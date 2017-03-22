@@ -1,0 +1,27 @@
+[package]
+name = "sovrin-client"
+version = "0.1.0"
+authors = [
+  "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
+  "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
+  "Artem Ivanov <artem.ivanov@dsr-company.com>",
+  "Evgeniy Razinkov <evgeniy.razinkov@dsr-company.com.ru>",
+  "Kirill Neznamov <kirill.neznamov@dsr-company.com>"
+  ]
+
+description = "sovrin-client-rust"
+license = "MIT/Apache-2.0"
+
+[lib]
+name = "sovrin_client"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sovrin_client"
+path = "src/main.rs"
+
+[dependencies]
+log = "0.3.7"
+zmq = "0.8.1"
+openssl = "0.9.9"
+int_traits = "0.1.1"

@@ -1,0 +1,10 @@
+version: '2'
+services:
+  sovrin-client-rust-test:
+    build:
+      context: .
+    command: cargo test --color=always
+    volumes:
+      - "./src:/home/sorvin-client-rust/src"
+      - "./Cargo.toml:/home/sorvin-client-rust/Cargo.toml"
+      - "./target:/home/sorvin-client-rust/target"
