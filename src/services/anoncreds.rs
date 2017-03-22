@@ -67,26 +67,20 @@ impl AnoncredsService {
         result.add_word(2);
         result
     }
-    fn gen_u(public_key: PublicKey, ms: BigNum) {
+    fn gen_u(public_key: PublicKey, ms: BigNum) -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
         let mut vprime = BigNum::new().unwrap();
         vprime.rand(LARGE_VPRIME, MSB_MAYBE_ZERO, false);
-        println!("vprime: {}", vprime);
 
-        let mut value = BigNum::new().unwrap();
-        value.mod_exp(&public_key.s, &vprime, &public_key.n, &mut ctx);
-        println!("valuee{}", &value);
+        let mut result_mul_one = BigNum::new().unwrap();
+        result_mul_one.mod_exp(&public_key.s, &vprime, &public_key.n, &mut ctx);
 
-        let mut value2 = BigNum::new().unwrap();
-        value2.mod_exp(&public_key.rms, &ms, &public_key.n, &mut ctx);
-        println!("valuee{}", &value2);
+        let mut result_mul_two = BigNum::new().unwrap();
+        result_mul_two.mod_exp(&public_key.rms, &ms, &public_key.n, &mut ctx);
 
-        let mut u = &value * &value2;
+        let mut u = &result_mul_one * &result_mul_two;
         u = &u % &public_key.n;
-
-        //value2.mod_exp(&public_key.rms, &ms, &public_key.n, &mut ctx);
-        println!("valueeU{}", &u);
-        //(S ** vprime) * (Rms ** ms) % N
+        u
     }
     fn random_in_range(n: &BigNum) -> BigNum {
         let mut random_number = BigNum::new().unwrap();
@@ -126,6 +120,13 @@ impl AnoncredsService {
         println!("Generated prime: {}", prime);
         prime
     }
+    fn create_claim_request() -> ClaimRequest {
+        let public_key = AnoncredsService::generate_public_key();
+        let master_secret = AnoncredsService::generate_master_secret();
+        let u = AnoncredsService::gen_u(public_key, master_secret);
+        let claim_request = ClaimRequest {u: u};
+        claim_request
+    }
 }
 
 #[derive(Debug)]
@@ -133,6 +134,11 @@ struct PublicKey {
     n: BigNum,
     s: BigNum,
     rms: BigNum
+}
+
+#[derive(Debug)]
+struct ClaimRequest {
+    u: BigNum
 }
 
 #[cfg(test)]
@@ -159,10 +165,7 @@ mod tests {
 //    }
     #[test]
     fn create_claim_request_works() {
-        let public_key = AnoncredsService::generate_public_key();
-        let master_secret = AnoncredsService::generate_master_secret();
-        println!("{:?}", public_key);
-
-        let u = AnoncredsService::gen_u(public_key, master_secret);
+        let claim_request = AnoncredsService::create_claim_request();
+        println!("{:?}", claim_request)
     }
 }
