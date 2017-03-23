@@ -39,32 +39,27 @@ pub struct CommandExecutorService {
 impl CommandExecutorService {
     fn new() -> CommandExecutorService {
         let (tx, rx) = sync_channel(100);
-        let ret = CommandExecutorService {
+        return CommandExecutorService {
             cmdqueue: tx,
             worker: Some(thread::spawn(move || {
-                let mut exit = false;
-                while !exit {
-                    let mut r = rx.recv();
-                    match r {
-                        Ok(c) => {
-                            let mut cmd = c;
-                            if cmd.name() == "exit" {
-                                println!("thread exit!");
-                                exit = true;
-                            } else {
-                                println!("execute command {}", cmd.name());
-                                cmd.execute();
-                            }
+                loop {
+                    match rx.recv() {
+                        Ok(ref mut cmd) if cmd.name() == "exit" => {
+                            println!("thread exit!");
+                            break;
+                        },
+                        Ok(mut cmd) => {
+                            println!("execute command {}", cmd.name());
+                            cmd.execute();
                         },
                         Err(_) => {
                             println!("failed to get command!");
-                            exit = true;
+                            break;
                         }
                     }
                 }
             }))
         };
-        return ret;
     }
 
     fn add_command(&mut self, cmd: Box<Command>) {
