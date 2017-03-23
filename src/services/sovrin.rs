@@ -1,18 +1,14 @@
 use std::error::Error;
 
-pub struct SovrinService {
-    dummy: String
-}
+pub struct SovrinService {}
 
 impl SovrinService {
     pub fn new() -> SovrinService {
-        trace!(target: "SovrinService", "new");
-        SovrinService { dummy: "sovrin_dummy".to_string() }
+        SovrinService {}
     }
 
-    pub fn set_did(&self, did: String) -> Result<String, Box<Error>> {
-        trace!(target: "SovrinService", "set_did {:?}", did);
-        Ok(did)
+    pub fn set_did(&self, did: String) -> Result<(), Box<Error>> {
+        Ok(())
     }
 }
 
@@ -21,8 +17,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn service_creation_is_possible() {
+    fn sovrin_service_can_be_created() {
         let sovrin_service = SovrinService::new();
-        assert_eq!("sovrin_dummy", sovrin_service.dummy, "Dummy field is filled by constructor");
+        assert!(true, "No crashes on SovrinService::new");
+    }
+
+    #[test]
+    fn sovrin_service_can_be_dropped() {
+        fn drop_test() {
+            let sovrin_service = SovrinService::new();
+        }
+
+        drop_test();
+        assert!(true, "No crashes on SovrinService::drop");
     }
 }

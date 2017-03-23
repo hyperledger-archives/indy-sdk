@@ -1,7 +1,72 @@
 mod set_did;
 
-pub trait Command {
-    fn execute(&self);
+use commands::set_did::SetDidCommandExecutor;
+use services::sovrin::SovrinService;
+
+use std::error;
+use std::sync::mpsc::{Sender, channel};
+use std::rc::Rc;
+use std::thread;
+
+pub enum Command {
+    Exit,
+    SetDidCommand(String, Box<Fn(Result<(), Box<error::Error>>) + Send>)
+}
+
+pub struct CommandExecutor {
+    worker: Option<thread::JoinHandle<()>>,
+    sender: Sender<Command>
+}
+
+impl CommandExecutor {
+    pub fn new() -> CommandExecutor {
+        let (sender, receiver) = channel();
+
+        CommandExecutor {
+            sender: sender,
+            worker: Some(thread::spawn(move || {
+                loop {
+                    info!(target: "CommandExecutor", "Worker thread started");
+
+                    let sovrin_service = Rc::new(SovrinService::new());
+                    let set_did_executor = SetDidCommandExecutor::new(sovrin_service);
+
+                    match receiver.recv() {
+                        Ok(Command::SetDidCommand(did, cb)) => {
+                            info!(target: "CommandExecutor", "SetDidCommand command received");
+                            set_did_executor.execute(did, cb);
+                        }
+                        Ok(Command::Exit) => {
+                            info!(target: "CommandExecutor", "Exit command received");
+                            break
+                        },
+                        Ok(_) => {
+                            error!(target: "CommandExecutor", "Unknown command received!");
+                            panic!("CommandExecutor: Unknown command received!")
+                        },
+                        Err(err) => {
+                            error!(target: "CommandExecutor", "Failed to get command!");
+                            panic!("CommandExecutor: Failed to get command! {:?}", err)
+                        }
+                    }
+                }
+            }))
+        }
+    }
+
+    pub fn send(&self, cmd: Command) {
+        self.sender.send(cmd);
+    }
+}
+
+impl Drop for CommandExecutor {
+    fn drop(&mut self) {
+        info!(target: "CommandExecutor", "Drop started");
+        self.send(Command::Exit);
+        // Option worker type and this kludge is workaround for rust
+        self.worker.take().unwrap().join();
+        info!(target: "CommandExecutor", "Drop finished");
+    }
 }
 
 #[cfg(test)]
@@ -9,32 +74,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn command_creation_is_possible() {
-        use std::sync::Arc;
-        use std::sync::Mutex;
+    fn command_executor_can_be_created() {
+        let command_executor = CommandExecutor::new();
+        assert!(true, "No crashes on CommandExecutor::new");
+    }
 
-        struct Command1 {
-            cb: Box<Fn(String)>
+    #[test]
+    fn command_executor_can_be_dropped() {
+        fn drop_test() {
+            let command_executor = CommandExecutor::new();
         }
 
-        impl Command for Command1 {
-            fn execute(&self) {
-                (self.cb)("Command1 result".to_string())
+        drop_test();
+        assert!(true, "No crashes on CommandExecutor::drop");
+    }
+
+    #[test]
+    fn set_did_command_can_be_sent() {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |result| {
+            match result {
+                Ok(val) => sender.send("OK"),
+                Err(err) => sender.send("ERR")
+            };
+        });
+
+        let cmd_executor = CommandExecutor::new();
+        cmd_executor.send(Command::SetDidCommand("DID0".to_string(), cb));
+
+        match receiver.recv() {
+            Ok(result) => {
+                assert_eq!("OK", result);
+            }
+            Err(err) => {
+                panic!("Error on result recv: {:?}", err);
             }
         }
-
-        let arc = Arc::new(Mutex::new("".to_string()));
-        let arc2 = arc.clone();
-
-        let command1 = Command1 {
-            cb: Box::new(move |result| {
-                let mut val = arc2.lock().unwrap();
-                *val = result;
-            })
-        };
-
-        command1.execute();
-
-        assert_eq!("Command1 result", *arc.lock().unwrap());
     }
 }
