@@ -40,10 +40,6 @@ impl CommandExecutor {
                             info!(target: "CommandExecutor", "Exit command received");
                             break
                         },
-                        Ok(_) => {
-                            error!(target: "CommandExecutor", "Unknown command received!");
-                            panic!("CommandExecutor: Unknown command received!")
-                        },
                         Err(err) => {
                             error!(target: "CommandExecutor", "Failed to get command!");
                             panic!("CommandExecutor: Failed to get command! {:?}", err)

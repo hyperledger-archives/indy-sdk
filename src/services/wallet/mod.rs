@@ -31,13 +31,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn wallet_service_creation_is_possible() {
-        let sqlite_service = sqllite::SqliteWalletService::new();
-        let wallet_service = WalletService::new(sqlite_service);
-    }
-
-
-    #[test]
     fn wallet_service_set_get_value_possible() {
         let sqlite_service = sqllite::SqliteWalletService::new();
         let wallet_service = WalletService::new(sqlite_service);
