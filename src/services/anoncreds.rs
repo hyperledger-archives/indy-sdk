@@ -3,11 +3,11 @@ const LARGE_PRIME: i32 = 1024;
 const LARGE_VPRIME: i32 = 2128;
 const LARGE_E_START: i32 = 596;
 const LARGE_E_END_RANGE: i32 = 119;
-
 extern crate openssl;
 extern crate int_traits;
 use self::int_traits::IntTraits;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
+use self::openssl::hash::{hash, MessageDigest};
 pub struct AnoncredsService {
     dummy: String
 }
@@ -165,6 +165,9 @@ impl AnoncredsService {
         e_end = &e_start + &e_end;
         let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
     }
+    fn encode_attribute() {
+
+    }
 }
 
 #[derive(Debug)]
@@ -231,6 +234,26 @@ mod tests {
         ];
         let claim_request = AnoncredsService::create_claim_request();
         let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u);
-
+        let str = "Alexer".as_bytes();
+        let res = hash(MessageDigest::sha256(), str).unwrap();
+        println!("{:?}", res);
+//        let data = [b"Alex"];
+//        let mut h = Hasher::new(MessageDigest::sha256()).unwrap();
+//        h.update(data[0]).unwrap();
+//        let res = h.finish().unwrap();
+        //println!("{:?}", res);
+        //assert_eq!(res, spec);
+//        let input = "Alexer5435";
+//        let mut asd = vec![0;32];
+//        let mut sha = Sha256::new();
+//        sha.input_str(input);
+//        println!("ob {}", sha.output_bytes());
+//        sha.result(asd.as_mut_slice());
+//        let b = sha.result_str();
+//        //let c = String::from_utf8(asd);
+//        //println!("utf8 {:?}",c);
+//        println!("{:?}", &asd);
+        let a = BigNum::from_dec_str("93838255634171043313693932530283701522875554780708470423762684802192372035729").unwrap();
+        println!("{:?}", a.to_vec());
     }
 }
