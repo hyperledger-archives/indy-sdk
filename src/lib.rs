@@ -17,24 +17,6 @@ impl AnoncredsAPI {
         AnoncredsAPI { command_executor: command_executor }
     }
 
-    fn dummy() {}
-}
-
-struct SovrinAPI {
-    command_executor: Arc<CommandExecutor>,
-}
-
-impl SovrinAPI {
-    pub fn new(command_executor: Arc<CommandExecutor>) -> SovrinAPI {
-        SovrinAPI {
-            command_executor: command_executor
-        }
-    }
-
-    pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
-        self.command_executor.send(Command::SetDidCommand(did, cb));
-    }
-
     pub fn create_master_secret(cb: Box<Fn(Result<(String), Box<error::Error>>) + Send>) {
 
     }
@@ -53,7 +35,7 @@ impl SovrinAPI {
                              public_key_revocation: String,
                              cb: Box<Fn(
                                  Result<((String, String, String, String)),
-                                 Box<error::Error>>
+                                     Box<error::Error>>
                              ) + Send>) {
 
     }
@@ -86,6 +68,22 @@ impl SovrinAPI {
                         public_key: String, attributes: String,
                         cb: Box<Fn(Result<(String), Box<error::Error>>) + Send>) {
 
+    }
+}
+
+struct SovrinAPI {
+    command_executor: Arc<CommandExecutor>,
+}
+
+impl SovrinAPI {
+    pub fn new(command_executor: Arc<CommandExecutor>) -> SovrinAPI {
+        SovrinAPI {
+            command_executor: command_executor
+        }
+    }
+
+    pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
+        self.command_executor.send(Command::SetDidCommand(did, cb));
     }
 }
 
