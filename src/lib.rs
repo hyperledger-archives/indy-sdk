@@ -21,6 +21,49 @@ impl SovrinClient {
     pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
         self.command_executor.send(Command::SetDidCommand(did, cb));
     }
+
+    pub fn create_master_secret() {
+
+    }
+
+    pub fn create_keys(schema: String) {
+
+    }
+
+    pub fn create_context_attribute(i_a: String, user_id: String) {
+
+    }
+
+    pub fn issue_accumulator(schema: String, i_a: String, l: String,
+                             public_key_revocation: String) {
+
+    }
+
+    pub fn issue_claim(attributes: String, accumulator: String,i_a: String, i: String,
+                       claim_request: String, context_attribute: String, public_key: String,
+                       secret_key: String, public_key_revocation: String,
+                       secret_key_revocation: String, tails: String,
+                       secret_key_accumulator: String) {
+
+    }
+
+    pub fn create_claim_request(master_secret: String, public_key: String,
+                                public_key_revocation: String, request_non_revocation: String) {
+
+    }
+
+    pub fn create_proof(proof_input: String, nonce: String, claims: String,
+                        public_key_revocation: String, accum: String, public_key: String,
+                        master_secret: String) {
+
+    }
+
+    pub fn verify_proof(proof_input: String, proof: String, revealed_attributes: String,
+                        nonce: String, public_key_revocation: String,
+                        public_key_accumulator: String, accumulator: String,
+                        public_key: String, attributes: String) {
+
+    }
 }
 
 #[cfg(test)]
