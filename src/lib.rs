@@ -1,56 +1,70 @@
 #[macro_use]
 extern crate log;
-extern crate zmq;
 
 mod commands;
 mod services;
 
-use std::str;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::thread;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {}
-}
-
-type SovrinCallback = Box<Fn(String) + Send>;
+use commands::{Command, CommandExecutor};
+use std::error;
 
 pub struct SovrinClient {
-    cb: Option<SovrinCallback>,
-    worker: Option<thread::JoinHandle<()>>,
-    cmd_socket: Option<zmq::Socket>
+    command_executor: CommandExecutor
 }
 
 impl SovrinClient {
     pub fn new() -> SovrinClient {
         SovrinClient {
-            cb: None,
-            worker: None,
-            cmd_socket: None
+            command_executor: CommandExecutor::new()
         }
     }
 
-    pub fn init(&mut self, cb: SovrinCallback) -> i32 {
-        let arc = Arc::new(Mutex::new(cb));
-        self.worker = Some(thread::spawn(move || {
-            let xarc = arc.clone();
-            println!("thread");
-            let xcb = xarc.lock();
-            xcb.unwrap()(String::from("qwe"));
-        }));
-        return 0;
+    pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
+        self.command_executor.send(Command::SetDidCommand(did, cb));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc::channel;
+
+    #[test]
+    fn sovrin_client_can_be_created() {
+        let sovrin_client = SovrinClient::new();
+        assert!(true, "No crashes on SovrinClient::new");
     }
 
+    #[test]
+    fn sovrin_client_can_be_dropped() {
+        fn drop_test() {
+            let sovrin_client = SovrinClient::new();
+        }
 
-    pub fn do_call(&mut self, params: &[&str]) -> i32 {
-        return 0;
+        drop_test();
+        assert!(true, "No crashes on SovrinClient::drop");
     }
 
-    pub fn deinit(&mut self) -> i32 {
-        let x = self.worker.take().unwrap().join();
-        return 0;
+    #[test]
+    fn set_did_method_can_be_called() {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |result| {
+            match result {
+                Ok(val) => sender.send("OK"),
+                Err(err) => sender.send("ERROR")
+            };
+        });
+
+        let sovrin_client = SovrinClient::new();
+        sovrin_client.set_did("DID0".to_string(), cb);
+
+        match receiver.recv() {
+            Ok(result) => {
+                assert_eq!("OK", result);
+            }
+            Err(err) => {
+                panic!("Error on result recv: {:?}", err);
+            }
+        }
     }
 }
