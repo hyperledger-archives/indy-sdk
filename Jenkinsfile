@@ -1,6 +1,9 @@
 #!groovy​
 
-def success = true
+@Library('SovrinHelpers') _
+
+name = 'sovrin-client-rust'
+def err
 
 try {
 
@@ -30,12 +33,20 @@ try {
     }
 
 } catch(e) {
-    success = false
     currentBuild.result = "FAILED"
-    throw e
+    node('ubuntu-master') {
+        sendNotification.fail()
+    }
+    err = e
 } finally {
-    if (success && (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel')) {
-        currentBuild.result = "SUCCESS"
+    if (err) {
+        throw err
+    }
+    currentBuild.result = "SUCCESS"
+    if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel') {
+        node('ubuntu-master') {
+            sendNotification.success(name)
+        }
     }
 }
 
@@ -45,11 +56,10 @@ def testUbuntu() {
         checkout scm
 
         echo 'Ubuntu Test: Build docker image'
-        def testEnv = docker.build 'sovrin-client-rust-test'
+        def testEnv = dockerHelpers.build(name)
 
-        testEnv.inside("-u root"){
+        testEnv.inside {
             echo 'Ubuntu Test: Test'
-            sh 'cd /home/sorvin-client-rust'
 
             try {
                 sh 'cargo test-xunit'
@@ -71,11 +81,9 @@ def publishToCargo() {
         checkout scm
 
         echo 'Publish to Cargo: Build docker image'
-        def testEnv = docker.build 'sovrin-client-rust-test'
+        def testEnv = dockerHelpers.build(name)
 
-        testEnv.inside("-u root"){
-            sh 'cd /home/sorvin-client-rust'
-
+        testEnv.inside {
             echo 'Update version'
 
             def suffix = env.BRANCH_NAME == 'master' ? env.BUILD_NUMBER : 'devel-' + env.BUILD_NUMBER;
