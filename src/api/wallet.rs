@@ -57,14 +57,14 @@ mod tests {
 
     #[test]
     fn wallet_api_can_be_created() {
-        let sovrin_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
+        let wallet_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
         assert! (true, "No crashes on WalletAPI::new");
     }
 
     #[test]
     fn wallet_api_can_be_dropped() {
         fn drop_test() {
-            let sovrin_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
+            let wallet_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
         }
 
         drop_test();
