@@ -1,8 +1,7 @@
 mod sqlite;
 
+use errors::wallet::WalletError;
 use services::wallet::sqlite::SqliteWallet;
-use std::error::Error;
-use errors::WalletError;
 
 
 trait Wallet {
@@ -18,7 +17,7 @@ trait AnoncredsWallet: Wallet {
 
 trait IdentityWallet: Wallet {
     fn get_key_by_did(&self, did: &String) -> Result<String, WalletError> {
-        self.get(&[&did])
+        self.get(&[did])
     }
 }
 
@@ -29,7 +28,7 @@ struct WallerService {
 impl WallerService {
     fn new() -> WallerService {
         WallerService {
-            wallet: Box::new(SqliteWallet::new())
+            wallet: Box::new(SqliteWallet::new().unwrap())
         }
     }
 
@@ -67,7 +66,11 @@ mod tests {
 
         assert!(wallet_service.set(&[&key, &subkey], &value).is_ok(), "Set key sqliite wallet");
 
-        assert_eq!(Ok(value), wallet_service.get(&[&key, &subkey]), "Get value by key");
+        let result = wallet_service.get(&[&key, &subkey]);
+
+        assert!(result.is_ok(), "Value got");
+
+        assert_eq!(value, result.unwrap(), "Get correct value by key");
     }
 
     #[test]
@@ -78,7 +81,11 @@ mod tests {
 
         assert!(wallet_service.set(&[&did, &schema, &pk], &master).is_ok(), "Set key sqliite wallet");
 
-        assert_eq!(Ok(master), wallet_service.get_master_secret(&did, &schema, &pk), "Get master secret");
+        let result = wallet_service.get_master_secret(&did, &schema, &pk);
+
+        assert!(result.is_ok(), "Value got");
+
+        assert_eq!(master, result.unwrap(), "Get correct value");
     }
 
     #[test]
@@ -89,7 +96,11 @@ mod tests {
 
         assert!(wallet_service.set(&[&did], &master).is_ok(), "Set key sql wallet");
 
-        assert_eq!(Ok(master), wallet_service.get_key_by_did(&did), "Get key by did");
+        let result = wallet_service.get_key_by_did(&did);
+
+        assert!(result.is_ok(), "Value got");
+
+        assert_eq!(master, result.unwrap(), "Get correct value");
     }
 
     #[test]

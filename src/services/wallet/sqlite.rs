@@ -1,32 +1,33 @@
 extern crate rusqlite;
 
-use errors::WalletError;
-use services::wallet::{Wallet, AnoncredsWallet, IdentityWallet};
-use std::error::Error;
+use errors::wallet::WalletError;
 use self::rusqlite::Connection;
-use self::rusqlite::Error::QueryReturnedNoRows;
+use services::wallet::Wallet;
+use std::io;
+use std::io::ErrorKind;
 
 pub struct SqliteWallet {
     connection: Connection
 }
 
 impl SqliteWallet {
-    pub fn new() -> SqliteWallet {
-        match Connection::open("sovrin.db") {
-            Ok(connection) => {
-                connection.execute(
-                    "CREATE TABLE IF NOT EXISTS wallet (
+    pub fn new() -> Result<SqliteWallet, WalletError> {
+        let connection =
+            try!(Connection::open("sovrin.db")
+                .map_err(|err| WalletError::from(io::Error::new(ErrorKind::NotConnected, err)))
+            );
+
+        try!(connection.execute(
+            "CREATE TABLE IF NOT EXISTS wallet (
                           key       TEXT NOT NULL,
                           value     TEXT NOT NULL
                           )",
-                    &[]);
+            &[])
+            .map_err(|err| WalletError::from(io::Error::new(ErrorKind::InvalidData, err))));
 
-                SqliteWallet {
-                    connection: connection
-                }
-            },
-            Err(err) => panic!("{}", err)
-        }
+        Ok(SqliteWallet {
+            connection: connection
+        })
     }
 }
 
@@ -37,13 +38,12 @@ impl Wallet for SqliteWallet {
             .map(|k| format!("{}", k))
             .collect();
 
-        match self.connection.execute(
+        self.connection.execute(
             "INSERT INTO wallet (key, value) VALUES (?1, ?2)",
             &[&string_keys.join("::"), value]
-        ) {
-            Ok(_) => Ok(()),
-            Err(err) => Err(WalletError::UnknownError(Box::new(err)))
-        }
+        )
+            .map(|_| ())
+            .map_err(|err| WalletError::from(io::Error::new(ErrorKind::InvalidData, err)))
     }
 
     fn get(&self, keys: &[&String]) -> Result<String, WalletError> {
@@ -52,20 +52,22 @@ impl Wallet for SqliteWallet {
             .map(|k| format!("{}", k))
             .collect();
 
-        match self.connection.prepare("SELECT value FROM wallet WHERE key = ?1 LIMIT 1") {
-            Ok(mut stmt) =>
-                match stmt.query(&[&string_keys.join("::")]) {
-                    Ok(mut rows) =>
-                        match rows.next() {
-                            Some(row) => match row {
-                                Ok(r) => Ok(r.get(0)),
-                                Err(err) => Err(WalletError::NotFoundError)
-                            },
-                            _ => Err(WalletError::NotFoundError)
-                        },
-                    Err(err) => Err(WalletError::UnknownError(Box::new(err)))
-                },
-            Err(err) => Err(WalletError::UnknownError(Box::new(err)))
-        }
+        let mut stmt = try!(
+            self.connection.prepare("SELECT value FROM wallet WHERE key = ?1 LIMIT 1")
+                .map_err(|err| WalletError::from(io::Error::new(ErrorKind::InvalidData, err)))
+        );
+
+        let mut rows = try!(
+            stmt.query(&[&string_keys.join("::")])
+                .map_err(|err| WalletError::from(io::Error::new(ErrorKind::InvalidData, err)))
+        );
+
+        rows.next()
+            .ok_or(WalletError::NotFound("Value not found".to_string()))
+            .and_then(|row|
+                row
+                    .map(|r| r.get(0))
+                    .map_err(|err| WalletError::NotFound(format!("{}", err)))
+            )
     }
 }

@@ -4,7 +4,7 @@ use std::fmt;
 use std::num;
 
 #[derive(Debug)]
-enum WalletError {
+pub enum WalletError {
     NotFound(String),
     Io(io::Error)
 }
