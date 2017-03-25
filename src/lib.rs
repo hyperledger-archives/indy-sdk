@@ -1,26 +1,29 @@
 #[macro_use]
 extern crate log;
 
-mod errors;
+mod api;
 mod commands;
+mod errors;
 mod services;
 
+use api::anoncreds::AnoncredsAPI;
+use api::sovrin::SovrinAPI;
 use commands::{Command, CommandExecutor};
 use std::error;
+use std::sync::Arc;
 
 pub struct SovrinClient {
-    command_executor: CommandExecutor
+    anoncreds: AnoncredsAPI,
+    sovrin: SovrinAPI
 }
 
 impl SovrinClient {
     pub fn new() -> SovrinClient {
+        let command_executor = Arc::new(CommandExecutor::new());
         SovrinClient {
-            command_executor: CommandExecutor::new()
+            anoncreds: AnoncredsAPI::new(command_executor.clone()),
+            sovrin: SovrinAPI::new(command_executor.clone())
         }
-    }
-
-    pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
-        self.command_executor.send(Command::SetDidCommand(did, cb));
     }
 }
 
@@ -32,7 +35,7 @@ mod tests {
     #[test]
     fn sovrin_client_can_be_created() {
         let sovrin_client = SovrinClient::new();
-        assert!(true, "No crashes on SovrinClient::new");
+        assert! (true, "No crashes on SovrinClient::new");
     }
 
     #[test]
@@ -42,11 +45,11 @@ mod tests {
         }
 
         drop_test();
-        assert!(true, "No crashes on SovrinClient::drop");
+        assert! (true, "No crashes on SovrinClient::drop");
     }
 
     #[test]
-    fn set_did_method_can_be_called() {
+    fn sovrin_set_did_method_can_be_called() {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |result| {
@@ -57,11 +60,11 @@ mod tests {
         });
 
         let sovrin_client = SovrinClient::new();
-        sovrin_client.set_did("DID0".to_string(), cb);
+        sovrin_client.sovrin.set_did("DID0".to_string(), cb);
 
         match receiver.recv() {
             Ok(result) => {
-                assert_eq!("OK", result);
+                assert_eq! ("OK", result);
             }
             Err(err) => {
                 panic!("Error on result recv: {:?}", err);
