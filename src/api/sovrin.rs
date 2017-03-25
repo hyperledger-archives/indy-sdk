@@ -1,4 +1,7 @@
+use errors::sovrin::SovrinError;
 use commands::{Command, CommandExecutor};
+use commands::sovrin::SovrinCommand;
+
 use std::error;
 use std::sync::Arc;
 
@@ -13,8 +16,8 @@ impl SovrinAPI {
         }
     }
 
-    pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
-        self.command_executor.send(Command::SetDidCommand(did, cb));
+    pub fn send_nym_tx(&self, did: &str, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        self.command_executor.send(Command::Sovrin(SovrinCommand::SendNymTx(did.to_string(), cb)));
     }
 }
 

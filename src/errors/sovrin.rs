@@ -4,7 +4,7 @@ use std::fmt;
 use std::num;
 
 #[derive(Debug)]
-enum SovrinError {
+pub enum SovrinError {
     NoConsensus(String),
     TimedOut(String),
     InvalidData(String),

@@ -4,7 +4,7 @@ use std::fmt;
 use std::num;
 
 #[derive(Debug)]
-enum AnoncredsError {
+pub enum AnoncredsError {
     InvalidData(String)
 }
 
