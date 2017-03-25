@@ -3,6 +3,7 @@ extern crate log;
 
 mod api;
 mod commands;
+mod errors;
 mod services;
 
 use api::anoncreds::AnoncredsAPI;
