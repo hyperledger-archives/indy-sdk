@@ -23,7 +23,7 @@ impl AnoncredsAPI {
     /// #Errors
     /// No method specific errors.
     /// See `AnoncredsError` docs for common errors description.
-    pub fn create_master_secret(cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+    pub fn create_master_secret(cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         unimplemented!();
     }
 
@@ -99,7 +99,7 @@ impl AnoncredsAPI {
                        secret_key: &[&u8], public_key_non_revocation: &[&u8],
                        secret_key_non_revocation: &[&u8], tails: &[&u8],
                        secret_key_accumulator: &[&u8],
-                       cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+                       cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         unimplemented!();
     }
 
@@ -120,7 +120,7 @@ impl AnoncredsAPI {
     /// See `AnoncredsError` docs for common errors description.
     pub fn create_claim_request(master_secret: &[&u8], public_key: &[&u8],
                                 public_key_non_revocation: &[&u8], request_non_revocation: &[&u8],
-                                cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+                                cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         unimplemented!();
     }
 
@@ -180,7 +180,7 @@ impl AnoncredsAPI {
                         nonce: &[&u8], public_key_non_revocation: &[&u8],
                         accumulator: &[&u8], public_key_accumulator: &[&u8],
                         public_key: &[&u8], attributes: &[&u8],
-                        cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+                        cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         unimplemented!();
     }
 
@@ -195,7 +195,7 @@ impl AnoncredsAPI {
     /// #Errors
     /// No method specific errors.
     /// See `AnoncredsError` docs for common errors description.
-    pub fn create_nonce(cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+    pub fn create_nonce(cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         unimplemented!();
     }
 }
