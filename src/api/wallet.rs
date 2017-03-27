@@ -1,4 +1,5 @@
 use commands::{Command, CommandExecutor};
+use commands::wallet::WalletCommand;
 use errors::wallet::WalletError;
 
 use std::sync::Arc;
@@ -30,8 +31,13 @@ impl WalletAPI {
     /// #Errors
     /// No method specific errors.
     /// See `WallerError` docs for common errors description.
-    pub fn set(keys: &[&str], value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        unimplemented!();
+    pub fn set(&self, keys: &[&str], value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
+        self.command_executor.send(Command::Wallet(
+            WalletCommand::Set(
+                keys.iter().map(|key| key.to_string()).collect(),
+                value.to_string(),
+                cb))
+        );
     }
 
     /// Get Wallet record identified by keys list.
@@ -41,13 +47,18 @@ impl WalletAPI {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Value of corresponded Wallet record.
+    /// None if no value was set for this keys
+    /// Value of corresponded Wallet record otherwise.
     ///
     /// #Errors
     /// WalletError::NotFound - If no corresponded Wallet record found.
     /// See `WallerError` docs for common errors description.
-    pub fn get(keys: &[&str], cb: Box<Fn(Result<String, WalletError>) + Send>) {
-        unimplemented!();
+    pub fn get(&self, keys: &[&str], cb: Box<Fn(Result<Option<String>, WalletError>) + Send>) {
+        self.command_executor.send(Command::Wallet(
+            WalletCommand::Get(
+                keys.iter().map(|key| key.to_string()).collect(),
+                cb))
+        );
     }
 }
 
