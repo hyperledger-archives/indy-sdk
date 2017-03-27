@@ -3,7 +3,7 @@ extern crate log;
 
 mod api;
 mod commands;
-mod constants;
+mod common;
 mod errors;
 mod services;
 

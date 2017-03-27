@@ -1,4 +1,4 @@
-use constants::SovrinRole;
+use common::SovrinRole;
 use errors::sovrin::SovrinError;
 
 pub struct SovrinService {}

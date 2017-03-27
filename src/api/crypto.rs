@@ -31,7 +31,7 @@ impl CryptoAPI {
     /// #Errors
     /// No method specific errors.
     /// See `CryptoError` docs for common errors description.
-    pub fn sodium_create_key_pair(cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), CryptoError>) + Send>) {
+    pub fn sodium_create_key_pair(seed: Option<&str>, cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), CryptoError>) + Send>) {
         unimplemented!();
     }
 

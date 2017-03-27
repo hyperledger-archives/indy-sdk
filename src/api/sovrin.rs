@@ -1,7 +1,7 @@
 use errors::sovrin::SovrinError;
 use commands::{Command, CommandExecutor};
 use commands::sovrin::SovrinCommand;
-use constants::SovrinRole;
+use common::{SovrinRole, SovrinIdentity};
 
 use std::error;
 use std::sync::Arc;
@@ -28,6 +28,7 @@ impl SovrinAPI {
     /// Note that only trustees and stewards can create new sponsors and trustee can be created only by other trusties.
     ///
     /// #Params
+    /// identity: Transaction identity.
     /// dest: Id of a target NYM record or an alias.
     /// verkey: Optional(defaults to dest). Verification key.
     /// xref: Optional (Required if dest is an alias). Id of a NYM record.
@@ -43,7 +44,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_nym_tx(&self, dest: &str, verkey: Option<&str>, xref: Option<&str>,
+    pub fn send_nym_tx(&self, identity: &SovrinIdentity, dest: &str, verkey: Option<&str>, xref: Option<&str>,
                        data: Option<&str>, role: Option<SovrinRole>,
                        cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         self.command_executor.send(
@@ -62,6 +63,7 @@ impl SovrinAPI {
     /// Adds attribute to NYM record.
     ///
     /// #Params
+    /// identity: Transaction identity.
     /// dest: Optional (defaults to origin). Id of a target NYM record.
     /// hash: Hash of attribute data.
     /// raw: Raw attribute data represented as json, where key is attribute name and value is it's value.
@@ -74,7 +76,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_attrib_tx(&self, dest: Option<&str>, hash: &str, raw: &str, enc: &str,
+    pub fn send_attrib_tx(&self, identity: &SovrinIdentity, dest: Option<&str>, hash: &str, raw: &str, enc: &str,
                        cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -84,6 +86,7 @@ impl SovrinAPI {
     /// Get attribute value.
     ///
     /// #Params
+    /// identity: Transaction identity.
     /// dest: Id of a target NYM record.
     /// data: Attribute name.
     /// cb: Callback that takes command result as parameter.
@@ -94,7 +97,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_att_tx(&self, dest: &str, data: &str,
+    pub fn send_get_att_tx(&self, identity: &SovrinIdentity, dest: &str, data: &str,
                           cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -105,6 +108,7 @@ impl SovrinAPI {
     /// and id of a sponsor, who created it.
     ///
     /// #Params
+    /// identity: Transaction identity.
     /// dest: Id of a target NYM record.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -114,7 +118,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_nym_tx(&self, dest: &str,
+    pub fn send_get_nym_tx(&self, identity: &SovrinIdentity, dest: &str,
                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -124,6 +128,7 @@ impl SovrinAPI {
     /// Write the schema of a claim on sovrin.
     ///
     /// #Params
+    /// identity: Transaction identity.
     /// dest: Id of a target NYM record.
     /// data: Schema represent as json: name, version, type, attr_names (ip, port, keys) and etc...
     /// cb: Callback that takes command result as parameter.
@@ -134,8 +139,29 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_schema_tx(&self, data: &str,
-                           cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+    pub fn send_get_schema_tx(&self, identity: &SovrinIdentity, data: &str,
+                           cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends GET_SCHEMA transaction to Identity Ledger.
+    ///
+    /// Write the schema of a claim on sovrin.
+    ///
+    /// #Params
+    /// identity: Transaction identity.
+    /// dest: Id of a target NYM record.
+    /// data: Schema represent as json: name, version, type, attr_names (ip, port, keys) and etc...
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// NIM data represent as json.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_schema_tx(&self, identity: &SovrinIdentity, data: &str,
+                          cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
 }
