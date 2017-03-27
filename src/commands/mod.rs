@@ -4,7 +4,9 @@ pub mod sovrin;
 pub mod wallet;
 
 use commands::sovrin::{SovrinCommand, SovrinCommandExecutor};
+use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use services::sovrin::SovrinService;
+use services::wallet::WalletService;
 
 use std::error;
 use std::sync::mpsc::{Sender, channel};
@@ -13,7 +15,8 @@ use std::thread;
 
 pub enum Command {
     Exit,
-    Sovrin(SovrinCommand)
+    Sovrin(SovrinCommand),
+    Wallet(WalletCommand)
 }
 
 pub struct CommandExecutor {
@@ -32,13 +35,19 @@ impl CommandExecutor {
                     info!(target: "command_executor", "Worker thread started");
 
                     let sovrin_service = Rc::new(SovrinService::new());
+                    let wallet_service = Rc::new(WalletService::new());
                     let sovrin_command_executor = SovrinCommandExecutor::new(sovrin_service.clone());
+                    let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
 
                     match receiver.recv() {
                         Ok(Command::Sovrin(cmd)) => {
                             info!(target: "command_executor", "SovrinCommand command received");
                             sovrin_command_executor.execute(cmd);
-                        }
+                        },
+                        Ok(Command::Wallet(cmd)) => {
+                            info!(target: "command_executor", "WalletCommand command received");
+                            wallet_command_executor.execute(cmd);
+                        },
                         Ok(Command::Exit) => {
                             info!(target: "command_executor", "Exit command received");
                             break
@@ -90,7 +99,6 @@ mod tests {
 
     #[test]
     fn set_did_command_can_be_sent() {
-
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |result| {
@@ -106,6 +114,55 @@ mod tests {
         match receiver.recv() {
             Ok(result) => {
                 assert_eq!("OK", result);
+            }
+            Err(err) => {
+                panic!("Error on result recv: {:?}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn wallet_set_value_command_can_be_sent() {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |result| {
+            match result {
+                Ok(val) => sender.send("OK"),
+                Err(err) => sender.send("ERR")
+            };
+        });
+
+        let cmd_executor = CommandExecutor::new();
+        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb)));
+
+        match receiver.recv() {
+            Ok(result) => {
+                assert_eq!("OK", result);
+            }
+            Err(err) => {
+                panic!("Error on result recv: {:?}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn wallet_get_value_command_can_be_sent() {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |result| {
+            match result {
+                Ok(val) => sender.send(val),
+                Err(err) => sender.send(None)
+            };
+        });
+
+        let cmd_executor = CommandExecutor::new();
+
+        cmd_executor.send(Command::Wallet(WalletCommand::Get(vec!["key".to_string(), "subkey".to_string()], cb)));
+
+        match receiver.recv() {
+            Ok(result) => {
+                assert_eq!(Some("value".to_string()), result);
             }
             Err(err) => {
                 panic!("Error on result recv: {:?}", err);

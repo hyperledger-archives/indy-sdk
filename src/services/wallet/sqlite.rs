@@ -40,13 +40,13 @@ impl Wallet for SqliteWallet {
 
         self.connection.execute(
             "INSERT INTO wallet (key, value) VALUES (?1, ?2)",
-            &[&string_keys.join("::"), value]
+            &[&string_keys.join("::"), &value.to_string()]
         )
             .map(|_| ())
             .map_err(|err| WalletError::from(io::Error::new(ErrorKind::InvalidData, err)))
     }
 
-    fn get(&self, keys: &[&String]) -> Result<String, WalletError> {
+    fn get(&self, keys: &[&String]) -> Result<Option<String>, WalletError> {
         let string_keys: Vec<String> = keys.to_vec()
             .iter()
             .map(|k| format!("{}", k))
@@ -62,12 +62,13 @@ impl Wallet for SqliteWallet {
                 .map_err(|err| WalletError::from(io::Error::new(ErrorKind::InvalidData, err)))
         );
 
-        rows.next()
-            .ok_or(WalletError::NotFound("Value not found".to_string()))
-            .and_then(|row|
-                row
-                    .map(|r| r.get(0))
-                    .map_err(|err| WalletError::NotFound(format!("{}", err)))
-            )
+        match rows.next() {
+            Some(row) =>
+                match row {
+                    Ok(r) => Ok(Some(r.get(0))),
+                    Err(err) => Err(WalletError::from(io::Error::new(ErrorKind::InvalidData, err)))
+                },
+            None => Ok(None)
+        }
     }
 }
