@@ -64,11 +64,11 @@ mod tests {
 
         let (key, subkey, value) = ("key".to_string(), "subkey".to_string(), "value".to_string());
 
-        assert!(wallet_service.set(&[&key, &subkey], &value).is_ok(), "Set key sqliite wallet");
+        assert!(wallet_service.set(&[&key, &subkey], &value).is_ok(), "Success set key in sqlite wallet");
 
         let result = wallet_service.get(&[&key, &subkey]);
 
-        assert!(result.is_ok(), "Value got");
+        assert!(result.is_ok(), "Success get value from sqlite wallet");
 
         assert_eq!(value, result.unwrap(), "Get correct value by key");
     }
@@ -79,13 +79,13 @@ mod tests {
 
         let (did, schema, pk, master) = ("did".to_string(), "schema".to_string(), "pk".to_string(), "master".to_string());
 
-        assert!(wallet_service.set(&[&did, &schema, &pk], &master).is_ok(), "Set key sqliite wallet");
+        assert!(wallet_service.set(&[&did, &schema, &pk], &master).is_ok(), "Success set key in sqlite wallet");
 
         let result = wallet_service.get_master_secret(&did, &schema, &pk);
 
-        assert!(result.is_ok(), "Value got");
+        assert!(result.is_ok(), "Success get value from sqlite wallet");
 
-        assert_eq!(master, result.unwrap(), "Get correct value");
+        assert_eq!(master, result.unwrap(), "Get correct value by key");
     }
 
     #[test]
@@ -94,13 +94,13 @@ mod tests {
 
         let (did, master) = ("did".to_string(), "master".to_string());
 
-        assert!(wallet_service.set(&[&did], &master).is_ok(), "Set key sql wallet");
+        assert!(wallet_service.set(&[&did], &master).is_ok(), "Success set key in sqlite wallet");
 
         let result = wallet_service.get_key_by_did(&did);
 
-        assert!(result.is_ok(), "Value got");
+        assert!(result.is_ok(), "Success get value from sqlite wallet");
 
-        assert_eq!(master, result.unwrap(), "Get correct value");
+        assert_eq!(master, result.unwrap(), "Get correct value by key");
     }
 
     #[test]
