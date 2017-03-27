@@ -1,6 +1,7 @@
 use commands::{Command, CommandExecutor};
 use std::error;
 use std::sync::Arc;
+use errors::anoncreds::AnoncredsError;
 
 pub struct AnoncredsAPI {
     command_executor: Arc<CommandExecutor>,
@@ -11,17 +12,17 @@ impl AnoncredsAPI {
         AnoncredsAPI { command_executor: command_executor }
     }
 
-    pub fn create_master_secret(cb: Box<Fn(Result<(String), Box<error::Error>>) + Send>) {
+    pub fn create_master_secret(cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
 
     }
 
     pub fn create_keys(schema: String,
-                       cb: Box<Fn(Result<((String, String)), Box<error::Error>>) + Send>) {
+                       cb: Box<Fn(Result<((String, String)), AnoncredsError>) + Send>) {
 
     }
 
     pub fn create_context_attribute(i_a: String, user_id: String,
-                                    cb: Box<Fn(Result<(String), Box<error::Error>>) + Send>) {
+                                    cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
 
     }
 
@@ -29,7 +30,7 @@ impl AnoncredsAPI {
                              public_key_revocation: String,
                              cb: Box<Fn(
                                  Result<((String, String, String, String)),
-                                     Box<error::Error>>
+                                     AnoncredsError>
                              ) + Send>) {
 
     }
@@ -39,20 +40,20 @@ impl AnoncredsAPI {
                        secret_key: String, public_key_revocation: String,
                        secret_key_revocation: String, tails: String,
                        secret_key_accumulator: String,
-                       cb: Box<Fn(Result<(String, String), Box<error::Error>>) + Send>) {
+                       cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
 
     }
 
     pub fn create_claim_request(master_secret: String, public_key: String,
                                 public_key_revocation: String, request_non_revocation: String,
-                                cb: Box<Fn(Result<(String), Box<error::Error>>) + Send>) {
+                                cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
 
     }
 
     pub fn create_proof(proof_input: String, nonce: String, claims: String,
                         public_key_revocation: String, accum: String, public_key: String,
                         master_secret: String,
-                        cb: Box<Fn(Result<(String, String), Box<error::Error>>) + Send>) {
+                        cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
 
     }
 
@@ -60,7 +61,7 @@ impl AnoncredsAPI {
                         nonce: String, public_key_revocation: String,
                         public_key_accumulator: String, accumulator: String,
                         public_key: String, attributes: String,
-                        cb: Box<Fn(Result<(String), Box<error::Error>>) + Send>) {
+                        cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
 
     }
 }
