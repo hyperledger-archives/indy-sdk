@@ -34,7 +34,7 @@ impl WalletAPI {
     pub fn set(&self, keys: &[&str], value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
         self.command_executor.send(Command::Wallet(
             WalletCommand::Set(
-                keys.iter().map(|k| format!("{}", k)).collect(),
+                keys.iter().map(|key| key.to_string()).collect(),
                 value.to_string(),
                 cb))
         );
@@ -56,7 +56,7 @@ impl WalletAPI {
     pub fn get(&self, keys: &[&str], cb: Box<Fn(Result<Option<String>, WalletError>) + Send>) {
         self.command_executor.send(Command::Wallet(
             WalletCommand::Get(
-                keys.iter().map(|k| format!("{}", k)).collect(),
+                keys.iter().map(|key| key.to_string()).collect(),
                 cb))
         );
     }

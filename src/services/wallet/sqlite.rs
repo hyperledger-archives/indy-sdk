@@ -35,7 +35,7 @@ impl Wallet for SqliteWallet {
     fn set(&self, keys: &[&str], value: &str) -> Result<(), WalletError> {
         let string_keys: Vec<String> = keys.to_vec()
             .iter()
-            .map(|k| format!("{}", k))
+            .map(|key| key.to_string())
             .collect();
 
         self.connection.execute(
@@ -49,7 +49,7 @@ impl Wallet for SqliteWallet {
     fn get(&self, keys: &[&str]) -> Result<Option<String>, WalletError> {
         let string_keys: Vec<String> = keys.to_vec()
             .iter()
-            .map(|k| format!("{}", k))
+            .map(|key| key.to_string())
             .collect();
 
         let mut stmt = try!(self.connection.prepare("SELECT value FROM wallet WHERE key = ?1 LIMIT 1"));
