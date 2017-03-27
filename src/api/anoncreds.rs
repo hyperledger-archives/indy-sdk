@@ -47,12 +47,6 @@ impl AnoncredsAPI {
         unimplemented!();
     }
 
-
-    pub fn create_context_attribute(i_a: String, user_id: String,
-                                    cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
-
-    }
-
     /// Issues accumulator.
     ///
     /// #Params
@@ -77,13 +71,36 @@ impl AnoncredsAPI {
         unimplemented!();
     }
 
-    pub fn issue_claim(attributes: String, accumulator: String,i_a: String, i: String,
-                       claim_request: String, context_attribute: String, public_key: String,
-                       secret_key: String, public_key_revocation: String,
-                       secret_key_revocation: String, tails: String,
-                       secret_key_accumulator: String,
-                       cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
 
+    /// Issues claim.
+    ///
+    /// #Params
+    /// attributes:  all names of attributes as a byte array.
+    /// accumulator: accumulator as a byte array.
+    /// sequence_number: claim's sequence number within accumulator as a byte array.
+    /// claim_request:
+    ///     A claim request containing prover ID and prover-generated values as a byte array.
+    /// public_key: issuer's public_key as a byte array.
+    /// secret_key: issuer's secret_key as a byte array.
+    /// public_key_non_revocation: issuer's non-revocation public key as a byte array.
+    /// secret_key_non_revocation: issuer's non-revocation secret key as a byte array.
+    /// tails: tails as a byte array.
+    /// secret_key_accumulator: accumulator's secret key as a byte array.
+    /// cb: Callback that takes command result as a parameter.
+    ///
+    /// #Returns
+    /// The claim (both primary and non-revocation) as a String.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `AnoncredsError` docs for common errors description.
+    pub fn issue_claim(attributes: &[&u8], accumulator: &[&u8], sequence_number: &[&u8],
+                       claim_request: &[&u8], public_key: &[&u8],
+                       secret_key: &[&u8], public_key_non_revocation: &[&u8],
+                       secret_key_non_revocation: &[&u8], tails: &[&u8],
+                       secret_key_accumulator: &[&u8],
+                       cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+        unimplemented!();
     }
 
     /// Creates claim request.
