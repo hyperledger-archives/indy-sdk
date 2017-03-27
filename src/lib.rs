@@ -60,7 +60,7 @@ mod tests {
         });
 
         let sovrin_client = SovrinClient::new();
-        sovrin_client.sovrin.set_did("DID0".to_string(), cb);
+        sovrin_client.sovrin.send_nym_tx("DID0", cb);
 
         match receiver.recv() {
             Ok(result) => {

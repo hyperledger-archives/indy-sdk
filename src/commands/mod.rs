@@ -1,6 +1,9 @@
-mod set_did;
+pub mod anoncreds;
+pub mod crypto;
+pub mod sovrin;
+pub mod wallet;
 
-use commands::set_did::SetDidCommandExecutor;
+use commands::sovrin::{SovrinCommand, SovrinCommandExecutor};
 use services::sovrin::SovrinService;
 
 use std::error;
@@ -10,7 +13,7 @@ use std::thread;
 
 pub enum Command {
     Exit,
-    SetDidCommand(String, Box<Fn(Result<(), Box<error::Error>>) + Send>)
+    Sovrin(SovrinCommand)
 }
 
 pub struct CommandExecutor {
@@ -26,23 +29,23 @@ impl CommandExecutor {
             sender: sender,
             worker: Some(thread::spawn(move || {
                 loop {
-                    info!(target: "CommandExecutor", "Worker thread started");
+                    info!(target: "command_executor", "Worker thread started");
 
                     let sovrin_service = Rc::new(SovrinService::new());
-                    let set_did_executor = SetDidCommandExecutor::new(sovrin_service);
+                    let sovrin_command_executor = SovrinCommandExecutor::new(sovrin_service.clone());
 
                     match receiver.recv() {
-                        Ok(Command::SetDidCommand(did, cb)) => {
-                            info!(target: "CommandExecutor", "SetDidCommand command received");
-                            set_did_executor.execute(did, cb);
+                        Ok(Command::Sovrin(cmd)) => {
+                            info!(target: "command_executor", "SovrinCommand command received");
+                            sovrin_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
-                            info!(target: "CommandExecutor", "Exit command received");
+                            info!(target: "command_executor", "Exit command received");
                             break
                         },
                         Err(err) => {
-                            error!(target: "CommandExecutor", "Failed to get command!");
-                            panic!("CommandExecutor: Failed to get command! {:?}", err)
+                            error!(target: "command_executor", "Failed to get command!");
+                            panic!("Failed to get command! {:?}", err)
                         }
                     }
                 }
@@ -57,11 +60,11 @@ impl CommandExecutor {
 
 impl Drop for CommandExecutor {
     fn drop(&mut self) {
-        info!(target: "CommandExecutor", "Drop started");
+        info!(target: "command_executor", "Drop started");
         self.send(Command::Exit);
         // Option worker type and this kludge is workaround for rust
         self.worker.take().unwrap().join();
-        info!(target: "CommandExecutor", "Drop finished");
+        info!(target: "command_executor", "Drop finished");
     }
 }
 
@@ -87,6 +90,7 @@ mod tests {
 
     #[test]
     fn set_did_command_can_be_sent() {
+
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |result| {
@@ -97,7 +101,7 @@ mod tests {
         });
 
         let cmd_executor = CommandExecutor::new();
-        cmd_executor.send(Command::SetDidCommand("DID0".to_string(), cb));
+        cmd_executor.send(Command::Sovrin(SovrinCommand::SendNymTx("DID0".to_string(), cb)));
 
         match receiver.recv() {
             Ok(result) => {
