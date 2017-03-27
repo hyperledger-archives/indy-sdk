@@ -145,8 +145,19 @@ impl AnoncredsAPI {
 
     }
 
-    pub fn create_nonce() {
-
+    /// Creates verifier's nonce.
+    ///
+    /// #Params
+    /// cb: Callback that takes command result as a parameter.
+    ///
+    /// #Returns
+    /// Nonce as a String.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `AnoncredsError` docs for common errors description.
+    pub fn create_nonce(cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+        unimplemented!();
     }
 }
 
