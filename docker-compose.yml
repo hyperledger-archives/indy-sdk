@@ -3,6 +3,7 @@ services:
   sovrin-client-rust-test:
     build:
       context: .
+      dockerfile: ci/ubuntu.dockerfile
     command: cargo test --color=always
     volumes:
       - "./src:/home/sorvin-client-rust/src"
