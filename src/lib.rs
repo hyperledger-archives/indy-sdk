@@ -8,14 +8,19 @@ mod errors;
 mod services;
 
 use api::anoncreds::AnoncredsAPI;
+use api::crypto::CryptoAPI;
 use api::sovrin::SovrinAPI;
+use api::wallet::WalletAPI;
+
 use commands::{Command, CommandExecutor};
 use std::error;
 use std::sync::Arc;
 
 pub struct SovrinClient {
     anoncreds: AnoncredsAPI,
-    sovrin: SovrinAPI
+    crypto: CryptoAPI,
+    sovrin: SovrinAPI,
+    wallet: WalletAPI
 }
 
 impl SovrinClient {
@@ -23,7 +28,9 @@ impl SovrinClient {
         let command_executor = Arc::new(CommandExecutor::new());
         SovrinClient {
             anoncreds: AnoncredsAPI::new(command_executor.clone()),
-            sovrin: SovrinAPI::new(command_executor.clone())
+            crypto: CryptoAPI::new(command_executor.clone()),
+            sovrin: SovrinAPI::new(command_executor.clone()),
+            wallet: WalletAPI::new(command_executor.clone())
         }
     }
 }
