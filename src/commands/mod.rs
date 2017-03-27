@@ -167,7 +167,7 @@ mod tests {
             };
         });
 
-        cmd_executor.send(Command::Wallet(WalletCommand::Get(vec!["key".to_string(), "subkey".to_string()], cb_set)));
+        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb_set)));
 
         match set_receiver.recv() {
             Ok(result) => {
