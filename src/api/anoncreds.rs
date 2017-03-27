@@ -59,7 +59,7 @@ impl AnoncredsAPI {
     /// schema: claim definition schema as a byte array.
     /// accumulator_id: accumulator id as a byte array.
     /// max_claims: maximum number of claims within accumulator as a byte array.
-    /// public_key_non_revocation: non-revocation public key as a byte array.
+    /// public_key_non_revocation: issuer's non-revocation public key as a byte array.
     /// cb: Callback that takes command result as a parameter.
     ///
     /// #Returns
@@ -89,9 +89,9 @@ impl AnoncredsAPI {
     /// Creates claim request.
     ///
     /// #Params
-    /// master_secret: prover master secret as a byte array.
-    /// public_key: issuer public_key as a byte array.
-    /// public_key_non_revocation: issuer non-revocation public key as a byte array.
+    /// master_secret: prover's master secret as a byte array.
+    /// public_key: issuer's public_key as a byte array.
+    /// public_key_non_revocation: issuer's non-revocation public key as a byte array.
     /// request_non_revocation: whether to request non-revocation claim as a byte array.
     /// cb: Callback that takes command result as a parameter.
     ///
@@ -107,11 +107,34 @@ impl AnoncredsAPI {
         unimplemented!();
     }
 
-    pub fn create_proof(proof_input: String, nonce: String, claims: String,
-                        public_key_revocation: String, accum: String, public_key: String,
-                        master_secret: String,
-                        cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
 
+    /// Creates proof.
+    ///
+    /// #Params
+    /// proof_input: description of a proof to be presented
+    ///     (revealed attributes, predicates, timestamps for non-revocation) as a byte array.
+    /// nonce: verifier's nonce as a byte array.
+    /// claims: necessary claims for proof as a byte array.
+    /// master_secret: prover's master secret key as a byte array.
+    /// public_key: issuer's public key as a byte array.
+    /// public_key_non_revocation: issuer's non-revocation public key as a byte array.
+    /// accumulator: accumulator as a byte array.
+    /// cb: Callback that takes command result as a parameter.
+    ///
+    /// #Returns
+    /// Typle of (
+    ///         Proof (both primary and non-revocation),
+    ///         Revealed attributes (initial non-encoded values)
+    ///     ) as a String.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `AnoncredsError` docs for common errors description.
+    pub fn create_proof(proof_input: &[&u8], nonce: &[&u8], claims: &[&u8],
+                        public_key_non_revocation: &[&u8], accumulator: &[&u8], public_key: &[&u8],
+                        master_secret: &[&u8],
+                        cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
+        unimplemented!();
     }
 
     pub fn verify_proof(proof_input: String, proof: String, revealed_attributes: String,
@@ -119,6 +142,10 @@ impl AnoncredsAPI {
                         public_key_accumulator: String, accumulator: String,
                         public_key: String, attributes: String,
                         cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
+
+    }
+
+    pub fn create_nonce() {
 
     }
 }
