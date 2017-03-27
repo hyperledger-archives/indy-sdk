@@ -5,19 +5,19 @@ use services::wallet::sqlite::SqliteWallet;
 
 
 pub trait Wallet {
-    fn set(&self, keys: &[&String], value: &String) -> Result<(), WalletError>;
-    fn get(&self, keys: &[&String]) -> Result<Option<String>, WalletError>;
+    fn set(&self, keys: &[&str], value: &str) -> Result<(), WalletError>;
+    fn get(&self, keys: &[&str]) -> Result<Option<String>, WalletError>;
 }
 
 pub trait AnoncredsWallet: Wallet {
-    fn get_master_secret(&self, did: &String, schema: &String, pk: &String) -> Result<Option<String>, WalletError> {
-        self.get((vec![did, schema, pk]).as_slice())
+    fn get_master_secret(&self, did: &str, schema: &str, pk: &str) -> Result<Option<String>, WalletError> {
+        self.get((&[did, schema, pk]))
     }
 }
 
 pub trait IdentityWallet: Wallet {
-    fn get_key_by_did(&self, did: &String) -> Result<Option<String>, WalletError> {
-        self.get((vec![did]).as_slice())
+    fn get_key_by_did(&self, did: &str) -> Result<Option<String>, WalletError> {
+        self.get((&[did]))
     }
 }
 
@@ -40,11 +40,11 @@ impl WalletService {
 }
 
 impl Wallet for WalletService {
-    fn set(&self, keys: &[&String], value: &String) -> Result<(), WalletError> {
+    fn set(&self, keys: &[&str], value: &str) -> Result<(), WalletError> {
         self.wallet.set(keys, value)
     }
 
-    fn get(&self, keys: &[&String]) -> Result<Option<String>, WalletError> {
+    fn get(&self, keys: &[&str]) -> Result<Option<String>, WalletError> {
         self.wallet.get(keys)
     }
 }
@@ -101,6 +101,8 @@ mod tests {
         let wallet_service = WalletService::new();
 
         let (did, master) = ("did".to_string(), "master".to_string());
+
+        assert!(wallet_service.set(&[&did], &master).is_ok(), "Success set key in sqlite wallet");
 
         let result = wallet_service.get_key_by_did(&did);
 

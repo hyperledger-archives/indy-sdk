@@ -56,13 +56,13 @@ impl WalletCommandExecutor {
     }
 
     fn set(&self, keys: &Vec<String>, value: &String) -> Result<(), WalletError> {
-        let vector_links: Vec<&String> = keys.iter().map(|s| s).collect();
+        let vector_links: Vec<&str> = keys.iter().map(|s| &s[..]).collect();
 
         self.wallet_service.set(vector_links.as_slice(), value)
     }
 
     fn get(&self, keys: &Vec<String>) -> Result<Option<String>, WalletError> {
-        let vector_links: Vec<&String> = keys.iter().map(|s| s).collect();
+        let vector_links: Vec<&str> = keys.iter().map(|s| &s[..]).collect();
 
         self.wallet_service.get(vector_links.as_slice())
     }

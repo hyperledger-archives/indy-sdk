@@ -155,20 +155,41 @@ mod tests {
 
     #[test]
     fn wallet_get_value_command_can_be_sent() {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |result| {
-            match result {
-                Ok(val) => sender.send(val),
-                Err(err) => sender.send(None)
-            };
-        });
 
         let cmd_executor = CommandExecutor::new();
 
+        let (set_sender, set_receiver) = channel();
+
+        let cb_set = Box::new(move |result| {
+            match result {
+                Ok(val) => set_sender.send("OK"),
+                Err(err) => set_sender.send("ERR")
+            };
+        });
+
+        cmd_executor.send(Command::Wallet(WalletCommand::Get(vec!["key".to_string(), "subkey".to_string()], cb_set)));
+
+        match set_receiver.recv() {
+            Ok(result) => {
+                assert_eq!("OK", result);
+            }
+            Err(err) => {
+                panic!("Error on result recv: {:?}", err);
+            }
+        }
+
+        let (get_sender, get_receiver) = channel();
+
+        let cb = Box::new(move |result| {
+            match result {
+                Ok(val) => get_sender.send(val),
+                Err(err) => get_sender.send(None)
+            };
+        });
+
         cmd_executor.send(Command::Wallet(WalletCommand::Get(vec!["key".to_string(), "subkey".to_string()], cb)));
 
-        match receiver.recv() {
+        match get_receiver.recv() {
             Ok(result) => {
                 assert_eq!(Some("value".to_string()), result);
             }
