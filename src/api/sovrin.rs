@@ -38,7 +38,7 @@ impl SovrinAPI {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// No result
+    /// No result.
     ///
     /// #Errors
     /// No method specific errors.
@@ -55,6 +55,88 @@ impl SovrinAPI {
                     data.map(String::from),
                     role,
                     cb)));
+    }
+
+    /// Sends ATTRIB transaction to Identity Ledger.
+    ///
+    /// Adds attribute to NYM record.
+    ///
+    /// #Params
+    /// dest: Optional (defaults to origin). Id of a target NYM record.
+    /// hash: Hash of attribute data.
+    /// raw: Raw attribute data represented as json, where key is attribute name and value is it's value.
+    /// enc: Optional. Encrypted attribute data.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// No result.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_attrib_tx(&self, dest: Option<&str>, hash: &str, raw: &str, enc: &str,
+                       cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends GET_ATTR transaction to Identity Ledger.
+    ///
+    /// Get attribute value.
+    ///
+    /// #Params
+    /// dest: Id of a target NYM record.
+    /// data: Attribute name.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Attribute value.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_get_att_tx(&self, dest: &str, data: &str,
+                          cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends GET_NYM transaction to Identity Ledger.
+    ///
+    /// Get information about existing NYM record, such as a role
+    /// and id of a sponsor, who created it.
+    ///
+    /// #Params
+    /// dest: Id of a target NYM record.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// NIM data represent as json.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_get_nym_tx(&self, dest: &str,
+                           cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends SCHEMA transaction to Identity Ledger.
+    ///
+    /// Write the schema of a claim on sovrin.
+    ///
+    /// #Params
+    /// dest: Id of a target NYM record.
+    /// data: Schema represent as json: name, version, type, attr_names (ip, port, keys) and etc...
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// NIM data represent as json.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_schema_tx(&self, data: &str,
+                           cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        unimplemented!();
     }
 }
 
