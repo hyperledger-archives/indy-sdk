@@ -3,6 +3,7 @@ extern crate log;
 
 mod api;
 mod commands;
+mod constants;
 mod errors;
 mod services;
 
@@ -60,7 +61,7 @@ mod tests {
         });
 
         let sovrin_client = SovrinClient::new();
-        sovrin_client.sovrin.send_nym_tx("DID0", cb);
+        sovrin_client.sovrin.send_nym_tx("DID0", None, None, None, None, cb);
 
         match receiver.recv() {
             Ok(result) => {
