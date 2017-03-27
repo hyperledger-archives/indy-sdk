@@ -1,4 +1,5 @@
-use std::error::Error;
+use constants::SovrinRole;
+use errors::sovrin::SovrinError;
 
 pub struct SovrinService {}
 
@@ -7,7 +8,9 @@ impl SovrinService {
         SovrinService {}
     }
 
-    pub fn set_did(&self, did: String) -> Result<(), Box<Error>> {
+    pub fn send_nym_tx(&self, dest: &str, verkey: Option<&str>,
+                       xref: Option<&str>, data: Option<&str>,
+                       role: Option<SovrinRole>) -> Result<(), SovrinError> {
         Ok(())
     }
 }

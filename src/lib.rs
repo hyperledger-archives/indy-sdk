@@ -1,45 +1,21 @@
 #[macro_use]
 extern crate log;
 
+mod api;
 mod commands;
+mod constants;
+mod errors;
 mod services;
 
+use api::anoncreds::AnoncredsAPI;
+use api::sovrin::SovrinAPI;
 use commands::{Command, CommandExecutor};
 use std::error;
 use std::sync::Arc;
 
-struct AnoncredsAPI {
-    command_executor: Arc<CommandExecutor>,
-}
-
-impl AnoncredsAPI {
-    pub fn new(command_executor: Arc<CommandExecutor>) -> AnoncredsAPI {
-        AnoncredsAPI { command_executor: command_executor }
-    }
-
-    fn dummy() {}
-}
-
-struct SovrinAPI {
-    command_executor: Arc<CommandExecutor>,
-}
-
-impl SovrinAPI {
-    pub fn new(command_executor: Arc<CommandExecutor>) -> SovrinAPI {
-        SovrinAPI {
-            command_executor: command_executor
-        }
-    }
-
-    pub fn set_did(&self, did: String, cb: Box<Fn(Result<(), Box<error::Error>>) + Send>) {
-        self.command_executor.send(Command::SetDidCommand(did, cb));
-    }
-}
-
-
 pub struct SovrinClient {
-    sovrin: SovrinAPI,
-    anoncreds: AnoncredsAPI
+    anoncreds: AnoncredsAPI,
+    sovrin: SovrinAPI
 }
 
 impl SovrinClient {
@@ -74,7 +50,7 @@ mod tests {
     }
 
     #[test]
-    fn set_did_method_can_be_called() {
+    fn sovrin_set_did_method_can_be_called() {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |result| {
@@ -85,7 +61,7 @@ mod tests {
         });
 
         let sovrin_client = SovrinClient::new();
-        sovrin_client.sovrin.set_did("DID0".to_string(), cb);
+        sovrin_client.sovrin.send_nym_tx("DID0", None, None, None, None, cb);
 
         match receiver.recv() {
             Ok(result) => {
