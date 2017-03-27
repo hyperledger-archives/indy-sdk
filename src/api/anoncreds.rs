@@ -137,12 +137,34 @@ impl AnoncredsAPI {
         unimplemented!();
     }
 
-    pub fn verify_proof(proof_input: String, proof: String, revealed_attributes: String,
-                        nonce: String, public_key_revocation: String,
-                        public_key_accumulator: String, accumulator: String,
-                        public_key: String, attributes: String,
+    /// Verifies proof.
+    ///
+    /// #Params
+    /// proof_input: description of a proof to be presented
+    ///     (revealed attributes, predicates, timestamps for non-revocation) as a byte array.
+    /// proof: a proof as a byte array.
+    /// revealed_attributes:
+    ///     values of revealed attributes (initial values, non-encoded) as a byte array.
+    /// nonce: verifier's nonce as a byte array.
+    /// public_key_non_revocation: issuer's non-revocation public key as a byte array.
+    /// accumulator: accumulator as a byte array.
+    /// public_key_accumulator: accumulator's public key as a byte array.
+    /// public_key: issuer's public key as a byte array.
+    /// attributes:  all names of attributes as a byte array.
+    /// cb: Callback that takes command result as a parameter.
+    ///
+    /// #Returns
+    /// True if verified successfully and false otherwise as a String.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `AnoncredsError` docs for common errors description.
+    pub fn verify_proof(proof_input: &[&u8], proof: &[&u8], revealed_attributes: &[&u8],
+                        nonce: &[&u8], public_key_non_revocation: &[&u8],
+                        accumulator: &[&u8], public_key_accumulator: &[&u8],
+                        public_key: &[&u8], attributes: &[&u8],
                         cb: Box<Fn(Result<(String), AnoncredsError>) + Send>) {
-
+        unimplemented!();
     }
 
     /// Creates verifier's nonce.
