@@ -101,7 +101,15 @@ mod tests {
         });
 
         let cmd_executor = CommandExecutor::new();
-        cmd_executor.send(Command::Sovrin(SovrinCommand::SendNymTx("DID0".to_string(), cb)));
+        cmd_executor.send(
+            Command::Sovrin
+                (SovrinCommand::SendNymTx(
+                    "DID0".to_string(),
+                    None,
+                    None,
+                    None,
+                    None,
+                    cb)));
 
         match receiver.recv() {
             Ok(result) => {
