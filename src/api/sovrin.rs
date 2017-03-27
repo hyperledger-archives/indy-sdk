@@ -77,7 +77,7 @@ impl SovrinAPI {
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
     pub fn send_attrib_tx(&self, identity: &SovrinIdentity, dest: Option<&str>, hash: &str, raw: &str, enc: &str,
-                       cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+                          cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
 
@@ -98,7 +98,7 @@ impl SovrinAPI {
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
     pub fn send_get_att_tx(&self, identity: &SovrinIdentity, dest: &str, data: &str,
-                          cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                           cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
 
@@ -129,18 +129,17 @@ impl SovrinAPI {
     ///
     /// #Params
     /// identity: Transaction identity.
-    /// dest: Id of a target NYM record.
     /// data: Schema represent as json: name, version, type, attr_names (ip, port, keys) and etc...
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// NIM data represent as json.
+    /// No data
     ///
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_schema_tx(&self, identity: &SovrinIdentity, data: &str,
-                           cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+    pub fn send_schema_tx(&self, identity: &SovrinIdentity, data: &str,
+                          cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
 
@@ -150,18 +149,79 @@ impl SovrinAPI {
     ///
     /// #Params
     /// identity: Transaction identity.
-    /// dest: Id of a target NYM record.
-    /// data: Schema represent as json: name, version, type, attr_names (ip, port, keys) and etc...
+    /// data: Schema query represent as json: name and version
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// NIM data represent as json.
+    /// Schema data represent as json.
     ///
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_schema_tx(&self, identity: &SovrinIdentity, data: &str,
-                          cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+    pub fn send_get_schema_tx(&self, identity: &SovrinIdentity, data: &str,
+                              cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends ISSUER_KEY transaction to Identity Ledger.
+    ///
+    /// Set public key, that Issuer creates and publishes for a particular credential definition.
+    ///
+    /// #Params
+    /// identity: Transaction identity.
+    /// xref: Seq. number of schema.
+    /// data: components of a key as json: N, R, S, Z.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// No data
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_issuer_key_tx(&self, identity: &SovrinIdentity, xref: &str, data: &str,
+                              cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends GET_ISSUER_KEY transaction to Identity Ledger.
+    ///
+    /// Get issuer key.
+    ///
+    /// #Params
+    /// identity: Transaction identity.
+    /// xref: Seq. number of schema.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Issuer key represent as json.
+    ///
+    /// #Errors
+    /// No method specific errors.
+    /// See `SovrinError` docs for common errors description.
+    pub fn send_get_issuer_key_tx(&self, identity: &SovrinIdentity, xref: &str,
+                                  cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        unimplemented!();
+    }
+
+    /// Sends NODE transaction to Pool Ledger.
+    ///
+    /// Add new node to a cluster, or update existing node of pool.
+    ///
+    /// #Params
+    /// identity: Transaction identity.
+    /// dest: id of a target NYM record.
+    /// data: Node data as json: node_ip, node_port, client_ip, client_port,alias.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// No data.
+    ///
+    /// #Errors
+    /// No method specific errors.
+/// See `SovrinError` docs for common errors description.
+    pub fn send_node_tx(&self, identity: &SovrinIdentity, dest: &str, data: &str,
+                        cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
 }
