@@ -165,7 +165,30 @@ impl AnoncredsService {
         e_end = &e_start + &e_end;
         let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
     }
-    fn encode_attribute() {
+    fn transform_bytes_array_into_integer(vec: &Vec<u8>) {
+        let mut ctx = BigNumContext::new().unwrap();
+        let mut result = BigNum::from_u32(0).unwrap();
+        for i in (0..vec.len()).rev() {
+            let mut pow256 = BigNum::new().unwrap();
+            pow256.exp(&BigNum::from_u32(256).unwrap(), &BigNum::from_u32(i as u32).unwrap(), &mut ctx);
+            println!("pow: {}", pow256);
+            println!("aaa{}", &BigNum::from_u32(vec[i] as u32).unwrap());
+            pow256 = &pow256 * &BigNum::from_u32(vec[i] as u32).unwrap();
+            result = &result + &pow256;
+        }
+        println!("reverse: {:?}", &result);
+    }
+    fn encode_attribute(attribute: &str) {
+        let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
+        let index = result.iter().position(|&value| value == 0);
+        match index {
+            Some(index) => {
+                result.truncate(index);
+                println!("{:?}, {:?}", result, index);
+                AnoncredsService::transform_bytes_array_into_integer(&result);
+            },
+            None => println!("{:?}, 0", result)
+        }
 
     }
 }
@@ -234,9 +257,11 @@ mod tests {
         ];
         let claim_request = AnoncredsService::create_claim_request();
         let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u);
-        let str = "Alexer".as_bytes();
-        let res = hash(MessageDigest::sha256(), str).unwrap();
-        println!("{:?}", res);
+        let encoded_attribute = AnoncredsService::encode_attribute("Alexer5435");
+        println!("encoded: {:?}", encoded_attribute);
+        let str = "Alexer5435".as_bytes();
+//        let res = hash(MessageDigest::sha256(), str).unwrap();
+//        println!("{:?}", res);
 //        let data = [b"Alex"];
 //        let mut h = Hasher::new(MessageDigest::sha256()).unwrap();
 //        h.update(data[0]).unwrap();
