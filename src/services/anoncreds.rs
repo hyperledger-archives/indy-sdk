@@ -3,6 +3,7 @@ const LARGE_PRIME: i32 = 1024;
 const LARGE_VPRIME: i32 = 2128;
 const LARGE_E_START: i32 = 596;
 const LARGE_E_END_RANGE: i32 = 119;
+const LARGE_VPRIME_PRIME: i32 = 2724;
 extern crate openssl;
 extern crate int_traits;
 use self::int_traits::IntTraits;
@@ -159,12 +160,20 @@ impl AnoncredsService {
     fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum) {
         let mut ctx = BigNumContext::new().unwrap();
         println!("{}\n{:?}", u, attributes);
-        //calc vprimeprime
+        let vprimeprime = AnoncredsService::generate_vprimeprime();
         let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
         e_start.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_START as u32).unwrap(), &mut ctx);
         e_end.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_END_RANGE as u32).unwrap(), &mut ctx);
         e_end = &e_start + &e_end;
         let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
+    }
+    fn generate_vprimeprime() -> BigNum {
+        let mut ctx = BigNumContext::new().unwrap();
+        let mut a = BigNum::new().unwrap();
+        let mut b = BigNum::new().unwrap();
+        a.rand(LARGE_VPRIME_PRIME, MSB_MAYBE_ZERO, false).unwrap();
+        b.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32((LARGE_VPRIME_PRIME - 1) as u32).unwrap(), &mut ctx);
+        AnoncredsService::bitwise_or_big_int(&a, &b)
     }
     fn transform_byte_array_to_big_integer(vec: &Vec<u8>) -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
