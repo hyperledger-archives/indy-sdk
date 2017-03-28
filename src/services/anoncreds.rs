@@ -157,7 +157,7 @@ impl AnoncredsService {
         let claim_request = ClaimRequest {u: u};
         claim_request
     }
-    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum) {
+    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
         let mut ctx = BigNumContext::new().unwrap();
         let vprimeprime = AnoncredsService::generate_vprimeprime();
         let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
@@ -166,6 +166,16 @@ impl AnoncredsService {
         e_end = &e_start + &e_end;
         let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
         let encoded_attributes = AnoncredsService::encode_attributes(attributes);
+        let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
+    }
+    fn sign(attributes: &Vec<AttributeType>, v: &BigNum, u: &BigNum, e: &BigNum) {
+
+    }
+    fn generate_context(accumulator_id: &str, user_id: &str) {
+        println!("{:?}, {:?}", accumulator_id, user_id);
+        let a = AnoncredsService::encode_attribute(accumulator_id);
+        //TODO byteorder for encode_attribute
+        println!("attr{}", a);
     }
     fn generate_vprimeprime() -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
@@ -303,7 +313,8 @@ mod tests {
             AttributeType {name: "height".to_string(), value: "175".to_string(), encode: false},
             AttributeType {name: "sex".to_string(), value: "male".to_string(), encode: true}
         ];
+        let (user_id, accumulator_id) = ("111", "110");
         let claim_request = AnoncredsService::create_claim_request();
-        let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u);
+        let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u, &accumulator_id, &user_id);
     }
 }
