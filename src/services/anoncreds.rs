@@ -159,13 +159,13 @@ impl AnoncredsService {
     }
     fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum) {
         let mut ctx = BigNumContext::new().unwrap();
-        println!("{}\n{:?}", u, attributes);
         let vprimeprime = AnoncredsService::generate_vprimeprime();
         let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
         e_start.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_START as u32).unwrap(), &mut ctx);
         e_end.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_END_RANGE as u32).unwrap(), &mut ctx);
         e_end = &e_start + &e_end;
         let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
+        let encoded_attributes = AnoncredsService::encode_attributes(attributes);
     }
     fn generate_vprimeprime() -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
@@ -186,7 +186,7 @@ impl AnoncredsService {
         }
         result
     }
-    fn encode_attribute(attribute: &str) -> BigNum {
+    fn encode_attribute(attribute: &str) -> String {
         let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
         let index = result.iter().position(|&value| value == 0);
         let encoded_attribute = match index {
@@ -198,7 +198,19 @@ impl AnoncredsService {
                 AnoncredsService::transform_byte_array_to_big_integer(&result)
             }
         };
-        encoded_attribute
+        encoded_attribute.to_dec_str().unwrap().to_string()
+    }
+    fn encode_attributes(attributes: &Vec<AttributeType>) -> Vec<AttributeType> {
+        let mut encoded_attributes = Vec::new();
+        for i in attributes {
+            if i.encode {
+                encoded_attributes.push(AttributeType {name: i.name.clone(), value: AnoncredsService::encode_attribute(&i.value), encode: i.encode.clone()});
+            }
+            else {
+                encoded_attributes.push(AttributeType {name: i.name.clone(), value: i.value.clone(), encode: i.encode.clone()});
+            }
+        }
+        encoded_attributes
     }
     fn bitwise_or_big_int(a: &BigNum, b: &BigNum) -> BigNum {
         let significant_bits = max(a.num_bits(), b.num_bits());
@@ -227,6 +239,7 @@ struct ClaimRequest {
 #[derive(Debug)]
 struct AttributeType {
     name: String,
+    value: String,
     encode: bool
 }
 
@@ -270,8 +283,8 @@ mod tests {
     fn encode_attribute_works() {
         let test_str_one = "Alexer5435";
         let test_str_two = "Alexer";
-        let test_answer_one = BigNum::from_dec_str("62794").unwrap();
-        let test_answer_two = BigNum::from_dec_str("93838255634171043313693932530283701522875554780708470423762684802192372035729").unwrap();
+        let test_answer_one = "62794";
+        let test_answer_two = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
         assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one));
         assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two));
     }
@@ -284,14 +297,13 @@ mod tests {
     }
     #[test]
     fn anoncreds_works() {
-        let mut attributes = vec![
-            AttributeType {name: "name".to_string(), encode: true},
-            AttributeType {name: "age".to_string(), encode: false},
-            AttributeType {name: "height".to_string(), encode: false},
-            AttributeType {name: "sex".to_string(), encode: true}
+        let attributes = vec![
+            AttributeType {name: "name".to_string(), value: "Alex".to_string(), encode: true},
+            AttributeType {name: "age".to_string(), value: "28".to_string(), encode: false},
+            AttributeType {name: "height".to_string(), value: "175".to_string(), encode: false},
+            AttributeType {name: "sex".to_string(), value: "male".to_string(), encode: true}
         ];
         let claim_request = AnoncredsService::create_claim_request();
         let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u);
-        let encoded_attribute = AnoncredsService::encode_attribute("Alexer");
     }
 }
