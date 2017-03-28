@@ -8,6 +8,7 @@ extern crate int_traits;
 use self::int_traits::IntTraits;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::hash::{hash, MessageDigest};
+use std::cmp::max;
 pub struct AnoncredsService {
     dummy: String
 }
@@ -190,6 +191,16 @@ impl AnoncredsService {
         };
         encoded_attribute
     }
+    fn bitwise_or_big_int(a: &BigNum, b: &BigNum) -> BigNum {
+        let significant_bits = max(a.num_bits(), b.num_bits());
+        let mut result = BigNum::new().unwrap();
+        for i in 0..significant_bits {
+            if a.is_bit_set(i) || b.is_bit_set(i) {
+                result.set_bit(i);
+            }
+        }
+        result
+    }
 }
 
 #[derive(Debug)]
@@ -254,6 +265,13 @@ mod tests {
         let test_answer_two = BigNum::from_dec_str("93838255634171043313693932530283701522875554780708470423762684802192372035729").unwrap();
         assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one));
         assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two));
+    }
+    #[test]
+    fn bitwise_or_big_int_works () {
+        let a = BigNum::from_dec_str("778378032744961463933002553964902776831187587689736807008034459507677878432383414623740074").unwrap();
+        let b = BigNum::from_dec_str("1018517988167243043134222844204689080525734196832968125318070224677190649881668353091698688").unwrap();
+        let result = BigNum::from_dec_str("1796896020912204507067225398169591857356921784522704932326104684184868528314051767715438762").unwrap();
+        assert_eq!(result, AnoncredsService::bitwise_or_big_int(&a, &b));
     }
     #[test]
     fn anoncreds_works() {
