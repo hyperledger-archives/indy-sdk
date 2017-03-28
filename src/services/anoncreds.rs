@@ -165,31 +165,30 @@ impl AnoncredsService {
         e_end = &e_start + &e_end;
         let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
     }
-    fn transform_bytes_array_into_integer(vec: &Vec<u8>) {
+    fn transform_byte_array_to_big_integer(vec: &Vec<u8>) -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
         let mut result = BigNum::from_u32(0).unwrap();
         for i in (0..vec.len()).rev() {
             let mut pow256 = BigNum::new().unwrap();
             pow256.exp(&BigNum::from_u32(256).unwrap(), &BigNum::from_u32(i as u32).unwrap(), &mut ctx);
-            println!("pow: {}", pow256);
-            println!("aaa{}", &BigNum::from_u32(vec[i] as u32).unwrap());
-            pow256 = &pow256 * &BigNum::from_u32(vec[i] as u32).unwrap();
+            pow256 = &pow256 * &BigNum::from_u32(vec[vec.len() - 1 - i] as u32).unwrap();
             result = &result + &pow256;
         }
-        println!("reverse: {:?}", &result);
+        result
     }
-    fn encode_attribute(attribute: &str) {
+    fn encode_attribute(attribute: &str) -> BigNum {
         let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
         let index = result.iter().position(|&value| value == 0);
-        match index {
+        let encoded_attribute = match index {
             Some(index) => {
                 result.truncate(index);
-                println!("{:?}, {:?}", result, index);
-                AnoncredsService::transform_bytes_array_into_integer(&result);
+                AnoncredsService::transform_byte_array_to_big_integer(&result)
             },
-            None => println!("{:?}, 0", result)
-        }
-
+            None => {
+                AnoncredsService::transform_byte_array_to_big_integer(&result)
+            }
+        };
+        encoded_attribute
     }
 }
 
@@ -248,6 +247,15 @@ mod tests {
 //        assert_eq!(is_prime, true);
 //    }
     #[test]
+    fn encode_attribute_works() {
+        let test_str_one = "Alexer5435";
+        let test_str_two = "Alexer";
+        let test_answer_one = BigNum::from_dec_str("62794").unwrap();
+        let test_answer_two = BigNum::from_dec_str("93838255634171043313693932530283701522875554780708470423762684802192372035729").unwrap();
+        assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one));
+        assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two));
+    }
+    #[test]
     fn anoncreds_works() {
         let mut attributes = vec![
             AttributeType {name: "name".to_string(), encode: true},
@@ -257,28 +265,6 @@ mod tests {
         ];
         let claim_request = AnoncredsService::create_claim_request();
         let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u);
-        let encoded_attribute = AnoncredsService::encode_attribute("Alexer5435");
-        println!("encoded: {:?}", encoded_attribute);
-        let str = "Alexer5435".as_bytes();
-//        let res = hash(MessageDigest::sha256(), str).unwrap();
-//        println!("{:?}", res);
-//        let data = [b"Alex"];
-//        let mut h = Hasher::new(MessageDigest::sha256()).unwrap();
-//        h.update(data[0]).unwrap();
-//        let res = h.finish().unwrap();
-        //println!("{:?}", res);
-        //assert_eq!(res, spec);
-//        let input = "Alexer5435";
-//        let mut asd = vec![0;32];
-//        let mut sha = Sha256::new();
-//        sha.input_str(input);
-//        println!("ob {}", sha.output_bytes());
-//        sha.result(asd.as_mut_slice());
-//        let b = sha.result_str();
-//        //let c = String::from_utf8(asd);
-//        //println!("utf8 {:?}",c);
-//        println!("{:?}", &asd);
-        let a = BigNum::from_dec_str("93838255634171043313693932530283701522875554780708470423762684802192372035729").unwrap();
-        println!("{:?}", a.to_vec());
+        let encoded_attribute = AnoncredsService::encode_attribute("Alexer");
     }
 }
