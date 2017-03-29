@@ -10,6 +10,12 @@ use self::int_traits::IntTraits;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::hash::{hash, MessageDigest};
 use std::cmp::max;
+
+enum ByteOrder {
+    Big,
+    Little
+}
+
 pub struct AnoncredsService {
     dummy: String
 }
@@ -173,8 +179,7 @@ impl AnoncredsService {
     }
     fn generate_context(accumulator_id: &str, user_id: &str) {
         println!("{:?}, {:?}", accumulator_id, user_id);
-        let a = AnoncredsService::encode_attribute(accumulator_id);
-        //TODO byteorder for encode_attribute
+        let a = AnoncredsService::encode_attribute(accumulator_id, ByteOrder::Little);
         println!("attr{}", a);
     }
     fn generate_vprimeprime() -> BigNum {
@@ -196,25 +201,23 @@ impl AnoncredsService {
         }
         result
     }
-    fn encode_attribute(attribute: &str) -> String {
+    fn encode_attribute(attribute: &str, byte_order: ByteOrder) -> String {
         let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
         let index = result.iter().position(|&value| value == 0);
-        let encoded_attribute = match index {
-            Some(index) => {
-                result.truncate(index);
-                AnoncredsService::transform_byte_array_to_big_integer(&result)
-            },
-            None => {
-                AnoncredsService::transform_byte_array_to_big_integer(&result)
-            }
-        };
+        if let Some(position) = index {
+            result.truncate(position);
+        }
+        if let ByteOrder::Little = byte_order {
+            result.reverse();
+        }
+        let encoded_attribute = AnoncredsService::transform_byte_array_to_big_integer(&result);
         encoded_attribute.to_dec_str().unwrap().to_string()
     }
     fn encode_attributes(attributes: &Vec<AttributeType>) -> Vec<AttributeType> {
         let mut encoded_attributes = Vec::new();
         for i in attributes {
             if i.encode {
-                encoded_attributes.push(AttributeType {name: i.name.clone(), value: AnoncredsService::encode_attribute(&i.value), encode: i.encode.clone()});
+                encoded_attributes.push(AttributeType {name: i.name.clone(), value: AnoncredsService::encode_attribute(&i.value, ByteOrder::Big), encode: i.encode.clone()});
             }
             else {
                 encoded_attributes.push(AttributeType {name: i.name.clone(), value: i.value.clone(), encode: i.encode.clone()});
@@ -295,8 +298,8 @@ mod tests {
         let test_str_two = "Alexer";
         let test_answer_one = "62794";
         let test_answer_two = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
-        assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one));
-        assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two));
+        assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one, ByteOrder::Big));
+        assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two, ByteOrder::Big));
     }
     #[test]
     fn bitwise_or_big_int_works () {
