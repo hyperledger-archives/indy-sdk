@@ -3,7 +3,6 @@ extern crate log;
 
 mod api;
 mod commands;
-mod common;
 mod errors;
 mod services;
 
@@ -38,9 +37,6 @@ impl SovrinClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use common::SovrinIdentity;
-
     use std::sync::mpsc::channel;
 
     #[test]
@@ -70,9 +66,8 @@ mod tests {
             };
         });
 
-        let sovrin_identity = SovrinIdentity::new("DID0", None, Some("PK0"));
         let sovrin_client = SovrinClient::new();
-        sovrin_client.sovrin.send_nym_tx(&sovrin_identity, "DID1", None, None, None, None, cb);
+        sovrin_client.sovrin.send_nym_tx("{did: \"DID0\", sign_key: \"KEY0\"}", "DID1", None, None, None, None, cb);
 
         match receiver.recv() {
             Ok(result) => {

@@ -1,7 +1,6 @@
 use errors::sovrin::SovrinError;
 use commands::{Command, CommandExecutor};
 use commands::sovrin::SovrinCommand;
-use common::{SovrinRole, SovrinIdentity};
 
 use std::error;
 use std::sync::Arc;
@@ -28,14 +27,12 @@ impl SovrinAPI {
     /// Note that only trustees and stewards can create new sponsors and trustee can be created only by other trusties.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// dest: Id of a target NYM record or an alias.
     /// verkey: Optional(defaults to dest). Verification key.
     /// xref: Optional (Required if dest is an alias). Id of a NYM record.
     /// data: Optional. Alias.
-    /// role: Optional (defaults to None). Role of a user NYM record being created for.
-    ///     One of USER, TRUST_ANCHOR, STEWARD, TRUSTEE.
-    ///     Also a TRUSTEE can change any Nym's role to None, this stopping it from making any writes.
+    /// role: Optional (defaults to None). One of "USER", "TRUST_ANCHOR", "STEWARD", "TRUSTEE".
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -44,17 +41,18 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_nym_tx(&self, identity: &SovrinIdentity, dest: &str, verkey: Option<&str>, xref: Option<&str>,
-                       data: Option<&str>, role: Option<SovrinRole>,
+    pub fn send_nym_tx(&self, issuer: &str, dest: &str, verkey: Option<&str>, xref: Option<&str>,
+                       data: Option<&str>, role: Option<&str>,
                        cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         self.command_executor.send(
             Command::Sovrin(
                 SovrinCommand::SendNymTx(
+                    issuer.to_string(),
                     dest.to_string(),
                     verkey.map(String::from),
                     xref.map(String::from),
                     data.map(String::from),
-                    role,
+                    role.map(String::from),
                     cb)));
     }
 
@@ -63,7 +61,7 @@ impl SovrinAPI {
     /// Adds attribute to NYM record.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// dest: Optional (defaults to origin). Id of a target NYM record.
     /// hash: Hash of attribute data.
     /// raw: Raw attribute data represented as json, where key is attribute name and value is it's value.
@@ -76,7 +74,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_attrib_tx(&self, identity: &SovrinIdentity, dest: Option<&str>, hash: &str, raw: &str, enc: &str,
+    pub fn send_attrib_tx(&self, issuer: &str, dest: Option<&str>, hash: &str, raw: &str, enc: &str,
                           cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -86,7 +84,7 @@ impl SovrinAPI {
     /// Get attribute value.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// dest: Id of a target NYM record.
     /// data: Attribute name.
     /// cb: Callback that takes command result as parameter.
@@ -97,7 +95,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_att_tx(&self, identity: &SovrinIdentity, dest: &str, data: &str,
+    pub fn send_get_att_tx(&self, issuer: &str, dest: &str, data: &str,
                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -108,7 +106,7 @@ impl SovrinAPI {
     /// and id of a sponsor, who created it.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// dest: Id of a target NYM record.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -118,7 +116,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_nym_tx(&self, identity: &SovrinIdentity, dest: &str,
+    pub fn send_get_nym_tx(&self, issuer: &str, dest: &str,
                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -128,7 +126,7 @@ impl SovrinAPI {
     /// Write the schema of a claim on sovrin.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// data: Schema represent as json: name, version, type, attr_names (ip, port, keys) and etc...
     /// cb: Callback that takes command result as parameter.
     ///
@@ -138,7 +136,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_schema_tx(&self, identity: &SovrinIdentity, data: &str,
+    pub fn send_schema_tx(&self, issuer: &str, data: &str,
                           cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -148,7 +146,7 @@ impl SovrinAPI {
     /// Write the schema of a claim on sovrin.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// data: Schema query represent as json: name and version
     /// cb: Callback that takes command result as parameter.
     ///
@@ -158,7 +156,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_schema_tx(&self, identity: &SovrinIdentity, data: &str,
+    pub fn send_get_schema_tx(&self, issuer: &str, data: &str,
                               cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -168,7 +166,7 @@ impl SovrinAPI {
     /// Set public key, that Issuer creates and publishes for a particular credential definition.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// xref: Seq. number of schema.
     /// data: components of a key as json: N, R, S, Z.
     /// cb: Callback that takes command result as parameter.
@@ -179,7 +177,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_issuer_key_tx(&self, identity: &SovrinIdentity, xref: &str, data: &str,
+    pub fn send_issuer_key_tx(&self, issuer: &str, xref: &str, data: &str,
                               cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -189,7 +187,7 @@ impl SovrinAPI {
     /// Get issuer key.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// xref: Seq. number of schema.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -199,7 +197,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
     /// See `SovrinError` docs for common errors description.
-    pub fn send_get_issuer_key_tx(&self, identity: &SovrinIdentity, xref: &str,
+    pub fn send_get_issuer_key_tx(&self, issuer: &str, xref: &str,
                                   cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         unimplemented!();
     }
@@ -209,7 +207,7 @@ impl SovrinAPI {
     /// Add new node to a cluster, or update existing node of pool.
     ///
     /// #Params
-    /// identity: Transaction identity.
+    /// issuer: Issuer identity as json.
     /// dest: id of a target NYM record.
     /// data: Node data as json: node_ip, node_port, client_ip, client_port,alias.
     /// cb: Callback that takes command result as parameter.
@@ -220,7 +218,7 @@ impl SovrinAPI {
     /// #Errors
     /// No method specific errors.
 /// See `SovrinError` docs for common errors description.
-    pub fn send_node_tx(&self, identity: &SovrinIdentity, dest: &str, data: &str,
+    pub fn send_node_tx(&self, issuer: &str, dest: &str, data: &str,
                         cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         unimplemented!();
     }
