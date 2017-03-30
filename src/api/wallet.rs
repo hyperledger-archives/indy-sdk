@@ -18,10 +18,12 @@ impl WalletAPI {
         WalletAPI { command_executor: command_executor }
     }
 
-    /// Set or update Wallet record identified by keys list.
+    /// Set or update Wallet record.
     ///
     /// #Params
-    /// keys: List of keys that identify Wallet record.
+    /// collection: Name of collection that identifies entity.
+    /// key: First part of (key, subkey) pair that identifies entity.
+    /// sub_key: Second part of (key, subkey) pair that identifies entity.
     /// value: Wallet record value to set or update.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -31,19 +33,16 @@ impl WalletAPI {
     /// #Errors
     /// No method specific errors.
     /// See `WallerError` docs for common errors description.
-    pub fn set(&self, keys: &[&str], value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        self.command_executor.send(Command::Wallet(
-            WalletCommand::Set(
-                keys.iter().map(|key| key.to_string()).collect(),
-                value.to_string(),
-                cb))
-        );
+    pub fn set(&self, collection: &str, key: &str, sub_key: &str, value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
+        unimplemented!();
     }
 
-    /// Get Wallet record identified by keys list.
+    /// Get Wallet record.
     ///
     /// #Params
-    /// keys: List of keys that identify Wallet record.
+    /// collection: Name of collection that identifies entity.
+    /// key: First part of (key, subkey) pair that identifies entity.
+    /// sub_key: Second part of (key, subkey) pair that identifies entity.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -53,12 +52,8 @@ impl WalletAPI {
     /// #Errors
     /// WalletError::NotFound - If no corresponded Wallet record found.
     /// See `WallerError` docs for common errors description.
-    pub fn get(&self, keys: &[&str], cb: Box<Fn(Result<Option<String>, WalletError>) + Send>) {
-        self.command_executor.send(Command::Wallet(
-            WalletCommand::Get(
-                keys.iter().map(|key| key.to_string()).collect(),
-                cb))
-        );
+    pub fn get(&self, collection: &str, key: &str, sub_key: &str, cb: Box<Fn(Result<Option<String>, WalletError>) + Send>) {
+        unimplemented!();
     }
 }
 

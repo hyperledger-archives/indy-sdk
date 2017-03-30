@@ -112,6 +112,7 @@ mod tests {
         cmd_executor.send(
             Command::Sovrin
                 (SovrinCommand::SendNymTx(
+                    "{did: \"DID0\", sign_key: \"KEY0\"}".to_string(),
                     "DID0".to_string(),
                     None,
                     None,
