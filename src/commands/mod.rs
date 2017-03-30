@@ -31,14 +31,14 @@ impl CommandExecutor {
         CommandExecutor {
             sender: sender,
             worker: Some(thread::spawn(move || {
+                info!(target: "command_executor", "Worker thread started");
+
+                let sovrin_service = Rc::new(SovrinService::new());
+                let wallet_service = Rc::new(WalletService::new());
+                let sovrin_command_executor = SovrinCommandExecutor::new(sovrin_service.clone());
+                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+
                 loop {
-                    info!(target: "command_executor", "Worker thread started");
-
-                    let sovrin_service = Rc::new(SovrinService::new());
-                    let wallet_service = Rc::new(WalletService::new());
-                    let sovrin_command_executor = SovrinCommandExecutor::new(sovrin_service.clone());
-                    let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
-
                     match receiver.recv() {
                         Ok(Command::Sovrin(cmd)) => {
                             info!(target: "command_executor", "SovrinCommand command received");
@@ -156,7 +156,6 @@ mod tests {
 
     #[test]
     fn wallet_get_value_command_can_be_sent() {
-
         let cmd_executor = CommandExecutor::new();
 
         let (set_sender, set_receiver) = channel();
