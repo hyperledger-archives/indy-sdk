@@ -178,9 +178,14 @@ impl AnoncredsService {
 
     }
     fn generate_context(accumulator_id: &str, user_id: &str) {
-        println!("{:?}, {:?}", accumulator_id, user_id);
-        let a = AnoncredsService::encode_attribute(accumulator_id, ByteOrder::Little);
-        println!("attr{}", a);
+        let accumulator_id_encoded = AnoncredsService::encode_attribute(accumulator_id, ByteOrder::Little);
+        let user_id_encoded = AnoncredsService::encode_attribute(user_id, ByteOrder::Little);
+        let a_e = BigNum::from_dec_str(&accumulator_id_encoded).unwrap();
+        let u_e = BigNum::from_dec_str(&user_id_encoded).unwrap();
+        let s = AnoncredsService::bitwise_or_big_int(&a_e, &u_e);
+        let mut result = hash(MessageDigest::sha256(), s.to_hex_str().unwrap().as_bytes()).unwrap();
+        let encoded_attribute = AnoncredsService::transform_byte_array_to_big_integer(&result);
+        println!("attr{:?}", encoded_attribute);
     }
     fn generate_vprimeprime() -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
