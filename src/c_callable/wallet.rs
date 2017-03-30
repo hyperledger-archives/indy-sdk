@@ -68,7 +68,7 @@ pub  extern fn wallet_sovrin_get_identities(client_id: i32, command_id: i32,
     unimplemented!();
 }
 
-/// Creates all necessary keys and objects depends on received schema and return schema_id.
+/// Creates all necessary keys and objects depends on received schema and returns schema_id.
 ///
 /// #Params
 /// client_id: id of sovrin client instance.
