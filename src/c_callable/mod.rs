@@ -66,3 +66,35 @@ pub extern fn release_client(client_id: i32) -> i32 {
 pub extern fn free_str(c_ptr: *mut c_char) {
     unimplemented!();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+
+    #[test]
+    fn sovrin_client_can_be_created() {
+        let empty = CString::new("").unwrap();
+        init_client(empty.as_ptr());
+    }
+
+    #[test]
+    fn sovrin_client_can_be_created_and_freed() {
+        let empty = CString::new("").unwrap();
+        let id = init_client(empty.as_ptr());
+        let other_id = id + 1;
+        assert_eq!(0, release_client(id));
+        assert_eq!(-1, release_client(other_id));
+        //TODO create more complex example: use different threads
+    }
+
+//        TODO: check memory consumption
+//        #[test]
+//        fn sovrin_client_no_leak() {
+//            let empty = CString::new("").unwrap();
+//            for i in 1..1000000 {
+//                let id = init_client(empty.as_ptr());
+//                assert_eq!(0, release_client(id));
+//            }
+//        }
+}
