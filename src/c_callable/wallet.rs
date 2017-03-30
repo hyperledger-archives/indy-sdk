@@ -67,3 +67,28 @@ pub  extern fn wallet_sovrin_get_identities(client_id: i32, command_id: i32,
                                                           identity_ids: [*const c_char])) {
     unimplemented!();
 }
+
+/// Creates all necessary keys and objects depends on received schema and return schema_id.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// schema_json: Schema as a json. Includes name, version, attributes, keys, accumulator and etc.
+///     Every empty field in the schema will be filled with the right value.
+///     For example: if schema have an empty public key value, function will generate it. If it's
+///         not necessary, value for public key field should be None.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Returns id of schema.
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
+#[no_mangle]
+pub extern fn wallet_anoncreds_create_schema(client_id: i32, command_id: i32,
+                                             schema_json: *const c_char,
+                                             cb: extern fn(xcommand_id: i32, err: i32,
+                                                           schema_id: *const c_char)) {
+    unimplemented!();
+}
