@@ -21,8 +21,9 @@ name = "sovrin_client"
 path = "src/main.rs"
 
 [dependencies]
-log = "0.3.7"
-zmq = "0.8.1"
-openssl = "0.9.9"
 int_traits = "0.1.1"
+libc = "0.2.21"
+log = "0.3.7"
+openssl = "0.9.9"
 rusqlite = "0.10.1"
+zmq = "0.8.1"

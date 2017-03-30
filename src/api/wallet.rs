@@ -1,79 +1,118 @@
-use commands::{Command, CommandExecutor};
-use commands::wallet::WalletCommand;
-use errors::wallet::WalletError;
+extern crate libc;
 
-use std::sync::Arc;
+use self::libc::{c_char, c_uchar};
 
-pub struct WalletAPI {
-    command_executor: Arc<CommandExecutor>,
+/// Creates and saves in secured Wallet identity that can be used to
+/// issue and verify Identity Ledger transaction.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// identity_json: Identity information as json. For current moment it is NYM transaction
+///   data with optional information for creation of sign key (DID, Verkey, Role, Alias, Seed and etc...).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// String identifier of this Identity.
+///
+/// #Errors
+/// No method specific errors.
+/// See `SovrinError` docs for common errors description.
+#[no_mangle]
+pub  extern fn wallet_sovrin_create_identity(client_id: i32, command_id: i32,
+                                             identity_json: *const c_char,
+                                             cb: extern fn(xcommand_id: i32, err: i32,
+                                                           identity_id: *const c_char)) {
+    unimplemented!();
 }
 
-impl WalletAPI {
-    /// Constructs a new `WalletAPI`.
-    ///
-    /// #Params
-    /// command_executor: Reference to `CommandExecutor` instance.
-    ///
-    pub fn new(command_executor: Arc<CommandExecutor>) -> WalletAPI {
-        WalletAPI { command_executor: command_executor }
-    }
-
-    /// Set or update Wallet record.
-    ///
-    /// #Params
-    /// collection: Name of collection that identifies entity.
-    /// key: First part of (key, subkey) pair that identifies entity.
-    /// sub_key: Second part of (key, subkey) pair that identifies entity.
-    /// value: Wallet record value to set or update.
-    /// cb: Callback that takes command result as parameter.
-    ///
-    /// #Returns
-    /// No result
-    ///
-    /// #Errors
-    /// No method specific errors.
-    /// See `WallerError` docs for common errors description.
-    pub fn set(&self, collection: &str, key: &str, sub_key: &str, value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        unimplemented!();
-    }
-
-    /// Get Wallet record.
-    ///
-    /// #Params
-    /// collection: Name of collection that identifies entity.
-    /// key: First part of (key, subkey) pair that identifies entity.
-    /// sub_key: Second part of (key, subkey) pair that identifies entity.
-    /// cb: Callback that takes command result as parameter.
-    ///
-    /// #Returns
-    /// None if no value was set for this keys
-    /// Value of corresponded Wallet record otherwise.
-    ///
-    /// #Errors
-    /// WalletError::NotFound - If no corresponded Wallet record found.
-    /// See `WallerError` docs for common errors description.
-    pub fn get(&self, collection: &str, key: &str, sub_key: &str, cb: Box<Fn(Result<Option<String>, WalletError>) + Send>) {
-        unimplemented!();
-    }
+/// Returns public information for Identity stored in secured Wallet.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// identity_id: Id of Identity stored in secured Wallet.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Public Identity information as json (DID, Verkey, Role, Alias and etc...).
+///
+/// #Errors
+/// No method specific errors.
+/// See `SovrinError` docs for common errors description.
+#[no_mangle]
+pub  extern fn wallet_sovrin_get_identity(client_id: i32, command_id: i32,
+                                          identity_id: *const c_char,
+                                          cb: extern fn(xcommand_id: i32, err: i32,
+                                                        identity_json: *const c_char)) {
+    unimplemented!();
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Returns list of ids for Identities stored in secured Wallet.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// List of stored identity ids.
+///
+/// #Errors
+/// No method specific errors.
+/// See `SovrinError` docs for common errors description.
+#[no_mangle]
+pub  extern fn wallet_sovrin_get_identities(client_id: i32, command_id: i32,
+                                            cb: extern fn(xcommand_id: i32, err: i32,
+                                                          identity_ids: [*const c_char])) {
+    unimplemented!();
+}
 
-    #[test]
-    fn wallet_api_can_be_created() {
-        let wallet_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
-        assert! (true, "No crashes on WalletAPI::new");
-    }
+/// Creates all necessary keys and objects depends on received schema and returns schema_id.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// schema_json: Schema as a json. Includes name, version, attributes, keys, accumulator and etc.
+///     Every empty field in the schema will be filled with the right value.
+///     For example: if schema have an empty public key value, function will generate it. If it's
+///         not necessary, value for public key field should be None.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Returns id of schema.
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
+#[no_mangle]
+pub extern fn wallet_anoncreds_create_schema(client_id: i32, command_id: i32,
+                                             schema_json: *const c_char,
+                                             cb: extern fn(xcommand_id: i32, err: i32,
+                                                           schema_id: *const c_char)) {
+    unimplemented!();
+}
 
-    #[test]
-    fn wallet_api_can_be_dropped() {
-        fn drop_test() {
-            let wallet_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
-        }
-
-        drop_test();
-        assert! (true, "No crashes on WalletAPI::drop");
-    }
+/// Creates and saves in secured Wallet received claim.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// schema_id: id of schema for which claim was generated.
+/// claim_json: Claim as a json.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Returns id of claim.
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
+#[no_mangle]
+pub extern fn wallet_anoncreds_create_claim(client_id: i32, command_id: i32,
+                                            schema_id: *const c_char,
+                                            claim_json: *const c_char,
+                                            cb: extern fn(xcommand_id: i32, err: i32,
+                                                          claim_id: *const c_char)) {
+    unimplemented!();
 }
