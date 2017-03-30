@@ -96,7 +96,7 @@ pub extern fn anoncreds_create_proof(client_id: i32, command_id: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Claim request.
+/// True if verified successfully and false otherwise.
 ///
 /// #Errors
 /// No method specific errors.
