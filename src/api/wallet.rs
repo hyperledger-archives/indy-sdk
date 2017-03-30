@@ -93,7 +93,20 @@ pub extern fn wallet_anoncreds_create_schema(client_id: i32, command_id: i32,
     unimplemented!();
 }
 
-// Returns public fields of schema
+/// Returns public fields of schema.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// schema_id: id of schema.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Public fields of schema.
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
 pub extern fn wallet_anoncreds_get_schema(client_id: i32, command_id: i32,
                                           schema_id: *const c_char,
                                           cb: extern fn(xcommand_id: i32, err: i32,
@@ -101,14 +114,39 @@ pub extern fn wallet_anoncreds_get_schema(client_id: i32, command_id: i32,
     unimplemented!();
 }
 
-// Returns list of ides for all saved schemes
+/// Returns list of ides for all saved schemes.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// List of ides
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
 pub extern fn wallet_anoncreds_get_schemes(client_id: i32, command_id: i32,
                                           cb: extern fn(xcommand_id: i32, err: i32,
                                                         schema_jsons: [*const c_char])) {
     unimplemented!();
 }
 
-// Generates new issuer keys and crypto variables for stored schema
+/// Generates new issuer keys and crypto variables for stored schema.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// schema_id: id of schema.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// None
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
 pub extern fn wallet_anoncreds_schema_update_issuer_key(client_id: i32, command_id: i32,
                                                         schema_id: *const c_char,
                                                         cb: extern fn(xcommand_id: i32, err: i32)) {
