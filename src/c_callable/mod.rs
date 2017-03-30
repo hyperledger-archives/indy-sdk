@@ -34,12 +34,32 @@ pub fn get_active_clients() -> SingletonClients {
 
 #[no_mangle]
 pub extern fn init_client(host_and_port: *const c_char) -> i32 {
-    unimplemented!();
+    let s = get_active_clients();
+    let (ref mut clients, mut cl_id): (HashMap<i32, SovrinClient>, i32) = *s.inner.lock().unwrap();
+
+    while clients.contains_key(&cl_id) {
+        cl_id += 1;
+        if cl_id < 0 {
+            cl_id = 1;
+        }
+    }
+
+    clients.insert(cl_id, SovrinClient::new());
+
+    cl_id
 }
 
 #[no_mangle]
 pub extern fn release_client(client_id: i32) -> i32 {
-    unimplemented!();
+    let s = get_active_clients();
+    let ref mut clients: HashMap<i32, SovrinClient> = (*s.inner.lock().unwrap()).0;
+
+    if clients.contains_key(&client_id) {
+        clients.remove(&client_id);
+        0
+    } else {
+        -1
+    }
 }
 
 #[no_mangle]
