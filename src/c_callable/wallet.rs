@@ -92,3 +92,27 @@ pub extern fn wallet_anoncreds_create_schema(client_id: i32, command_id: i32,
                                                            schema_id: *const c_char)) {
     unimplemented!();
 }
+
+/// Saves received claim.
+///
+/// #Params
+/// client_id: id of sovrin client instance.
+/// command_id: command id to map of callback to user context.
+/// schema_id: id of schema for which claim was generated.
+/// claim_json: Claim as a json.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Returns id of claim.
+///
+/// #Errors
+/// No method specific errors.
+/// See `AnoncredsError` docs for common errors description.
+#[no_mangle]
+pub extern fn wallet_anoncreds_save_claim(client_id: i32, command_id: i32,
+                                          schema_id: *const c_char,
+                                          claim_json: *const c_char,
+                                          cb: extern fn(xcommand_id: i32, err: i32,
+                                                        claim_id: *const c_char)) {
+    unimplemented!();
+}
