@@ -28,7 +28,7 @@ pub extern fn crypto_sodium_verify(public_key: *const c_uchar, doc: *const c_uch
 }
 
 pub extern fn crypto_base58_encode(src: *const c_uchar,
-                                   cb: extern fn(xcommand_id: i32, err: i32, result: *const c_cchar)) {
+                                   cb: extern fn(xcommand_id: i32, err: i32, result: *const c_char)) {
     unimplemented!();
 }
 

@@ -6,7 +6,8 @@ authors = [
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
   "Artem Ivanov <artem.ivanov@dsr-company.com>",
   "Evgeniy Razinkov <evgeniy.razinkov@dsr-company.com.ru>",
-  "Kirill Neznamov <kirill.neznamov@dsr-company.com>"
+  "Kirill Neznamov <kirill.neznamov@dsr-company.com>",
+  "Sergey Minaev <sergey.minaev@dsr-company.com>"
   ]
 
 description = "sovrin-client-rust"
@@ -26,3 +27,4 @@ zmq = "0.8.1"
 openssl = "0.9.9"
 int_traits = "0.1.1"
 rusqlite = "0.10.1"
+libc = "0.2.21"

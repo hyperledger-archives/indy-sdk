@@ -5,6 +5,7 @@ mod api;
 mod commands;
 mod errors;
 mod services;
+pub mod c_callable;
 
 use api::anoncreds::AnoncredsAPI;
 use api::crypto::CryptoAPI;
