@@ -101,6 +101,13 @@ pub extern fn wallet_anoncreds_get_schema(client_id: i32, command_id: i32,
     unimplemented!();
 }
 
+// Returns list of ides for all saved schemes
+pub extern fn wallet_anoncreds_get_schemes(client_id: i32, command_id: i32,
+                                          cb: extern fn(xcommand_id: i32, err: i32,
+                                                        schema_jsons: [*const c_char])) {
+    unimplemented!();
+}
+
 // Generates new issuer keys and crypto variables for stored schema
 pub extern fn wallet_anoncreds_schema_update_issuer_key(client_id: i32, command_id: i32,
                                                         schema_id: *const c_char,
