@@ -18,10 +18,10 @@ pub extern fn ledger_read_ddo(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-/// Sends transaction message to Ledger network.
+/// Sends transaction message to validator pool.
 ///
 /// Adds issuer information to passed transaction json, signs it with issuer sign key
-/// and sends signed transaction message to Ledger network.
+/// and sends signed transaction message to validator pool.
 ///
 /// #Params
 /// client_handle: id of Ledger client instance.
@@ -44,7 +44,7 @@ pub extern fn ledger_write_txn(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates NYM transaction message and sends it to Ledger network.
+// Creates NYM transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_write_nym_txn(client_handle: i32, command_handle: i32,
                                    submitter_did: *const c_char,
@@ -56,7 +56,7 @@ pub extern fn ledger_write_nym_txn(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates ATTRIB transaction message and sends it to Ledger network.
+// Creates ATTRIB transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_write_attrib_txn(client_handle: i32, command_handle: i32,
                                       submitter_did: *const c_char, target_did: *const c_char,
@@ -66,7 +66,7 @@ pub extern fn ledger_write_attrib_txn(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates GET_ATTRIB transaction message and sends it to Ledger network.
+// Creates GET_ATTRIB transaction message and sends it to validator pool.
 pub extern fn ledger_read_attrib(client_handle: i32, command_handle: i32,
                                  submitter_did: *const c_char, target_did: *const c_char,
                                  data: *const c_char,
@@ -75,7 +75,7 @@ pub extern fn ledger_read_attrib(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates GET_NYM transaction message and sends it to Ledger network.
+// Creates GET_NYM transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_read_nym(client_handle: i32, command_handle: i32,
                               submitter_did: *const c_char, target_did: *const c_char,
@@ -84,7 +84,7 @@ pub extern fn ledger_read_nym(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates SCHEMA transaction message and sends it to Ledger network.
+// Creates SCHEMA transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_write_schema_txn(client_handle: i32, command_handle: i32,
                                       submitter_did: *const c_char, data: *const c_char,
@@ -93,7 +93,7 @@ pub extern fn ledger_write_schema_txn(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates GET_SCHEMA transaction message and sends it to Ledger network.
+// Creates GET_SCHEMA transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_read_schema(client_handle: i32, command_handle: i32,
                                  submitter_did: *const c_char, data: *const c_char,
@@ -102,7 +102,7 @@ pub extern fn ledger_read_schema(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates ISSUER_KEY transaction message and sends it to Ledger network.
+// Creates ISSUER_KEY transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_write_issuer_key_txn(client_handle: i32, command_handle: i32,
                                           submitter_did: *const c_char, xref: *const c_char,
@@ -112,7 +112,7 @@ pub extern fn ledger_write_issuer_key_txn(client_handle: i32, command_handle: i3
     unimplemented!();
 }
 
-// Creates GET_ISSUER_KEY transaction message and sends it to Ledger network.
+// Creates GET_ISSUER_KEY transaction message and sends it to validator pool.
 pub extern fn ledger_read_issuer_key(client_handle: i32, command_handle: i32,
                                      submitter_did: *const c_char, xref: *const c_char,
                                      cb: extern fn(xcommand_handle: i32, err: i32,
@@ -120,7 +120,7 @@ pub extern fn ledger_read_issuer_key(client_handle: i32, command_handle: i32,
     unimplemented!();
 }
 
-// Creates NODE transaction message and sends it to Ledger network.
+// Creates NODE transaction message and sends it to validator pool.
 #[no_mangle]
 pub extern fn ledger_write_node_txn(client_handle: i32, command_handle: i32,
                                     submitter_did: *const c_char, target_did: *const c_char,
