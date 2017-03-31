@@ -17,9 +17,9 @@ use self::libc::{c_char, c_uchar};
 ///
 /// #Errors
 /// No method specific errors.
-/// See `SovrinError` docs for common errors description.
+/// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub  extern fn wallet_sovrin_create_identity(client_id: i32, command_id: i32,
+pub  extern fn wallet_ledger_create_identity(client_id: i32, command_id: i32,
                                              identity_json: *const c_char,
                                              cb: extern fn(xcommand_id: i32, err: i32,
                                                            identity_id: *const c_char)) {
@@ -39,9 +39,9 @@ pub  extern fn wallet_sovrin_create_identity(client_id: i32, command_id: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `SovrinError` docs for common errors description.
+/// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub  extern fn wallet_sovrin_get_identity(client_id: i32, command_id: i32,
+pub  extern fn wallet_ledger_get_identity(client_id: i32, command_id: i32,
                                           identity_id: *const c_char,
                                           cb: extern fn(xcommand_id: i32, err: i32,
                                                         identity_json: *const c_char)) {
@@ -60,9 +60,9 @@ pub  extern fn wallet_sovrin_get_identity(client_id: i32, command_id: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `SovrinError` docs for common errors description.
+/// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub  extern fn wallet_sovrin_get_identities(client_id: i32, command_id: i32,
+pub  extern fn wallet_ledger_get_identities(client_id: i32, command_id: i32,
                                             cb: extern fn(xcommand_id: i32, err: i32,
                                                           identity_ids: [*const c_char])) {
     unimplemented!();
