@@ -9,11 +9,11 @@ use std::mem;
 use std::sync::{Arc, Mutex, Once, ONCE_INIT};
 
 use self::libc::{c_char, c_uchar};
-use super::SovrinClient;
+use commands::CommandExecutor;
 
 #[derive(Clone)]
 pub struct SingletonClients {
-    inner: Arc<Mutex<(HashMap<i32, SovrinClient>, i32)>>
+    inner: Arc<Mutex<(HashMap<i32, CommandExecutor>, i32)>>
 }
 
 pub fn get_active_clients() -> SingletonClients {
@@ -34,7 +34,7 @@ pub fn get_active_clients() -> SingletonClients {
 #[no_mangle]
 pub extern fn init_client(host_and_port: *const c_char) -> i32 {
     let s = get_active_clients();
-    let (ref mut clients, mut cl_id): (HashMap<i32, SovrinClient>, i32) = *s.inner.lock().unwrap();
+    let (ref mut clients, mut cl_id): (HashMap<i32, CommandExecutor>, i32) = *s.inner.lock().unwrap();
 
     while clients.contains_key(&cl_id) {
         cl_id += 1;
@@ -43,7 +43,7 @@ pub extern fn init_client(host_and_port: *const c_char) -> i32 {
         }
     }
 
-    clients.insert(cl_id, SovrinClient::new());
+    clients.insert(cl_id, CommandExecutor::new());
 
     cl_id
 }
@@ -51,7 +51,7 @@ pub extern fn init_client(host_and_port: *const c_char) -> i32 {
 #[no_mangle]
 pub extern fn release_client(client_id: i32) -> i32 {
     let s = get_active_clients();
-    let ref mut clients: HashMap<i32, SovrinClient> = (*s.inner.lock().unwrap()).0;
+    let ref mut clients: HashMap<i32, CommandExecutor> = (*s.inner.lock().unwrap()).0;
 
     if clients.contains_key(&client_id) {
         clients.remove(&client_id);
