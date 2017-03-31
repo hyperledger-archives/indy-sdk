@@ -1,7 +1,7 @@
 extern crate libc;
 
 pub mod anoncreds;
-pub mod sovrin;
+pub mod ledger;
 pub mod wallet;
 
 use std::collections::HashMap;
@@ -72,13 +72,13 @@ mod tests {
     use std::ffi::CString;
 
     #[test]
-    fn sovrin_client_can_be_created() {
+    fn ledger_client_can_be_created() {
         let empty = CString::new("").unwrap();
         init_client(empty.as_ptr());
     }
 
     #[test]
-    fn sovrin_client_can_be_created_and_freed() {
+    fn ledger_client_can_be_created_and_freed() {
         let empty = CString::new("").unwrap();
         let id = init_client(empty.as_ptr());
         let other_id = id + 1;
@@ -89,7 +89,7 @@ mod tests {
 
 //        TODO: check memory consumption
 //        #[test]
-//        fn sovrin_client_no_leak() {
+//        fn ledger_client_no_leak() {
 //            let empty = CString::new("").unwrap();
 //            for i in 1..1000000 {
 //                let id = init_client(empty.as_ptr());
