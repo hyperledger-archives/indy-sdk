@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate log;
 
-mod api;
+pub mod api;
 mod commands;
 mod errors;
 mod services;
