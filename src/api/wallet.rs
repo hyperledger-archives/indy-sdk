@@ -2,143 +2,52 @@ extern crate libc;
 
 use self::libc::{c_char, c_uchar};
 
-/// Creates and saves in secured Wallet identity that can be used to
-/// issue and verify Identity Ledger transaction.
+/// Creates keys (signing and encryption keys) for a new
+/// Identity (owned by the caller of the library).
+/// Identity's DID can be either explicitly provided, or taken as the first 16 bit of verkey.
+/// Saves the Identity DID with keys in a secured Wallet, so that it can be used to sign
+/// and encrypt transactions.
 ///
 /// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// identity_json: Identity information as json. For current moment it is NYM transaction
-///   data with optional information for creation of sign key (DID, Verkey, Role, Alias, Seed and etc...).
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// identity_json: Identity information as json. Example:
+/// {
+///     "did": string, (optional; if not provided then the first 16 bit of the verkey will be used
+///             as a new DID; if provided, then keys will be replaced - key rotation use case)
+///     "seed": string, (optional; if not provide then a random one will be created)
+///     "signer": string, (optional; if not set then ed25519 curve is used;
+///               currently only 'ed25519' value is supported for this field)
+/// }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// String identifier of this Identity.
+/// DID, verkey (for verification of signatire) and public_key (for decryption)
 ///
 /// #Errors
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
-#[no_mangle]
-pub  extern fn wallet_ledger_create_identity(client_id: i32, command_id: i32,
-                                             identity_json: *const c_char,
-                                             cb: extern fn(xcommand_id: i32, err: i32,
-                                                           identity_id: *const c_char)) {
+pub  extern fn wallet_create_and_store_my_identity(client_handle: i32, command_handle: i32,
+                                                   identity_json: *const c_char,
+                                                   cb: extern fn(xcommand_handle: i32, err: i32,
+                                                                 did: *const c_char,
+                                                                 verkey: *const c_char,
+                                                                 pk: *const c_char)) -> i32 {
     unimplemented!();
 }
 
-/// Returns public information for Identity stored in secured Wallet.
+/// Saves their Identity for a pairwise connection in a secured Wallet,
+/// so that it can be used to verify transaction.
 ///
 /// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// identity_id: Id of Identity stored in secured Wallet.
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// Public Identity information as json (DID, Verkey, Role, Alias and etc...).
-///
-/// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
-#[no_mangle]
-pub  extern fn wallet_ledger_get_identity(client_id: i32, command_id: i32,
-                                          identity_id: *const c_char,
-                                          cb: extern fn(xcommand_id: i32, err: i32,
-                                                        identity_json: *const c_char)) {
-    unimplemented!();
-}
-
-/// Returns list of ids for Identities stored in secured Wallet.
-///
-/// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// List of stored identity ids.
-///
-/// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
-#[no_mangle]
-pub  extern fn wallet_ledger_get_identities(client_id: i32, command_id: i32,
-                                            cb: extern fn(xcommand_id: i32, err: i32,
-                                                          identity_ids: [*const c_char])) {
-    unimplemented!();
-}
-
-/// Creates all necessary keys and objects depends on received schema and returns schema_id.
-///
-/// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// schema_json: Schema as a json. Includes name, version, attributes, keys, accumulator and etc.
-///     Every empty field in the schema will be filled with the right value.
-///     For example: if schema have an empty public key value, function will generate it. If it's
-///         not necessary, value for public key field should be None.
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// Returns id of schema.
-///
-/// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
-#[no_mangle]
-pub extern fn wallet_anoncreds_create_schema(client_id: i32, command_id: i32,
-                                             schema_json: *const c_char,
-                                             cb: extern fn(xcommand_id: i32, err: i32,
-                                                           schema_id: *const c_char)) {
-    unimplemented!();
-}
-
-/// Returns public fields of schema.
-///
-/// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// schema_id: id of schema.
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// Public fields of schema.
-///
-/// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
-pub extern fn wallet_anoncreds_get_schema(client_id: i32, command_id: i32,
-                                          schema_id: *const c_char,
-                                          cb: extern fn(xcommand_id: i32, err: i32,
-                                                        schema_json: *const c_char)) {
-    unimplemented!();
-}
-
-/// Returns list of ides for all saved schemes.
-///
-/// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// List of ides
-///
-/// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
-pub extern fn wallet_anoncreds_get_schemes(client_id: i32, command_id: i32,
-                                          cb: extern fn(xcommand_id: i32, err: i32,
-                                                        schema_jsons: [*const c_char])) {
-    unimplemented!();
-}
-
-/// Generates new issuer keys and crypto variables for stored schema.
-///
-/// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// schema_id: id of schema.
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// identity_json: Identity information as json. Example:
+///     {
+///        "did": string, (required)
+///        "verkey": string, (optional; if only public key for decryption is provided),
+///        "pk": string (optional, if only verification key sis provided),
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -146,33 +55,115 @@ pub extern fn wallet_anoncreds_get_schemes(client_id: i32, command_id: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
-pub extern fn wallet_anoncreds_schema_update_issuer_key(client_id: i32, command_id: i32,
-                                                        schema_id: *const c_char,
-                                                        cb: extern fn(xcommand_id: i32, err: i32)) {
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_store_their_identity(client_handle: i32, command_handle: i32,
+                                           identity_json: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
     unimplemented!();
 }
 
-/// Creates and saves in secured Wallet received claim.
+/// Signs a message by a signing key associated with my DID. The DID with a signing key
+/// must be already created and stored in a secured wallet (see wallet_create_and_store_my_identity)
 ///
 /// #Params
-/// client_id: id of sovrin client instance.
-/// command_id: command id to map of callback to user context.
-/// schema_id: id of schema for which claim was generated.
-/// claim_json: Claim as a json.
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: signing DID
+/// msg: a message to be signed
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Returns id of claim.
+/// a signature string
 ///
 /// #Errors
 /// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
-#[no_mangle]
-pub extern fn wallet_anoncreds_create_claim(client_id: i32, command_id: i32,
-                                            schema_id: *const c_char,
-                                            claim_json: *const c_char,
-                                            cb: extern fn(xcommand_id: i32, err: i32,
-                                                          claim_id: *const c_char)) {
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_sign_by_my_did(client_handle: i32, command_handle: i32,
+                                     did: *const c_char,
+                                     msg: *const c_char,
+                                     cb: extern fn(xcommand_handle: i32, err: i32,
+                                                   signature: *const c_char)) -> i32 {
+    unimplemented!();
+}
+
+/// Verify a signature created by a key associated with a DID.
+/// If a secure wallet doesn't contain a verkey associated with the given DID,
+/// then verkey is read from the Ledger.
+/// Otherwise either an existing verkey from wallet is used (see wallet_store_their_identity),
+/// or it checks the Ledger (according to freshness settings set during initialization)
+/// whether verkey is still the same and updates verkey for the DID if needed.
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: DID that signed the message
+/// msg: message
+/// signature: a signature to be verified
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// None
+///
+/// #Errors
+/// VerificationError
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_verify_by_their_did(client_handle: i32, command_handle: i32,
+                                          did: *const c_char,
+                                          msg: *const c_char,
+                                          signature: *const c_char,
+                                          cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
+    unimplemented!();
+}
+
+/// Encrypts a message by a public key associated with a DID.
+/// If a secure wallet doesn't contain a public key associated with the given DID,
+/// then the public key is read from the Ledger.
+/// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
+/// or it checks the Ledger (according to freshness settings set during initialization)
+/// whether public key is still the same and updates public key for the DID if needed.
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: encrypting DID
+/// msg: a message to be signed
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// an encrypted message
+///
+/// #Errors
+/// No method specific errors.
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_encrypt_by_their_did(client_handle: i32, command_handle: i32,
+                                           did: *const c_char,
+                                           msg: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32,
+                                                         encrypted_msg: *const c_char)) -> i32 {
+    unimplemented!();
+}
+
+/// Decrypts a message encrypted by a public key associated with my DID.
+/// The DID with a secret key must be already created and
+/// stored in a secured wallet (see wallet_create_and_store_my_identity)
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: DID that signed the message
+/// encrypted_msg: encrypted message
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// decrypted message
+///
+/// #Errors
+/// VerificationError
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_decrypt_by_my_did(client_handle: i32, command_handle: i32,
+                                        did: *const c_char,
+                                        encrypted_msg: *const c_char,
+                                        cb: extern fn(xcommand_handle: i32, err: i32,
+                                                      decrypted_msg: *const c_char)) -> i32 {
     unimplemented!();
 }
