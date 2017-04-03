@@ -28,3 +28,6 @@ log = "0.3.7"
 openssl = "0.9.9"
 rusqlite = "0.10.1"
 zmq = "0.8.1"
+milagro-crypto = { git = "https://github.com/DSRCorporation/milagro-crypto-rust" }
+rand = "0.3"
+

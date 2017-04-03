@@ -6,10 +6,12 @@ const LARGE_E_END_RANGE: i32 = 119;
 const LARGE_VPRIME_PRIME: i32 = 2724;
 extern crate openssl;
 extern crate int_traits;
+extern crate milagro_crypto;
 use self::int_traits::IntTraits;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::hash::{hash, MessageDigest};
 use std::cmp::max;
+use services::crypto;
 
 enum ByteOrder {
     Big,
@@ -324,5 +326,9 @@ mod tests {
         let (user_id, accumulator_id) = ("111", "110");
         let claim_request = AnoncredsService::create_claim_request();
         let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u, &accumulator_id, &user_id);
+    }
+    #[test]
+    fn test_random() {
+        crypto::generate_big_random(2787);
     }
 }
