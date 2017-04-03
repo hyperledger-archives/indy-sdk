@@ -4,8 +4,9 @@ use self::libc::{c_char, c_uchar};
 
 /// Signs and sends transaction message to validator pool.
 ///
-/// Adds submitter information to passed transaction json, signs it with submitter sign key (see wallet_sign_by_my_did),
-/// and sends signed transaction message to validator pool (see ledger_write_txn).
+/// Adds submitter information to passed transaction json, signs it with submitter
+/// sign key (see wallet_sign_by_my_did), and sends signed transaction message
+/// to validator pool (see ledger_write_txn).
 ///
 /// #Params
 /// client_handle: id of Ledger client instance.
