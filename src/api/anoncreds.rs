@@ -21,10 +21,11 @@ use self::libc::{c_char, c_uchar};
 /// See `AnoncredsError` docs for common errors description.
 #[no_mangle]
 pub extern fn anoncreds_issuer_create_and_store_keys(client_handle: i32, command_handle: i32,
-                                             schema_json: *const c_char,
-                                             sign_type: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32,
-                                             public_key_json: *const c_char)) {
+                                                     schema_json: *const c_char,
+                                                     sign_type: *const c_char,
+                                                     cb: extern fn(xcommand_handle: i32, err: i32,
+                                                                   public_key_json: *const c_char
+                                                     )) -> i32 {
     unimplemented!();
 }
 
@@ -48,7 +49,8 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(client_handle: i32, co
                                                   public_key_id: *const c_char,
                                                   max_claim_num: i32,
                                                   cb: extern fn(xcommand_handle: i32, err: i32,
-                                                                revoc_reg_json: *const c_char)) {
+                                                                revoc_reg_json: *const c_char
+                                                  )) -> i32 {
     unimplemented!();
 }
 
@@ -89,14 +91,15 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(client_handle: i32, co
 /// See `AnoncredsError` docs for common errors description.
 #[no_mangle]
 pub extern fn anoncreds_issuer_create_credential(client_handle: i32, command_handle: i32,
-                                             claim_req_json: *const c_char,
-                                             claim_json: *const c_char,
-                                             public_key_id: *const c_char,
-                                             revoc_reg_id: *const c_char,
-                                             user_revoc_id: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32,
-                                                       credential_json: *const c_char,
-                                                       revoc_reg_update_json: *const c_char)) {
+                                                 claim_req_json: *const c_char,
+                                                 claim_json: *const c_char,
+                                                 public_key_id: *const c_char,
+                                                 revoc_reg_id: *const c_char,
+                                                 user_revoc_id: *const c_char,
+                                                 cb: extern fn(xcommand_handle: i32, err: i32,
+                                                               credential_json: *const c_char,
+                                                               revoc_reg_update_json: *const c_char
+                                                 )) -> i32 {
     unimplemented!();
 }
 
@@ -122,7 +125,8 @@ pub extern fn anoncreds_issuer_revoke_claim(client_handle: i32, command_handle: 
                                              revoc_reg_id: *const c_char,
                                              user_revoc_id: *const c_char,
                                              cb: extern fn(xcommand_handle: i32, err: i32,
-                                                       revoc_reg_update_json: *const c_char)) {
+                                                       revoc_reg_update_json: *const c_char
+                                             )) -> i32 {
     unimplemented!();
 }
 
@@ -155,7 +159,8 @@ pub extern fn anoncreds_prover_create_and_store_claim_req(client_handle: i32, co
                                              claim_offer_json: *const c_char,
                                              master_secret: *const c_char,
                                              cb: extern fn(xcommand_handle: i32, err: i32,
-                                                           claim_req_json: *const c_char)) {
+                                                           claim_req_json: *const c_char
+                                             )) -> i32 {
     unimplemented!();
 }
 
@@ -185,8 +190,10 @@ pub extern fn anoncreds_prover_create_and_store_claim_req(client_handle: i32, co
 /// See `AnoncredsError` docs for common errors description.
 #[no_mangle]
 pub extern fn anoncreds_prover_store_credential(client_handle: i32, command_handle: i32,
-                                             credentials_json: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32)) {
+                                                credentials_json: *const c_char,
+                                                cb: extern fn(
+                                                    xcommand_handle: i32, err: i32
+                                                )) -> i32 {
     unimplemented!();
 }
 
@@ -224,7 +231,7 @@ pub extern fn anoncreds_prover_store_credential(client_handle: i32, command_hand
 pub extern fn anoncreds_prover_create_proof(client_handle: i32, command_handle: i32,
                                              proof_request_json: *const c_char,
                                              cb: extern fn(xcommand_handle: i32, err: i32,
-                                                proof_json: *const c_char)) {
+                                                proof_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -260,10 +267,11 @@ pub extern fn anoncreds_prover_create_proof(client_handle: i32, command_handle: 
 /// See `AnoncredsError` docs for common errors description.
 #[no_mangle]
 pub extern fn anoncreds_verifier_verify_proof(client_handle: i32, command_handle: i32,
-                                             proof_request_initial_json: *const c_char,
-                                             proof_request_disclosed_json: *const c_char,
-                                             proof_json: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32)) {
+                                              proof_request_initial_json: *const c_char,
+                                              proof_request_disclosed_json: *const c_char,
+                                              proof_json: *const c_char,
+                                              cb: extern fn(xcommand_handle: i32, err: i32
+                                              )) -> i32 {
     unimplemented!();
 }
 

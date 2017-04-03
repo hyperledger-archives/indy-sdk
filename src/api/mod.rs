@@ -31,6 +31,12 @@ pub fn get_active_clients() -> SingletonClients {
     }
 }
 
+// inits pool from an (optional) genesis txn file
+#[no_mangle]
+pub extern fn init_pool(genesis_txn: *const c_char, config: *const c_char) -> i32 {
+    unimplemented!();
+}
+
 #[no_mangle]
 pub extern fn init_client(host_and_port: *const c_char) -> i32 {
     let s = get_active_clients();

@@ -32,7 +32,7 @@ pub  extern fn wallet_create_and_store_my_identity(client_handle: i32, command_h
                                                    cb: extern fn(xcommand_handle: i32, err: i32,
                                                                  did: *const c_char,
                                                                  verkey: *const c_char,
-                                                                 pk: *const c_char)) {
+                                                                 pk: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -58,7 +58,7 @@ pub  extern fn wallet_create_and_store_my_identity(client_handle: i32, command_h
 /// See `LedgerError` docs for common errors description.
 pub  extern fn wallet_store_their_identity(client_handle: i32, command_handle: i32,
                                            identity_json: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: i32)) {
+                                           cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
     unimplemented!();
 }
 
@@ -82,7 +82,7 @@ pub  extern fn wallet_sign_by_my_did(client_handle: i32, command_handle: i32,
                                      did: *const c_char,
                                      msg: *const c_char,
                                      cb: extern fn(xcommand_handle: i32, err: i32,
-                                                   signature: *const c_char)) {
+                                                   signature: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -111,7 +111,7 @@ pub  extern fn wallet_verify_by_their_did(client_handle: i32, command_handle: i3
                                           did: *const c_char,
                                           msg: *const c_char,
                                           signature: *const c_char,
-                                          cb: extern fn(xcommand_handle: i32, err: i32)) {
+                                          cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
     unimplemented!();
 }
 
@@ -139,7 +139,7 @@ pub  extern fn wallet_encrypt_by_their_did(client_handle: i32, command_handle: i
                                            did: *const c_char,
                                            msg: *const c_char,
                                            cb: extern fn(xcommand_handle: i32, err: i32,
-                                                         encrypted_msg: *const c_char)) {
+                                                         encrypted_msg: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -164,6 +164,6 @@ pub  extern fn wallet_decrypt_by_my_did(client_handle: i32, command_handle: i32,
                                         did: *const c_char,
                                         encrypted_msg: *const c_char,
                                         cb: extern fn(xcommand_handle: i32, err: i32,
-                                                      decrypted_msg: *const c_char)) {
+                                                      decrypted_msg: *const c_char)) -> i32 {
     unimplemented!();
 }

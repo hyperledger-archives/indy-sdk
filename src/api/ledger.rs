@@ -25,7 +25,7 @@ use self::libc::{c_char, c_uchar};
 pub extern fn ledger_sign_and_send_txn(client_handle: i32, command_handle: i32,
                                        submitter_did: *const c_char, txn_json: *const c_char,
                                        cb: extern fn(xcommand_handle: i32, err: i32,
-                                                     txn_result_json: *const c_char)) {
+                                                     txn_result_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -49,7 +49,7 @@ pub extern fn ledger_sign_and_send_txn(client_handle: i32, command_handle: i32,
 pub extern fn ledger_send_txn(client_handle: i32, command_handle: i32,
                               txn_json: *const c_char,
                               cb: extern fn(xcommand_handle: i32, err: i32,
-                                            txn_result_json: *const c_char)) {
+                                            txn_result_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -74,7 +74,7 @@ pub extern fn ledger_send_txn(client_handle: i32, command_handle: i32,
 pub extern fn create_get_ddo_txn(client_handle: i32, command_handle: i32, sign: i32,
                                  submitter_did: *const c_char, target_did: *const c_char,
                                  cb: extern fn(xcommand_handle: i32, err: i32,
-                                               txn_json: *const c_char)) {
+                                               txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -107,7 +107,7 @@ pub extern fn create_nym_txn(client_handle: i32, command_handle: i32, sign: i32,
                              verkey: *const c_char, xref: *const c_char,
                              data: *const c_char, role: *const c_char,
                              cb: extern fn(xcommand_handle: i32, err: i32,
-                                           txn_json: *const c_char)) {
+                                           txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -135,7 +135,7 @@ pub extern fn create_attrib_txn(client_handle: i32, command_handle: i32, sign: i
                                 submitter_did: *const c_char, target_did: *const c_char,
                                 hash: *const c_char, raw: *const c_char, enc: *const c_char,
                                 cb: extern fn(xcommand_handle: i32, err: i32,
-                                              txn_json: *const c_char)) {
+                                              txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -160,7 +160,7 @@ pub extern fn create_get_attrib_txn(client_handle: i32, command_handle: i32, sig
                                     submitter_did: *const c_char, target_did: *const c_char,
                                     data: *const c_char,
                                     cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_json: *const c_char)) {
+                                                  txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -184,7 +184,7 @@ pub extern fn create_get_attrib_txn(client_handle: i32, command_handle: i32, sig
 pub extern fn create_get_nym_txn(client_handle: i32, command_handle: i32, sign: i32,
                                  submitter_did: *const c_char, target_did: *const c_char,
                                  cb: extern fn(xcommand_handle: i32, err: i32,
-                                               txn_json: *const c_char)) {
+                                               txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -208,7 +208,7 @@ pub extern fn create_get_nym_txn(client_handle: i32, command_handle: i32, sign: 
 pub extern fn create_schema_txn(client_handle: i32, command_handle: i32, sign: i32,
                                 submitter_did: *const c_char, data: *const c_char,
                                 cb: extern fn(xcommand_handle: i32, err: i32,
-                                              txn_json: *const c_char)) {
+                                              txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -232,7 +232,7 @@ pub extern fn create_schema_txn(client_handle: i32, command_handle: i32, sign: i
 pub extern fn create_get_schema_txn(client_handle: i32, command_handle: i32, sign: i32,
                                     submitter_did: *const c_char, data: *const c_char,
                                     cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_json: *const c_char)) {
+                                                  txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -258,7 +258,7 @@ pub extern fn create_issuer_key_txn(client_handle: i32, command_handle: i32, sig
                                     submitter_did: *const c_char, xref: *const c_char,
                                     data: *const c_char,
                                     cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_result_json: *const c_char)) {
+                                                  txn_result_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -281,7 +281,7 @@ pub extern fn create_issuer_key_txn(client_handle: i32, command_handle: i32, sig
 pub extern fn crate_get_issuer_key_txn(client_handle: i32, command_handle: i32, sign: i32,
                                        submitter_did: *const c_char, xref: *const c_char,
                                        cb: extern fn(xcommand_handle: i32, err: i32,
-                                                     txn_json: *const c_char)) {
+                                                     txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -307,6 +307,6 @@ pub extern fn create_node_txn(client_handle: i32, command_handle: i32, sign: i32
                               submitter_did: *const c_char, target_did: *const c_char,
                               data: *const c_char,
                               cb: extern fn(xcommand_handle: i32, err: i32,
-                                            txn_json: *const c_char)) {
+                                            txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
