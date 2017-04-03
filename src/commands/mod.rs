@@ -1,11 +1,11 @@
 pub mod anoncreds;
 pub mod crypto;
-pub mod sovrin;
+pub mod ledger;
 pub mod wallet;
 
-use commands::sovrin::{SovrinCommand, SovrinCommandExecutor};
+use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
-use services::sovrin::SovrinService;
+use services::ledger::LedgerService;
 use services::wallet::WalletService;
 
 use std::error;
@@ -15,7 +15,7 @@ use std::thread;
 
 pub enum Command {
     Exit,
-    Sovrin(SovrinCommand),
+    Ledger(LedgerCommand),
     Wallet(WalletCommand)
 }
 
@@ -31,18 +31,18 @@ impl CommandExecutor {
         CommandExecutor {
             sender: sender,
             worker: Some(thread::spawn(move || {
+                info!(target: "command_executor", "Worker thread started");
+
+                let ledger_service = Rc::new(LedgerService::new());
+                let wallet_service = Rc::new(WalletService::new());
+                let ledger_command_executor = LedgerCommandExecutor::new(ledger_service.clone());
+                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+
                 loop {
-                    info!(target: "command_executor", "Worker thread started");
-
-                    let sovrin_service = Rc::new(SovrinService::new());
-                    let wallet_service = Rc::new(WalletService::new());
-                    let sovrin_command_executor = SovrinCommandExecutor::new(sovrin_service.clone());
-                    let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
-
                     match receiver.recv() {
-                        Ok(Command::Sovrin(cmd)) => {
-                            info!(target: "command_executor", "SovrinCommand command received");
-                            sovrin_command_executor.execute(cmd);
+                        Ok(Command::Ledger(cmd)) => {
+                            info!(target: "command_executor", "LedgerCommand command received");
+                            ledger_command_executor.execute(cmd);
                         },
                         Ok(Command::Wallet(cmd)) => {
                             info!(target: "command_executor", "WalletCommand command received");
@@ -110,8 +110,8 @@ mod tests {
 
         let cmd_executor = CommandExecutor::new();
         cmd_executor.send(
-            Command::Sovrin
-                (SovrinCommand::SendNymTx(
+            Command::Ledger
+                (LedgerCommand::SendNymTx(
                     "{did: \"DID0\", sign_key: \"KEY0\"}".to_string(),
                     "DID0".to_string(),
                     None,
@@ -156,7 +156,6 @@ mod tests {
 
     #[test]
     fn wallet_get_value_command_can_be_sent() {
-
         let cmd_executor = CommandExecutor::new();
 
         let (set_sender, set_receiver) = channel();

@@ -1,79 +1,169 @@
-use commands::{Command, CommandExecutor};
-use commands::wallet::WalletCommand;
-use errors::wallet::WalletError;
+extern crate libc;
 
-use std::sync::Arc;
+use self::libc::{c_char, c_uchar};
 
-pub struct WalletAPI {
-    command_executor: Arc<CommandExecutor>,
+/// Creates keys (signing and encryption keys) for a new
+/// Identity (owned by the caller of the library).
+/// Identity's DID can be either explicitly provided, or taken as the first 16 bit of verkey.
+/// Saves the Identity DID with keys in a secured Wallet, so that it can be used to sign
+/// and encrypt transactions.
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// identity_json: Identity information as json. Example:
+/// {
+///     "did": string, (optional; if not provided then the first 16 bit of the verkey will be used
+///             as a new DID; if provided, then keys will be replaced - key rotation use case)
+///     "seed": string, (optional; if not provide then a random one will be created)
+///     "signer": string, (optional; if not set then ed25519 curve is used;
+///               currently only 'ed25519' value is supported for this field)
+/// }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// DID, verkey (for verification of signatire) and public_key (for decryption)
+///
+/// #Errors
+/// No method specific errors.
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_create_and_store_my_identity(client_handle: i32, command_handle: i32,
+                                                   identity_json: *const c_char,
+                                                   cb: extern fn(xcommand_handle: i32, err: i32,
+                                                                 did: *const c_char,
+                                                                 verkey: *const c_char,
+                                                                 pk: *const c_char)) -> i32 {
+    unimplemented!();
 }
 
-impl WalletAPI {
-    /// Constructs a new `WalletAPI`.
-    ///
-    /// #Params
-    /// command_executor: Reference to `CommandExecutor` instance.
-    ///
-    pub fn new(command_executor: Arc<CommandExecutor>) -> WalletAPI {
-        WalletAPI { command_executor: command_executor }
-    }
-
-    /// Set or update Wallet record.
-    ///
-    /// #Params
-    /// collection: Name of collection that identifies entity.
-    /// key: First part of (key, subkey) pair that identifies entity.
-    /// sub_key: Second part of (key, subkey) pair that identifies entity.
-    /// value: Wallet record value to set or update.
-    /// cb: Callback that takes command result as parameter.
-    ///
-    /// #Returns
-    /// No result
-    ///
-    /// #Errors
-    /// No method specific errors.
-    /// See `WallerError` docs for common errors description.
-    pub fn set(&self, collection: &str, key: &str, sub_key: &str, value: &str, cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        unimplemented!();
-    }
-
-    /// Get Wallet record.
-    ///
-    /// #Params
-    /// collection: Name of collection that identifies entity.
-    /// key: First part of (key, subkey) pair that identifies entity.
-    /// sub_key: Second part of (key, subkey) pair that identifies entity.
-    /// cb: Callback that takes command result as parameter.
-    ///
-    /// #Returns
-    /// None if no value was set for this keys
-    /// Value of corresponded Wallet record otherwise.
-    ///
-    /// #Errors
-    /// WalletError::NotFound - If no corresponded Wallet record found.
-    /// See `WallerError` docs for common errors description.
-    pub fn get(&self, collection: &str, key: &str, sub_key: &str, cb: Box<Fn(Result<Option<String>, WalletError>) + Send>) {
-        unimplemented!();
-    }
+/// Saves their Identity for a pairwise connection in a secured Wallet,
+/// so that it can be used to verify transaction.
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// identity_json: Identity information as json. Example:
+///     {
+///        "did": string, (required)
+///        "verkey": string, (optional; if only public key for decryption is provided),
+///        "pk": string (optional, if only verification key sis provided),
+///     }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// None
+///
+/// #Errors
+/// No method specific errors.
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_store_their_identity(client_handle: i32, command_handle: i32,
+                                           identity_json: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
+    unimplemented!();
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Signs a message by a signing key associated with my DID. The DID with a signing key
+/// must be already created and stored in a secured wallet (see wallet_create_and_store_my_identity)
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: signing DID
+/// msg: a message to be signed
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// a signature string
+///
+/// #Errors
+/// No method specific errors.
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_sign_by_my_did(client_handle: i32, command_handle: i32,
+                                     did: *const c_char,
+                                     msg: *const c_char,
+                                     cb: extern fn(xcommand_handle: i32, err: i32,
+                                                   signature: *const c_char)) -> i32 {
+    unimplemented!();
+}
 
-    #[test]
-    fn wallet_api_can_be_created() {
-        let wallet_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
-        assert! (true, "No crashes on WalletAPI::new");
-    }
+/// Verify a signature created by a key associated with a DID.
+/// If a secure wallet doesn't contain a verkey associated with the given DID,
+/// then verkey is read from the Ledger.
+/// Otherwise either an existing verkey from wallet is used (see wallet_store_their_identity),
+/// or it checks the Ledger (according to freshness settings set during initialization)
+/// whether verkey is still the same and updates verkey for the DID if needed.
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: DID that signed the message
+/// msg: message
+/// signature: a signature to be verified
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// None
+///
+/// #Errors
+/// VerificationError
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_verify_by_their_did(client_handle: i32, command_handle: i32,
+                                          did: *const c_char,
+                                          msg: *const c_char,
+                                          signature: *const c_char,
+                                          cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
+    unimplemented!();
+}
 
-    #[test]
-    fn wallet_api_can_be_dropped() {
-        fn drop_test() {
-            let wallet_api = WalletAPI::new(Arc::new(CommandExecutor::new()));
-        }
+/// Encrypts a message by a public key associated with a DID.
+/// If a secure wallet doesn't contain a public key associated with the given DID,
+/// then the public key is read from the Ledger.
+/// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
+/// or it checks the Ledger (according to freshness settings set during initialization)
+/// whether public key is still the same and updates public key for the DID if needed.
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: encrypting DID
+/// msg: a message to be signed
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// an encrypted message
+///
+/// #Errors
+/// No method specific errors.
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_encrypt_by_their_did(client_handle: i32, command_handle: i32,
+                                           did: *const c_char,
+                                           msg: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32,
+                                                         encrypted_msg: *const c_char)) -> i32 {
+    unimplemented!();
+}
 
-        drop_test();
-        assert! (true, "No crashes on WalletAPI::drop");
-    }
+/// Decrypts a message encrypted by a public key associated with my DID.
+/// The DID with a secret key must be already created and
+/// stored in a secured wallet (see wallet_create_and_store_my_identity)
+///
+/// #Params
+/// client_handle: id of Ledger client instance.
+/// command_handle: command id to map of callback to user context.
+/// did: DID that signed the message
+/// encrypted_msg: encrypted message
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// decrypted message
+///
+/// #Errors
+/// VerificationError
+/// See `LedgerError` docs for common errors description.
+pub  extern fn wallet_decrypt_by_my_did(client_handle: i32, command_handle: i32,
+                                        did: *const c_char,
+                                        encrypted_msg: *const c_char,
+                                        cb: extern fn(xcommand_handle: i32, err: i32,
+                                                      decrypted_msg: *const c_char)) -> i32 {
+    unimplemented!();
 }
