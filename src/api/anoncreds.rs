@@ -87,7 +87,7 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(client_id: i32, comman
 /// RevocRegistryFull
 /// See `AnoncredsError` docs for common errors description.
 #[no_mangle]
-pub extern fn anoncreds_issuer_sign_claim(client_id: i32, command_id: i32,
+pub extern fn anoncreds_issuer_create_credential(client_id: i32, command_id: i32,
                                              claim_req_json: *const c_char,
                                              claim_json: *const c_char,
                                              public_key_id: *const c_char,
