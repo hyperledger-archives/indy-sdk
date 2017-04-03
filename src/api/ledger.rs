@@ -59,7 +59,7 @@ pub extern fn ledger_send_txn(client_handle: i32, command_handle: i32,
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
 /// cb: Callback that takes command result as parameter.
@@ -71,10 +71,10 @@ pub extern fn ledger_send_txn(client_handle: i32, command_handle: i32,
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_get_ddo_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                 submitter_did: *const c_char, target_did: *const c_char,
-                                 cb: extern fn(xcommand_handle: i32, err: i32,
-                                               txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_get_ddo_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                        submitter_did: *const c_char, target_did: *const c_char,
+                                        cb: extern fn(xcommand_handle: i32, err: i32,
+                                                      txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -85,13 +85,13 @@ pub extern fn create_get_ddo_txn(client_handle: i32, command_handle: i32, sign: 
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
-/// verkey:
-/// xref:
-/// data:
-/// role:
+/// verkey: verification key
+/// xref: id of a NYM record
+/// data: alias
+/// role: Role of a user NYM record
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -101,13 +101,13 @@ pub extern fn create_get_ddo_txn(client_handle: i32, command_handle: i32, sign: 
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_nym_txn(client_handle: i32, command_handle: i32, sign: i32,
-                             submitter_did: *const c_char,
-                             target_did: *const c_char,
-                             verkey: *const c_char, xref: *const c_char,
-                             data: *const c_char, role: *const c_char,
-                             cb: extern fn(xcommand_handle: i32, err: i32,
-                                           txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_nym_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                    submitter_did: *const c_char,
+                                    target_did: *const c_char,
+                                    verkey: *const c_char, xref: *const c_char,
+                                    data: *const c_char, role: *const c_char,
+                                    cb: extern fn(xcommand_handle: i32, err: i32,
+                                                  txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -116,12 +116,12 @@ pub extern fn create_nym_txn(client_handle: i32, command_handle: i32, sign: i32,
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
-/// hash:
-/// raw:
-/// enc:
+/// hash: Hash of attribute data
+/// raw: represented as json, where key is attribute name and value is it's value
+/// enc: Encrypted attribute data
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -131,11 +131,11 @@ pub extern fn create_nym_txn(client_handle: i32, command_handle: i32, sign: i32,
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_attrib_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                submitter_did: *const c_char, target_did: *const c_char,
-                                hash: *const c_char, raw: *const c_char, enc: *const c_char,
-                                cb: extern fn(xcommand_handle: i32, err: i32,
-                                              txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_attrib_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                       submitter_did: *const c_char, target_did: *const c_char,
+                                       hash: *const c_char, raw: *const c_char, enc: *const c_char,
+                                       cb: extern fn(xcommand_handle: i32, err: i32,
+                                                     txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -144,10 +144,10 @@ pub extern fn create_attrib_txn(client_handle: i32, command_handle: i32, sign: i
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
-/// data:
+/// data: name (attribute name)
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -156,11 +156,11 @@ pub extern fn create_attrib_txn(client_handle: i32, command_handle: i32, sign: i
 /// #Errors
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
-pub extern fn create_get_attrib_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                    submitter_did: *const c_char, target_did: *const c_char,
-                                    data: *const c_char,
-                                    cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_get_attrib_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                           submitter_did: *const c_char, target_did: *const c_char,
+                                           data: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32,
+                                                         txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -169,7 +169,7 @@ pub extern fn create_get_attrib_txn(client_handle: i32, command_handle: i32, sig
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
 /// cb: Callback that takes command result as parameter.
@@ -181,10 +181,10 @@ pub extern fn create_get_attrib_txn(client_handle: i32, command_handle: i32, sig
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_get_nym_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                 submitter_did: *const c_char, target_did: *const c_char,
-                                 cb: extern fn(xcommand_handle: i32, err: i32,
-                                               txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_get_nym_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                        submitter_did: *const c_char, target_did: *const c_char,
+                                        cb: extern fn(xcommand_handle: i32, err: i32,
+                                                      txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -193,9 +193,9 @@ pub extern fn create_get_nym_txn(client_handle: i32, command_handle: i32, sign: 
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// data:
+/// data: name, version, type, attr_names (ip, port, keys)
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -205,10 +205,10 @@ pub extern fn create_get_nym_txn(client_handle: i32, command_handle: i32, sign: 
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_schema_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                submitter_did: *const c_char, data: *const c_char,
-                                cb: extern fn(xcommand_handle: i32, err: i32,
-                                              txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_schema_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                       submitter_did: *const c_char, data: *const c_char,
+                                       cb: extern fn(xcommand_handle: i32, err: i32,
+                                                     txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -217,9 +217,9 @@ pub extern fn create_schema_txn(client_handle: i32, command_handle: i32, sign: i
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// data:
+/// data: name, version
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -229,10 +229,10 @@ pub extern fn create_schema_txn(client_handle: i32, command_handle: i32, sign: i
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_get_schema_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                    submitter_did: *const c_char, data: *const c_char,
-                                    cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_get_schema_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                           submitter_did: *const c_char, data: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32,
+                                                         txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -241,10 +241,10 @@ pub extern fn create_get_schema_txn(client_handle: i32, command_handle: i32, sig
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// xref:
-/// data:
+/// xref: Seq. number of schema
+/// data: components of a key in json: N, R, S, Z
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -254,11 +254,11 @@ pub extern fn create_get_schema_txn(client_handle: i32, command_handle: i32, sig
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_issuer_key_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                    submitter_did: *const c_char, xref: *const c_char,
-                                    data: *const c_char,
-                                    cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_result_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_issuer_key_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                           submitter_did: *const c_char, xref: *const c_char,
+                                           data: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: i32,
+                                                         txn_result_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -267,9 +267,9 @@ pub extern fn create_issuer_key_txn(client_handle: i32, command_handle: i32, sig
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// xref:
+/// xref: Seq. number of schema
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -278,10 +278,10 @@ pub extern fn create_issuer_key_txn(client_handle: i32, command_handle: i32, sig
 /// #Errors
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
-pub extern fn crate_get_issuer_key_txn(client_handle: i32, command_handle: i32, sign: i32,
-                                       submitter_did: *const c_char, xref: *const c_char,
-                                       cb: extern fn(xcommand_handle: i32, err: i32,
-                                                     txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_get_issuer_key_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                               submitter_did: *const c_char, xref: *const c_char,
+                                               cb: extern fn(xcommand_handle: i32, err: i32,
+                                                             txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
 
@@ -290,10 +290,10 @@ pub extern fn crate_get_issuer_key_txn(client_handle: i32, command_handle: i32, 
 /// #Params
 /// client_handle: id of Ledger client instance.
 /// command_handle: command id to map of callback to user context.
-/// sign:
+/// sign: boolean (true if tnx must be signed).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
-/// data:
+/// data: id of a target NYM record
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -303,10 +303,10 @@ pub extern fn crate_get_issuer_key_txn(client_handle: i32, command_handle: i32, 
 /// No method specific errors.
 /// See `LedgerError` docs for common errors description.
 #[no_mangle]
-pub extern fn create_node_txn(client_handle: i32, command_handle: i32, sign: i32,
-                              submitter_did: *const c_char, target_did: *const c_char,
-                              data: *const c_char,
-                              cb: extern fn(xcommand_handle: i32, err: i32,
-                                            txn_json: *const c_char)) -> i32 {
+pub extern fn ledger_create_node_txn(client_handle: i32, command_handle: i32, sign: bool,
+                                     submitter_did: *const c_char, target_did: *const c_char,
+                                     data: *const c_char,
+                                     cb: extern fn(xcommand_handle: i32, err: i32,
+                                                   txn_json: *const c_char)) -> i32 {
     unimplemented!();
 }
