@@ -4,6 +4,7 @@
 
 name = 'sovrin-client-rust'
 def err
+def publishBranch = (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel')
 
 try {
 
@@ -20,7 +21,7 @@ try {
         }
     }
 
-    if (env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'devel') {
+    if (!publishBranch) {
         echo "${env.BRANCH_NAME}: skip publishing"
         return
     }
@@ -35,7 +36,7 @@ try {
 } catch(e) {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
-        sendNotification.fail()
+        sendNotification.fail([slack: publishBranch])
     }
     err = e
 } finally {
@@ -43,7 +44,7 @@ try {
         throw err
     }
     currentBuild.result = "SUCCESS"
-    if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel') {
+    if (publishBranch) {
         node('ubuntu-master') {
             sendNotification.success(name)
         }
