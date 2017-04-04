@@ -33,7 +33,7 @@ pub enum ErrorCode {
     CommonInvalidState,
 
     // Indicates that api was called before init_library call
-    CommonUninizialized,
+    CommonUninitialized,
 
     // Wallet errors
     // Unknown type of wallet was passed on open_session
