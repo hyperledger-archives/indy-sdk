@@ -4,24 +4,6 @@ use api::ErrorCode;
 
 use self::libc::{c_char, c_uchar};
 
-/// Reads updated nodes list from pool ledger associated with session and
-/// updates list of Nodes sockets.
-///
-/// #Params
-/// No params. All required data will be provided in open_session call.
-///
-/// #Returns
-/// error code
-///
-/// #Errors
-/// Common*
-/// Ledger*
-#[no_mangle]
-pub extern fn reconnect(session_handle: i32, command_handle: i32,
-                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
-}
-
 /// Signs and publishes transaction message to validator pool.
 ///
 /// Adds submitter information to passed transaction json, signs it with submitter

@@ -32,6 +32,9 @@ pub enum ErrorCode {
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
 
+    // Indicates that api was called before init_library call
+    CommonUninizialized,
+
     // Wallet errors
     // Unknown type of wallet was passed on open_session
     WalletUnknownType = 200,
@@ -78,7 +81,32 @@ pub enum ErrorCode {
     CryptoRevocationRegistryFull
 }
 
-/// Creates a new session. A session is associated with a wallet and a pool ledger.
+/// Initializes the library by providing global configuration.
+///
+/// Perform the following initialization actions:
+/// - Refreshing of local pool ledger copy (catch up)
+/// - Establishing of connection with Nodes
+///
+///
+/// #Params
+/// ledger_config: (optional) Ledger configuration json. Example:
+/// {
+///     "genesis_txn": string, (optional; a path to genesis transaction file. If NULL, then a default one will be used.)
+///     // TODO: Provide description of additional params like timeouts
+/// }
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn init_library(ledger_config: *const c_char, cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+    unimplemented!();
+}
+
+/// Creates a new session. A session is associated with a wallet.
 /// The call is synchronous.
 ///
 /// Note that there can be only one session for each wallet if wallet implementation doesn't provide
@@ -93,11 +121,6 @@ pub enum ErrorCode {
 ///             Amount of minutes to consider wallet value as fresh.
 ///     "config": json, (optional; if not provided default configuration will be used. Configuration
 ///             is specific for concrete wallet type)
-/// }
-/// ledger_config: (optional) Ledger configuration json. Example:
-/// {
-///     "genesis_txn": string, (optional; a path to genesis transaction file. If NULL, then a default one will be used.)
-///     // TODO: Provide description of additional params like timeouts
 /// }
 ///
 /// #Returns
@@ -114,7 +137,7 @@ pub enum ErrorCode {
 /// LedgerIOError
 ///
 #[no_mangle]
-pub extern fn open_session(wallet_config: *const c_char, ledger_config: *const c_char) -> ErrorCode {
+pub extern fn open_session(wallet_config: *const c_char, session_handler: *const * mut i32) -> ErrorCode {
     unimplemented!();
 }
 
@@ -162,15 +185,10 @@ pub extern fn register_wallet_type(type_name: *const c_char,
     unimplemented!();
 }
 
-/// Refreshes a local copy of a pool ledger associated with the given genesis transactions file.
-/// If there is not copy for this genesis transaction file, then a new one will be created.
+/// Refreshes a local copy of a pool ledger and updates pool nodes connections.
 ///
 /// #Params
-/// ledger_config: (optional) Ledger configuration json. Example:
-/// {
-///     "genesis_txn": string, (optional; a path to genesis transaction file. If NULL, then a default one will be used.)
-///     // TODO: Provide description of additional params like timeouts
-/// }
+/// None. Ledger configuration must be provided with init_library call.
 ///
 /// #Returns
 /// Error code
@@ -179,8 +197,7 @@ pub extern fn register_wallet_type(type_name: *const c_char,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn refresh_pool_ledger(ledger_config: *const c_char,
-                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn refresh_pool_ledger(cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
