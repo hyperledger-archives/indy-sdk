@@ -19,8 +19,10 @@ use self::libc::{c_char, c_uchar};
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
+/// WalletError
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn ledger_sign_and_publish_txn(session_handle: i32, command_handle: i32,
                                        submitter_did: *const c_char, txn_json: *const c_char,
@@ -43,8 +45,9 @@ pub extern fn ledger_sign_and_publish_txn(session_handle: i32, command_handle: i
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn ledger_publish_txn(session_handle: i32, command_handle: i32,
                               txn_json: *const c_char,
@@ -68,7 +71,6 @@ pub extern fn ledger_publish_txn(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_get_ddo_txn(session_handle: i32, command_handle: i32,
                                         submitter_did: *const c_char, target_did: *const c_char,
@@ -97,7 +99,6 @@ pub extern fn ledger_build_get_ddo_txn(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_nym_txn(session_handle: i32, command_handle: i32,
                                     submitter_did: *const c_char,
@@ -126,7 +127,6 @@ pub extern fn ledger_build_nym_txn(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_attrib_txn(session_handle: i32, command_handle: i32,
                                        submitter_did: *const c_char, target_did: *const c_char,
@@ -151,7 +151,6 @@ pub extern fn ledger_build_attrib_txn(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 pub extern fn ledger_build_get_attrib_txn(session_handle: i32, command_handle: i32,
                                            submitter_did: *const c_char, target_did: *const c_char,
                                            data: *const c_char,
@@ -174,7 +173,6 @@ pub extern fn ledger_build_get_attrib_txn(session_handle: i32, command_handle: i
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_get_nym_txn(session_handle: i32, command_handle: i32,
                                         submitter_did: *const c_char, target_did: *const c_char,
@@ -197,7 +195,6 @@ pub extern fn ledger_build_get_nym_txn(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_schema_txn(session_handle: i32, command_handle: i32,
                                        submitter_did: *const c_char, data: *const c_char,
@@ -220,7 +217,6 @@ pub extern fn ledger_build_schema_txn(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_get_schema_txn(session_handle: i32, command_handle: i32,
                                            submitter_did: *const c_char, data: *const c_char,
@@ -244,7 +240,6 @@ pub extern fn ledger_build_get_schema_txn(session_handle: i32, command_handle: i
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_issuer_key_txn(session_handle: i32, command_handle: i32,
                                            submitter_did: *const c_char, xref: *const c_char,
@@ -268,7 +263,6 @@ pub extern fn ledger_build_issuer_key_txn(session_handle: i32, command_handle: i
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 pub extern fn ledger_build_get_issuer_key_txn(session_handle: i32, command_handle: i32,
                                                submitter_did: *const c_char, xref: *const c_char,
                                                cb: extern fn(xcommand_handle: i32, err: i32,
@@ -291,7 +285,6 @@ pub extern fn ledger_build_get_issuer_key_txn(session_handle: i32, command_handl
 ///
 /// #Errors
 /// No method specific errors.
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn ledger_build_node_txn(session_handle: i32, command_handle: i32,
                                      submitter_did: *const c_char, target_did: *const c_char,

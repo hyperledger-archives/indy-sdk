@@ -16,10 +16,12 @@ use self::libc::{c_char, c_uchar};
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Public key seq_no (sequene number of the Public Key transaction in Ledger).
+/// Public key seq_no (sequence number of the Public Key transaction in Ledger).
 ///
 /// #Errors
 /// WalletError
+/// InvalidIssuerDIDError
+/// UnknownSignatureTypeError
 /// IOError
 /// LedgerConsensusError
 /// LedgerInvalidDataError
@@ -46,10 +48,12 @@ pub extern fn anoncreds_issuer_create_and_store_keys(session_handle: i32, comman
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Revoc registry seq_no (sequene number of the Revoc Reg transaction in Ledger).
+/// Revoc registry seq_no (sequence number of the Revoc Reg transaction in Ledger).
 ///
 /// #Errors
 /// WalletError
+/// InvalidIssuerDID
+/// PublicKeyNotFoundError
 /// IOError
 /// LedgerConsensusError
 /// LedgerInvalidDataError
@@ -98,6 +102,9 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, c
 ///
 /// #Errors
 /// RevocationRegistryFull
+/// InvalidUserRevocIndex
+/// PublicKeyNotFoundError
+/// RevocRegNotFoundError
 /// WalletError
 /// IOError
 /// LedgerConsensusError
@@ -133,8 +140,12 @@ pub extern fn anoncreds_issuer_create_credential(session_handle: i32, command_ha
 /// None
 ///
 /// #Errors
-/// NotIssued
-/// See `AnoncredsError` docs for common errors description.
+/// NotIssuedError
+/// RevocRegNotFoundError
+/// WalletError
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_issuer_revoke_claim(session_handle: i32, command_handle: i32,
                                              issuer_did: *const c_char,
@@ -161,8 +172,8 @@ pub extern fn anoncreds_issuer_revoke_claim(session_handle: i32, command_handle:
 /// None.
 ///
 /// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
+/// WalletError
+/// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_handle: i32,
                                              claim_offer_json: *const c_char,
@@ -182,8 +193,8 @@ pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_ha
 /// A json with a ist of claim offers for this issuer.
 ///
 /// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
+/// WalletError
+/// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_handle: i32,
                                              isseur_did: *const c_char,
@@ -206,8 +217,9 @@ pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_han
 /// None.
 ///
 /// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
+/// DuplicateNameError
+/// WalletError
+/// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command_handle: i32,
                                              master_secret_name: *const c_char,
@@ -240,8 +252,12 @@ pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command
 /// Claim request json.
 ///
 /// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
+/// WalletError
+/// PublicKeyNotFoundError
+/// SchemaNotFoundError
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, command_handle: i32,
                                              claim_offer_json: *const c_char,
@@ -275,8 +291,8 @@ pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, c
 /// None
 ///
 /// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
+/// WalletError
+/// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_store_credential(session_handle: i32, command_handle: i32,
                                                 credentials_json: *const c_char,
@@ -314,8 +330,14 @@ pub extern fn anoncreds_prover_store_credential(session_handle: i32, command_han
 /// }
 ///
 /// #Errors
-/// No method specific errors.
-/// See `AnoncredsError` docs for common errors description.
+/// ClaimNotFoundError
+/// WalletError
+/// PublicKeyNotFoundError
+/// SchemaNotFoundError
+/// RevocRegNotFoundError
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_prover_create_proof(session_handle: i32, command_handle: i32,
                                              proof_request_json: *const c_char,
@@ -353,7 +375,13 @@ pub extern fn anoncreds_prover_create_proof(session_handle: i32, command_handle:
 ///
 /// #Errors
 /// ProofRejected.
-/// See `AnoncredsError` docs for common errors description.
+/// WalletError
+/// PublicKeyNotFoundError
+/// SchemaNotFoundError
+/// RevocRegNotFoundError
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_verifier_verify_proof(session_handle: i32, command_handle: i32,
                                               proof_request_initial_json: *const c_char,

@@ -22,11 +22,12 @@ use self::libc::{c_char, c_uchar};
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// DID, verkey (for verification of signatire) and public_key (for decryption)
+/// DID, verkey (for verification of signature) and public_key (for decryption)
 ///
 /// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
+/// UnknownCryptoTypeError
+/// WalletError
+/// IOError
 pub  extern fn wallet_create_and_store_my_identity(session_handle: i32, command_handle: i32,
                                                    identity_json: *const c_char,
                                                    cb: extern fn(xcommand_handle: i32, err: i32,
@@ -54,8 +55,8 @@ pub  extern fn wallet_create_and_store_my_identity(session_handle: i32, command_
 /// None
 ///
 /// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
+/// WalletError
+/// IOError
 pub  extern fn wallet_store_their_identity(session_handle: i32, command_handle: i32,
                                            identity_json: *const c_char,
                                            cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
@@ -76,8 +77,8 @@ pub  extern fn wallet_store_their_identity(session_handle: i32, command_handle: 
 /// a signature string
 ///
 /// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
+/// WalletError
+/// IOError
 pub  extern fn wallet_sign(session_handle: i32, command_handle: i32,
                                      did: *const c_char,
                                      msg: *const c_char,
@@ -106,7 +107,8 @@ pub  extern fn wallet_sign(session_handle: i32, command_handle: i32,
 ///
 /// #Errors
 /// VerificationError
-/// See `LedgerError` docs for common errors description.
+/// WalletError
+/// IOError
 pub  extern fn wallet_verify(session_handle: i32, command_handle: i32,
                                           did: *const c_char,
                                           msg: *const c_char,
@@ -133,8 +135,8 @@ pub  extern fn wallet_verify(session_handle: i32, command_handle: i32,
 /// an encrypted message
 ///
 /// #Errors
-/// No method specific errors.
-/// See `LedgerError` docs for common errors description.
+/// WalletError
+/// IOError
 pub  extern fn wallet_encrypt(session_handle: i32, command_handle: i32,
                                            did: *const c_char,
                                            msg: *const c_char,
@@ -158,8 +160,9 @@ pub  extern fn wallet_encrypt(session_handle: i32, command_handle: i32,
 /// decrypted message
 ///
 /// #Errors
-/// VerificationError
-/// See `LedgerError` docs for common errors description.
+/// DecryptionError
+/// WalletError
+/// IOError
 pub  extern fn wallet_decrypt(session_handle: i32, command_handle: i32,
                                         did: *const c_char,
                                         encrypted_msg: *const c_char,

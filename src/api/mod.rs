@@ -36,7 +36,7 @@ pub fn get_active_clients() -> SingletonClients {
 /// The method should be called at the very first connection to a ledger, as well as when the ledger needs to be updated.
 /// The method can not be called for another genesis transaction during the library run,
 /// that is a library can work only with one pool ledger per run.
-/// No other calls to ledger should be called until the method completes.
+/// No other calls to ledger should be done until the method completes.
 ///
 /// #Params
 /// genesis_txn: (optional) a path to genesis transaction file. If NULL, then a default one will be created.
@@ -46,8 +46,11 @@ pub fn get_active_clients() -> SingletonClients {
 /// pool ledger handle
 ///
 /// #Errors
-/// PoolAlreadyInitialized
-/// See `LedgerError` docs for common errors description.
+/// PoolLedgerAlreadyInitializedError
+/// PoolLedgerError
+/// IOError
+/// LedgerConsensusError
+/// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn refresh_pool_ledger(genesis_txn: *const c_char, config: *const c_char,
                                 cb: extern fn(xcommand_handle: i32, err: i32) -> i32 {
@@ -55,34 +58,36 @@ pub extern fn refresh_pool_ledger(genesis_txn: *const c_char, config: *const c_c
 }
 
 /// Creates a new wallet with a given name. The method is synchronous.
+/// The wallet name must be unique.
 ///
 /// #Params
 /// wallet_name: a name for the new wallet (must be unique)
 /// config: (optional) config; may contain a name for the external implementation of the wallet
 ///
 /// #Returns
-/// pool ledger handle
+/// error code
 ///
 /// #Errors
-/// WalletAlreadyExists
-/// See `LedgerError` docs for common errors description.
+/// DuplicateNameError
+/// IOError
 #[no_mangle]
 pub extern fn create_wallet(wallet_name: *const c_char, config: *const c_char) -> i32 {
     unimplemented!();
 }
 
 /// Creates a new session. A session is associated with a wallet and a pool ledger.
+/// The call si synchronous.
 ///
 /// #Params
 /// wallet_name: a wallet's name (must be created by create_wallet)
 /// config: (optional) session config
 ///
 /// #Returns
-/// pool ledger handle
+/// session handle
 ///
 /// #Errors
-/// WalletNotExistent
-/// See `LedgerError` docs for common errors description.
+/// WalletNotFoundError
+/// PoolNotInitializedError
 #[no_mangle]
 pub extern fn open_session(wallet_name (required), config (optional)) -> i32 {
     let s = get_active_clients();
@@ -100,17 +105,15 @@ pub extern fn open_session(wallet_name (required), config (optional)) -> i32 {
     cl_id
 }
 
-/// Closes a session.
+/// Closes a session. The call is synchronous.
 ///
 /// #Params
 /// session_handle: session handler (created by open_session).
 ///
 /// #Returns
-/// pool ledger handle
+/// error code
 ///
 /// #Errors
-/// WalletNotExistent
-/// See `LedgerError` docs for common errors description.
 #[no_mangle]
 pub extern fn close_session(session_handle: i32) -> i32 {
     let s = get_active_clients();
