@@ -1,6 +1,26 @@
 extern crate libc;
 
+use api::ErrorCode;
+
 use self::libc::{c_char, c_uchar};
+
+/// Reads updated nodes list from pool ledger associated with session and
+/// updates list of Nodes sockets.
+///
+/// #Params
+/// No params. All required data will be provided in open_session call.
+///
+/// #Returns
+/// error code
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn reconnect(session_handle: i32, command_handle: i32,
+                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+    unimplemented!();
+}
 
 /// Signs and publishes transaction message to validator pool.
 ///
@@ -19,15 +39,15 @@ use self::libc::{c_char, c_uchar};
 /// Transaction result as json.
 ///
 /// #Errors
-/// WalletError
-/// IOError
-/// LedgerConsensusError
-/// LedgerInvalidDataError
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 #[no_mangle]
 pub extern fn ledger_sign_and_publish_txn(session_handle: i32, command_handle: i32,
-                                       submitter_did: *const c_char, txn_json: *const c_char,
-                                       cb: extern fn(xcommand_handle: i32, err: i32,
-                                                     txn_result_json: *const c_char)) -> i32 {
+                                          submitter_did: *const c_char, txn_json: *const c_char,
+                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        txn_result_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -45,14 +65,13 @@ pub extern fn ledger_sign_and_publish_txn(session_handle: i32, command_handle: i
 /// Transaction result as json.
 ///
 /// #Errors
-/// IOError
-/// LedgerConsensusError
-/// LedgerInvalidDataError
+/// Common*
+/// Ledger*
 #[no_mangle]
 pub extern fn ledger_publish_txn(session_handle: i32, command_handle: i32,
-                              txn_json: *const c_char,
-                              cb: extern fn(xcommand_handle: i32, err: i32,
-                                            txn_result_json: *const c_char)) -> i32 {
+                                 txn_json: *const c_char,
+                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                               txn_result_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -70,15 +89,14 @@ pub extern fn ledger_publish_txn(session_handle: i32, command_handle: i32,
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_get_ddo_txn(session_handle: i32, command_handle: i32,
-                                        submitter_did: *const c_char, target_did: *const c_char,
-                                        cb: extern fn(xcommand_handle: i32, err: i32,
-                                                      txn_json: *const c_char)) -> i32 {
+                                       submitter_did: *const c_char, target_did: *const c_char,
+                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                     txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
-
 
 
 /// Builds a NYM transaction.
@@ -98,15 +116,15 @@ pub extern fn ledger_build_get_ddo_txn(session_handle: i32, command_handle: i32,
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_nym_txn(session_handle: i32, command_handle: i32,
-                                    submitter_did: *const c_char,
-                                    target_did: *const c_char,
-                                    verkey: *const c_char, xref: *const c_char,
-                                    data: *const c_char, role: *const c_char,
-                                    cb: extern fn(xcommand_handle: i32, err: i32,
-                                                  txn_json: *const c_char)) -> i32 {
+                                   submitter_did: *const c_char,
+                                   target_did: *const c_char,
+                                   verkey: *const c_char, xref: *const c_char,
+                                   data: *const c_char, role: *const c_char,
+                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                 txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -126,13 +144,13 @@ pub extern fn ledger_build_nym_txn(session_handle: i32, command_handle: i32,
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_attrib_txn(session_handle: i32, command_handle: i32,
-                                       submitter_did: *const c_char, target_did: *const c_char,
-                                       hash: *const c_char, raw: *const c_char, enc: *const c_char,
-                                       cb: extern fn(xcommand_handle: i32, err: i32,
-                                                     txn_json: *const c_char)) -> i32 {
+                                      submitter_did: *const c_char, target_did: *const c_char,
+                                      hash: *const c_char, raw: *const c_char, enc: *const c_char,
+                                      cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                    txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -150,12 +168,12 @@ pub extern fn ledger_build_attrib_txn(session_handle: i32, command_handle: i32,
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 pub extern fn ledger_build_get_attrib_txn(session_handle: i32, command_handle: i32,
-                                           submitter_did: *const c_char, target_did: *const c_char,
-                                           data: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: i32,
-                                                         txn_json: *const c_char)) -> i32 {
+                                          submitter_did: *const c_char, target_did: *const c_char,
+                                          data: *const c_char,
+                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -172,12 +190,12 @@ pub extern fn ledger_build_get_attrib_txn(session_handle: i32, command_handle: i
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_get_nym_txn(session_handle: i32, command_handle: i32,
-                                        submitter_did: *const c_char, target_did: *const c_char,
-                                        cb: extern fn(xcommand_handle: i32, err: i32,
-                                                      txn_json: *const c_char)) -> i32 {
+                                       submitter_did: *const c_char, target_did: *const c_char,
+                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                     txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -194,12 +212,12 @@ pub extern fn ledger_build_get_nym_txn(session_handle: i32, command_handle: i32,
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_schema_txn(session_handle: i32, command_handle: i32,
-                                       submitter_did: *const c_char, data: *const c_char,
-                                       cb: extern fn(xcommand_handle: i32, err: i32,
-                                                     txn_json: *const c_char)) -> i32 {
+                                      submitter_did: *const c_char, data: *const c_char,
+                                      cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                    txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -216,12 +234,12 @@ pub extern fn ledger_build_schema_txn(session_handle: i32, command_handle: i32,
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_get_schema_txn(session_handle: i32, command_handle: i32,
-                                           submitter_did: *const c_char, data: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: i32,
-                                                         txn_json: *const c_char)) -> i32 {
+                                          submitter_did: *const c_char, data: *const c_char,
+                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -239,13 +257,13 @@ pub extern fn ledger_build_get_schema_txn(session_handle: i32, command_handle: i
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_issuer_key_txn(session_handle: i32, command_handle: i32,
-                                           submitter_did: *const c_char, xref: *const c_char,
-                                           data: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: i32,
-                                                         txn_result_json: *const c_char)) -> i32 {
+                                          submitter_did: *const c_char, xref: *const c_char,
+                                          data: *const c_char,
+                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        txn_result_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -262,11 +280,11 @@ pub extern fn ledger_build_issuer_key_txn(session_handle: i32, command_handle: i
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 pub extern fn ledger_build_get_issuer_key_txn(session_handle: i32, command_handle: i32,
-                                               submitter_did: *const c_char, xref: *const c_char,
-                                               cb: extern fn(xcommand_handle: i32, err: i32,
-                                                             txn_json: *const c_char)) -> i32 {
+                                              submitter_did: *const c_char, xref: *const c_char,
+                                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -284,12 +302,12 @@ pub extern fn ledger_build_get_issuer_key_txn(session_handle: i32, command_handl
 /// Transaction result as json.
 ///
 /// #Errors
-/// No method specific errors.
+/// Common*
 #[no_mangle]
 pub extern fn ledger_build_node_txn(session_handle: i32, command_handle: i32,
-                                     submitter_did: *const c_char, target_did: *const c_char,
-                                     data: *const c_char,
-                                     cb: extern fn(xcommand_handle: i32, err: i32,
-                                                   txn_json: *const c_char)) -> i32 {
+                                    submitter_did: *const c_char, target_did: *const c_char,
+                                    data: *const c_char,
+                                    cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                  txn_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }

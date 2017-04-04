@@ -1,5 +1,7 @@
 extern crate libc;
 
+use api::ErrorCode;
+
 use self::libc::{c_char, c_uchar};
 
 /// Create keys (both primary and revocation) for the given schema and stores the keys
@@ -19,20 +21,18 @@ use self::libc::{c_char, c_uchar};
 /// Public key seq_no (sequence number of the Public Key transaction in Ledger).
 ///
 /// #Errors
-/// WalletError
-/// InvalidIssuerDIDError
-/// UnknownSignatureTypeError
-/// IOError
-/// LedgerConsensusError
-/// LedgerInvalidDataError
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 #[no_mangle]
 pub extern fn anoncreds_issuer_create_and_store_keys(session_handle: i32, command_handle: i32,
                                                      issuer_did: *const c_char,
                                                      schema_json: *const c_char,
                                                      signature_type: *const c_char,
-                                                     cb: extern fn(xcommand_handle: i32, err: i32,
-                                                        public_key_seq_no: i32
-                                                     )) -> i32 {
+                                                     cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                   public_key_seq_no: i32
+                                                     )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -51,20 +51,18 @@ pub extern fn anoncreds_issuer_create_and_store_keys(session_handle: i32, comman
 /// Revoc registry seq_no (sequence number of the Revoc Reg transaction in Ledger).
 ///
 /// #Errors
-/// WalletError
-/// InvalidIssuerDID
-/// PublicKeyNotFoundError
-/// IOError
-/// LedgerConsensusError
-/// LedgerInvalidDataError
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 #[no_mangle]
 pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, command_handle: i32,
-                                                  issuer_did: *const c_char,
-                                                  public_key_seq_no: i32,
-                                                  max_claim_num: i32,
-                                                  cb: extern fn(xcommand_handle: i32, err: i32,
-                                                                revoc_reg_seq_no: *const c_char
-                                                  )) -> i32 {
+                                                          issuer_did: *const c_char,
+                                                          public_key_seq_no: i32,
+                                                          max_claim_num: i32,
+                                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                        revoc_reg_seq_no: *const c_char
+                                                          )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -117,9 +115,9 @@ pub extern fn anoncreds_issuer_create_credential(session_handle: i32, command_ha
                                                  public_key_seq_no: i32,
                                                  revoc_reg_seq_no: i32,
                                                  user_revoc_index: i32,
-                                                 cb: extern fn(xcommand_handle: i32, err: i32,
+                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                credential_json: *const c_char
-                                                 )) -> i32 {
+                                                 )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -148,11 +146,11 @@ pub extern fn anoncreds_issuer_create_credential(session_handle: i32, command_ha
 /// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_issuer_revoke_claim(session_handle: i32, command_handle: i32,
-                                             issuer_did: *const c_char,
-                                             revoc_reg_seq_no: *const c_char,
-                                             user_revoc_index: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32
-                                             )) -> i32 {
+                                            issuer_did: *const c_char,
+                                            revoc_reg_seq_no: *const c_char,
+                                            user_revoc_index: *const c_char,
+                                            cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                            )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -176,9 +174,9 @@ pub extern fn anoncreds_issuer_revoke_claim(session_handle: i32, command_handle:
 /// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_handle: i32,
-                                             claim_offer_json: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32
-                                             )) -> i32 {
+                                                 claim_offer_json: *const c_char,
+                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                                 )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -198,9 +196,9 @@ pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_ha
 #[no_mangle]
 pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_handle: i32,
                                                 isseur_did: *const c_char,
-                                                cb: extern fn(xcommand_handle: i32, err: i32,
+                                                cb: extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               claim_offers_json: *const c_char
-                                                )) -> i32 {
+                                                )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -222,9 +220,9 @@ pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_han
 /// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command_handle: i32,
-                                             master_secret_name: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32
-                                             )) -> i32 {
+                                                    master_secret_name: *const c_char,
+                                                    cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                                    )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -260,11 +258,11 @@ pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command
 /// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, command_handle: i32,
-                                             claim_offer_json: *const c_char,
-                                             master_secret_name: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32,
-                                                           claim_req_json: *const c_char
-                                             )) -> i32 {
+                                                          claim_offer_json: *const c_char,
+                                                          master_secret_name: *const c_char,
+                                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                        claim_req_json: *const c_char
+                                                          )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -297,8 +295,8 @@ pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, c
 pub extern fn anoncreds_prover_store_credential(session_handle: i32, command_handle: i32,
                                                 credentials_json: *const c_char,
                                                 cb: extern fn(
-                                                    xcommand_handle: i32, err: i32
-                                                )) -> i32 {
+                                                    xcommand_handle: i32, err: ErrorCode
+                                                )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -340,9 +338,9 @@ pub extern fn anoncreds_prover_store_credential(session_handle: i32, command_han
 /// LedgerInvalidDataError
 #[no_mangle]
 pub extern fn anoncreds_prover_create_proof(session_handle: i32, command_handle: i32,
-                                             proof_request_json: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32,
-                                                proof_json: *const c_char)) -> i32 {
+                                            proof_request_json: *const c_char,
+                                            cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                          proof_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -387,8 +385,8 @@ pub extern fn anoncreds_verifier_verify_proof(session_handle: i32, command_handl
                                               proof_request_initial_json: *const c_char,
                                               proof_request_disclosed_json: *const c_char,
                                               proof_json: *const c_char,
-                                              cb: extern fn(xcommand_handle: i32, err: i32
-                                              )) -> i32 {
+                                              cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                              )) -> ErrorCode {
     unimplemented!();
 }
 

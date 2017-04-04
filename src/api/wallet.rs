@@ -1,5 +1,7 @@
 extern crate libc;
 
+use api::ErrorCode;
+
 use self::libc::{c_char, c_uchar};
 
 /// Creates keys (signing and encryption keys) for a new
@@ -25,15 +27,15 @@ use self::libc::{c_char, c_uchar};
 /// DID, verkey (for verification of signature) and public_key (for decryption)
 ///
 /// #Errors
-/// UnknownCryptoTypeError
-/// WalletError
-/// IOError
+/// Common*
+/// Wallet*
+/// Crypto*
 pub  extern fn wallet_create_and_store_my_identity(session_handle: i32, command_handle: i32,
                                                    identity_json: *const c_char,
-                                                   cb: extern fn(xcommand_handle: i32, err: i32,
+                                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                  did: *const c_char,
                                                                  verkey: *const c_char,
-                                                                 pk: *const c_char)) -> i32 {
+                                                                 pk: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -55,11 +57,12 @@ pub  extern fn wallet_create_and_store_my_identity(session_handle: i32, command_
 /// None
 ///
 /// #Errors
-/// WalletError
-/// IOError
+/// Common*
+/// Wallet*
+/// Crypto*
 pub  extern fn wallet_store_their_identity(session_handle: i32, command_handle: i32,
                                            identity_json: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
+                                           cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -77,13 +80,14 @@ pub  extern fn wallet_store_their_identity(session_handle: i32, command_handle: 
 /// a signature string
 ///
 /// #Errors
-/// WalletError
-/// IOError
+/// Common*
+/// Wallet*
+/// Crypto*
 pub  extern fn wallet_sign(session_handle: i32, command_handle: i32,
-                                     did: *const c_char,
-                                     msg: *const c_char,
-                                     cb: extern fn(xcommand_handle: i32, err: i32,
-                                                   signature: *const c_char)) -> i32 {
+                           did: *const c_char,
+                           msg: *const c_char,
+                           cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                         signature: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -106,14 +110,15 @@ pub  extern fn wallet_sign(session_handle: i32, command_handle: i32,
 /// None
 ///
 /// #Errors
-/// VerificationError
-/// WalletError
-/// IOError
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 pub  extern fn wallet_verify(session_handle: i32, command_handle: i32,
-                                          did: *const c_char,
-                                          msg: *const c_char,
-                                          signature: *const c_char,
-                                          cb: extern fn(xcommand_handle: i32, err: i32)) -> i32 {
+                             did: *const c_char,
+                             msg: *const c_char,
+                             signature: *const c_char,
+                             cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -135,13 +140,15 @@ pub  extern fn wallet_verify(session_handle: i32, command_handle: i32,
 /// an encrypted message
 ///
 /// #Errors
-/// WalletError
-/// IOError
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 pub  extern fn wallet_encrypt(session_handle: i32, command_handle: i32,
-                                           did: *const c_char,
-                                           msg: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: i32,
-                                                         encrypted_msg: *const c_char)) -> i32 {
+                              did: *const c_char,
+                              msg: *const c_char,
+                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                            encrypted_msg: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -160,13 +167,13 @@ pub  extern fn wallet_encrypt(session_handle: i32, command_handle: i32,
 /// decrypted message
 ///
 /// #Errors
-/// DecryptionError
-/// WalletError
-/// IOError
+/// Common*
+/// Wallet*
+/// Crypto*
 pub  extern fn wallet_decrypt(session_handle: i32, command_handle: i32,
-                                        did: *const c_char,
-                                        encrypted_msg: *const c_char,
-                                        cb: extern fn(xcommand_handle: i32, err: i32,
-                                                      decrypted_msg: *const c_char)) -> i32 {
+                              did: *const c_char,
+                              encrypted_msg: *const c_char,
+                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                            decrypted_msg: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
