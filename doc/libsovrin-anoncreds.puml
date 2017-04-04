@@ -1,0 +1,127 @@
+@startuml
+title Libsovrin anoncreds
+scale 0.9
+participant "Isseur Wallet" as IW
+actor Issuer as I
+
+participant "Prover Wallet" as PW
+actor Prover as P
+
+participant "Verifier Wallet" as VW
+actor Verifier as V
+
+participant "Ledger" as L
+
+
+note over IW, L #white
+    dashed arrows: a value from Ledger may be cached (in wallet?)
+    <b>bold text</b>: anoncreds libsovrin API call
+    <font color=red>red:</font> anoncreds libsovrin API call
+    <font color=green>green:</font> submit/get to/from secure wallet
+    <font color=blue>blue:</font> submit/get to/from Ledger
+    black: communication between Issuer/Prover/Verifier
+
+endnote
+
+
+
+I -> I: <b>1. anoncreds_issuer_create_and_store_keys
+activate I
+I -[#green]> IW: store keys
+I-[#blue]>L: store public key in Ledger
+deactivate I
+... ...
+
+I -> I: <b>2. anoncreds_issuer_create_and_store_revoc_reg
+activate I
+I -[#green]> IW: get keys
+I -[#green]> IW: store revoc reg
+I-[#blue]>L: store revoc_reg in Ledger
+deactivate I
+
+... ...
+
+I -[#black]> P: send claim offer
+
+P -> P: <b> 3. anoncreds_prover_store_claim_offer
+activate P
+P -[#green]> PW: store claim offer
+deactivate P
+
+... ...
+
+P -> P: <b>4.anoncreds_prover_create_master_secret
+activate P
+P -[#green]> PW: store master secret
+deactivate P
+
+... ...
+
+P -> P: <b>5.anoncreds_prover_get_claim_offers
+activate P
+P -[#green]> PW: get claim offer
+deactivate P
+
+|||
+
+P -> P: <b>6.anoncreds_prover_create_and_store_claim_req
+activate P
+P -[#green]> PW: get master secret
+L -[#blue]-> P: get schema
+L -[#blue]-> P: get public key
+P -[#green]> PW: store claim_req
+deactivate P
+
+|||
+
+P -[#black]> I: send claim request
+
+|||
+
+I -> I: <b>7. anoncreds_issuer_create_credential
+activate I
+I -[#green]> IW: get keys
+I -[#green]> IW: get revoc reg
+I -[#blue]> L: update revoc reg
+deactivate I
+
+|||
+
+I -[#black]> P: send credential
+
+|||
+
+P -> P: <b>8.anoncreds_prover_store_credential
+activate P
+P -[#green]> PW: get claim request
+P -[#green]> PW: store credentials
+deactivate P
+
+... ...
+
+V -[#black]> P: send proof request
+
+|||
+
+P -> P: <b>9.anoncreds_prover_create_proof
+activate P
+P -[#green]> PW: get credentials
+L -[#blue]-> P: get schema
+L -[#blue]-> P: get public key
+L -[#blue]-> P: get revoc_reg
+deactivate P
+
+|||
+
+P -[#black]> V: send proof
+
+|||
+
+V -> V: <b>10. anoncreds_verifier_verify_proof
+activate V
+L -[#blue]-> V: get schema
+L -[#blue]-> V: get public key
+L -[#blue]-> V: get revoc_reg
+deactivate V
+
+@enduml

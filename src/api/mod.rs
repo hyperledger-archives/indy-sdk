@@ -4,102 +4,204 @@ pub mod anoncreds;
 pub mod ledger;
 pub mod wallet;
 
-use std::collections::HashMap;
-use std::mem;
-use std::sync::{Arc, Mutex, Once, ONCE_INIT};
+use self::libc::{c_char};
 
-use self::libc::{c_char, c_uchar};
-use commands::CommandExecutor;
+#[repr(i32)]
+pub enum ErrorCode {
+    Success = 0,
 
-#[derive(Clone)]
-pub struct SingletonClients {
-    inner: Arc<Mutex<(HashMap<i32, CommandExecutor>, i32)>>
+    // Common errors
+    // Called passed invalid session handle
+    CommonInvalidSession = 100,
+
+    // Caller passed invalid value as param 1 (null, invalid json and etc..)
+    CommonInvalidParam1,
+
+    // Caller passed invalid value as param 2 (null, invalid json and etc..)
+    CommonInvalidParam2,
+
+    // Caller passed invalid value as param 3 (null, invalid json and etc..)
+    CommonInvalidParam3,
+
+    // Caller passed invalid value as param 4 (null, invalid json and etc..)
+    CommonInvalidParam4,
+
+    // Caller passed invalid value as param 5 (null, invalid json and etc..)
+    CommonInvalidParam5,
+
+    // Invalid library state was detected in runtime. It signals library bug
+    CommonInvalidState,
+
+    // Indicates that api was called before init_library call
+    CommonUninitialized,
+
+    // Wallet errors
+    // Unknown type of wallet was passed on open_session
+    WalletUnknownType = 200,
+
+    // Attempt to register already existing wallet type
+    WalletTypeAlreadyRegistered,
+
+    // Requested entity id isn't present in wallet
+    WalletNotFound,
+
+    // Wallet files referenced in open_session have invalid data format
+    WalletInvalidDataFormat,
+
+    // IO error during access wallet backend
+    WalletIOError,
+
+    // Ledger errors
+    // Pool ledger files referenced in open_session have invalid data format
+    LedgerPoolInvalidDataFormat = 300,
+
+    // IO error during access pool ledger files
+    LedgerPoolIOError,
+
+    // No concensus during ledger operation
+    LedgerNoConsensus,
+
+    // Attempt to send unknown or incomplete transaction message
+    LedgerInvalidTransaction,
+
+    // Attempt to send transaction without the necessary privileges
+    LedgerSecurityError,
+
+    // IO error during sending of ledger transactions or catchup process
+    LedgerIOError,
+
+    // Crypto errors
+    // Invalid structure of any crypto promitives (keys, signatures, seeds and etc...)
+    CryptoInvalidStructure = 400,
+
+    // Unknown crypto type was requested for signing/verifiyng or encoding/decoding
+    CryptoUnknownType,
+
+    // Revocation registry is full and creation of new registry is necessary
+    CryptoRevocationRegistryFull
 }
 
-pub fn get_active_clients() -> SingletonClients {
-    static mut SINGLETON: *const SingletonClients = 0 as *const SingletonClients;
-    static ONCE: Once = ONCE_INIT;
-
-    unsafe {
-        ONCE.call_once(|| {
-            let singleton = SingletonClients {
-                inner: Arc::new(Mutex::new((HashMap::new(), 1)))
-            };
-            SINGLETON = mem::transmute(Box::new(singleton));
-        });
-        (*SINGLETON).clone()
-    }
-}
-
-// inits pool from an (optional) genesis txn file
+/// Initializes the library by providing global configuration.
+///
+/// Perform the following initialization actions:
+/// - Refreshing of local pool ledger copy (catch up)
+/// - Establishing of connection with Nodes
+///
+///
+/// #Params
+/// ledger_config: (optional) Ledger configuration json. Example:
+/// {
+///     "genesis_txn": string, (optional; a path to genesis transaction file. If NULL, then a default one will be used.)
+///     // TODO: Provide description of additional params like timeouts
+/// }
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Ledger*
 #[no_mangle]
-pub extern fn init_pool(genesis_txn: *const c_char, config: *const c_char) -> i32 {
+pub extern fn init_library(ledger_config: *const c_char, cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
+/// Creates a new session. A session is associated with a wallet.
+/// The call is synchronous.
+///
+/// Note that there can be only one session for each wallet if wallet implementation doesn't provide
+/// concurrent access.
+///
+/// #Params
+/// wallet_config: Wallet configuration json. Example:
+/// {
+///     "type": string, (optional; if not provided then the default wallet type will be used.
+///             Custom wallet type can be created with register_wallet_type call)
+///     "freshnessTime": int, (optional; if not provided then 60*24 value will be used.
+///             Amount of minutes to consider wallet value as fresh.
+///     "config": json, (optional; if not provided default configuration will be used. Configuration
+///             is specific for concrete wallet type)
+/// }
+///
+/// #Returns
+/// session handle
+///
+/// #Errors
+/// CommonInvalidParam1
+/// CommonInvalidParam2
+/// WalletUnknownType
+/// WalletInvalidDataFormat
+/// WalletIOError
+/// LedgerPoolInvalidDataFormat
+/// LedgerPoolIOError
+/// LedgerIOError
+///
 #[no_mangle]
-pub extern fn init_client(host_and_port: *const c_char) -> i32 {
-    let s = get_active_clients();
-    let (ref mut clients, mut cl_id): (HashMap<i32, CommandExecutor>, i32) = *s.inner.lock().unwrap();
-
-    while clients.contains_key(&cl_id) {
-        cl_id += 1;
-        if cl_id < 0 {
-            cl_id = 1;
-        }
-    }
-
-    clients.insert(cl_id, CommandExecutor::new());
-
-    cl_id
+pub extern fn open_session(wallet_config: *const c_char, session_handler: *const * mut i32) -> ErrorCode {
+    unimplemented!();
 }
 
+/// Closes a session and frees allocated resources. The call is synchronous.
+///
+/// #Params
+/// session_handle: session handler (created by open_session).
+///
+/// #Returns
+/// error code
+///
+/// #Errors
 #[no_mangle]
-pub extern fn release_client(client_id: i32) -> i32 {
-    let s = get_active_clients();
-    let ref mut clients: HashMap<i32, CommandExecutor> = (*s.inner.lock().unwrap()).0;
-
-    if clients.contains_key(&client_id) {
-        clients.remove(&client_id);
-        0
-    } else {
-        -1
-    }
+pub extern fn close_session(session_handle: i32) -> ErrorCode {
+    unimplemented!();
 }
 
+/// Registers custom wallet implementation.
+/// It allows library user to provide custom wallet implementation that can be referenced in
+/// open_session call.
+///
+/// #Params
+/// type_name: Wallet type name.
+/// init: init operation handler
+/// set: set operation handler
+/// get: get operation handler
+/// free: free operation handler
+///
+/// #Returns
+/// error code
+///
+/// #Errors
+/// CommonInvalidParam1
+/// CommonInvalidParam2
+/// CommonInvalidParam3
+/// CommonInvalidParam4
+/// CommonInvalidParam5
+/// WalletTypeAlreadyRegistered
 #[no_mangle]
-pub extern fn free_str(c_ptr: *mut c_char) {
+pub extern fn register_wallet_type(type_name: *const c_char,
+                                   init: extern fn(config: *const c_char, wallet_handle: *const *mut i32) -> ErrorCode,
+                                   set: extern fn(wallet_handle: i32, key: *const c_char, sub_key: *const c_char, value: *const c_char) -> ErrorCode,
+                                   get: extern fn(wallet_handle: i32, key: *const c_char, sub_key: *const c_char, value_ptr: *const *mut c_char) -> ErrorCode,
+                                   free: extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode) -> ErrorCode {
+    unimplemented!();
+}
+
+/// Refreshes a local copy of a pool ledger and updates pool nodes connections.
+///
+/// #Params
+/// None. Ledger configuration must be provided with init_library call.
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn refresh_pool_ledger(cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ffi::CString;
-
-    #[test]
-    fn ledger_client_can_be_created() {
-        let empty = CString::new("").unwrap();
-        init_client(empty.as_ptr());
-    }
-
-    #[test]
-    fn ledger_client_can_be_created_and_freed() {
-        let empty = CString::new("").unwrap();
-        let id = init_client(empty.as_ptr());
-        let other_id = id + 1;
-        assert_eq!(0, release_client(id));
-        assert_eq!(-1, release_client(other_id));
-        //TODO create more complex example: use different threads
-    }
-
-//        TODO: check memory consumption
-//        #[test]
-//        fn ledger_client_no_leak() {
-//            let empty = CString::new("").unwrap();
-//            for i in 1..1000000 {
-//                let id = init_client(empty.as_ptr());
-//                assert_eq!(0, release_client(id));
-//            }
-//        }
 }
