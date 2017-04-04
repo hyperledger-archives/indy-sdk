@@ -197,10 +197,10 @@ pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_ha
 /// IOError
 #[no_mangle]
 pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_handle: i32,
-                                             isseur_did: *const c_char,
-                                             cb: extern fn(xcommand_handle: i32, err: i32,
-                                                claim_offers_json
-                                             )) -> i32 {
+                                                isseur_did: *const c_char,
+                                                cb: extern fn(xcommand_handle: i32, err: i32,
+                                                              claim_offers_json: *const c_char
+                                                )) -> i32 {
     unimplemented!();
 }
 
