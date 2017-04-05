@@ -102,7 +102,7 @@ pub enum ErrorCode {
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn init_library(command_handle: i32
+pub extern fn init_library(command_handle: i32,
                            ledger_config: *const c_char,
                            cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
