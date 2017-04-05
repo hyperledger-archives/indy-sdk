@@ -102,7 +102,9 @@ pub enum ErrorCode {
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn init_library(ledger_config: *const c_char, cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn init_library(command_handle: i32
+                           ledger_config: *const c_char,
+                           cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -137,7 +139,8 @@ pub extern fn init_library(ledger_config: *const c_char, cb: extern fn(xcommand_
 /// LedgerIOError
 ///
 #[no_mangle]
-pub extern fn open_session(wallet_config: *const c_char, session_handler: *const * mut i32) -> ErrorCode {
+pub extern fn open_session(wallet_name: *const c_char,
+                           wallet_config: *const c_char, session_handler: *const * mut i32) -> ErrorCode {
     unimplemented!();
 }
 
@@ -197,7 +200,47 @@ pub extern fn register_wallet_type(type_name: *const c_char,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn refresh_pool_ledger(cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn refresh_pool_ledger(command_handle: i32,
+                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+    unimplemented!();
+}
+
+/// Creates a new secure wallet with the given unique name.
+///
+/// #Params
+/// wallet_name
+/// wallet_config
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn create_wallet(command_handle: i32,
+                            wallet_name: *const c_char,
+                            wallet_config: *const c_char,
+                            cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+    unimplemented!();
+}
+
+/// Removes a secure wallet with the given unique name.
+///
+/// #Params
+/// wallet_name
+/// wallet_config
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn delete_wallet(command_handle: i32,
+                            wallet_name: *const c_char,
+                            cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 

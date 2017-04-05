@@ -26,7 +26,7 @@ use self::libc::{c_char, c_uchar};
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn anoncreds_issuer_create_and_store_keys(session_handle: i32, command_handle: i32,
+pub extern fn issuer_create_and_store_keys(session_handle: i32, command_handle: i32,
                                                      issuer_did: *const c_char,
                                                      schema_json: *const c_char,
                                                      signature_type: *const c_char,
@@ -56,7 +56,7 @@ pub extern fn anoncreds_issuer_create_and_store_keys(session_handle: i32, comman
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, command_handle: i32,
+pub extern fn issuer_create_and_store_revoc_reg(session_handle: i32, command_handle: i32,
                                                           issuer_did: *const c_char,
                                                           public_key_seq_no: i32,
                                                           max_claim_num: i32,
@@ -66,7 +66,7 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, c
     unimplemented!();
 }
 
-/// Signs a given claim for the given user by a given key (that is create a credential).
+/// Signs a given claim for the given user by a given key.
 /// The corresponding keys and revocation registry must be already created
 /// an stored into the wallet.
 /// Updates the revocation registry in the Ledger for the newly issued claim
@@ -76,7 +76,7 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, c
 /// command_handle: command handle to map callback to session.
 /// issuer_did: a DID of the issuer signing transactions to the Ledger
 /// claim_req_json: a claim request with a blinded secret
-///     from the user (returned by anoncreds_prover_create_and_store_claim_req)
+///     from the user (returned by prover_create_and_store_claim_req)
 /// claim_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
@@ -89,10 +89,10 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, c
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Credential json containing issued credential, and public_key_seq_no and revoc_reg_seq_no
+/// Claim json containing issued claim, and public_key_seq_no and revoc_reg_seq_no
 /// used for issuance
 ///     {
-///         "cred": string,
+///         "claim": string,
 ///         "schema_seq_no": string,
 ///         "public_key_seq_no", string,
 ///         "revoc_reg_seq_no", string
@@ -108,7 +108,7 @@ pub extern fn anoncreds_issuer_create_and_store_revoc_reg(session_handle: i32, c
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn anoncreds_issuer_create_credential(session_handle: i32, command_handle: i32,
+pub extern fn issuer_create_claim(session_handle: i32, command_handle: i32,
                                                  claim_req_json: *const c_char,
                                                  claim_json: *const c_char,
                                                  issuer_did: *const c_char,
@@ -116,7 +116,7 @@ pub extern fn anoncreds_issuer_create_credential(session_handle: i32, command_ha
                                                  revoc_reg_seq_no: i32,
                                                  user_revoc_index: i32,
                                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                               credential_json: *const c_char
+                                                               claim_json: *const c_char
                                                  )) -> ErrorCode {
     unimplemented!();
 }
@@ -145,7 +145,7 @@ pub extern fn anoncreds_issuer_create_credential(session_handle: i32, command_ha
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn anoncreds_issuer_revoke_claim(session_handle: i32, command_handle: i32,
+pub extern fn issuer_revoke_claim(session_handle: i32, command_handle: i32,
                                             issuer_did: *const c_char,
                                             revoc_reg_seq_no: *const c_char,
                                             user_revoc_index: *const c_char,
@@ -173,14 +173,14 @@ pub extern fn anoncreds_issuer_revoke_claim(session_handle: i32, command_handle:
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_handle: i32,
+pub extern fn prover_store_claim_offer(session_handle: i32, command_handle: i32,
                                                  claim_offer_json: *const c_char,
                                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode
                                                  )) -> ErrorCode {
     unimplemented!();
 }
 
-/// Gets all claim offers stored for the given issuer DID (see anoncreds_prover_store_claim_offer).
+/// Gets all claim offers stored for the given issuer DID (see prover_store_claim_offer).
 ///
 /// #Params
 /// session_handle: session handler (created by open_session).
@@ -194,7 +194,7 @@ pub extern fn anoncreds_prover_store_claim_offer(session_handle: i32, command_ha
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_handle: i32,
+pub extern fn prover_get_claim_offers(session_handle: i32, command_handle: i32,
                                                 isseur_did: *const c_char,
                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               claim_offers_json: *const c_char
@@ -219,7 +219,7 @@ pub extern fn anoncreds_prover_get_claim_offers(session_handle: i32, command_han
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command_handle: i32,
+pub extern fn prover_create_master_secret(session_handle: i32, command_handle: i32,
                                                     master_secret_name: *const c_char,
                                                     cb: extern fn(xcommand_handle: i32, err: ErrorCode
                                                     )) -> ErrorCode {
@@ -231,7 +231,7 @@ pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command
 /// and the schema (schema_seq_no).
 /// The method gets public key and schema from the ledger, stores them in a wallet,
 /// and creates a blinded master secret for a master secret identified by a provided name.
-/// The master secret identified by the name must be already stored in the secure wallet (see anoncreds_prover_create_master_secret)
+/// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
 /// The blinded master secret is a part of the claim request.
 ///
 /// #Params
@@ -257,7 +257,7 @@ pub extern fn anoncreds_prover_create_master_secret(session_handle: i32, command
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, command_handle: i32,
+pub extern fn prover_create_and_store_claim_req(session_handle: i32, command_handle: i32,
                                                           claim_offer_json: *const c_char,
                                                           master_secret_name: *const c_char,
                                                           cb: extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -266,19 +266,19 @@ pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, c
     unimplemented!();
 }
 
-/// Updates the credential by a master secret and stores in a secure wallet.
-/// The credential contains the information about schema_seq_no,
-/// public_key_seq_no revoc_reg_seq_no (see anoncreds_issuer_create_credential).
+/// Updates the claim by a master secret and stores in a secure wallet.
+/// The claim contains the information about schema_seq_no,
+/// public_key_seq_no revoc_reg_seq_no (see issuer_create_claim).
 /// Seq_no is a sequence number of the corresponding transaction in the ledger.
 /// The method loads a blinded secret for this key from the wallet,
-/// updates the credential and stores it in a wallet.
+/// updates the claim and stores it in a wallet.
 ///
 /// #Params
 /// session_handle: session handler (created by open_session).
 /// command_handle: command handle to map callback to session.
-/// credentials_json: credentials json:
+/// claims_json: claim json:
 ///     {
-///         "cred": string,
+///         "claim": string,
 ///         "schema_seq_no": string,
 ///         "public_key_seq_no", string,
 ///         "revoc_reg_seq_no", string
@@ -292,8 +292,8 @@ pub extern fn anoncreds_prover_create_and_store_claim_req(session_handle: i32, c
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn anoncreds_prover_store_credential(session_handle: i32, command_handle: i32,
-                                                credentials_json: *const c_char,
+pub extern fn prover_store_claim(session_handle: i32, command_handle: i32,
+                                                claims_json: *const c_char,
                                                 cb: extern fn(
                                                     xcommand_handle: i32, err: ErrorCode
                                                 )) -> ErrorCode {
@@ -337,7 +337,7 @@ pub extern fn anoncreds_prover_store_credential(session_handle: i32, command_han
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn anoncreds_prover_create_proof(session_handle: i32, command_handle: i32,
+pub extern fn prover_create_proof(session_handle: i32, command_handle: i32,
                                             proof_request_json: *const c_char,
                                             cb: extern fn(xcommand_handle: i32, err: ErrorCode,
                                                           proof_json: *const c_char)) -> ErrorCode {
@@ -381,7 +381,7 @@ pub extern fn anoncreds_prover_create_proof(session_handle: i32, command_handle:
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn anoncreds_verifier_verify_proof(session_handle: i32, command_handle: i32,
+pub extern fn verifier_verify_proof(session_handle: i32, command_handle: i32,
                                               proof_request_initial_json: *const c_char,
                                               proof_request_disclosed_json: *const c_char,
                                               proof_json: *const c_char,
