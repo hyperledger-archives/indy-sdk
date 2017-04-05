@@ -34,6 +34,7 @@ pub fn generate_big_random(size: usize) -> FF {
 pub fn generate_prime(size: usize) -> FF {
     let seed = generate_random_seed();
     let mut rng = Random::new(seed);
+    let mut iteration = 0;
 
     let mut prime = generate_big_random(size);
     let mut prime_bytes = prime.to_bytes();
@@ -42,8 +43,27 @@ pub fn generate_prime(size: usize) -> FF {
     prime_bytes[length - 1] = last_byte | 3;
     prime = FF::from_bytes(&prime_bytes, length, BIG_SIZE);
     while !FF::is_prime(&prime, &mut rng) {
-        prime = FF::add(&prime, &FF::from_hex("4", BIG_SIZE));
+        prime.inc(4);
+        iteration += 1;
     }
+    println!("Iteration: {}\nFound prime: {}", iteration, prime);
 
+    prime
+}
+
+pub fn generate_prime_2p_plus_1(size: usize) -> FF {
+    let seed = generate_random_seed();
+    let mut rng = Random::new(seed);
+    let (mut is_prime, mut iteration) = (false, 0);
+    let mut prime = FF::new(BIG_SIZE);
+
+    while !is_prime {
+        iteration += 1;
+        prime = generate_prime(size);
+        let mut prime_for_check = FF::mul(&prime, &FF::from_hex("2", BIG_SIZE));
+        prime_for_check.inc(1);
+        is_prime = FF::is_prime(&prime_for_check, &mut rng);
+        println!("Iteration: {}\nFound prime: {}\nis_prime: {}\n", iteration, prime, is_prime);
+    }
     prime
 }

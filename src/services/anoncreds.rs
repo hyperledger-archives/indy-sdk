@@ -329,7 +329,7 @@ mod tests {
     }
     #[test]
     fn test_random() {
-        let prime = crypto::generate_prime(2048);
+        let prime = crypto::generate_prime_2p_plus_1(20);
         println!("prime is: {}", prime)
     }
 }
