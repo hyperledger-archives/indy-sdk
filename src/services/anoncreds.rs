@@ -327,9 +327,9 @@ mod tests {
         let claim_request = AnoncredsService::create_claim_request();
         let claim = AnoncredsService::issue_primary_claim(&attributes, &claim_request.u, &accumulator_id, &user_id);
     }
-    #[test]
-    fn test_random() {
-        let prime = crypto::generate_prime_2p_plus_1(20);
-        println!("prime is: {}", prime)
-    }
+//    #[test]
+//    fn test_random() {
+//        let prime = crypto::generate_prime(1024);
+//        println!("prime is: {}", prime)
+//    }
 }

@@ -35,6 +35,7 @@ pub fn generate_prime(size: usize) -> FF {
     let seed = generate_random_seed();
     let mut rng = Random::new(seed);
     let mut iteration = 0;
+    let mut is_prime = false;
 
     let mut prime = generate_big_random(size);
     let mut prime_bytes = prime.to_bytes();
@@ -42,9 +43,10 @@ pub fn generate_prime(size: usize) -> FF {
     let last_byte = prime_bytes[length - 1];
     prime_bytes[length - 1] = last_byte | 3;
     prime = FF::from_bytes(&prime_bytes, length, BIG_SIZE);
-    while !FF::is_prime(&prime, &mut rng) {
+    while !is_prime {
         prime.inc(4);
         iteration += 1;
+        is_prime = FF::is_prime(&prime, &mut rng);
     }
     println!("Iteration: {}\nFound prime: {}", iteration, prime);
 
