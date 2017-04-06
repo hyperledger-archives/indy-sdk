@@ -10,8 +10,8 @@ use self::libc::{c_char, c_uchar};
 /// A signing type can be set (currently only CL signature type is supported).
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing public_key transaction to the Ledger
 /// schema_json: schema as a json
 /// signature_type: signature type (optional). Currently only 'CL' is supported.
@@ -26,13 +26,14 @@ use self::libc::{c_char, c_uchar};
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn issuer_create_and_store_keys(session_handle: i32, command_handle: i32,
-                                                     issuer_did: *const c_char,
-                                                     schema_json: *const c_char,
-                                                     signature_type: *const c_char,
-                                                     cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                   public_key_seq_no: i32
-                                                     )) -> ErrorCode {
+pub extern fn sovrin_issuer_create_and_store_keys(command_handle: i32,
+                                                  wallet_handle: i32,
+                                                  issuer_did: *const c_char,
+                                                  schema_json: *const c_char,
+                                                  signature_type: *const c_char,
+                                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                public_key_seq_no: i32
+                                                  )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -40,8 +41,8 @@ pub extern fn issuer_create_and_store_keys(session_handle: i32, command_handle: 
 /// Publishes the public key in the Ledger (so that a seq_no is associated with the registry).
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
 /// public_key_seq_no: seq no of a public key transaction in Ledger
 /// max_claim_num: maximum number of claims the new registry can process.
@@ -56,13 +57,14 @@ pub extern fn issuer_create_and_store_keys(session_handle: i32, command_handle: 
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn issuer_create_and_store_revoc_reg(session_handle: i32, command_handle: i32,
-                                                          issuer_did: *const c_char,
-                                                          public_key_seq_no: i32,
-                                                          max_claim_num: i32,
-                                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                        revoc_reg_seq_no: *const c_char
-                                                          )) -> ErrorCode {
+pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
+                                                       wallet_handle: i32,
+                                                       issuer_did: *const c_char,
+                                                       public_key_seq_no: i32,
+                                                       max_claim_num: i32,
+                                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                     revoc_reg_seq_no: *const c_char
+                                                       )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -72,8 +74,8 @@ pub extern fn issuer_create_and_store_revoc_reg(session_handle: i32, command_han
 /// Updates the revocation registry in the Ledger for the newly issued claim
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transactions to the Ledger
 /// claim_req_json: a claim request with a blinded secret
 ///     from the user (returned by prover_create_and_store_claim_req)
@@ -108,16 +110,17 @@ pub extern fn issuer_create_and_store_revoc_reg(session_handle: i32, command_han
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn issuer_create_claim(session_handle: i32, command_handle: i32,
-                                                 claim_req_json: *const c_char,
-                                                 claim_json: *const c_char,
-                                                 issuer_did: *const c_char,
-                                                 public_key_seq_no: i32,
-                                                 revoc_reg_seq_no: i32,
-                                                 user_revoc_index: i32,
-                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                               claim_json: *const c_char
-                                                 )) -> ErrorCode {
+pub extern fn sovrin_issuer_create_claim(command_handle: i32,
+                                         wallet_handle: i32,
+                                         claim_req_json: *const c_char,
+                                         claim_json: *const c_char,
+                                         issuer_did: *const c_char,
+                                         public_key_seq_no: i32,
+                                         revoc_reg_seq_no: i32,
+                                         user_revoc_index: i32,
+                                         cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                       xclaim_json: *const c_char
+                                         )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -127,8 +130,8 @@ pub extern fn issuer_create_claim(session_handle: i32, command_handle: i32,
 /// Updates the revocation registry in the Ledger for the revocated claim
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transactions to the Ledger
 /// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of the user in the revocation registry
@@ -145,20 +148,21 @@ pub extern fn issuer_create_claim(session_handle: i32, command_handle: i32,
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn issuer_revoke_claim(session_handle: i32, command_handle: i32,
-                                            issuer_did: *const c_char,
-                                            revoc_reg_seq_no: *const c_char,
-                                            user_revoc_index: *const c_char,
-                                            cb: extern fn(xcommand_handle: i32, err: ErrorCode
-                                            )) -> ErrorCode {
+pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
+                                         wallet_handle: i32,
+                                         issuer_did: *const c_char,
+                                         revoc_reg_seq_no: *const c_char,
+                                         user_revoc_index: *const c_char,
+                                         cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                         )) -> ErrorCode {
     unimplemented!();
 }
 
 /// Stores a claim offer from the given issuer in a secure storage.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
@@ -173,18 +177,19 @@ pub extern fn issuer_revoke_claim(session_handle: i32, command_handle: i32,
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn prover_store_claim_offer(session_handle: i32, command_handle: i32,
-                                                 claim_offer_json: *const c_char,
-                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode
-                                                 )) -> ErrorCode {
+pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
+                                              wallet_handle: i32,
+                                              claim_offer_json: *const c_char,
+                                              cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                              )) -> ErrorCode {
     unimplemented!();
 }
 
 /// Gets all claim offers stored for the given issuer DID (see prover_store_claim_offer).
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// isseur_did: isser DID find claim offers for
 ///
 /// #Returns
@@ -194,11 +199,12 @@ pub extern fn prover_store_claim_offer(session_handle: i32, command_handle: i32,
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn prover_get_claim_offers(session_handle: i32, command_handle: i32,
-                                                isseur_did: *const c_char,
-                                                cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              claim_offers_json: *const c_char
-                                                )) -> ErrorCode {
+pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
+                                             wallet_handle: i32,
+                                             isseur_did: *const c_char,
+                                             cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           claim_offers_json: *const c_char
+                                             )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -207,8 +213,8 @@ pub extern fn prover_get_claim_offers(session_handle: i32, command_handle: i32,
 /// The name must be unique.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// master_secret_name: a new master secret name
 ///
 /// #Returns
@@ -219,10 +225,11 @@ pub extern fn prover_get_claim_offers(session_handle: i32, command_handle: i32,
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn prover_create_master_secret(session_handle: i32, command_handle: i32,
-                                                    master_secret_name: *const c_char,
-                                                    cb: extern fn(xcommand_handle: i32, err: ErrorCode
-                                                    )) -> ErrorCode {
+pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
+                                                 wallet_handle: i32,
+                                                 master_secret_name: *const c_char,
+                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                                 )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -235,8 +242,8 @@ pub extern fn prover_create_master_secret(session_handle: i32, command_handle: i
 /// The blinded master secret is a part of the claim request.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
@@ -257,12 +264,13 @@ pub extern fn prover_create_master_secret(session_handle: i32, command_handle: i
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn prover_create_and_store_claim_req(session_handle: i32, command_handle: i32,
-                                                          claim_offer_json: *const c_char,
-                                                          master_secret_name: *const c_char,
-                                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                        claim_req_json: *const c_char
-                                                          )) -> ErrorCode {
+pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
+                                                       wallet_handle: i32,
+                                                       claim_offer_json: *const c_char,
+                                                       master_secret_name: *const c_char,
+                                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                     claim_req_json: *const c_char
+                                                       )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -274,8 +282,8 @@ pub extern fn prover_create_and_store_claim_req(session_handle: i32, command_han
 /// updates the claim and stores it in a wallet.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// claims_json: claim json:
 ///     {
 ///         "claim": string,
@@ -292,11 +300,12 @@ pub extern fn prover_create_and_store_claim_req(session_handle: i32, command_han
 /// WalletError
 /// IOError
 #[no_mangle]
-pub extern fn prover_store_claim(session_handle: i32, command_handle: i32,
-                                                claims_json: *const c_char,
-                                                cb: extern fn(
-                                                    xcommand_handle: i32, err: ErrorCode
-                                                )) -> ErrorCode {
+pub extern fn sovrin_prover_store_claim(command_handle: i32,
+                                        wallet_handle: i32,
+                                        claims_json: *const c_char,
+                                        cb: extern fn(
+                                            xcommand_handle: i32, err: ErrorCode
+                                        )) -> ErrorCode {
     unimplemented!();
 }
 
@@ -308,8 +317,8 @@ pub extern fn prover_store_claim(session_handle: i32, command_handle: i32,
 /// The proof contains proofs for each schema with corresponding seq_no of public_key and revoc_reg transactions in Ledger.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// proof_request_json: proof request as a json
 /// cb: Callback that takes command result as parameter.
 ///
@@ -337,10 +346,11 @@ pub extern fn prover_store_claim(session_handle: i32, command_handle: i32,
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn prover_create_proof(session_handle: i32, command_handle: i32,
-                                            proof_request_json: *const c_char,
-                                            cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                          proof_json: *const c_char)) -> ErrorCode {
+pub extern fn sovrin_prover_create_proof(command_handle: i32,
+                                         wallet_handle: i32,
+                                         proof_request_json: *const c_char,
+                                         cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                       proof_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -348,8 +358,8 @@ pub extern fn prover_create_proof(session_handle: i32, command_handle: i32,
 /// and verifies a proof (of multiple claim).
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// proof_request_initial_json: initial proof request as sent by the verifier
 /// proof_request_disclosed_json: an updated by the prover proof_request if the prover doesn't want
 /// to disclose all the information from the initial proof_request.
@@ -381,12 +391,13 @@ pub extern fn prover_create_proof(session_handle: i32, command_handle: i32,
 /// LedgerConsensusError
 /// LedgerInvalidDataError
 #[no_mangle]
-pub extern fn verifier_verify_proof(session_handle: i32, command_handle: i32,
-                                              proof_request_initial_json: *const c_char,
-                                              proof_request_disclosed_json: *const c_char,
-                                              proof_json: *const c_char,
-                                              cb: extern fn(xcommand_handle: i32, err: ErrorCode
-                                              )) -> ErrorCode {
+pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
+                                           wallet_handle: i32,
+                                           proof_request_initial_json: *const c_char,
+                                           proof_request_disclosed_json: *const c_char,
+                                           proof_json: *const c_char,
+                                           cb: extern fn(xcommand_handle: i32, err: ErrorCode
+                                           )) -> ErrorCode {
     unimplemented!();
 }
 
