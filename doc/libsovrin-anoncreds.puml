@@ -25,14 +25,14 @@ endnote
 
 
 
-I -> I: <b>1. anoncreds_issuer_create_and_store_keys
+I -> I: <b>1. issuer_create_and_store_keys
 activate I
 I -[#green]> IW: store keys
 I-[#blue]>L: store public key in Ledger
 deactivate I
 ... ...
 
-I -> I: <b>2. anoncreds_issuer_create_and_store_revoc_reg
+I -> I: <b>2. issuer_create_and_store_revoc_reg
 activate I
 I -[#green]> IW: get keys
 I -[#green]> IW: store revoc reg
@@ -43,28 +43,28 @@ deactivate I
 
 I -[#black]> P: send claim offer
 
-P -> P: <b> 3. anoncreds_prover_store_claim_offer
+P -> P: <b> 3. prover_store_claim_offer
 activate P
 P -[#green]> PW: store claim offer
 deactivate P
 
 ... ...
 
-P -> P: <b>4.anoncreds_prover_create_master_secret
+P -> P: <b>4.prover_create_master_secret
 activate P
 P -[#green]> PW: store master secret
 deactivate P
 
 ... ...
 
-P -> P: <b>5.anoncreds_prover_get_claim_offers
+P -> P: <b>5.prover_get_claim_offers
 activate P
 P -[#green]> PW: get claim offer
 deactivate P
 
 |||
 
-P -> P: <b>6.anoncreds_prover_create_and_store_claim_req
+P -> P: <b>6.prover_create_and_store_claim_req
 activate P
 P -[#green]> PW: get master secret
 L -[#blue]-> P: get schema
@@ -78,7 +78,7 @@ P -[#black]> I: send claim request
 
 |||
 
-I -> I: <b>7. anoncreds_issuer_create_credential
+I -> I: <b>7. issuer_create_claim
 activate I
 I -[#green]> IW: get keys
 I -[#green]> IW: get revoc reg
@@ -87,14 +87,14 @@ deactivate I
 
 |||
 
-I -[#black]> P: send credential
+I -[#black]> P: send claim
 
 |||
 
-P -> P: <b>8.anoncreds_prover_store_credential
+P -> P: <b>8.prover_store_claim
 activate P
 P -[#green]> PW: get claim request
-P -[#green]> PW: store credentials
+P -[#green]> PW: store claim
 deactivate P
 
 ... ...
@@ -103,9 +103,9 @@ V -[#black]> P: send proof request
 
 |||
 
-P -> P: <b>9.anoncreds_prover_create_proof
+P -> P: <b>9.prover_create_proof
 activate P
-P -[#green]> PW: get credentials
+P -[#green]> PW: get claim
 L -[#blue]-> P: get schema
 L -[#blue]-> P: get public key
 L -[#blue]-> P: get revoc_reg
@@ -117,7 +117,7 @@ P -[#black]> V: send proof
 
 |||
 
-V -> V: <b>10. anoncreds_verifier_verify_proof
+V -> V: <b>10. verifier_verify_proof
 activate V
 L -[#blue]-> V: get schema
 L -[#blue]-> V: get public key
