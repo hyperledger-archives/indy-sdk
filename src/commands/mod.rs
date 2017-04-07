@@ -12,6 +12,7 @@ use std::error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
 use std::thread;
+use std::sync::Mutex;
 
 pub enum Command {
     Exit,
@@ -24,8 +25,22 @@ pub struct CommandExecutor {
     sender: Sender<Command>
 }
 
+/// Global (lazy inited) instance of CommandExecutor
+///
+/// Sample:
+///
+/// {
+///     ...
+///     let ref ce: CommandExecutor = *COMMAND_EXECUTOR.lock().unwrap();           <- lock +
+///     ce.send(Command::Exit);                                                            |
+///     ...                                                                                |
+/// }                                                                            <- unlock +
+lazy_static! {
+    pub static ref COMMAND_EXECUTOR: Mutex<CommandExecutor> = Mutex::new(CommandExecutor::new());
+}
+
 impl CommandExecutor {
-    pub fn new() -> CommandExecutor {
+    fn new() -> CommandExecutor {
         let (sender, receiver) = channel();
 
         CommandExecutor {

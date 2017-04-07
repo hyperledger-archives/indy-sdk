@@ -95,12 +95,14 @@ pub enum ErrorCode {
     AnoncredsClaimNotFoundError,
 
     AnoncredsProofRejected
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use commands::{Command, COMMAND_EXECUTOR};
+    use commands::wallet::WalletCommand;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn wallet_set_value_command_can_be_sent() {
@@ -113,7 +115,7 @@ mod tests {
             };
         });
 
-        let cmd_executor = CommandExecutor::new();
+        let ref cmd_executor = *COMMAND_EXECUTOR.lock().unwrap();
         cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb)));
 
         match receiver.recv() {
