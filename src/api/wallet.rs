@@ -4,206 +4,160 @@ use api::ErrorCode;
 
 use self::libc::{c_char, c_uchar};
 
-/// Creates keys (signing and encryption keys) for a new
-/// DID (owned by the caller of the library).
-/// Identity's DID must be either explicitly provided, or taken as the first 16 bit of verkey.
-/// Saves the Identity DID with keys in a secured Wallet, so that it can be used to sign
-/// and encrypt transactions.
+/// Registers custom wallet implementation.
+///
+/// It allows library user to provide custom wallet implementation.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// did_json: Identity information as json. Example:
+/// xtype: Wallet type name.
+/// create: create operation handler
+/// create: open operation handler
+/// set: set operation handler
+/// get: get operation handler
+/// close: close operation handler
+/// free: free operation handler
+///
+/// #Returns
+/// error code
+///
+/// #Errors
+/// CommonInvalidParam1
+/// CommonInvalidParam2
+/// CommonInvalidParam3
+/// CommonInvalidParam4
+/// CommonInvalidParam5
+/// WalletTypeAlreadyRegistered
+#[no_mangle]
+pub extern fn sovrin_register_wallet_type(xtype: *const c_char,
+                                          create: extern fn(name: *const c_char,
+                                                            config: *const c_char) -> ErrorCode,
+                                          open: extern fn(name: *const c_char,
+                                                          config: *const c_char,
+                                                          handle: *const *mut i32) -> ErrorCode,
+                                          set: extern fn(handle: i32,
+                                                         key: *const c_char, sub_key: *const c_char,
+                                                         value: *const c_char) -> ErrorCode,
+                                          get: extern fn(handle: i32,
+                                                         key: *const c_char, sub_key: *const c_char,
+                                                         value_ptr: *const *mut c_char,
+                                                         value_life_time: *const *mut i32) -> ErrorCode,
+                                          close: extern fn(handle: i32) -> ErrorCode,
+                                          delete: extern fn(name: *const c_char) -> ErrorCode,
+                                          free: extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode) -> ErrorCode {
+    unimplemented!();
+}
+
+/// Creates a new secure wallet with the given unique name.
+///
+/// #Params
+/// pool_name: Name of the pool that corresponds to this wallet.
+/// name: Name of the wallet.
+/// xtype(optional): Type of the wallet. Defaults to 'default'.
+///                  Custom types can be registered with sovrin_register_wallet_type call.
+/// config (optional): Wallet configuration json. List of supported keys are defined by wallet type.
+///                    if NULL, then default config will be used.
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn sovrin_create_wallet(command_handle: i32,
+                                   pool_name: *const c_char,
+                                   name: *const c_char,
+                                   xtype: *const c_char,
+                                   config: *const c_char,
+                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+    unimplemented!();
+}
+
+/// Opens the wallet with specific name.
+///
+/// Wallet with corresponded name must be previously created with sovrin_create_pool method.
+/// It is impossible to open wallet with the same name more than once.
+///
+/// #Params
+/// pool_handle: pool handle returned by sovrin_open_pool
+/// name: Name of the wallet.
+/// config (optional): Runtime wallet configuration json. if NULL, then default config will be used. Example:
 /// {
-///     "did": string, (optional; if not provided then the first 16 bit of the verkey will be used
-///             as a new DID; if provided, then keys will be replaced - key rotation use case)
-///     "seed": string, (optional; if not provide then a random one will be created)
-///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
-///               currently only 'ed25519' value is supported for this field)
+///     "freshnessTime": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
+///     ... List of additional supported keys are defined by wallet type.
 /// }
-/// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// DID, verkey (for verification of signature) and public_key (for decryption)
+/// Handle to opened wallet to use in methods that require wallet access.
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
-pub  extern fn create_and_store_my_did(session_handle: i32, command_handle: i32,
-                                                   did_json: *const c_char,
-                                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                 did: *const c_char,
-                                                                 verkey: *const c_char,
-                                                                 pk: *const c_char)) -> ErrorCode {
+#[no_mangle]
+pub extern fn sovrin_open_wallet(command_handle: i32,
+                                 pool_handle: i32,
+                                 name: *const c_char,
+                                 config: *const c_char,
+                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)) -> ErrorCode {
     unimplemented!();
 }
 
-/// Generated new keys (signing and encryption keys) for an existing
-/// DID (owned by the caller of the library).
+
+/// Closes opened wallet and frees allocated resources.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// identity_json: Identity information as json. Example:
-/// {
-///     "seed": string, (optional; if not provide then a random one will be created)
-///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
-///               currently only 'ed25519' value is supported for this field)
-/// }
-/// cb: Callback that takes command result as parameter.
+/// handle: wallet handle returned by sovrin_open_wallet.
 ///
 /// #Returns
-/// verkey (for verification of signature) and public_key (for decryption)
+/// Error code
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
-pub  extern fn replace_keys(session_handle: i32, command_handle: i32,
-                           did: *const c_char,
-                           did_json: *const c_char,
-                           cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                         verkey: *const c_char,
-                                         pk: *const c_char)) -> ErrorCode {
+#[no_mangle]
+pub extern fn sovrin_close_wallet(command_handle: i32,
+                                  handle: i32,
+                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
-/// Saves their DID for a pairwise connection in a secured Wallet,
-/// so that it can be used to verify transaction.
+/// Deletes created wallet.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// did_json: Identity information as json. Example:
-///     {
-///        "did": string, (required)
-///        "verkey": string, (optional; if only public key for decryption is provided),
-///        "pk": string (optional, if only verification key sis provided),
-///     }
-/// cb: Callback that takes command result as parameter.
+/// name: Name of the wallet to delete.
 ///
 /// #Returns
-/// None
+/// Error code
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
-pub  extern fn store_their_did(session_handle: i32, command_handle: i32,
-                                           identity_json: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+#[no_mangle]
+pub extern fn sovrin_delete_wallet(command_handle: i32,
+                                   name: *const c_char,
+                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
-/// Signs a message by a signing key associated with my DID. The DID with a signing key
-/// must be already created and stored in a secured wallet (see create_and_store_my_identity)
+/// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
+/// in a secure wallet identified by the given number.
+/// The number identifying the value in the wallet is returned when the value is stored in the wallet.
 ///
 /// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// did: signing DID
-/// msg: a message to be signed
-/// cb: Callback that takes command result as parameter.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// wallet_key: unique number identifying the value in the wallet
 ///
 /// #Returns
-/// a signature string
+/// Error code
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
-pub  extern fn sign(session_handle: i32, command_handle: i32,
-                           did: *const c_char,
-                           msg: *const c_char,
-                           cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                         signature: *const c_char)) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Verify a signature created by a key associated with a DID.
-/// If a secure wallet doesn't contain a verkey associated with the given DID,
-/// then verkey is read from the Ledger.
-/// Otherwise either an existing verkey from wallet is used (see wallet_store_their_identity),
-/// or it checks the Ledger (according to freshness settings set during initialization)
-/// whether verkey is still the same and updates verkey for the DID if needed.
-///
-/// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// did: DID that signed the message
-/// msg: message
-/// signature: a signature to be verified
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// None
-///
-/// #Errors
-/// Common*
-/// Wallet*
-/// Ledger*
-/// Crypto*
-pub  extern fn verify_signature(session_handle: i32, command_handle: i32,
-                             did: *const c_char,
-                             msg: *const c_char,
-                             signature: *const c_char,
-                             cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Encrypts a message by a public key associated with a DID.
-/// If a secure wallet doesn't contain a public key associated with the given DID,
-/// then the public key is read from the Ledger.
-/// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
-/// or it checks the Ledger (according to freshness settings set during initialization)
-/// whether public key is still the same and updates public key for the DID if needed.
-///
-/// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// did: encrypting DID
-/// msg: a message to be signed
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// an encrypted message
-///
-/// #Errors
-/// Common*
-/// Wallet*
-/// Ledger*
-/// Crypto*
-pub  extern fn encrypt(session_handle: i32, command_handle: i32,
-                              did: *const c_char,
-                              msg: *const c_char,
-                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                            encrypted_msg: *const c_char)) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Decrypts a message encrypted by a public key associated with my DID.
-/// The DID with a secret key must be already created and
-/// stored in a secured wallet (see wallet_create_and_store_my_identity)
-///
-/// #Params
-/// session_handle: session handler (created by open_session).
-/// command_handle: command handle to map callback to session.
-/// did: DID that signed the message
-/// encrypted_msg: encrypted message
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// decrypted message
-///
-/// #Errors
-/// Common*
-/// Wallet*
-/// Crypto*
-pub  extern fn decrypt(session_handle: i32, command_handle: i32,
-                              did: *const c_char,
-                              encrypted_msg: *const c_char,
-                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                            decrypted_msg: *const c_char)) -> ErrorCode {
+#[no_mangle]
+pub extern fn sovrin_wallet_set_seq_no_for_value(command_handle: i32,
+                                   wallet_handle: i32,
+                                   wallet_key: *const c_char,
+                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
