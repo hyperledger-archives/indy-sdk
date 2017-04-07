@@ -1,8 +1,11 @@
 extern crate libc;
 
 pub mod anoncreds;
+pub mod signus;
 pub mod ledger;
+pub mod pool;
 pub mod wallet;
+
 
 use self::libc::{c_char};
 
@@ -51,6 +54,9 @@ pub enum ErrorCode {
     // IO error during access wallet backend
     WalletIOError,
 
+    // Trying to use wallet with pool that has different name
+    WalletIncorrectPool,
+
     // Ledger errors
     // Pool ledger files referenced in open_session have invalid data format
     LedgerPoolInvalidDataFormat = 300,
@@ -81,170 +87,31 @@ pub enum ErrorCode {
     CryptoRevocationRegistryFull
 }
 
-/// Initializes the library by providing global configuration.
-///
-/// Perform the following initialization actions:
-/// - Refreshing of local pool ledger copy (catch up)
-/// - Establishing of connection with Nodes
-///
-///
-/// #Params
-/// ledger_config: (optional) Ledger configuration json. Example:
-/// {
-///     "genesis_txn": string, (optional; a path to genesis transaction file. If NULL, then a default one will be used.)
-///     // TODO: Provide description of additional params like timeouts
-/// }
-///
-/// #Returns
-/// Error code
-///
-/// #Errors
-/// Common*
-/// Ledger*
-#[no_mangle]
-pub extern fn init_library(command_handle: i32,
-                           ledger_config: *const c_char,
-                           cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Creates a new session. A session is associated with a wallet.
-/// The call is synchronous.
-///
-/// Note that there can be only one session for each wallet if wallet implementation doesn't provide
-/// concurrent access.
-///
-/// #Params
-/// wallet_config: Wallet configuration json. Example:
-/// {
-///     "type": string, (optional; if not provided then the default wallet type will be used.
-///             Custom wallet type can be created with register_wallet_type call)
-///     "freshnessTime": int, (optional; if not provided then 60*24 value will be used.
-///             Amount of minutes to consider wallet value as fresh.
-///     "config": json, (optional; if not provided default configuration will be used. Configuration
-///             is specific for concrete wallet type)
-/// }
-///
-/// #Returns
-/// session handle
-///
-/// #Errors
-/// CommonInvalidParam1
-/// CommonInvalidParam2
-/// WalletUnknownType
-/// WalletInvalidDataFormat
-/// WalletIOError
-/// LedgerPoolInvalidDataFormat
-/// LedgerPoolIOError
-/// LedgerIOError
-///
-#[no_mangle]
-pub extern fn open_session(wallet_name: *const c_char,
-                           wallet_config: *const c_char, session_handler: *const * mut i32) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Closes a session and frees allocated resources. The call is synchronous.
-///
-/// #Params
-/// session_handle: session handler (created by open_session).
-///
-/// #Returns
-/// error code
-///
-/// #Errors
-#[no_mangle]
-pub extern fn close_session(session_handle: i32) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Registers custom wallet implementation.
-/// It allows library user to provide custom wallet implementation that can be referenced in
-/// open_session call.
-///
-/// #Params
-/// type_name: Wallet type name.
-/// init: init operation handler
-/// set: set operation handler
-/// get: get operation handler
-/// free: free operation handler
-///
-/// #Returns
-/// error code
-///
-/// #Errors
-/// CommonInvalidParam1
-/// CommonInvalidParam2
-/// CommonInvalidParam3
-/// CommonInvalidParam4
-/// CommonInvalidParam5
-/// WalletTypeAlreadyRegistered
-#[no_mangle]
-pub extern fn register_wallet_type(type_name: *const c_char,
-                                   init: extern fn(config: *const c_char, wallet_handle: *const *mut i32) -> ErrorCode,
-                                   set: extern fn(wallet_handle: i32, key: *const c_char, sub_key: *const c_char, value: *const c_char) -> ErrorCode,
-                                   get: extern fn(wallet_handle: i32, key: *const c_char, sub_key: *const c_char, value_ptr: *const *mut c_char) -> ErrorCode,
-                                   free: extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Refreshes a local copy of a pool ledger and updates pool nodes connections.
-///
-/// #Params
-/// None. Ledger configuration must be provided with init_library call.
-///
-/// #Returns
-/// Error code
-///
-/// #Errors
-/// Common*
-/// Ledger*
-#[no_mangle]
-pub extern fn refresh_pool_ledger(command_handle: i32,
-                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Creates a new secure wallet with the given unique name.
-///
-/// #Params
-/// wallet_name
-/// wallet_config
-///
-/// #Returns
-/// Error code
-///
-/// #Errors
-/// Common*
-/// Ledger*
-#[no_mangle]
-pub extern fn create_wallet(command_handle: i32,
-                            wallet_name: *const c_char,
-                            wallet_config: *const c_char,
-                            cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
-}
-
-/// Removes a secure wallet with the given unique name.
-///
-/// #Params
-/// wallet_name
-/// wallet_config
-///
-/// #Returns
-/// Error code
-///
-/// #Errors
-/// Common*
-/// Ledger*
-#[no_mangle]
-pub extern fn delete_wallet(command_handle: i32,
-                            wallet_name: *const c_char,
-                            cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wallet_set_value_command_can_be_sent() {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |result| {
+            match result {
+                Ok(val) => sender.send("OK"),
+                Err(err) => sender.send("ERR")
+            };
+        });
+
+        let cmd_executor = CommandExecutor::new();
+        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb)));
+
+        match receiver.recv() {
+            Ok(result) => {
+                assert_eq!("OK", result);
+            }
+            Err(err) => {
+                panic!("Error on result recv: {:?}", err);
+            }
+        }
+    }
 }
