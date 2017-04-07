@@ -102,27 +102,27 @@ pub enum ErrorCode {
 mod tests {
     use super::*;
 
-    #[test]
-    fn wallet_set_value_command_can_be_sent() {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |result| {
-            match result {
-                Ok(val) => sender.send("OK"),
-                Err(err) => sender.send("ERR")
-            };
-        });
-
-        let cmd_executor = CommandExecutor::new();
-        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb)));
-
-        match receiver.recv() {
-            Ok(result) => {
-                assert_eq!("OK", result);
-            }
-            Err(err) => {
-                panic!("Error on result recv: {:?}", err);
-            }
-        }
-    }
+//    #[test]
+//    fn wallet_set_value_command_can_be_sent() {
+//        let (sender, receiver) = channel();
+//
+//        let cb = Box::new(move |result| {
+//            match result {
+//                Ok(val) => sender.send("OK"),
+//                Err(err) => sender.send("ERR")
+//            };
+//        });
+//
+//        let cmd_executor = CommandExecutor::new();
+//        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb)));
+//
+//        match receiver.recv() {
+//            Ok(result) => {
+//                assert_eq!("OK", result);
+//            }
+//            Err(err) => {
+//                panic!("Error on result recv: {:?}", err);
+//            }
+//        }
+//    }
 }

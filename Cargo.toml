@@ -26,8 +26,11 @@ int_traits = "0.1.1"
 libc = "0.2.21"
 log = "0.3.7"
 openssl = "0.9.9"
-rusqlite = "0.10.1"
-zmq = "0.8.1"
 milagro-crypto = { git = "https://github.com/DSRCorporation/milagro-crypto-rust" }
 rand = "0.3"
+rusqlite = "0.10.1"
+rust-base58 = "0.0.4"
+rustc-serialize = "0.3"
+sodiumoxide = "0.0.14"
+zmq = "0.8.1"
 
