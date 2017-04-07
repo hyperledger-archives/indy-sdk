@@ -84,7 +84,18 @@ pub enum ErrorCode {
     CryptoUnknownType,
 
     // Revocation registry is full and creation of new registry is necessary
-    CryptoRevocationRegistryFull
+    AnoncredsRevocationRegistryFull = 500,
+
+    AnoncredsInvalidUserRevocIndex,
+
+    AnoncredsNotIssuedError,
+
+    AnoncredsMasterSecretDuplicateNameError,
+
+    AnoncredsClaimNotFoundError,
+
+    AnoncredsProofRejected
+
 }
 
 #[cfg(test)]
