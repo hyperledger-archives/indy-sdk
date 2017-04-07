@@ -55,7 +55,7 @@ pub fn generate_prime(size: usize) -> FF {
         iteration += 1;
         is_prime = FF::is_prime(&prime, &mut rng);
     }
-    println!("Iteration: {}\nFound prime: {}", iteration, prime);
+    debug!("Iteration: {}\nFound prime: {}", iteration, prime);
 
     prime
 }
@@ -72,7 +72,7 @@ pub fn generate_prime_2p_plus_1(size: usize) -> FF {
         let mut prime_for_check = FF::mul(&prime, &FF::from_hex("2", BIG_SIZE));
         prime_for_check.inc(1);
         is_prime = FF::is_prime(&prime_for_check, &mut rng);
-        println!("Iteration: {}\nFound prime: {}\nis_prime: {}\n", iteration, prime, is_prime);
+        debug!("Iteration: {}\nFound prime: {}\nis_prime: {}\n", iteration, prime, is_prime);
     }
     prime
 }
@@ -89,7 +89,7 @@ fn random_in_range(start: &FF, end: &FF) {
     //            random_number.rand(sub.num_bits(), MSB_MAYBE_ZERO, false).unwrap();
     //        }
     //    &random_number + start
-    println!("start: {}\nend: {}\nsub: {}\nrandom: {}", start, end, sub, random_number);
+    debug!("start: {}\nend: {}\nsub: {}\nrandom: {}", start, end, sub, random_number);
 }
 
 pub fn encode_attribute(attribute: &str, byte_order: ByteOrder) {
@@ -128,7 +128,7 @@ fn generate_probable_prime(size: usize) {
     let mut random_number = generate_big_random(size);
     let mut mods: Vec<FF> = Vec::new();
     for i in 1..NUM_PRIMES {
-        println!("{}", i);
+        debug!("{}", i);
         let bytes = random_number.to_bytes();
         let mut new_random = FF::from_bytes(&bytes, size, BIG_SIZE);
         let prime = FF::from_hex(&format!("{:x}", PRIMES[i])[..], BIG_SIZE);
@@ -165,6 +165,8 @@ mod tests {
 
     #[test]
     fn random_in_range_works() {
+        ::env_logger::init().unwrap();
+
         let random1 = generate_big_random(20);
         let random2 = generate_big_random(30);
         let a = random_in_range(&random1, &random2);
