@@ -138,3 +138,26 @@ pub extern fn sovrin_delete_wallet(command_handle: i32,
                                    cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
+
+/// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
+/// in a secure wallet identified by the given number.
+/// The number identifying the value in the wallet is returned when the value is stored in the wallet.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// wallet_key: unique number identifying the value in the wallet
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn sovrin_wallet_set_seq_no_for_value(command_handle: i32,
+                                   wallet_handle: i32,
+                                   wallet_key: *const c_char,
+                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+    unimplemented!();
+}
