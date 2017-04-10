@@ -5,239 +5,248 @@ use std::iter::FromIterator;
 use services::crypto::types::{PublicKey, PrimaryEqualProof, PrimaryPredicateGEProof, Predicate};
 use services::crypto::constants::{LARGE_E_START};
 
-pub fn calc_tge(pk: &PublicKey, u: &HashMap<String, FF>, r: &HashMap<String, FF>,
-                mj: &FF, alpha: &FF, t: &HashMap<String, FF>) -> Vec<FF> {
-    let mut tau_list = Vec::new();
+pub struct Verifier {}
 
-    let mut t_tau = FF::from_hex("1", 64);
+impl Verifier {
+    pub fn new() -> Verifier {
+        Verifier {}
+    }
+    pub fn calc_tge(&self, pk: &PublicKey, u: &HashMap<String, FF>, r: &HashMap<String, FF>,
+                    mj: &FF, alpha: &FF, t: &HashMap<String, FF>) -> Vec<FF> {
+        let mut tau_list = Vec::new();
 
-    for i in 0..4 {
-        let cur_u = u.get(&i.to_string()[..]).unwrap();
-        let cur_r = r.get(&i.to_string()[..]).unwrap();
+        let mut t_tau = FF::from_hex("1", 64);
 
-        t_tau = &FF::pow(&pk.z, &cur_u, &pk.n) * &FF::pow(&pk.s, &cur_r, &pk.n);
+        for i in 0..4 {
+            let cur_u = u.get(&i.to_string()[..]).unwrap();
+            let cur_r = r.get(&i.to_string()[..]).unwrap();
+
+            t_tau = &FF::pow(&pk.z, &cur_u, &pk.n) * &FF::pow(&pk.s, &cur_r, &pk.n);
+
+            FF::modulus(&mut t_tau, &pk.n);
+
+            tau_list.push(t_tau);
+        }
+
+        let delta = r.get("DELTA").unwrap();
+        t_tau = &FF::pow(&pk.z, &mj, &pk.n) * &FF::pow(&pk.s, &delta, &pk.n);
 
         FF::modulus(&mut t_tau, &pk.n);
 
         tau_list.push(t_tau);
-    }
 
-    let delta = r.get("DELTA").unwrap();
-    t_tau = &FF::pow(&pk.z, &mj, &pk.n) * &FF::pow(&pk.s, &delta, &pk.n);
+        let mut Q = FF::from_hex("1", 64);
 
-    FF::modulus(&mut t_tau, &pk.n);
-
-    tau_list.push(t_tau);
-
-    let mut Q = FF::from_hex("1", 64);
-
-    for i in 0..4 {
-        let mut t_pow_u = FF::pow(
-            &t.get(&i.to_string()[..]).unwrap(),
-            &u.get(&i.to_string()[..]).unwrap(),
-            &pk.n
-        );
-        t_pow_u.set_size(64);
-
-        Q = &Q * &t_pow_u;
-    }
-
-    let mut pks_pow_alpha = FF::pow(&pk.s, &alpha, &pk.n);
-    pks_pow_alpha.set_size(64);
-
-    Q = &Q * &pks_pow_alpha;
-
-
-    //there is problem with pk.n big counts
-    let pkn_bytes = pk.n.to_bytes();
-    let mut module = FF::from_bytes(&pkn_bytes[..], pkn_bytes.len(), 64);
-
-    FF::modulus(&mut Q, &module);
-    //////////////////////
-
-    tau_list.push(Q);
-
-    tau_list
-}
-
-pub fn verify_equality(proof: &PrimaryEqualProof, c_h: FF, all_revealed_attrs: &HashMap<String, FF>) -> Vec<FF> {
-    let mut t_hat: Vec<FF> = Vec::new();
-
-    let pk = mocks::wallet_get_pk();/////wallet get pk
-    let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];/////wallet get attr names
-
-    let attr_names_hash_set: HashSet<String> = HashSet::<String>::from_iter(attr_names.iter().cloned());
-    let revealed_attr_names: HashSet<String> = HashSet::<String>::from_iter(proof.revealed_attr_names.iter().cloned());
-
-    let unrevealed_attr_names =
-        attr_names_hash_set
-            .difference(&revealed_attr_names)
-            .map(|attr| attr.to_owned())
-            .collect::<Vec<String>>();
-
-    let t1: FF = calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
-                                            &proof.m1, &proof.m2, &unrevealed_attr_names);
-
-    let mut rar = FF::from_hex("1", 64);
-
-    for attr_name in proof.revealed_attr_names.iter() {
-        let mut pkr_pow_revealed_attrs =
-            FF::pow(
-                &pk.r.get(attr_name).unwrap(),
-                &all_revealed_attrs.get(attr_name).unwrap(),
+        for i in 0..4 {
+            let mut t_pow_u = FF::pow(
+                &t.get(&i.to_string()[..]).unwrap(),
+                &u.get(&i.to_string()[..]).unwrap(),
                 &pk.n
             );
-        pkr_pow_revealed_attrs.set_size(64 as usize);
+            t_pow_u.set_size(64);
 
-        rar = &rar * &pkr_pow_revealed_attrs;
+            Q = &Q * &t_pow_u;
+        }
+
+        let mut pks_pow_alpha = FF::pow(&pk.s, &alpha, &pk.n);
+        pks_pow_alpha.set_size(64);
+
+        Q = &Q * &pks_pow_alpha;
+
+
+        //there is problem with pk.n big counts
+        let pkn_bytes = pk.n.to_bytes();
+        let mut module = FF::from_bytes(&pkn_bytes[..], pkn_bytes.len(), 64);
+
+        FF::modulus(&mut Q, &module);
+        //////////////////////
+
+        tau_list.push(Q);
+
+        tau_list
     }
 
-    let two_pow_large_e_start: FF =
-        FF::pow(
-            &FF::from_hex("2", 32),
-            &FF::from_hex(&format!("{:x}", LARGE_E_START)[..], 32), //LARGE_E_STArT to hex and than to FF
-            &FF::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 32)
-        );
+    pub fn verify_equality(&self, proof: &PrimaryEqualProof, c_h: FF, all_revealed_attrs: &HashMap<String, FF>) -> Vec<FF> {
+        let mut t_hat: Vec<FF> = Vec::new();
+        let verifier = Verifier::new();
 
-    let mut aprime_pow_large_e_start = FF::pow(&proof.a_prime, &two_pow_large_e_start, &pk.n);
-    aprime_pow_large_e_start.set_size(64);
+        let pk = mocks::wallet_get_pk();/////wallet get pk
+        let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];/////wallet get attr names
 
-    rar = &rar * &aprime_pow_large_e_start;
-    //fine -______-
+        let attr_names_hash_set: HashSet<String> = HashSet::<String>::from_iter(attr_names.iter().cloned());
+        let revealed_attr_names: HashSet<String> = HashSet::<String>::from_iter(proof.revealed_attr_names.iter().cloned());
 
-    let pkz_div_rar = div(&pk.z, &rar, &pk.n); //need operation div
+        let unrevealed_attr_names =
+            attr_names_hash_set
+                .difference(&revealed_attr_names)
+                .map(|attr| attr.to_owned())
+                .collect::<Vec<String>>();
 
-    //14e1f102d149d5c026475fe149631a3f578b00e07dd431eccb75c8e4d5dd0b4fe121057f60e090fa1da81f37f6c9b87f2fe4ad352735d42b351c5fbfd97d1c37e283d66186a7b4dc6638e31ab033cc67dcd115a031804863213ea7222ef0b810414a4cbed8c3c30c8de0626087c94d26c9e6266a0ceaee74bda49fbaa14aead19d8010c8ff24581f0921d0f486012a620eaca9a4370f0f13d4dbab4533fd467175561c5a99dc6066764e7fc35430695d4ee71e23a74b934625a51f67d5d034623f9c378cb61fee376234af9e481e0c753be47fddab3eb04b2b6f624292b14b5c170ca479d9fafd56ab954c3f3a3c8a01709f6752b1492fcd2050e1e1838f2efd
+        let t1: FF = verifier.calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
+                              &proof.m1, &proof.m2, &unrevealed_attr_names);
 
-    //        let neg_ch = FF::neg(&c_h); //need operation neg
-    //
-    //        let mut t2 = FF::pow(&pkz_div_rar, &neg_ch, &pk.n);
-    //
-    //        FF::modulus(&mut t2, &pk.n);
-    //
-    //        let mut t = &t1 * &t2;
-    //        FF::modulus(&mut t, &pk.n);
-    //
-    //        t_hat.push(t);
+        let mut rar = FF::from_hex("1", 64);
 
-    t_hat
-}
+        for attr_name in proof.revealed_attr_names.iter() {
+            let mut pkr_pow_revealed_attrs =
+                FF::pow(
+                    &pk.r.get(attr_name).unwrap(),
+                    &all_revealed_attrs.get(attr_name).unwrap(),
+                    &pk.n
+                );
+            pkr_pow_revealed_attrs.set_size(64 as usize);
 
-pub fn verify_ge_predicate(proof: &PrimaryPredicateGEProof, c_h: &FF) -> Vec<FF> {
-    let pk = mocks::wallet_get_pk();/////wallet get pk
-    let (k, v) = (&proof.predicate.attr_name, &proof.predicate.value);
+            rar = &rar * &pkr_pow_revealed_attrs;
+        }
 
-    let mut tau_list = calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
-                                                  &proof.alpha, &proof.t);
+        let two_pow_large_e_start: FF =
+            FF::pow(
+                &FF::from_hex("2", 32),
+                &FF::from_hex(&format!("{:x}", LARGE_E_START)[..], 32), //LARGE_E_STArT to hex and than to FF
+                &FF::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 32)
+            );
 
-    let neg_ch = c_h; //FF::neg(&c_h); //need operation neg
+        let mut aprime_pow_large_e_start = FF::pow(&proof.a_prime, &two_pow_large_e_start, &pk.n);
+        aprime_pow_large_e_start.set_size(64);
 
-    for i in 0..4 {
-        let mut tt = FF::pow(
-            &proof.u.get(&i.to_string()[..]).unwrap(),
-            &neg_ch,
+        rar = &rar * &aprime_pow_large_e_start;
+        //fine -______-
+
+        let pkz_div_rar = verifier.div(&pk.z, &rar, &pk.n); //need operation div
+
+        //14e1f102d149d5c026475fe149631a3f578b00e07dd431eccb75c8e4d5dd0b4fe121057f60e090fa1da81f37f6c9b87f2fe4ad352735d42b351c5fbfd97d1c37e283d66186a7b4dc6638e31ab033cc67dcd115a031804863213ea7222ef0b810414a4cbed8c3c30c8de0626087c94d26c9e6266a0ceaee74bda49fbaa14aead19d8010c8ff24581f0921d0f486012a620eaca9a4370f0f13d4dbab4533fd467175561c5a99dc6066764e7fc35430695d4ee71e23a74b934625a51f67d5d034623f9c378cb61fee376234af9e481e0c753be47fddab3eb04b2b6f624292b14b5c170ca479d9fafd56ab954c3f3a3c8a01709f6752b1492fcd2050e1e1838f2efd
+
+        //        let neg_ch = FF::neg(&c_h); //need operation neg
+        //
+        //        let mut t2 = FF::pow(&pkz_div_rar, &neg_ch, &pk.n);
+        //
+        //        FF::modulus(&mut t2, &pk.n);
+        //
+        //        let mut t = &t1 * &t2;
+        //        FF::modulus(&mut t, &pk.n);
+        //
+        //        t_hat.push(t);
+
+        t_hat
+    }
+
+    pub fn verify_ge_predicate(&self, proof: &PrimaryPredicateGEProof, c_h: &FF) -> Vec<FF> {
+        let pk = mocks::wallet_get_pk();/////wallet get pk
+        let (k, v) = (&proof.predicate.attr_name, &proof.predicate.value);
+        let verifier = Verifier::new();
+        let mut tau_list = verifier.calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
+                                    &proof.alpha, &proof.t);
+
+        let neg_ch = c_h; //FF::neg(&c_h); //need operation neg
+
+        for i in 0..4 {
+            let mut tt = FF::pow(
+                &proof.u.get(&i.to_string()[..]).unwrap(),
+                &neg_ch,
+                &pk.n
+            );
+
+            FF::modulus(&mut tt, &pk.n);
+
+            tau_list[i] = &tau_list[i] * &tt;
+
+            FF::modulus(&mut tau_list[i], &pk.n);
+        }
+
+        let pkz_pow_v = FF::pow(
+            &pk.z,
+            &FF::from_hex(&format!("{:x}", v)[..], 32),
             &pk.n
         );
 
-        FF::modulus(&mut tt, &pk.n);
+        let delta = proof.t.get("DELTA").unwrap();
 
-        tau_list[i] = &tau_list[i] * &tt;
+        tau_list[4] = &tau_list[4] *
+            &FF::pow(
+                &(delta * &pkz_pow_v),
+                &neg_ch,
+                &pk.n
+            );
 
-        FF::modulus(&mut tau_list[i], &pk.n);
+        FF::modulus(&mut tau_list[4], &pk.n);
+
+
+        let mut lett_v_pow_ch = FF::pow(&delta, &neg_ch, &pk.n);
+        lett_v_pow_ch.set_size(64);
+
+        tau_list[5] = &tau_list[5] * &lett_v_pow_ch;
+
+        FF::modulus(&mut tau_list[5], &pk.n);
+
+        tau_list
     }
 
-    let pkz_pow_v = FF::pow(
-        &pk.z,
-        &FF::from_hex(&format!("{:x}", v)[..], 32),
-        &pk.n
-    );
+    pub fn calc_teq(&self, pk: &PublicKey, a_prime: &FF, e: &FF, v: &FF, mtilde: &HashMap<String, FF>, m1tilde: &FF, m2tilde: &FF, unrevealed_attr_names: &Vec<String>) -> FF {
+        let mut rur = FF::from_hex("1", 64);
 
-    let delta = proof.t.get("DELTA").unwrap();
+        for k in unrevealed_attr_names.iter() {
+            let cur_r = pk.r.get(k).unwrap();
+            let cur_m = mtilde.get(k).unwrap();
 
-    tau_list[4] = &tau_list[4] *
-        &FF::pow(
-            &(delta * &pkz_pow_v),
-            &neg_ch,
-            &pk.n
-        );
+            let mut pkr_pow_mtilde = FF::pow(&cur_r, &cur_m, &pk.n);
+            pkr_pow_mtilde.set_size(64 as usize);
+            rur = &rur + &pkr_pow_mtilde
+        }
 
-    FF::modulus(&mut tau_list[4], &pk.n);
+        let mut pkrms_pow_m1_tilde = FF::pow(&pk.rms, &m1tilde, &pk.n);
+        pkrms_pow_m1_tilde.set_size(64 as usize);
 
+        rur = &rur * &pkrms_pow_m1_tilde;
 
-    let mut lett_v_pow_ch = FF::pow(&delta, &neg_ch, &pk.n);
-    lett_v_pow_ch.set_size(64);
+        let mut pkrctxt_pow_m2_tilde = FF::pow(&pk.rctxt, &m2tilde, &pk.n);
+        pkrctxt_pow_m2_tilde.set_size(64 as usize);
 
-    tau_list[5] = &tau_list[5] * &lett_v_pow_ch;
+        rur = &rur * &pkrctxt_pow_m2_tilde;
 
-    FF::modulus(&mut tau_list[5], &pk.n);
+        let mut a_prime_pow_e = FF::pow(&a_prime, &e, &pk.n);
+        a_prime_pow_e.set_size(64 as usize);
 
-    tau_list
-}
+        let mut result = &a_prime_pow_e * &rur;
 
-pub fn calc_teq(pk: &PublicKey, a_prime: &FF, e: &FF, v: &FF, mtilde: &HashMap<String, FF>, m1tilde: &FF, m2tilde: &FF, unrevealed_attr_names: &Vec<String>) -> FF {
-    let mut rur = FF::from_hex("1", 64);
+        let mut pk_s_pow_v = FF::pow(&pk.s, &v, &pk.n);
+        pk_s_pow_v.set_size(64 as usize);
 
-    for k in unrevealed_attr_names.iter() {
-        let cur_r = pk.r.get(k).unwrap();
-        let cur_m = mtilde.get(k).unwrap();
+        result = &result * &pk_s_pow_v;
 
-        let mut pkr_pow_mtilde = FF::pow(&cur_r, &cur_m, &pk.n);
-        pkr_pow_mtilde.set_size(64 as usize);
-        rur = &rur + &pkr_pow_mtilde
+        //there is problem with pk.n bigs count
+        let pkn_bytes = pk.n.to_bytes();//there is problem with pk.n bigs count
+        let mut module = FF::from_bytes(&pkn_bytes[..], pkn_bytes.len(), 64);
+
+        FF::modulus(&mut result, &module);
+        //////////////////////
+
+        result
     }
 
-    let mut pkrms_pow_m1_tilde = FF::pow(&pk.rms, &m1tilde, &pk.n);
-    pkrms_pow_m1_tilde.set_size(64 as usize);
+    fn div(&self, a: &FF, b: &FF, p: &FF) -> FF {
+        //(a * b^(p-2)) % p
 
-    rur = &rur * &pkrms_pow_m1_tilde;
+        let two = FF::from_hex("2", p.len());
 
-    let mut pkrctxt_pow_m2_tilde = FF::pow(&pk.rctxt, &m2tilde, &pk.n);
-    pkrctxt_pow_m2_tilde.set_size(64 as usize);
+        let mut p_sub_2 = p - &two;
 
-    rur = &rur * &pkrctxt_pow_m2_tilde;
+        let b_pow_c = FF::pow(&b, &p_sub_2, &p);
 
-    let mut a_prime_pow_e = FF::pow(&a_prime, &e, &pk.n);
-    a_prime_pow_e.set_size(64 as usize);
+        let mut res = a * &b_pow_c;
 
-    let mut result = &a_prime_pow_e * &rur;
+        FF::modulus(&mut res, p);
 
-    let mut pk_s_pow_v = FF::pow(&pk.s, &v, &pk.n);
-    pk_s_pow_v.set_size(64 as usize);
-
-    result = &result * &pk_s_pow_v;
-
-    //there is problem with pk.n bigs count
-    let pkn_bytes = pk.n.to_bytes();//there is problem with pk.n bigs count
-    let mut module = FF::from_bytes(&pkn_bytes[..], pkn_bytes.len(), 64);
-
-    FF::modulus(&mut result, &module);
-    //////////////////////
-
-    result
-}
-
-fn div(a: &FF, b: &FF, p: &FF) -> FF {
-    //(a * b^(p-2)) % p
-
-    let two = FF::from_hex("2", p.len());
-
-    let mut p_sub_2 = p - &two;
-
-    let b_pow_c = FF::pow(&b, &p_sub_2, &p);
-
-    let mut res = a * &b_pow_c;
-
-    FF::modulus(&mut res, p);
-
-    res
+        res
+    }
 }
 
 #[test]
 fn calc_teg_works() {
     let proof = mocks::get_ge_proof();
+    let verifier = Verifier::new();
     let c_h = FF::from_hex("1066d2487a484fd43ad9f809a7b694bcf98dd7e9876173674e2573dd1152860bfd98cbb827794acac2e1546114fe85b2efb09f6cfb6974694d18822df221d7bb560ad1c810c9a58f8a55", 32);
 
-    let res: Vec<FF> = verify_ge_predicate(
+    let res: Vec<FF> = verifier.verify_ge_predicate(
         &proof,
         &c_h
     );
@@ -246,7 +255,8 @@ fn calc_teg_works() {
 #[test]
 fn calc_teq_works() {
     let proof = mocks::get_eq_proof();
-    let res: FF = calc_teq(
+    let verifier = Verifier::new();
+    let res: FF = verifier.calc_teq(
         &mocks::wallet_get_pk(),
         &proof.a_prime,
         &proof.e,
@@ -261,9 +271,10 @@ fn calc_teq_works() {
 #[test]
 fn verify_equlity_test() {
     let mut all_revealed_attrs = HashMap::new();
+    let verifier = Verifier::new();
     all_revealed_attrs.insert("name".to_string(), FF::from_hex("db74c940d447e877d119df613edd27", 32));
 
-    let res: Vec<FF> = verify_equality(
+    let res: Vec<FF> = verifier.verify_equality(
         &mocks::get_eq_proof(),
         FF::from_hex("c7b01d94ee76cc411a4a818107fdb3b331fec5f3b6a77af52d2051dcb7a5718a", 32),
         &all_revealed_attrs
