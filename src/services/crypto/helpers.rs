@@ -107,10 +107,10 @@ fn random_in_range(start: &FF, end: &FF) -> FF {
     random_number
 }
 
-pub fn encode_attribute(attribute: &str, byte_order: ByteOrder) {
+pub fn encode_attribute(attribute: &str, byte_order: ByteOrder) -> FF {
     let array_bytes = attribute.as_bytes();
     let mut sha256: hash256 = hash256::new();
-    println!("array_bytes{:?}", array_bytes);
+
     for byte in array_bytes[..].iter() {
         sha256.process(*byte);
     }
@@ -120,22 +120,21 @@ pub fn encode_attribute(attribute: &str, byte_order: ByteOrder) {
             .map(|v| *v as u8)
             .collect();
 
+    let index = hashed_array.iter().position(|&value| value == 0);
+    if let Some(position) = index {
+        hashed_array.truncate(position);
+    }
+
     if let ByteOrder::Little = byte_order {
         hashed_array.reverse();
     }
-    println!("hashedarr{:?}", hashed_array);
-    let hex = FF::from_bytes(&hashed_array[..], hashed_array.len(), BIG_SIZE);
-    println!("asby{}", hex);
-    //    let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
-    //    let index = result.iter().position(|&value| value == 0);
-    //    if let Some(position) = index {
-    //        result.truncate(position);
-    //    }
-    //    if let ByteOrder::Little = byte_order {
-    //        result.reverse();
-    //    }
-    //    let encoded_attribute = AnoncredsService::transform_byte_array_to_big_integer(&result);
-    //    encoded_attribute.to_dec_str().unwrap().to_string()
+
+    if hashed_array.len() < 32 {
+        for i in 0..(32 - hashed_array.len()) {
+            hashed_array.insert(0, 0);
+        }
+    }
+    FF::from_bytes(&hashed_array, MODBYTES, 32)
 }
 
 fn significant_bytes(n: &FF) -> Vec<u8> {
@@ -223,8 +222,7 @@ mod tests {
         let test_str_two = "Alexer";
         let test_answer_one = "f54a";
         let test_answer_two = "cf76920dae32802476cc5e8d2518fd21c16b5f83e713a684db1aeb7089c67091";
-        encode_attribute(test_str_one, ByteOrder::Big);
-//        assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one, ByteOrder::Big));
-//        assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two, ByteOrder::Big));
+        assert_eq!(FF::from_hex(test_answer_one, BIG_SIZE), encode_attribute(test_str_one, ByteOrder::Big));
+        assert_eq!(FF::from_hex(test_answer_two, BIG_SIZE), encode_attribute(test_str_two, ByteOrder::Big));
     }
 }
