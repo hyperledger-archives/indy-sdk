@@ -78,7 +78,19 @@ pub fn generate_prime_2p_plus_1(size: usize) -> FF {
 }
 
 pub fn random_qr(n: &FF){
-
+    println!("n :{}", n);
+    let mut random = random_in_range(&FF::from_hex("0", BIG_SIZE), n);
+    println!("random :{}", random);
+    random = FF::sqr(&random);
+    println!("random sqr :{}", random);
+//    let mut nn = n.clone();
+//    nn.set_size(32);
+//    random.set_size(32);
+    let random1 = FF::modulus(&random, &n);
+    println!("random1 :{}", random1);
+//    let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());
+//    random_qr.sqr(&AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &n), &mut ctx);
+//    random_qr
 }
 
 fn random_in_range(start: &FF, end: &FF) -> FF {
@@ -179,5 +191,11 @@ mod tests {
 
         let random = random_in_range(&start, &end);
         assert!((random > start) && (random < end));
+    }
+
+    #[test]
+    fn test_random_qr() {
+        let n = generate_big_random(10);
+        random_qr(&n);
     }
 }
