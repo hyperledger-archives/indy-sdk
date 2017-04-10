@@ -1,3 +1,4 @@
+//TODO: remove this code after all functions will be rewritten with Milagro library.
 const LARGE_MASTER_SECRET: i32 = 256;
 const LARGE_PRIME: i32 = 1024;
 const LARGE_VPRIME: i32 = 2128;
