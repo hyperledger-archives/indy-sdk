@@ -81,15 +81,18 @@ pub fn random_qr(n: &FF){
 
 }
 
-fn random_in_range(start: &FF, end: &FF) {
+fn random_in_range(start: &FF, end: &FF) -> FF {
     let sub = end - start;
     let size = significant_bits(&sub);
     let mut random_number = generate_big_random(size);
-    //        while (&random_number + start) > *end {
-    //            random_number.rand(sub.num_bits(), MSB_MAYBE_ZERO, false).unwrap();
-    //        }
-    //    &random_number + start
+
+    while (&random_number + start) > *end {
+        random_number = generate_big_random(size);
+    }
+
+    random_number = &random_number + start;
     debug!("start: {}\nend: {}\nsub: {}\nrandom: {}", start, end, sub, random_number);
+    random_number
 }
 
 pub fn encode_attribute(attribute: &str, byte_order: ByteOrder) {
@@ -167,8 +170,14 @@ mod tests {
     fn random_in_range_works() {
         ::env_logger::init().unwrap();
 
-        let random1 = generate_big_random(20);
-        let random2 = generate_big_random(30);
-        let a = random_in_range(&random1, &random2);
+        let start = generate_big_random(100);
+        let mut end = generate_big_random(120);
+
+        while end < start {
+            end = generate_big_random(30);
+        }
+
+        let random = random_in_range(&start, &end);
+        assert!((random > start) && (random < end));
     }
 }
