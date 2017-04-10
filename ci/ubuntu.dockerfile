@@ -9,7 +9,9 @@ RUN apt-get update && \
       libssl-dev \
       curl \
       build-essential \
-      libsqlite3-dev
+      libsqlite3-dev \
+      libsodium-dev \
+      cmake
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
@@ -29,5 +31,6 @@ RUN useradd -ms /bin/bash -u $uid sovrin
 USER sovrin
 
 RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
+RUN cargo update
 
 WORKDIR /home/sorvin
