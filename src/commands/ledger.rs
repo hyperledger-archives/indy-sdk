@@ -1,49 +1,64 @@
 use errors::ledger::LedgerError;
-use services::ledger::LedgerService;
+
+use services::crypto::CryptoService;
+use services::pool::PoolService;
+use services::wallet::WalletService;
 
 use std::rc::Rc;
 
 pub enum LedgerCommand {
-    SendNymTx(
-        String, // issuer
-        String, // dest
-        Option<String>, // verkey
-        Option<String>, // xref
-        Option<String>, // data
-        Option<String>, // role
-        Box<Fn(Result<(), LedgerError>) + Send>)
+    PublishTx(
+        i32, // pool handle
+        String, // tx_json
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    PublishTxAck(
+        i32, // command handle
+        Result<String, LedgerError>)
 }
 
 pub struct LedgerCommandExecutor {
-    ledger_service: Rc<LedgerService>
+    crypto_service: Rc<CryptoService>,
+    pool_service: Rc<PoolService>,
+    wallet_service: Rc<WalletService>,
+
 }
 
 impl LedgerCommandExecutor {
-    pub fn new(ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
+    pub fn new(crypto_service: Rc<CryptoService>,
+               pool_service: Rc<PoolService>,
+               wallet_service: Rc<WalletService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
-            ledger_service: ledger_service
+            crypto_service: crypto_service,
+            pool_service: pool_service,
+            wallet_service: wallet_service,
         }
     }
 
     pub fn execute(&self, command: LedgerCommand) {
-        let (result, cb) = match command {
-            LedgerCommand::SendNymTx(issuer, did, verkey, xref, data, role, cb) => {
-                info!(target: "ledger_command_executor", "SendNymTx command received");
-                (self.send_nym_tx(
-                    &issuer,
-                    &did,
-                    verkey.as_ref().map(String::as_str),
-                    xref.as_ref().map(String::as_str),
-                    data.as_ref().map(String::as_str),
-                    role.as_ref().map(String::as_str)), cb)
+        match command {
+            LedgerCommand::PublishTx(handle, tx_json, cb) => {
+                info!(target: "ledger_command_executor", "PublishTx command received");
+                self.publish_tx(handle, &tx_json, cb);
+            },
+            LedgerCommand::PublishTxAck(handle, result) => {
+                info!(target: "ledger_command_executor", "PublishTxAck command received");
+                self.publish_tx_ack(handle, result);
             }
         };
-
-        cb(result);
     }
 
-    fn send_nym_tx(&self, issuer: &str, did: &str, verkey: Option<&str>, xref: Option<&str>,
-                   data: Option<&str>, role: Option<&str>) -> Result<(), LedgerError> {
-        self.ledger_service.send_nym_tx(issuer, did, verkey, xref, data, role)
+    fn publish_tx(&self,
+                  handle: i32,
+                  tx_json: &str,
+                  cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        // TODO: FIXME: In real implementation publish_tx will save callback in context
+        // TODO: FIXME: and send message to pool thread. Callback will be called on
+        // TODO: FIXME: receiving of ack command.
+        unimplemented!()
+    }
+
+    fn publish_tx_ack(&self, handle: i32, result: Result<String, LedgerError>) {
+        // cb(result)
+        unimplemented!()
     }
 }
