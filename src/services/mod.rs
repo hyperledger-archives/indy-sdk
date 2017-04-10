@@ -1,3 +1,3 @@
-pub mod anoncreds;
-pub mod sovrin;
+pub mod crypto;
+pub mod pool;
 pub mod wallet;
