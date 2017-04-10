@@ -34,4 +34,4 @@ rust-base58 = "0.0.4"
 rustc-serialize = "0.3"
 sodiumoxide = "0.0.14"
 zmq = "0.8.1"
-
+lazy_static = "0.2"
