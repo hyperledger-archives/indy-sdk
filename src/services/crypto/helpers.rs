@@ -108,6 +108,24 @@ fn random_in_range(start: &FF, end: &FF) -> FF {
 }
 
 pub fn encode_attribute(attribute: &str, byte_order: ByteOrder) {
+    let array_bytes = attribute.as_bytes();
+    let mut sha256: hash256 = hash256::new();
+    println!("array_bytes{:?}", array_bytes);
+    for byte in array_bytes[..].iter() {
+        sha256.process(*byte);
+    }
+
+    let mut hashed_array: Vec<u8> =
+        sha256.hash().iter()
+            .map(|v| *v as u8)
+            .collect();
+
+    if let ByteOrder::Little = byte_order {
+        hashed_array.reverse();
+    }
+    println!("hashedarr{:?}", hashed_array);
+    let hex = FF::from_bytes(&hashed_array[..], hashed_array.len(), BIG_SIZE);
+    println!("asby{}", hex);
     //    let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
     //    let index = result.iter().position(|&value| value == 0);
     //    if let Some(position) = index {
@@ -197,5 +215,16 @@ mod tests {
     fn test_random_qr() {
 //        let n = generate_big_random(10);
 //        random_qr(&n);
+    }
+
+    #[test]
+    fn encode_attribute_works() {
+        let test_str_one = "Alexer5435";
+        let test_str_two = "Alexer";
+        let test_answer_one = "f54a";
+        let test_answer_two = "cf76920dae32802476cc5e8d2518fd21c16b5f83e713a684db1aeb7089c67091";
+        encode_attribute(test_str_one, ByteOrder::Big);
+//        assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one, ByteOrder::Big));
+//        assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two, ByteOrder::Big));
     }
 }
