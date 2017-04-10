@@ -1,11 +1,17 @@
 pub mod anoncreds;
-pub mod crypto;
 pub mod ledger;
+pub mod pool;
+pub mod signus;
 pub mod wallet;
 
+use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
+use commands::pool::{PoolCommand, PoolCommandExecutor};
+use commands::signus::{SignusCommand, SignusCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
-use services::ledger::LedgerService;
+
+use services::crypto::CryptoService;
+use services::pool::PoolService;
 use services::wallet::WalletService;
 
 use std::error;
@@ -15,7 +21,10 @@ use std::thread;
 
 pub enum Command {
     Exit,
+    Anoncreds(AnoncredsCommand),
     Ledger(LedgerCommand),
+    Pool(PoolCommand),
+    Signus(SignusCommand),
     Wallet(WalletCommand)
 }
 
@@ -33,16 +42,33 @@ impl CommandExecutor {
             worker: Some(thread::spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
-                let ledger_service = Rc::new(LedgerService::new());
+                let crypto_service = Rc::new(CryptoService::new());
+                let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
-                let ledger_command_executor = LedgerCommandExecutor::new(ledger_service.clone());
-                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+
+                let anoncreds_command_executor = AnoncredsCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
+                let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
+                let signus_command_executor = SignusCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
+                let wallet_command_executor = WalletCommandExecutor::new(pool_service.clone(), wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
+                        Ok(Command::Anoncreds(cmd)) => {
+                            info!(target: "command_executor", "AnoncredsCommand command received");
+                            anoncreds_command_executor.execute(cmd);
+                        },
                         Ok(Command::Ledger(cmd)) => {
                             info!(target: "command_executor", "LedgerCommand command received");
                             ledger_command_executor.execute(cmd);
+                        },
+                        Ok(Command::Pool(cmd)) => {
+                            info!(target: "command_executor", "PoolCommand command received");
+                            pool_command_executor.execute(cmd);
+                        },
+                        Ok(Command::Signus(cmd)) => {
+                            info!(target: "command_executor", "SignusCommand command received");
+                            signus_command_executor.execute(cmd);
                         },
                         Ok(Command::Wallet(cmd)) => {
                             info!(target: "command_executor", "WalletCommand command received");
@@ -95,107 +121,5 @@ mod tests {
 
         drop_test();
         assert!(true, "No crashes on CommandExecutor::drop");
-    }
-
-    #[test]
-    fn set_did_command_can_be_sent() {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |result| {
-            match result {
-                Ok(val) => sender.send("OK"),
-                Err(err) => sender.send("ERR")
-            };
-        });
-
-        let cmd_executor = CommandExecutor::new();
-        cmd_executor.send(
-            Command::Ledger
-                (LedgerCommand::SendNymTx(
-                    "{did: \"DID0\", sign_key: \"KEY0\"}".to_string(),
-                    "DID0".to_string(),
-                    None,
-                    None,
-                    None,
-                    None,
-                    cb)));
-
-        match receiver.recv() {
-            Ok(result) => {
-                assert_eq!("OK", result);
-            }
-            Err(err) => {
-                panic!("Error on result recv: {:?}", err);
-            }
-        }
-    }
-
-    #[test]
-    fn wallet_set_value_command_can_be_sent() {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |result| {
-            match result {
-                Ok(val) => sender.send("OK"),
-                Err(err) => sender.send("ERR")
-            };
-        });
-
-        let cmd_executor = CommandExecutor::new();
-        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb)));
-
-        match receiver.recv() {
-            Ok(result) => {
-                assert_eq!("OK", result);
-            }
-            Err(err) => {
-                panic!("Error on result recv: {:?}", err);
-            }
-        }
-    }
-
-    #[test]
-    fn wallet_get_value_command_can_be_sent() {
-        let cmd_executor = CommandExecutor::new();
-
-        let (set_sender, set_receiver) = channel();
-
-        let cb_set = Box::new(move |result| {
-            match result {
-                Ok(val) => set_sender.send("OK"),
-                Err(err) => set_sender.send("ERR")
-            };
-        });
-
-        cmd_executor.send(Command::Wallet(WalletCommand::Set(vec!["key".to_string(), "subkey".to_string()], "value".to_string(), cb_set)));
-
-        match set_receiver.recv() {
-            Ok(result) => {
-                assert_eq!("OK", result);
-            }
-            Err(err) => {
-                panic!("Error on result recv: {:?}", err);
-            }
-        }
-
-        let (get_sender, get_receiver) = channel();
-
-        let cb = Box::new(move |result| {
-            match result {
-                Ok(val) => get_sender.send(val),
-                Err(err) => get_sender.send(None)
-            };
-        });
-
-        cmd_executor.send(Command::Wallet(WalletCommand::Get(vec!["key".to_string(), "subkey".to_string()], cb)));
-
-        match get_receiver.recv() {
-            Ok(result) => {
-                assert_eq!(Some("value".to_string()), result);
-            }
-            Err(err) => {
-                panic!("Error on result recv: {:?}", err);
-            }
-        }
     }
 }

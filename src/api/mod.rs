@@ -84,24 +84,22 @@ pub enum ErrorCode {
     CryptoUnknownType,
 
     // Revocation registry is full and creation of new registry is necessary
-    AnoncredsRevocationRegistryFull = 500,
+    CryptoRevocationRegistryFull,
 
-    AnoncredsInvalidUserRevocIndex,
+    CryptoInvalidUserRevocIndex,
 
     AnoncredsNotIssuedError,
 
     AnoncredsMasterSecretDuplicateNameError,
 
-    AnoncredsClaimNotFoundError,
-
     AnoncredsProofRejected
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+<<<<<<< HEAD
 //    #[test]
 //    fn wallet_set_value_command_can_be_sent() {
 //        let (sender, receiver) = channel();
@@ -125,4 +123,7 @@ mod tests {
 //            }
 //        }
 //    }
+=======
+    // TODO: FIXME: Provide tests!
+>>>>>>> master
 }

@@ -10,15 +10,15 @@ authors = [
   "Sergey Minaev <sergey.minaev@dsr-company.com>"
   ]
 
-description = "sovrin-client-rust"
+description = "Sovrin client with c-callable interface"
 license = "MIT/Apache-2.0"
 
 [lib]
-name = "sovrin_client"
+name = "libsovrin"
 path = "src/lib.rs"
 
 [[bin]]
-name = "sovrin_client"
+name = "sovrin"
 path = "src/main.rs"
 
 [dependencies]
