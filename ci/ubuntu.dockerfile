@@ -30,7 +30,9 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.ca
 RUN useradd -ms /bin/bash -u $uid sovrin
 USER sovrin
 
-RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
+WORKDIR /home/sorvin
+
+COPY Cargo.toml /home/sorvin
 RUN cargo update
 
-WORKDIR /home/sorvin
+RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
