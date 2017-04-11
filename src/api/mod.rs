@@ -97,7 +97,5 @@ pub enum ErrorCode {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     // TODO: FIXME: Provide tests!
 }

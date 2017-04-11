@@ -18,6 +18,7 @@ use std::error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
 use std::thread;
+use std::sync::{Mutex, MutexGuard};
 
 pub enum Command {
     Exit,
@@ -33,8 +34,26 @@ pub struct CommandExecutor {
     sender: Sender<Command>
 }
 
+/// Global (lazy inited) instance of CommandExecutor
+///
+/// Sample:
+///
+/// {
+///     ...
+///     let ref ce: CommandExecutor = *CommandExecutor::instance();                <- lock +
+///     ce.send(Command::Exit);                                                            |
+///     ...                                                                                |
+/// }                                                                            <- unlock +
+lazy_static! {
+    static ref COMMAND_EXECUTOR: Mutex<CommandExecutor> = Mutex::new(CommandExecutor::new());
+}
+
 impl CommandExecutor {
-    pub fn new() -> CommandExecutor {
+    pub fn instance<'mutex>() -> MutexGuard<'mutex, CommandExecutor> {
+        COMMAND_EXECUTOR.lock().unwrap()
+    }
+
+    fn new() -> CommandExecutor {
         let (sender, receiver) = channel();
 
         CommandExecutor {
@@ -121,5 +140,12 @@ mod tests {
 
         drop_test();
         assert!(true, "No crashes on CommandExecutor::drop");
+    }
+
+    #[test]
+    fn command_executor_can_get_instance() {
+        let ref command_executor: CommandExecutor = *CommandExecutor::instance();
+        // Deadlock if another one instance will be requested (try to uncomment the next line)
+        // let ref other_ce: CommandExecutor = *CommandExecutor::instance();
     }
 }

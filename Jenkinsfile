@@ -62,6 +62,8 @@ def testUbuntu() {
         testEnv.inside {
             echo 'Ubuntu Test: Test'
 
+            sh 'cargo update'
+
             try {
                 sh 'cargo test-xunit'
             }
