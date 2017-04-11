@@ -141,7 +141,7 @@ pub  extern fn sovrin_sign(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// None
+/// valid: true - if signature is valid, false - otherwise
 ///
 /// #Errors
 /// Common*
@@ -153,7 +153,8 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
                                        did: *const c_char,
                                        msg: *const c_char,
                                        signature: *const c_char,
-                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                     valid: bool)) -> ErrorCode {
     unimplemented!();
 }
 

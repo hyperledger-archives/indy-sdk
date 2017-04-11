@@ -21,10 +21,10 @@ use self::libc::{c_char, c_uchar};
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_create_pool(command_handle: i32,
-                                 name: *const c_char,
-                                 config: *const c_char,
-                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn sovrin_create_pool_ledger(command_handle: i32,
+                                        name: *const c_char,
+                                        config: *const c_char,
+                                        cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -52,17 +52,17 @@ pub extern fn sovrin_create_pool(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_open_pool(command_handle: i32,
-                               name: *const c_char,
-                               config: *const c_char,
-                               cb: extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)) -> ErrorCode {
+pub extern fn sovrin_open_pool_ledger(command_handle: i32,
+                                      name: *const c_char,
+                                      config: *const c_char,
+                                      cb: extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)) -> ErrorCode {
     unimplemented!();
 }
 
 /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
 ///
 /// #Params
-/// handle: pool handle returned by sovrin_open_pool
+/// handle: pool handle returned by sovrin_open_pool_ledger
 ///
 /// #Returns
 /// Error code
@@ -71,16 +71,16 @@ pub extern fn sovrin_open_pool(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_refresh_pool(command_handle: i32,
-                                  handle: i32,
-                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn sovrin_refresh_pool_ledger(command_handle: i32,
+                                         handle: i32,
+                                         cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
-/// Closes opened pool, opened nodes connections and frees allocated resources.
+/// Closes opened pool ledger, opened nodes connections and frees allocated resources.
 ///
 /// #Params
-/// handle: pool handle returned by sovrin_open_pool.
+/// handle: pool handle returned by sovrin_open_pool_ledger.
 ///
 /// #Returns
 /// Error code
@@ -89,16 +89,16 @@ pub extern fn sovrin_refresh_pool(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_close_pool(command_handle: i32,
-                                handle: i32,
-                                cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn sovrin_close_pool_ledger(command_handle: i32,
+                                       handle: i32,
+                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
 
-/// Deletes created pool.
+/// Deletes created pool ledger.
 ///
 /// #Params
-/// name: Name of the pool to delete.
+/// name: Name of the pool ledger to delete.
 ///
 /// #Returns
 /// Error code
@@ -107,8 +107,8 @@ pub extern fn sovrin_close_pool(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_delete_pool(command_handle: i32,
-                                 name: *const c_char,
-                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+pub extern fn sovrin_delete_pool_ledger(command_handle: i32,
+                                        name: *const c_char,
+                                        cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }

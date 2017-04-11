@@ -30,9 +30,11 @@ use self::libc::{c_char, c_uchar};
 #[no_mangle]
 pub extern fn sovrin_register_wallet_type(xtype: *const c_char,
                                           create: extern fn(name: *const c_char,
-                                                            config: *const c_char) -> ErrorCode,
+                                                            config: *const c_char,
+                                                            credentials: *const c_char) -> ErrorCode,
                                           open: extern fn(name: *const c_char,
                                                           config: *const c_char,
+                                                          credentials: *const c_char,
                                                           handle: *const *mut i32) -> ErrorCode,
                                           set: extern fn(handle: i32,
                                                          key: *const c_char, sub_key: *const c_char,
@@ -54,7 +56,9 @@ pub extern fn sovrin_register_wallet_type(xtype: *const c_char,
 /// name: Name of the wallet.
 /// xtype(optional): Type of the wallet. Defaults to 'default'.
 ///                  Custom types can be registered with sovrin_register_wallet_type call.
-/// config (optional): Wallet configuration json. List of supported keys are defined by wallet type.
+/// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
+///                    if NULL, then default config will be used.
+/// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
 ///                    if NULL, then default config will be used.
 ///
 /// #Returns
@@ -69,6 +73,7 @@ pub extern fn sovrin_create_wallet(command_handle: i32,
                                    name: *const c_char,
                                    xtype: *const c_char,
                                    config: *const c_char,
+                                   credentials: *const c_char,
                                    cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
@@ -86,6 +91,8 @@ pub extern fn sovrin_create_wallet(command_handle: i32,
 ///     "freshnessTime": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
 ///     ... List of additional supported keys are defined by wallet type.
 /// }
+/// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
+///                    if NULL, then default config will be used.
 ///
 /// #Returns
 /// Handle to opened wallet to use in methods that require wallet access.
@@ -98,6 +105,7 @@ pub extern fn sovrin_open_wallet(command_handle: i32,
                                  pool_handle: i32,
                                  name: *const c_char,
                                  config: *const c_char,
+                                 credentials: *const c_char,
                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)) -> ErrorCode {
     unimplemented!();
 }
@@ -156,8 +164,8 @@ pub extern fn sovrin_delete_wallet(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn sovrin_wallet_set_seq_no_for_value(command_handle: i32,
-                                   wallet_handle: i32,
-                                   wallet_key: *const c_char,
-                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
+                                                 wallet_handle: i32,
+                                                 wallet_key: *const c_char,
+                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
     unimplemented!();
 }
