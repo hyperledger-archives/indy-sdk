@@ -9,6 +9,7 @@ pub mod bn_impl {
     use errors::crypto::CryptoError;
     use std::error::Error;
 
+    #[derive(Debug)]
     pub struct BigNumber {
         openssl_bn: BigNum
     }
