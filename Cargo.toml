@@ -21,12 +21,16 @@ path = "src/lib.rs"
 name = "sovrin"
 path = "src/main.rs"
 
+[features]
+default = ["bn_openssl"]
+bn_openssl = ["openssl"]
+
 [dependencies]
 int_traits = "0.1.1"
 env_logger = "0.4.2"
 libc = "0.2.21"
 log = "0.3.7"
-openssl = "0.9.9"
+openssl = { version = "0.9.9", optional = true}
 milagro-crypto = { git = "https://github.com/DSRCorporation/milagro-crypto-rust" }
 rand = "0.3"
 rusqlite = "0.10.1"
