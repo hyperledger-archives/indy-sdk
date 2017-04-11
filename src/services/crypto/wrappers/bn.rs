@@ -27,6 +27,12 @@ mod bn_impl {
             Ok(bn)
         }
 
+        pub fn rand(&self, size: i32) -> Result<BigNumber, CryptoError> {
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::rand(&mut bn.openssl_bn, size, MSB_MAYBE_ZERO, false));
+            Ok(bn)
+        }
+
         pub fn from_dec(dec: &str) -> Result<BigNumber, CryptoError> {
             let bn = try!(BigNum::from_dec_str(dec));
             Ok(BigNumber {
@@ -78,6 +84,13 @@ mod bn_impl {
             let mut ctx = BigNumContext::new().unwrap();
             let mut bn = try!(BigNumber::new());
             try!(BigNumRef::checked_mul(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
+            Ok(bn)
+        }
+
+        pub fn div(&mut self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
+            let mut ctx = BigNumContext::new().unwrap();
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::checked_div(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
             Ok(bn)
         }
 
