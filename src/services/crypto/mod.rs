@@ -4,17 +4,17 @@ pub mod ed25519;
 pub mod wrappers;
 
 use self::anoncreds::AnoncredsService;
-use self::ed25519::Sodium;
+use self::ed25519::ED25519;
 
 pub struct CryptoService {
-    sodium: Sodium,
+    ed25519: ED25519,
     anoncreds: AnoncredsService
 }
 
 impl CryptoService {
     pub fn new() -> CryptoService {
         CryptoService {
-            sodium: Sodium::new(),
+            ed25519: ED25519::new(),
             anoncreds: AnoncredsService::new()
         }
     }

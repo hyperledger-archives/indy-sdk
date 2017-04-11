@@ -24,15 +24,6 @@ pub struct AnoncredsService {
 }
 
 impl AnoncredsService {
-    pub fn new() -> AnoncredsService {
-        trace!(target: "AnoncredsService", "new");
-        AnoncredsService { dummy: "anoncreds_dummy".to_string() }
-    }
-    fn generate_master_secret() -> BigNum {
-        let mut ms = BigNum::new().unwrap();
-        ms.rand(LARGE_MASTER_SECRET, MSB_MAYBE_ZERO, false);
-        ms
-    }
     fn generate_public_key() -> PublicKey {
         //let (p_prime, q_prime) = (AnoncredsService::generate_prime(), AnoncredsService::generate_prime());
         let p_prime = BigNum::from_dec_str("147210949676505370022291901638323344651935110597590993130806944871698104433042968489453214046274983960765508724336420649095413993801340223096499490318385863961435462627523137938481776395548210420546733337321351064531462114552738775282293300556323029911674068388889455348206728016707243243859948314986927502343").unwrap();
@@ -66,18 +57,6 @@ impl AnoncredsService {
 
         PublicKey {n: n, s: s, rms: rms}
     }
-    fn gen_x(p: &BigNum, q: &BigNum) -> BigNum {
-        let mut ctx = BigNumContext::new().unwrap();
-        let mut value = BigNum::new().unwrap();
-        let mut result = BigNum::new().unwrap();
-
-        value.checked_mul(&p, &q, &mut ctx);
-        value.sub_word(3);
-
-        result = AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &value);
-        result.add_word(2);
-        result
-    }
     fn gen_u(public_key: PublicKey, ms: BigNum) -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
         let mut vprime = BigNum::new().unwrap();
@@ -92,17 +71,6 @@ impl AnoncredsService {
         let mut u = &result_mul_one * &result_mul_two;
         u = &u % &public_key.n;
         u
-    }
-    fn random_in_range(start: &BigNum, end: &BigNum) -> BigNum {
-        let mut random_number = BigNum::new().unwrap();
-        let sub = end - start;
-
-        random_number.rand(sub.num_bits(), MSB_MAYBE_ZERO, false).unwrap();
-        while (&random_number + start) > *end {
-            random_number.rand(sub.num_bits(), MSB_MAYBE_ZERO, false).unwrap();
-        }
-
-        &random_number + start
     }
     fn random_qr(n: &BigNum) -> BigNum {
         let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());

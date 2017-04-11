@@ -9,11 +9,11 @@ use self::sodiumoxide::crypto::sign;
 use self::sodiumoxide::randombytes;
 use std::convert::AsMut;
 
-pub struct Sodium {}
+pub struct ED25519 {}
 
-impl Sodium {
-    pub fn new() -> Sodium {
-        Sodium {}
+impl ED25519 {
+    pub fn new() -> ED25519 {
+        ED25519 {}
     }
 
     pub fn sodium_symmetric_create_key(&self) -> Vec<u8> {
@@ -25,7 +25,7 @@ impl Sodium {
     }
 
     pub fn sodium_symmetric_encrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Vec<u8> {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         secretbox::seal(
             doc,
             &secretbox::Nonce(sodium.clone_into_array(nonce)),
@@ -34,7 +34,7 @@ impl Sodium {
     }
 
     pub fn sodium_symmetric_decrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         secretbox::open(
             doc,
             &secretbox::Nonce(sodium.clone_into_array(nonce)),
@@ -50,7 +50,7 @@ impl Sodium {
     }
 
     pub fn sodium_encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         box_::seal(
             doc,
             &box_::Nonce(sodium.clone_into_array(nonce)),
@@ -60,7 +60,7 @@ impl Sodium {
     }
 
     pub fn sodium_decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         box_::open(
             doc,
             &box_::Nonce(sodium.clone_into_array(nonce)),
@@ -75,7 +75,7 @@ impl Sodium {
     }
 
     pub fn sodium_create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> (Vec<u8>, Vec<u8>) {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         let (public_key, private_key) =
             sign::keypair_from_seed(
                 &sign::Seed(
@@ -99,7 +99,7 @@ impl Sodium {
     }
 
     pub fn sodium_verify(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         sign::verify(
             doc,
             &sign::PublicKey(sodium.clone_into_array(public_key))
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn crypto_service_can_encode_decode_string() {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         let data = &[1, 2, 3];
 
         let encode_result = sodium.base58_encode(&data[..]);
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn crypto_service_encode_decode_test() {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         let (alice_pk, alice_sk) = sodium.sodium_box_create_key_pair();
         let (bob_pk, bob_sk) = sodium.sodium_box_create_key_pair();
 
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn crypto_service_signin_verify_test() {
-        let sodium = Sodium::new();
+        let sodium = ED25519::new();
         let seed = randombytes::randombytes(32);
 
         let (public_key, secret_key) = sodium.sodium_create_key_pair_for_signature(Some(&seed[..]));
