@@ -1,12 +1,12 @@
 #[cfg(feature = "bn_openssl")]
 pub mod bn_impl {
-    extern crate openssl;
-
-    use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
-    use self::openssl::hash::{hash, MessageDigest};
-    use self::openssl::error::ErrorStack;
-    use services::crypto::anoncreds::constants::{LARGE_PRIME};
     use errors::crypto::CryptoError;
+
+    extern crate openssl;
+    use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
+    use self::openssl::error::ErrorStack;
+    use self::openssl::hash::{hash, MessageDigest};
+
     use std::error::Error;
 
     #[derive(Debug)]

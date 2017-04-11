@@ -1,6 +1,6 @@
 use services::crypto::anoncreds::constants::{LARGE_MASTER_SECRET};
-use services::crypto::wrappers::bn::bn_impl::BigNumber;
 use errors::crypto::CryptoError;
+use services::crypto::wrappers::bn::bn_impl::BigNumber;
 
 pub struct Prover {}
 
