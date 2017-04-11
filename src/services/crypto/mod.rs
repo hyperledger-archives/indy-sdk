@@ -5,6 +5,7 @@ pub mod libsodium;
 pub mod prover;
 pub mod types;
 pub mod verifier;
+pub mod wrappers;
 
 use self::libsodium::Sodium;
 use self::issuer::Issuer;

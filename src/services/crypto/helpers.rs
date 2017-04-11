@@ -93,7 +93,7 @@ pub fn random_qr(n: &FF){
 //    random_qr
 }
 
-fn random_in_range(start: &FF, end: &FF) -> FF {
+pub fn random_in_range(start: &FF, end: &FF) -> FF {
     let sub = end - start;
     let size = significant_bits(&sub);
     let mut random_number = generate_big_random(size);
