@@ -170,15 +170,19 @@ fn generate_probable_prime(size: usize) {
     //TODO loop for mods check
 }
 
-pub fn get_hash_as_int(num: FF) -> FF {
-    let array_bytes: Vec<u8> = num.to_bytes();
-
-    let index = array_bytes.iter().position(|&value| value != 0).unwrap_or(array_bytes.len());
-
+pub fn get_hash_as_int(nums: &mut Vec<FF>) -> FF {
     let mut sha256: hash256 = hash256::new();
 
-    for byte in array_bytes[index..].iter() {
-        sha256.process(*byte);
+    nums.sort();
+
+    for num in nums.iter() {
+        let array_bytes: Vec<u8> = num.to_bytes();
+
+        let index = array_bytes.iter().position(|&value| value != 0).unwrap_or(array_bytes.len());
+
+        for byte in array_bytes[index..].iter() {
+            sha256.process(*byte);
+        }
     }
 
     let mut hashed_array: Vec<u8> =
@@ -224,5 +228,15 @@ mod tests {
         let test_answer_two = "cf76920dae32802476cc5e8d2518fd21c16b5f83e713a684db1aeb7089c67091";
         assert_eq!(FF::from_hex(test_answer_one, BIG_SIZE), encode_attribute(test_str_one, ByteOrder::Big));
         assert_eq!(FF::from_hex(test_answer_two, BIG_SIZE), encode_attribute(test_str_two, ByteOrder::Big));
+    }
+
+    #[test]
+    fn get_hash_as_in_works(){
+        let mut nums = vec![
+            FF::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa94d3fdf6abfbff", 32),
+            FF::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa9168615ccbc546", 32)
+        ];
+        let res =  get_hash_as_int(&mut nums);
+        assert_eq!("0000000000000000000000000000000000000000000000000000000000000000 9E2A0653691B96A9B55B3D1133F9FEE2F2C37B848DBADF2F70DFFFE9E47C5A5D", res.to_hex());
     }
 }
