@@ -9,6 +9,7 @@ pub enum CryptoError {
     CryptoUnknownType(String),
     CryptoRevocationRegistryFull(String),
     CryptoInvalidUserRevocIndex(String),
+    CryptoBackendError(String)
 }
 
 impl fmt::Display for CryptoError {
@@ -17,7 +18,8 @@ impl fmt::Display for CryptoError {
             CryptoError::CryptoInvalidStructure(ref description) => write!(f, "Invalid crypto structure: {}", description),
             CryptoError::CryptoUnknownType(ref description) => write!(f, "Unknown crypto type: {}", description),
             CryptoError::CryptoRevocationRegistryFull(ref description) => write!(f, "Crypto revocation registry is full: {}", description),
-            CryptoError::CryptoInvalidUserRevocIndex(ref description) => write!(f, "Crypto invalid revocation index: {}", description)
+            CryptoError::CryptoInvalidUserRevocIndex(ref description) => write!(f, "Crypto invalid revocation index: {}", description),
+            CryptoError::CryptoBackendError(ref description) => write!(f, "Crypto backend error {}", description)
         }
     }
 }
@@ -29,6 +31,7 @@ impl error::Error for CryptoError {
             CryptoError::CryptoUnknownType(ref description) => description,
             CryptoError::CryptoRevocationRegistryFull(ref description) => description,
             CryptoError::CryptoInvalidUserRevocIndex(ref description) => description,
+            CryptoError::CryptoBackendError(ref description) => description
         }
     }
 
@@ -37,7 +40,8 @@ impl error::Error for CryptoError {
             CryptoError::CryptoInvalidStructure(ref description) => None,
             CryptoError::CryptoUnknownType(ref description) => None,
             CryptoError::CryptoRevocationRegistryFull(ref description) => None,
-            CryptoError::CryptoInvalidUserRevocIndex(ref description) => None
+            CryptoError::CryptoInvalidUserRevocIndex(ref description) => None,
+            CryptoError::CryptoBackendError(ref err) => None
         }
     }
 }

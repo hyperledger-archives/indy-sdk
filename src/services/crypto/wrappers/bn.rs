@@ -4,90 +4,121 @@ mod bn_impl {
 
     use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
     use self::openssl::hash::{hash, MessageDigest};
+    use self::openssl::error::ErrorStack;
     use services::crypto::constants::{LARGE_PRIME};
+    use errors::crypto::CryptoError;
+    use std::error::Error;
 
     pub struct BigNumber {
-        bn: BigNum
+        openssl_bn: BigNum
     }
 
     impl BigNumber {
-        pub fn new() -> BigNumber {
-            BigNumber {
-                bn: BigNum::new().unwrap()
-            }
+        pub fn new() -> Result<BigNumber, CryptoError> {
+            let bn = try!(BigNum::new());
+            Ok(BigNumber {
+                openssl_bn: bn
+            })
         }
 
-        pub fn safe_prime(&mut self) {
-            self.bn.generate_prime(LARGE_PRIME as i32, true, None, None).unwrap()
+        pub fn safe_prime(&self, size: i32) -> Result<BigNumber, CryptoError> {
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::generate_prime(&mut bn.openssl_bn, size, true, None, None));
+            Ok(bn)
         }
 
-        pub fn from_dec(dec: &str) -> BigNumber {
-            BigNumber {
-                bn: BigNum::from_dec_str(dec).unwrap()
-            }
+        pub fn from_dec(dec: &str) -> Result<BigNumber, CryptoError> {
+            let bn = try!(BigNum::from_dec_str(dec));
+            Ok(BigNumber {
+                openssl_bn: bn
+            })
         }
 
-        pub fn from_hex(hex: &str) -> BigNumber {
-            BigNumber {
-                bn: BigNum::from_hex_str(hex).unwrap()
-            }
+        pub fn from_hex(hex: &str) -> Result<BigNumber, CryptoError> {
+            let bn = try!(BigNum::from_hex_str(hex));
+            Ok(BigNumber {
+                openssl_bn: bn
+            })
         }
 
-        pub fn from_bytes(bytes: &[u8]) -> BigNumber {
-            BigNumber {
-                bn: BigNum::from_slice(bytes).unwrap()
-            }
+        pub fn from_bytes(bytes: &[u8]) -> Result<BigNumber, CryptoError> {
+            let bn = try!(BigNum::from_slice(bytes));
+            Ok(BigNumber {
+                openssl_bn: bn
+            })
         }
 
-        pub fn to_dec(&self) -> String {
-            self.bn.to_dec_str().unwrap().to_string()
+        pub fn to_dec(&self) -> Result<String, CryptoError> {
+            let result = try!(self.openssl_bn.to_dec_str());
+            Ok(result.to_string())
         }
 
-        pub fn to_hex(&self) -> String {
-            self.bn.to_hex_str().unwrap().to_string()
+        pub fn to_hex(&self) -> Result<String, CryptoError> {
+            let result = try!(self.openssl_bn.to_hex_str());
+            Ok(result.to_string())
         }
 
-        pub fn to_bytes(&self) -> Vec<u8> {
-            self.bn.to_vec()
+        pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+            Ok(self.openssl_bn.to_vec())
         }
 
-        pub fn add(&mut self, a: &BigNumber, b: &BigNumber) {
-            self.bn.checked_add(&a.bn, &b.bn).unwrap()
+        pub fn add(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::checked_add(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn));
+            Ok(bn)
         }
 
-        pub fn sub(&mut self, a: &BigNumber, b: &BigNumber) {
-            self.bn.checked_sub(&a.bn, &b.bn).unwrap()
+        pub fn sub(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::checked_sub(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn));
+            Ok(bn)
         }
 
-        pub fn mul(&mut self, a: &BigNumber, b: &BigNumber) {
+        pub fn mul(&mut self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
             let mut ctx = BigNumContext::new().unwrap();
-            self.bn.checked_mul(&a.bn, &b.bn, &mut ctx).unwrap()
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::checked_mul(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
+            Ok(bn)
         }
 
-        pub fn add_word(&mut self, w: u32) {
-            self.add_word(w);
+        pub fn add_word(&mut self, w: u32) -> Result<&mut BigNumber, CryptoError> {
+            try!(BigNumRef::add_word(&mut self.openssl_bn, w));
+            Ok(self)
         }
 
-        pub fn sub_word(&mut self, w: u32) {
-            self.sub_word(w);
+        pub fn sub_word(&mut self, w: u32) -> Result<&mut BigNumber, CryptoError> {
+            try!(BigNumRef::sub_word(&mut self.openssl_bn, w));
+            Ok(self)
         }
 
-        pub fn mul_word(&mut self, w: u32) {
-            self.mul_word(w);
+        pub fn mul_word(&mut self, w: u32) -> Result<&mut BigNumber, CryptoError> {
+            try!(BigNumRef::mul_word(&mut self.openssl_bn, w));
+            Ok(self)
         }
 
-        pub fn div_word(&mut self, w: u32) {
-            self.div_word(w);
+        pub fn div_word(&mut self, w: u32) -> Result<&mut BigNumber, CryptoError> {
+            try!(BigNumRef::div_word(&mut self.openssl_bn, w));
+            Ok(self)
         }
 
-        pub fn mod_exp(&mut self, a: &BigNumber, b: &BigNumber, c: &BigNumber) {
+        pub fn mod_exp(&self, a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
             let mut ctx = BigNumContext::new().unwrap();
-            self.bn.mod_exp(&a.bn, &b.bn, &c.bn, &mut ctx).unwrap()
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::mod_exp(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &b.openssl_bn, &mut ctx));
+            Ok(bn)
         }
 
-        fn modulus(&mut self, a: &BigNumber, b: &BigNumber) {
+        fn modulus(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
             let mut ctx = BigNumContext::new().unwrap();
-            self.bn.nnmod(&a.bn, &b.bn, &mut ctx).unwrap()
+            let mut bn = try!(BigNumber::new());
+            try!(BigNumRef::nnmod(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
+            Ok(bn)
+        }
+    }
+
+    impl From<ErrorStack> for CryptoError {
+        fn from(err: ErrorStack) -> CryptoError {
+            CryptoError::CryptoBackendError(err.description().to_string())
         }
     }
 }
