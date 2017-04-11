@@ -147,7 +147,7 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
                                          revoc_reg_seq_no: *const c_char,
                                          user_revoc_index: *const c_char,
                                          cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                            revoc_reg_update_json: *const c_char,
+                                                       revoc_reg_update_json: *const c_char,
                                          )) -> ErrorCode {
     unimplemented!();
 }
@@ -336,10 +336,10 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn sovrin_prover_parse_proof_request(command_handle: i32,
-                                         wallet_handle: i32,
-                                         proof_request_json: *const c_char,
-                                         cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                       parsed_proof_request_json: *const c_char)) -> ErrorCode {
+                                                wallet_handle: i32,
+                                                proof_request_json: *const c_char,
+                                                cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                              parsed_proof_request_json: *const c_char)) -> ErrorCode {
     unimplemented!();
 }
 
@@ -417,7 +417,7 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// None
+/// valid: true - if signature is valid, false - otherwise
 ///
 /// #Errors
 /// Annoncreds*
@@ -432,8 +432,8 @@ pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
                                            schemas_json: *const c_char,
                                            public_keys_json: *const c_char,
                                            revoc_regs_json: *const c_char,
-                                           cb: extern fn(xcommand_handle: i32, err: ErrorCode
-                                           )) -> ErrorCode {
+                                           cb: extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                         valid: bool)) -> ErrorCode {
     unimplemented!();
 }
 
