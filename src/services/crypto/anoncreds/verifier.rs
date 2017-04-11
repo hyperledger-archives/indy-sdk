@@ -3,8 +3,18 @@ extern crate milagro_crypto;
 use self::milagro_crypto::ff::FF;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
-use services::crypto::types::{PublicKey, PrimaryEqualProof, PrimaryPredicateGEProof, Predicate, ProofInput, PrimaryProof, Proof, FullProof, SchemaKey};
-use services::crypto::constants::{LARGE_E_START};
+use services::crypto::anoncreds::types::{
+    PublicKey,
+    PrimaryEqualProof,
+    PrimaryPredicateGEProof,
+    Predicate,
+    ProofInput,
+    PrimaryProof,
+    Proof,
+    FullProof,
+    SchemaKey
+};
+use services::crypto::anoncreds::constants::{LARGE_E_START};
 use services::crypto::helpers::get_hash_as_int;
 
 pub struct Verifier {}

@@ -1,16 +1,12 @@
 pub mod helpers;
-pub mod constants;
-pub mod issuer;
-pub mod libsodium;
-pub mod prover;
-pub mod types;
-pub mod verifier;
+pub mod anoncreds;
+pub mod ed25519;
 pub mod wrappers;
 
-use self::libsodium::Sodium;
-use self::issuer::Issuer;
-use self::prover::Prover;
-use self::verifier::Verifier;
+use self::ed25519::Sodium;
+use self::anoncreds::issuer::Issuer;
+use self::anoncreds::prover::Prover;
+use self::anoncreds::verifier::Verifier;
 
 pub struct CryptoService {
     sodium: Sodium,

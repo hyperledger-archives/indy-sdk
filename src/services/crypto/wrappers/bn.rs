@@ -5,7 +5,7 @@ mod bn_impl {
     use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
     use self::openssl::hash::{hash, MessageDigest};
     use self::openssl::error::ErrorStack;
-    use services::crypto::constants::{LARGE_PRIME};
+    use services::crypto::anoncreds::constants::{LARGE_PRIME};
     use errors::crypto::CryptoError;
     use std::error::Error;
 

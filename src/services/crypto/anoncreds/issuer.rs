@@ -4,7 +4,7 @@ use services::crypto::helpers::{
     random_qr,
     random_in_range
 };
-use services::crypto::constants::{BIG_SIZE};
+use services::crypto::anoncreds::constants::{BIG_SIZE};
 
 pub struct Issuer {
 

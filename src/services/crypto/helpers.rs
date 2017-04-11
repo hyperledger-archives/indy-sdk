@@ -6,14 +6,14 @@ use self::milagro_crypto::ff::FF;
 use self::milagro_crypto::hash::wrappers::hash256;
 use self::rand::os::OsRng;
 use self::rand::Rng;
-use services::crypto::constants::{
+use services::crypto::anoncreds::constants::{
     BIG_SIZE,
     BN_MASK,
     PRIMES,
     NUM_PRIMES,
     LARGE_PRIME
 };
-use services::crypto::types::{ByteOrder};
+use services::crypto::anoncreds::types::{ByteOrder};
 
 pub fn generate_random_seed() -> [u8; 32] {
     let mut seed: [u8; 32] = [0; 32];
