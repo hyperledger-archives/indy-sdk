@@ -5,6 +5,7 @@ use services::crypto::helpers::{
     random_in_range
 };
 use services::crypto::anoncreds::constants::{BIG_SIZE};
+use services::crypto::wrappers::bn::bn_impl::BigNumber;
 
 pub struct Issuer {
 
@@ -16,6 +17,7 @@ impl Issuer {
     }
     pub fn generate_keys(&self) {
         let issuer = Issuer::new();
+        //let bn = BigNumber::new();
         //    let p_prime = generate_prime_2p_plus_1(LARGE_PRIME);
         //    let q_prime = generate_prime_2p_plus_1(LARGE_PRIME);
         let p_prime = FF::from_hex("d1a2a65b9b574dd3e8416aa93f6d570adc2b5fc26925f78216225de6c882ebf431c5fec9d5fab19237092699f3e1b31c94912926b5e7dd03983328465dffa76a6a227d6518632ac99ebf103e84f8e492e8e2ec37395f2f50b38753f3f3a529f80944cf84c2cc5534dae121bb1c65f62705882d279d18ff9d76a7f8d2546a3407", BIG_SIZE);

@@ -1,5 +1,5 @@
 #[cfg(feature = "bn_openssl")]
-mod bn_impl {
+pub mod bn_impl {
     extern crate openssl;
 
     use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
@@ -31,6 +31,13 @@ mod bn_impl {
             let mut bn = try!(BigNumber::new());
             try!(BigNumRef::rand(&mut bn.openssl_bn, size, MSB_MAYBE_ZERO, false));
             Ok(bn)
+        }
+
+        pub fn from_u32(n: u32) -> Result<BigNumber, CryptoError> {
+            let bn = try!(BigNum::from_u32(n));
+            Ok(BigNumber {
+                openssl_bn: bn
+            })
         }
 
         pub fn from_dec(dec: &str) -> Result<BigNumber, CryptoError> {
