@@ -26,7 +26,8 @@ pub struct PublicKey {
 }
 
 pub struct ClaimInitData {
-
+    pub u: BigNumber,
+    pub v_prime: BigNumber
 }
 
 pub struct FullProof {
