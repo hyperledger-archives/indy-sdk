@@ -9,12 +9,24 @@ pub mod bn_impl {
 
     use std::error::Error;
 
+    pub struct BigNumberContext {
+        openssl_bn_context: BigNumContext
+    }
+
     #[derive(Debug)]
     pub struct BigNumber {
         openssl_bn: BigNum
     }
 
     impl BigNumber {
+
+        pub fn new_context() -> Result<BigNumberContext, CryptoError> {
+            let ctx = try!(BigNumContext::new());
+            Ok(BigNumberContext {
+                openssl_bn_context: ctx
+            })
+        }
+
         pub fn new() -> Result<BigNumber, CryptoError> {
             let bn = try!(BigNum::new());
             Ok(BigNumber {
@@ -94,17 +106,27 @@ pub mod bn_impl {
             Ok(bn)
         }
 
-        pub fn mul(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
-            let mut ctx = BigNumContext::new().unwrap();
+        pub fn mul(&self, a: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
             let mut bn = try!(BigNumber::new());
-            try!(BigNumRef::checked_mul(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
+            match ctx {
+                Some(context) => try!(BigNumRef::checked_mul(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut context.openssl_bn_context)),
+                None => {
+                    let mut ctx = try!(BigNumber::new_context());
+                    try!(BigNumRef::checked_mul(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx.openssl_bn_context));
+                }
+            }
             Ok(bn)
         }
 
-        pub fn div(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
-            let mut ctx = BigNumContext::new().unwrap();
+        pub fn div(&self, a: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
             let mut bn = try!(BigNumber::new());
-            try!(BigNumRef::checked_div(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
+            match ctx {
+                Some(context) => try!(BigNumRef::checked_div(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut context.openssl_bn_context)),
+                None => {
+                    let mut ctx = try!(BigNumber::new_context());
+                    try!(BigNumRef::checked_div(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx.openssl_bn_context));
+                }
+            }
             Ok(bn)
         }
 
@@ -128,17 +150,27 @@ pub mod bn_impl {
             Ok(self)
         }
 
-        pub fn mod_exp(&self, a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
-            let mut ctx = BigNumContext::new().unwrap();
+        pub fn mod_exp(&self, a: &BigNumber, b: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
             let mut bn = try!(BigNumber::new());
-            try!(BigNumRef::mod_exp(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &b.openssl_bn, &mut ctx));
+            match ctx {
+                Some(context) => try!(BigNumRef::mod_exp(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &b.openssl_bn, &mut context.openssl_bn_context)),
+                None => {
+                    let mut ctx = try!(BigNumber::new_context());
+                    try!(BigNumRef::mod_exp(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &b.openssl_bn, &mut ctx.openssl_bn_context));
+                }
+            }
             Ok(bn)
         }
 
-        fn modulus(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
-            let mut ctx = BigNumContext::new().unwrap();
+        fn modulus(&self, a: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
             let mut bn = try!(BigNumber::new());
-            try!(BigNumRef::nnmod(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx));
+            match ctx {
+                Some(context) => try!(BigNumRef::nnmod(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut context.openssl_bn_context)),
+                None => {
+                    let mut ctx = try!(BigNumber::new_context());
+                    try!(BigNumRef::nnmod(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx.openssl_bn_context));
+                }
+            }
             Ok(bn)
         }
     }

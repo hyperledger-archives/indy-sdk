@@ -57,21 +57,6 @@ impl AnoncredsService {
 
         PublicKey {n: n, s: s, rms: rms}
     }
-    fn gen_u(public_key: PublicKey, ms: BigNum) -> BigNum {
-        let mut ctx = BigNumContext::new().unwrap();
-        let mut vprime = BigNum::new().unwrap();
-        vprime.rand(LARGE_VPRIME, MSB_MAYBE_ZERO, false);
-
-        let mut result_mul_one = BigNum::new().unwrap();
-        result_mul_one.mod_exp(&public_key.s, &vprime, &public_key.n, &mut ctx);
-
-        let mut result_mul_two = BigNum::new().unwrap();
-        result_mul_two.mod_exp(&public_key.rms, &ms, &public_key.n, &mut ctx);
-
-        let mut u = &result_mul_one * &result_mul_two;
-        u = &u % &public_key.n;
-        u
-    }
     fn random_qr(n: &BigNum) -> BigNum {
         let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());
         random_qr.sqr(&AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &n), &mut ctx);

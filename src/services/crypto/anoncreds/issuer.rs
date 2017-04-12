@@ -1,4 +1,8 @@
-use services::crypto::anoncreds::constants::{BIG_SIZE};
+use services::crypto::anoncreds::constants::{
+    BIG_SIZE,
+    LARGE_VPRIME
+};
+use services::crypto::anoncreds::types::{PublicKey};
 use errors::crypto::CryptoError;
 use services::crypto::helpers::{
     random_qr,
@@ -35,11 +39,26 @@ impl Issuer {
     }
 
     fn gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
-        let mut value = try!(p.mul(&q));
+        let mut value = try!(p.mul(&q, None));
         try!(value.sub_word(3));
 
         let mut result = try!(value.rand_range());
         try!(result.add_word(2));
         Ok(result)
     }
+
+//    fn gen_u(public_key: &PublicKey, ms: &BigNumber) -> Result<BigNumber, CryptoError> {
+//        let bn = try!(BigNumber::new());
+//        let vprime = try!(bn.rand(LARGE_VPRIME));
+//
+//        let mut result_mul_one = BigNum::new().unwrap();
+//        result_mul_one.mod_exp(&public_key.s, &vprime, &public_key.n, &mut ctx);
+//
+//        let mut result_mul_two = BigNum::new().unwrap();
+//        result_mul_two.mod_exp(&public_key.rms, &ms, &public_key.n, &mut ctx);
+//
+//        let mut u = &result_mul_one * &result_mul_two;
+//        u = &u % &public_key.n;
+//        u
+//    }
 }
