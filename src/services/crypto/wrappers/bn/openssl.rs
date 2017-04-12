@@ -104,6 +104,18 @@ impl BigNumber {
         Ok(bn)
     }
 
+    pub fn sqr(&self, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
+        let mut bn = try!(BigNumber::new());
+        match ctx {
+            Some(context) => try!(BigNumRef::sqr(&mut bn.openssl_bn, &self.openssl_bn, &mut context.openssl_bn_context)),
+            None => {
+                let mut ctx = try!(BigNumber::new_context());
+                try!(BigNumRef::sqr(&mut bn.openssl_bn, &self.openssl_bn, &mut ctx.openssl_bn_context));
+            }
+        }
+        Ok(bn)
+    }
+
     pub fn mul(&self, a: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
         let mut bn = try!(BigNumber::new());
         match ctx {

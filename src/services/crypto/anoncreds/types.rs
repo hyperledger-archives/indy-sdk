@@ -16,6 +16,13 @@ pub struct SchemaKey {
     pub issue_id: String
 }
 
+pub struct Schema {
+    pub name: String,
+    pub version: String,
+    pub attribute_names: Vec<String>
+}
+
+#[derive(Debug)]
 pub struct PublicKey {
     pub n: BigNumber,
     pub s: BigNumber,
@@ -23,6 +30,12 @@ pub struct PublicKey {
     pub r: HashMap<String, BigNumber>,
     pub rctxt: BigNumber,
     pub z: BigNumber
+}
+
+#[derive(Debug)]
+pub struct SecretKey {
+    pub p: BigNumber,
+    pub q: BigNumber
 }
 
 pub struct ClaimInitData {

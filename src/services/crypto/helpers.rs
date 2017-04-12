@@ -1,3 +1,4 @@
+use errors::crypto::CryptoError;
 extern crate rand;
 extern crate milagro_crypto;
 use self::milagro_crypto::randapi::Random;
@@ -14,6 +15,7 @@ use services::crypto::anoncreds::constants::{
     LARGE_PRIME
 };
 use services::crypto::anoncreds::types::{ByteOrder};
+use services::crypto::wrappers::bn::BigNumber;
 
 pub fn generate_random_seed() -> [u8; 32] {
     let mut seed: [u8; 32] = [0; 32];
@@ -77,20 +79,11 @@ pub fn generate_prime_2p_plus_1(size: usize) -> FF {
     prime
 }
 
-pub fn random_qr(n: &FF){
-    println!("n :{}", n);
-    let mut random = random_in_range(&FF::from_hex("0", BIG_SIZE), n);
-    println!("random :{}", random);
-    random = FF::sqr(&random);
-    println!("random sqr :{}", random);
-//    let mut nn = n.clone();
-//    nn.set_size(32);
-//    random.set_size(32);
-    let random1 = FF::modulus(&random, &n);
-    println!("random1 :{}", random1);
-//    let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());
-//    random_qr.sqr(&AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &n), &mut ctx);
-//    random_qr
+pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
+    let mut random = try!(n.rand_range());
+    random = try!(random.sqr(None));
+    random = try!(random.modulus(&n, None));
+    Ok(random)
 }
 
 pub fn random_in_range(start: &FF, end: &FF) -> FF {
