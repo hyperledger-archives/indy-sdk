@@ -1,14 +1,9 @@
-use services::crypto::anoncreds::constants::{
-    BIG_SIZE,
-    LARGE_VPRIME
-};
-use services::crypto::anoncreds::types::{PublicKey};
 use errors::crypto::CryptoError;
 use services::crypto::helpers::{
     random_qr,
     random_in_range
 };
-use services::crypto::wrappers::bn::bn_impl::BigNumber;
+use services::crypto::wrappers::bn::BigNumber;
 
 pub struct Issuer {
 
@@ -46,19 +41,4 @@ impl Issuer {
         try!(result.add_word(2));
         Ok(result)
     }
-
-//    fn gen_u(public_key: &PublicKey, ms: &BigNumber) -> Result<BigNumber, CryptoError> {
-//        let bn = try!(BigNumber::new());
-//        let vprime = try!(bn.rand(LARGE_VPRIME));
-//
-//        let mut result_mul_one = BigNum::new().unwrap();
-//        result_mul_one.mod_exp(&public_key.s, &vprime, &public_key.n, &mut ctx);
-//
-//        let mut result_mul_two = BigNum::new().unwrap();
-//        result_mul_two.mod_exp(&public_key.rms, &ms, &public_key.n, &mut ctx);
-//
-//        let mut u = &result_mul_one * &result_mul_two;
-//        u = &u % &public_key.n;
-//        u
-//    }
 }

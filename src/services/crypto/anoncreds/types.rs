@@ -1,3 +1,5 @@
+use services::crypto::wrappers::bn::BigNumber;
+
 extern crate milagro_crypto;
 
 use self::milagro_crypto::ff::FF;
@@ -15,12 +17,16 @@ pub struct SchemaKey {
 }
 
 pub struct PublicKey {
-    pub n: FF,
-    pub s: FF,
-    pub rms: FF,
-    pub r: HashMap<String, FF>,
-    pub rctxt: FF,
-    pub z: FF
+    pub n: BigNumber,
+    pub s: BigNumber,
+    pub rms: BigNumber,
+    pub r: HashMap<String, BigNumber>,
+    pub rctxt: BigNumber,
+    pub z: BigNumber
+}
+
+pub struct ClaimInitData {
+
 }
 
 pub struct FullProof {
