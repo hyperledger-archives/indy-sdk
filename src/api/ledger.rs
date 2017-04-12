@@ -4,21 +4,21 @@ use api::ErrorCode;
 
 use self::libc::{c_char, c_uchar};
 
-/// Signs and submits transaction message to validator pool.
+/// Signs and submits request message to validator pool.
 ///
-/// Adds submitter information to passed transaction json, signs it with submitter
-/// sign key (see wallet_sign), and sends signed transaction message
+/// Adds submitter information to passed request json, signs it with submitter
+/// sign key (see wallet_sign), and sends signed request message
 /// to validator pool (see write_request).
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// request_json: Transaction data json.
+/// request_json: Request data json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -34,18 +34,18 @@ pub extern fn sign_and_submit_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Publishes transaction message to validator pool (no signing, unlike sign_and_submit_request).
+/// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
 ///
-/// The transaction is sent to the validator pool as is. It's assumed that it's already prepared.
+/// The request is sent to the validator pool as is. It's assumed that it's already prepared.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// pool_handle: pool handle (created by open_pool_ledger).
-/// request_json: Transaction data json.
+/// request_json: Request data json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -69,7 +69,7 @@ pub extern fn submit_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -82,7 +82,7 @@ pub extern fn build_get_ddo_request(command_handle: i32,
 }
 
 
-/// Builds a NYM transaction.
+/// Builds a NYM request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -95,7 +95,7 @@ pub extern fn build_get_ddo_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -110,7 +110,7 @@ pub extern fn build_nym_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds an ATTRIB transaction.
+/// Builds an ATTRIB request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -122,7 +122,7 @@ pub extern fn build_nym_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -135,7 +135,7 @@ pub extern fn build_attrib_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds a GET_ATTRIB transaction.
+/// Builds a GET_ATTRIB request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -145,7 +145,7 @@ pub extern fn build_attrib_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -157,7 +157,7 @@ pub extern fn build_get_attrib_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds a GET_NYM transaction.
+/// Builds a GET_NYM request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -166,7 +166,7 @@ pub extern fn build_get_attrib_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -178,7 +178,7 @@ pub extern fn build_get_nym_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds a SCHEMA transaction.
+/// Builds a SCHEMA request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -187,7 +187,7 @@ pub extern fn build_get_nym_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -199,7 +199,7 @@ pub extern fn build_schema_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds a GET_SCHEMA transaction.
+/// Builds a GET_SCHEMA request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -208,7 +208,7 @@ pub extern fn build_schema_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -220,7 +220,7 @@ pub extern fn build_get_schema_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds an ISSUER_KEY transaction.
+/// Builds an ISSUER_KEY request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -230,7 +230,7 @@ pub extern fn build_get_schema_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -243,7 +243,7 @@ pub extern fn build_issuer_key_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds a GET_ISSUER_KEY transaction.
+/// Builds a GET_ISSUER_KEY request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -252,7 +252,7 @@ pub extern fn build_issuer_key_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
@@ -263,7 +263,7 @@ pub extern fn build_get_issuer_key_request(command_handle: i32,
     unimplemented!();
 }
 
-/// Builds a NODE transaction.
+/// Builds a NODE request.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -273,7 +273,7 @@ pub extern fn build_get_issuer_key_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Transaction result as json.
+/// Request result as json.
 ///
 /// #Errors
 /// Common*
