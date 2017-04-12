@@ -2,6 +2,7 @@ pub const BIG_SIZE: usize = 32;
 pub const LARGE_MASTER_SECRET: usize = 256;
 pub const LARGE_E_START: usize = 596;
 pub const LARGE_PRIME: usize = 1024;
+pub const LARGE_VPRIME: usize = 2128;
 pub const NUM_PRIMES: usize = 2048;
 pub const BN_MASK: usize = 4294967295;
 pub const PRIMES: [u8; NUM_PRIMES] = [
