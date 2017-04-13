@@ -2,7 +2,7 @@ extern crate libc;
 
 use api::ErrorCode;
 
-use self::libc::{c_char, c_uchar};
+use self::libc::c_char;
 
 /// Create keys (both primary and revocation) for the given schema and stores the keys
 /// in a secure wallet. The public key in the wallet is identifying by a returned unique key.

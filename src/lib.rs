@@ -1,8 +1,16 @@
+// TODO: FIXME: It must be removed after code layout stabilization!
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate lazy_static;
 extern crate env_logger;
+
+// Not that to use macroses from util inside of other modules it must me loaded first!
+#[macro_use]
+mod utils;
 
 pub mod api;
 mod commands;
@@ -11,7 +19,7 @@ mod services;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 
     #[test]
     fn dummy() {

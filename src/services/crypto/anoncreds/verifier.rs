@@ -72,9 +72,9 @@ impl Verifier {
 
         for attr_name in proof.revealed_attr_names.iter() {
             let cur_r = try!(pk.r.get(attr_name)
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
             let cur_attr = try!(all_revealed_attrs.get(attr_name)
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
             rar = try!(
                 cur_r
@@ -121,7 +121,7 @@ impl Verifier {
 
         for i in 0..4 {
             let cur_t = try!(proof.t.get(&i.to_string()[..])
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
             tau_list[i] =
                 try!(
@@ -135,7 +135,7 @@ impl Verifier {
 
         let big_v = try!(BigNumber::from_dec(&v.to_string()[..]));
         let delta = try!(proof.t.get("DELTA")
-            .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+            .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
 
         tau_list[4] = try!(
@@ -166,9 +166,9 @@ impl Verifier {
 
         for i in 0..4 {
             let cur_u = try!(u.get(&i.to_string()[..])
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
             let cur_r = try!(r.get(&i.to_string()[..])
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
             let mut pks_pow_r: BigNumber = try!(pk.s.mod_exp(&cur_r, &pk.n, Some(&mut ctx)));
 
@@ -183,7 +183,7 @@ impl Verifier {
         }
 
         let delta = try!(r.get("DELTA")
-            .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+            .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
         let mut pks_pow_delta = try!(pk.s.mod_exp(&delta, &pk.n, Some(&mut ctx)));
 
@@ -200,9 +200,9 @@ impl Verifier {
 
         for i in 0..4 {
             let cur_t = try!(t.get(&i.to_string()[..])
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
             let cur_u = try!(u.get(&i.to_string()[..])
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
             q = try!(
                 cur_t
@@ -232,9 +232,9 @@ impl Verifier {
 
         for k in unrevealed_attr_names.iter() {
             let cur_r = try!(pk.r.get(k)
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
             let cur_m = try!(mtilde.get(k)
-                .ok_or(CryptoError::CryptoBackendError("Element not found".to_string())));
+                .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
             result = try!(cur_r
                 .mod_exp(&cur_m, &pk.n, Some(&mut ctx))?
