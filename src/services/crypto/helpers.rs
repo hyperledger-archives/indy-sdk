@@ -1,5 +1,6 @@
 extern crate rand;
 extern crate milagro_crypto;
+
 use self::milagro_crypto::randapi::Random;
 use self::milagro_crypto::big::wrappers::MODBYTES;
 use self::milagro_crypto::ff::FF;
@@ -14,6 +15,8 @@ use services::crypto::anoncreds::constants::{
     LARGE_PRIME
 };
 use services::crypto::anoncreds::types::{ByteOrder};
+use services::crypto::wrappers::bn::BigNumber;
+use errors::crypto::CryptoError;
 
 pub fn generate_random_seed() -> [u8; 32] {
     let mut seed: [u8; 32] = [0; 32];
@@ -77,20 +80,20 @@ pub fn generate_prime_2p_plus_1(size: usize) -> FF {
     prime
 }
 
-pub fn random_qr(n: &FF){
+pub fn random_qr(n: &FF) {
     println!("n :{}", n);
     let mut random = random_in_range(&FF::from_hex("0", BIG_SIZE), n);
     println!("random :{}", random);
     random = FF::sqr(&random);
     println!("random sqr :{}", random);
-//    let mut nn = n.clone();
-//    nn.set_size(32);
-//    random.set_size(32);
+    //    let mut nn = n.clone();
+    //    nn.set_size(32);
+    //    random.set_size(32);
     let random1 = FF::modulus(&random, &n);
     println!("random1 :{}", random1);
-//    let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());
-//    random_qr.sqr(&AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &n), &mut ctx);
-//    random_qr
+    //    let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());
+    //    random_qr.sqr(&AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &n), &mut ctx);
+    //    random_qr
 }
 
 pub fn random_in_range(start: &FF, end: &FF) -> FF {
@@ -170,13 +173,13 @@ fn generate_probable_prime(size: usize) {
     //TODO loop for mods check
 }
 
-pub fn get_hash_as_int(nums: &mut Vec<FF>) -> FF {
+pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoError> {
     let mut sha256: hash256 = hash256::new();
 
     nums.sort();
 
     for num in nums.iter() {
-        let array_bytes: Vec<u8> = num.to_bytes();
+        let array_bytes: Vec<u8> = try!(num.to_bytes());
 
         let index = array_bytes.iter().position(|&value| value != 0).unwrap_or(array_bytes.len());
 
@@ -192,7 +195,7 @@ pub fn get_hash_as_int(nums: &mut Vec<FF>) -> FF {
 
     hashed_array.reverse();
 
-    FF::from_bytes(&hashed_array[..], hashed_array.len(), 2)
+    BigNumber::from_bytes(&hashed_array[..])
 }
 
 #[cfg(test)]
@@ -216,8 +219,8 @@ mod tests {
 
     #[test]
     fn test_random_qr() {
-//        let n = generate_big_random(10);
-//        random_qr(&n);
+        //        let n = generate_big_random(10);
+        //        random_qr(&n);
     }
 
     #[test]
@@ -231,12 +234,14 @@ mod tests {
     }
 
     #[test]
-    fn get_hash_as_in_works(){
+    fn get_hash_as_in_works() {
         let mut nums = vec![
-            FF::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa94d3fdf6abfbff", 32),
-            FF::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa9168615ccbc546", 32)
+            BigNumber::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa94d3fdf6abfbff").unwrap(),
+            BigNumber::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa9168615ccbc546").unwrap()
         ];
-        let res =  get_hash_as_int(&mut nums);
-        assert_eq!("0000000000000000000000000000000000000000000000000000000000000000 9E2A0653691B96A9B55B3D1133F9FEE2F2C37B848DBADF2F70DFFFE9E47C5A5D", res.to_hex());
+        let res = get_hash_as_int(&mut nums);
+
+        assert!(res.is_ok());
+        assert_eq!("9E2A0653691B96A9B55B3D1133F9FEE2F2C37B848DBADF2F70DFFFE9E47C5A5D", res.unwrap().to_hex().unwrap());
     }
 }
