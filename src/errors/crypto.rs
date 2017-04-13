@@ -8,7 +8,8 @@ pub enum CryptoError {
     InvalidStructure(String),
     UnknownType(String),
     RevocationRegistryFull(String),
-    InvalidUserRevocIndex(String)
+    InvalidUserRevocIndex(String),
+    BackendError(String)
 }
 
 impl fmt::Display for CryptoError {
@@ -17,7 +18,8 @@ impl fmt::Display for CryptoError {
             CryptoError::InvalidStructure(ref description) => write!(f, "Invalid crypto structure: {}", description),
             CryptoError::UnknownType(ref description) => write!(f, "Unknown crypto type: {}", description),
             CryptoError::RevocationRegistryFull(ref description) => write!(f, "Crypto revocation registry is full: {}", description),
-            CryptoError::InvalidUserRevocIndex(ref description) => write!(f, "Crypto invalid revocation index: {}", description)
+            CryptoError::InvalidUserRevocIndex(ref description) => write!(f, "Crypto invalid revocation index: {}", description),
+            CryptoError::BackendError(ref description) => write!(f, "Crypto backend error {}", description)
         }
     }
 }
@@ -28,7 +30,8 @@ impl error::Error for CryptoError {
             CryptoError::InvalidStructure(ref description) => description,
             CryptoError::UnknownType(ref description) => description,
             CryptoError::RevocationRegistryFull(ref description) => description,
-            CryptoError::InvalidUserRevocIndex(ref description) => description
+            CryptoError::InvalidUserRevocIndex(ref description) => description,
+            CryptoError::BackendError(ref description) => description
         }
     }
 
@@ -37,7 +40,8 @@ impl error::Error for CryptoError {
             CryptoError::InvalidStructure(ref description) => None,
             CryptoError::UnknownType(ref description) => None,
             CryptoError::RevocationRegistryFull(ref description) => None,
-            CryptoError::InvalidUserRevocIndex(ref description) => None
+            CryptoError::InvalidUserRevocIndex(ref description) => None,
+            CryptoError::BackendError(ref err) => None
         }
     }
 }

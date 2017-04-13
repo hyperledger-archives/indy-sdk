@@ -1,30 +1,21 @@
 pub mod helpers;
-pub mod constants;
-pub mod issuer;
-pub mod libsodium;
-pub mod prover;
-pub mod types;
-pub mod verifier;
+pub mod anoncreds;
+pub mod ed25519;
+pub mod wrappers;
 
-use self::libsodium::Sodium;
-use self::issuer::Issuer;
-use self::prover::Prover;
-use self::verifier::Verifier;
+use self::anoncreds::AnoncredsService;
+use self::ed25519::ED25519;
 
 pub struct CryptoService {
-    sodium: Sodium,
-    issuer: Issuer,
-    prover: Prover,
-    verifier: Verifier
+    ed25519: ED25519,
+    anoncreds: AnoncredsService
 }
 
 impl CryptoService {
     pub fn new() -> CryptoService {
         CryptoService {
-            sodium: Sodium::new(),
-            issuer: Issuer::new(),
-            prover: Prover::new(),
-            verifier: Verifier::new()
+            ed25519: ED25519::new(),
+            anoncreds: AnoncredsService::new()
         }
     }
 }
