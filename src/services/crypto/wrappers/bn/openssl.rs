@@ -5,6 +5,8 @@ extern crate openssl;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
 use self::openssl::hash::{hash, MessageDigest};
+use std::cmp::Ord;
+use std::cmp::Ordering;
 
 use std::error::Error;
 use std::ops::Deref;
@@ -196,6 +198,74 @@ impl BigNumber {
             }
         }
         Ok(bn)
+    }
+
+    pub fn exp(&self, a: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
+        let mut bn = try!(BigNumber::new());
+        match ctx {
+            Some(context) => try!(BigNumRef::exp(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut context.openssl_bn_context)),
+            None => {
+                let mut ctx = try!(BigNumber::new_context());
+                try!(BigNumRef::exp(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn, &mut ctx.openssl_bn_context));
+            }
+        }
+        Ok(bn)
+    }
+
+    pub fn inverse(&self, n: &BigNumber, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
+        let mut bn = try!(BigNumber::new());
+        match ctx {
+            Some(context) => try!(BigNumRef::mod_inverse(&mut bn.openssl_bn, &self.openssl_bn, &n.openssl_bn, &mut context.openssl_bn_context)),
+            None => {
+                let mut ctx = try!(BigNumber::new_context());
+                try!(BigNumRef::mod_inverse(&mut bn.openssl_bn, &self.openssl_bn, &n.openssl_bn, &mut ctx.openssl_bn_context));
+            }
+        }
+        Ok(bn)
+    }
+
+    pub fn mod_div(&self, b: &BigNumber, p: &BigNumber) -> Result<BigNumber, CryptoError> {
+        //(a*  (1/b mod p) mod p)
+
+        let mut context = try!(BigNumber::new_context());
+
+        let mut res = try!(
+            b
+                .inverse(p, Some(&mut context))?
+                .mul(&self, Some(&mut context))?
+                .modulus(&p, Some(&mut context))
+        );
+        Ok(res)
+    }
+
+    pub fn compare(&self, other: &BigNumber) -> bool {
+        self.openssl_bn == other.openssl_bn
+    }
+
+    pub fn clone(&self) -> Result<BigNumber, CryptoError> {
+        let bytes = try!(self.to_bytes());
+        let mut bn = try!(BigNumber::from_bytes(bytes.as_slice()));
+        Ok(bn)
+    }
+}
+
+impl Ord for BigNumber {
+    fn cmp(&self, other: &BigNumber) -> Ordering {
+        self.openssl_bn.ucmp(&other.openssl_bn)
+    }
+}
+
+impl Eq for BigNumber {}
+
+impl PartialOrd for BigNumber {
+    fn partial_cmp(&self, other: &BigNumber) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for BigNumber {
+    fn eq(&self, other: &BigNumber) -> bool {
+        self.openssl_bn == other.openssl_bn
     }
 }
 
