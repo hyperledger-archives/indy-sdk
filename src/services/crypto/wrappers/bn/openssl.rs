@@ -52,6 +52,19 @@ impl BigNumber {
         Ok(bn)
     }
 
+    pub fn num_bits(&self) -> Result<i32, CryptoError> {
+        Ok(self.openssl_bn.num_bits())
+    }
+
+    pub fn is_bit_set(&self, n: i32) -> Result<bool, CryptoError> {
+        Ok(self.openssl_bn.is_bit_set(n))
+    }
+
+    pub fn set_bit(&mut self, n: i32) -> Result<&mut BigNumber, CryptoError> {
+        try!(BigNumRef::set_bit(&mut self.openssl_bn, n));
+        Ok(self)
+    }
+
     pub fn from_u32(n: u32) -> Result<BigNumber, CryptoError> {
         let bn = try!(BigNum::from_u32(n));
         Ok(BigNumber {
@@ -103,6 +116,18 @@ impl BigNumber {
     pub fn sub(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut bn = try!(BigNumber::new());
         try!(BigNumRef::checked_sub(&mut bn.openssl_bn, &self.openssl_bn, &a.openssl_bn));
+        Ok(bn)
+    }
+
+    pub fn sqr(&self, ctx: Option<&mut BigNumberContext>) -> Result<BigNumber, CryptoError> {
+        let mut bn = try!(BigNumber::new());
+        match ctx {
+            Some(context) => try!(BigNumRef::sqr(&mut bn.openssl_bn, &self.openssl_bn, &mut context.openssl_bn_context)),
+            None => {
+                let mut ctx = try!(BigNumber::new_context());
+                try!(BigNumRef::sqr(&mut bn.openssl_bn, &self.openssl_bn, &mut ctx.openssl_bn_context));
+            }
+        }
         Ok(bn)
     }
 
