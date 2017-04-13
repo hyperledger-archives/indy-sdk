@@ -203,9 +203,12 @@ impl BigNumber {
 
         let mut context = try!(BigNumber::new_context());
 
-        let mut res = try!(b.inverse(p, Some(&mut context)));
-        res = try!(self.mul(&res, Some(&mut context)));
-        res = try!(res.modulus(&p, Some(&mut context)));
+        let mut res = try!(
+            b
+                .inverse(p, Some(&mut context))?
+                .mul(&self, Some(&mut context))?
+                .modulus(&p, Some(&mut context))
+        );
         Ok(res)
     }
 
