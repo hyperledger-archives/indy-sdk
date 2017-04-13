@@ -1,7 +1,4 @@
 use services::crypto::wrappers::bn::BigNumber;
-
-extern crate milagro_crypto;
-
 use std::collections::HashMap;
 
 pub enum ByteOrder {
