@@ -32,7 +32,8 @@ fn sovrin_create_pool_ledger_can_be_called() {
                                         pool_config.as_ptr(),
                                         callback);
 
-    let err = receiver.recv().unwrap();
+    assert_eq!(ErrorCode::Success, err);
 
+    let err = receiver.recv().unwrap();
     assert_eq!(ErrorCode::Success, err);
 }

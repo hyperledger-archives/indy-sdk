@@ -41,8 +41,6 @@ impl Prover {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn dummy() {
 
