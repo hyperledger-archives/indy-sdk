@@ -11,7 +11,6 @@ extern crate milagro_crypto;
 use self::int_traits::IntTraits;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::hash::{hash, MessageDigest};
-use std::cmp::max;
 use services::crypto;
 
 enum ByteOrder {
@@ -24,66 +23,10 @@ pub struct AnoncredsService {
 }
 
 impl AnoncredsService {
-    fn generate_public_key() -> PublicKey {
-        //let (p_prime, q_prime) = (AnoncredsService::generate_prime(), AnoncredsService::generate_prime());
-        let p_prime = BigNum::from_dec_str("147210949676505370022291901638323344651935110597590993130806944871698104433042968489453214046274983960765508724336420649095413993801340223096499490318385863961435462627523137938481776395548210420546733337321351064531462114552738775282293300556323029911674068388889455348206728016707243243859948314986927502343").unwrap();
-        let q_prime = BigNum::from_dec_str("135780746061008989066681842882411968289578365330121870655195830818464118363874946689390282395824911410416094765498522070170715656164604448597511036312331994824492100665472180363433381994083327828179950784236529457340933711810709515143629906739084420423785456874473704622664344722021987863690561674302204741259").unwrap();
-        //println!("p: {}\nq: {}", p_prime, q_prime);
 
-        let (mut p, mut q, mut ctx, mut n, mut s, mut rms) = (
-            BigNum::new().unwrap(),
-            BigNum::new().unwrap(),
-            BigNumContext::new().unwrap(),
-            BigNum::new().unwrap(),
-            BigNum::new().unwrap(),
-            BigNum::new().unwrap()
-        );
-
-        p.checked_mul(&p_prime, &BigNum::from_u32(2).unwrap(), &mut ctx);
-        p.add_word(1);
-        q.checked_mul(&q_prime, &BigNum::from_u32(2).unwrap(), &mut ctx);
-        q.add_word(1);
-        //println!("p: {}\nq: {}", p, q);
-
-        let mut n = BigNum::new().unwrap();
-        n.checked_mul(&p, &q, &mut ctx);
-        //println!("n: {}", n);
-
-        s = AnoncredsService::random_qr(&n);
-        //println!("s: {}", s);
-
-        rms.mod_exp(&s, &AnoncredsService::gen_x(&p_prime, &q_prime), &n, &mut ctx);
-        //println!("rms: {}", rms);
-
-        PublicKey {n: n, s: s, rms: rms}
-    }
-    fn random_qr(n: &BigNum) -> BigNum {
-        let (mut ctx, mut random_qr) = (BigNumContext::new().unwrap(), BigNum::new().unwrap());
-        random_qr.sqr(&AnoncredsService::random_in_range(&BigNum::from_u32(0).unwrap(), &n), &mut ctx);
-        random_qr
-    }
     fn count_rounds_for_prime_check(prime: &BigNum) -> i32 {
         let prime_len = prime.to_dec_str().unwrap().len();
         prime_len.log2() as i32
-    }
-    fn generate_prime() -> BigNum {
-        let mut ctx = BigNumContext::new().unwrap();
-        let mut prime = BigNum::new().unwrap();
-        let (mut is_prime, mut iteration) = (false, 0);
-
-        while !is_prime {
-            iteration += 1;
-            prime.generate_prime(LARGE_PRIME, false, None, None);
-            let checks = AnoncredsService::count_rounds_for_prime_check(&prime);
-            let mut prime_for_check = BigNum::new().unwrap();
-            prime_for_check.checked_mul(&prime, &BigNum::from_u32(2).unwrap(), &mut ctx).unwrap();
-            prime_for_check.add_word(1);
-            is_prime = prime_for_check.is_prime(checks, &mut ctx).unwrap();
-            println!("Iteration: {}\nFound prime: {}\nis_prime: {}\n", iteration, prime, is_prime);
-        }
-
-        //println!("Generated prime: {}", prime);
-        prime
     }
     fn generate_prime_in_range(start: &BigNum, end: &BigNum) -> Result<BigNum, &'static str>{
         let (mut iteration, max_iterations, mut prime_is_found, mut prime, mut ctx) = (
@@ -185,16 +128,6 @@ impl AnoncredsService {
             }
         }
         encoded_attributes
-    }
-    fn bitwise_or_big_int(a: &BigNum, b: &BigNum) -> BigNum {
-        let significant_bits = max(a.num_bits(), b.num_bits());
-        let mut result = BigNum::new().unwrap();
-        for i in 0..significant_bits {
-            if a.is_bit_set(i) || b.is_bit_set(i) {
-                result.set_bit(i);
-            }
-        }
-        result
     }
 }
 

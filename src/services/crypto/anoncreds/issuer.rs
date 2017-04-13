@@ -28,6 +28,10 @@ impl Issuer {
         unimplemented!();
     }
 
+    pub fn create_claim() {
+
+    }
+
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
         let bn = try!(BigNumber::new());
         let p = try!(bn.safe_prime(LARGE_PRIME));
@@ -73,7 +77,7 @@ impl Issuer {
 
     }
 
-    pub fn issuer_primary_claim(&self) {
+    fn _issuer_primary_claim(&self) {
 
     }
 

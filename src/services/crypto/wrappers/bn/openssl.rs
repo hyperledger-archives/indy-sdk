@@ -7,6 +7,7 @@ use self::openssl::error::ErrorStack;
 use self::openssl::hash::{hash, MessageDigest};
 
 use std::error::Error;
+use std::ops::Deref;
 
 pub struct BigNumberContext {
     openssl_bn_context: BigNumContext
@@ -48,6 +49,19 @@ impl BigNumber {
         let mut bn = try!(BigNumber::new());
         try!(BigNumRef::rand_range(&self.openssl_bn, &mut bn.openssl_bn));
         Ok(bn)
+    }
+
+    pub fn num_bits(&self) -> Result<i32, CryptoError> {
+        Ok(self.openssl_bn.num_bits())
+    }
+
+    pub fn is_bit_set(&self, n: i32) -> Result<bool, CryptoError> {
+        Ok(self.openssl_bn.is_bit_set(n))
+    }
+
+    pub fn set_bit(&mut self, n: i32) -> Result<&mut BigNumber, CryptoError> {
+        try!(BigNumRef::set_bit(&mut self.openssl_bn, n));
+        Ok(self)
     }
 
     pub fn from_u32(n: u32) -> Result<BigNumber, CryptoError> {
@@ -182,6 +196,12 @@ impl BigNumber {
             }
         }
         Ok(bn)
+    }
+}
+
+impl PartialEq for BigNumber {
+    fn eq(&self, oth: &BigNumber) -> bool {
+        self.openssl_bn.deref().eq(&oth.openssl_bn)
     }
 }
 

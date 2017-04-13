@@ -7,6 +7,7 @@ use self::milagro_crypto::ff::FF;
 use self::milagro_crypto::hash::wrappers::hash256;
 use self::rand::os::OsRng;
 use self::rand::Rng;
+use std::cmp::max;
 use services::crypto::anoncreds::constants::{
     BIG_SIZE,
     BN_MASK,
@@ -84,6 +85,17 @@ pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     random = try!(random.sqr(None));
     random = try!(random.modulus(&n, None));
     Ok(random)
+}
+
+fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
+    let significant_bits = max(try!(a.num_bits()), try!(b.num_bits()));
+    let mut result = try!(BigNumber::new());
+    for i in 0..significant_bits {
+        if try!(a.is_bit_set(i)) || try!(b.is_bit_set(i)) {
+            result.set_bit(i);
+        }
+    }
+    Ok(result)
 }
 
 pub fn random_in_range(start: &FF, end: &FF) -> FF {
@@ -193,6 +205,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn bitwise_or_big_int_works () {
+        let a = BigNumber::from_dec("778378032744961463933002553964902776831187587689736807008034459507677878432383414623740074");
+        let b = BigNumber::from_dec("1018517988167243043134222844204689080525734196832968125318070224677190649881668353091698688");
+        let result = BigNumber::from_dec("1796896020912204507067225398169591857356921784522704932326104684184868528314051767715438762");
+        assert_eq!(result.unwrap(), bitwise_or_big_int(&a.unwrap(), &b.unwrap()).unwrap());
+    }
+
+    #[test]
     fn random_in_range_works() {
         ::env_logger::init().unwrap();
 
@@ -205,12 +225,6 @@ mod tests {
 
         let random = random_in_range(&start, &end);
         assert!((random > start) && (random < end));
-    }
-
-    #[test]
-    fn test_random_qr() {
-//        let n = generate_big_random(10);
-//        random_qr(&n);
     }
 
     #[test]
