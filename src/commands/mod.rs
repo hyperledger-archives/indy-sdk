@@ -10,11 +10,13 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::signus::{SignusCommand, SignusCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 
+use errors::common::CommonError;
+
 use services::crypto::CryptoService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
-use std::error;
+use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
 use std::thread;
@@ -98,8 +100,11 @@ impl CommandExecutor {
         }
     }
 
-    pub fn send(&self, cmd: Command) {
-        self.sender.send(cmd);
+    pub fn send(&self, cmd: Command) -> Result<(), CommonError> {
+        match self.sender.send(cmd) {
+            Ok(val) => Ok(()),
+            Err(ref err) => Err(CommonError::InvalidState(err.description().to_string()))
+        }
     }
 }
 

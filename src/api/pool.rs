@@ -35,21 +35,17 @@ pub extern fn sovrin_create_pool_ledger(command_handle: i32,
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    CommandExecutor::instance()
+    let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Create(
             name,
             config,
             Box::new(move |result| {
-                let err = match result {
-                    Ok(res) => ErrorCode::Success,
-                    Err(err) => From::from(err)
-                };
-
+                let err = result_to_err_code!(result);
                 cb(command_handle, err)
             })
         )));
 
-    ErrorCode::Success
+    result_to_err_code!(result)
 }
 
 /// Opens pool ledger and performs connecting to pool nodes.

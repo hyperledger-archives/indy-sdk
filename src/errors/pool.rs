@@ -8,9 +8,9 @@ use api::ErrorCode;
 #[derive(Debug)]
 pub enum PoolError {
     NotCreated(String),
-    InvalidHandle(String),
-    NoConsensus(String),
     InvalidData(String),
+    InvalidConfiguration(String),
+    InvalidHandle(String),
     Io(io::Error)
 }
 
@@ -19,7 +19,7 @@ impl fmt::Display for PoolError {
         match *self {
             PoolError::NotCreated(ref description) => write!(f, "Not created: {}", description),
             PoolError::InvalidHandle(ref description) => write!(f, "Invalid Handle: {}", description),
-            PoolError::NoConsensus(ref description) => write!(f, "No consensus: {}", description),
+            PoolError::InvalidConfiguration(ref description) => write!(f, "Invalid configuration: {}", description),
             PoolError::InvalidData(ref description) => write!(f, "Invalid data: {}", description),
             PoolError::Io(ref err) => err.fmt(f)
         }
@@ -31,8 +31,8 @@ impl error::Error for PoolError {
         match *self {
             PoolError::NotCreated(ref description) => description,
             PoolError::InvalidHandle(ref description) => description,
-            PoolError::NoConsensus(ref description) => description,
             PoolError::InvalidData(ref description) => description,
+            PoolError::InvalidConfiguration(ref description) => description,
             PoolError::Io(ref err) => err.description()
         }
     }
@@ -41,8 +41,8 @@ impl error::Error for PoolError {
         match *self {
             PoolError::NotCreated(ref description) => None,
             PoolError::InvalidHandle(ref description) => None,
-            PoolError::NoConsensus(ref description) => None,
             PoolError::InvalidData(ref description) => None,
+            PoolError::InvalidConfiguration(ref description) => None,
             PoolError::Io(ref err) => Some(err)
         }
     }

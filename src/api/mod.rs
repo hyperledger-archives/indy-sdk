@@ -6,6 +6,7 @@ pub mod ledger;
 pub mod pool;
 pub mod wallet;
 
+use errors::common::CommonError;
 use errors::pool::PoolError;
 
 use self::libc::{c_char};
@@ -58,17 +59,20 @@ pub enum ErrorCode {
     WalletIncompatiblePoolError,
 
     // Ledger errors
-    // Caller passed invalid pool ledger handle
-    PoolLedgerInvalidPoolHandle = 300,
+    // Trying to open pool ledger that wasn't created before
+    PoolLedgerNotCreatedError = 300,
+
+    // Invalid pool ledger configuration was passed to open_pool_ledger or create_pool_ledger
+    PoolLedgerInvalidConfiguration,
 
     // Pool ledger files referenced in open_pool_ledger have invalid data format
     PoolLedgerInvalidDataFormat,
 
+    // Caller passed invalid pool ledger handle
+    PoolLedgerInvalidPoolHandle,
+
     // IO error during access pool ledger files
     PoolLedgerIOError,
-
-    // Requested entity id isn't present in wallet
-    PoolLedgerNotFoundError,
 
     // No concensus during ledger operation
     LedgerNoConsensusError,
@@ -102,14 +106,27 @@ pub enum ErrorCode {
     AnoncredsMasterSecretDuplicateNameError
 }
 
+impl From<CommonError> for ErrorCode {
+    fn from(err: CommonError) -> Self {
+        match err {
+            CommonError::InvalidParam1(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam2(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam3(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam4(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam5(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState
+        }
+    }
+}
+
 impl From<PoolError> for ErrorCode {
     fn from(err: PoolError) -> Self {
         match err {
-            PoolError::NotCreated(ref description) => ErrorCode::CommonInvalidParam1,
-            PoolError::InvalidHandle(ref description) => ErrorCode::CommonInvalidParam1,
-            PoolError::NoConsensus(ref description) => ErrorCode::CommonInvalidParam1,
-            PoolError::InvalidData(ref description) => ErrorCode::CommonInvalidParam1,
-            PoolError::Io(ref err) => ErrorCode::CommonInvalidParam1
+            PoolError::NotCreated(ref description) => ErrorCode::PoolLedgerNotCreatedError,
+            PoolError::InvalidConfiguration(ref description) => ErrorCode::PoolLedgerInvalidConfiguration,
+            PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
+            PoolError::InvalidData(ref description) => ErrorCode::PoolLedgerInvalidDataFormat,
+            PoolError::Io(ref err) => ErrorCode::PoolLedgerIOError
         }
     }
 }

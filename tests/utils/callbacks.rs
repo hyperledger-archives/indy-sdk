@@ -7,8 +7,8 @@ pub struct CallbacksHelpers {}
 
 impl CallbacksHelpers {
     pub fn closure_to_create_pool_ledger_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                       extern fn(command_handle: i32,
-                                                                                                 err: ErrorCode)) {
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
         lazy_static! {
             static ref CREATE_POOL_LEDGER_CALLBACKS: Mutex<Vec<Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -21,6 +21,6 @@ impl CallbacksHelpers {
 
         let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
         callbacks.push(closure);
-        ((callbacks.len() - 1) as i32, create_pool_ledger_callback)
+        ((callbacks.len() - 1) as i32, Some(create_pool_ledger_callback))
     }
 }
