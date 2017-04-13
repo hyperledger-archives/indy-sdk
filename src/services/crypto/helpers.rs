@@ -1,12 +1,9 @@
 extern crate rand;
 extern crate milagro_crypto;
 
-use self::milagro_crypto::randapi::Random;
 use self::milagro_crypto::big::wrappers::MODBYTES;
 use self::milagro_crypto::ff::FF;
 use self::milagro_crypto::hash::wrappers::hash256;
-use self::rand::os::OsRng;
-use self::rand::Rng;
 use std::cmp::max;
 //use services::crypto::anoncreds::constants::{
 //    BIG_SIZE,
@@ -93,7 +90,7 @@ fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoE
     let mut result = try!(BigNumber::new());
     for i in 0..significant_bits {
         if try!(a.is_bit_set(i)) || try!(b.is_bit_set(i)) {
-            result.set_bit(i);
+            try!(result.set_bit(i));
         }
     }
     Ok(result)

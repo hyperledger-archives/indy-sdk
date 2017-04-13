@@ -1,4 +1,4 @@
-use services::crypto::anoncreds::types::{PublicKey, PrimaryEqualProof, PrimaryPredicateGEProof, Predicate, ProofInput, PrimaryProof, Proof, FullProof, SchemaKey};
+use services::crypto::anoncreds::types::{PublicKey, PrimaryEqualProof, PrimaryPredicateGEProof, Predicate, ProofInput, PrimaryProof, FullProof};
 use services::crypto::anoncreds::constants::{LARGE_E_START};
 use services::crypto::helpers::get_hash_as_int;
 use services::crypto::wrappers::bn::BigNumber;
@@ -18,8 +18,8 @@ impl Verifier {
 
         let it = proof.schema_keys.iter().zip(proof.proofs.iter());
 
-        for (i, (schemaKey, proofItem)) in it.enumerate() {
-            if let Some(ref primary_proof) = proofItem.primary_proof {
+        for (i, (schema_key, proof_item)) in it.enumerate() {
+            if let Some(ref primary_proof) = proof_item.primary_proof {
                 tau_list.append(
                     &mut try!(self.verify_primary_proof(&proof_input, &proof.c_hash, &primary_proof, &all_revealed_attrs))
                 )
@@ -96,14 +96,14 @@ impl Verifier {
                 .mul(&rar, Some(&mut ctx))
         );
 
-        let mut t2: BigNumber = try!(
+        let t2: BigNumber = try!(
             pk.z
                 .mod_div(&rar, &pk.n)?
                 .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
                 .inverse(&pk.n, Some(&mut ctx))
         );
 
-        let mut t: BigNumber = try!(
+        let t: BigNumber = try!(
             t1
                 .mul(&t2, Some(&mut ctx))?
                 .modulus(&pk.n, Some(&mut ctx))
@@ -161,7 +161,6 @@ impl Verifier {
         BigNumber>, mj: &BigNumber, alpha: &BigNumber, t: &HashMap<String, BigNumber>)
                 -> Result<Vec<BigNumber>, CryptoError> {
         let mut tau_list: Vec<BigNumber> = Vec::new();
-        let mut t_tau: BigNumber = try!(BigNumber::from_hex("1"));
         let mut ctx = try!(BigNumber::new_context());
 
         for i in 0..4 {
@@ -170,9 +169,9 @@ impl Verifier {
             let cur_r = try!(r.get(&i.to_string()[..])
                 .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
-            let mut pks_pow_r: BigNumber = try!(pk.s.mod_exp(&cur_r, &pk.n, Some(&mut ctx)));
+            let pks_pow_r: BigNumber = try!(pk.s.mod_exp(&cur_r, &pk.n, Some(&mut ctx)));
 
-            t_tau = try!(
+            let t_tau = try!(
                 pk.z
                     .mod_exp(&cur_u, &pk.n, Some(&mut ctx))?
                     .mul(&pks_pow_r, Some(&mut ctx))?
@@ -185,9 +184,9 @@ impl Verifier {
         let delta = try!(r.get("DELTA")
             .ok_or(CryptoError::BackendError("Element not found".to_string())));
 
-        let mut pks_pow_delta = try!(pk.s.mod_exp(&delta, &pk.n, Some(&mut ctx)));
+        let pks_pow_delta = try!(pk.s.mod_exp(&delta, &pk.n, Some(&mut ctx)));
 
-        t_tau = try!(
+        let t_tau = try!(
             pk.z
                 .mod_exp(&mj, &pk.n, Some(&mut ctx))?
                 .mul(&pks_pow_delta, Some(&mut ctx))?
@@ -227,7 +226,7 @@ impl Verifier {
                 mtilde: &HashMap<String, BigNumber>, m1tilde: &BigNumber, m2tilde: &BigNumber,
                 unrevealed_attr_names: &Vec<String>) -> Result<BigNumber, CryptoError> {
         let mut result: BigNumber = try!(BigNumber::from_dec("1"));
-        let mut tmp: BigNumber = try!(BigNumber::new());
+        let tmp: BigNumber = try!(BigNumber::new());
         let mut ctx = try!(BigNumber::new_context());
 
         for k in unrevealed_attr_names.iter() {
@@ -271,150 +270,156 @@ impl Verifier {
     }
 }
 
-#[test]
-fn verify_test() {
-    let verifier = Verifier::new();
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use services::crypto::anoncreds::types::{SchemaKey, Proof};
 
-    let mut all_revealed_attrs = HashMap::new();
-    all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
+    #[test]
+    fn verify_test() {
+        let verifier = Verifier::new();
 
-    let nonce = BigNumber::from_dec("150136900874297269339868").unwrap();
+        let mut all_revealed_attrs = HashMap::new();
+        all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
 
-    let predicate = Predicate { attr_name: "age".to_string(), p_type: "ge".to_string(), value: 18 };
+        let nonce = BigNumber::from_dec("150136900874297269339868").unwrap();
 
-    let proof_input = ProofInput {
-        revealed_attrs: vec!["name".to_string()],
-        predicates: vec![predicate],
-        ts: "".to_string(),
-        pubseq_no: "".to_string()
-    };
-    let schema_key = SchemaKey { name: "GVT".to_string(), version: "1.0".to_string(), issue_id: "issuer1".to_string() };
+        let predicate = Predicate { attr_name: "age".to_string(), p_type: "ge".to_string(), value: 18 };
 
-    let eq_proof = mocks::get_eq_proof().unwrap();
-    let ge_proof = mocks::get_ge_proof().unwrap();
+        let proof_input = ProofInput {
+            revealed_attrs: vec!["name".to_string()],
+            predicates: vec![predicate],
+            ts: "".to_string(),
+            pubseq_no: "".to_string()
+        };
+        let schema_key = SchemaKey { name: "GVT".to_string(), version: "1.0".to_string(), issue_id: "issuer1".to_string() };
 
-    let primary_proof = PrimaryProof {
-        eq_proof: eq_proof,
-        ge_proofs: vec![ge_proof]
-    };
+        let eq_proof = mocks::get_eq_proof().unwrap();
+        let ge_proof = mocks::get_ge_proof().unwrap();
 
-    let proof = Proof {
-        primary_proof: Some(primary_proof)
-    };
+        let primary_proof = PrimaryProof {
+            eq_proof: eq_proof,
+            ge_proofs: vec![ge_proof]
+        };
 
-    let proof = FullProof {
-        c_hash: BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap(),
-        schema_keys: vec![schema_key],
-        proofs: vec![proof],
-        c_list: vec![]
-    };
+        let proof = Proof {
+            primary_proof: Some(primary_proof)
+        };
 
-    let res = verifier.verify(
-        &proof_input,
-        &proof,
-        &all_revealed_attrs,
-        &nonce
-    );
+        let proof = FullProof {
+            c_hash: BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap(),
+            schema_keys: vec![schema_key],
+            proofs: vec![proof],
+            c_list: vec![]
+        };
 
-    assert!(res.is_ok());
-    assert_eq!(false, res.unwrap());//TODO replace it on true after implementation verify non revocation proof
-}
+        let res = verifier.verify(
+            &proof_input,
+            &proof,
+            &all_revealed_attrs,
+            &nonce
+        );
 
-#[test]
-fn verify_equlity_test() {
-    let verifier = Verifier::new();
-    let proof = mocks::get_eq_proof().unwrap();
-    let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
+        assert!(res.is_ok());
+        assert_eq!(false, res.unwrap());//TODO replace it on true after implementation verify non revocation proof
+    }
 
-    let mut all_revealed_attrs = HashMap::new();
-    all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
+    #[test]
+    fn verify_equlity_test() {
+        let verifier = Verifier::new();
+        let proof = mocks::get_eq_proof().unwrap();
+        let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
 
-    let res: Result<Vec<BigNumber>, CryptoError> = verifier.verify_equality(
-        &proof,
-        &c_h,
-        &all_revealed_attrs
-    );
+        let mut all_revealed_attrs = HashMap::new();
+        all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
 
-    assert!(res.is_ok());
-    assert_eq!("8587651374942675536728753067347608709923065423222685438966198646355384235605146057750016685007100765028881800702364440231217947350369743\
+        let res: Result<Vec<BigNumber>, CryptoError> = verifier.verify_equality(
+            &proof,
+            &c_h,
+            &all_revealed_attrs
+        );
+
+        assert!(res.is_ok());
+        assert_eq!("8587651374942675536728753067347608709923065423222685438966198646355384235605146057750016685007100765028881800702364440231217947350369743\
     7857804979183199263295761778145588965111459517594719543696782791489766042732025814161437109818972963936021789845879318003605961256519820582781422914\
     97483852459936553097915975160943885654662856194246459692268230399812271607008648333989067502873781526028636897730244216695340964909830792881918581540\
     43873141931971315451530757661716555801069654237014399171221318077704626190288641508984014104319842941642570762210967615676477710700081132170451096239\
     93976701236193875603478579771137394", res.unwrap()[0].to_dec().unwrap());
-}
+    }
 
-#[test]
-fn verify_ge_predicate_works() {
-    let verifier = Verifier::new();
-    let proof = mocks::get_ge_proof().unwrap();
-    let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
+    #[test]
+    fn verify_ge_predicate_works() {
+        let verifier = Verifier::new();
+        let proof = mocks::get_ge_proof().unwrap();
+        let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
 
-    let mut res = verifier.verify_ge_predicate(&proof, &c_h);
+        let res = verifier.verify_ge_predicate(&proof, &c_h);
 
-    assert!(res.is_ok());
-    let res_data = res.unwrap();
+        assert!(res.is_ok());
+        let res_data = res.unwrap();
 
-    assert_eq!("590677196901723818020415922807296116426887937783467552329163347868728175050285426810380554550521915469309366010293784655561646989461816914001376856160959474\
+        assert_eq!("590677196901723818020415922807296116426887937783467552329163347868728175050285426810380554550521915469309366010293784655561646989461816914001376856160959474\
     724414209525842689549578189455824659628722854086979862112126227427503673036934175777141430158851152801070493790103722897828582782870163648640848483116640936376249697914\
     633137312593554018309295958591096901852088786667038390724116720409279123241545342232722741939277853790638731624274772561371001348651265045334956091681420778381377735879\
     68669689592641726487646825879342092157114737380151398135267202044295696236084701682251092338479916535603864922996074284941502", res_data[0].to_dec().unwrap());
 
-    assert_eq!("543920569174455471552712599639581440766547705711484869326147123041712949811245262311199901062814754524825877546701435180039685252325466998614308056075575752\
+        assert_eq!("543920569174455471552712599639581440766547705711484869326147123041712949811245262311199901062814754524825877546701435180039685252325466998614308056075575752\
     3012229141304994213488418248472205210074847942832434112795278331835277383464971076923322954858384250535611705097886772449075174912745310975145629869588136613587711321262\
     7728458751804045531877233822168791389059182616293449039452340074699209366938385424160688825799810090127647002083194688148464107036527938948376814931919821538192884074388\
     857130767228996607411418624748269121453442291957717517888961515288426522014549478484314078535183196345054464060687989571272", res_data[4].to_dec().unwrap());
 
-    assert_eq!("5291248239406641292396471233645296793027806694289670593845325691604331838238498977162512644007769726817609527208308190348307854043130390623053807510337254881\
+        assert_eq!("5291248239406641292396471233645296793027806694289670593845325691604331838238498977162512644007769726817609527208308190348307854043130390623053807510337254881\
     53385441651181164838096995680599793153167424540679236858880383788178608357393234960916139159480841866618336282250341768534336113015828670517732010317195575756736857228019\
     99959821781284558791752968988627903716556541708694042188547572928871840445046338355043889462205730182388607688269913628444534146082714639049648123224230863440138867623776\
     549927089094790233964941899325435455174972634582611070515233787127321158133866337540066814079592094148393576048620611972", res_data[5].to_dec().unwrap());
-}
+    }
 
-#[test]
-fn calc_teg_works() {
-    let verifier = Verifier::new();
-    let proof = mocks::get_ge_proof().unwrap();
-    let pk = mocks::wallet_get_pk().unwrap();
+    #[test]
+    fn calc_teg_works() {
+        let verifier = Verifier::new();
+        let proof = mocks::get_ge_proof().unwrap();
+        let pk = mocks::wallet_get_pk().unwrap();
 
-    let res = verifier.calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
-                                &proof.alpha, &proof.t);
+        let res = verifier.calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
+                                    &proof.alpha, &proof.t);
 
-    assert!(res.is_ok());
+        assert!(res.is_ok());
 
-    let res_data = res.unwrap();
+        let res_data = res.unwrap();
 
-    assert_eq!("66763809913905005196685504127801735117197865238790458248607529048879049233469065301125917408730585682472169276319924014654607203248656655401523177550968\
+        assert_eq!("66763809913905005196685504127801735117197865238790458248607529048879049233469065301125917408730585682472169276319924014654607203248656655401523177550968\
     79005126037514992260570317766093693503820466315473651774235097627461187468560528498637265821197064092074734183979312736841571077239362785443096285343022325743749493\
     115671111253247628251990871764988964166665374208195759750683082601207244879323795625125414213912754126587933035233507317880982815199471233315480695428246221116099530\
     2762582265012461801281742135973017791914100890332877707316728113640973774147232476482160263443368393229756851203511677358619849710094360", res_data[1].to_dec().unwrap());
 
-    assert_eq!("1696893728060613826189455641919714506779750280465195946299906248745222420050846334948115499804146149236210969719663609022008928047696210368681129164314195\
+        assert_eq!("1696893728060613826189455641919714506779750280465195946299906248745222420050846334948115499804146149236210969719663609022008928047696210368681129164314195\
     73961162181255619271925974300906611593381407468871521942852472844008029827907111131222578449896833731023679346466149116169563017889291210126870245249099669006944487937\
     701186090023854916946824876428968293209784770081426960793331644949561007921128739917551308870397017309196194046088818137669808278548338892856171583731467477794490146449\
     84371272994658213772000759824325978473230458194532365204418256638583185120380190225687161021928828234401021859449125311307071", res_data[4].to_dec().unwrap());
 
-    assert_eq!("7393309861349259392630193573257336708857960195548821598928169647822585190694497646718777350819780512754931147438702100908573008083971392605400292392558068639\
+        assert_eq!("7393309861349259392630193573257336708857960195548821598928169647822585190694497646718777350819780512754931147438702100908573008083971392605400292392558068639\
     6426790932973170010764749286999115602174793097294839591793292822808780386838139840847178284597133066509806751359097256406292722692372335587138313303601933346125677119170\
     3745548456402537166527941377105628418709499120225110517191272248627626095292045349794519230242306378755919873322083068080833514101587864250782718259987761547941791394977\
     87217811540121982252785628801722587508068009691576296044178037535833166612637915579540102026829676380055826672922204922443", res_data[5].to_dec().unwrap());
-}
+    }
 
-#[test]
-fn calc_teq_works() {
-    let verifier = Verifier::new();
-    let proof = mocks::get_eq_proof().unwrap();
-    let pk = mocks::wallet_get_pk().unwrap();
+    #[test]
+    fn calc_teq_works() {
+        let verifier = Verifier::new();
+        let proof = mocks::get_eq_proof().unwrap();
+        let pk = mocks::wallet_get_pk().unwrap();
 
-    let res = verifier.calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v,
-                                &proof.m, &proof.m1, &proof.m2,
-                                &vec!["sex".to_string(), "age".to_string(), "height".to_string()]
-    );
+        let res = verifier.calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v,
+                                    &proof.m, &proof.m1, &proof.m2,
+                                    &vec!["sex".to_string(), "age".to_string(), "height".to_string()]
+        );
 
-    assert!(res.is_ok());
-    assert_eq!("44674566012490574873221338726897300898913972309497258940219569980165585727901128041268469063382008728753943624549705899352321456091543114868302412585283526922\
+        assert!(res.is_ok());
+        assert_eq!("44674566012490574873221338726897300898913972309497258940219569980165585727901128041268469063382008728753943624549705899352321456091543114868302412585283526922\
     48482588030725250950307379112600430281021015407801054038315353187338898917957982724509886210242668120433945426431434030155726888483222722925281121829536918755833970204795\
     18277688063064207469055405971871717892031608853055468434231459862469415223592109268515989593021324862858241499053669862628606497232449247691824831224716135821088977103328\
     37686070090582706144278719293684893116662729424191599602937927245245078018737281020133694291784582308345229012480867237", res.unwrap().to_dec().unwrap());
+    }
 }
 
 mod mocks {
