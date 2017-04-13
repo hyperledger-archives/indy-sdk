@@ -9,7 +9,6 @@ use std::cmp::Ord;
 use std::cmp::Ordering;
 
 use std::error::Error;
-use std::ops::Deref;
 
 pub struct BigNumberContext {
     openssl_bn_context: BigNumContext
@@ -266,12 +265,6 @@ impl PartialOrd for BigNumber {
 impl PartialEq for BigNumber {
     fn eq(&self, other: &BigNumber) -> bool {
         self.openssl_bn == other.openssl_bn
-    }
-}
-
-impl PartialEq for BigNumber {
-    fn eq(&self, oth: &BigNumber) -> bool {
-        self.openssl_bn.deref().eq(&oth.openssl_bn)
     }
 }
 

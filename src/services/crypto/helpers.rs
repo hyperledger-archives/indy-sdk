@@ -1,4 +1,3 @@
-use errors::crypto::CryptoError;
 extern crate rand;
 extern crate milagro_crypto;
 
