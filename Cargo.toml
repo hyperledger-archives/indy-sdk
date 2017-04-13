@@ -14,7 +14,7 @@ description = "Sovrin client with c-callable interface"
 license = "MIT/Apache-2.0"
 
 [lib]
-name = "libsovrin"
+name = "sovrin"
 path = "src/lib.rs"
 
 [[bin]]
