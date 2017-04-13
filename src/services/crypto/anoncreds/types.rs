@@ -1,8 +1,4 @@
 use services::crypto::wrappers::bn::BigNumber;
-
-extern crate milagro_crypto;
-
-use self::milagro_crypto::ff::FF;
 use std::collections::HashMap;
 
 pub enum ByteOrder {
@@ -31,10 +27,10 @@ pub struct ClaimInitData {
 }
 
 pub struct FullProof {
-    pub c_hash: FF,
+    pub c_hash: BigNumber,
     pub schema_keys: Vec<SchemaKey>,
     pub proofs: Vec<Proof>,
-    pub c_list: Vec<FF>
+    pub c_list: Vec<BigNumber>
 }
 
 pub struct ProofInput {
@@ -56,20 +52,20 @@ pub struct PrimaryProof {
 
 pub struct PrimaryEqualProof {
     pub revealed_attr_names: Vec<String>,
-    pub a_prime: FF,
-    pub e: FF,
-    pub v: FF,
-    pub m: HashMap<String, FF>,
-    pub m1: FF,
-    pub m2: FF
+    pub a_prime: BigNumber,
+    pub e: BigNumber,
+    pub v: BigNumber,
+    pub m: HashMap<String, BigNumber>,
+    pub m1: BigNumber,
+    pub m2: BigNumber
 }
 
 pub struct PrimaryPredicateGEProof {
-    pub u: HashMap<String, FF>,
-    pub r: HashMap<String, FF>,
-    pub mj: FF,
-    pub alpha: FF,
-    pub t: HashMap<String, FF>,
+    pub u: HashMap<String, BigNumber>,
+    pub r: HashMap<String, BigNumber>,
+    pub mj: BigNumber,
+    pub alpha: BigNumber,
+    pub t: HashMap<String, BigNumber>,
     pub predicate: Predicate
 }
 
