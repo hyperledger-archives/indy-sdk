@@ -9,7 +9,7 @@ use services::crypto::anoncreds::types::{
 };
 use services::crypto::helpers::{
     random_qr,
-    random_in_range
+    //random_in_range
 };
 use services::crypto::wrappers::bn::BigNumber;
 
@@ -89,4 +89,12 @@ impl Issuer {
         try!(result.add_word(2));
         Ok(result)
     }
+
+//    fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
+//        let mut a = BigNum::new().unwrap();
+//        let mut b = BigNum::new().unwrap();
+//        a.rand(LARGE_VPRIME_PRIME, MSB_MAYBE_ZERO, false).unwrap();
+//        b.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32((LARGE_VPRIME_PRIME - 1) as u32).unwrap(), &mut ctx);
+//        AnoncredsService::bitwise_or_big_int(&a, &b)
+//    }
 }

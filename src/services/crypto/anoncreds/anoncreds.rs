@@ -73,9 +73,6 @@ impl AnoncredsService {
         let encoded_attributes = AnoncredsService::encode_attributes(attributes);
         let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
     }
-    fn sign(attributes: &Vec<AttributeType>, v: &BigNum, u: &BigNum, e: &BigNum) {
-
-    }
     fn generate_context(accumulator_id: &str, user_id: &str) {
         let accumulator_id_encoded = AnoncredsService::encode_attribute(accumulator_id, ByteOrder::Little);
         let user_id_encoded = AnoncredsService::encode_attribute(user_id, ByteOrder::Little);
@@ -85,14 +82,6 @@ impl AnoncredsService {
         let mut result = hash(MessageDigest::sha256(), s.to_hex_str().unwrap().as_bytes()).unwrap();
         let encoded_attribute = AnoncredsService::transform_byte_array_to_big_integer(&result);
         println!("attr{:?}", encoded_attribute);
-    }
-    fn generate_vprimeprime() -> BigNum {
-        let mut ctx = BigNumContext::new().unwrap();
-        let mut a = BigNum::new().unwrap();
-        let mut b = BigNum::new().unwrap();
-        a.rand(LARGE_VPRIME_PRIME, MSB_MAYBE_ZERO, false).unwrap();
-        b.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32((LARGE_VPRIME_PRIME - 1) as u32).unwrap(), &mut ctx);
-        AnoncredsService::bitwise_or_big_int(&a, &b)
     }
     fn transform_byte_array_to_big_integer(vec: &Vec<u8>) -> BigNum {
         let mut ctx = BigNumContext::new().unwrap();
