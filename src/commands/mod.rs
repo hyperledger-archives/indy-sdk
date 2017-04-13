@@ -111,9 +111,9 @@ impl CommandExecutor {
 impl Drop for CommandExecutor {
     fn drop(&mut self) {
         info!(target: "command_executor", "Drop started");
-        self.send(Command::Exit);
+        self.send(Command::Exit).unwrap();
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join();
+        self.worker.take().unwrap().join().unwrap();
         info!(target: "command_executor", "Drop finished");
     }
 }

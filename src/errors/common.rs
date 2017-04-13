@@ -1,7 +1,8 @@
 use std::error;
-use std::io;
 use std::fmt;
-use std::num;
+
+use api::ErrorCode;
+use errors::ToErrorCode;
 
 #[derive(Debug)]
 pub enum CommonError {
@@ -50,10 +51,21 @@ impl error::Error for CommonError {
     }
 }
 
+impl ToErrorCode for CommonError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            CommonError::InvalidParam1(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam2(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam3(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam4(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam5(ref description) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::sync::mpsc::channel;
-
+    //use super::*;
     // TODO: FIXME: Provide tests!
 }

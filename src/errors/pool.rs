@@ -1,9 +1,9 @@
 use std::error;
 use std::io;
 use std::fmt;
-use std::num;
 
 use api::ErrorCode;
+use errors::ToErrorCode;
 
 #[derive(Debug)]
 pub enum PoolError {
@@ -54,11 +54,21 @@ impl From<io::Error> for PoolError {
     }
 }
 
+impl ToErrorCode for PoolError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            PoolError::NotCreated(ref description) => ErrorCode::PoolLedgerNotCreatedError,
+            PoolError::InvalidConfiguration(ref description) => ErrorCode::PoolLedgerInvalidConfiguration,
+            PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
+            PoolError::InvalidData(ref description) => ErrorCode::PoolLedgerInvalidDataFormat,
+            PoolError::Io(ref err) => ErrorCode::PoolLedgerIOError
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::sync::mpsc::channel;
-
+    //use super::*;
     // TODO: FIXME: Provide tests!!!
 
     //    #[test]

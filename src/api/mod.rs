@@ -6,11 +6,6 @@ pub mod ledger;
 pub mod pool;
 pub mod wallet;
 
-use errors::common::CommonError;
-use errors::pool::PoolError;
-
-use self::libc::{c_char};
-
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode {
@@ -104,29 +99,4 @@ pub enum ErrorCode {
 
     // Attempt to generate master secret with dupplicated name
     AnoncredsMasterSecretDuplicateNameError
-}
-
-impl From<CommonError> for ErrorCode {
-    fn from(err: CommonError) -> Self {
-        match err {
-            CommonError::InvalidParam1(ref description) => ErrorCode::CommonInvalidParam1,
-            CommonError::InvalidParam2(ref description) => ErrorCode::CommonInvalidParam1,
-            CommonError::InvalidParam3(ref description) => ErrorCode::CommonInvalidParam1,
-            CommonError::InvalidParam4(ref description) => ErrorCode::CommonInvalidParam1,
-            CommonError::InvalidParam5(ref description) => ErrorCode::CommonInvalidParam1,
-            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState
-        }
-    }
-}
-
-impl From<PoolError> for ErrorCode {
-    fn from(err: PoolError) -> Self {
-        match err {
-            PoolError::NotCreated(ref description) => ErrorCode::PoolLedgerNotCreatedError,
-            PoolError::InvalidConfiguration(ref description) => ErrorCode::PoolLedgerInvalidConfiguration,
-            PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
-            PoolError::InvalidData(ref description) => ErrorCode::PoolLedgerInvalidDataFormat,
-            PoolError::Io(ref err) => ErrorCode::PoolLedgerIOError
-        }
-    }
 }

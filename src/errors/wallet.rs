@@ -1,8 +1,6 @@
 use std::error;
-use std::error::Error;
 use std::io;
 use std::fmt;
-use std::num;
 
 #[derive(Debug)]
 pub enum WalletError {

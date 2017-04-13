@@ -1,7 +1,6 @@
 use std::error;
 use std::io;
 use std::fmt;
-use std::num;
 
 use errors::crypto::CryptoError;
 use errors::pool::PoolError;
@@ -52,8 +51,6 @@ impl error::Error for LedgerError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::sync::mpsc::channel;
-
+    // use super::*;
     // TODO: FIXME: Provide tests!
 }

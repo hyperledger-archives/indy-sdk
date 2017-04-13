@@ -1,7 +1,5 @@
 use std::error;
-use std::io;
 use std::fmt;
-use std::num;
 
 #[derive(Debug)]
 pub enum CryptoError {
@@ -48,8 +46,7 @@ impl error::Error for CryptoError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::sync::mpsc::channel;
+    //use super::*;
 
 //    #[test]
 //    fn crypto_error_can_be_created() {

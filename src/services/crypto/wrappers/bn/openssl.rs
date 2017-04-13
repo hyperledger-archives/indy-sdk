@@ -270,6 +270,6 @@ impl PartialEq for BigNumber {
 
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
-        CryptoError::CryptoBackendError(err.description().to_string())
+        CryptoError::BackendError(err.description().to_string())
     }
 }

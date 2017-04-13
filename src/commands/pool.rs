@@ -12,7 +12,7 @@ pub enum PoolCommand {
     Delete(String, // name
            Box<Fn(Result<(), PoolError>) + Send>),
     Open(String, // name
-         String, // config
+         Option<String>, // config
          Box<Fn(Result<i32, PoolError>) + Send>),
     Close(i32, // pool handle
           Box<Fn(Result<(), PoolError>) + Send>),
@@ -43,7 +43,7 @@ impl PoolCommandExecutor {
             },
             PoolCommand::Open(name, config, cb) => {
                 info!(target: "pool_command_executor", "Open command received");
-                self.open(&name, &config, cb);
+                self.open(&name, config.as_ref().map(String::as_str), cb);
             },
             PoolCommand::Close(handle, cb) => {
                 info!(target: "pool_command_executor", "Close command received");
@@ -57,22 +57,27 @@ impl PoolCommandExecutor {
     }
 
     fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), PoolError>) + Send>) {
-        unimplemented!()
+        // TODO: FIXME: Implement me!!!
+        cb(Ok(()));
     }
 
     fn delete(&self, name: &str, cb: Box<Fn(Result<(), PoolError>) + Send>) {
-        unimplemented!()
+        // TODO: FIXME: Implement me!!!
+        cb(Ok(()));
     }
 
-    fn open(&self, name: &str, config: &str, cb: Box<Fn(Result<i32, PoolError>) + Send>) {
-        unimplemented!()
+    fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, PoolError>) + Send>) {
+        // TODO: FIXME: Implement me!!!
+        cb(Ok((1000)));
     }
 
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), PoolError>) + Send>) {
-        unimplemented!()
+        // TODO: FIXME: Implement me!!!
+        cb(Ok(()));
     }
 
     fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), PoolError>) + Send>) {
-        unimplemented!()
+        // TODO: FIXME: Implement me!!!
+        cb(Ok(()));
     }
 }
