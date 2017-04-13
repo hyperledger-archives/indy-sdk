@@ -1,7 +1,5 @@
 use std::error;
-use std::io;
 use std::fmt;
-use std::num;
 
 use errors::crypto::CryptoError;
 use errors::pool::PoolError;
@@ -11,7 +9,7 @@ use errors::wallet::WalletError;
 pub enum SignusError {
     CryptoError(CryptoError),
     PoolError(PoolError),
-    WalletError(WalletError),
+    WalletError(WalletError)
 }
 
 impl fmt::Display for SignusError {
@@ -44,8 +42,6 @@ impl error::Error for SignusError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::sync::mpsc::channel;
-
+    //use super::*;
     // TODO: FIXME: Provide tests!
 }

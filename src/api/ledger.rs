@@ -2,7 +2,7 @@ extern crate libc;
 
 use api::ErrorCode;
 
-use self::libc::{c_char, c_uchar};
+use self::libc::c_char;
 
 /// Signs and submits request message to validator pool.
 ///

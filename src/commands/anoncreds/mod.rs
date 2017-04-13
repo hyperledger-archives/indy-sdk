@@ -2,8 +2,6 @@ mod issuer;
 
 use commands::anoncreds::issuer::{IssuerCommand, IssuerCommandExecutor};
 
-use errors::anoncreds::AnoncredsError;
-
 use services::crypto::CryptoService;
 use services::pool::PoolService;
 use services::wallet::WalletService;

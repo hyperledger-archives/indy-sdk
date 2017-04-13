@@ -6,6 +6,5 @@ services:
       dockerfile: ci/ubuntu.dockerfile
     command: cargo test --color=always
     volumes:
-      - "./src:/home/sorvin-client-rust/src"
-      - "./Cargo.toml:/home/sorvin-client-rust/Cargo.toml"
-      - "./target:/home/sorvin-client-rust/target"
+      - ".:/home/sovrin/sovrin-client-rust"
+    working_dir: /home/sovrin/sovrin-client-rust

@@ -10,11 +10,13 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::signus::{SignusCommand, SignusCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 
+use errors::common::CommonError;
+
 use services::crypto::CryptoService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
-use std::error;
+use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
 use std::thread;
@@ -34,16 +36,7 @@ pub struct CommandExecutor {
     sender: Sender<Command>
 }
 
-/// Global (lazy inited) instance of CommandExecutor
-///
-/// Sample:
-///
-/// {
-///     ...
-///     let ref ce: CommandExecutor = *CommandExecutor::instance();                <- lock +
-///     ce.send(Command::Exit);                                                            |
-///     ...                                                                                |
-/// }                                                                            <- unlock +
+// Global (lazy inited) instance of CommandExecutor
 lazy_static! {
     static ref COMMAND_EXECUTOR: Mutex<CommandExecutor> = Mutex::new(CommandExecutor::new());
 }
@@ -107,17 +100,20 @@ impl CommandExecutor {
         }
     }
 
-    pub fn send(&self, cmd: Command) {
-        self.sender.send(cmd);
+    pub fn send(&self, cmd: Command) -> Result<(), CommonError> {
+        match self.sender.send(cmd) {
+            Ok(val) => Ok(()),
+            Err(ref err) => Err(CommonError::InvalidState(err.description().to_string()))
+        }
     }
 }
 
 impl Drop for CommandExecutor {
     fn drop(&mut self) {
         info!(target: "command_executor", "Drop started");
-        self.send(Command::Exit);
+        self.send(Command::Exit).unwrap();
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join();
+        self.worker.take().unwrap().join().unwrap();
         info!(target: "command_executor", "Drop finished");
     }
 }

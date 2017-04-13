@@ -2,7 +2,7 @@ extern crate libc;
 
 use api::ErrorCode;
 
-use self::libc::{c_char, c_uchar};
+use self::libc::c_char;
 
 /// Creates keys (signing and encryption keys) for a new
 /// DID (owned by the caller of the library).
