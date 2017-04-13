@@ -40,7 +40,7 @@ impl Sodium {
             &secretbox::Nonce(sodium.clone_into_array(nonce)),
             &secretbox::Key(sodium.clone_into_array(key))
         )
-            .map_err(|_| CryptoError::CryptoInvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|_| CryptoError::InvalidStructure("Unable to decrypt data".to_string()))
     }
 
 
@@ -67,7 +67,7 @@ impl Sodium {
             &box_::PublicKey(sodium.clone_into_array(public_key)),
             &box_::SecretKey(sodium.clone_into_array(private_key))
         )
-            .map_err(|_| CryptoError::CryptoInvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|_| CryptoError::InvalidStructure("Unable to decrypt data".to_string()))
     }
 
     pub fn get_nonce(&self) -> Vec<u8> {
@@ -104,7 +104,7 @@ impl Sodium {
             doc,
             &sign::PublicKey(sodium.clone_into_array(public_key))
         )
-            .map_err(|_| CryptoError::CryptoInvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|_| CryptoError::InvalidStructure("Unable to decrypt data".to_string()))
     }
 
     pub fn base58_encode(&self, doc: &[u8]) -> String {
@@ -113,7 +113,7 @@ impl Sodium {
 
     pub fn base58_decode(&self, doc: &String) -> Result<Vec<u8>, CryptoError> {
         doc.from_base58()
-            .map_err(|err| CryptoError::CryptoInvalidStructure(format!("{}", err)))
+            .map_err(|err| CryptoError::InvalidStructure(format!("{}", err)))
     }
 
     fn clone_into_array<A, T>(&self, slice: &[T]) -> A

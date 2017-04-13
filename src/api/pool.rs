@@ -1,8 +1,14 @@
 extern crate libc;
 
 use api::ErrorCode;
+use commands::{Command, CommandExecutor};
+use commands::pool::PoolCommand;
+use utils::cstring::CStringUtils;
 
 use self::libc::{c_char, c_uchar};
+
+use std::convert::From;
+use std::ffi::CStr;
 
 /// Creates a new local pool ledger that can be used later to connect pool nodes.
 ///
@@ -24,8 +30,26 @@ use self::libc::{c_char, c_uchar};
 pub extern fn sovrin_create_pool_ledger(command_handle: i32,
                                         name: *const c_char,
                                         config: *const c_char,
-                                        cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
+                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    CommandExecutor::instance()
+        .send(Command::Pool(PoolCommand::Create(
+            name,
+            config,
+            Box::new(move |result| {
+                let err = match result {
+                    Ok(res) => ErrorCode::Success,
+                    Err(err) => From::from(err)
+                };
+
+                cb(command_handle, err)
+            })
+        )));
+
+    ErrorCode::Success
 }
 
 /// Opens pool ledger and performs connecting to pool nodes.

@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 pub enum PoolCommand {
     Create(String, // name
-           String, // config
+           Option<String>, // config
            Box<Fn(Result<(), PoolError>) + Send>),
     Delete(String, // name
            Box<Fn(Result<(), PoolError>) + Send>),
@@ -35,7 +35,7 @@ impl PoolCommandExecutor {
         match command {
             PoolCommand::Create(name, config, cb) => {
                 info!(target: "pool_command_executor", "Create command received");
-                self.create(&name, &config, cb);
+                self.create(&name, config.as_ref().map(String::as_str), cb);
             },
             PoolCommand::Delete(name, cb) => {
                 info!(target: "pool_command_executor", "Delete command received");
@@ -56,7 +56,7 @@ impl PoolCommandExecutor {
         };
     }
 
-    fn create(&self, name: &str, config: &str, cb: Box<Fn(Result<(), PoolError>) + Send>) {
+    fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), PoolError>) + Send>) {
         unimplemented!()
     }
 

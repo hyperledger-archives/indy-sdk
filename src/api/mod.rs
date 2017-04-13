@@ -6,22 +6,19 @@ pub mod ledger;
 pub mod pool;
 pub mod wallet;
 
+use errors::pool::PoolError;
 
 use self::libc::{c_char};
 
+#[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode {
     Success = 0,
 
     // Common errors
-    // Caller passed invalid pool ledger handle
-    CommonInvalidPoolLedgerHandle = 100,
-
-    // Caller passed invalid wallet handle
-    CommonInvalidWalletHandle,
 
     // Caller passed invalid value as param 1 (null, invalid json and etc..)
-    CommonInvalidParam1,
+    CommonInvalidParam1 = 100,
 
     // Caller passed invalid value as param 2 (null, invalid json and etc..)
     CommonInvalidParam2,
@@ -39,6 +36,9 @@ pub enum ErrorCode {
     CommonInvalidState,
 
     // Wallet errors
+    // Caller passed invalid wallet handle
+    WalletInvalidHandle,
+
     // Unknown type of wallet was passed on create_wallet
     WalletUnknownTypeError = 200,
 
@@ -58,11 +58,17 @@ pub enum ErrorCode {
     WalletIncompatiblePoolError,
 
     // Ledger errors
+    // Caller passed invalid pool ledger handle
+    PoolLedgerInvalidPoolHandle = 300,
+
     // Pool ledger files referenced in open_pool_ledger have invalid data format
-    PoolLedgerInvalidDataFormat = 300,
+    PoolLedgerInvalidDataFormat,
 
     // IO error during access pool ledger files
-    PoolILedgerOError,
+    PoolLedgerIOError,
+
+    // Requested entity id isn't present in wallet
+    PoolLedgerNotFoundError,
 
     // No concensus during ledger operation
     LedgerNoConsensusError,
@@ -94,4 +100,16 @@ pub enum ErrorCode {
 
     // Attempt to generate master secret with dupplicated name
     AnoncredsMasterSecretDuplicateNameError
+}
+
+impl From<PoolError> for ErrorCode {
+    fn from(err: PoolError) -> Self {
+        match err {
+            PoolError::NotCreated(ref description) => ErrorCode::CommonInvalidParam1,
+            PoolError::InvalidHandle(ref description) => ErrorCode::CommonInvalidParam1,
+            PoolError::NoConsensus(ref description) => ErrorCode::CommonInvalidParam1,
+            PoolError::InvalidData(ref description) => ErrorCode::CommonInvalidParam1,
+            PoolError::Io(ref err) => ErrorCode::CommonInvalidParam1
+        }
+    }
 }

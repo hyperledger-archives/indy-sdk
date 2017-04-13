@@ -11,7 +11,7 @@ use errors::wallet::WalletError;
 pub enum SignusError {
     CryptoError(CryptoError),
     PoolError(PoolError),
-    WalletError(WalletError),
+    WalletError(WalletError)
 }
 
 impl fmt::Display for SignusError {

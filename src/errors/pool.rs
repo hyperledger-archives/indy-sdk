@@ -3,6 +3,8 @@ use std::io;
 use std::fmt;
 use std::num;
 
+use api::ErrorCode;
+
 #[derive(Debug)]
 pub enum PoolError {
     NotCreated(String),
@@ -59,27 +61,27 @@ mod tests {
 
     // TODO: FIXME: Provide tests!!!
 
-//    #[test]
-//    fn sovrin_error_can_be_created() {
-//        let not_created_error = PoolError::NotCreated("NotCreated".to_string());
-//        let invalid_handle_error = PoolError::InvalidHandle("InvalidHandle".to_string());
-//        let no_consensus_error = PoolError::NoConsensus("NoConsensus".to_string());
-//        let invalid_data_error = PoolError::InvalidData("InvalidData".to_string());
-//        let io_error = PoolError::Io(io::Error());
-//    }
-//
-//    #[test]
-//    fn sovrin_error_can_be_formatted() {
-//        let not_created_error_formatted = format!("{}", PoolError::NotCreated("NotCreated".to_string()));
-//        let invalid_handle_error_formatted = format!("{}", PoolError::InvalidHandle("InvalidHandle".to_string()));
-//        let no_consensus_error_formatted = format!("{}", PoolError::NoConsensus("NoConsensus".to_string()));
-//        let invalid_data_error_formatted = format!("{}", PoolError::InvalidData("InvalidData".to_string()));
-//        let io_error_formatted = format!("{}", PoolError::Io(io::Error()));
-//
-//        assert_eq!("No consensus: NotCreated", not_created_error_formatted);
-//        assert_eq!("No consensus: InvalidHandle", invalid_handle_error_formatted);
-//        assert_eq!("No consensus: NoConsensus", no_consensus_error_formatted);
-//        assert_eq!("Invalid data: InvalidData", invalid_data_error_formatted);
-//        assert_eq!("IO", io_error_formatted);
-//    }
+    //    #[test]
+    //    fn sovrin_error_can_be_created() {
+    //        let not_created_error = PoolError::NotCreated("NotCreated".to_string());
+    //        let invalid_handle_error = PoolError::InvalidHandle("InvalidHandle".to_string());
+    //        let no_consensus_error = PoolError::NoConsensus("NoConsensus".to_string());
+    //        let invalid_data_error = PoolError::InvalidData("InvalidData".to_string());
+    //        let io_error = PoolError::Io(io::Error());
+    //    }
+    //
+    //    #[test]
+    //    fn sovrin_error_can_be_formatted() {
+    //        let not_created_error_formatted = format!("{}", PoolError::NotCreated("NotCreated".to_string()));
+    //        let invalid_handle_error_formatted = format!("{}", PoolError::InvalidHandle("InvalidHandle".to_string()));
+    //        let no_consensus_error_formatted = format!("{}", PoolError::NoConsensus("NoConsensus".to_string()));
+    //        let invalid_data_error_formatted = format!("{}", PoolError::InvalidData("InvalidData".to_string()));
+    //        let io_error_formatted = format!("{}", PoolError::Io(io::Error()));
+    //
+    //        assert_eq!("No consensus: NotCreated", not_created_error_formatted);
+    //        assert_eq!("No consensus: InvalidHandle", invalid_handle_error_formatted);
+    //        assert_eq!("No consensus: NoConsensus", no_consensus_error_formatted);
+    //        assert_eq!("Invalid data: InvalidData", invalid_data_error_formatted);
+    //        assert_eq!("IO", io_error_formatted);
+    //    }
 }

@@ -34,16 +34,7 @@ pub struct CommandExecutor {
     sender: Sender<Command>
 }
 
-/// Global (lazy inited) instance of CommandExecutor
-///
-/// Sample:
-///
-/// {
-///     ...
-///     let ref ce: CommandExecutor = *CommandExecutor::instance();                <- lock +
-///     ce.send(Command::Exit);                                                            |
-///     ...                                                                                |
-/// }                                                                            <- unlock +
+// Global (lazy inited) instance of CommandExecutor
 lazy_static! {
     static ref COMMAND_EXECUTOR: Mutex<CommandExecutor> = Mutex::new(CommandExecutor::new());
 }
