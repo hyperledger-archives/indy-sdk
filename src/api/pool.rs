@@ -8,10 +8,10 @@ use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 
-/// Creates a new local pool ledger that can be used later to connect pool nodes.
+/// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///
 /// #Params
-/// name: Name of the pool
+/// config_name: Name of the pool ledger configuration.
 /// config (optional): Pool configuration json. if NULL, then default config will be used. Example:
 /// {
 ///     "genesis_txn": string (optional), A path to genesis transaction file. If NULL, then a default one will be used.
@@ -25,17 +25,17 @@ use self::libc::c_char;
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_create_pool_ledger(command_handle: i32,
-                                        name: *const c_char,
-                                        config: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+pub extern fn sovrin_create_pool_ledger_config(command_handle: i32,
+                                               config_name: *const c_char,
+                                               config: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Create(
-            name,
+            config_name,
             config,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
@@ -48,10 +48,11 @@ pub extern fn sovrin_create_pool_ledger(command_handle: i32,
 
 /// Opens pool ledger and performs connecting to pool nodes.
 ///
-/// Pool with corresponded name must be previously created with sovrin_create_pool method.
+/// Pool ledger configuration with corresponded name must be previously created
+/// with sovrin_create_pool_ledger_config method.
 /// It is impossible to open pool with the same name more than once.
 ///
-/// name: Name of the pool.
+/// config_name: Name of the pool ledger configuration.
 /// config (optional): Runtime pool configuration json.
 ///                         if NULL, then default config will be used. Example:
 /// {
@@ -71,7 +72,7 @@ pub extern fn sovrin_create_pool_ledger(command_handle: i32,
 /// Ledger*
 #[no_mangle]
 pub extern fn sovrin_open_pool_ledger(command_handle: i32,
-                                      name: *const c_char,
+                                      config_name: *const c_char,
                                       config: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
@@ -80,7 +81,7 @@ pub extern fn sovrin_open_pool_ledger(command_handle: i32,
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Open(
-            name,
+            config_name,
             config,
             Box::new(move |result| {
                 let (err, pool_handle) = result_to_err_code_1!(result, 0);
@@ -149,10 +150,10 @@ pub extern fn sovrin_close_pool_ledger(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Deletes created pool ledger.
+/// Deletes created pool ledger configuration.
 ///
 /// #Params
-/// name: Name of the pool ledger to delete.
+/// config_name: Name of the pool ledger configuration to delete.
 ///
 /// #Returns
 /// Error code
@@ -161,15 +162,15 @@ pub extern fn sovrin_close_pool_ledger(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_delete_pool_ledger(command_handle: i32,
-                                        name: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+pub extern fn sovrin_delete_pool_ledger_config(command_handle: i32,
+                                               config_name: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Delete(
-            name,
+            config_name,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
