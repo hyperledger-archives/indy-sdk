@@ -4,19 +4,12 @@ const LARGE_PRIME: i32 = 1024;
 const LARGE_VPRIME: i32 = 2128;
 const LARGE_E_START: i32 = 596;
 const LARGE_E_END_RANGE: i32 = 119;
-const LARGE_VPRIME_PRIME: i32 = 2724;
 extern crate openssl;
 extern crate int_traits;
 extern crate milagro_crypto;
 use self::int_traits::IntTraits;
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
-use self::openssl::hash::{hash, MessageDigest};
 use services::crypto;
-
-enum ByteOrder {
-    Big,
-    Little
-}
 
 pub struct AnoncredsService {
     dummy: String
@@ -62,17 +55,6 @@ impl AnoncredsService {
         let claim_request = ClaimRequest {u: u};
         claim_request
     }
-    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
-        let mut ctx = BigNumContext::new().unwrap();
-        let vprimeprime = AnoncredsService::generate_vprimeprime();
-        let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
-        e_start.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_START as u32).unwrap(), &mut ctx);
-        e_end.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_END_RANGE as u32).unwrap(), &mut ctx);
-        e_end = &e_start + &e_end;
-        let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
-        let encoded_attributes = AnoncredsService::encode_attributes(attributes);
-        let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
-    }
     fn generate_context(accumulator_id: &str, user_id: &str) {
         let accumulator_id_encoded = AnoncredsService::encode_attribute(accumulator_id, ByteOrder::Little);
         let user_id_encoded = AnoncredsService::encode_attribute(user_id, ByteOrder::Little);
@@ -94,30 +76,6 @@ impl AnoncredsService {
         }
         result
     }
-    fn encode_attribute(attribute: &str, byte_order: ByteOrder) -> String {
-        let mut result = hash(MessageDigest::sha256(), attribute.as_bytes()).unwrap();
-        let index = result.iter().position(|&value| value == 0);
-        if let Some(position) = index {
-            result.truncate(position);
-        }
-        if let ByteOrder::Little = byte_order {
-            result.reverse();
-        }
-        let encoded_attribute = AnoncredsService::transform_byte_array_to_big_integer(&result);
-        encoded_attribute.to_dec_str().unwrap().to_string()
-    }
-    fn encode_attributes(attributes: &Vec<AttributeType>) -> Vec<AttributeType> {
-        let mut encoded_attributes = Vec::new();
-        for i in attributes {
-            if i.encode {
-                encoded_attributes.push(AttributeType {name: i.name.clone(), value: AnoncredsService::encode_attribute(&i.value, ByteOrder::Big), encode: i.encode.clone()});
-            }
-            else {
-                encoded_attributes.push(AttributeType {name: i.name.clone(), value: i.value.clone(), encode: i.encode.clone()});
-            }
-        }
-        encoded_attributes
-    }
 }
 
 #[derive(Debug)]
@@ -130,13 +88,6 @@ struct PublicKey {
 #[derive(Debug)]
 struct ClaimRequest {
     u: BigNum
-}
-
-#[derive(Debug)]
-struct AttributeType {
-    name: String,
-    value: String,
-    encode: bool
 }
 
 #[cfg(test)]
@@ -175,15 +126,7 @@ mod tests {
 //        let is_prime = prime.is_prime(checks, &mut ctx).unwrap();
 //        assert_eq!(is_prime, true);
 //    }
-    #[test]
-    fn encode_attribute_works() {
-        let test_str_one = "Alexer5435";
-        let test_str_two = "Alexer";
-        let test_answer_one = "62794";
-        let test_answer_two = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
-        assert_eq!(test_answer_one, AnoncredsService::encode_attribute(test_str_one, ByteOrder::Big));
-        assert_eq!(test_answer_two, AnoncredsService::encode_attribute(test_str_two, ByteOrder::Big));
-    }
+
     #[test]
     fn bitwise_or_big_int_works () {
         let a = BigNum::from_dec_str("778378032744961463933002553964902776831187587689736807008034459507677878432383414623740074").unwrap();

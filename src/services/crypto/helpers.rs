@@ -85,7 +85,7 @@ pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     Ok(random)
 }
 
-fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
+pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
     let significant_bits = max(try!(a.num_bits()), try!(b.num_bits()));
     let mut result = try!(BigNumber::new());
     for i in 0..significant_bits {

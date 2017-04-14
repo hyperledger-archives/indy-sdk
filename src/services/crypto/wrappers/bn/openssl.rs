@@ -4,6 +4,7 @@ extern crate openssl;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
+use self::openssl::hash::{hash, MessageDigest};
 use std::cmp::Ord;
 use std::cmp::Ordering;
 
@@ -104,6 +105,10 @@ impl BigNumber {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         Ok(self.openssl_bn.to_vec())
+    }
+
+    pub fn hash(data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        Ok(try!(hash(MessageDigest::sha256(), data)))
     }
 
     pub fn add(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
@@ -234,10 +239,6 @@ impl BigNumber {
                 .modulus(&p, Some(&mut context))
         );
         Ok(res)
-    }
-
-    pub fn compare(&self, other: &BigNumber) -> bool {
-        self.openssl_bn == other.openssl_bn
     }
 
     pub fn clone(&self) -> Result<BigNumber, CryptoError> {

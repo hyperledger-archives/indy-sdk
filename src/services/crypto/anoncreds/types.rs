@@ -87,3 +87,10 @@ pub struct Predicate {
     pub p_type: String,
     pub value: i32
 }
+
+#[derive(Debug)]
+pub struct Attribute {
+    pub name: String,
+    pub value: String,
+    pub encode: bool
+}

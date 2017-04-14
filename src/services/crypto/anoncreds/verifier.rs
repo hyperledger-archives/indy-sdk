@@ -37,7 +37,7 @@ impl Verifier {
 
         let c_hver = try!(get_hash_as_int(&mut values));
 
-        Ok(c_hver.compare(&proof.c_hash))
+        Ok(c_hver == proof.c_hash)
     }
 
     fn verify_primary_proof(&self, proof_input: &ProofInput, c_hash: &BigNumber, primary_proof: &PrimaryProof,
