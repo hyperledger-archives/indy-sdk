@@ -321,6 +321,8 @@ mod tests {
 
     #[test]
     fn generate_prime_in_range_works() {
+        ::env_logger::init().unwrap();
+        
         let bn = BigNumber::new().unwrap();
         let start = bn.rand(250).unwrap();
         let end = bn.rand(300).unwrap();
