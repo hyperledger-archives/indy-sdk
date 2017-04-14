@@ -1,5 +1,6 @@
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::constants::{
+    LARGE_MASTER_SECRET,
     LARGE_PRIME,
     LARGE_VPRIME_PRIME
 };
@@ -12,7 +13,8 @@ use services::crypto::anoncreds::types::{
 };
 use services::crypto::helpers::{
     random_qr,
-    bitwise_or_big_int
+    bitwise_or_big_int,
+    get_hash_as_int
 };
 use services::crypto::wrappers::bn::BigNumber;
 
@@ -84,6 +86,36 @@ impl Issuer {
 
     }
 
+    //    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
+    //        let mut ctx = BigNumContext::new().unwrap();
+    //        let vprimeprime = AnoncredsService::generate_vprimeprime();
+    //        let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
+    //        e_start.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_START as u32).unwrap(), &mut ctx);
+    //        e_end.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_END_RANGE as u32).unwrap(), &mut ctx);
+    //        e_end = &e_start + &e_end;
+    //        let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
+    //        let encoded_attributes = AnoncredsService::encode_attributes(attributes);
+    //        let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
+    //    }
+
+    fn _generate_context_attribute(accumulator_id: &String, user_id: &String) -> Result<BigNumber, CryptoError> {
+        let accumulator_id_encoded = try!(Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little));
+        let user_id_encoded = try!(Issuer::_encode_attribute(&user_id, ByteOrder::Little));
+        let mut s = vec![try!(bitwise_or_big_int(
+            &try!(BigNumber::from_dec(&accumulator_id_encoded)),
+            &try!(BigNumber::from_dec(&user_id_encoded))
+        ))];
+        let mut h = try!(get_hash_as_int(&mut s));
+        let mut pow_2 = try!(BigNumber::from_u32(2));
+        pow_2 = try!(pow_2.exp(&try!(BigNumber::from_u32(LARGE_MASTER_SECRET as u32)), None));
+        h = try!(h.modulus(&pow_2, None));
+        Ok(h)
+    }
+
+    fn _sign() {
+        unimplemented!()
+    }
+
     fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<String, CryptoError> {
         let mut result = try!(BigNumber::hash(&attribute.as_bytes()));
         let index = result.iter().position(|&value| value == 0);
@@ -110,18 +142,6 @@ impl Issuer {
         Ok(encoded_attributes)
     }
 
-//    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
-//        let mut ctx = BigNumContext::new().unwrap();
-//        let vprimeprime = AnoncredsService::generate_vprimeprime();
-//        let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
-//        e_start.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_START as u32).unwrap(), &mut ctx);
-//        e_end.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_END_RANGE as u32).unwrap(), &mut ctx);
-//        e_end = &e_start + &e_end;
-//        let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
-//        let encoded_attributes = AnoncredsService::encode_attributes(attributes);
-//        let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
-//    }
-
     fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut value = try!(p.mul(&q, None));
         try!(value.sub_word(3));
@@ -147,18 +167,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encode_attribute_works() {
-        let test_str_one = "Alexer5435";
-        let test_str_two = "Alexer";
-        let test_answer_one = "62794";
-        let test_answer_two = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
-        assert_eq!(test_answer_one, Issuer::_encode_attribute(test_str_one, ByteOrder::Big).unwrap());
-        assert_eq!(test_answer_two, Issuer::_encode_attribute(test_str_two, ByteOrder::Big).unwrap());
+    fn encode_attribute_works_short_hash() {
+        let test_str = "Alexer5435";
+        let test_answer = "62794";
+        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap());
+    }
+
+    #[test]
+    fn encode_attribute_works_long_hash() {
+        let test_str = "Alexer";
+        let test_answer = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
+        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap());
     }
 
     #[test]
     fn encode_attributes_works() {
         assert_eq!(mocks::get_encoded_attributes(), Issuer::_encode_attributes(&mocks::get_attributes()).unwrap());
+    }
+
+    #[test]
+    fn generate_context_attribute_works() {
+        let accumulator_id = "110".to_string();
+        let user_id = "111".to_string();
+        let answer = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
+        let result = Issuer::_generate_context_attribute(&accumulator_id, &user_id).unwrap();
+        assert_eq!(result, answer);
     }
 }
 
