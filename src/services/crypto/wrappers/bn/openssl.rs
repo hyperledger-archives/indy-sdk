@@ -6,7 +6,7 @@ use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
 use std::cmp::Ord;
 use std::cmp::Ordering;
-
+use std::num::ParseIntError;
 use std::error::Error;
 
 pub struct BigNumberContext {
@@ -236,14 +236,10 @@ impl BigNumber {
         Ok(res)
     }
 
-    pub fn compare(&self, other: &BigNumber) -> bool {
-        self.openssl_bn == other.openssl_bn
-    }
-
     pub fn clone(&self) -> Result<BigNumber, CryptoError> {
-        let bytes = try!(self.to_bytes());
-        let bn = try!(BigNumber::from_bytes(bytes.as_slice()));
-        Ok(bn)
+        Ok(BigNumber {
+            openssl_bn: try!(BigNum::from_slice(&self.openssl_bn.to_vec()[..]))
+        })
     }
 }
 
@@ -269,6 +265,12 @@ impl PartialEq for BigNumber {
 
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
+        CryptoError::BackendError(err.description().to_string())
+    }
+}
+
+impl From<ParseIntError> for CryptoError {
+    fn from(err: ParseIntError) -> CryptoError {
         CryptoError::BackendError(err.description().to_string())
     }
 }
