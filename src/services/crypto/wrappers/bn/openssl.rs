@@ -1,6 +1,8 @@
 use errors::crypto::CryptoError;
 
 extern crate openssl;
+extern crate int_traits;
+use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
@@ -34,10 +36,48 @@ impl BigNumber {
         })
     }
 
-    pub fn safe_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn generate_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = try!(BigNumber::new());
-        try!(BigNumRef::generate_prime(&mut bn.openssl_bn, size as i32, true, None, None));
+        try!(BigNumRef::generate_prime(&mut bn.openssl_bn, size as i32, false, None, None));
         Ok(bn)
+    }
+
+    pub fn generate_safe_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+        let mut bn = try!(BigNumber::new());
+        try!(BigNumRef::generate_prime(&mut bn.openssl_bn, (size + 1) as i32, true, None, None));
+        Ok(bn)
+    }
+
+    pub fn generate_prime_in_range(&self, start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {
+        let mut prime;
+        let mut iteration = 0;
+        let mut bn_ctx = try!(BigNumber::new_context());
+        let sub = try!(end.sub(start));
+
+        loop {
+            prime = try!(sub.rand_range());
+            prime = try!(prime.add(start));
+
+            if try!(prime.is_prime(Some(&mut bn_ctx))) {
+                debug!("Found prime in {} iteration", iteration);
+                break;
+            }
+            iteration += 1;
+        }
+
+        Ok(prime)
+    }
+
+    pub fn is_prime(&self, ctx: Option<&mut BigNumberContext>) -> Result<bool, CryptoError> {
+        let prime_len = try!(self.to_dec()).len();
+        let checks = prime_len.log2() as i32;
+        match ctx {
+            Some(context) => Ok(try!(self.openssl_bn.is_prime(checks, &mut context.openssl_bn_context))),
+            None => {
+                let mut ctx = try!(BigNumber::new_context());
+                Ok(try!(self.openssl_bn.is_prime(checks, &mut ctx.openssl_bn_context)))
+            }
+        }
     }
 
     pub fn rand(&self, size: usize) -> Result<BigNumber, CryptoError> {
@@ -271,5 +311,21 @@ impl PartialEq for BigNumber {
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
         CryptoError::BackendError(err.description().to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn generate_prime_in_range_works() {
+        let bn = BigNumber::new().unwrap();
+        let start = bn.rand(250).unwrap();
+        let end = bn.rand(300).unwrap();
+        let random_prime = bn.generate_prime_in_range(&start, &end).unwrap();
+        assert!(start < random_prime);
+        assert!(end > random_prime);
     }
 }

@@ -37,8 +37,8 @@ impl Issuer {
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
         let bn = try!(BigNumber::new());
-        let p = try!(bn.safe_prime(LARGE_PRIME));
-        let q = try!(bn.safe_prime(LARGE_PRIME));
+        let p = try!(bn.generate_safe_prime(LARGE_PRIME));
+        let q = try!(bn.generate_safe_prime(LARGE_PRIME));
 
         let mut p_prime = try!(p.sub(&try!(BigNumber::from_u32(1))));
         try!(p_prime.div_word(2));
