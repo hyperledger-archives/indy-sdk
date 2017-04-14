@@ -83,13 +83,7 @@ pub extern fn sovrin_open_pool_ledger(command_handle: i32,
             name,
             config,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
-
-                let pool_handle = match result {
-                    Ok(pool_handle) => pool_handle,
-                    Err(err) => 0
-                };
-
+                let (err, pool_handle) = result_to_err_code_1!(result, 0);
                 cb(command_handle, err, pool_handle)
             })
         )));

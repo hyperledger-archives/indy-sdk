@@ -4,7 +4,6 @@ extern crate openssl;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
-use self::openssl::hash::{hash, MessageDigest};
 use std::cmp::Ord;
 use std::cmp::Ordering;
 
@@ -228,7 +227,7 @@ impl BigNumber {
 
         let mut context = try!(BigNumber::new_context());
 
-        let mut res = try!(
+        let res = try!(
             b
                 .inverse(p, Some(&mut context))?
                 .mul(&self, Some(&mut context))?
@@ -243,7 +242,7 @@ impl BigNumber {
 
     pub fn clone(&self) -> Result<BigNumber, CryptoError> {
         let bytes = try!(self.to_bytes());
-        let mut bn = try!(BigNumber::from_bytes(bytes.as_slice()));
+        let bn = try!(BigNumber::from_bytes(bytes.as_slice()));
         Ok(bn)
     }
 }

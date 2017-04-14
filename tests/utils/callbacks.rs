@@ -1,7 +1,6 @@
 use std::sync::Mutex;
 
-use libsovrin::api::ErrorCode;
-
+use sovrin::api::ErrorCode;
 
 pub struct CallbacksHelpers {}
 

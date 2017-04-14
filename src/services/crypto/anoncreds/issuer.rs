@@ -24,7 +24,7 @@ impl Issuer {
         Issuer {}
     }
     pub fn generate_keys(&self, schema: &Schema) -> Result<((PublicKey, SecretKey)), CryptoError> {
-        (Issuer::_generate_keys(&schema));
+        //(Issuer::_generate_keys(&schema));
         unimplemented!();
     }
 
