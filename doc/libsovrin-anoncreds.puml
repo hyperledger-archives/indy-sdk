@@ -24,11 +24,11 @@ endnote
 
 
 
-I -> IW: <b>1. sovrin_issuer_create_and_store_keys
+I -> IW: <b>1. sovrin_issuer_create_and_store_claim_def
 IW -[#green]> IW: store keys
-IW -[#black]> I: <public_key>
+IW -[#black]> I: <claim_def>
 
-I-[#blue]>L: store public key in Ledger
+I-[#blue]>L: store claim definition in Ledger
 
 I -> IW: <b>2. sovrin_wallet_set_seq_no_for_value
 IW -[#green]> IW: update key seq_no
@@ -59,7 +59,7 @@ PW -[#green]> PW: store master secret
 
 P -> P: <b>7.sovrin_prover_get_claim_offers
 L -[#blue]-> P: get schema
-L -[#blue]-> P: get public key
+L -[#blue]-> P: get claim definition
 
 P -> PW: <b>8.sovrin_prover_create_and_store_claim_req
 PW -[#green]> PW: get master secret
@@ -89,8 +89,8 @@ V -[#black]> P: send proof request
 P -> PW: <b>11.sovrin_prover_parse_proof_request
 PW -[#black]> P: <parsed proof request>
 L -[#blue]-> P: get schema
-L -[#blue]-> P: get public key
-L -[#blue]-> P: get revoc_reg
+L -[#blue]-> P: get claim definition
+L -[#blue]-> P: get revoc_registry
 P -> PW: <b>12.sovrin_prover_create_proof
 P -[#green]> PW: get claim
 PW -[#black]> P: <proof>
