@@ -11,22 +11,22 @@ use services::crypto::anoncreds::constants::{
     ITERATION
 };
 use services::crypto::anoncreds::types::{
-    PublicKey,
     ClaimInitData,
+    Predicate,
     PrimaryClaim,
     PrimaryEqualInitProof,
     PrimaryEqualProof,
-    Predicate,
+    PrimaryInitProof,
     PrimaryPrecicateGEInitProof,
     PrimaryPredicateGEProof,
-    PrimaryInitProof,
     PrimaryProof,
-    ClaimInitDataType
+    PublicKey
 };
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::HashMap;
 use services::crypto::anoncreds::verifier::Verifier;
 use std::rc::Rc;
+use services::crypto::helpers::{get_mtilde, four_squares, split_revealed_attrs};
 
 pub struct Prover {}
 
@@ -57,7 +57,7 @@ impl Prover {
         })
     }
 
-    fn prepare_primary_claim(claim_init_data: ClaimInitDataType, claim: &mut PrimaryClaim)
+    fn prepare_primary_claim(claim_init_data: ClaimInitData, claim: &mut PrimaryClaim)
                              -> Result<&mut PrimaryClaim, CryptoError> {
         let new_v = try!(claim.v.add(&claim_init_data.v_prime));
         claim.v = new_v;
@@ -117,9 +117,9 @@ impl Prover {
         let etilde = try!(BigNumber::new()?.rand(LARGE_ETILDE));
         let vtilde = try!(BigNumber::new()?.rand(LARGE_VTILDE));
 
-        let (_, unrevealed_attrs) = try!(Prover::split_revealed_attrs(&c1.encoded_attrs, &revealed_attrs));
+        let (_, unrevealed_attrs) = try!(split_revealed_attrs(&c1.encoded_attrs, &revealed_attrs));
 
-        let mtilde = try!(Prover::get_mtilde(&unrevealed_attrs));
+        let mtilde = try!(get_mtilde(&unrevealed_attrs));
 
         let aprime = try!(
             pk.s
@@ -238,7 +238,7 @@ impl Prover {
             return Err(CryptoError::InvalidStructure("Predicate is not satisfied".to_string()))
         }
 
-        let u = try!(Prover::four_squares(delta));
+        let u = try!(four_squares(delta));
 
         let mut r: HashMap<String, BigNumber> = HashMap::new();
         let mut t: HashMap<String, BigNumber> = HashMap::new();
@@ -382,95 +382,12 @@ impl Prover {
             predicate: init_proof.predicate.clone()
         })
     }
-
-    fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &Vec<String>)
-                            -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
-        let mut ar: HashMap<String, BigNumber> = HashMap::new();
-        let mut aur: HashMap<String, BigNumber> = HashMap::new();
-
-        for (attr, value) in encoded_attrs.iter() {
-            if revealed_ttrs.contains(&attr) {
-                ar.insert(attr.clone(), try!(value.clone()));
-            } else {
-                aur.insert(attr.clone(), try!(value.clone()));
-            }
-        }
-        Ok((ar, aur))
-    }
-
-    fn get_mtilde(unrevealed_attrs: &HashMap<String, BigNumber>)
-                  -> Result<HashMap<String, BigNumber>, CryptoError> {
-        let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
-
-        for (attr, _) in unrevealed_attrs.iter() {
-            mtilde.insert(attr.clone(), try!(BigNumber::new()?.rand(LARGE_MVECT)));
-        }
-        Ok(mtilde)
-    }
-
-    fn largest_square_less_than(delta: i64) -> i64 {
-        (delta as f64).sqrt().floor() as i64
-    }
-
-    fn four_squares(delta: i64) -> Result<HashMap<String, BigNumber>, CryptoError> {
-        let u1 = Prover::largest_square_less_than(delta);
-        let u2 = Prover::largest_square_less_than(delta - u1.pow(2));
-        let u3 = Prover::largest_square_less_than(delta - u1.pow(2) - u2.pow(2));
-        let u4 = Prover::largest_square_less_than(delta - u1.pow(2) - u2.pow(2) - u3.pow(2));
-
-        if u1.pow(2) + u2.pow(2) + u3.pow(2) + u4.pow(2) == delta {
-            let mut res: HashMap<String, BigNumber> = HashMap::new();
-            res.insert("0".to_string(), try!(BigNumber::from_dec(&u1.to_string()[..])));
-            res.insert("1".to_string(), try!(BigNumber::from_dec(&u2.to_string()[..])));
-            res.insert("2".to_string(), try!(BigNumber::from_dec(&u3.to_string()[..])));
-            res.insert("3".to_string(), try!(BigNumber::from_dec(&u4.to_string()[..])));
-
-            Ok(res)
-        } else {
-            Err(CryptoError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use services::crypto::anoncreds::verifier;
-
-    #[test]
-    fn four_squares_works() {
-        let res = Prover::four_squares(10 as i64);
-
-        assert!(res.is_ok());
-        let res_data = res.unwrap();
-
-        assert_eq!("3".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
-        assert_eq!("1".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
-        assert_eq!("0".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
-        assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
-    }
-
-    #[test]
-    fn split_revealed_attrs_works() {
-        let mut encoded_attrs: HashMap<String, BigNumber> = HashMap::new();
-        encoded_attrs.insert("name".to_string(), BigNumber::from_dec("1").unwrap());
-        encoded_attrs.insert("age".to_string(), BigNumber::from_dec("1").unwrap());
-        encoded_attrs.insert("sex".to_string(), BigNumber::from_dec("1").unwrap());
-
-        let revealed_attrs = vec!["name".to_string()];
-
-        let res = Prover::split_revealed_attrs(&encoded_attrs, &revealed_attrs);
-
-        assert!(res.is_ok());
-
-        let (revealed, unrevealed) = res.unwrap();
-
-        assert_eq!(1, revealed.len());
-        assert_eq!(2, unrevealed.len());
-        assert!(revealed.contains_key("name"));
-        assert!(unrevealed.contains_key("sex"));
-        assert!(unrevealed.contains_key("age"));
-    }
 
     #[test]
     fn finalize_eq_proof_works() {

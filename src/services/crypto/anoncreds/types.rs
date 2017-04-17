@@ -40,6 +40,28 @@ pub struct ClaimInitData {
     pub v_prime: BigNumber
 }
 
+#[derive(Clone, Debug)]
+pub struct Predicate {
+    pub attr_name: String,
+    pub p_type: String,
+    pub value: i32
+}
+
+#[derive(Debug)]
+pub struct Attribute {
+    pub name: String,
+    pub value: String,
+    pub encode: bool
+}
+
+pub struct PrimaryClaim {
+    pub encoded_attrs: HashMap<String, BigNumber>,
+    pub m2: BigNumber,
+    pub a: BigNumber,
+    pub e: BigNumber,
+    pub v: BigNumber
+}
+
 pub struct FullProof {
     pub c_hash: BigNumber,
     pub schema_keys: Vec<Rc<SchemaKey>>,
@@ -57,45 +79,6 @@ pub struct ProofInput {
 pub struct Proof {
     pub primary_proof: Option<Rc<PrimaryProof>>
     //non_revocation_proof
-}
-
-pub struct PrimaryProof {
-    pub eq_proof: Rc<PrimaryEqualProof>,
-    pub ge_proofs: Vec<Rc<PrimaryPredicateGEProof>>
-}
-
-pub struct PrimaryEqualProof {
-    pub revealed_attr_names: Vec<String>,
-    pub a_prime: BigNumber,
-    pub e: BigNumber,
-    pub v: BigNumber,
-    pub m: HashMap<String, BigNumber>,
-    pub m1: BigNumber,
-    pub m2: BigNumber
-}
-
-pub struct PrimaryPredicateGEProof {
-    pub u: HashMap<String, BigNumber>,
-    pub r: HashMap<String, BigNumber>,
-    pub mj: BigNumber,
-    pub alpha: BigNumber,
-    pub t: Rc<HashMap<String, BigNumber>>,
-    pub predicate: Rc<Predicate>
-}
-
-#[derive(Clone, Debug)]
-pub struct Predicate {
-    pub attr_name: String,
-    pub p_type: String,
-    pub value: i32
-}
-
-pub struct PrimaryClaim {
-    pub encoded_attrs: HashMap<String, BigNumber>,
-    pub m2: BigNumber,
-    pub a: BigNumber,
-    pub e: BigNumber,
-    pub v: BigNumber
 }
 
 pub struct PrimaryEqualInitProof {
@@ -125,19 +108,31 @@ pub struct PrimaryPrecicateGEInitProof {
     pub t: Rc<HashMap<String, BigNumber>>
 }
 
+pub struct PrimaryEqualProof {
+    pub revealed_attr_names: Vec<String>,
+    pub a_prime: BigNumber,
+    pub e: BigNumber,
+    pub v: BigNumber,
+    pub m: HashMap<String, BigNumber>,
+    pub m1: BigNumber,
+    pub m2: BigNumber
+}
+
+pub struct PrimaryPredicateGEProof {
+    pub u: HashMap<String, BigNumber>,
+    pub r: HashMap<String, BigNumber>,
+    pub mj: BigNumber,
+    pub alpha: BigNumber,
+    pub t: Rc<HashMap<String, BigNumber>>,
+    pub predicate: Rc<Predicate>
+}
+
+pub struct PrimaryProof {
+    pub eq_proof: Rc<PrimaryEqualProof>,
+    pub ge_proofs: Vec<Rc<PrimaryPredicateGEProof>>
+}
+
 pub struct PrimaryInitProof {
     pub eq_proof: Rc<PrimaryEqualInitProof>,
     pub ge_proofs: Vec<Rc<PrimaryPrecicateGEInitProof>>
-}
-
-pub struct ClaimInitDataType {
-    pub u: BigNumber,
-    pub v_prime: BigNumber
-}
-
-#[derive(Debug)]
-pub struct Attribute {
-    pub name: String,
-    pub value: String,
-    pub encode: bool
 }
