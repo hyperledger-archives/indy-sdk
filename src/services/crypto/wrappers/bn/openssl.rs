@@ -2,6 +2,7 @@ use errors::crypto::CryptoError;
 
 extern crate openssl;
 extern crate int_traits;
+
 use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
@@ -9,7 +10,7 @@ use self::openssl::error::ErrorStack;
 use self::openssl::hash::{hash, MessageDigest};
 use std::cmp::Ord;
 use std::cmp::Ordering;
-
+use std::num::ParseIntError;
 use std::error::Error;
 
 pub struct BigNumberContext {
@@ -282,9 +283,9 @@ impl BigNumber {
     }
 
     pub fn clone(&self) -> Result<BigNumber, CryptoError> {
-        let bytes = try!(self.to_bytes());
-        let bn = try!(BigNumber::from_bytes(bytes.as_slice()));
-        Ok(bn)
+        Ok(BigNumber {
+            openssl_bn: try!(BigNum::from_slice(&self.openssl_bn.to_vec()[..]))
+        })
     }
 }
 
@@ -314,15 +315,20 @@ impl From<ErrorStack> for CryptoError {
     }
 }
 
+impl From<ParseIntError> for CryptoError {
+    fn from(err: ParseIntError) -> CryptoError {
+        CryptoError::BackendError(err.description().to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
     fn generate_prime_in_range_works() {
         ::env_logger::init().unwrap();
-        
+
         let bn = BigNumber::new().unwrap();
         let start = bn.rand(250).unwrap();
         let end = bn.rand(300).unwrap();
