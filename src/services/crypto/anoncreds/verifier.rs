@@ -306,7 +306,7 @@ mod tests {
 
         let eq_proof = mocks::get_eq_proof().unwrap();
         let ge_proof = mocks::get_ge_proof().unwrap();
-        let pk = mocks::get_pk().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
 
         let primary_proof = PrimaryProof {
             eq_proof: Rc::new(eq_proof),
@@ -340,7 +340,7 @@ mod tests {
     fn verify_equlity_test() {
         let verifier = Verifier::new();
         let proof = mocks::get_eq_proof().unwrap();
-        let pk = mocks::get_pk().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
 
         let mut all_revealed_attrs = HashMap::new();

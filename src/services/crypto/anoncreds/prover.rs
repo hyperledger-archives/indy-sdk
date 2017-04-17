@@ -494,7 +494,7 @@ mod tests {
 
     #[test]
     fn init_ge_proof_works() {
-        let pk = verifier::mocks::get_pk().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let eq_proof = mocks::get_primary_equal_init_proof().unwrap();
         let claim = mocks::get_primary_claim().unwrap();
 
@@ -524,7 +524,7 @@ mod tests {
 
     #[test]
     fn init_proof_works() {
-        let pk = verifier::mocks::get_pk().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let claim = mocks::get_primary_claim().unwrap();
         let revealed_attrs = vec!["name".to_string()];
         let m1_t = BigNumber::from_dec("21544287380986891419162473617242441136231665555467324140952028776483657408525689082249184862870856267009773225408151321864247533184196094757877079561221602250888815228824796823045594410522810417051146366939126434027952941761214129885206419097498982142646746254256892181011609282364766769899756219988071473111").unwrap();
