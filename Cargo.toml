@@ -14,8 +14,9 @@ description = "Sovrin client with c-callable interface"
 license = "MIT/Apache-2.0"
 
 [lib]
-name = "libsovrin"
+name = "sovrin"
 path = "src/lib.rs"
+crate-type = ["rlib", "dylib"]
 
 [[bin]]
 name = "sovrin"
@@ -23,14 +24,14 @@ path = "src/main.rs"
 
 [features]
 default = ["bn_openssl"]
-bn_openssl = ["openssl"]
+bn_openssl = ["openssl", "int_traits"]
 
 [dependencies]
-int_traits = "0.1.1"
+int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 libc = "0.2.21"
 log = "0.3.7"
-openssl = { version = "0.9.9", optional = true}
+openssl = { version = "0.9.9", optional = true }
 milagro-crypto = "0.1.0"
 rand = "0.3"
 rusqlite = "0.10.1"

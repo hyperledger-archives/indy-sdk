@@ -134,3 +134,10 @@ pub struct ClaimInitDataType {
     pub u: BigNumber,
     pub v_prime: BigNumber
 }
+
+#[derive(Debug)]
+pub struct Attribute {
+    pub name: String,
+    pub value: String,
+    pub encode: bool
+}

@@ -1,4 +1,4 @@
-extern crate libsovrin;
+extern crate sovrin;
 
 #[macro_use]
 extern crate lazy_static;
@@ -6,8 +6,8 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
-use libsovrin::api::ErrorCode;
-use libsovrin::api::pool::sovrin_create_pool_ledger;
+use sovrin::api::ErrorCode;
+use sovrin::api::pool::sovrin_create_pool_ledger;
 
 use utils::callbacks::CallbacksHelpers;
 
