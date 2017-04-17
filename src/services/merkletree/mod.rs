@@ -1,35 +1,22 @@
 extern crate ring;
-extern crate merkle;
 extern crate rustc_serialize;
 
 use self::rustc_serialize::{ json, Encodable, Encoder, Decodable, Decoder };
 use self::ring::digest::{ Algorithm, Context, SHA512 };
-use self::merkle::*;
+
+pub mod hashutils;
+pub mod tree;
+pub mod proof;
+pub mod merkletree;
+
+use self::hashutils::*;
+use self::tree::*;
+use self::proof::*;
+use self::merkletree::*;
 
 static DIGEST: &'static Algorithm = &SHA512;
 
-struct Proof<T> {
-    proof: merkle::Proof<T>
-}
-
-struct MerkleTree<T> {
-    tree: merkle::MerkleTree<T>
-}
-
-impl<T: AsRef<[u8]>> Proof<T> {
-    pub fn validate(&self, root_hash: &[u8]) -> bool {
-        // TODO: implement
-        return false;
-    }
-}
-
 impl<T: AsRef<[u8]>> MerkleTree<T> {
-    pub fn new() -> MerkleTree<T> {
-        MerkleTree::<T> {
-            tree: merkle::MerkleTree::<T>::from_vec(DIGEST, vec![])
-        }
-    }
-
     pub fn add_subtree(&mut self, st: MerkleTree<T>) {
         // TODO: implement
     }
@@ -37,44 +24,35 @@ impl<T: AsRef<[u8]>> MerkleTree<T> {
     pub fn add_nodes(&mut self, nodes: Vec<T>) {
         // TODO: implement
     }
-
-    pub fn gen_proof(&self, val: T) -> Option<Proof<T>> {
-        let ret = self.tree.gen_proof(val);
-        match ret {
-            None => return None,
-            Some(x) => return Some(Proof::<T> {
-                proof: x
-            })
-        }
-    }
-
-    pub fn root_hash(&self) -> &Vec<u8> {
-        return self.tree.root_hash();
-    }
 }
 
 impl<T: AsRef<[u8]> + Encodable> Encodable for MerkleTree<T> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        // TODO: implement
-        Ok(())
+        s.emit_enum("MerkleTree", |s| {
+            self.root.encode(s)
+        })
     }
 }
 
-impl<T: AsRef<[u8]>> Decodable for MerkleTree<T> {
+impl<T: AsRef<[u8]> + Decodable> Decodable for MerkleTree<T> {
     fn decode<D: Decoder>(d: &mut D) -> Result<MerkleTree<T>, D::Error> {
-        // TODO: implement
-        Ok(MerkleTree::<T>::new())
+        let r = Tree::decode(d);
+        match r {
+            Ok(root) => {
+                let mut ret = MerkleTree { algorithm: DIGEST, root: root, height: 0, count: 0 };
+                // TODO: fix height, count
+                return Ok(ret);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_merkletree_new() {
-        let mt = MerkleTree::<String>::new();
-    }
 
     #[test]
     fn test_merkletree_add_subtree() {
@@ -87,16 +65,34 @@ mod tests {
     }
 
     #[test]
-    fn test_merkletree_proof() {
-        // TODO: implement
+    fn test_valid_proof() {
+        let values    = (1..10).map(|x| vec![x]).collect::<Vec<_>>();
+        let tree      = MerkleTree::from_vec(DIGEST, values.clone());
+        let root_hash = tree.root_hash();
+
+        for value in values {
+            let proof    = tree.gen_proof(value);
+            let is_valid = proof.map(|p| p.validate(&root_hash)).unwrap_or(false);
+
+            assert!(is_valid);
+        }
     }
 
     #[test]
     fn test_merkletree_serialize() {
-        let mt = MerkleTree::<String>::new();
+        let values = vec![ "1", "2", "3" ];
+        let mt = MerkleTree::<&str>::from_vec(DIGEST, values.clone());
         let serialized = json::encode(&mt).unwrap();
         println!("serialize: {}", serialized);
         let newmt :MerkleTree<String> = json::decode(serialized.as_str()).unwrap();
+
+        let mut collected = Vec::new();
+        for value in &newmt {
+            collected.push(value);
+        }
+        let refs = values.iter().collect::<Vec<_>>();
+        assert_eq!(refs, collected);
+
         assert_eq!(mt.root_hash(), newmt.root_hash());
     }
 }
