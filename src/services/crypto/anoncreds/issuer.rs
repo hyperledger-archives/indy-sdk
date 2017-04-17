@@ -107,14 +107,42 @@ impl Issuer {
         ))];
         let mut h = try!(get_hash_as_int(&mut s));
         let mut pow_2 = try!(BigNumber::from_u32(2));
-        pow_2 = try!(pow_2.exp(&try!(BigNumber::from_u32(LARGE_MASTER_SECRET as u32)), None));
+        pow_2 = try!(pow_2.exp(&try!(BigNumber::from_u32(LARGE_MASTER_SECRET)), None));
         h = try!(h.modulus(&pow_2, None));
         Ok(h)
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             attributes: &HashMap<String, String>, v: &BigNumber, u: &BigNumber, e: &BigNumber) {
-        unimplemented!()
+             attributes: &HashMap<String, String>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
+        let mut rx = try!(BigNumber::from_u32(1));
+        let mut context = try!(BigNumber::new_context());
+
+        for (key, value) in attributes {
+            let pk_r = try!(public_key.r.get(key)
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key))));
+            let pow = try!(pk_r.mod_exp(&try!(BigNumber::from_dec(value)), &public_key.n, Some(&mut context)));
+            rx = try!(rx.mul(&pow, Some(&mut context)));
+        }
+
+        let pk_rctxt_pow = try!(public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context)));
+        rx = try!(rx.mul(&pk_rctxt_pow, Some(&mut context)));
+
+        if u != &try!(BigNumber::from_u32(0)) {
+            let module = try!(u.modulus(&public_key.n, Some(&mut context)));
+            rx = try!(rx.mul(&module, Some(&mut context)));
+        }
+
+        let n = try!(secret_key.p.mul(&secret_key.q, Some(&mut context)));
+        let mut e_inverse = try!(e.modulus(&n, Some(&mut context)));
+
+        let mut a = try!(public_key.s.mod_exp(&v, &public_key.n, Some(&mut context)));
+        a = try!(a.mul(&rx, Some(&mut context)));
+        a = try!(public_key.z.mod_div(&a, &public_key.n));
+
+        e_inverse = try!(e_inverse.inverse(&n, Some(&mut context)));
+        a = try!(a.mod_exp(&e_inverse, &public_key.n, Some(&mut context)));
+
+        Ok(a)
     }
 
     fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<String, CryptoError> {
@@ -156,7 +184,7 @@ impl Issuer {
         let bn = try!(BigNumber::new());
         let a = try!(bn.rand(LARGE_VPRIME_PRIME));
         let mut b = try!(BigNumber::from_u32(2));
-        b = try!(b.exp(&try!(BigNumber::from_u32((LARGE_VPRIME_PRIME - 1) as u32)), None));
+        b = try!(b.exp(&try!(BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)), None));
         let v_prime_prime = try!(bitwise_or_big_int(&a, &b));
         Ok(v_prime_prime)
     }
@@ -197,13 +225,15 @@ mod tests {
 
     #[test]
     fn sign_works() {
-        let public_key = mocks::get_pk();
+        let public_key = mocks::get_pk().unwrap();
         let secret_key = mocks::get_secret_key();
         let context_attribute = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
         let attributes = mocks::get_encoded_attributes();
         let v = BigNumber::from_dec("5237513942984418438429595379849430501110274945835879531523435677101657022026899212054747703201026332785243221088006425007944260107143086435227014329174143861116260506019310628220538205630726081406862023584806749693647480787838708606386447727482772997839699379017499630402117304253212246286800412454159444495341428975660445641214047184934669036997173182682771745932646179140449435510447104436243207291913322964918630514148730337977117021619857409406144166574010735577540583316493841348453073326447018376163876048624924380855323953529434806898415857681702157369526801730845990252958130662749564283838280707026676243727830151176995470125042111348846500489265328810592848939081739036589553697928683006514398844827534478669492201064874941684905413964973517155382540340695991536826170371552446768460042588981089470261358687308").unwrap();
         let u = BigNumber::from_dec("72637991796589957272144423539998982864769854130438387485781642285237707120228376409769221961371420625002149758076600738245408098270501483395353213773728601101770725294535792756351646443825391806535296461087756781710547778467803194521965309091287301376623972321639262276779134586366620773325502044026364814032821517244814909708610356590687571152567177116075706850536899272749781370266769562695357044719529245223811232258752001942940813585440938291877640445002571323841625932424781535818087233087621479695522263178206089952437764196471098717335358765920438275944490561172307673744212256272352897964947435086824617146019").unwrap();
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
+        let result = BigNumber::from_dec("18970881790876593286488783486386867538450674270137197011105008151201183300028283403854725282778638150217936721942434319741164063687946275930536223863520768657672755664180955901543160149915323325151339912941454195063854083578091043058101001054089316795088554097754632405106453701959655043761308676687984722831097067744306280339099944309055300662730322057853217855619342132319369757252485139011180518031078822262681093763592682724354563150664662385847044702450408149239372444565988153918412684418519832197112374827438788434448252992414094101094582772269873015514685057917124494501480003311040042093731740782916169155664").unwrap();
+        assert_eq!(result, Issuer::_sign(&public_key, &secret_key, &context_attribute, &attributes, &v, &u, &e).unwrap());
     }
 }
 
