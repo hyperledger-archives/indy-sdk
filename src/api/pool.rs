@@ -29,7 +29,7 @@ pub extern fn sovrin_create_pool_ledger_config(command_handle: i32,
                                                config_name: *const c_char,
                                                config: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
-    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -75,7 +75,7 @@ pub extern fn sovrin_open_pool_ledger(command_handle: i32,
                                       config_name: *const c_char,
                                       config: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode {
-    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -165,7 +165,7 @@ pub extern fn sovrin_close_pool_ledger(command_handle: i32,
 pub extern fn sovrin_delete_pool_ledger_config(command_handle: i32,
                                                config_name: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
-    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
