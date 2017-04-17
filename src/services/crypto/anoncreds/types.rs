@@ -54,12 +54,14 @@ pub struct Attribute {
     pub encode: bool
 }
 
+#[derive(Debug)]
 pub struct PrimaryClaim {
-    pub encoded_attrs: HashMap<String, BigNumber>,
+    pub attributes: Rc<Vec<Attribute>>,
+    pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber,
     pub a: BigNumber,
     pub e: BigNumber,
-    pub v: BigNumber
+    pub v_prime_prime: BigNumber
 }
 
 pub struct FullProof {

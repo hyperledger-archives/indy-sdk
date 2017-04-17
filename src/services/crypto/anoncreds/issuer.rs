@@ -1,5 +1,7 @@
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::constants::{
+    LARGE_E_START,
+    LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
     LARGE_PRIME,
     LARGE_VPRIME_PRIME
@@ -7,6 +9,7 @@ use services::crypto::anoncreds::constants::{
 use services::crypto::anoncreds::types::{
     Attribute,
     ByteOrder,
+    PrimaryClaim,
     PublicKey,
     Schema,
     SecretKey
@@ -19,6 +22,7 @@ use services::crypto::helpers::{
 use services::crypto::wrappers::bn::BigNumber;
 
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct Issuer {
 
@@ -34,7 +38,7 @@ impl Issuer {
     }
 
     pub fn create_claim() {
-
+        //Generate context attribute here
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
@@ -82,8 +86,26 @@ impl Issuer {
 
     }
 
-    fn _issuer_primary_claim() {
+    fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
+                            attributes: Rc<Vec<Attribute>>) -> Result<PrimaryClaim, CryptoError> {
+        let v_prime_prime = try!(Issuer::_generate_v_prime_prime());
+        let e_start = try!(BigNumber::from_u32(2)?.exp(&try!(BigNumber::from_u32(LARGE_E_START)), None));
+        let e_end = try!(BigNumber::from_u32(2)?
+            .exp(&try!(BigNumber::from_u32(LARGE_E_END_RANGE)), None)?
+            .add(&e_start));
 
+        let e = try!(e_start.generate_prime_in_range(&e_start, &e_end));
+
+        let encoded_attributes = try!(Issuer::_encode_attributes(&attributes));
+        let a = try!(Issuer::_sign(public_key, secret_key, context_attribute, &encoded_attributes, &v_prime_prime, u, &e));
+        Ok(PrimaryClaim {
+            attributes: attributes,
+            encoded_attributes: encoded_attributes,
+            m2: try!(context_attribute.clone()),
+            a: a,
+            e: e,
+            v_prime_prime: v_prime_prime
+        })
     }
 
     //    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
@@ -97,6 +119,10 @@ impl Issuer {
     //        let encoded_attributes = AnoncredsService::encode_attributes(attributes);
     //        let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
     //    }
+
+    fn _issue_non_revocation_claim() {
+
+    }
 
     fn _generate_context_attribute(accumulator_id: &String, user_id: &String) -> Result<BigNumber, CryptoError> {
         let accumulator_id_encoded = try!(Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little));
@@ -113,14 +139,14 @@ impl Issuer {
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             attributes: &HashMap<String, String>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
+             attributes: &HashMap<String, BigNumber>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut rx = try!(BigNumber::from_u32(1));
         let mut context = try!(BigNumber::new_context());
 
         for (key, value) in attributes {
             let pk_r = try!(public_key.r.get(key)
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key))));
-            let pow = try!(pk_r.mod_exp(&try!(BigNumber::from_dec(value)), &public_key.n, Some(&mut context)));
+            let pow = try!(pk_r.mod_exp(&value, &public_key.n, Some(&mut context)));
             rx = try!(rx.mul(&pow, Some(&mut context)));
         }
 
@@ -158,14 +184,14 @@ impl Issuer {
         Ok(try!(encoded_attribute.to_dec()).to_string())
     }
 
-    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, String>, CryptoError> {
-        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
+    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, BigNumber>, CryptoError> {
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         for i in attributes {
             if i.encode {
-                encoded_attributes.insert(i.name.clone(), try!(Issuer::_encode_attribute(&i.value, ByteOrder::Big)));
+                encoded_attributes.insert(i.name.clone(), try!(BigNumber::from_dec(&try!(Issuer::_encode_attribute(&i.value, ByteOrder::Big)))));
             }
                 else {
-                    encoded_attributes.insert(i.name.clone(), i.value.clone());
+                    encoded_attributes.insert(i.name.clone(), try!(BigNumber::from_dec(&i.value)));
                 }
         }
         Ok(encoded_attributes)
@@ -266,15 +292,15 @@ pub mod mocks {
         attributes
     }
 
-    pub fn get_encoded_attributes() -> HashMap<String, String> {
-        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
+    pub fn get_encoded_attributes() -> HashMap<String, BigNumber> {
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         encoded_attributes.insert("name".to_string(),
-                                  "1139481716457488690172217916278103335".to_string());
-        encoded_attributes.insert("age".to_string(), "28".to_string());
+                                  BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
+        encoded_attributes.insert("age".to_string(), BigNumber::from_dec("28").unwrap());
         encoded_attributes.insert(
             "sex".to_string(),
-            "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string());
-        encoded_attributes.insert("height".to_string(), "175".to_string());
+            BigNumber::from_dec("5944657099558967239210949258394887428692050081607692519917050011144233115103").unwrap());
+        encoded_attributes.insert("height".to_string(), BigNumber::from_dec("175").unwrap());
         encoded_attributes
     }
 
