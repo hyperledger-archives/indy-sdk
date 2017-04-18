@@ -41,10 +41,10 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
                                                                             claim_def_json: *const c_char,
                                                                             claim_def_wallet_key: i32
                                                        )>) -> ErrorCode {
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreKeys(
@@ -54,7 +54,10 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
             signature_type,
             Box::new(move |result| {
                 let (err, claim_def_json, claim_def_wallet_key) = result_to_err_code_2!(result, "".to_string(), 0);
-                cb(command_handle, err, CStringUtils::string_to_i8(claim_def_json), claim_def_wallet_key)
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(claim_def_json).as_ptr(),
+                   claim_def_wallet_key
+                )
             })
         ))));
 
@@ -90,8 +93,8 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                                             revoc_reg_json: *const c_char,
                                                                             revoc_reg_wallet_key: *const c_char
                                                        )>) -> ErrorCode {
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreRevocation(
@@ -101,7 +104,10 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
             max_claim_num,
             Box::new(move |result| {
                 let (err, revoc_reg_json, revoc_reg_wallet_key) = result_to_err_code_2!(result, "".to_string(), "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(revoc_reg_json), CStringUtils::string_to_i8(revoc_reg_wallet_key))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(revoc_reg_json).as_ptr(),
+                   CStringUtils::string_to_cstring(revoc_reg_wallet_key).as_ptr()
+                )
             })
         ))));
 
@@ -156,10 +162,10 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                                               revoc_reg_update_json: *const c_char,
                                                               xclaim_json: *const c_char
                                          )>) -> ErrorCode {
-    check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
@@ -172,7 +178,10 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
             user_revoc_index,
             Box::new(move |result| {
                 let (err, revoc_reg_update_json, xclaim_json) = result_to_err_code_2!(result, "".to_string(), "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(revoc_reg_update_json), CStringUtils::string_to_i8(xclaim_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(revoc_reg_update_json).as_ptr(),
+                   CStringUtils::string_to_cstring(xclaim_json).as_ptr()
+                )
             })
         ))));
 
@@ -209,8 +218,8 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               revoc_reg_update_json: *const c_char,
                                          )>) -> ErrorCode {
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::RevokeClaim(
@@ -221,7 +230,9 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
             user_revoc_index,
             Box::new(move |result| {
                 let (err, revoc_reg_update_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(revoc_reg_update_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(revoc_reg_update_json).as_ptr()
+                )
             })
         ))));
 
@@ -251,7 +262,7 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
                                               claim_offer_json: *const c_char,
                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
                                               )>) -> ErrorCode {
-    check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -287,7 +298,7 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                   claim_offers_json: *const c_char
                                              )>) -> ErrorCode {
-    check_useful_c_str!(isseur_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(isseur_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -296,7 +307,9 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
             isseur_did,
             Box::new(move |result| {
                 let (err, claim_offers_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(claim_offers_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(claim_offers_json).as_ptr()
+                )
             })
         ))));
 
@@ -325,7 +338,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
                                                  master_secret_name: *const c_char,
                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
                                                  )>) -> ErrorCode {
-    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -379,11 +392,11 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             claim_req_json: *const c_char
                                                        )>) -> ErrorCode {
-    check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreClaimRequest(
@@ -394,7 +407,9 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
             master_secret_name,
             Box::new(move |result| {
                 let (err, claim_req_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(claim_req_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(claim_req_json).as_ptr()
+                )
             })
         ))));
 
@@ -433,7 +448,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
                                         cb: Option<extern fn(
                                             xcommand_handle: i32, err: ErrorCode
                                         )>) -> ErrorCode {
-    check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -483,7 +498,7 @@ pub extern fn sovrin_prover_parse_proof_request(command_handle: i32,
                                                 proof_request_json: *const c_char,
                                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                      parsed_proof_request_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -492,7 +507,9 @@ pub extern fn sovrin_prover_parse_proof_request(command_handle: i32,
             proof_request_json,
             Box::new(move |result| {
                 let (err, parsed_proof_request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(parsed_proof_request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(parsed_proof_request_json).as_ptr()
+                )
             })
         ))));
 
@@ -541,11 +558,11 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
                                          revoc_regs_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               proof_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(parsed_proof_request_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(parsed_proof_request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateProof(
@@ -556,7 +573,9 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
             revoc_regs_json,
             Box::new(move |result| {
                 let (err, proof_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(proof_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(proof_json).as_ptr()
+                )
             })
         ))));
 
@@ -607,13 +626,13 @@ pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
                                            revoc_regs_json: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 valid: bool)>) -> ErrorCode {
-    check_useful_c_str!(proof_request_initial_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(proof_request_disclosed_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(proof_request_initial_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(proof_request_disclosed_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam8);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Verifier(VerifierCommand::VerifyProof(

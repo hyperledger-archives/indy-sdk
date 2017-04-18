@@ -28,6 +28,18 @@ pub enum ErrorCode {
     // Caller passed invalid value as param 5 (null, invalid json and etc..)
     CommonInvalidParam5,
 
+    // Caller passed invalid value as param 6 (null, invalid json and etc..)
+    CommonInvalidParam6,
+
+    // Caller passed invalid value as param 7 (null, invalid json and etc..)
+    CommonInvalidParam7,
+
+    // Caller passed invalid value as param 8 (null, invalid json and etc..)
+    CommonInvalidParam8,
+
+    // Caller passed invalid value as param 9 (null, invalid json and etc..)
+    CommonInvalidParam9,
+
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
 

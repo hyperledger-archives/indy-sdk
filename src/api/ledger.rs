@@ -32,12 +32,13 @@ use self::libc::c_char;
 #[no_mangle]
 pub extern fn sign_and_submit_request(command_handle: i32,
                                       wallet_handle: i32,
-                                      submitter_did: *const c_char, request_json: *const c_char,
+                                      submitter_did: *const c_char,
+                                      request_json: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                            request_result_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
@@ -46,7 +47,9 @@ pub extern fn sign_and_submit_request(command_handle: i32,
             request_json,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_result_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_result_json).as_ptr()
+                )
             })
         )));
 
@@ -75,7 +78,7 @@ pub extern fn submit_request(command_handle: i32,
                              request_json: *const c_char,
                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                   request_result_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -84,7 +87,9 @@ pub extern fn submit_request(command_handle: i32,
             request_json,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_result_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_result_json).as_ptr()
+                )
             })
         )));
 
@@ -107,11 +112,12 @@ pub extern fn submit_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_get_ddo_request(command_handle: i32,
-                                    submitter_did: *const c_char, target_did: *const c_char,
+                                    submitter_did: *const c_char,
+                                    target_did: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                          request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -120,7 +126,9 @@ pub extern fn build_get_ddo_request(command_handle: i32,
             target_did,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -149,17 +157,19 @@ pub extern fn build_get_ddo_request(command_handle: i32,
 pub extern fn build_nym_request(command_handle: i32,
                                 submitter_did: *const c_char,
                                 target_did: *const c_char,
-                                verkey: *const c_char, xref: *const c_char,
-                                data: *const c_char, role: *const c_char,
+                                verkey: *const c_char,
+                                xref: *const c_char,
+                                data: *const c_char,
+                                role: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                      request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(role, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(role, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildNymRequest(
@@ -171,7 +181,9 @@ pub extern fn build_nym_request(command_handle: i32,
             role,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -196,16 +208,19 @@ pub extern fn build_nym_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_attrib_request(command_handle: i32,
-                                   submitter_did: *const c_char, target_did: *const c_char,
-                                   hash: *const c_char, raw: *const c_char, enc: *const c_char,
+                                   submitter_did: *const c_char,
+                                   target_did: *const c_char,
+                                   hash: *const c_char,
+                                   raw: *const c_char,
+                                   enc: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                         request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(hash, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(raw, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(enc, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(hash, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(raw, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(enc, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildAttribRequest(
@@ -216,7 +231,9 @@ pub extern fn build_attrib_request(command_handle: i32,
             enc,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -238,14 +255,15 @@ pub extern fn build_attrib_request(command_handle: i32,
 /// #Errors
 /// Common*
 pub extern fn build_get_attrib_request(command_handle: i32,
-                                       submitter_did: *const c_char, target_did: *const c_char,
+                                       submitter_did: *const c_char,
+                                       target_did: *const c_char,
                                        data: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetAttribRequest(
@@ -254,7 +272,9 @@ pub extern fn build_get_attrib_request(command_handle: i32,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -276,11 +296,12 @@ pub extern fn build_get_attrib_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_get_nym_request(command_handle: i32,
-                                    submitter_did: *const c_char, target_did: *const c_char,
+                                    submitter_did: *const c_char,
+                                    target_did: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                          request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -289,7 +310,9 @@ pub extern fn build_get_nym_request(command_handle: i32,
             target_did,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -311,11 +334,12 @@ pub extern fn build_get_nym_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_schema_request(command_handle: i32,
-                                   submitter_did: *const c_char, data: *const c_char,
+                                   submitter_did: *const c_char,
+                                   data: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                         request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -324,7 +348,9 @@ pub extern fn build_schema_request(command_handle: i32,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -346,11 +372,12 @@ pub extern fn build_schema_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_get_schema_request(command_handle: i32,
-                                       submitter_did: *const c_char, data: *const c_char,
+                                       submitter_did: *const c_char,
+                                       data: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -359,7 +386,9 @@ pub extern fn build_get_schema_request(command_handle: i32,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -382,14 +411,15 @@ pub extern fn build_get_schema_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_claim_def_txn(command_handle: i32,
-                                       submitter_did: *const c_char, xref: *const c_char,
-                                       data: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                            request_result_json: *const c_char)>) -> ErrorCode {
+                                  submitter_did: *const c_char,
+                                  xref: *const c_char,
+                                  data: *const c_char,
+                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                       request_result_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildClaimDefRequest(
@@ -398,7 +428,9 @@ pub extern fn build_claim_def_txn(command_handle: i32,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -419,11 +451,12 @@ pub extern fn build_claim_def_txn(command_handle: i32,
 /// #Errors
 /// Common*
 pub extern fn build_get_claim_def_txn(command_handle: i32,
-                                           submitter_did: *const c_char, xref: *const c_char,
-                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                request_json: *const c_char)>) -> ErrorCode {
+                                      submitter_did: *const c_char,
+                                      xref: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -432,7 +465,9 @@ pub extern fn build_get_claim_def_txn(command_handle: i32,
             xref,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 
@@ -455,14 +490,15 @@ pub extern fn build_get_claim_def_txn(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn build_node_request(command_handle: i32,
-                                 submitter_did: *const c_char, target_did: *const c_char,
+                                 submitter_did: *const c_char,
+                                 target_did: *const c_char,
                                  data: *const c_char,
                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                       request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildNodeRequest(
@@ -471,7 +507,9 @@ pub extern fn build_node_request(command_handle: i32,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(request_json))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(request_json).as_ptr()
+                )
             })
         )));
 

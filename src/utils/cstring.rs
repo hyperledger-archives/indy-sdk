@@ -22,9 +22,8 @@ impl CStringUtils {
         }
     }
 
-    pub fn string_to_i8(s: String) -> *const i8 {
-        let string_to_i8 = CString::new(s).unwrap();
-        string_to_i8.as_ptr()
+    pub fn string_to_cstring(s: String) -> CString {
+        CString::new(s).unwrap()
     }
 }
 

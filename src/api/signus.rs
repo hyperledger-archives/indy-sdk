@@ -41,7 +41,7 @@ pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
                                                                    did: *const c_char,
                                                                    verkey: *const c_char,
                                                                    pk: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -50,8 +50,11 @@ pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
             did_json,
             Box::new(move |result| {
                 let (err, did, verkey, pk) = result_to_err_code_3!(result, "".to_string(), "".to_string(), "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(did),
-                   CStringUtils::string_to_i8(verkey), CStringUtils::string_to_i8(pk))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(did).as_ptr(),
+                   CStringUtils::string_to_cstring(verkey).as_ptr(),
+                   CStringUtils::string_to_cstring(pk).as_ptr()
+                )
             })
         )));
 
@@ -86,9 +89,9 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                         verkey: *const c_char,
                                                         pk: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::ReplaceKeys(
@@ -97,7 +100,10 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, verkey, pk) = result_to_err_code_2!(result, "".to_string(), "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(verkey), CStringUtils::string_to_i8(pk))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(verkey).as_ptr(),
+                   CStringUtils::string_to_cstring(pk).as_ptr()
+                )
             })
         )));
 
@@ -129,7 +135,7 @@ pub  extern fn sovrin_store_their_did(command_handle: i32,
                                       wallet_handle: i32,
                                       identity_json: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
-    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -168,9 +174,9 @@ pub  extern fn sovrin_sign(command_handle: i32,
                            msg: *const c_char,
                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                 signature: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Sign(
@@ -179,7 +185,9 @@ pub  extern fn sovrin_sign(command_handle: i32,
             msg,
             Box::new(move |result| {
                 let (err, signature) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(signature))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(signature).as_ptr()
+                )
             })
         )));
 
@@ -216,10 +224,10 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
                                        signature: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             valid: bool)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(signature, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(signature, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::VerifySignature(
@@ -264,9 +272,9 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
                               msg: *const c_char,
                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                    encrypted_msg: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Encrypt(
@@ -275,7 +283,9 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
             msg,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(encrypted_msg))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(encrypted_msg).as_ptr()
+                )
             })
         )));
 
@@ -306,9 +316,9 @@ pub  extern fn sovrin_decrypt(command_handle: i32,
                               encrypted_msg: *const c_char,
                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                    decrypted_msg: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(encrypted_msg, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(encrypted_msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Decrypt(
@@ -317,7 +327,9 @@ pub  extern fn sovrin_decrypt(command_handle: i32,
             encrypted_msg,
             Box::new(move |result| {
                 let (err, decrypted_msg) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err, CStringUtils::string_to_i8(decrypted_msg))
+                cb(command_handle, err,
+                   CStringUtils::string_to_cstring(decrypted_msg).as_ptr()
+                )
             })
         )));
 
