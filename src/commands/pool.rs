@@ -67,6 +67,11 @@ impl PoolCommandExecutor {
     }
 
     fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, PoolError>) + Send>) {
+        let config: String = match config {
+            Some(s) => String::from(s),
+            None => format!("{{\"genesis_txn\": \"{}.txn\"}}", name),
+        };
+        self.pool_service.open(name, config.as_str());
         // TODO: FIXME: Implement me!!!
         cb(Ok((1000)));
     }

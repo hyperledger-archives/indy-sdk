@@ -1,10 +1,32 @@
-use errors::pool::PoolError;
+extern crate zmq;
 
-pub struct PoolService {}
+use errors::pool::PoolError;
+use self::zmq::Socket;
+use std::collections::HashMap;
+use std::io::{Error, ErrorKind};
+use std::thread;
+
+pub struct PoolService {
+    pools: HashMap<String, Socket>,
+}
 
 impl PoolService {
     pub fn new() -> PoolService {
-        PoolService {}
+        PoolService {
+            pools: HashMap::new(),
+        }
+    }
+
+    fn run(cmd_sock: Socket) {
+        let mut socks_to_poll: [zmq::PollItem; 1] = [
+            cmd_sock.as_poll_item(zmq::POLLIN),
+        ];
+        loop {
+            trace!("zmq poll loop >>");
+            let r = zmq::poll(&mut socks_to_poll, -1);
+            //FIXME implement
+            trace!("zmq poll loop << ret {:?}, at cmd sock {:?}", r, cmd_sock.recv_string(0));
+        }
     }
 
     pub fn create(&self, name: &str, config: &str) -> Result<(), PoolError> {
@@ -16,7 +38,33 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, config: &str) -> Result<i32, PoolError> {
-        unimplemented!()
+        if self.pools.contains_key(&name.to_string()) {
+            // TODO make methods of this service void and return error via ack command?
+            //CommandExecutor::instance()
+            // .send(super::super::commands::pool::PoolCommand::OpenAck())});
+            // TODO change error
+            return Err(PoolError::InvalidHandle("Already opened".to_string()));
+        }
+
+        let zmq_ctx = zmq::Context::new();
+        //TODO ZMQ_PAIR may be unsupported on iOS
+        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let inproc_sock_name: String = format!("inproc://pool_{}", name);
+        if recv_cmd_sock.bind(inproc_sock_name.as_str()).is_err() {
+            return Err(PoolError::Io(Error::new(ErrorKind::ConnectionRefused, "Can't bind inproc socket")));
+        }
+
+        if send_cmd_sock.connect(inproc_sock_name.as_str()).is_err() {
+            return Err(PoolError::Io(Error::new(ErrorKind::ConnectionRefused, "Can't connect to inproc socket")));
+        }
+        thread::spawn(move || {
+            PoolService::run(recv_cmd_sock);
+        });
+        send_cmd_sock.send("test".as_bytes(), 0);
+        // TODO mut ?
+        // self.pools.insert(name.to_string(), send_cmd_sock);
+        return Ok(0);
     }
 
     pub fn close(&self, handle: i32) -> Result<(), PoolError> {
