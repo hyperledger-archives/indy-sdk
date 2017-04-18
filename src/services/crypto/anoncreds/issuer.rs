@@ -20,9 +20,7 @@ use services::crypto::wrappers::bn::BigNumber;
 
 use std::collections::HashMap;
 
-pub struct Issuer {
-
-}
+pub struct Issuer {}
 
 impl Issuer {
     pub fn new() -> Issuer {
@@ -33,9 +31,7 @@ impl Issuer {
         unimplemented!();
     }
 
-    pub fn create_claim() {
-
-    }
+    pub fn create_claim() {}
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
         let bn = try!(BigNumber::new());
@@ -78,13 +74,9 @@ impl Issuer {
         ))
     }
 
-    fn _generate_revocation_keys() {
+    fn _generate_revocation_keys() {}
 
-    }
-
-    fn _issuer_primary_claim() {
-
-    }
+    fn _issuer_primary_claim() {}
 
     //    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
     //        let mut ctx = BigNumContext::new().unwrap();
@@ -102,8 +94,8 @@ impl Issuer {
         let accumulator_id_encoded = try!(Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little));
         let user_id_encoded = try!(Issuer::_encode_attribute(&user_id, ByteOrder::Little));
         let mut s = vec![try!(bitwise_or_big_int(
-            &try!(BigNumber::from_dec(&accumulator_id_encoded)),
-            &try!(BigNumber::from_dec(&user_id_encoded))
+            &accumulator_id_encoded,
+            &user_id_encoded
         ))];
         let mut h = try!(get_hash_as_int(&mut s));
         let mut pow_2 = try!(BigNumber::from_u32(2));
@@ -117,7 +109,7 @@ impl Issuer {
         unimplemented!()
     }
 
-    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<String, CryptoError> {
+    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
         let mut result = try!(BigNumber::hash(&attribute.as_bytes()));
         let index = result.iter().position(|&value| value == 0);
         if let Some(position) = index {
@@ -126,19 +118,17 @@ impl Issuer {
         if let ByteOrder::Little = byte_order {
             result.reverse();
         }
-        let encoded_attribute = try!(BigNumber::from_bytes(&result));
-        Ok(try!(encoded_attribute.to_dec()).to_string())
+        Ok(try!(BigNumber::from_bytes(&result)))
     }
 
-    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, String>, CryptoError> {
-        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
+    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, BigNumber>, CryptoError> {
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         for i in attributes {
             if i.encode {
                 encoded_attributes.insert(i.name.clone(), try!(Issuer::_encode_attribute(&i.value, ByteOrder::Big)));
+            } else {
+                encoded_attributes.insert(i.name.clone(), try!(BigNumber::from_dec(&i.value.to_string())));
             }
-                else {
-                    encoded_attributes.insert(i.name.clone(), i.value.clone());
-                }
         }
         Ok(encoded_attributes)
     }
@@ -164,26 +154,25 @@ impl Issuer {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
     fn encode_attribute_works_short_hash() {
         let test_str = "Alexer5435";
         let test_answer = "62794";
-        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap());
+        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
     }
 
     #[test]
     fn encode_attribute_works_long_hash() {
         let test_str = "Alexer";
         let test_answer = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
-        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap());
+        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
     }
 
     #[test]
     fn encode_attributes_works() {
-        assert_eq!(mocks::get_encoded_attributes(), Issuer::_encode_attributes(&mocks::get_attributes()).unwrap());
+        assert_eq!(mocks::get_encoded_attributes().unwrap(), Issuer::_encode_attributes(&mocks::get_attributes()).unwrap());
     }
 
     #[test]
@@ -236,16 +225,16 @@ pub mod mocks {
         attributes
     }
 
-    pub fn get_encoded_attributes() -> HashMap<String, String> {
-        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
+    pub fn get_encoded_attributes() -> Result<HashMap<String, BigNumber>, CryptoError> {
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         encoded_attributes.insert("name".to_string(),
-                                  "1139481716457488690172217916278103335".to_string());
-        encoded_attributes.insert("age".to_string(), "28".to_string());
+                                  try!(BigNumber::from_dec("1139481716457488690172217916278103335")));
+        encoded_attributes.insert("age".to_string(), try!(BigNumber::from_dec("28")));
         encoded_attributes.insert(
             "sex".to_string(),
-            "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string());
-        encoded_attributes.insert("height".to_string(), "175".to_string());
-        encoded_attributes
+            try!(BigNumber::from_dec("5944657099558967239210949258394887428692050081607692519917050011144233115103")));
+        encoded_attributes.insert("height".to_string(), try!(BigNumber::from_dec("175")));
+        Ok(encoded_attributes)
     }
 
     pub fn get_secret_key() -> SecretKey {

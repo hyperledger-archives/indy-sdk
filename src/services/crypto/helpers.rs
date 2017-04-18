@@ -53,7 +53,7 @@ pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoErr
 }
 
 pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &Vec<String>)
-                        -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
+                            -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
     let mut ar: HashMap<String, BigNumber> = HashMap::new();
     let mut aur: HashMap<String, BigNumber> = HashMap::new();
 
@@ -68,7 +68,7 @@ pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed
 }
 
 pub fn get_mtilde(unrevealed_attrs: &HashMap<String, BigNumber>)
-              -> Result<HashMap<String, BigNumber>, CryptoError> {
+                  -> Result<HashMap<String, BigNumber>, CryptoError> {
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for (attr, _) in unrevealed_attrs.iter() {
