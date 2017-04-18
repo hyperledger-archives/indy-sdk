@@ -1,12 +1,16 @@
 use errors::crypto::CryptoError;
 
 extern crate openssl;
+extern crate int_traits;
+
+use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
+use self::openssl::hash::{hash, MessageDigest};
 use std::cmp::Ord;
 use std::cmp::Ordering;
-
+use std::num::ParseIntError;
 use std::error::Error;
 
 pub struct BigNumberContext {
@@ -33,10 +37,48 @@ impl BigNumber {
         })
     }
 
-    pub fn safe_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn generate_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = try!(BigNumber::new());
-        try!(BigNumRef::generate_prime(&mut bn.openssl_bn, size as i32, true, None, None));
+        try!(BigNumRef::generate_prime(&mut bn.openssl_bn, size as i32, false, None, None));
         Ok(bn)
+    }
+
+    pub fn generate_safe_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+        let mut bn = try!(BigNumber::new());
+        try!(BigNumRef::generate_prime(&mut bn.openssl_bn, (size + 1) as i32, true, None, None));
+        Ok(bn)
+    }
+
+    pub fn generate_prime_in_range(&self, start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {
+        let mut prime;
+        let mut iteration = 0;
+        let mut bn_ctx = try!(BigNumber::new_context());
+        let sub = try!(end.sub(start));
+
+        loop {
+            prime = try!(sub.rand_range());
+            prime = try!(prime.add(start));
+
+            if try!(prime.is_prime(Some(&mut bn_ctx))) {
+                debug!("Found prime in {} iteration", iteration);
+                break;
+            }
+            iteration += 1;
+        }
+
+        Ok(prime)
+    }
+
+    pub fn is_prime(&self, ctx: Option<&mut BigNumberContext>) -> Result<bool, CryptoError> {
+        let prime_len = try!(self.to_dec()).len();
+        let checks = prime_len.log2() as i32;
+        match ctx {
+            Some(context) => Ok(try!(self.openssl_bn.is_prime(checks, &mut context.openssl_bn_context))),
+            None => {
+                let mut ctx = try!(BigNumber::new_context());
+                Ok(try!(self.openssl_bn.is_prime(checks, &mut ctx.openssl_bn_context)))
+            }
+        }
     }
 
     pub fn rand(&self, size: usize) -> Result<BigNumber, CryptoError> {
@@ -64,8 +106,8 @@ impl BigNumber {
         Ok(self)
     }
 
-    pub fn from_u32(n: u32) -> Result<BigNumber, CryptoError> {
-        let bn = try!(BigNum::from_u32(n));
+    pub fn from_u32(n: usize) -> Result<BigNumber, CryptoError> {
+        let bn = try!(BigNum::from_u32(n as u32));
         Ok(BigNumber {
             openssl_bn: bn
         })
@@ -104,6 +146,10 @@ impl BigNumber {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         Ok(self.openssl_bn.to_vec())
+    }
+
+    pub fn hash(data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        Ok(try!(hash(MessageDigest::sha256(), data)))
     }
 
     pub fn add(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
@@ -236,14 +282,10 @@ impl BigNumber {
         Ok(res)
     }
 
-    pub fn compare(&self, other: &BigNumber) -> bool {
-        self.openssl_bn == other.openssl_bn
-    }
-
     pub fn clone(&self) -> Result<BigNumber, CryptoError> {
-        let bytes = try!(self.to_bytes());
-        let bn = try!(BigNumber::from_bytes(bytes.as_slice()));
-        Ok(bn)
+        Ok(BigNumber {
+            openssl_bn: try!(BigNum::from_slice(&self.openssl_bn.to_vec()[..]))
+        })
     }
 }
 
@@ -270,5 +312,28 @@ impl PartialEq for BigNumber {
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
         CryptoError::BackendError(err.description().to_string())
+    }
+}
+
+impl From<ParseIntError> for CryptoError {
+    fn from(err: ParseIntError) -> CryptoError {
+        CryptoError::BackendError(err.description().to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_prime_in_range_works() {
+        ::env_logger::init().unwrap();
+
+        let bn = BigNumber::new().unwrap();
+        let start = bn.rand(250).unwrap();
+        let end = bn.rand(300).unwrap();
+        let random_prime = bn.generate_prime_in_range(&start, &end).unwrap();
+        assert!(start < random_prime);
+        assert!(end > random_prime);
     }
 }

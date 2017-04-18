@@ -24,17 +24,17 @@ path = "src/main.rs"
 
 [features]
 default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium"]
-bn_openssl = ["openssl"]
+bn_openssl = ["openssl", "int_traits"]
 ed25519_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 xsalsa20_sodium = ["sodiumoxide"]
 
 [dependencies]
-int_traits = "0.1.1"
+int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 libc = "0.2.21"
 log = "0.3.7"
-openssl = { version = "0.9.9", optional = true}
+openssl = { version = "0.9.9", optional = true }
 milagro-crypto = "0.1.0"
 rand = "0.3"
 rusqlite = "0.10.1"

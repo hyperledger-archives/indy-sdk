@@ -1,10 +1,19 @@
-use services::crypto::anoncreds::types::{PublicKey, PrimaryEqualProof, PrimaryPredicateGEProof, Predicate, ProofInput, PrimaryProof, FullProof};
-use services::crypto::anoncreds::constants::{LARGE_E_START};
+use services::crypto::anoncreds::types::{
+    PublicKey,
+    PrimaryEqualProof,
+    PrimaryPredicateGEProof,
+    Predicate,
+    ProofInput,
+    PrimaryProof,
+    FullProof
+};
+use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION};
 use services::crypto::helpers::get_hash_as_int;
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use errors::crypto::CryptoError;
+use std::rc::Rc;
 
 pub struct Verifier {}
 
@@ -13,7 +22,8 @@ impl Verifier {
         Verifier {}
     }
 
-    pub fn verify(&self, proof_input: &ProofInput, proof: &FullProof, all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber) -> Result<bool, CryptoError> {
+    pub fn verify(&self, pk: &PublicKey, proof_input: &ProofInput, proof: &FullProof,
+                  all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber) -> Result<bool, CryptoError> {
         let mut tau_list = Vec::new();
 
         let it = proof.schema_keys.iter().zip(proof.proofs.iter());
@@ -21,7 +31,7 @@ impl Verifier {
         for (i, (schema_key, proof_item)) in it.enumerate() {
             if let Some(ref primary_proof) = proof_item.primary_proof {
                 tau_list.append(
-                    &mut try!(self.verify_primary_proof(&proof_input, &proof.c_hash, &primary_proof, &all_revealed_attrs))
+                    &mut try!(self.verify_primary_proof(&pk, &proof_input, &proof.c_hash, &primary_proof, &all_revealed_attrs))
                 )
             }
         }
@@ -37,13 +47,13 @@ impl Verifier {
 
         let c_hver = try!(get_hash_as_int(&mut values));
 
-        Ok(c_hver.compare(&proof.c_hash))
+        Ok(c_hver == proof.c_hash)
     }
 
-    fn verify_primary_proof(&self, proof_input: &ProofInput, c_hash: &BigNumber, primary_proof: &PrimaryProof,
+    fn verify_primary_proof(&self, pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber, primary_proof: &PrimaryProof,
                             all_revealed_attrs: &HashMap<String, BigNumber>) -> Result<Vec<BigNumber>, CryptoError> {
         let mut t_hat: Vec<BigNumber> =
-            try!(self.verify_equality(&primary_proof.eq_proof, &c_hash, &all_revealed_attrs));
+            try!(self.verify_equality(&pk, &primary_proof.eq_proof, &c_hash, &all_revealed_attrs));
 
         for ge_proof in primary_proof.ge_proofs.iter() {
             t_hat.append(&mut try!(self.verify_ge_predicate(ge_proof, &c_hash)))
@@ -51,8 +61,8 @@ impl Verifier {
         Ok(t_hat)
     }
 
-    fn verify_equality(&self, proof: &PrimaryEqualProof, c_h: &BigNumber, all_revealed_attrs: &HashMap<String, BigNumber>) -> Result<Vec<BigNumber>, CryptoError> {
-        let pk: PublicKey = try!(mocks::wallet_get_pk());//TODO:  get from wallet
+    fn verify_equality(&self, pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
+                       all_revealed_attrs: &HashMap<String, BigNumber>) -> Result<Vec<BigNumber>, CryptoError> {
         let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];//TODO:  get from wallet
 
         let attr_names_hash_set = HashSet::<String>::from_iter(attr_names.iter().cloned());
@@ -64,17 +74,17 @@ impl Verifier {
                 .map(|attr| attr.to_owned())
                 .collect::<Vec<String>>();
 
-        let t1: BigNumber = try!(self.calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
-                                               &proof.m1, &proof.m2, &unrevealed_attr_names));
+        let t1: BigNumber = try!(Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
+                                                    &proof.m1, &proof.m2, &unrevealed_attr_names));
 
         let mut ctx = try!(BigNumber::new_context());
         let mut rar = try!(BigNumber::from_dec("1"));
 
         for attr_name in proof.revealed_attr_names.iter() {
             let cur_r = try!(pk.r.get(attr_name)
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr_name))));
             let cur_attr = try!(all_revealed_attrs.get(attr_name)
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in all_revealed_attrs", attr_name))));
 
             rar = try!(
                 cur_r
@@ -113,15 +123,15 @@ impl Verifier {
     }
 
     fn verify_ge_predicate(&self, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
-        let pk = mocks::wallet_get_pk().unwrap();/////wallet get pk
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();/////wallet get pk
         let (k, v) = (&proof.predicate.attr_name, &proof.predicate.value);
-        let mut tau_list = try!(self.calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
-                                              &proof.alpha, &proof.t));
+        let mut tau_list = try!(Verifier::calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
+                                                   &proof.alpha, &proof.t));
         let mut ctx = try!(BigNumber::new_context());
 
-        for i in 0..4 {
+        for i in 0..ITERATION {
             let cur_t = try!(proof.t.get(&i.to_string()[..])
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", i))));
 
             tau_list[i] =
                 try!(
@@ -135,39 +145,39 @@ impl Verifier {
 
         let big_v = try!(BigNumber::from_dec(&v.to_string()[..]));
         let delta = try!(proof.t.get("DELTA")
-            .ok_or(CryptoError::BackendError("Element not found".to_string())));
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", "DELTA"))));
 
 
-        tau_list[4] = try!(
+        tau_list[ITERATION] = try!(
             pk.z.mod_exp(&big_v, &pk.n, Some(&mut ctx))?
                 .mul(&delta, Some(&mut ctx))?
                 .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
                 .inverse(&pk.n, Some(&mut ctx))?
-                .mul(&tau_list[4], Some(&mut ctx))?
+                .mul(&tau_list[ITERATION], Some(&mut ctx))?
                 .modulus(&pk.n, Some(&mut ctx))
         );
 
-        tau_list[5] = try!(
+        tau_list[ITERATION + 1] = try!(
             delta.mod_exp(&c_h, &pk.n, Some(&mut ctx))?
                 .inverse(&pk.n, Some(&mut ctx))?
-                .mul(&tau_list[5], Some(&mut ctx))?
+                .mul(&tau_list[ITERATION + 1], Some(&mut ctx))?
                 .modulus(&pk.n, Some(&mut ctx))
         );
 
         Ok(tau_list)
     }
 
-    fn calc_tge(&self, pk: &PublicKey, u: &HashMap<String, BigNumber>, r: &HashMap<String,
+    pub fn calc_tge(pk: &PublicKey, u: &HashMap<String, BigNumber>, r: &HashMap<String,
         BigNumber>, mj: &BigNumber, alpha: &BigNumber, t: &HashMap<String, BigNumber>)
-                -> Result<Vec<BigNumber>, CryptoError> {
+                    -> Result<Vec<BigNumber>, CryptoError> {
         let mut tau_list: Vec<BigNumber> = Vec::new();
         let mut ctx = try!(BigNumber::new_context());
 
-        for i in 0..4 {
+        for i in 0..ITERATION {
             let cur_u = try!(u.get(&i.to_string()[..])
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u", i))));
             let cur_r = try!(r.get(&i.to_string()[..])
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in r", i))));
 
             let pks_pow_r: BigNumber = try!(pk.s.mod_exp(&cur_r, &pk.n, Some(&mut ctx)));
 
@@ -182,7 +192,7 @@ impl Verifier {
         }
 
         let delta = try!(r.get("DELTA")
-            .ok_or(CryptoError::BackendError("Element not found".to_string())));
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in r", "DELTA"))));
 
         let pks_pow_delta = try!(pk.s.mod_exp(&delta, &pk.n, Some(&mut ctx)));
 
@@ -197,11 +207,11 @@ impl Verifier {
 
         let mut q: BigNumber = try!(BigNumber::from_dec("1"));
 
-        for i in 0..4 {
+        for i in 0..ITERATION {
             let cur_t = try!(t.get(&i.to_string()[..])
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in t", i))));
             let cur_u = try!(u.get(&i.to_string()[..])
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u", i))));
 
             q = try!(
                 cur_t
@@ -222,18 +232,18 @@ impl Verifier {
         Ok(tau_list)
     }
 
-    fn calc_teq(&self, pk: &PublicKey, a_prime: &BigNumber, e: &BigNumber, v: &BigNumber,
-                mtilde: &HashMap<String, BigNumber>, m1tilde: &BigNumber, m2tilde: &BigNumber,
-                unrevealed_attr_names: &Vec<String>) -> Result<BigNumber, CryptoError> {
+    pub fn calc_teq(pk: &PublicKey, a_prime: &BigNumber, e: &BigNumber, v: &BigNumber,
+                    mtilde: &HashMap<String, BigNumber>, m1tilde: &BigNumber, m2tilde: &BigNumber,
+                    unrevealed_attr_names: &Vec<String>) -> Result<BigNumber, CryptoError> {
         let mut result: BigNumber = try!(BigNumber::from_dec("1"));
         let tmp: BigNumber = try!(BigNumber::new());
         let mut ctx = try!(BigNumber::new_context());
 
         for k in unrevealed_attr_names.iter() {
             let cur_r = try!(pk.r.get(k)
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", k))));
             let cur_m = try!(mtilde.get(k)
-                .ok_or(CryptoError::BackendError("Element not found".to_string())));
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in mtilde", k))));
 
             result = try!(cur_r
                 .mod_exp(&cur_m, &pk.n, Some(&mut ctx))?
@@ -288,7 +298,7 @@ mod tests {
 
         let proof_input = ProofInput {
             revealed_attrs: vec!["name".to_string()],
-            predicates: vec![predicate],
+            predicates: vec![Rc::new(predicate)],
             ts: "".to_string(),
             pubseq_no: "".to_string()
         };
@@ -296,24 +306,26 @@ mod tests {
 
         let eq_proof = mocks::get_eq_proof().unwrap();
         let ge_proof = mocks::get_ge_proof().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
 
         let primary_proof = PrimaryProof {
-            eq_proof: eq_proof,
-            ge_proofs: vec![ge_proof]
+            eq_proof: Rc::new(eq_proof),
+            ge_proofs: vec![Rc::new(ge_proof)]
         };
 
         let proof = Proof {
-            primary_proof: Some(primary_proof)
+            primary_proof: Some(Rc::new(primary_proof))
         };
 
         let proof = FullProof {
             c_hash: BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap(),
-            schema_keys: vec![schema_key],
-            proofs: vec![proof],
+            schema_keys: vec![Rc::new(schema_key)],
+            proofs: vec![Rc::new(proof)],
             c_list: vec![]
         };
 
         let res = verifier.verify(
+            &pk,
             &proof_input,
             &proof,
             &all_revealed_attrs,
@@ -328,12 +340,14 @@ mod tests {
     fn verify_equlity_test() {
         let verifier = Verifier::new();
         let proof = mocks::get_eq_proof().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
 
         let mut all_revealed_attrs = HashMap::new();
         all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
 
         let res: Result<Vec<BigNumber>, CryptoError> = verifier.verify_equality(
+            &pk,
             &proof,
             &c_h,
             &all_revealed_attrs
@@ -378,10 +392,10 @@ mod tests {
     fn calc_teg_works() {
         let verifier = Verifier::new();
         let proof = mocks::get_ge_proof().unwrap();
-        let pk = mocks::wallet_get_pk().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
 
-        let res = verifier.calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
-                                    &proof.alpha, &proof.t);
+        let res = Verifier::calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
+                                     &proof.alpha, &proof.t);
 
         assert!(res.is_ok());
 
@@ -405,13 +419,12 @@ mod tests {
 
     #[test]
     fn calc_teq_works() {
-        let verifier = Verifier::new();
         let proof = mocks::get_eq_proof().unwrap();
-        let pk = mocks::wallet_get_pk().unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
 
-        let res = verifier.calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v,
-                                    &proof.m, &proof.m1, &proof.m2,
-                                    &vec!["sex".to_string(), "age".to_string(), "height".to_string()]
+        let res = Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v,
+                                     &proof.m, &proof.m1, &proof.m2,
+                                     &vec!["sex".to_string(), "age".to_string(), "height".to_string()]
         );
 
         assert!(res.is_ok());
@@ -422,24 +435,8 @@ mod tests {
     }
 }
 
-mod mocks {
+pub mod mocks {
     use super::*;
-
-    pub fn wallet_get_pk() -> Result<PublicKey, CryptoError> {
-        let mut r = HashMap::new();
-        r.insert("name".to_string(), try!(BigNumber::from_dec("55636937636844819812189791288187243913404055721058334520072574568680438360936320682628189506248931475232504868784141809162526982794777886937554791279646171992316154768489491205932973020390955775825994246509354890417980543491344959419958264200222321573290332068573840656874584148318471805081070819330139498643368112616125508016850665039138240007045133711819182960399913468566074586611076818097815310939823561848962949647054263397457358507697316036204724311688330058092618087260011626918624130336633163118234963001890740389604366796070789463043007475519162863457847133916866147682877703700016314519649272629853810342756")));
-        r.insert("height".to_string(), try!(BigNumber::from_dec("32014206266070285395118493698246684536543402308857326229844369749153998025988120078148833919040926762489849787174726278317154939222455553684674979640533728771798727404529140716275948809394914126446467274094766630776034154814466245563241594664595503357965283703581353868787640425189228669159837529621065262578472511140258233443082035493432067002995028424708181638248338655901732889892559561796172833245307347288440850886016760883963087954594369665160758244185860669353304463245326602784567519981372129418674907732019485821481470791951576038671383506105840172336020165255666872489673679749492975692222529386986002548508")));
-        r.insert("age".to_string(), try!(BigNumber::from_dec("5573886601587513393941805393558438475134278869721908377896820376573868172897985632537697650826768061917733566546691785934393119648542993289296693181509209448802827620254572500988956963540401872482092959068516484681223765164669694589952326903719257213107559712016680752042520470482095682948519795635218252370953948099226141669796718651544648226881826585169101432801215379161624527044414118535373924688074790569833168081423701512430033511620744395776217769497965549575153091462845485986562792539143519413414753164756782101386489471333391388468474082175228293592033872018644198196278046021752128670441648674265160079365")));
-        r.insert("sex".to_string(), try!(BigNumber::from_dec("44319112097252841415305877008967513656231862316131581238409828513703699212059952418622049664178569730633939544882861264006945675755509881864438312327074402062963599178195087536260752294006450133601248863198870283839961116512248865885787100775903023034879852152846002669257161013317472827548494571935048240800817870893700771269978535707078640961353407573194897812343272563394036737677668293122931520603798620428922052839619195929427039933665104815440476791376703125056734891504425929510493567119107731184250744646520780647416583157402277832961026300695141515177928171182043898138863324570665593349095177082259229019129")));
-
-        let n = try!(BigNumber::from_dec("95230844261716231334966278654105782744493078250034916428724307571481648650972254096365233503303500776910009532385733941342231244809050180342216701303297309484964627111488667613567243812137828734726055835536190375874228378361894062875040911721595668269426387378524841651770329520854646198182993599992246846197622806018586940960824812499707703407200235006250330376435395757240807360245145895448238973940748414130249165698642798758094515234629492123379833360060582377815656998861873479266942101526163937107816424422201955494796734174781894506437514751553369884508767256335322189421050651814494097369702888544056010606733"));
-        let s = try!(BigNumber::from_dec("83608735581956052060766602122241456047092927591272898317077507857903324472083195301035502442829713523495655160192410742120440247481077060649728889735943333622709039987090137325037494001551239812739256925595650405403616377574225590614582056226657979932825031688262428848508620618206304014287232713708048427099425348438343473342088258502098208531627321778163620061043269821806176268690486341352405206188888371253713940995260309747672937693391957731544958179245054768704977202091642139481745073141174316305851938990898215928942632876267309335084279137046749673230694376359278715909536580114502953378593787412958122696491"));
-        let rms = try!(BigNumber::from_dec("12002410972675035848706631786298987049295298281772467607461994087192649160666347028767622091944497528304565759377490497287538655369597530498218287879384450121974605678051982553150980093839175365101087722528582689341030912237571526676430070213849160857477430406424356131111577547636360346507596843363617776545054084329725294982409132506989181200852351104199115448152798956456818387289142907618956667090125913885442746763678284193811934837479547315881192351556311788630337391374089308234091189363160599574268958752271955343795665269131980077642259235693653829664040302092446308732796745472579352704501330580826351662240"));
-        let rctxt = try!(BigNumber::from_dec("77129119521935975385795386930301402827628026853991528755303486255023263353142617098662225360498227999564663438861313570702364984107826653399214544314002820732458443871729599318191904265844432709910182014204478532265518566229953111318413830009256162339443077098917698777223763712267731802804425167444165048596271025553618253855465562660530445682078873631967934956107222619891473818051441942768338388425312823594456990243766677728754477201176089151138798586336262283249409402074987943625960454785501038059209634637204497573094989557296328178873844804605590768348774565136642366470996059740224170274762372312531963184654"));
-        let z = try!(BigNumber::from_dec("55164544925922114758373643773121488212903100773688663772257168750760838562077540114734459902014369305346806516101767509487128278169584105585138623374643674838487232408713159693511105298301789373764578281065365292802332455328842835614608027129883137292324033168485729810074426971615144489078436563295402449746541981155232849178606822309310700682675942602404109375598809372735287212196379089816519481644996930522775604565458855945697714216633192192613598668941671920105596720544264146532180330974698466182799108850159851058132630467033919618658033816306014912309279430724013987717126519405488323062369100827358874261055"));
-
-        Ok(PublicKey { n: n, r: r, s: s, rms: rms, rctxt: rctxt, z: z })
-    }
 
     pub fn get_ge_proof() -> Result<PrimaryPredicateGEProof, CryptoError> {
         let mut u = HashMap::new();
@@ -467,7 +464,7 @@ mod mocks {
         let mj = try!(BigNumber::from_dec("1603425011106247404410993992231356816212687443774810147917707956054468639246061842660922922638282972213339086692783888162583747872610530439675358599658842676000681975294259033921"));
         let alpha = try!(BigNumber::from_dec("10356391427643160498096100322044181597098497015522243313140952718701540840206124784483254227685815326973121415131868716208997744531667356503588945389793642286002145762891552961662804737699174847630739288154243345749050494830443436382280881466833601915627397601315033369264534756381669075511238130934450573103942299767277725603498732898775126784825329479233488928873905649944203334284969529288341712039042121593832892633719941366126598676503928077684908261211960615121039788257179455497199714100480379742080080363623749544442225600170310016965613238530651846654311018291673656192911252359090044631268913200633654215640107245506757349629342277896334140999154991920063754025485899126293818842601918101509689122011832619551509675197082794490012616416413823359927604558553776550532965415598441778103806673039612795460783658848060332784778084904"));
 
-        Ok(PrimaryPredicateGEProof { u: u, r: r, mj: mj, alpha: alpha, t: t, predicate: predicate })
+        Ok(PrimaryPredicateGEProof { u: u, r: r, mj: mj, alpha: alpha, t: Rc::new(t), predicate: Rc::new(predicate) })
     }
 
     pub fn get_eq_proof() -> Result<PrimaryEqualProof, CryptoError> {
