@@ -4,6 +4,7 @@ use self::libc::c_char;
 
 use std::ffi::CStr;
 use std::str::Utf8Error;
+use std::ffi::CString;
 
 pub struct CStringUtils {}
 
@@ -19,6 +20,10 @@ impl CStringUtils {
                 Err(err) => Err(err)
             }
         }
+    }
+
+    pub fn string_to_cstring(s: String) -> CString {
+        CString::new(s).unwrap()
     }
 }
 
