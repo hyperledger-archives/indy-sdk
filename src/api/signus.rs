@@ -50,11 +50,11 @@ pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
             did_json,
             Box::new(move |result| {
                 let (err, did, verkey, pk) = result_to_err_code_3!(result, "".to_string(), "".to_string(), "".to_string());
-                cb(command_handle, err,
-                   CStringUtils::string_to_cstring(did).as_ptr(),
-                   CStringUtils::string_to_cstring(verkey).as_ptr(),
-                   CStringUtils::string_to_cstring(pk).as_ptr()
-                )
+                let c_did = CStringUtils::string_to_cstring(did);
+                let c_verkey = CStringUtils::string_to_cstring(verkey);
+                let c_pk = CStringUtils::string_to_cstring(pk);
+
+                cb(command_handle, err, c_did.as_ptr(), c_verkey.as_ptr(), c_pk.as_ptr())
             })
         )));
 
@@ -100,10 +100,10 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, verkey, pk) = result_to_err_code_2!(result, "".to_string(), "".to_string());
-                cb(command_handle, err,
-                   CStringUtils::string_to_cstring(verkey).as_ptr(),
-                   CStringUtils::string_to_cstring(pk).as_ptr()
-                )
+                let c_verkey = CStringUtils::string_to_cstring(verkey);
+                let c_pk = CStringUtils::string_to_cstring(pk);
+
+                cb(command_handle, err, c_verkey.as_ptr(), c_pk.as_ptr())
             })
         )));
 
@@ -185,9 +185,9 @@ pub  extern fn sovrin_sign(command_handle: i32,
             msg,
             Box::new(move |result| {
                 let (err, signature) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err,
-                   CStringUtils::string_to_cstring(signature).as_ptr()
-                )
+                let c_signature = CStringUtils::string_to_cstring(signature);
+
+                cb(command_handle, err, c_signature.as_ptr())
             })
         )));
 
@@ -283,9 +283,9 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
             msg,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err,
-                   CStringUtils::string_to_cstring(encrypted_msg).as_ptr()
-                )
+                let c_encrypted_msg = CStringUtils::string_to_cstring(encrypted_msg);
+
+                cb(command_handle, err, c_encrypted_msg.as_ptr())
             })
         )));
 
@@ -327,9 +327,9 @@ pub  extern fn sovrin_decrypt(command_handle: i32,
             encrypted_msg,
             Box::new(move |result| {
                 let (err, decrypted_msg) = result_to_err_code_1!(result, "".to_string());
-                cb(command_handle, err,
-                   CStringUtils::string_to_cstring(decrypted_msg).as_ptr()
-                )
+                let c_decrypted_msg = CStringUtils::string_to_cstring(decrypted_msg);
+
+                cb(command_handle, err, c_decrypted_msg.as_ptr())
             })
         )));
 
