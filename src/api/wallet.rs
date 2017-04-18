@@ -1,6 +1,10 @@
 extern crate libc;
 
 use api::ErrorCode;
+use errors::ToErrorCode;
+use commands::{Command, CommandExecutor};
+use commands::wallet::WalletCommand;
+use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 
@@ -74,8 +78,28 @@ pub extern fn sovrin_create_wallet(command_handle: i32,
                                    xtype: *const c_char,
                                    config: *const c_char,
                                    credentials: *const c_char,
-                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(pool_name, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(xtype, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::Create(
+            pool_name,
+            name,
+            xtype,
+            config,
+            credentials,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Opens the wallet with specific name.
@@ -106,8 +130,25 @@ pub extern fn sovrin_open_wallet(command_handle: i32,
                                  name: *const c_char,
                                  config: *const c_char,
                                  credentials: *const c_char,
-                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)) -> ErrorCode {
-    unimplemented!();
+                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
+    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::Open(
+            pool_handle,
+            name,
+            config,
+            credentials,
+            Box::new(move |result| {
+                let (err, handle) = result_to_err_code_1!(result, 0);
+                cb(command_handle, err, handle)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 
@@ -125,8 +166,19 @@ pub extern fn sovrin_open_wallet(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_close_wallet(command_handle: i32,
                                   handle: i32,
-                                  cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
+                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::Close(
+            handle,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Deletes created wallet.
@@ -143,8 +195,20 @@ pub extern fn sovrin_close_wallet(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_delete_wallet(command_handle: i32,
                                    name: *const c_char,
-                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::Delete(
+            name,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
@@ -166,6 +230,19 @@ pub extern fn sovrin_delete_wallet(command_handle: i32,
 pub extern fn sovrin_wallet_set_seq_no_for_value(command_handle: i32,
                                                  wallet_handle: i32,
                                                  wallet_key: *const c_char,
-                                                 cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
+                                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(wallet_key, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::SetSeqNoForValue(
+            wallet_handle,
+            wallet_key,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }

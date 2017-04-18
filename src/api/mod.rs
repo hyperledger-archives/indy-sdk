@@ -53,6 +53,8 @@ pub enum ErrorCode {
     // Trying to use wallet with pool that has different name
     WalletIncompatiblePoolError,
 
+    WalletInvalidConfiguration,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
@@ -98,5 +100,7 @@ pub enum ErrorCode {
     AnoncredsNotIssuedError,
 
     // Attempt to generate master secret with dupplicated name
-    AnoncredsMasterSecretDuplicateNameError
+    AnoncredsMasterSecretDuplicateNameError,
+
+    ProofRejected
 }

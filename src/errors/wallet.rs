@@ -2,6 +2,9 @@ use std::error;
 use std::io;
 use std::fmt;
 
+use api::ErrorCode;
+use errors::ToErrorCode;
+
 #[derive(Debug)]
 pub enum WalletError {
     InvalidHandle(String),
@@ -53,6 +56,21 @@ impl error::Error for WalletError {
             WalletError::IncorrectPool(ref description) => None,
             WalletError::InvalidConfig(ref description) => None,
             WalletError::IOError(ref err) => Some(err)
+        }
+    }
+}
+
+impl ToErrorCode for WalletError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            WalletError::InvalidHandle(ref description) => ErrorCode::WalletInvalidHandle,
+            WalletError::UnknownType(ref description) => ErrorCode::WalletUnknownTypeError,
+            WalletError::TypeAlreadyRegistered(ref description) => ErrorCode::WalletTypeAlreadyRegisteredError,
+            WalletError::NotFound(ref err) => ErrorCode::WalletNotFoundError,
+            WalletError::InvalidDataFormat(ref err) => ErrorCode::WalletInvalidDataFormat,
+            WalletError::IncorrectPool(ref err) => ErrorCode::WalletIncompatiblePoolError,
+            WalletError::InvalidConfig(ref err) => ErrorCode::WalletInvalidConfiguration,
+            WalletError::IOError(ref err) => ErrorCode::WalletIOError
         }
     }
 }

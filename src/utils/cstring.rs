@@ -4,6 +4,7 @@ use self::libc::c_char;
 
 use std::ffi::CStr;
 use std::str::Utf8Error;
+use std::ffi::CString;
 
 pub struct CStringUtils {}
 
@@ -19,6 +20,11 @@ impl CStringUtils {
                 Err(err) => Err(err)
             }
         }
+    }
+
+    pub fn string_to_i8(s: String) -> *const i8 {
+        let string_to_i8 = CString::new(s).unwrap();
+        string_to_i8.as_ptr()
     }
 }
 
