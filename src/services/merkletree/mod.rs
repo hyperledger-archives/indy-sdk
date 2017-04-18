@@ -41,9 +41,14 @@ impl<T: AsRef<[u8]> + Decodable + Display> Decodable for MerkleTree<T> {
         let r = Tree::decode(d);
         match r {
             Ok(root) => {
-                let mut ret = MerkleTree { algorithm: DIGEST, root: root, height: 0, count: 0 };
-                // TODO: fix height, count
-                return Ok(ret);
+                let h = root.get_height();
+                let c = root.get_count();
+                Ok(MerkleTree {
+                    algorithm: DIGEST,
+                    root: root,
+                    height: h,
+                    count: c
+                })
             }
             Err(e) => {
                 return Err(e);
@@ -84,9 +89,11 @@ mod tests {
     fn test_merkletree_serialize() {
         let values = vec![ "1", "2", "3" ];
         let mt = MerkleTree::<&str>::from_vec(DIGEST, values.clone());
+        println!("serialize mt: h={}, c={}", mt.height, mt.count);
         let serialized = json::encode(&mt).unwrap();
         println!("serialize: {}", serialized);
         let newmt :MerkleTree<String> = json::decode(serialized.as_str()).unwrap();
+        println!("serialize newmt: h={}, c={}", newmt.height, newmt.count);
 
         let mut collected = Vec::new();
         for value in &newmt {

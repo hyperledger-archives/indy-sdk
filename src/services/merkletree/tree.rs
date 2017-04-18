@@ -2,6 +2,7 @@ extern crate ring;
 extern crate rustc_serialize;
 
 use std::fmt::Display;
+use std::cmp;
 
 use self::ring::digest::{ Algorithm, Digest };
 use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder, json };
@@ -69,6 +70,26 @@ impl <T> Tree<T> {
     /// Returns a borrowing iterator over the leaves of the tree.
     pub fn iter(&self) -> LeavesIterator<T> {
         LeavesIterator::new(self)
+    }
+
+    pub fn get_height(&self) -> usize {
+        match *self {
+            Tree::Empty { .. } => { 0 },
+            Tree::Node { ref left, ref right, .. } => {
+                1 + cmp::max(left.get_height(),right.get_height())
+            },
+            Tree::Leaf { .. } => { 0 }
+        }
+    }
+
+    pub fn get_count(&self) -> usize {
+        match *self {
+            Tree::Empty { .. } => { 0 },
+            Tree::Node { ref left, ref right, .. } => {
+                left.get_count() + right.get_count()
+            },
+            Tree::Leaf { .. } => { 1 }
+        }
     }
 }
 
