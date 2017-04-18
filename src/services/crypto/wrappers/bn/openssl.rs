@@ -106,8 +106,8 @@ impl BigNumber {
         Ok(self)
     }
 
-    pub fn from_u32(n: u32) -> Result<BigNumber, CryptoError> {
-        let bn = try!(BigNum::from_u32(n));
+    pub fn from_u32(n: usize) -> Result<BigNumber, CryptoError> {
+        let bn = try!(BigNum::from_u32(n as u32));
         Ok(BigNumber {
             openssl_bn: bn
         })

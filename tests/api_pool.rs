@@ -7,7 +7,7 @@ extern crate lazy_static;
 mod utils;
 
 use sovrin::api::ErrorCode;
-use sovrin::api::pool::sovrin_create_pool_ledger;
+use sovrin::api::pool::sovrin_create_pool_ledger_config;
 
 use utils::callbacks::CallbacksHelpers;
 
@@ -27,10 +27,10 @@ fn sovrin_create_pool_ledger_can_be_called() {
     let pool_name = CString::new("test1").unwrap();
     let pool_config = CString::new("{\"genesis_txn\": \"test1.txn\"}").unwrap();
 
-    let err = sovrin_create_pool_ledger(command_handle,
-                                        pool_name.as_ptr(),
-                                        pool_config.as_ptr(),
-                                        callback);
+    let err = sovrin_create_pool_ledger_config(command_handle,
+                                               pool_name.as_ptr(),
+                                               pool_config.as_ptr(),
+                                               callback);
 
     assert_eq!(ErrorCode::Success, err);
 
