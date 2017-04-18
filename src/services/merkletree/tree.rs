@@ -1,6 +1,8 @@
 extern crate ring;
 extern crate rustc_serialize;
 
+use std::fmt::Display;
+
 use self::ring::digest::{ Algorithm, Digest };
 use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder, json };
 
@@ -73,30 +75,53 @@ impl <T> Tree<T> {
 impl<T: AsRef<[u8]> + Encodable> Encodable for Tree<T> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         match *self {
-            Tree::Empty { .. } => {
-                s.emit_nil()
-            }
-            Tree::Node { ref hash, ref left, ref right, .. } => {
-                s.emit_struct("node", 3, |s| {
-                    try!(s.emit_struct_field("hash", 0, |s| {
+            Tree::Empty { ref hash, .. } => {
+                s.emit_struct("node", 4, |s| {
+                    try!(s.emit_struct_field("type", 0, |s| {
+                        s.emit_str("empty")
+                    }));
+                    try!(s.emit_struct_field("hash", 1, |s| {
                         hash.encode(s)
                     }));
-                    try!(s.emit_struct_field("left", 1, |s| {
+                    try!(s.emit_struct_field("", 2, |s| {
+                        s.emit_str("")
+                    }));
+                    try!(s.emit_struct_field("", 3, |s| {
+                        s.emit_str("")
+                    }));
+                    Ok(())
+                })
+            }
+            Tree::Node { ref hash, ref left, ref right, .. } => {
+                s.emit_struct("node", 4, |s| {
+                    try!(s.emit_struct_field("type", 0, |s| {
+                        s.emit_str("node")
+                    }));
+                    try!(s.emit_struct_field("hash", 1, |s| {
+                        hash.encode(s)
+                    }));
+                    try!(s.emit_struct_field("left", 2, |s| {
                         left.encode(s)
                     }));
-                    try!(s.emit_struct_field("right", 2, |s| {
+                    try!(s.emit_struct_field("right", 3, |s| {
                         right.encode(s)
                     }));
                     Ok(())
                 })
             }
             Tree::Leaf { ref hash, ref value, .. } => {
-                s.emit_struct("leaf", 2, |s| {
-                    try!(s.emit_struct_field("hash", 0, |s| {
+                s.emit_struct("node", 4, |s| {
+                    try!(s.emit_struct_field("type", 0, |s| {
+                        s.emit_str("leaf")
+                    }));
+                    try!(s.emit_struct_field("hash", 1, |s| {
                         hash.encode(s)
                     }));
-                    try!(s.emit_struct_field("value", 1, |s| {
+                    try!(s.emit_struct_field("value", 2, |s| {
                         value.encode(s)
+                    }));
+                    try!(s.emit_struct_field("", 3, |s| {
+                        s.emit_str("")
                     }));
                     Ok(())
                 })
@@ -105,26 +130,45 @@ impl<T: AsRef<[u8]> + Encodable> Encodable for Tree<T> {
     }
 }
 
-impl<T: AsRef<[u8]> + Decodable> Decodable for Tree<T> {
+impl<T: AsRef<[u8]> + Decodable + Display> Decodable for Tree<T> {
     fn decode<D: Decoder>(d: &mut D) -> Result<Tree<T>, D::Error> {
-        d.read_struct("node", 3, |d| {
-            let hash = try!(d.read_struct_field("hash", 0, |d| { Vec::<u8>::decode(d) }));
-            let value = d.read_struct_field("value", 1, |d| { T::decode(d) });
-            match value {
-                Ok(val) => {
-                    Ok(Tree::Leaf{
-                        hash: hash,
-                        value: val
+        d.read_struct("node", 4, |d| {
+            let nodetype = try!(d.read_struct_field("type", 0, |d| {
+                d.read_str()
+            }));
+            let hash = try!(d.read_struct_field("hash", 0, |d| {
+                Vec::<u8>::decode(d)
+            }));
+            match nodetype.as_ref() {
+                "empty" => {
+                    Ok(Tree::Empty{
+                        hash: hash
                     })
                 }
-                Err(e) => {
-                    let left = try!(d.read_struct_field("left", 1, |d| { Tree::<T>::decode(d) }));
-                    let right = try!(d.read_struct_field("right", 2, |d| { Tree::<T>::decode(d) }));
+                "node" => {
+                    let left = try!(d.read_struct_field("left", 1, |d| {
+                        Tree::<T>::decode(d)
+                    }));
+                    let right = try!(d.read_struct_field("right", 2, |d| {
+                        Tree::<T>::decode(d)
+                    }));
                     Ok(Tree::Node{
                         hash: hash,
                         left: Box::new(left),
                         right: Box::new(right)
                     })
+                }
+                "leaf" => {
+                    let value = try!(d.read_struct_field("value", 1, |d| {
+                        T::decode(d)
+                    }));
+                    Ok(Tree::Leaf{
+                        hash: hash,
+                        value: value
+                    })
+                }
+                _ => {
+                    Err(d.error("bad node type"))
                 }
             }
         })

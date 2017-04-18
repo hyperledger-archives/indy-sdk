@@ -1,6 +1,8 @@
 extern crate ring;
 extern crate rustc_serialize;
 
+use std::fmt::Display;
+
 use self::rustc_serialize::{ json, Encodable, Encoder, Decodable, Decoder };
 use self::ring::digest::{ Algorithm, Context, SHA512 };
 
@@ -34,7 +36,7 @@ impl<T: AsRef<[u8]> + Encodable> Encodable for MerkleTree<T> {
     }
 }
 
-impl<T: AsRef<[u8]> + Decodable> Decodable for MerkleTree<T> {
+impl<T: AsRef<[u8]> + Decodable + Display> Decodable for MerkleTree<T> {
     fn decode<D: Decoder>(d: &mut D) -> Result<MerkleTree<T>, D::Error> {
         let r = Tree::decode(d);
         match r {
