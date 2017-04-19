@@ -27,7 +27,7 @@ impl PointG1 {
         unimplemented!();
     }
 
-    pub fn to_bytes(&mut self, b: &mut [u8]) -> Result<&mut [u8], CryptoError> {
+    pub fn to_bytes(&mut self) -> Result<Vec<u8>, CryptoError> {
         unimplemented!();
     }
 
@@ -61,11 +61,11 @@ impl GroupOrderElement {
         unimplemented!();
     }
 
-    pub fn to_bytes(&mut self, b: &mut [u8]) {
+    pub fn to_bytes(&mut self, b: &mut [u8]) -> Result<Vec<u8>, CryptoError> {
         unimplemented!();
     }
 
-    pub fn from_bytes(b: &[u8]) -> GroupOrderElement {
+    pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {
         unimplemented!();
     }
 }
