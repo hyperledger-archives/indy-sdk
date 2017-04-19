@@ -1,26 +1,34 @@
 extern crate zmq;
 
+use commands::Command;
+use commands::CommandExecutor;
+use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use self::zmq::Socket;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::thread;
 
 pub struct PoolService {
-    pools: HashMap<String, Socket>,
+    pools: RefCell<HashMap<i32, Socket>>,
+    pools_names: RefCell<HashMap<String, i32>>,
 }
 
 impl PoolService {
     pub fn new() -> PoolService {
         PoolService {
-            pools: HashMap::new(),
+            pools: RefCell::new(HashMap::new()),
+            pools_names: RefCell::new(HashMap::new()),
         }
     }
 
-    fn run(cmd_sock: Socket) {
+    fn run(cmd_sock: Socket, pool_id: i32, cmd_id: i32) {
         let mut socks_to_poll: [zmq::PollItem; 1] = [
             cmd_sock.as_poll_item(zmq::POLLIN),
         ];
+        CommandExecutor::instance().send(Command::Pool(
+            PoolCommand::OpenAck(cmd_id, Ok(pool_id)))); //TODO send only after catch-up?
         loop {
             trace!("zmq poll loop >>");
             let r = zmq::poll(&mut socks_to_poll, -1);
@@ -38,10 +46,7 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, config: &str) -> Result<i32, PoolError> {
-        if self.pools.contains_key(&name.to_string()) {
-            // TODO make methods of this service void and return error via ack command?
-            //CommandExecutor::instance()
-            // .send(super::super::commands::pool::PoolCommand::OpenAck())});
+        if self.pools_names.borrow().contains_key(&name.to_string()) {
             // TODO change error
             return Err(PoolError::InvalidHandle("Already opened".to_string()));
         }
@@ -58,13 +63,14 @@ impl PoolService {
         if send_cmd_sock.connect(inproc_sock_name.as_str()).is_err() {
             return Err(PoolError::Io(Error::new(ErrorKind::ConnectionRefused, "Can't connect to inproc socket")));
         }
-        thread::spawn(move || {
-            PoolService::run(recv_cmd_sock);
-        });
-        send_cmd_sock.send("test".as_bytes(), 0);
-        // TODO mut ?
-        // self.pools.insert(name.to_string(), send_cmd_sock);
-        return Ok(0);
+
+        let pool_id: i32 = CommandExecutor::get_new_id();
+        let cmd_id: i32 = CommandExecutor::get_new_id();
+        thread.spawn(move || { PoolService::run(recv_cmd_sock, pool_id, cmd_id); });
+        send_cmd_sock.send("opened".as_bytes(), 0); //TODO remove
+        self.pools.borrow_mut().insert(pool_id, send_cmd_sock);
+        self.pools_names.borrow_mut().insert(name.to_string(), pool_id);
+        return Ok(cmd_id);
     }
 
     pub fn close(&self, handle: i32) -> Result<(), PoolError> {
