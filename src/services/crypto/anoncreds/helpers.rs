@@ -1,13 +1,15 @@
 extern crate rand;
 extern crate milagro_crypto;
+extern crate openssl;
 
-use self::milagro_crypto::hash::wrappers::hash256;
 use std::cmp::max;
 
 use errors::crypto::CryptoError;
 use services::crypto::wrappers::bn::BigNumber;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use services::crypto::anoncreds::constants::LARGE_MVECT;
+use std::hash::Hash;
+
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let mut random = try!(n.rand_range());
@@ -28,37 +30,21 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
 }
 
 pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoError> {
-    let mut sha256: hash256 = hash256::new();
-
     nums.sort();
 
-    for num in nums.iter() {
-        let array_bytes: Vec<u8> = try!(num.to_bytes());
-
-        let index = array_bytes.iter().position(|&value| value != 0).unwrap_or(array_bytes.len());
-
-        for byte in array_bytes[index..].iter() {
-            sha256.process(*byte);
-        }
-    }
-
-    let mut hashed_array: Vec<u8> =
-        sha256.hash().iter()
-            .map(|v| *v as u8)
-            .collect();
-
+    let mut hashed_array: Vec<u8> = try!(BigNumber::hash_array(&nums));
     hashed_array.reverse();
 
     BigNumber::from_bytes(&hashed_array[..])
 }
 
-pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &Vec<String>)
-                        -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
+pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &HashSet<String>)
+                            -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
     let mut ar: HashMap<String, BigNumber> = HashMap::new();
     let mut aur: HashMap<String, BigNumber> = HashMap::new();
 
     for (attr, value) in encoded_attrs.iter() {
-        if revealed_ttrs.contains(&attr) {
+        if revealed_ttrs.contains(attr) {
             ar.insert(attr.clone(), try!(value.clone()));
         } else {
             aur.insert(attr.clone(), try!(value.clone()));
@@ -68,7 +54,7 @@ pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed
 }
 
 pub fn get_mtilde(unrevealed_attrs: &HashMap<String, BigNumber>)
-              -> Result<HashMap<String, BigNumber>, CryptoError> {
+                  -> Result<HashMap<String, BigNumber>, CryptoError> {
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for (attr, _) in unrevealed_attrs.iter() {
@@ -98,6 +84,28 @@ pub fn four_squares(delta: i64) -> Result<HashMap<String, BigNumber>, CryptoErro
     } else {
         Err(CryptoError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
     }
+}
+
+pub trait CopyFrom {
+    fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError>;
+}
+
+impl CopyFrom for Vec<BigNumber> {
+    fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError> {
+        for el in other.iter() {
+            self.push(try!(el.clone()));
+        }
+        Ok(())
+    }
+}
+
+pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>)
+                                              -> Result<HashMap<K, BigNumber>, CryptoError> {
+    let mut res: HashMap<K, BigNumber> = HashMap::new();
+    for (k, v) in other {
+        res.insert(k.clone(), try!(v.clone()));
+    }
+    Ok(res)
 }
 
 #[cfg(test)]
@@ -144,7 +152,7 @@ mod tests {
         encoded_attrs.insert("age".to_string(), BigNumber::from_dec("1").unwrap());
         encoded_attrs.insert("sex".to_string(), BigNumber::from_dec("1").unwrap());
 
-        let revealed_attrs = vec!["name".to_string()];
+        let revealed_attrs = ::services::crypto::anoncreds::prover::mocks::get_revealed_attrs();
 
         let res = split_revealed_attrs(&encoded_attrs, &revealed_attrs);
 

@@ -7,7 +7,7 @@ use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
-use self::openssl::hash::{hash, MessageDigest};
+use self::openssl::hash::{hash, MessageDigest, Hasher};
 use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::num::ParseIntError;
@@ -286,6 +286,23 @@ impl BigNumber {
         Ok(BigNumber {
             openssl_bn: try!(BigNum::from_slice(&self.openssl_bn.to_vec()[..]))
         })
+    }
+
+    pub fn hash_array(nums: &Vec<BigNumber>) -> Result<Vec<u8>, CryptoError> {
+        let mut sha256 = try!(Hasher::new(MessageDigest::sha256()));
+
+        for num in nums.iter() {
+            let array_bytes: Vec<u8> = try!(num.to_bytes());
+
+            let index =
+                array_bytes.iter()
+                    .position(|&value| value != 0)
+                    .unwrap_or(array_bytes.len());
+
+            try!(sha256.update(&array_bytes[index..]));
+        }
+
+        Ok(try!(sha256.finish()))
     }
 }
 
