@@ -2,6 +2,7 @@ use services::crypto::wrappers::bn::BigNumber;
 use std::collections::HashMap;
 use std::rc::Rc;
 use errors::crypto::CryptoError;
+use services::crypto::anoncreds::helpers::CopyFrom;
 
 pub enum ByteOrder {
     Big,
@@ -15,6 +16,7 @@ pub struct SchemaKey {
     pub issue_id: String
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Schema {
     pub name: String,
     pub version: String,
@@ -35,6 +37,12 @@ pub struct PublicKey {
 pub struct SecretKey {
     pub p: BigNumber,
     pub q: BigNumber
+}
+
+pub struct ClaimRequest {
+    pub user_id: String,
+    pub u: BigNumber,
+    //    ur: BigNumber
 }
 
 pub struct ClaimInitData {
@@ -58,12 +66,12 @@ pub struct Attribute {
 
 #[derive(Debug)]
 pub struct PrimaryClaim {
-    pub attributes: Rc<Vec<Attribute>>,
+    pub attributes: Rc<Vec<Rc<Attribute>>>,
     pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber,
     pub a: BigNumber,
     pub e: BigNumber,
-    pub v_prime_prime: BigNumber
+    pub v_prime: BigNumber
 }
 
 pub struct FullProof {
@@ -81,7 +89,7 @@ pub struct ProofInput {
 }
 
 pub struct Proof {
-    pub primary_proof: Option<Rc<PrimaryProof>>
+    pub primary_proof: Rc<PrimaryProof>
     //non_revocation_proof
 }
 
@@ -142,12 +150,12 @@ pub struct PrimaryInitProof {
 }
 
 pub struct InitProof {
-    pub primary_init_proof: Option<Rc<PrimaryInitProof>>,
+    pub primary_init_proof: Rc<PrimaryInitProof>,
     //nonRevocInitProof
 }
 
 pub struct Claims {
-    pub primary_claim: Option<Rc<PrimaryClaim>>,
+    pub primary_claim: Rc<PrimaryClaim>,
     //nonRevocClai,
 }
 
@@ -158,7 +166,7 @@ pub struct ProofClaims {
 }
 
 
-//          impl
+//impl block
 impl PrimaryEqualInitProof {
     pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         Ok(vec![try!(self.a_prime.clone())])
@@ -183,9 +191,9 @@ impl PrimaryInitProof {
     pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         let mut c_list: Vec<BigNumber> = try!(self.eq_proof.as_c_list());
         for ge_proof in self.ge_proofs.iter() {
-            for el in try!(ge_proof.as_c_list()).iter() {
-                c_list.push(try!(el.clone()));
-            }
+            try!(c_list.clone_from_vector(
+                try!(ge_proof.as_c_list())
+            ));
         }
         Ok(c_list)
     }
@@ -193,9 +201,9 @@ impl PrimaryInitProof {
     pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         let mut tau_list: Vec<BigNumber> = try!(self.eq_proof.as_tau_list());
         for ge_proof in self.ge_proofs.iter() {
-            for el in try!(ge_proof.as_tau_list()).iter() {
-                tau_list.push(try!(el.clone()));
-            }
+            try!(tau_list.clone_from_vector(
+                try!(ge_proof.as_tau_list())
+            ));
         }
         Ok(tau_list)
     }

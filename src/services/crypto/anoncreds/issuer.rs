@@ -9,12 +9,14 @@ use services::crypto::anoncreds::constants::{
 use services::crypto::anoncreds::types::{
     Attribute,
     ByteOrder,
+    ClaimRequest,
+    Claims,
     PrimaryClaim,
     PublicKey,
     Schema,
     SecretKey
 };
-use services::crypto::helpers::{
+use services::crypto::anoncreds::helpers::{
     random_qr,
     bitwise_or_big_int,
     get_hash_as_int
@@ -31,8 +33,7 @@ impl Issuer {
         Issuer {}
     }
     pub fn generate_keys(&self, schema: &Schema) -> Result<((PublicKey, SecretKey)), CryptoError> {
-        //(Issuer::_generate_keys(&schema));
-        unimplemented!();
+        (Issuer::_generate_keys(&schema)) //TODO non revocation
     }
 
     pub fn create_claim() {
@@ -85,7 +86,7 @@ impl Issuer {
     fn _issuer_primary_claim() {}
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
-                            attributes: Rc<Vec<Attribute>>) -> Result<PrimaryClaim, CryptoError> {
+                            attributes: Rc<Vec<Rc<Attribute>>>) -> Result<PrimaryClaim, CryptoError> {
         let v_prime_prime = try!(Issuer::_generate_v_prime_prime());
         let e_start = try!(BigNumber::from_u32(2)?.exp(&try!(BigNumber::from_u32(LARGE_E_START)), None));
         let e_end = try!(BigNumber::from_u32(2)?
@@ -102,25 +103,11 @@ impl Issuer {
             m2: try!(context_attribute.clone()),
             a: a,
             e: e,
-            v_prime_prime: v_prime_prime
+            v_prime: v_prime_prime
         })
     }
 
-    //    fn issue_primary_claim(attributes: &Vec<AttributeType>, u: &BigNum, accumulator_id: &str, user_id: &str) {
-    //        let mut ctx = BigNumContext::new().unwrap();
-    //        let vprimeprime = AnoncredsService::generate_vprimeprime();
-    //        let (mut e_start, mut e_end) = (BigNum::new().unwrap(), BigNum::new().unwrap());
-    //        e_start.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_START as u32).unwrap(), &mut ctx);
-    //        e_end.exp(&BigNum::from_u32(2).unwrap(), &BigNum::from_u32(LARGE_E_END_RANGE as u32).unwrap(), &mut ctx);
-    //        e_end = &e_start + &e_end;
-    //        let e = AnoncredsService::generate_prime_in_range(&e_start, &e_end).unwrap();
-    //        let encoded_attributes = AnoncredsService::encode_attributes(attributes);
-    //        let m2 = AnoncredsService::generate_context(accumulator_id, user_id);
-    //    }
-
-    fn _issue_non_revocation_claim() {
-
-    }
+    fn _issue_non_revocation_claim() {}
 
     fn _generate_context_attribute(accumulator_id: &String, user_id: &String) -> Result<BigNumber, CryptoError> {
         let accumulator_id_encoded = try!(Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little));
@@ -181,7 +168,7 @@ impl Issuer {
         Ok(try!(BigNumber::from_bytes(&result)))
     }
 
-    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, BigNumber>, CryptoError> {
+    fn _encode_attributes(attributes: &Vec<Rc<Attribute>>) -> Result<HashMap<String, BigNumber>, CryptoError> {
         let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         for i in attributes {
             if i.encode {
@@ -203,12 +190,36 @@ impl Issuer {
     }
 
     fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
-        let bn = try!(BigNumber::new());
-        let a = try!(bn.rand(LARGE_VPRIME_PRIME));
+        let a = try!(BigNumber::new()?.rand(LARGE_VPRIME_PRIME));
         let mut b = try!(BigNumber::from_u32(2));
         b = try!(b.exp(&try!(BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)), None));
         let v_prime_prime = try!(bitwise_or_big_int(&a, &b));
         Ok(v_prime_prime)
+    }
+
+    pub fn issue_claim(&self, pk: &PublicKey, sk: &SecretKey, accumulator_id: &String, user_id: &String,
+                   claim_request: Rc<ClaimRequest>, attributes: Rc<Vec<Rc<Attribute>>>) -> Result<Claims, CryptoError> {
+        let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
+        let c1 = try!(Issuer::_issue_primary_claim(pk, sk, &claim_request.u, &context, attributes));
+
+        Ok(Claims {
+            primary_claim: Rc::new(c1)
+        })
+    }
+
+    fn issue_claims(&self, pk: &PublicKey, sk: &SecretKey,
+                    accumulator_id: &String, user_id: &String, claim_requests: &HashMap<Rc<Schema>, Rc<ClaimRequest>>,
+                    attributes: Rc<Vec<Rc<Attribute>>>) -> Result<HashMap<Rc<Schema>, Claims>, CryptoError> {
+        let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
+        let mut res: HashMap<Rc<Schema>, Claims> = HashMap::new();
+
+        for (schema, claim_req) in claim_requests {
+            res.insert(
+                schema.clone(),
+                try!(Issuer::issue_claim(&self, pk, sk, accumulator_id, user_id, claim_req.clone(), attributes.clone()))
+            );
+        }
+        Ok(res)
     }
 }
 
@@ -249,7 +260,7 @@ mod tests {
         let public_key = mocks::get_pk().unwrap();
         let secret_key = mocks::get_secret_key();
         let context_attribute = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
-        let attributes = mocks::get_encoded_attributes();
+        let attributes = mocks::get_encoded_attributes().unwrap();
         let v = BigNumber::from_dec("5237513942984418438429595379849430501110274945835879531523435677101657022026899212054747703201026332785243221088006425007944260107143086435227014329174143861116260506019310628220538205630726081406862023584806749693647480787838708606386447727482772997839699379017499630402117304253212246286800412454159444495341428975660445641214047184934669036997173182682771745932646179140449435510447104436243207291913322964918630514148730337977117021619857409406144166574010735577540583316493841348453073326447018376163876048624924380855323953529434806898415857681702157369526801730845990252958130662749564283838280707026676243727830151176995470125042111348846500489265328810592848939081739036589553697928683006514398844827534478669492201064874941684905413964973517155382540340695991536826170371552446768460042588981089470261358687308").unwrap();
         let u = BigNumber::from_dec("72637991796589957272144423539998982864769854130438387485781642285237707120228376409769221961371420625002149758076600738245408098270501483395353213773728601101770725294535792756351646443825391806535296461087756781710547778467803194521965309091287301376623972321639262276779134586366620773325502044026364814032821517244814909708610356590687571152567177116075706850536899272749781370266769562695357044719529245223811232258752001942940813585440938291877640445002571323841625932424781535818087233087621479695522263178206089952437764196471098717335358765920438275944490561172307673744212256272352897964947435086824617146019").unwrap();
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
@@ -261,28 +272,28 @@ mod tests {
 pub mod mocks {
     use super::*;
 
-    pub fn get_attributes() -> Vec<Attribute> {
-        let attributes: Vec<Attribute> = vec![
-            Attribute {
+    pub fn get_attributes() -> Vec<Rc<Attribute>> {
+        let attributes: Vec<Rc<Attribute>> = vec![
+            Rc::new(Attribute {
                 name: "name".to_string(),
                 value: "Alex".to_string(),
                 encode: true
-            },
-            Attribute {
+            }),
+            Rc::new(Attribute {
                 name: "age".to_string(),
                 value: "28".to_string(),
                 encode: false
-            },
-            Attribute {
+            }),
+                    Rc::new(Attribute {
                 name: "sex".to_string(),
                 value: "male".to_string(),
                 encode: true
-            },
-            Attribute {
+            }),
+                            Rc::new(Attribute {
                 name: "height".to_string(),
                 value: "175".to_string(),
                 encode: false
-            }
+            })
         ];
         attributes
     }

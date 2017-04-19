@@ -1,4 +1,3 @@
-pub mod helpers;
 pub mod anoncreds;
 pub mod ed25519;
 pub mod wrappers;

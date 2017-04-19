@@ -1,13 +1,15 @@
 extern crate rand;
 extern crate milagro_crypto;
+extern crate openssl;
 
-use self::milagro_crypto::hash::wrappers::hash256;
 use std::cmp::max;
 
 use errors::crypto::CryptoError;
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::HashMap;
 use services::crypto::anoncreds::constants::LARGE_MVECT;
+
+use self::openssl::hash::{Hasher, MessageDigest};
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let mut random = try!(n.rand_range());
@@ -28,7 +30,7 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
 }
 
 pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoError> {
-    let mut sha256: hash256 = hash256::new();
+    let mut sha256 = try!(Hasher::new(MessageDigest::sha256()));
 
     nums.sort();
 
@@ -36,16 +38,10 @@ pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoErr
         let array_bytes: Vec<u8> = try!(num.to_bytes());
 
         let index = array_bytes.iter().position(|&value| value != 0).unwrap_or(array_bytes.len());
-
-        for byte in array_bytes[index..].iter() {
-            sha256.process(*byte);
-        }
+        try!(sha256.update(&array_bytes[index..]));
     }
 
-    let mut hashed_array: Vec<u8> =
-        sha256.hash().iter()
-            .map(|v| *v as u8)
-            .collect();
+    let mut hashed_array: Vec<u8> = try!(sha256.finish());
 
     hashed_array.reverse();
 
@@ -97,6 +93,19 @@ pub fn four_squares(delta: i64) -> Result<HashMap<String, BigNumber>, CryptoErro
         Ok(res)
     } else {
         Err(CryptoError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
+    }
+}
+
+pub trait CopyFrom {
+    fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError>;
+}
+
+impl CopyFrom for Vec<BigNumber> {
+    fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError> {
+        for el in other.iter() {
+            self.push(try!(el.clone()));
+        }
+        Ok(())
     }
 }
 

@@ -11,3 +11,4 @@ pub const LARGE_UTILDE: usize = 592;
 pub const LARGE_RTILDE: usize = 672;
 pub const ITERATION: usize = 4;
 pub const LARGE_M2_TILDE: usize = 1024;
+pub const LARGE_NONCE: usize = 80;

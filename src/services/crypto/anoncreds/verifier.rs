@@ -7,13 +7,14 @@ use services::crypto::anoncreds::types::{
     PrimaryProof,
     FullProof
 };
-use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION};
-use services::crypto::helpers::get_hash_as_int;
+use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
+use services::crypto::anoncreds::helpers::get_hash_as_int;
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use errors::crypto::CryptoError;
 use std::rc::Rc;
+use services::crypto::anoncreds::helpers::CopyFrom;
 
 pub struct Verifier {}
 
@@ -22,49 +23,47 @@ impl Verifier {
         Verifier {}
     }
 
-    pub fn verify(&self, pk: &PublicKey, proof_input: &ProofInput, proof: &FullProof,
-                  all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber) -> Result<bool, CryptoError> {
+    pub fn generate_nonce(&self) -> Result<BigNumber, CryptoError> {
+        BigNumber::new()?.rand(LARGE_NONCE)
+    }
+
+    pub fn verify(&self, pk: &PublicKey, proof_input: &ProofInput, proof: Rc<FullProof>,
+                  all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber, attr_name: &Vec<String>)
+                  -> Result<bool, CryptoError> {
         let mut tau_list = Vec::new();
 
-        let it = proof.schema_keys.iter().zip(proof.proofs.iter());
-
-        for (i, (schema_key, proof_item)) in it.enumerate() {
-            if let Some(ref primary_proof) = proof_item.primary_proof {
-                tau_list.append(
-                    &mut try!(self.verify_primary_proof(&pk, &proof_input, &proof.c_hash, &primary_proof, &all_revealed_attrs))
-                )
-            }
+        for (schema_key, proof_item) in proof.schema_keys.iter().zip(proof.proofs.iter()) {
+            tau_list.append(
+                &mut try!(Verifier::_verify_primary_proof(pk, proof_input, &proof.c_hash,
+                                                          &proof_item.primary_proof, all_revealed_attrs, attr_name))
+            );
         }
 
-        let mut values: Vec<BigNumber> = vec![];
+        let mut values: Vec<BigNumber> = Vec::new();
 
         values.push(try!(nonce.clone()));
-        values.append(&mut tau_list);
-
-        for el in proof.c_list.iter() {
-            values.push(try!(el.clone()));
-        }
+        try!(values.clone_from_vector(&tau_list));
+        try!(values.clone_from_vector(&proof.c_list));
 
         let c_hver = try!(get_hash_as_int(&mut values));
 
         Ok(c_hver == proof.c_hash)
     }
 
-    fn verify_primary_proof(&self, pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber, primary_proof: &PrimaryProof,
-                            all_revealed_attrs: &HashMap<String, BigNumber>) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut t_hat: Vec<BigNumber> =
-            try!(self.verify_equality(&pk, &primary_proof.eq_proof, &c_hash, &all_revealed_attrs));
+    fn _verify_primary_proof(pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber,
+                             primary_proof: &PrimaryProof, all_revealed_attrs: &HashMap<String, BigNumber>,
+                             attr_names: &Vec<String>) -> Result<Vec<BigNumber>, CryptoError> {
+        let mut t_hat: Vec<BigNumber> = try!(
+            Verifier::_verify_equality(pk, &primary_proof.eq_proof, c_hash, all_revealed_attrs, attr_names));
 
         for ge_proof in primary_proof.ge_proofs.iter() {
-            t_hat.append(&mut try!(self.verify_ge_predicate(ge_proof, &c_hash)))
+            t_hat.append(&mut try!(Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)))
         }
         Ok(t_hat)
     }
 
-    fn verify_equality(&self, pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
-                       all_revealed_attrs: &HashMap<String, BigNumber>) -> Result<Vec<BigNumber>, CryptoError> {
-        let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];//TODO:  get from wallet
-
+    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
+                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &Vec<String>) -> Result<Vec<BigNumber>, CryptoError> {
         let attr_names_hash_set = HashSet::<String>::from_iter(attr_names.iter().cloned());
         let revealed_attr_names = HashSet::<String>::from_iter(proof.revealed_attr_names.iter().cloned());
 
@@ -93,7 +92,7 @@ impl Verifier {
             );
         }
 
-        let large_e_start = try!(BigNumber::from_dec(&LARGE_E_START.to_string()[..]));
+        let large_e_start = try!(BigNumber::from_dec(&LARGE_E_START.to_string()));
 
         let tmp: BigNumber = try!(
             BigNumber::from_dec("2")?
@@ -122,15 +121,14 @@ impl Verifier {
         Ok(vec![t])
     }
 
-    fn verify_ge_predicate(&self, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
-        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();/////wallet get pk
+    fn _verify_ge_predicate(pk: &PublicKey, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
         let (k, v) = (&proof.predicate.attr_name, &proof.predicate.value);
         let mut tau_list = try!(Verifier::calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
                                                    &proof.alpha, &proof.t));
         let mut ctx = try!(BigNumber::new_context());
 
         for i in 0..ITERATION {
-            let cur_t = try!(proof.t.get(&i.to_string()[..])
+            let cur_t = try!(proof.t.get(&i.to_string())
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", i))));
 
             tau_list[i] =
@@ -143,7 +141,7 @@ impl Verifier {
                 );
         }
 
-        let big_v = try!(BigNumber::from_dec(&v.to_string()[..]));
+        let big_v = try!(BigNumber::from_dec(&v.to_string()));
         let delta = try!(proof.t.get("DELTA")
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", "DELTA"))));
 
@@ -167,16 +165,16 @@ impl Verifier {
         Ok(tau_list)
     }
 
-    pub fn calc_tge(pk: &PublicKey, u: &HashMap<String, BigNumber>, r: &HashMap<String,
-        BigNumber>, mj: &BigNumber, alpha: &BigNumber, t: &HashMap<String, BigNumber>)
+    pub fn calc_tge(pk: &PublicKey, u: &HashMap<String, BigNumber>, r: &HashMap<String, BigNumber>,
+                    mj: &BigNumber, alpha: &BigNumber, t: &HashMap<String, BigNumber>)
                     -> Result<Vec<BigNumber>, CryptoError> {
         let mut tau_list: Vec<BigNumber> = Vec::new();
         let mut ctx = try!(BigNumber::new_context());
 
         for i in 0..ITERATION {
-            let cur_u = try!(u.get(&i.to_string()[..])
+            let cur_u = try!(u.get(&i.to_string())
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u", i))));
-            let cur_r = try!(r.get(&i.to_string()[..])
+            let cur_r = try!(r.get(&i.to_string())
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in r", i))));
 
             let pks_pow_r: BigNumber = try!(pk.s.mod_exp(&cur_r, &pk.n, Some(&mut ctx)));
@@ -208,9 +206,9 @@ impl Verifier {
         let mut q: BigNumber = try!(BigNumber::from_dec("1"));
 
         for i in 0..ITERATION {
-            let cur_t = try!(t.get(&i.to_string()[..])
+            let cur_t = try!(t.get(&i.to_string())
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in t", i))));
-            let cur_u = try!(u.get(&i.to_string()[..])
+            let cur_u = try!(u.get(&i.to_string())
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u", i))));
 
             q = try!(
@@ -314,7 +312,7 @@ mod tests {
         };
 
         let proof = Proof {
-            primary_proof: Some(Rc::new(primary_proof))
+            primary_proof: Rc::new(primary_proof)
         };
 
         let proof = FullProof {
@@ -323,13 +321,15 @@ mod tests {
             proofs: vec![Rc::new(proof)],
             c_list: ::services::crypto::anoncreds::prover::mocks::get_c_list().unwrap()
         };
+        let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];
 
         let res = verifier.verify(
             &pk,
             &proof_input,
-            &proof,
+            Rc::new(proof),
             &all_revealed_attrs,
-            &nonce
+            &nonce,
+            &attr_names
         );
 
         assert!(res.is_ok());
@@ -338,7 +338,6 @@ mod tests {
 
     #[test]
     fn verify_equlity_test() {
-        let verifier = Verifier::new();
         let proof = mocks::get_eq_proof().unwrap();
         let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
@@ -346,11 +345,14 @@ mod tests {
         let mut all_revealed_attrs = HashMap::new();
         all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
 
-        let res: Result<Vec<BigNumber>, CryptoError> = verifier.verify_equality(
+        let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];
+
+        let res: Result<Vec<BigNumber>, CryptoError> = Verifier::_verify_equality(
             &pk,
             &proof,
             &c_h,
-            &all_revealed_attrs
+            &all_revealed_attrs,
+            &attr_names
         );
 
         assert!(res.is_ok());
@@ -362,12 +364,12 @@ mod tests {
     }
 
     #[test]
-    fn verify_ge_predicate_works() {
-        let verifier = Verifier::new();
+    fn _verify_ge_predicate_works() {
         let proof = mocks::get_ge_proof().unwrap();
         let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
 
-        let res = verifier.verify_ge_predicate(&proof, &c_h);
+        let res = Verifier::_verify_ge_predicate(&pk, &proof, &c_h);
 
         assert!(res.is_ok());
         let res_data = res.unwrap();
