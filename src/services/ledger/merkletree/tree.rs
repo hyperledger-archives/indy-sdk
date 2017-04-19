@@ -7,9 +7,9 @@ use std::cmp;
 use self::ring::digest::{ Algorithm, Digest };
 use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder, json };
 
-use services::merkletree::hashutils::{ Hashable, HashUtils };
+use services::ledger::merkletree::hashutils::{ Hashable, HashUtils };
 
-pub use services::merkletree::proof::{
+pub use services::ledger::merkletree::proof::{
     Proof,
     Lemma,
     Positioned

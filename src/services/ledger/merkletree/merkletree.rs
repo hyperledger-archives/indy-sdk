@@ -1,9 +1,9 @@
 extern crate ring;
 use self::ring::digest::Algorithm;
 
-use services::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator };
-use services::merkletree::hashutils::{ Hashable, HashUtils };
-use services::merkletree::proof::{ Proof, Lemma };
+use services::ledger::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator };
+use services::ledger::merkletree::hashutils::{ Hashable, HashUtils };
+use services::ledger::merkletree::proof::{ Proof, Lemma };
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.

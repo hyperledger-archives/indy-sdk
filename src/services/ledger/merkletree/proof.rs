@@ -1,8 +1,8 @@
 extern crate ring;
 use self::ring::digest::Algorithm;
 
-use services::merkletree::tree::Tree;
-use services::merkletree::hashutils::HashUtils;
+use services::ledger::merkletree::tree::Tree;
+use services::ledger::merkletree::hashutils::HashUtils;
 
 /// An inclusion proof represent the fact that a `value` is a member
 /// of a `MerkleTree` with root hash `root_hash`, and hash function `algorithm`.

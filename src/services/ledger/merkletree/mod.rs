@@ -4,7 +4,7 @@ extern crate rustc_serialize;
 use std::fmt::Display;
 
 use self::rustc_serialize::{ json, Encodable, Encoder, Decodable, Decoder };
-use self::ring::digest::{ Algorithm, Context, SHA512 };
+use self::ring::digest::{ Algorithm, Context, SHA256 };
 
 pub mod hashutils;
 pub mod tree;
@@ -16,7 +16,7 @@ use self::tree::*;
 use self::proof::*;
 use self::merkletree::*;
 
-static DIGEST: &'static Algorithm = &SHA512;
+static DIGEST: &'static Algorithm = &SHA256;
 
 impl<T: AsRef<[u8]>> MerkleTree<T> {
     pub fn add_subtree(&mut self, st: MerkleTree<T>) {
