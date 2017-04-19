@@ -28,6 +28,18 @@ pub enum ErrorCode {
     // Caller passed invalid value as param 5 (null, invalid json and etc..)
     CommonInvalidParam5,
 
+    // Caller passed invalid value as param 6 (null, invalid json and etc..)
+    CommonInvalidParam6,
+
+    // Caller passed invalid value as param 7 (null, invalid json and etc..)
+    CommonInvalidParam7,
+
+    // Caller passed invalid value as param 8 (null, invalid json and etc..)
+    CommonInvalidParam8,
+
+    // Caller passed invalid value as param 9 (null, invalid json and etc..)
+    CommonInvalidParam9,
+
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
 
@@ -52,6 +64,8 @@ pub enum ErrorCode {
 
     // Trying to use wallet with pool that has different name
     WalletIncompatiblePoolError,
+
+    WalletInvalidConfiguration,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
@@ -98,5 +112,7 @@ pub enum ErrorCode {
     AnoncredsNotIssuedError,
 
     // Attempt to generate master secret with dupplicated name
-    AnoncredsMasterSecretDuplicateNameError
+    AnoncredsMasterSecretDuplicateNameError,
+
+    ProofRejected
 }

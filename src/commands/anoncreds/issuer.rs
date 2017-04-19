@@ -11,8 +11,30 @@ pub enum IssuerCommand {
         i32, // wallet handle
         String, // issuer did
         String, // schema json
-        String, // signature type
-        Box<Fn(Result<(String, String), AnoncredsError>) + Send>)
+        Option<String>, // signature type
+        Box<Fn(Result<(String, i32), AnoncredsError>) + Send>),
+    CreateAndStoreRevocation(
+        i32, // wallet handle
+        String, // issuer did
+        i32, // claim def seq no
+        i32, // max claim num
+        Box<Fn(Result<(String, String), AnoncredsError>) + Send>),
+    CreateClaim(
+        i32, // wallet handle
+        String, // claim req json
+        String, // claim json
+        String, // issuer did
+        i32, // claim def seq no
+        i32, // revoc reg seq no
+        i32, // user revoc index
+        Box<Fn(Result<(String, String), AnoncredsError>) + Send>),
+    RevokeClaim(
+        i32, // wallet handle
+        String, // issuer did
+        i32, // claim def seq no
+        i32, // revoc reg seq no
+        i32, // user revoc index
+        Box<Fn(Result<String, AnoncredsError>) + Send>),
 }
 
 pub struct IssuerCommandExecutor {
@@ -35,8 +57,23 @@ impl IssuerCommandExecutor {
     pub fn execute(&self, command: IssuerCommand) {
         match command {
             IssuerCommand::CreateAndStoreKeys(wallet_handle, issuer_did, schema_json, signature_type, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreKeys command received");
-                self.create_and_store_keys(wallet_handle, &issuer_did, &schema_json, &signature_type, cb);
+                info!(target: "issuer_command_executor", "CreateAndStoreClaim command received");
+                self.create_and_store_keys(wallet_handle, &issuer_did, &schema_json, signature_type.as_ref().map(String::as_str), cb);
+            },
+            IssuerCommand::CreateAndStoreRevocation(wallet_handle, issuer_did, claim_def_seq_no, max_claim_num, cb) => {
+                info!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistry command received");
+                self.create_and_store_revocation(wallet_handle, &issuer_did, claim_def_seq_no, max_claim_num, cb);
+            },
+            IssuerCommand::CreateClaim(wallet_handle, claim_req_json, claim_json, issuer_did,
+                                       claim_def_seq_no, revoc_reg_seq_no, user_revoc_index, cb) => {
+                info!(target: "issuer_command_executor", "CreateClaim command received");
+                self.create_and_store_claim(wallet_handle, &claim_req_json, &claim_json, &issuer_did,
+                                            claim_def_seq_no, revoc_reg_seq_no, user_revoc_index, cb);
+            },
+            IssuerCommand::RevokeClaim(wallet_handle, issuer_did, claim_def_seq_no, revoc_reg_seq_no,
+                                       user_revoc_index, cb) => {
+                info!(target: "issuer_command_executor", "RevokeClaim command received");
+                self.revoke_claim(wallet_handle, &issuer_did, claim_def_seq_no, revoc_reg_seq_no, user_revoc_index, cb);
             }
         };
     }
@@ -45,8 +82,39 @@ impl IssuerCommandExecutor {
                              wallet_handle: i32,
                              issuer_did: &str,
                              schema_json: &str,
-                             signature_type: &str,
-                             cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
-        unimplemented!();
+                             signature_type: Option<&str>,
+                             cb: Box<Fn(Result<(String, i32), AnoncredsError>) + Send>) {
+        cb(Ok(("".to_string(), 0)));
+    }
+
+    fn create_and_store_revocation(&self,
+                                   wallet_handle: i32,
+                                   issuer_did: &str,
+                                   claim_def_seq_no: i32,
+                                   max_claim_num: i32,
+                                   cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
+        cb(Ok(("".to_string(), "".to_string())));
+    }
+
+    fn create_and_store_claim(&self,
+                              wallet_handle: i32,
+                              claim_req_json: &str,
+                              claim_json: &str,
+                              issuer_did: &str,
+                              claim_def_seq_no: i32,
+                              revoc_reg_seq_no: i32,
+                              user_revoc_index: i32,
+                              cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
+        cb(Ok(("".to_string(), "".to_string())));
+    }
+
+    fn revoke_claim(&self,
+                    wallet_handle: i32,
+                    issuer_did: &str,
+                    claim_def_seq_no: i32,
+                    revoc_reg_seq_no: i32,
+                    user_revoc_index: i32,
+                    cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
+        cb(Ok("".to_string()));
     }
 }
