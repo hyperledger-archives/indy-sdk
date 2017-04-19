@@ -99,7 +99,8 @@ impl CopyFrom for Vec<BigNumber> {
     }
 }
 
-pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>) -> Result<HashMap<K, BigNumber>, CryptoError> {
+pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>)
+                                              -> Result<HashMap<K, BigNumber>, CryptoError> {
     let mut res: HashMap<K, BigNumber> = HashMap::new();
     for (k, v) in other {
         res.insert(k.clone(), try!(v.clone()));

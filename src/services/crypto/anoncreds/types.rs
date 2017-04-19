@@ -44,11 +44,6 @@ pub struct ClaimRequest {
     //    ur: BigNumber
 }
 
-pub struct ClaimInitData {
-    pub u: BigNumber,
-    pub v_prime: BigNumber
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Predicate {
     pub attr_name: String,
@@ -63,10 +58,9 @@ pub struct Attribute {
     pub encode: bool
 }
 
-pub struct ProofClaims {
-    pub claims: Claims,
-    pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Predicate>
+pub struct ClaimInitData {
+    pub u: BigNumber,
+    pub v_prime: BigNumber
 }
 
 pub struct Claims {
@@ -88,6 +82,12 @@ pub struct ProofInput {
     pub predicates: Vec<Predicate>,
     pub ts: Option<String>,
     pub pubseq_no: Option<String>
+}
+
+pub struct ProofClaims {
+    pub claims: Claims,
+    pub revealed_attrs: HashSet<String>,
+    pub predicates: Vec<Predicate>
 }
 
 pub struct FullProof {

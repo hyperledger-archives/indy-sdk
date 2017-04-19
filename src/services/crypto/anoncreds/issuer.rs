@@ -22,7 +22,6 @@ use services::crypto::anoncreds::helpers::{
     get_hash_as_int
 };
 use services::crypto::wrappers::bn::BigNumber;
-
 use std::collections::HashMap;
 
 pub struct Issuer {}

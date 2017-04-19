@@ -36,7 +36,6 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use services::crypto::anoncreds::verifier::Verifier;
 use services::crypto::anoncreds::helpers::{get_mtilde, four_squares, split_revealed_attrs, get_hash_as_int, CopyFrom, clone_bignum_map};
-use std::rc::Rc;
 
 pub struct Prover {}
 
@@ -169,7 +168,7 @@ impl Prover {
         for (schema_key, claim) in claims {
             let m2_tilde: Option<BigNumber> = None; //TODO replace it on if non_revoc_init_proof.is_some() {non_revoc_init_proof.tau_tist_params} else { None };
             let primary_init_proof = try!(
-                Prover::_init_proof(pk, Rc::new(claim.claims.primary_claim), &claim.revealed_attrs,
+                Prover::_init_proof(pk, &claim.claims.primary_claim, &claim.revealed_attrs,
                                     &claim.predicates, &m1_tilde, m2_tilde));
 
             try!(c_list.clone_from_vector(&try!(primary_init_proof.as_c_list())));
@@ -211,14 +210,14 @@ impl Prover {
         })
     }
 
-    fn _init_proof(pk: &PublicKey, c1: Rc<PrimaryClaim>, revealed_attrs: &HashSet<String>,
+    fn _init_proof(pk: &PublicKey, c1: &PrimaryClaim, revealed_attrs: &HashSet<String>,
                    predicates: &Vec<Predicate>, m1_t: &BigNumber, m2_t: Option<BigNumber>)
                    -> Result<PrimaryInitProof, CryptoError> {
-        let eq_proof = try!(Prover::_init_eq_proof(&pk, c1.clone(), revealed_attrs, m1_t, m2_t));
+        let eq_proof = try!(Prover::_init_eq_proof(&pk, c1, revealed_attrs, m1_t, m2_t));
         let mut ge_proofs: Vec<PrimaryPrecicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
-            let ge_proof = try!(Prover::_init_ge_proof(&pk, &eq_proof, c1.clone(), predicate));
+            let ge_proof = try!(Prover::_init_ge_proof(&pk, &eq_proof, c1, predicate));
             ge_proofs.push(ge_proof);
         }
 
@@ -228,7 +227,7 @@ impl Prover {
         })
     }
 
-    fn _init_eq_proof(pk: &PublicKey, c1: Rc<PrimaryClaim>, revealed_attrs: &HashSet<String>,
+    fn _init_eq_proof(pk: &PublicKey, c1: &PrimaryClaim, revealed_attrs: &HashSet<String>,
                       m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CryptoError> {
         let mut ctx = try!(BigNumber::new_context());
 
@@ -286,7 +285,7 @@ impl Prover {
     }
 
     fn _init_ge_proof(pk: &PublicKey, eq_proof: &PrimaryEqualInitProof,
-                      c1: Rc<PrimaryClaim>, predicate: &Predicate)
+                      c1: &PrimaryClaim, predicate: &Predicate)
                       -> Result<PrimaryPrecicateGEInitProof, CryptoError> {
         let mut ctx = try!(BigNumber::new_context());
         let (k, value) = (&predicate.attr_name, predicate.value);
@@ -613,7 +612,7 @@ mod tests {
         let predicate = mocks::get_predicate();
         let predicates = vec![predicate];
 
-        let res = Prover::_init_proof(&pk, Rc::new(claim), &revealed_attrs, &predicates, &m1_t, Some(m2_t));
+        let res = Prover::_init_proof(&pk, &claim, &revealed_attrs, &predicates, &m1_t, Some(m2_t));
 
         assert!(res.is_ok());
     }
@@ -637,7 +636,7 @@ mod tests {
         let m1_tilde = BigNumber::from_dec("20554727940819369326014641184530501354910647573675182869425936210096839572607668409914698991106462531285749034656225912602388073825301987260007503795251066596411635150527632122753436503433718591016459070120101222755097222430234659312260718456091642186018776302305461905689611699638337017633125375611816940513").unwrap();
         let m2_tilde = BigNumber::from_dec("16671323881112214075050803663994936491012584417594560689195094027107661300937657821043816616156630021832958023103922089938711420140268942156607658040346011543375150241260098945906899591014316416228707861053280225472704227325664170495642648330074579132108248889585289945913996297683901740061991151163537424592").unwrap();
 
-        let res = Prover::_init_eq_proof(&pk, Rc::new(claim), &revealed_attrs, &m1_tilde, Some(m2_tilde));
+        let res = Prover::_init_eq_proof(&pk, &claim, &revealed_attrs, &m1_tilde, Some(m2_tilde));
 
         assert!(res.is_ok());
 
@@ -670,7 +669,7 @@ mod tests {
         let claim = mocks::get_primary_claim().unwrap();
         let predicate = mocks::get_predicate();
 
-        let res = Prover::_init_ge_proof(&pk, &eq_proof, Rc::new(claim), &predicate);
+        let res = Prover::_init_ge_proof(&pk, &eq_proof, &claim, &predicate);
         assert!(res.is_ok());
     }
 
