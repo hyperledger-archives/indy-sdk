@@ -24,7 +24,6 @@ use services::crypto::anoncreds::helpers::{
 use services::crypto::wrappers::bn::BigNumber;
 
 use std::collections::HashMap;
-use std::rc::Rc;
 
 pub struct Issuer {}
 
@@ -32,7 +31,7 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: &Schema) -> Result<((PublicKey, SecretKey)), CryptoError> {
+    pub fn generate_keys(&self, schema: Schema) -> Result<((PublicKey, SecretKey)), CryptoError> {
         (Issuer::_generate_keys(&schema)) //TODO non revocation
     }
 
@@ -41,9 +40,8 @@ impl Issuer {
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
-        let bn = try!(BigNumber::new());
-        let p = try!(bn.generate_safe_prime(LARGE_PRIME));
-        let q = try!(bn.generate_safe_prime(LARGE_PRIME));
+        let p = try!(BigNumber::new()?.generate_safe_prime(LARGE_PRIME));
+        let q = try!(BigNumber::new()?.generate_safe_prime(LARGE_PRIME));
 
         let mut p_prime = try!(p.sub(&try!(BigNumber::from_u32(1))));
         try!(p_prime.div_word(2));
@@ -86,7 +84,7 @@ impl Issuer {
     fn _issuer_primary_claim() {}
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
-                            attributes: Rc<Vec<Rc<Attribute>>>) -> Result<PrimaryClaim, CryptoError> {
+                            attributes: &Vec<Attribute>) -> Result<PrimaryClaim, CryptoError> {
         let v_prime_prime = try!(Issuer::_generate_v_prime_prime());
         let e_start = try!(BigNumber::from_u32(2)?.exp(&try!(BigNumber::from_u32(LARGE_E_START)), None));
         let e_end = try!(BigNumber::from_u32(2)?
@@ -98,7 +96,6 @@ impl Issuer {
         let encoded_attributes = try!(Issuer::_encode_attributes(&attributes));
         let a = try!(Issuer::_sign(public_key, secret_key, context_attribute, &encoded_attributes, &v_prime_prime, u, &e));
         Ok(PrimaryClaim {
-            attributes: attributes,
             encoded_attributes: encoded_attributes,
             m2: try!(context_attribute.clone()),
             a: a,
@@ -168,7 +165,7 @@ impl Issuer {
         Ok(try!(BigNumber::from_bytes(&result)))
     }
 
-    fn _encode_attributes(attributes: &Vec<Rc<Attribute>>) -> Result<HashMap<String, BigNumber>, CryptoError> {
+    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, BigNumber>, CryptoError> {
         let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         for i in attributes {
             if i.encode {
@@ -197,30 +194,30 @@ impl Issuer {
         Ok(v_prime_prime)
     }
 
-    pub fn issue_claim(&self, pk: &PublicKey, sk: &SecretKey, accumulator_id: &String, user_id: &String,
-                       claim_request: Rc<ClaimRequest>, attributes: Rc<Vec<Rc<Attribute>>>) -> Result<Claims, CryptoError> {
-        let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
-        let c1 = try!(Issuer::_issue_primary_claim(pk, sk, &claim_request.u, &context, attributes));
+    pub fn issue_claim(&self, pk: PublicKey, sk: SecretKey, accumulator_id: String, user_id: String,
+                       claim_request: ClaimRequest, attributes: Vec<Attribute>) -> Result<Claims, CryptoError> {
+        let context = try!(Issuer::_generate_context_attribute(&accumulator_id, &user_id));
+        let c1 = try!(Issuer::_issue_primary_claim(&pk, &sk, &claim_request.u, &context, &attributes));
 
         Ok(Claims {
-            primary_claim: Rc::new(c1)
+            primary_claim: c1
         })
     }
 
-    fn issue_claims(&self, data: Vec<(&PublicKey, &SecretKey, &String, &String, Rc<ClaimRequest>, Rc<Vec<Rc<Attribute>>>)>)
-                    -> Result<Vec<Claims>, CryptoError> {
-        let mut res: Vec<Claims> = Vec::new();
-
-        for d in data {
-            let (pk, sk, accumulator_id, user_id, claim_req, attributes) = d;
-            let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
-
-            res.push(
-                try!(Issuer::issue_claim(&self, pk, sk, accumulator_id, user_id, claim_req.clone(), attributes.clone()))
-            );
-        }
-        Ok(res)
-    }
+    //    fn issue_claims(&self, data: Vec<(&PublicKey, &SecretKey, &String, &String, Rc<ClaimRequest>, Rc<Vec<Rc<Attribute>>>)>)
+    //                    -> Result<HashMap<Rc<Schema>, Claims>, CryptoError> {
+    //        let mut res: Vec<Claims> = Vec::new();
+    //
+    //        for d in data {
+    //            let (pk, sk, accumulator_id, user_id, claim_req, attributes) = d;
+    //            let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
+    //
+    //            res.push(
+    //                try!(Issuer::issue_claim(&self, pk, sk, accumulator_id, user_id, claim_req.clone(), attributes.clone()))
+    //            );
+    //        }
+    //        Ok(res)
+    //    }
 }
 
 #[cfg(test)]
@@ -272,28 +269,28 @@ mod tests {
 pub mod mocks {
     use super::*;
 
-    pub fn get_attributes() -> Vec<Rc<Attribute>> {
-        let attributes: Vec<Rc<Attribute>> = vec![
-            Rc::new(Attribute {
+    pub fn get_attributes() -> Vec<Attribute> {
+        let attributes: Vec<Attribute> = vec![
+            Attribute {
                 name: "name".to_string(),
                 value: "Alex".to_string(),
                 encode: true
-            }),
-            Rc::new(Attribute {
+            },
+            Attribute {
                 name: "age".to_string(),
                 value: "28".to_string(),
                 encode: false
-            }),
-            Rc::new(Attribute {
+            },
+            Attribute {
                 name: "sex".to_string(),
                 value: "male".to_string(),
                 encode: true
-            }),
-            Rc::new(Attribute {
+            },
+            Attribute {
                 name: "height".to_string(),
                 value: "175".to_string(),
                 encode: false
-            })
+            }
         ];
         attributes
     }

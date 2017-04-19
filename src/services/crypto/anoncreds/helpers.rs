@@ -8,8 +8,8 @@ use errors::crypto::CryptoError;
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use services::crypto::anoncreds::constants::LARGE_MVECT;
+use std::hash::Hash;
 
-use self::openssl::hash::{Hasher, MessageDigest};
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let mut random = try!(n.rand_range());
@@ -30,19 +30,9 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
 }
 
 pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoError> {
-    let mut sha256 = try!(Hasher::new(MessageDigest::sha256()));
-
     nums.sort();
 
-    for num in nums.iter() {
-        let array_bytes: Vec<u8> = try!(num.to_bytes());
-
-        let index = array_bytes.iter().position(|&value| value != 0).unwrap_or(array_bytes.len());
-        try!(sha256.update(&array_bytes[index..]));
-    }
-
-    let mut hashed_array: Vec<u8> = try!(sha256.finish());
-
+    let mut hashed_array: Vec<u8> = try!(BigNumber::hash_array(&nums));
     hashed_array.reverse();
 
     BigNumber::from_bytes(&hashed_array[..])
@@ -107,6 +97,14 @@ impl CopyFrom for Vec<BigNumber> {
         }
         Ok(())
     }
+}
+
+pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>) -> Result<HashMap<K, BigNumber>, CryptoError> {
+    let mut res: HashMap<K, BigNumber> = HashMap::new();
+    for (k, v) in other {
+        res.insert(k.clone(), try!(v.clone()));
+    }
+    Ok(res)
 }
 
 #[cfg(test)]

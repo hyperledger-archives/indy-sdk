@@ -1,6 +1,5 @@
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
 
@@ -65,19 +64,18 @@ pub struct Attribute {
 }
 
 pub struct ProofClaims {
-    pub claims: Rc<Claims>,
+    pub claims: Claims,
     pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Rc<Predicate>>
+    pub predicates: Vec<Predicate>
 }
 
 pub struct Claims {
-    pub primary_claim: Rc<PrimaryClaim>,
+    pub primary_claim: PrimaryClaim,
     //nonRevocClai,
 }
 
 #[derive(Debug)]
 pub struct PrimaryClaim {
-    pub attributes: Rc<Vec<Rc<Attribute>>>,
     pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber,
     pub a: BigNumber,
@@ -87,40 +85,39 @@ pub struct PrimaryClaim {
 
 pub struct ProofInput {
     pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Rc<Predicate>>,
+    pub predicates: Vec<Predicate>,
     pub ts: Option<String>,
     pub pubseq_no: Option<String>
 }
 
 pub struct FullProof {
     pub c_hash: BigNumber,
-    pub schema_keys: Vec<Rc<SchemaKey>>,
-    pub proofs: Vec<Rc<Proof>>,
+    pub schema_keys: Vec<SchemaKey>,
+    pub proofs: Vec<Proof>,
     pub c_list: Vec<BigNumber>
 }
 
 pub struct Proof {
-    pub primary_proof: Rc<PrimaryProof>
+    pub primary_proof: PrimaryProof
     //non_revocation_proof
 }
 
 pub struct InitProof {
-    pub primary_init_proof: Rc<PrimaryInitProof>,
+    pub primary_init_proof: PrimaryInitProof,
     //nonRevocInitProof
 }
 
 pub struct PrimaryInitProof {
-    pub eq_proof: Rc<PrimaryEqualInitProof>,
-    pub ge_proofs: Vec<Rc<PrimaryPrecicateGEInitProof>>
+    pub eq_proof: PrimaryEqualInitProof,
+    pub ge_proofs: Vec<PrimaryPrecicateGEInitProof>
 }
 
 pub struct PrimaryProof {
-    pub eq_proof: Rc<PrimaryEqualProof>,
-    pub ge_proofs: Vec<Rc<PrimaryPredicateGEProof>>
+    pub eq_proof: PrimaryEqualProof,
+    pub ge_proofs: Vec<PrimaryPredicateGEProof>
 }
 
 pub struct PrimaryEqualInitProof {
-    pub c1: Rc<PrimaryClaim>,
     pub a_prime: BigNumber,
     pub t: BigNumber,
     pub etilde: BigNumber,
@@ -131,7 +128,9 @@ pub struct PrimaryEqualInitProof {
     pub m1_tilde: BigNumber,
     pub m2_tilde: BigNumber,
     pub unrevealed_attrs: HashSet<String>,
-    pub revealed_attrs: HashSet<String>
+    pub revealed_attrs: HashSet<String>,
+    pub encoded_attributes: HashMap<String, BigNumber>,
+    pub m2: BigNumber
 }
 
 pub struct PrimaryPrecicateGEInitProof {
@@ -142,8 +141,8 @@ pub struct PrimaryPrecicateGEInitProof {
     pub r: HashMap<String, BigNumber>,
     pub r_tilde: HashMap<String, BigNumber>,
     pub alpha_tilde: BigNumber,
-    pub predicate: Rc<Predicate>,
-    pub t: Rc<HashMap<String, BigNumber>>
+    pub predicate: Predicate,
+    pub t: HashMap<String, BigNumber>
 }
 
 pub struct PrimaryEqualProof {
@@ -161,12 +160,26 @@ pub struct PrimaryPredicateGEProof {
     pub r: HashMap<String, BigNumber>,
     pub mj: BigNumber,
     pub alpha: BigNumber,
-    pub t: Rc<HashMap<String, BigNumber>>,
-    pub predicate: Rc<Predicate>
+    pub t: HashMap<String, BigNumber>,
+    pub predicate: Predicate
 }
 
 
 //impl block
+impl PrimaryClaim {
+    pub fn update_vprime(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
+        self.v_prime = try!(self.v_prime.add(&v_prime));
+        Ok(())
+    }
+}
+
+impl Claims {
+    pub fn prepare_primary_claim(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
+        try!(self.primary_claim.update_vprime(v_prime));
+        Ok(())
+    }
+}
+
 impl PrimaryEqualInitProof {
     pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         Ok(vec![try!(self.a_prime.clone())])

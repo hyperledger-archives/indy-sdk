@@ -12,7 +12,6 @@ use services::crypto::anoncreds::helpers::get_hash_as_int;
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
-use std::rc::Rc;
 use services::crypto::anoncreds::helpers::CopyFrom;
 
 pub struct Verifier {}
@@ -26,15 +25,15 @@ impl Verifier {
         BigNumber::new()?.rand(LARGE_NONCE)
     }
 
-    pub fn verify(&self, pk: &PublicKey, proof_input: &ProofInput, proof: Rc<FullProof>,
-                  all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber, attr_name: &HashSet<String>)
+    pub fn verify(&self, pk: PublicKey, proof_input: ProofInput, proof: FullProof,
+                  all_revealed_attrs: HashMap<String, BigNumber>, nonce: BigNumber, attr_names: HashSet<String>)
                   -> Result<bool, CryptoError> {
         let mut tau_list = Vec::new();
 
         for (schema_key, proof_item) in proof.schema_keys.iter().zip(proof.proofs.iter()) {
             tau_list.append(
-                &mut try!(Verifier::_verify_primary_proof(pk, proof_input, &proof.c_hash,
-                                                          &proof_item.primary_proof, all_revealed_attrs, attr_name))
+                &mut try!(Verifier::_verify_primary_proof(&pk, &proof_input, &proof.c_hash,
+                                                          &proof_item.primary_proof, &all_revealed_attrs, &attr_names))
             );
         }
 
@@ -63,7 +62,7 @@ impl Verifier {
 
     fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
                         all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
-        let unrevealed_attr_names : HashSet<String> =
+        let unrevealed_attr_names: HashSet<String> =
             attr_names
                 .difference(&proof.revealed_attr_names)
                 .map(|attr| attr.to_owned())
@@ -290,7 +289,7 @@ mod tests {
 
         let proof_input = ProofInput {
             revealed_attrs: revealed_attrs,
-            predicates: vec![Rc::new(predicate)],
+            predicates: vec![predicate],
             ts: None,
             pubseq_no: None
         };
@@ -301,30 +300,24 @@ mod tests {
         let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
 
         let primary_proof = PrimaryProof {
-            eq_proof: Rc::new(eq_proof),
-            ge_proofs: vec![Rc::new(ge_proof)]
+            eq_proof: eq_proof,
+            ge_proofs: vec![ge_proof]
         };
 
         let proof = Proof {
-            primary_proof: Rc::new(primary_proof)
+            primary_proof: primary_proof
         };
 
         let proof = FullProof {
             c_hash: BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap(),
-            schema_keys: vec![Rc::new(schema_key)],
-            proofs: vec![Rc::new(proof)],
+            schema_keys: vec![schema_key],
+            proofs: vec![proof],
             c_list: ::services::crypto::anoncreds::prover::mocks::get_c_list().unwrap()
         };
-        let attr_names = mocks::get_attr_names();;
+        let attr_names = mocks::get_attr_names();
 
-        let res = verifier.verify(
-            &pk,
-            &proof_input,
-            Rc::new(proof),
-            &all_revealed_attrs,
-            &nonce,
-            &attr_names
-        );
+
+        let res = verifier.verify(pk, proof_input, proof, all_revealed_attrs, nonce, attr_names);
 
         assert!(res.is_ok());
         assert_eq!(false, res.unwrap());//TODO replace it on true after implementation verify non revocation proof
@@ -339,7 +332,7 @@ mod tests {
         let mut all_revealed_attrs = HashMap::new();
         all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
 
-        let attr_names= mocks::get_attr_names();
+        let attr_names = mocks::get_attr_names();
 
         let res: Result<Vec<BigNumber>, CryptoError> = Verifier::_verify_equality(
             &pk,
@@ -469,7 +462,7 @@ pub mod mocks {
         let mj = try!(BigNumber::from_dec("1603425011106247404410993992231356816212687443774810147917707956054468639246061842660922922638282972213339086692783888162583747872610530439675358599658842676000681975294259033921"));
         let alpha = try!(BigNumber::from_dec("10356391427643160498096100322044181597098497015522243313140952718701540840206124784483254227685815326973121415131868716208997744531667356503588945389793642286002145762891552961662804737699174847630739288154243345749050494830443436382280881466833601915627397601315033369264534756381669075511238130934450573103942299767277725603498732898775126784825329479233488928873905649944203334284969529288341712039042121593832892633719941366126598676503928077684908261211960615121039788257179455497199714100480379742080080363623749544442225600170310016965613238530651846654311018291673656192911252359090044631268913200633654215640107245506757349629342277896334140999154991920063754025485899126293818842601918101509689122011832619551509675197082794490012616416413823359927604558553776550532965415598441778103806673039612795460783658848060332784778084904"));
 
-        Ok(PrimaryPredicateGEProof { u: u, r: r, mj: mj, alpha: alpha, t: Rc::new(t), predicate: Rc::new(predicate) })
+        Ok(PrimaryPredicateGEProof { u: u, r: r, mj: mj, alpha: alpha, t: t, predicate: predicate })
     }
 
     pub fn get_eq_proof() -> Result<PrimaryEqualProof, CryptoError> {
