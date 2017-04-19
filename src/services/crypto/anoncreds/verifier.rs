@@ -11,7 +11,6 @@ use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NON
 use services::crypto::anoncreds::helpers::get_hash_as_int;
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
-use std::iter::FromIterator;
 use errors::crypto::CryptoError;
 use std::rc::Rc;
 use services::crypto::anoncreds::helpers::CopyFrom;
@@ -28,7 +27,7 @@ impl Verifier {
     }
 
     pub fn verify(&self, pk: &PublicKey, proof_input: &ProofInput, proof: Rc<FullProof>,
-                  all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber, attr_name: &Vec<String>)
+                  all_revealed_attrs: &HashMap<String, BigNumber>, nonce: &BigNumber, attr_name: &HashSet<String>)
                   -> Result<bool, CryptoError> {
         let mut tau_list = Vec::new();
 
@@ -52,7 +51,7 @@ impl Verifier {
 
     fn _verify_primary_proof(pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber,
                              primary_proof: &PrimaryProof, all_revealed_attrs: &HashMap<String, BigNumber>,
-                             attr_names: &Vec<String>) -> Result<Vec<BigNumber>, CryptoError> {
+                             attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
         let mut t_hat: Vec<BigNumber> = try!(
             Verifier::_verify_equality(pk, &primary_proof.eq_proof, c_hash, all_revealed_attrs, attr_names));
 
@@ -63,15 +62,12 @@ impl Verifier {
     }
 
     fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
-                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &Vec<String>) -> Result<Vec<BigNumber>, CryptoError> {
-        let attr_names_hash_set = HashSet::<String>::from_iter(attr_names.iter().cloned());
-        let revealed_attr_names = HashSet::<String>::from_iter(proof.revealed_attr_names.iter().cloned());
-
-        let unrevealed_attr_names =
-            attr_names_hash_set
-                .difference(&revealed_attr_names)
+                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
+        let unrevealed_attr_names : HashSet<String> =
+            attr_names
+                .difference(&proof.revealed_attr_names)
                 .map(|attr| attr.to_owned())
-                .collect::<Vec<String>>();
+                .collect::<HashSet<String>>();
 
         let t1: BigNumber = try!(Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
                                                     &proof.m1, &proof.m2, &unrevealed_attr_names));
@@ -122,10 +118,9 @@ impl Verifier {
     }
 
     fn _verify_ge_predicate(pk: &PublicKey, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
-        let (k, v) = (&proof.predicate.attr_name, &proof.predicate.value);
+        let mut ctx = try!(BigNumber::new_context());
         let mut tau_list = try!(Verifier::calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
                                                    &proof.alpha, &proof.t));
-        let mut ctx = try!(BigNumber::new_context());
 
         for i in 0..ITERATION {
             let cur_t = try!(proof.t.get(&i.to_string())
@@ -141,13 +136,12 @@ impl Verifier {
                 );
         }
 
-        let big_v = try!(BigNumber::from_dec(&v.to_string()));
+        let predicate_value = try!(BigNumber::from_dec(&proof.predicate.value.to_string()));
         let delta = try!(proof.t.get("DELTA")
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", "DELTA"))));
 
-
         tau_list[ITERATION] = try!(
-            pk.z.mod_exp(&big_v, &pk.n, Some(&mut ctx))?
+            pk.z.mod_exp(&predicate_value, &pk.n, Some(&mut ctx))?
                 .mul(&delta, Some(&mut ctx))?
                 .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
                 .inverse(&pk.n, Some(&mut ctx))?
@@ -232,9 +226,8 @@ impl Verifier {
 
     pub fn calc_teq(pk: &PublicKey, a_prime: &BigNumber, e: &BigNumber, v: &BigNumber,
                     mtilde: &HashMap<String, BigNumber>, m1tilde: &BigNumber, m2tilde: &BigNumber,
-                    unrevealed_attr_names: &Vec<String>) -> Result<BigNumber, CryptoError> {
+                    unrevealed_attr_names: &HashSet<String>) -> Result<BigNumber, CryptoError> {
         let mut result: BigNumber = try!(BigNumber::from_dec("1"));
-        let tmp: BigNumber = try!(BigNumber::new());
         let mut ctx = try!(BigNumber::new_context());
 
         for k in unrevealed_attr_names.iter() {
@@ -292,10 +285,11 @@ mod tests {
 
         let nonce = BigNumber::from_dec("150136900874297269339868").unwrap();
 
-        let predicate = Predicate { attr_name: "age".to_string(), p_type: "ge".to_string(), value: 18 };
+        let predicate = ::services::crypto::anoncreds::prover::mocks::get_predicate();
+        let revealed_attrs = ::services::crypto::anoncreds::prover::mocks::get_revealed_attrs();
 
         let proof_input = ProofInput {
-            revealed_attrs: vec!["name".to_string()],
+            revealed_attrs: revealed_attrs,
             predicates: vec![Rc::new(predicate)],
             ts: None,
             pubseq_no: None
@@ -321,7 +315,7 @@ mod tests {
             proofs: vec![Rc::new(proof)],
             c_list: ::services::crypto::anoncreds::prover::mocks::get_c_list().unwrap()
         };
-        let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];
+        let attr_names = mocks::get_attr_names();;
 
         let res = verifier.verify(
             &pk,
@@ -345,7 +339,7 @@ mod tests {
         let mut all_revealed_attrs = HashMap::new();
         all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
 
-        let attr_names = vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()];
+        let attr_names= mocks::get_attr_names();
 
         let res: Result<Vec<BigNumber>, CryptoError> = Verifier::_verify_equality(
             &pk,
@@ -423,10 +417,10 @@ mod tests {
     fn calc_teq_works() {
         let proof = mocks::get_eq_proof().unwrap();
         let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
+        let unrevealed_attrs = ::services::crypto::anoncreds::prover::mocks::get_unrevealed_attrs();
 
         let res = Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v,
-                                     &proof.m, &proof.m1, &proof.m2,
-                                     &vec!["sex".to_string(), "age".to_string(), "height".to_string()]
+                                     &proof.m, &proof.m1, &proof.m2, &unrevealed_attrs
         );
 
         assert!(res.is_ok());
@@ -439,6 +433,15 @@ mod tests {
 
 pub mod mocks {
     use super::*;
+
+    pub fn get_attr_names() -> HashSet<String> {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert("name".to_string());
+        attr_names.insert("age".to_string());
+        attr_names.insert("height".to_string());
+        attr_names.insert("sex".to_string());
+        attr_names
+    }
 
     pub fn get_ge_proof() -> Result<PrimaryPredicateGEProof, CryptoError> {
         let mut u = HashMap::new();
@@ -480,8 +483,11 @@ pub mod mocks {
         let m2 = try!(BigNumber::from_dec("1323766290428560718316650362032141006992517904653586088737644821361547649912995176966509589375485991923219004461467056332846596210374933277433111217288600965656096366761598274718188430661014172306546555075331860671882382331826185116501265994994392187563331774320231157973439421596164605280733821402123058645"));
 
 
+        let mut revealed_attr_names: HashSet<String> = HashSet::new();
+        revealed_attr_names.insert("name".to_string());
+
         Ok(PrimaryEqualProof {
-            revealed_attr_names: vec!["name".to_string()],
+            revealed_attr_names: revealed_attr_names,
             a_prime: a_prime,
             e: e,
             v: v,

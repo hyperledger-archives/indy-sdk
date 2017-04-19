@@ -6,7 +6,7 @@ use std::cmp::max;
 
 use errors::crypto::CryptoError;
 use services::crypto::wrappers::bn::BigNumber;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use services::crypto::anoncreds::constants::LARGE_MVECT;
 
 use self::openssl::hash::{Hasher, MessageDigest};
@@ -48,13 +48,13 @@ pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoErr
     BigNumber::from_bytes(&hashed_array[..])
 }
 
-pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &Vec<String>)
+pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &HashSet<String>)
                             -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
     let mut ar: HashMap<String, BigNumber> = HashMap::new();
     let mut aur: HashMap<String, BigNumber> = HashMap::new();
 
     for (attr, value) in encoded_attrs.iter() {
-        if revealed_ttrs.contains(&attr) {
+        if revealed_ttrs.contains(attr) {
             ar.insert(attr.clone(), try!(value.clone()));
         } else {
             aur.insert(attr.clone(), try!(value.clone()));
@@ -153,7 +153,7 @@ mod tests {
         encoded_attrs.insert("age".to_string(), BigNumber::from_dec("1").unwrap());
         encoded_attrs.insert("sex".to_string(), BigNumber::from_dec("1").unwrap());
 
-        let revealed_attrs = vec!["name".to_string()];
+        let revealed_attrs = ::services::crypto::anoncreds::prover::mocks::get_revealed_attrs();
 
         let res = split_revealed_attrs(&encoded_attrs, &revealed_attrs);
 

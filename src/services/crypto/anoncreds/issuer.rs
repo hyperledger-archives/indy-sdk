@@ -198,7 +198,7 @@ impl Issuer {
     }
 
     pub fn issue_claim(&self, pk: &PublicKey, sk: &SecretKey, accumulator_id: &String, user_id: &String,
-                   claim_request: Rc<ClaimRequest>, attributes: Rc<Vec<Rc<Attribute>>>) -> Result<Claims, CryptoError> {
+                       claim_request: Rc<ClaimRequest>, attributes: Rc<Vec<Rc<Attribute>>>) -> Result<Claims, CryptoError> {
         let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
         let c1 = try!(Issuer::_issue_primary_claim(pk, sk, &claim_request.u, &context, attributes));
 
@@ -207,15 +207,15 @@ impl Issuer {
         })
     }
 
-    fn issue_claims(&self, pk: &PublicKey, sk: &SecretKey,
-                    accumulator_id: &String, user_id: &String, claim_requests: &HashMap<Rc<Schema>, Rc<ClaimRequest>>,
-                    attributes: Rc<Vec<Rc<Attribute>>>) -> Result<HashMap<Rc<Schema>, Claims>, CryptoError> {
-        let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
-        let mut res: HashMap<Rc<Schema>, Claims> = HashMap::new();
+    fn issue_claims(&self, data: Vec<(&PublicKey, &SecretKey, &String, &String, Rc<ClaimRequest>, Rc<Vec<Rc<Attribute>>>)>)
+                    -> Result<Vec<Claims>, CryptoError> {
+        let mut res: Vec<Claims> = Vec::new();
 
-        for (schema, claim_req) in claim_requests {
-            res.insert(
-                schema.clone(),
+        for d in data {
+            let (pk, sk, accumulator_id, user_id, claim_req, attributes) = d;
+            let context = try!(Issuer::_generate_context_attribute(accumulator_id, user_id));
+
+            res.push(
                 try!(Issuer::issue_claim(&self, pk, sk, accumulator_id, user_id, claim_req.clone(), attributes.clone()))
             );
         }
@@ -284,12 +284,12 @@ pub mod mocks {
                 value: "28".to_string(),
                 encode: false
             }),
-                    Rc::new(Attribute {
+            Rc::new(Attribute {
                 name: "sex".to_string(),
                 value: "male".to_string(),
                 encode: true
             }),
-                            Rc::new(Attribute {
+            Rc::new(Attribute {
                 name: "height".to_string(),
                 value: "175".to_string(),
                 encode: false

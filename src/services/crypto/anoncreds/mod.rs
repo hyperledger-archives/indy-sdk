@@ -36,7 +36,7 @@ mod tests {
         let schema = types::Schema {
             name: "GVT".to_string(),
             version: "1.0".to_string(),
-            attribute_names: vec!["name".to_string(), "age".to_string(), "height".to_string(), "sex".to_string()]
+            attribute_names: ::services::crypto::anoncreds::verifier::mocks::get_attr_names()
         };
         let prover_id = "1".to_string();
         let accumulator_id = "110".to_string();
