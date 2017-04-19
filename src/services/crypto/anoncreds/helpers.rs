@@ -2,28 +2,28 @@ extern crate rand;
 extern crate milagro_crypto;
 extern crate openssl;
 
-use std::cmp::max;
-
 use errors::crypto::CryptoError;
-use services::crypto::wrappers::bn::BigNumber;
-use std::collections::{HashMap, HashSet};
 use services::crypto::anoncreds::constants::LARGE_MVECT;
+use services::crypto::wrappers::bn::BigNumber;
 use std::hash::Hash;
+use std::cmp::max;
+use std::collections::{HashMap, HashSet};
 
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
-    let mut random = try!(n.rand_range());
-    random = try!(random.sqr(None));
-    random = try!(random.modulus(&n, None));
+    let random = n
+        .rand_range()?
+        .sqr(None)?
+        .modulus(&n, None)?;
     Ok(random)
 }
 
 pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
-    let significant_bits = max(try!(a.num_bits()), try!(b.num_bits()));
-    let mut result = try!(BigNumber::new());
+    let significant_bits = max(a.num_bits()?, b.num_bits()?);
+    let mut result = BigNumber::new()?;
     for i in 0..significant_bits {
-        if try!(a.is_bit_set(i)) || try!(b.is_bit_set(i)) {
-            try!(result.set_bit(i));
+        if a.is_bit_set(i)? || b.is_bit_set(i)? {
+            result.set_bit(i)?;
         }
     }
     Ok(result)
@@ -32,7 +32,7 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
 pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoError> {
     nums.sort();
 
-    let mut hashed_array: Vec<u8> = try!(BigNumber::hash_array(&nums));
+    let mut hashed_array: Vec<u8> = BigNumber::hash_array(&nums)?;
     hashed_array.reverse();
 
     BigNumber::from_bytes(&hashed_array[..])
@@ -45,9 +45,9 @@ pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed
 
     for (attr, value) in encoded_attrs.iter() {
         if revealed_ttrs.contains(attr) {
-            ar.insert(attr.clone(), try!(value.clone()));
+            ar.insert(attr.clone(), value.clone()?);
         } else {
-            aur.insert(attr.clone(), try!(value.clone()));
+            aur.insert(attr.clone(), value.clone()?);
         }
     }
     Ok((ar, aur))
@@ -58,7 +58,7 @@ pub fn get_mtilde(unrevealed_attrs: &HashMap<String, BigNumber>)
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for (attr, _) in unrevealed_attrs.iter() {
-        mtilde.insert(attr.clone(), try!(BigNumber::new()?.rand(LARGE_MVECT)));
+        mtilde.insert(attr.clone(), BigNumber::new()?.rand(LARGE_MVECT)?);
     }
     Ok(mtilde)
 }
@@ -75,10 +75,10 @@ pub fn four_squares(delta: i64) -> Result<HashMap<String, BigNumber>, CryptoErro
 
     if u1.pow(2) + u2.pow(2) + u3.pow(2) + u4.pow(2) == delta {
         let mut res: HashMap<String, BigNumber> = HashMap::new();
-        res.insert("0".to_string(), try!(BigNumber::from_dec(&u1.to_string()[..])));
-        res.insert("1".to_string(), try!(BigNumber::from_dec(&u2.to_string()[..])));
-        res.insert("2".to_string(), try!(BigNumber::from_dec(&u3.to_string()[..])));
-        res.insert("3".to_string(), try!(BigNumber::from_dec(&u4.to_string()[..])));
+        res.insert("0".to_string(), BigNumber::from_dec(&u1.to_string()[..])?);
+        res.insert("1".to_string(), BigNumber::from_dec(&u2.to_string()[..])?);
+        res.insert("2".to_string(), BigNumber::from_dec(&u3.to_string()[..])?);
+        res.insert("3".to_string(), BigNumber::from_dec(&u4.to_string()[..])?);
 
         Ok(res)
     } else {
@@ -93,7 +93,7 @@ pub trait CopyFrom {
 impl CopyFrom for Vec<BigNumber> {
     fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError> {
         for el in other.iter() {
-            self.push(try!(el.clone()));
+            self.push(el.clone()?);
         }
         Ok(())
     }
@@ -103,7 +103,7 @@ pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>)
                                               -> Result<HashMap<K, BigNumber>, CryptoError> {
     let mut res: HashMap<K, BigNumber> = HashMap::new();
     for (k, v) in other {
-        res.insert(k.clone(), try!(v.clone()));
+        res.insert(k.clone(), v.clone()?);
     }
     Ok(res)
 }
