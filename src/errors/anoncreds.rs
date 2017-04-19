@@ -4,6 +4,9 @@ use std::fmt;
 use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 
+use api::ErrorCode;
+use errors::ToErrorCode;
+
 #[derive(Debug)]
 pub enum AnoncredsError {
     NotIssuedError(String),
@@ -43,6 +46,18 @@ impl error::Error for AnoncredsError {
             AnoncredsError::ProofRejected(ref description) => None,
             AnoncredsError::CryptoError(ref err) => Some(err),
             AnoncredsError::WalletError(ref err) => Some(err)
+        }
+    }
+}
+
+impl ToErrorCode for AnoncredsError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            AnoncredsError::NotIssuedError(ref description) => ErrorCode::AnoncredsNotIssuedError,
+            AnoncredsError::MasterSecretDuplicateNameError(ref description) => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
+            AnoncredsError::ProofRejected(ref description) => ErrorCode::ProofRejected,
+            AnoncredsError::CryptoError(ref err) => err.to_error_code(),
+            AnoncredsError::WalletError(ref err) => err.to_error_code(),
         }
     }
 }

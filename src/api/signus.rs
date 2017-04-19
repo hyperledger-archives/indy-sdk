@@ -1,6 +1,10 @@
 extern crate libc;
 
 use api::ErrorCode;
+use errors::ToErrorCode;
+use commands::{Command, CommandExecutor};
+use commands::signus::SignusCommand;
+use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 
@@ -33,11 +37,28 @@ use self::libc::c_char;
 pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
                                               wallet_handle: i32,
                                               did_json: *const c_char,
-                                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                            did: *const c_char,
-                                                            verkey: *const c_char,
-                                                            pk: *const c_char)) -> ErrorCode {
-    unimplemented!();
+                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                   did: *const c_char,
+                                                                   verkey: *const c_char,
+                                                                   pk: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::CreateAndStoreMyDid(
+            wallet_handle,
+            did_json,
+            Box::new(move |result| {
+                let (err, did, verkey, pk) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
+                let did = CStringUtils::string_to_cstring(did);
+                let verkey = CStringUtils::string_to_cstring(verkey);
+                let pk = CStringUtils::string_to_cstring(pk);
+
+                cb(command_handle, err, did.as_ptr(), verkey.as_ptr(), pk.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Generated new keys (signing and encryption keys) for an existing
@@ -64,11 +85,29 @@ pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
 pub  extern fn sovrin_replace_keys(command_handle: i32,
                                    wallet_handle: i32,
                                    did: *const c_char,
-                                   did_json: *const c_char,
-                                   cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                 verkey: *const c_char,
-                                                 pk: *const c_char)) -> ErrorCode {
-    unimplemented!();
+                                   identity_json: *const c_char,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        verkey: *const c_char,
+                                                        pk: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::ReplaceKeys(
+            wallet_handle,
+            identity_json,
+            did,
+            Box::new(move |result| {
+                let (err, verkey, pk) = result_to_err_code_2!(result, String::new(), String::new());
+                let verkey = CStringUtils::string_to_cstring(verkey);
+                let pk = CStringUtils::string_to_cstring(pk);
+
+                cb(command_handle, err, verkey.as_ptr(), pk.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -77,7 +116,7 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// did_json: Identity information as json. Example:
+/// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
 ///        "verkey": string, (optional; if only public key for decryption is provided),
@@ -95,8 +134,21 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 pub  extern fn sovrin_store_their_did(command_handle: i32,
                                       wallet_handle: i32,
                                       identity_json: *const c_char,
-                                      cb: extern fn(xcommand_handle: i32, err: ErrorCode)) -> ErrorCode {
-    unimplemented!();
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::StoreTheirDid(
+            wallet_handle,
+            identity_json,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Signs a message by a signing key associated with my DID. The DID with a signing key
@@ -120,9 +172,26 @@ pub  extern fn sovrin_sign(command_handle: i32,
                            wallet_handle: i32,
                            did: *const c_char,
                            msg: *const c_char,
-                           cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                         signature: *const c_char)) -> ErrorCode {
-    unimplemented!();
+                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                signature: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::Sign(
+            wallet_handle,
+            did,
+            msg,
+            Box::new(move |result| {
+                let (err, signature) = result_to_err_code_1!(result, String::new());
+                let signature = CStringUtils::string_to_cstring(signature);
+
+                cb(command_handle, err, signature.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Verify a signature created by a key associated with a DID.
@@ -153,9 +222,26 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
                                        did: *const c_char,
                                        msg: *const c_char,
                                        signature: *const c_char,
-                                       cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                     valid: bool)) -> ErrorCode {
-    unimplemented!();
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            valid: bool)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(signature, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::VerifySignature(
+            wallet_handle,
+            did,
+            msg,
+            signature,
+            Box::new(move |result| {
+                let (err, valid) = result_to_err_code_1!(result, false);
+                cb(command_handle, err, valid)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Encrypts a message by a public key associated with a DID.
@@ -184,9 +270,26 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
                               wallet_handle: i32,
                               did: *const c_char,
                               msg: *const c_char,
-                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                            encrypted_msg: *const c_char)) -> ErrorCode {
-    unimplemented!();
+                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                   encrypted_msg: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::Encrypt(
+            wallet_handle,
+            did,
+            msg,
+            Box::new(move |result| {
+                let (err, encrypted_msg) = result_to_err_code_1!(result, String::new());
+                let encrypted_msg = CStringUtils::string_to_cstring(encrypted_msg);
+
+                cb(command_handle, err, encrypted_msg.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Decrypts a message encrypted by a public key associated with my DID.
@@ -211,7 +314,24 @@ pub  extern fn sovrin_decrypt(command_handle: i32,
                               wallet_handle: i32,
                               did: *const c_char,
                               encrypted_msg: *const c_char,
-                              cb: extern fn(xcommand_handle: i32, err: ErrorCode,
-                                            decrypted_msg: *const c_char)) -> ErrorCode {
-    unimplemented!();
+                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                   decrypted_msg: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(encrypted_msg, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::Decrypt(
+            wallet_handle,
+            did,
+            encrypted_msg,
+            Box::new(move |result| {
+                let (err, decrypted_msg) = result_to_err_code_1!(result, String::new());
+                let decrypted_msg = CStringUtils::string_to_cstring(decrypted_msg);
+
+                cb(command_handle, err, decrypted_msg.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }

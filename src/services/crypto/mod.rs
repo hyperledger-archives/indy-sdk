@@ -1,20 +1,25 @@
 pub mod anoncreds;
-pub mod ed25519;
 pub mod wrappers;
 
-use self::anoncreds::AnoncredsService;
-use self::ed25519::ED25519;
+use self::anoncreds::Anoncreds;
+use self::wrappers::base58::Base58;
+use self::wrappers::ed25519::ED25519;
+use self::wrappers::xsalsa20::XSalsa20;
 
 pub struct CryptoService {
+    anoncreds: Anoncreds,
+    base58: Base58,
     ed25519: ED25519,
-    anoncreds: AnoncredsService
+    xsalsa20: XSalsa20
 }
 
 impl CryptoService {
     pub fn new() -> CryptoService {
         CryptoService {
+            anoncreds: Anoncreds::new(),
+            base58: Base58::new(),
             ed25519: ED25519::new(),
-            anoncreds: AnoncredsService::new()
+            xsalsa20: XSalsa20::new()
         }
     }
 }

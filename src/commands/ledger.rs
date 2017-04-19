@@ -7,13 +7,65 @@ use services::wallet::WalletService;
 use std::rc::Rc;
 
 pub enum LedgerCommand {
-    PublishTx(
-        i32, // pool handle
-        String, // tx_json
+    SignAndSubmitRequest(
+        i32, // wallet handle
+        String, // submitter did
+        String, // request json
         Box<Fn(Result<String, LedgerError>) + Send>),
-    PublishTxAck(
-        i32, // command handle
-        Result<String, LedgerError>)
+    SubmitRequest(
+        i32, // pool handle
+        String, // request json
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildGetDdoRequest(
+        String, // submitter did
+        String, // target did
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildNymRequest(
+        String, // submitter did
+        String, // target did
+        String, // verkey
+        String, // xref
+        String, // data
+        String, // role
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildAttribRequest(
+        String, // submitter did
+        String, // target did
+        String, // hash
+        String, // raw
+        String, // enc
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildGetAttribRequest(
+        String, // submitter did
+        String, // target did
+        String, // data
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildGetNymRequest(
+        String, // submitter did
+        String, // target did
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildSchemaRequest(
+        String, // submitter did
+        String, // data
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildGetSchemaRequest(
+        String, // submitter did
+        String, // data
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildClaimDefRequest(
+        String, // submitter did
+        String, // xref
+        String, // data
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildGetClaimDefRequest(
+        String, // submitter did
+        String, // xref
+        Box<Fn(Result<String, LedgerError>) + Send>),
+    BuildNodeRequest(
+        String, // submitter did
+        String, // target_did
+        String, // data
+        Box<Fn(Result<String, LedgerError>) + Send>)
 }
 
 pub struct LedgerCommandExecutor {
@@ -36,29 +88,149 @@ impl LedgerCommandExecutor {
 
     pub fn execute(&self, command: LedgerCommand) {
         match command {
-            LedgerCommand::PublishTx(handle, tx_json, cb) => {
-                info!(target: "ledger_command_executor", "PublishTx command received");
-                self.publish_tx(handle, &tx_json, cb);
+            LedgerCommand::SignAndSubmitRequest(wallet_handle, submitter_did, request_json, cb) => {
+                info!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
+                self.sign_and_submit_request(wallet_handle, &submitter_did, &request_json, cb);
             },
-            LedgerCommand::PublishTxAck(handle, result) => {
-                info!(target: "ledger_command_executor", "PublishTxAck command received");
-                self.publish_tx_ack(handle, result);
+            LedgerCommand::SubmitRequest(handle, request_json, cb) => {
+                info!(target: "ledger_command_executor", "SubmitRequest command received");
+                self.submit_request(handle, &request_json, cb);
+            },
+            LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
+                self.build_get_ddo_request(&submitter_did, &target_did, cb);
+            },
+            LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, xref, data, role, cb) => {
+                info!(target: "ledger_command_executor", "BuildNymRequest command received");
+                self.build_nym_request(&submitter_did, &target_did, &verkey, &xref, &data, &role, cb);
+            },
+            LedgerCommand::BuildAttribRequest(submitter_did, target_did, hash, raw, enc, cb) => {
+                info!(target: "ledger_command_executor", "BuildAttribRequest command received");
+                self.build_attrib_request(&submitter_did, &target_did, &hash, &raw, &enc, cb);
+            },
+            LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
+                self.build_get_attrib_request(&submitter_did, &target_did, &data, cb);
+            },
+            LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetNymRequest command received");
+                self.build_get_nym_request(&submitter_did, &target_did, cb);
+            },
+            LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
+                self.build_schema_request(&submitter_did, &data, cb);
+            },
+            LedgerCommand::BuildGetSchemaRequest(submitter_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
+                self.build_get_schema_request(&submitter_did, &data, cb);
+            },
+            LedgerCommand::BuildClaimDefRequest(submitter_did, xref, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
+                self.build_issuer_key_request(&submitter_did, &xref, &data, cb);
+            },
+            LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
+                self.build_get_issuer_key_request(&submitter_did, &xref, cb);
+            },
+            LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildNodeRequest command received");
+                self.build_node_key_request(&submitter_did, &target_did, &data, cb);
             }
         };
     }
 
-    fn publish_tx(&self,
-                  handle: i32,
-                  tx_json: &str,
-                  cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        // TODO: FIXME: In real implementation publish_tx will save callback in context
-        // TODO: FIXME: and send message to pool thread. Callback will be called on
-        // TODO: FIXME: receiving of ack command.
-        unimplemented!()
+    fn sign_and_submit_request(&self,
+                               wallet_handle: i32,
+                               submitter_did: &str,
+                               request_json: &str,
+                               cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
     }
 
-    fn publish_tx_ack(&self, handle: i32, result: Result<String, LedgerError>) {
-        // cb(result)
-        unimplemented!()
+    fn submit_request(&self,
+                      handle: i32,
+                      request_json: &str,
+                      cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_get_ddo_request(&self,
+                             submitter_did: &str,
+                             target_did: &str,
+                             cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_nym_request(&self,
+                         submitter_did: &str,
+                         target_did: &str,
+                         verkey: &str,
+                         xref: &str,
+                         data: &str,
+                         role: &str,
+                         cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_attrib_request(&self,
+                            submitter_did: &str,
+                            target_did: &str,
+                            hash: &str,
+                            raw: &str,
+                            enc: &str,
+                            cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_get_attrib_request(&self,
+                                submitter_did: &str,
+                                target_did: &str,
+                                data: &str,
+                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_get_nym_request(&self,
+                             submitter_did: &str,
+                             target_did: &str,
+                             cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_schema_request(&self,
+                            submitter_did: &str,
+                            data: &str,
+                            cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_get_schema_request(&self,
+                                submitter_did: &str,
+                                data: &str,
+                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_issuer_key_request(&self,
+                                submitter_did: &str,
+                                xref: &str,
+                                data: &str,
+                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_get_issuer_key_request(&self,
+                                    submitter_did: &str,
+                                    xref: &str,
+                                    cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
+    }
+
+    fn build_node_key_request(&self,
+                              submitter_did: &str,
+                              target_did: &str,
+                              data: &str,
+                              cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(Ok("".to_string()));
     }
 }

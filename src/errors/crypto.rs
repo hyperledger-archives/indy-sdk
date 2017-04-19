@@ -1,6 +1,9 @@
 use std::error;
 use std::fmt;
 
+use api::ErrorCode;
+use errors::ToErrorCode;
+
 #[derive(Debug)]
 pub enum CryptoError {
     InvalidStructure(String),
@@ -44,18 +47,30 @@ impl error::Error for CryptoError {
     }
 }
 
+impl ToErrorCode for CryptoError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            CryptoError::InvalidStructure(ref description) => ErrorCode::CryptoInvalidStructure,
+            CryptoError::UnknownType(ref description) => ErrorCode::CryptoUnknownTypeError,
+            CryptoError::RevocationRegistryFull(ref description) => ErrorCode::CryptoRevocationRegistryFullError,
+            CryptoError::InvalidUserRevocIndex(ref err) => ErrorCode::CryptoInvalidUserRevocIndex,
+            CryptoError::BackendError(ref err) => ErrorCode::CryptoBackendError,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //use super::*;
 
-//    #[test]
-//    fn crypto_error_can_be_created() {
-//        let error = CryptoError::InvalidData("TEST".to_string());
-//    }
-//
-//    #[test]
-//    fn crypto_error_can_be_formatted() {
-//        let error_formatted = format!("{}", CryptoError::InvalidData("TEST".to_string()));
-//        assert_eq!("Invalid data: TEST", error_formatted);
-//    }
+    //    #[test]
+    //    fn crypto_error_can_be_created() {
+    //        let error = CryptoError::InvalidData("TEST".to_string());
+    //    }
+    //
+    //    #[test]
+    //    fn crypto_error_can_be_formatted() {
+    //        let error_formatted = format!("{}", CryptoError::InvalidData("TEST".to_string()));
+    //        assert_eq!("Invalid data: TEST", error_formatted);
+    //    }
 }

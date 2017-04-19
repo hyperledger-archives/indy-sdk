@@ -6,6 +6,9 @@ use errors::crypto::CryptoError;
 use errors::pool::PoolError;
 use errors::wallet::WalletError;
 
+use api::ErrorCode;
+use errors::ToErrorCode;
+
 #[derive(Debug)]
 pub enum LedgerError {
     NoConsensus(String),
@@ -45,6 +48,18 @@ impl error::Error for LedgerError {
             LedgerError::CryptoError(ref err) => Some(err),
             LedgerError::PoolError(ref err) => Some(err),
             LedgerError::WalletError(ref err) => Some(err)
+        }
+    }
+}
+
+impl ToErrorCode for LedgerError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            LedgerError::NoConsensus(ref description) => ErrorCode::LedgerNoConsensusError,
+            LedgerError::Io(ref err) => ErrorCode::PoolLedgerIOError,
+            LedgerError::CryptoError(ref err) => err.to_error_code(),
+            LedgerError::PoolError(ref err) => err.to_error_code(),
+            LedgerError::WalletError(ref err) => err.to_error_code(),
         }
     }
 }
