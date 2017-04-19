@@ -78,27 +78,27 @@ impl CommandExecutor {
                         Ok(Command::Anoncreds(cmd)) => {
                             info!(target: "command_executor", "AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
-                        },
+                        }
                         Ok(Command::Ledger(cmd)) => {
                             info!(target: "command_executor", "LedgerCommand command received");
                             ledger_command_executor.execute(cmd);
-                        },
+                        }
                         Ok(Command::Pool(cmd)) => {
                             info!(target: "command_executor", "PoolCommand command received");
                             pool_command_executor.execute(cmd);
-                        },
+                        }
                         Ok(Command::Signus(cmd)) => {
                             info!(target: "command_executor", "SignusCommand command received");
                             signus_command_executor.execute(cmd);
-                        },
+                        }
                         Ok(Command::Wallet(cmd)) => {
                             info!(target: "command_executor", "WalletCommand command received");
                             wallet_command_executor.execute(cmd);
-                        },
+                        }
                         Ok(Command::Exit) => {
                             info!(target: "command_executor", "Exit command received");
                             break
-                        },
+                        }
                         Err(err) => {
                             error!(target: "command_executor", "Failed to get command!");
                             panic!("Failed to get command! {:?}", err)

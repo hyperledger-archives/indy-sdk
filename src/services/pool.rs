@@ -52,7 +52,6 @@ impl PoolService {
         }
 
         let zmq_ctx = zmq::Context::new();
-        //TODO ZMQ_PAIR may be unsupported on iOS
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
         let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
         let inproc_sock_name: String = format!("inproc://pool_{}", name);
@@ -66,8 +65,7 @@ impl PoolService {
 
         let pool_id: i32 = CommandExecutor::get_new_id();
         let cmd_id: i32 = CommandExecutor::get_new_id();
-        thread.spawn(move || { PoolService::run(recv_cmd_sock, pool_id, cmd_id); });
-        send_cmd_sock.send("opened".as_bytes(), 0); //TODO remove
+        thread::spawn(move || { PoolService::run(recv_cmd_sock, pool_id, cmd_id); });
         self.pools.borrow_mut().insert(pool_id, send_cmd_sock);
         self.pools_names.borrow_mut().insert(name.to_string(), pool_id);
         return Ok(cmd_id);
