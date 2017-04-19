@@ -168,25 +168,25 @@ pub struct PrimaryPredicateGEProof {
 //impl block
 impl PrimaryClaim {
     pub fn update_vprime(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
-        self.v_prime = try!(self.v_prime.add(&v_prime));
+        self.v_prime = self.v_prime.add(&v_prime)?;
         Ok(())
     }
 }
 
 impl Claims {
     pub fn prepare_primary_claim(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
-        try!(self.primary_claim.update_vprime(v_prime));
+        self.primary_claim.update_vprime(v_prime)?;
         Ok(())
     }
 }
 
 impl PrimaryEqualInitProof {
     pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![try!(self.a_prime.clone())])
+        Ok(vec![self.a_prime.clone()?])
     }
 
     pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![try!(self.t.clone())])
+        Ok(vec![self.t.clone()?])
     }
 }
 
@@ -202,21 +202,17 @@ impl PrimaryPrecicateGEInitProof {
 
 impl PrimaryInitProof {
     pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut c_list: Vec<BigNumber> = try!(self.eq_proof.as_c_list());
+        let mut c_list: Vec<BigNumber> = self.eq_proof.as_c_list()?;
         for ge_proof in self.ge_proofs.iter() {
-            try!(c_list.clone_from_vector(
-                try!(ge_proof.as_c_list())
-            ));
+            c_list.clone_from_vector(ge_proof.as_c_list()?)?;
         }
         Ok(c_list)
     }
 
     pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut tau_list: Vec<BigNumber> = try!(self.eq_proof.as_tau_list());
+        let mut tau_list: Vec<BigNumber> = self.eq_proof.as_tau_list()?;
         for ge_proof in self.ge_proofs.iter() {
-            try!(tau_list.clone_from_vector(
-                try!(ge_proof.as_tau_list())
-            ));
+            tau_list.clone_from_vector(ge_proof.as_tau_list()?)?;
         }
         Ok(tau_list)
     }
