@@ -16,14 +16,14 @@ pub struct SqliteWallet {
 
 impl SqliteWallet {
     pub fn new() -> Result<SqliteWallet, WalletError> {
-        let connection = try!(Connection::open("sovrin.db"));
+        let connection = Connection::open("sovrin.db")?;
 
-        try!(connection.execute(
+        connection.execute(
             "CREATE TABLE IF NOT EXISTS wallet (
                           key       TEXT NOT NULL,
                           value     TEXT NOT NULL
                           )",
-            &[]));
+            &[])?;
 
         Ok(SqliteWallet {
             connection: connection
@@ -52,9 +52,9 @@ impl Wallet for SqliteWallet {
             .map(|key| key.to_string())
             .collect();
 
-        let mut stmt = try!(self.connection.prepare("SELECT value FROM wallet WHERE key = ?1 LIMIT 1"));
+        let mut stmt = self.connection.prepare("SELECT value FROM wallet WHERE key = ?1 LIMIT 1")?;
 
-        let mut rows = try!(stmt.query(&[&string_keys.join("::")]));
+        let mut rows = stmt.query(&[&string_keys.join("::")])?;
 
         match rows.next() {
             Some(row) =>

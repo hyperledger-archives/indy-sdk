@@ -1,20 +1,12 @@
 use errors::crypto::CryptoError;
 
-pub struct PointG1 {
+pub struct PointG1 {}
 
-}
+pub struct PointG2 {}
 
-pub struct PointG2 {
+pub struct GroupOrderElement {}
 
-}
-
-pub struct GroupOrderElement {
-
-}
-
-pub struct Pair {
-
-}
+pub struct Pair {}
 
 impl PointG1 {
     pub fn new() -> Result<PointG1, CryptoError> {
@@ -35,11 +27,11 @@ impl PointG1 {
         unimplemented!();
     }
 
-    pub fn to_bytes(&mut self, b: &mut [u8]) {
+    pub fn to_bytes(&mut self, b: &mut [u8]) -> Result<&mut [u8], CryptoError> {
         unimplemented!();
     }
 
-    pub fn from_bytes(b: &[u8]) -> PointG1 {
+    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
         unimplemented!();
     }
 }
