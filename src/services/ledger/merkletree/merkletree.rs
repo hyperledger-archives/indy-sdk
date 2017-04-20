@@ -95,6 +95,16 @@ impl <T> MerkleTree<T> {
         self.root.hash()
     }
 
+    /// Returns the hex root hash of Merkle tree
+    pub fn root_hash_hex(&self) -> String {
+        let rh = self.root.hash();
+        let mut ret:String = String::with_capacity(self.algorithm.output_len*2);
+        for i in rh {
+            ret.push_str(&format!("{:02x}", i));
+        }
+        return ret;
+    }
+
     /// Returns the height of Merkle tree
     pub fn height(&self) -> usize {
         self.height
