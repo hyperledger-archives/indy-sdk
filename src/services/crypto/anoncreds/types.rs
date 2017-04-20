@@ -58,7 +58,18 @@ pub struct SecretKey {
 }
 
 pub struct AccumulatorPublicKey {
-    z: Pair
+    pub z: Pair
+}
+
+pub struct AccumulatorSecretKey {
+    pub gamma: GroupOrderElement
+}
+
+pub struct Accumulator {
+    pub accumulator_id: i32,
+    pub acc: i32,
+    pub v: HashSet<i32>,
+    pub max_claim_num: i32
 }
 
 pub struct ClaimRequest {

@@ -7,6 +7,9 @@ use services::crypto::anoncreds::constants::{
     LARGE_VPRIME_PRIME
 };
 use services::crypto::anoncreds::types::{
+    Accumulator,
+    AccumulatorPublicKey,
+    AccumulatorSecretKey,
     Attribute,
     ByteOrder,
     ClaimRequest,
@@ -114,7 +117,8 @@ impl Issuer {
         ))
     }
 
-    pub fn issue_accumulator(pkR: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
+    pub fn issue_accumulator(pk_r: &RevocationPublicKey, accumulator_id: i32, max_claim_num: i32)
+                             -> Result<(Accumulator, Vec<PointG1>, AccumulatorPublicKey, AccumulatorSecretKey), CryptoError> {
         let gamma = GroupOrderElement::new()?;
         let mut g: Vec<PointG1> = Vec::new();
         let g_count = 2 * max_claim_num;
@@ -124,25 +128,32 @@ impl Issuer {
                 let i_bytes = transform_u32_to_array_of_u8(i as u32);
                 let mut pow = GroupOrderElement::from_bytes(&i_bytes)?;
                 pow = gamma.pow_mod(&pow)?;
-                g.push(pkR.g.mul(&pow)?);
+                g.push(pk_r.g.mul(&pow)?);
             }
         }
 
-        let mut z = Pair::pair(&pkR.g, &pkR.g)?;
+        let mut z = Pair::pair(&pk_r.g, &pk_r.g)?;
         let mut pow = GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8((max_claim_num + 1) as u32))?;
         pow = gamma.pow_mod(&pow)?;
         z = z.pow(&pow)?;
         let acc = 1;
         let v: HashSet<i32> = HashSet::new();
-        unimplemented!();
+        Ok((
+            Accumulator {
+                accumulator_id: accumulator_id,
+                acc: acc,
+                v: v,
+                max_claim_num: max_claim_num
+            },
+            g,
+            AccumulatorPublicKey {
+                z: z
+            },
+            AccumulatorSecretKey {
+                gamma: gamma
+            }
+            ))
     }
-//
-//    accPK = AccumulatorPublicKey(z)
-//    accSK = AccumulatorSecretKey(gamma)
-//accum = Accumulator(iA, acc, V, L)
-//return accum, g, accPK, accSK
-
-    fn _issuer_primary_claim() {}
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
                             attributes: &Vec<Attribute>) -> Result<PrimaryClaim, CryptoError> {
