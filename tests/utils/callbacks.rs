@@ -1,6 +1,12 @@
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::collections::HashMap;
 
 use sovrin::api::ErrorCode;
+
+lazy_static! {
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+}
 
 pub struct CallbacksHelpers {}
 
@@ -9,18 +15,19 @@ impl CallbacksHelpers {
                                                                                        Option<extern fn(command_handle: i32,
                                                                                                         err: ErrorCode)>) {
         lazy_static! {
-            static ref CREATE_POOL_LEDGER_CALLBACKS: Mutex<Vec<Box<FnMut(ErrorCode) + Send>>> = Default::default();
+            static ref CREATE_POOL_LEDGER_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
 
         extern "C" fn create_pool_ledger_callback(command_handle: i32, err: ErrorCode) {
             let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(command_handle as usize);
+            let mut cb = callbacks.remove(&command_handle).unwrap();
             cb(err)
         }
 
         let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
-        callbacks.push(closure);
-        ((callbacks.len() - 1) as i32, Some(create_pool_ledger_callback))
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+        (command_handle, Some(create_pool_ledger_callback))
     }
 
     pub fn closure_to_open_pool_ledger_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
@@ -28,17 +35,19 @@ impl CallbacksHelpers {
                                               Option<extern fn(command_handle: i32, err: ErrorCode,
                                                                pool_handle: i32)>) {
         lazy_static! {
-            static ref CREATE_POOL_LEDGER_CALLBACKS: Mutex<Vec<Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
+            static ref OPEN_POOL_LEDGER_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
         }
 
         extern "C" fn open_pool_ledger_callback(command_handle: i32, err: ErrorCode, pool_handle: i32) {
-            let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(command_handle as usize);
+            let mut callbacks = OPEN_POOL_LEDGER_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
             cb(err, pool_handle)
         }
 
-        let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
-        callbacks.push(closure);
-        ((callbacks.len() - 1) as i32, Some(open_pool_ledger_callback))
+        let mut callbacks = OPEN_POOL_LEDGER_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(open_pool_ledger_callback))
     }
 }
