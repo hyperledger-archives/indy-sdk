@@ -1,5 +1,5 @@
 use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
@@ -55,6 +55,10 @@ pub struct RevocationSecretKey {
 pub struct SecretKey {
     pub p: BigNumber,
     pub q: BigNumber
+}
+
+pub struct AccumulatorPublicKey {
+    z: Pair
 }
 
 pub struct ClaimRequest {

@@ -21,11 +21,12 @@ use services::crypto::anoncreds::types::{
 use services::crypto::anoncreds::helpers::{
     random_qr,
     bitwise_or_big_int,
-    get_hash_as_int
+    get_hash_as_int,
+    transform_u32_to_array_of_u8
 };
 use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
-use std::collections::HashMap;
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use std::collections::{HashMap, HashSet};
 
 pub struct Issuer {}
 
@@ -113,18 +114,33 @@ impl Issuer {
         ))
     }
 
-    pub fn issue_accumulator(pkr: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
+    pub fn issue_accumulator(pkR: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
         let gamma = GroupOrderElement::new()?;
         let mut g: Vec<PointG1> = Vec::new();
         let g_count = 2 * max_claim_num;
 
         for i in 0..g_count {
             if i != max_claim_num + 1 {
-
+                let i_bytes = transform_u32_to_array_of_u8(i as u32);
+                let mut pow = GroupOrderElement::from_bytes(&i_bytes)?;
+                pow = gamma.pow_mod(&pow)?;
+                g.push(pkR.g.mul(&pow)?);
             }
         }
+
+        let mut z = Pair::pair(&pkR.g, &pkR.g)?;
+        let mut pow = GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8((max_claim_num + 1) as u32))?;
+        pow = gamma.pow_mod(&pow)?;
+        z = z.pow(&pow)?;
+        let acc = 1;
+        let v: HashSet<i32> = HashSet::new();
         unimplemented!();
     }
+//
+//    accPK = AccumulatorPublicKey(z)
+//    accSK = AccumulatorSecretKey(gamma)
+//accum = Accumulator(iA, acc, V, L)
+//return accum, g, accPK, accSK
 
     fn _issuer_primary_claim() {}
 
