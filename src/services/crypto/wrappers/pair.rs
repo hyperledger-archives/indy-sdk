@@ -23,20 +23,19 @@ impl PointG1 {
         unimplemented!();
     }
 
-    pub fn mul(&mut self, gr: &mut GroupOrderElement) -> Result<PointG1, CryptoError> {
+    pub fn mul(&self, gr: &GroupOrderElement) -> Result<PointG1, CryptoError> {
         unimplemented!();
     }
 
-    pub fn add(&mut self, q: &mut PointG1) -> Result<&mut PointG1, CryptoError> {
-        //unimplemented!();
-        Ok(self)
+    pub fn add(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
+        unimplemented!()
     }
 
-    pub fn to_string(&mut self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CryptoError> {
         unimplemented!();
     }
 
-    pub fn to_bytes(&mut self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         unimplemented!();
     }
 
@@ -51,35 +50,64 @@ impl GroupOrderElement {
         unimplemented!();
     }
 
-    pub fn pow_mod(&mut self, e: &mut GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn pow_mod(&self, e: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         // need to use powmod where n - group_order
         unimplemented!();
     }
 
-    pub fn add_mod(&mut self, r: &GroupOrderElement) -> Result<&mut GroupOrderElement, CryptoError> {
+    pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         //need to use rmod after add
-        //unimplemented!();
-        Ok(self)
+        unimplemented!()
     }
 
-    pub fn mul_mod(&mut self, r: &mut GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn mul_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         // use modmul where n - group_order
         unimplemented!();
     }
 
-    pub fn inverse(&mut self) -> Result<GroupOrderElement, CryptoError> {
+    pub fn inverse(&self) -> Result<GroupOrderElement, CryptoError> {
         unimplemented!();
     }
 
-    pub fn to_string(&mut self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CryptoError> {
         unimplemented!();
     }
 
-    pub fn to_bytes(&mut self, b: &mut [u8]) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         unimplemented!();
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {
+        unimplemented!();
+    }
+}
+
+impl Pair {
+    pub fn pair(p: &PointG1, q: &PointG1) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn mul(&self, b: &Pair) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn pow(&self, b: &GroupOrderElement) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn inverse(&self) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn to_string(&self) -> Result<String, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn from_bytes(b: &[u8]) -> Result<Pair, CryptoError> {
         unimplemented!();
     }
 }
