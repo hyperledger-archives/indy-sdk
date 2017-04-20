@@ -1,4 +1,5 @@
 pub mod constants;
+pub mod helpers;
 pub mod issuer;
 pub mod prover;
 pub mod types;

@@ -5,6 +5,9 @@ use errors::crypto::CryptoError;
 use errors::pool::PoolError;
 use errors::wallet::WalletError;
 
+use api::ErrorCode;
+use errors::ToErrorCode;
+
 #[derive(Debug)]
 pub enum SignusError {
     CryptoError(CryptoError),
@@ -36,6 +39,16 @@ impl error::Error for SignusError {
             SignusError::CryptoError(ref err) => Some(err),
             SignusError::PoolError(ref err) => Some(err),
             SignusError::WalletError(ref err) => Some(err)
+        }
+    }
+}
+
+impl ToErrorCode for SignusError {
+    fn to_error_code(&self) -> ErrorCode {
+        match *self {
+            SignusError::CryptoError(ref err) => err.to_error_code(),
+            SignusError::PoolError(ref err) => err.to_error_code(),
+            SignusError::WalletError(ref err) => err.to_error_code(),
         }
     }
 }
