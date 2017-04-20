@@ -8,6 +8,7 @@ pub struct PointG2 {
 
 }
 
+#[derive(Copy, Clone)]
 pub struct GroupOrderElement {
 
 }
@@ -50,15 +51,20 @@ impl GroupOrderElement {
         unimplemented!();
     }
 
-    pub fn pow(&mut self, e: &mut GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn pow_mod(&mut self, e: &mut GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         // need to use powmod where n - group_order
         unimplemented!();
     }
 
-    pub fn add(&mut self, r: &GroupOrderElement) -> Result<&mut GroupOrderElement, CryptoError> {
+    pub fn add_mod(&mut self, r: &GroupOrderElement) -> Result<&mut GroupOrderElement, CryptoError> {
         //need to use rmod after add
         //unimplemented!();
         Ok(self)
+    }
+
+    pub fn mul_mod(&mut self, r: &mut GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+        // use modmul where n - group_order
+        unimplemented!();
     }
 
     pub fn inverse(&mut self) -> Result<GroupOrderElement, CryptoError> {
