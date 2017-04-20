@@ -22,4 +22,23 @@ impl CallbacksHelpers {
         callbacks.push(closure);
         ((callbacks.len() - 1) as i32, Some(create_pool_ledger_callback))
     }
+
+    pub fn closure_to_open_pool_ledger_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
+                                          -> (i32,
+                                              Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                               pool_handle: i32)>) {
+        lazy_static! {
+            static ref CREATE_POOL_LEDGER_CALLBACKS: Mutex<Vec<Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
+        }
+
+        extern "C" fn open_pool_ledger_callback(command_handle: i32, err: ErrorCode, pool_handle: i32) {
+            let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(command_handle as usize);
+            cb(err, pool_handle)
+        }
+
+        let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
+        callbacks.push(closure);
+        ((callbacks.len() - 1) as i32, Some(open_pool_ledger_callback))
+    }
 }
