@@ -1,4 +1,5 @@
 use services::crypto::wrappers::bn::BigNumber;
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
@@ -30,6 +31,24 @@ pub struct PublicKey {
     pub r: HashMap<String, BigNumber>,
     pub rctxt: BigNumber,
     pub z: BigNumber
+}
+
+pub struct RevocationPublicKey {
+    pub g: PointG1,
+    pub h: PointG1,
+    pub h0: PointG1,
+    pub h1: PointG1,
+    pub h2: PointG1,
+    pub htilde: PointG1,
+    pub u: PointG1,
+    pub pk: PointG1,
+    pub y: PointG1,
+    pub x: GroupOrderElement
+}
+
+pub struct RevocationSecretKey {
+    pub x: GroupOrderElement,
+    pub sk: GroupOrderElement
 }
 
 #[derive(Debug)]

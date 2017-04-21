@@ -13,6 +13,8 @@ use services::crypto::anoncreds::types::{
     Claims,
     PrimaryClaim,
     PublicKey,
+    RevocationPublicKey,
+    RevocationSecretKey,
     Schema,
     SecretKey
 };
@@ -22,6 +24,7 @@ use services::crypto::anoncreds::helpers::{
     get_hash_as_int
 };
 use services::crypto::wrappers::bn::BigNumber;
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
 use std::collections::HashMap;
 
 pub struct Issuer {}
@@ -30,8 +33,8 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: Schema) -> Result<((PublicKey, SecretKey)), CryptoError> {
-        (Issuer::_generate_keys(&schema)) //TODO non revocation
+    pub fn generate_keys(&self, schema: Schema) -> Result<((PublicKey, SecretKey), (RevocationPublicKey, RevocationSecretKey)), CryptoError> {
+        Ok((Issuer::_generate_keys(&schema)?, Issuer::_generate_revocation_keys()?))
     }
 
     pub fn create_claim() {
@@ -78,7 +81,50 @@ impl Issuer {
         ))
     }
 
-    fn _generate_revocation_keys() {}
+    fn _generate_revocation_keys() -> Result<(RevocationPublicKey, RevocationSecretKey), CryptoError> {
+        let h = PointG1::new()?;
+        let h0 = PointG1::new()?;
+        let h1 = PointG1::new()?;
+        let h2 = PointG1::new()?;
+        let g = PointG1::new()?;
+        let htilde = PointG1::new()?;
+        let u = PointG1::new()?;
+        let x = GroupOrderElement::new()?;
+        let sk = GroupOrderElement::new()?;
+        let pk = g.mul(&sk)?;
+        let y = h.mul(&x)?;
+        Ok((
+            RevocationPublicKey {
+                g: g,
+                h: h,
+                h0: h0,
+                h1: h1,
+                h2: h2,
+                htilde: htilde,
+                u: u,
+                pk: pk,
+                y: y,
+                x: x
+            },
+            RevocationSecretKey {
+                x: x,
+                sk: sk
+            }
+        ))
+    }
+
+    pub fn issue_accumulator(pkr: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
+        let gamma = GroupOrderElement::new()?;
+        let mut g: Vec<PointG1> = Vec::new();
+        let g_count = 2 * max_claim_num;
+
+        for i in 0..g_count {
+            if i != max_claim_num + 1 {
+
+            }
+        }
+        unimplemented!();
+    }
 
     fn _issuer_primary_claim() {}
 
