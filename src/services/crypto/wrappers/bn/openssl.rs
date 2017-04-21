@@ -339,10 +339,11 @@ impl From<ParseIntError> for CryptoError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::logger::LoggerUtils;
 
     #[test]
     fn generate_prime_in_range_works() {
-        ::env_logger::init().unwrap();
+        LoggerUtils::init();
 
         let bn = BigNumber::new().unwrap();
         let start = bn.rand(250).unwrap();
