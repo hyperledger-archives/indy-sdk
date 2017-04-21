@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::cmp;
 
 use self::ring::digest::{ Algorithm, Digest };
-use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder, json };
+use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder };
 
 use services::ledger::merkletree::hashutils::{ Hashable, HashUtils };
 
