@@ -70,6 +70,10 @@ impl GroupOrderElement {
         unimplemented!();
     }
 
+    pub fn mod_neg(&self) -> Result<GroupOrderElement, CryptoError> {
+        unimplemented!();
+    }
+
     pub fn to_string(&self) -> Result<String, CryptoError> {
         unimplemented!();
     }
