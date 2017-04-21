@@ -4,9 +4,11 @@
 
 #[macro_use]
 extern crate log;
+
 #[macro_use]
 extern crate lazy_static;
-extern crate env_logger;
+
+extern crate rustc_serialize;
 
 // Not that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]

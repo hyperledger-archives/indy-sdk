@@ -124,7 +124,7 @@ impl Prover {
     //        let mut res: Vec<(ClaimRequest, ClaimInitData)> = Vec::new();
     //        for &d in data.iter() {
     //            let (pk, ms, prover_id) = d;
-    //            res.push(try!(Prover::create_claim_request(&self, &pk, &ms, &prover_id)));
+    //            res.push(Prover::create_claim_request(&self, &pk, &ms, &prover_id)?);
     //        }
     //        Ok(res)
     //    }
