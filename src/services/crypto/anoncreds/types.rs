@@ -269,40 +269,12 @@ pub struct NonRevocProof {
 }
 
 pub struct AccumulatorPublicKey {
-    pub z: PointG1,
+    pub z: Pair,
     pub seq_id: i32
 }
 
 
 //impl block
-impl PrimaryClaim {
-    pub fn update_vprime(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
-        self.v_prime = self.v_prime.add(v_prime)?;
-        Ok(())
-    }
-}
-
-impl NonRevocationClaim {
-    pub fn update_v(&mut self, v_prime: &GroupOrderElement) -> Result<(), CryptoError> {
-        self.v = self.v.add_mod(v_prime)?;
-        Ok(())
-    }
-}
-
-impl Claims {
-    pub fn init_primary_claim(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
-        self.primary_claim.update_vprime(v_prime)?;
-        Ok(())
-    }
-
-    pub fn init_non_revocation_claim(&mut self, v_prime: &GroupOrderElement) -> Result<(), CryptoError> {
-        if let Some(ref mut non_revocation_claim) = self.non_revocation_claim {
-            non_revocation_claim.borrow_mut().update_v(v_prime)?;
-        }
-        Ok(())
-    }
-}
-
 impl PrimaryEqualInitProof {
     pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         Ok(vec![self.a_prime.clone()?])

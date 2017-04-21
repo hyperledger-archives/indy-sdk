@@ -13,6 +13,7 @@ use services::crypto::anoncreds::constants::{
 };
 use services::crypto::anoncreds::types::{
     Accumulator,
+    AccumulatorPublicKey,
     ClaimInitData,
     Claims,
     ClaimRequest,
@@ -129,13 +130,52 @@ impl Prover {
     //    }
 
     pub fn process_claim(&self, claims: RefCell<Claims>, primary_claim_init_data: ClaimInitData,
-                         revocation_claim_init_data: RevocationClaimInitData)
+                         revocation_claim_init_data: RevocationClaimInitData,
+                         pkr: RevocationPublicKey, acc: Accumulator, acc_pk: AccumulatorPublicKey, m2: BigNumber)
                          -> Result<RefCell<Claims>, CryptoError> {
-        claims.borrow_mut().init_primary_claim(&primary_claim_init_data.v_prime)?;
-        if let Some(_) = claims.borrow().non_revocation_claim {
-            claims.borrow_mut().init_non_revocation_claim(&revocation_claim_init_data.v_prime)?;
+        Prover::_init_primary_claim(&claims, &primary_claim_init_data.v_prime)?;
+        if let Some(ref non_revocation_claim) = claims.borrow().non_revocation_claim {
+            Prover::_init_non_revocation_claim(non_revocation_claim, &revocation_claim_init_data.v_prime,
+                                               &pkr, &acc, &acc_pk, &m2)?;
         }
         Ok(claims)
+    }
+
+    pub fn _init_primary_claim(claim: &RefCell<Claims>, v_prime: &BigNumber) -> Result<(), CryptoError> {
+        let mut claim = claim.borrow_mut();
+        claim.primary_claim.v_prime = v_prime.add(&claim.primary_claim.v_prime)?;
+        Ok(())
+    }
+
+    pub fn _init_non_revocation_claim(claim: &RefCell<NonRevocationClaim>, v_prime: &GroupOrderElement,
+                                      pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey, m2: &BigNumber)
+                                      -> Result<(), CryptoError> {
+        let mut claim_mut = claim.borrow_mut();
+        claim_mut.v = v_prime.add_mod(&claim_mut.v)?;
+        Prover::_test_witness_credential(claim, pkr, acc, acc_pk, m2)?;
+        Ok(())
+    }
+
+    pub fn _test_witness_credential(claim: &RefCell<NonRevocationClaim>, pkr: &RevocationPublicKey, acc: &Accumulator,
+                                    acc_pk: &AccumulatorPublicKey, m2: &BigNumber) -> Result<(), CryptoError> {
+        let z_calc = Pair {}.mul(&Pair {}.inverse()?)?;
+        if z_calc != acc_pk.z {
+            return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
+        }
+
+        let pair_gg_calc = Pair {};
+        let pair_gg = Pair {};
+        if pair_gg_calc != pair_gg {
+            return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
+        }
+
+        let pair_h1 = Pair {};
+        let pair_h2 = Pair {};
+        if pair_h1 != pair_h2 {
+            return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
+        }
+
+        Ok(())
     }
 
     pub fn present_proof(&self, pk: PublicKey, ms: BigNumber, pkr: RevocationPublicKey,
@@ -143,7 +183,7 @@ impl Prover {
                          nonce: BigNumber, tails: HashMap<i32, PointG1>)
                          -> Result<(FullProof, HashMap<String, BigNumber>), CryptoError> {
         let (claims, revealed_attrs_with_values) = Prover::_find_claims(proof_input, all_claims)?;
-        let proof  = Prover::_prepare_proof(claims, &nonce, &pk, &pkr, accum, &ms, &tails)?;
+        let proof = Prover::_prepare_proof(claims, &nonce, &pk, &pkr, accum, &ms, &tails)?;
         Ok((proof, revealed_attrs_with_values))
     }
 

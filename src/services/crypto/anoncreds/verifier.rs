@@ -17,7 +17,7 @@ use services::crypto::anoncreds::helpers::{AppendByteArray, get_hash_as_int, big
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
-use services::crypto::wrappers::pair::{Pair, PointG1};
+use services::crypto::wrappers::pair::Pair;
 use services::crypto::anoncreds::prover::Prover;
 
 pub struct Verifier {}
@@ -523,7 +523,7 @@ pub mod mocks {
 
     pub fn get_accum_publick_key() -> Result<AccumulatorPublicKey, CryptoError> {
         Ok(AccumulatorPublicKey {
-            z: PointG1 {},
+            z: Pair {},
             seq_id: 1
         })
     }

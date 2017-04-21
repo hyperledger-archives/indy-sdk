@@ -137,3 +137,11 @@ impl BytesView for GroupOrderElement {
         Ok(self.to_bytes()?)
     }
 }
+
+impl Eq for Pair {}
+
+impl PartialEq for Pair {
+    fn eq(&self, other: &Pair) -> bool {
+        unimplemented!();
+    }
+}
