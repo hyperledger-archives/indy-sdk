@@ -115,7 +115,7 @@ impl Issuer {
 
     pub fn issue_accumulator(pkr: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
         let gamma = GroupOrderElement::new()?;
-        let mut g: Vec<PointG1> = Vec::new();
+        let g: Vec<PointG1> = Vec::new();
         let g_count = 2 * max_claim_num;
 
         for i in 0..g_count {
