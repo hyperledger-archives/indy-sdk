@@ -1,12 +1,12 @@
 use errors::crypto::CryptoError;
 
-pub struct PointG1 {
+pub struct PointG1 {}
 
-}
+pub struct PointG2 {}
 
-pub struct PointG2 {
+pub struct GroupOrderElement {}
 
-}
+pub struct Pair {}
 
 #[derive(Copy, Clone)]
 pub struct GroupOrderElement {
