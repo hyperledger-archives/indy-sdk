@@ -4,18 +4,10 @@ pub struct PointG1 {}
 
 pub struct PointG2 {}
 
+#[derive(Copy, Clone)]
 pub struct GroupOrderElement {}
 
 pub struct Pair {}
-
-#[derive(Copy, Clone)]
-pub struct GroupOrderElement {
-
-}
-
-pub struct Pair {
-
-}
 
 impl PointG1 {
     pub fn new() -> Result<PointG1, CryptoError> {
