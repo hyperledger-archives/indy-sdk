@@ -69,13 +69,28 @@ pub struct Accumulator {
     pub accumulator_id: i32,
     pub acc: PointG1,
     pub v: HashSet<i32>,
-    pub max_claim_num: i32
+    pub max_claim_num: i32,
+    pub current_i: i32
+}
+
+impl Accumulator {
+    pub fn is_full(&self) -> bool {
+        self.current_i > self.max_claim_num
+    }
+}
+
+pub struct Witness {
+    pub sigma_i: PointG1,
+    pub u_i: PointG1,
+    pub g_i: PointG1,
+    pub omega: PointG1,
+    pub v: HashSet<i32>
 }
 
 pub struct ClaimRequest {
     pub user_id: String,
     pub u: BigNumber,
-    //    ur: BigNumber
+    pub ur: PointG1
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -109,6 +124,17 @@ pub struct PrimaryClaim {
     pub a: BigNumber,
     pub e: BigNumber,
     pub v_prime: BigNumber
+}
+
+pub struct NonRevocationClaim {
+    pub accumulator_id: i32,
+    pub sigma: PointG1,
+    pub c: GroupOrderElement,
+    pub vr_prime_prime: GroupOrderElement,
+    pub witness: Witness,
+    pub g_i: PointG1,
+    pub i: i32,
+    pub m2: GroupOrderElement
 }
 
 pub struct ProofInput {

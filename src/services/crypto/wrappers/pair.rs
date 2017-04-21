@@ -1,5 +1,6 @@
 use errors::crypto::CryptoError;
 
+#[derive(Copy, Clone)]
 pub struct PointG1 {}
 
 pub struct PointG2 {}

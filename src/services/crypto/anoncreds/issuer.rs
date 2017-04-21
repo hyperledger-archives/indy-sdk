@@ -14,12 +14,14 @@ use services::crypto::anoncreds::types::{
     ByteOrder,
     ClaimRequest,
     Claims,
+    NonRevocationClaim,
     PrimaryClaim,
     PublicKey,
     RevocationPublicKey,
     RevocationSecretKey,
     Schema,
-    SecretKey
+    SecretKey,
+    Witness
 };
 use services::crypto::anoncreds::helpers::{
     random_qr,
@@ -146,7 +148,8 @@ impl Issuer {
                 accumulator_id: accumulator_id,
                 acc: acc,
                 v: v,
-                max_claim_num: max_claim_num
+                max_claim_num: max_claim_num,
+                current_i: 1
             },
             g,
             AccumulatorPublicKey {
@@ -158,10 +161,87 @@ impl Issuer {
             ))
     }
 
-    fn _issue_non_revocation_claim(accumulator: &Accumulator, pk_r: &RevocationPublicKey,
-                                   sk_r: &RevocationSecretKey, g: &Vec<PointG1>,
-                                   sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber) {
-        unimplemented!()
+    fn _issue_non_revocation_claim(accumulator: RefCell<Accumulator>, pk_r: &RevocationPublicKey,
+                                   sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
+                                   sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
+                                   claim_request: &ClaimRequest, seq_number: Option<i32>) -> Result<(NonRevocationClaim, RefCell<Accumulator>, i64), CryptoError> {
+        if accumulator.borrow().is_full() {
+            return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
+        }
+
+        let mut i;
+
+        if let Some(x) = seq_number {
+            i = x;
+        } else {
+            i = accumulator.borrow().current_i;
+        }
+
+        accumulator.borrow_mut().current_i += 1;
+
+        let vr_prime_prime = GroupOrderElement::new()?;
+        let c = GroupOrderElement::new()?;
+        let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
+
+        let g_i = g.get(&i)
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
+
+        let sigma = pk_r.h0
+            .add(&pk_r.h1.mul(&m2)?)?
+            .add(&claim_request.ur)?
+            .add(g_i)?
+            .add(&pk_r.h2.mul(&vr_prime_prime)?)?
+            .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
+
+        let mut omega = PointG1::new_inf()?;
+
+        for j in &accumulator.borrow().v {
+            let index = accumulator.borrow().max_claim_num + 1 - j + i;
+            omega = omega.add(g.get(&index)
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+        }
+
+        let sigma_i = pk_r.g
+            .mul(&sk_r.sk
+                .add_mod(&sk_accum.gamma
+                    .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?
+                .inverse()?)?;
+        let u_i = pk_r.u
+            .mul(&sk_accum.gamma
+                .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?;
+
+        let index = accumulator.borrow().max_claim_num + 1 - i;
+        accumulator.borrow_mut().acc = accumulator.borrow().acc.add(g.get(&index)
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+        accumulator.borrow_mut().v.insert(i);
+
+        let witness = Witness {
+            sigma_i: sigma_i,
+            u_i: u_i,
+            g_i: g_i.clone(),
+            omega: omega,
+            v: accumulator.borrow().v.clone()
+        };
+
+        let timestamp = time::now_utc().to_timespec().sec;
+        let acc_id = accumulator.borrow().accumulator_id;
+
+        Ok(
+            (
+                NonRevocationClaim {
+                    accumulator_id: acc_id,
+                    sigma: sigma,
+                    c: c,
+                    vr_prime_prime: vr_prime_prime,
+                    witness: witness,
+                    g_i: g_i.clone(),
+                    i: i,
+                    m2: m2
+                },
+                accumulator,
+                timestamp
+            )
+        )
     }
 
     pub fn revoke(accumulator: RefCell<Accumulator>, g: &HashMap<i32, PointG1>, i: i32) -> Result<(RefCell<Accumulator>, i64), CryptoError> {
