@@ -67,7 +67,7 @@ pub struct AccumulatorSecretKey {
 
 pub struct Accumulator {
     pub accumulator_id: i32,
-    pub acc: i32,
+    pub acc: PointG1,
     pub v: HashSet<i32>,
     pub max_claim_num: i32
 }
