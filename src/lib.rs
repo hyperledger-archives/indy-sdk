@@ -10,6 +10,8 @@ extern crate lazy_static;
 
 extern crate rustc_serialize;
 
+extern crate zmq;
+
 // Not that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
 mod utils;

@@ -1,7 +1,10 @@
-extern crate zmq;
+use rustc_serialize;
+use rustc_serialize::json;
 use std::error;
 use std::io;
 use std::fmt;
+use std::error::Error;
+use zmq;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -58,6 +61,18 @@ impl From<io::Error> for PoolError {
 impl From<zmq::Error> for PoolError {
     fn from(err: zmq::Error) -> PoolError {
         PoolError::Io(io::Error::from(err))
+    }
+}
+
+impl From<json::DecoderError> for PoolError {
+    fn from(err: json::DecoderError) -> PoolError {
+        PoolError::InvalidConfiguration(err.description().to_string())
+    }
+}
+
+impl From<json::EncoderError> for PoolError {
+    fn from(err: json::EncoderError) -> PoolError {
+        PoolError::InvalidConfiguration(err.description().to_string())
     }
 }
 

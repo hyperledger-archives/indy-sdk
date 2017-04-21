@@ -79,8 +79,7 @@ impl PoolCommandExecutor {
     }
 
     fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), PoolError>) + Send>) {
-        // TODO: FIXME: Implement me!!!
-        cb(Ok(()));
+        cb(self.pool_service.create(name, config))
     }
 
     fn delete(&self, name: &str, cb: Box<Fn(Result<(), PoolError>) + Send>) {

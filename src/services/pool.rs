@@ -1,14 +1,17 @@
-extern crate zmq;
-
-use commands::Command;
-use commands::CommandExecutor;
-use commands::pool::PoolCommand;
-use errors::pool::PoolError;
-use self::zmq::Socket;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::thread;
+use std::{fs, thread};
+use std::io::{Error, ErrorKind, Write};
+use std::path::{Path, PathBuf};
+use rustc_serialize;
+use rustc_serialize::json;
+use zmq;
+
+use commands::{Command, CommandExecutor};
+use commands::pool::PoolCommand;
+use errors::pool::PoolError;
 use utils::sequence::SequenceUtils;
+use utils::environment::EnvironmentUtils;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -17,7 +20,7 @@ pub struct PoolService {
 struct Pool {
     name: String,
     id: i32,
-    send_sock: Socket,
+    send_sock: zmq::Socket,
     worker: Option<thread::JoinHandle<()>>,
 }
 
@@ -71,6 +74,19 @@ impl Drop for Pool {
     }
 }
 
+#[derive(RustcDecodable, RustcEncodable)]
+struct PoolConfig {
+    genesis_txn: String
+}
+
+impl PoolConfig {
+    fn default(name: &str) -> PoolConfig {
+        let mut txn = name.to_string();
+        txn += ".txn";
+        PoolConfig { genesis_txn: txn }
+    }
+}
+
 impl PoolService {
     pub fn new() -> PoolService {
         PoolService {
@@ -78,8 +94,34 @@ impl PoolService {
         }
     }
 
-    pub fn create(&self, name: &str, config: &str) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
+        let mut path = EnvironmentUtils::pool_path(name);
+        let pool_config: PoolConfig = match config {
+            Some(config) => json::decode(config)?,
+            None => PoolConfig::default(name)
+        };
+
+        if path.as_path().exists() {
+            return Err(PoolError::NotCreated("Already created".to_string()));
+        }
+
+        fs::create_dir_all(path.as_path());
+
+        path.push(name);
+        path.set_extension("txn");
+        fs::copy(&pool_config.genesis_txn, path.as_path())?;
+        path.pop();
+
+        path.push("config");
+        path.set_extension("json");
+        let mut f: fs::File = fs::File::create(path.as_path())?;
+        f.write(json::encode(&pool_config)?.as_bytes())?;
+        f.flush()?;
+
+        // TODO probably create another one file pool.json with pool description,
+        // but now there is no info to save (except name witch equal to directory)
+
+        Ok(())
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
