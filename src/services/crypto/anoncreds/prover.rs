@@ -806,21 +806,22 @@ mod tests {
     use super::*;
     use services::crypto::anoncreds::verifier;
 
-    //    #[test]
-    //    fn present_proof_works() {
-    //        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
-    //        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
-    //        let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
-    //        let proof_input = mocks::get_proof_input();
-    //        let claims = mocks::get_all_claims().unwrap();
-    //        let pkr = mocks::get_public_key_revocation().unwrap();
-    //        let accum = mocks::get_accumulator().unwrap();
-    //        let prover = Prover::new();
-    //
-    //        let res = prover.present_proof(pk, ms, pkr, accum, proof_input, claims, nonce);
-    //
-    //        assert!(res.is_ok());
-    //    }
+    #[test]
+    fn present_proof_works() {
+        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
+        let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
+        let proof_input = mocks::get_proof_input();
+        let claims = mocks::get_all_claims().unwrap();
+        let pkr = mocks::get_public_key_revocation().unwrap();
+        let accum = mocks::get_accumulator().unwrap();
+        let prover = Prover::new();
+        let tails = mocks::get_tails();
+
+        let res = prover.present_proof(pk, ms, pkr, accum, proof_input, claims, nonce, tails);
+
+        assert!(res.is_ok());
+    }
 
     #[test]
     fn find_claims_works() {
@@ -841,29 +842,30 @@ mod tests {
         assert!(revealed_attrs.contains_key("name"));
     }
 
-    //    #[test]
-    //    fn prepare_proof_works() {
-    //        let proof_input = mocks::get_proof_input();
-    //        let claims = mocks::get_all_claims().unwrap();
-    //        let schema_key = mocks::get_schema_key();
-    //        let res = Prover::_find_claims(proof_input, claims);
-    //        assert!(res.is_ok());
-    //        let (proof_claims, revealed_attrs) = res.unwrap();
-    //
-    //        let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
-    //        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
-    //        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
-    //        let pkr = mocks::get_public_key_revocation().unwrap();
-    //        let accum = mocks::get_accumulator().unwrap();
-    //        let res = Prover::_prepare_proof(proof_claims, &nonce, &pk, &pkr, &accum, &ms);
-    //
-    //        assert!(res.is_ok());
-    //        let proof = res.unwrap();
-    //
-    //        assert_eq!(proof.proofs.len(), 1);
-    //        assert_eq!(proof.schema_keys.len(), 1);
-    //        assert_eq!(proof.c_list.len(), 6);
-    //    }
+    #[test]
+    fn prepare_proof_works() {
+        let proof_input = mocks::get_proof_input();
+        let claims = mocks::get_all_claims().unwrap();
+        let schema_key = mocks::get_schema_key();
+        let res = Prover::_find_claims(proof_input, claims);
+        assert!(res.is_ok());
+        let (proof_claims, revealed_attrs) = res.unwrap();
+
+        let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
+        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
+        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
+        let pkr = mocks::get_public_key_revocation().unwrap();
+        let accum = mocks::get_accumulator().unwrap();
+        let tails = mocks::get_tails();
+        let res = Prover::_prepare_proof(proof_claims, &nonce, &pk, &pkr, accum, &ms, &tails);
+
+        assert!(res.is_ok());
+        let proof = res.unwrap();
+
+        assert_eq!(proof.proofs.len(), 1);
+        assert_eq!(proof.schema_keys.len(), 1);
+        assert_eq!(proof.c_list.len(), 6);
+    }
 
     #[test]
     fn init_proof_works() {
@@ -1176,5 +1178,11 @@ pub mod mocks {
         let mut res: HashMap<SchemaKey, Claims> = HashMap::new();
         res.insert(mocks::get_schema_key(), mocks::get_claims_object()?);
         Ok(res)
+    }
+
+    pub fn get_tails() -> HashMap<i32, PointG1> {
+        let mut res: HashMap<i32, PointG1> = HashMap::new();
+        res.insert(1, PointG1 {});
+        res
     }
 }
