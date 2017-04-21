@@ -45,20 +45,20 @@ impl WalletCommandExecutor {
                 info!(target: "wallet_command_executor", "Create command received");
                 self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
                             config.as_ref().map(String::as_str), credentials.as_ref().map(String::as_str), cb);
-            },
+            }
             WalletCommand::Open(pool_handle, name, config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Open command received");
                 self.open(pool_handle, &name, config.as_ref().map(String::as_str),
                           credentials.as_ref().map(String::as_str), cb);
-            },
+            }
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
                 self.close(handle, cb);
-            },
+            }
             WalletCommand::Delete(name, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
                 self.delete(&name, cb);
-            },
+            }
             WalletCommand::SetSeqNoForValue(wallet_handle, wallet_key, cb) => {
                 info!(target: "wallet_command_executor", "SetSeqNoForValue command received");
                 self.set_seq_no_for_value(wallet_handle, &wallet_key, cb);
@@ -73,7 +73,7 @@ impl WalletCommandExecutor {
               config: Option<&str>,
               credentials: Option<&str>,
               cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(Ok(()));
+        cb(self.wallet_service.create(pool_name, xtype, name, config, credentials));
     }
 
     fn open(&self,
@@ -82,7 +82,9 @@ impl WalletCommandExecutor {
             config: Option<&str>,
             credentials: Option<&str>,
             cb: Box<Fn(Result<i32, WalletError>) + Send>) {
-        cb(Ok(0));
+        //let pool_name = "sandbox"; // TODO: FIXME: Change to pool_service.get_name(handle);
+        //cb(self.wallet_service.open(pool_name, name, config, credentials));
+        cb(Ok(0))
     }
 
     fn close(&self,

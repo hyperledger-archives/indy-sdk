@@ -5,6 +5,7 @@ use self::default::DefaultWalletType;
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
 use utils::json::{JsonEncodable, JsonDecodable};
+use utils::sequence::SequenceUtils;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -19,9 +20,9 @@ trait Wallet {
 }
 
 trait WalletType {
-    fn create(&self, name: &str, config: &str, credentials: &str) -> Result<(), WalletError>;
+    fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
     fn delete(&self, name: &str) -> Result<(), WalletError>;
-    fn open(&self, name: &str, credentials: &str) -> Result<Box<Wallet>, WalletError>;
+    fn open(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
 }
 
 #[derive(RustcDecodable, RustcEncodable)]
@@ -77,7 +78,10 @@ impl WalletService {
         unimplemented!();
     }
 
-    pub fn create(&self, pool_name: &str, xtype: &str, name: &str, config: &str, credentials: &str) -> Result<(), WalletError> {
+    pub fn create(&self, pool_name: &str, xtype: Option<&str>, name: &str, config: Option<&str>,
+                  credentials: Option<&str>) -> Result<(), WalletError> {
+        let xtype = xtype.unwrap_or("default");
+
         let wallet_types = self.types.borrow();
         if !wallet_types.contains_key(xtype) {
             return Err(WalletError::UnknownType(xtype.to_string()))
@@ -97,7 +101,7 @@ impl WalletService {
         let mut descriptor_file = File::create(_wallet_descriptor_path(name))?;
         descriptor_file
             .write_all(
-                &WalletDescriptor::new(name, config, credentials)
+                &WalletDescriptor::new(pool_name, xtype, name)
                     .encode()
                     .unwrap() // TODO: FIXME: Provide error mapping!!!
                     .as_str()
@@ -105,9 +109,11 @@ impl WalletService {
             )?;
         descriptor_file.sync_all()?;
 
-        let mut config_file = File::create(_wallet_config_path(name))?;
-        config_file.write_all(config.as_bytes())?;
-        config_file.sync_all()?;
+        if config.is_some() {
+            let mut config_file = File::create(_wallet_config_path(name))?;
+            config_file.write_all(config.unwrap().as_bytes())?;
+            config_file.sync_all()?;
+        }
 
         Ok(())
     }
@@ -135,20 +141,65 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn open(name: &str, credentials: &str) -> Result<i32, WalletError> {
-        unimplemented!()
+    pub fn open(&self, pool_name: &str, name: &str, credentials: Option<&str>) -> Result<i32, WalletError> {
+        let desciptor = {
+            let mut descriptor_json = String::new();
+            WalletDescriptor::decode({
+                let mut descriptor_file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
+                descriptor_file.read_to_string(&mut descriptor_json)?;
+                descriptor_json.as_str()
+            }).unwrap() // FIXME: Provide type mapping
+        };
+
+        if desciptor.pool_name != pool_name {
+            return Err(WalletError::IncorrectPool(pool_name.to_string()));
+        }
+
+        let wallet_types = self.types.borrow();
+        if !wallet_types.contains_key(desciptor.xtype.as_str()) {
+            return Err(WalletError::UnknownType(desciptor.xtype));
+        }
+
+        let config = {
+            let config_path = _wallet_config_path(name);
+
+            if config_path.exists() {
+                let mut config_json = String::new();
+                let mut file = File::open(config_path)?;
+                file.read_to_string(&mut config_json)?;
+                Some(config_json)
+            } else {
+                None
+            }
+        };
+
+        let wallet_type = wallet_types.get(desciptor.xtype.as_str()).unwrap();
+        let wallet = wallet_type.open(name, config.as_ref().map(String::as_str), credentials)?;
+
+        let wallet_handle = SequenceUtils::get_next_id();
+        self.wallets.borrow_mut().insert(wallet_handle, wallet);
+        Ok(wallet_handle)
     }
 
-    pub fn close(handle: i32) -> Result<(), WalletError> {
-        unimplemented!()
+    pub fn close(&self, handle: i32) -> Result<(), WalletError> {
+        match self.wallets.borrow_mut().remove(&handle) {
+            Some(wallet) => Ok(()),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
     }
 
-    pub fn set(handle: i32, key: &str, sub_key: &str, value: &str) -> Result<i32, WalletError> {
-        unimplemented!()
+    pub fn set(&self, handle: i32, key: &str, value: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(wallet) => wallet.set(key,value),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
     }
 
-    pub fn get(handle: i32, key: &str, sub_key: &str) -> Result<(String, i32), WalletError> {
-        unimplemented!()
+    pub fn get(&self, handle: i32, key: &str) -> Result<String, WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(wallet) => wallet.get(key),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
     }
 }
 
