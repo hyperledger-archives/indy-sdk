@@ -151,6 +151,12 @@ impl PoolService {
     pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
         unimplemented!()
     }
+
+    pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
+        self.pools.borrow().get(&handle).map_or(
+            Err(PoolError::InvalidHandle("Doesn't exists".to_string())),
+            |pool: &Pool| Ok(pool.name.clone()))
+    }
 }
 
 #[cfg(test)]
