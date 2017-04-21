@@ -137,6 +137,45 @@ pub struct NonRevocationClaim {
     pub m2: GroupOrderElement
 }
 
+pub struct NonRevocProofXList {
+    pub rho: GroupOrderElement,
+    pub r: GroupOrderElement,
+    pub r_prime: GroupOrderElement,
+    pub r_prime_prime: GroupOrderElement,
+    pub r_prime_prime_prime: GroupOrderElement,
+    pub o: GroupOrderElement,
+    pub o_prime: GroupOrderElement,
+    pub m: GroupOrderElement,
+    pub m_prime: GroupOrderElement,
+    pub t: GroupOrderElement,
+    pub t_prime: GroupOrderElement,
+    pub m2: GroupOrderElement,
+    pub s: GroupOrderElement,
+    pub c: GroupOrderElement
+}
+
+pub struct NonRevocProofTauList {
+    pub t1: Pair,
+    pub t2: Pair,
+    pub t3: Pair,
+    pub t4: Pair,
+    pub t5: Pair,
+    pub t6: Pair,
+    pub t7: Pair,
+    pub t8: Pair
+}
+
+#[derive(Clone)]
+pub struct NonRevocProofCList {
+    pub e: PointG1,
+    pub d: PointG1,
+    pub a: PointG1,
+    pub g: PointG1,
+    pub w: PointG1,
+    pub s: PointG1,
+    pub u: PointG1
+}
+
 pub struct ProofInput {
     pub revealed_attrs: HashSet<String>,
     pub predicates: Vec<Predicate>,
