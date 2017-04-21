@@ -1,5 +1,5 @@
 use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
@@ -57,10 +57,40 @@ pub struct SecretKey {
     pub q: BigNumber
 }
 
+pub struct AccumulatorPublicKey {
+    pub z: Pair
+}
+
+pub struct AccumulatorSecretKey {
+    pub gamma: GroupOrderElement
+}
+
+pub struct Accumulator {
+    pub accumulator_id: i32,
+    pub acc: PointG1,
+    pub v: HashSet<i32>,
+    pub max_claim_num: i32,
+    pub current_i: i32
+}
+
+impl Accumulator {
+    pub fn is_full(&self) -> bool {
+        self.current_i > self.max_claim_num
+    }
+}
+
+pub struct Witness {
+    pub sigma_i: PointG1,
+    pub u_i: PointG1,
+    pub g_i: PointG1,
+    pub omega: PointG1,
+    pub v: HashSet<i32>
+}
+
 pub struct ClaimRequest {
     pub user_id: String,
     pub u: BigNumber,
-    //    ur: BigNumber
+    pub ur: PointG1
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -94,6 +124,56 @@ pub struct PrimaryClaim {
     pub a: BigNumber,
     pub e: BigNumber,
     pub v_prime: BigNumber
+}
+
+pub struct NonRevocationClaim {
+    pub accumulator_id: i32,
+    pub sigma: PointG1,
+    pub c: GroupOrderElement,
+    pub vr_prime_prime: GroupOrderElement,
+    pub witness: Witness,
+    pub g_i: PointG1,
+    pub i: i32,
+    pub m2: GroupOrderElement
+}
+
+pub struct NonRevocProofXList {
+    pub rho: GroupOrderElement,
+    pub r: GroupOrderElement,
+    pub r_prime: GroupOrderElement,
+    pub r_prime_prime: GroupOrderElement,
+    pub r_prime_prime_prime: GroupOrderElement,
+    pub o: GroupOrderElement,
+    pub o_prime: GroupOrderElement,
+    pub m: GroupOrderElement,
+    pub m_prime: GroupOrderElement,
+    pub t: GroupOrderElement,
+    pub t_prime: GroupOrderElement,
+    pub m2: GroupOrderElement,
+    pub s: GroupOrderElement,
+    pub c: GroupOrderElement
+}
+
+pub struct NonRevocProofTauList {
+    pub t1: Pair,
+    pub t2: Pair,
+    pub t3: Pair,
+    pub t4: Pair,
+    pub t5: Pair,
+    pub t6: Pair,
+    pub t7: Pair,
+    pub t8: Pair
+}
+
+#[derive(Clone)]
+pub struct NonRevocProofCList {
+    pub e: PointG1,
+    pub d: PointG1,
+    pub a: PointG1,
+    pub g: PointG1,
+    pub w: PointG1,
+    pub s: PointG1,
+    pub u: PointG1
 }
 
 pub struct ProofInput {

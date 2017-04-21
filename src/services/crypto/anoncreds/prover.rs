@@ -56,7 +56,8 @@ impl Prover {
         Ok((
             ClaimRequest {
                 user_id: prover_id.clone(),
-                u: claim_init_data.u.clone()?
+                u: claim_init_data.u.clone()?,
+                ur: unimplemented!()
             },
             claim_init_data
         ))
