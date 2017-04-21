@@ -12,11 +12,18 @@ use services::crypto::anoncreds::constants::{
     LARGE_M2_TILDE
 };
 use services::crypto::anoncreds::types::{
+    Accumulator,
     ClaimInitData,
     Claims,
     ClaimRequest,
     FullProof,
     InitProof,
+    NonRevocationClaim,
+    NonRevocProof,
+    NonRevocProofCList,
+    NonRevocInitProof,
+    NonRevocProofTauList,
+    NonRevocProofXList,
     Proof,
     ProofClaims,
     ProofInput,
@@ -29,13 +36,25 @@ use services::crypto::anoncreds::types::{
     PrimaryPredicateGEProof,
     PrimaryProof,
     PublicKey,
+    RevocationClaimInitData,
+    RevocationPublicKey,
     SchemaKey
 };
+use services::crypto::anoncreds::helpers::{
+    get_mtilde,
+    four_squares,
+    split_revealed_attrs,
+    get_hash_as_int,
+    CopyFrom,
+    clone_bignum_map,
+    group_element_to_bignum,
+    bignum_to_group_element
+};
+use services::crypto::anoncreds::verifier::Verifier;
 use services::crypto::wrappers::bn::BigNumber;
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
-use services::crypto::anoncreds::verifier::Verifier;
-use services::crypto::anoncreds::helpers::{get_mtilde, four_squares, split_revealed_attrs, get_hash_as_int, CopyFrom, clone_bignum_map};
 
 pub struct Prover {}
 
@@ -48,17 +67,24 @@ impl Prover {
         BigNumber::new()?.rand(LARGE_MASTER_SECRET)
     }
 
-    pub fn create_claim_request(&self, pk: PublicKey, ms: BigNumber, prover_id: String)
-                                -> Result<(ClaimRequest, ClaimInitData), CryptoError> {
-        let claim_init_data = try!(Prover::_gen_claim_init_data(&pk, &ms));
-        //TODO non revocation claim part  Ur = None if not reqNonRevoc else await self._genUr(schemaId)
+    pub fn create_claim_request(&self, pk: PublicKey, pkr: &mut RevocationPublicKey, ms: BigNumber,
+                                prover_id: String, req_non_revoc: bool)
+                                -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
+        let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
+
+        let (u, revocation_primary_claim_init_data) = if req_non_revoc {
+            let data = Prover::_generate_revocation_claim_init_data(pkr)?;
+            (Some(data.u.clone()), Some(data))
+        } else { (None, None) };
 
         Ok((
             ClaimRequest {
                 user_id: prover_id.clone(),
-                u: try!(claim_init_data.u.clone())
+                u: primary_claim_init_data.u.clone()?,
+                ur: u
             },
-            claim_init_data
+            primary_claim_init_data,
+            revocation_primary_claim_init_data
         ))
     }
 
@@ -72,23 +98,25 @@ impl Prover {
     //        Ok(res)
     //    }
 
-    pub fn process_claim<'a>(&self, claims: &'a mut Claims, claim_init_data: ClaimInitData)
+    pub fn process_claim<'a>(&self, claims: &'a mut Claims, primary_claim_init_data: ClaimInitData,
+                             revocation_claim_init_data: RevocationClaimInitData)
                              -> Result<&'a mut Claims, CryptoError> {
-        try!(claims.prepare_primary_claim(&claim_init_data.v_prime));
+        claims.init_primary_claim(&primary_claim_init_data.v_prime)?;
+        if let Some(_) = claims.non_revocation_claim {
+            claims.init_non_revocation_claim(&revocation_claim_init_data.v_prime)?;
+        }
         Ok(claims)
     }
 
-    fn _gen_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CryptoError> {
+    fn _gen_primary_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CryptoError> {
         let v_prime = try!(BigNumber::new()?.rand(LARGE_VPRIME));
 
         let result_mul = try!(public_key.rms.mod_exp(&ms, &public_key.n, None));
 
-        let u = try!(
-            public_key.s
-                .mod_exp(&v_prime, &public_key.n, None)?
-                .mul(&result_mul, None)?
-                .modulus(&public_key.n, None)
-        );
+        let u = public_key.s
+            .mod_exp(&v_prime, &public_key.n, None)?
+            .mul(&result_mul, None)?
+            .modulus(&public_key.n, None)?;
 
         Ok(ClaimInitData {
             u: u,
@@ -97,10 +125,10 @@ impl Prover {
     }
 
     pub fn present_proof(&self, proof_input: ProofInput, all_claims: HashMap<SchemaKey, Claims>,
-                         nonce: &BigNumber, pk: PublicKey, ms: BigNumber)
+                         nonce: BigNumber, pk: PublicKey, ms: BigNumber, pkr: RevocationPublicKey, accum: Accumulator)
                          -> Result<(FullProof, HashMap<String, BigNumber>), CryptoError> {
         let (claims, revealed_attrs_with_values) = try!(Prover::_find_claims(proof_input, all_claims));
-        let proof = try!(Prover::_prepare_proof(claims, &nonce, &pk, &ms));
+        let proof = try!(Prover::_prepare_proof(claims, &nonce, &pk, &pkr, &accum, &ms));
         Ok((proof, revealed_attrs_with_values))
     }
 
@@ -159,7 +187,8 @@ impl Prover {
     }
 
     fn _prepare_proof(claims: HashMap<SchemaKey, ProofClaims>, nonce: &BigNumber, pk: &PublicKey,
-                      ms: &BigNumber) -> Result<FullProof, CryptoError> {
+                      pkr: &RevocationPublicKey, accum: &Accumulator, ms: &BigNumber)
+                      -> Result<FullProof, CryptoError> {
         let m1_tilde = BigNumber::new()?.rand(LARGE_M2_TILDE)?;
 
         let mut init_proofs: HashMap<SchemaKey, InitProof> = HashMap::new();
@@ -167,17 +196,28 @@ impl Prover {
         let mut tau_list: Vec<BigNumber> = Vec::new();
 
         for (schema_key, claim) in claims {
-            let m2_tilde: Option<BigNumber> = None; //TODO replace it on if non_revoc_init_proof.is_some() {non_revoc_init_proof.tau_tist_params} else { None };
+            let mut non_revoc_init_proof = None;
+            let mut m2_tilde: Option<BigNumber> = None;
+
+            if let Some(non_revocation_claim) = claim.claims.non_revocation_claim {
+                let proof = Prover::_init_non_revocation_proof(&non_revocation_claim, &accum, &pkr)?;
+                //c_list.extend_from_slice(&proof.as_list()?)?;  //TODO there is PROBLEM WITH TYPES
+                //tau_list.extend_from_slice(&proof.as_tau_list()?)?;
+                m2_tilde = Some(group_element_to_bignum(&proof.tau_list_params.m2)?);
+                non_revoc_init_proof = Some(proof);
+            }
+
             let primary_init_proof = Prover::_init_proof(pk, &claim.claims.primary_claim, &claim.revealed_attrs,
                                                          &claim.predicates, &m1_tilde, m2_tilde)?;
 
-            c_list.clone_from_vector(&primary_init_proof.as_c_list()?)?;
+            c_list.clone_from_vector(&primary_init_proof.as_list()?)?;
             tau_list.clone_from_vector(&primary_init_proof.as_tau_list()?)?;
 
             init_proofs.insert(
                 schema_key.clone(),
                 InitProof {
-                    primary_init_proof: primary_init_proof
+                    primary_init_proof: primary_init_proof,
+                    non_revoc_init_proof: non_revoc_init_proof
                 }
             );
         }
@@ -194,10 +234,16 @@ impl Prover {
 
         for (schema_key, init_proof) in &init_proofs {
             schema_keys.push(schema_key.clone());
+            let mut non_revoc_proof = None;
+            if let Some(ref non_revoc_init_proof) = init_proof.non_revoc_init_proof {
+                non_revoc_proof = Some(Prover::_finalize_non_revocation_proof(&non_revoc_init_proof, &c_h)?);
+            }
+
             let primary_proof = Prover::_finalize_proof(&ms, &init_proof.primary_init_proof, &c_h)?;
             proofs.push(
                 Proof {
-                    primary_proof: primary_proof
+                    primary_proof: primary_proof,
+                    non_revoc_proof: non_revoc_proof
                 }
             )
         }
@@ -491,12 +537,12 @@ impl Prover {
         })
     }
 
-    //TODO looks like this functions are not need
     fn get_c_list(init_proofs: HashMap<String, InitProof>) -> Result<Vec<BigNumber>, CryptoError> {
         let mut c_list: Vec<BigNumber> = Vec::new();
         for value in init_proofs.values() {
-            c_list.clone_from_vector(&value.primary_init_proof.as_c_list()?)?;
-            //c_list.clone_from_vector(&value.non_revoc_init_proof.as_c_list()?)?;
+            let pip_as_list = value.primary_init_proof.as_list()?;
+            c_list.clone_from_vector(&pip_as_list)?;
+            //c_list.append(&mut try!(value.non_revoc_init_proof.as_list()));
         }
         Ok(c_list)
     }
@@ -504,10 +550,171 @@ impl Prover {
     fn get_tau_list(init_proofs: HashMap<String, InitProof>) -> Result<Vec<BigNumber>, CryptoError> {
         let mut tau_list: Vec<BigNumber> = Vec::new();
         for value in init_proofs.values() {
-            tau_list.clone_from_vector(&value.primary_init_proof.as_tau_list()?)?;
-            //tau_list.clone_from_vector(&value.non_revoc_init_proof.as_tau_list()?)?;
+            let pip_as_tau_list = value.primary_init_proof.as_tau_list()?;
+            tau_list.clone_from_vector(&pip_as_tau_list)?;
+            //tau_list.append(&mut try!(value.non_revoc_init_proof.as_list()));
         }
         Ok(tau_list)
+    }
+
+    fn _generate_revocation_claim_init_data(pkr: &mut RevocationPublicKey) -> Result<RevocationClaimInitData, CryptoError> {
+        let vr_prime = GroupOrderElement::new()?;
+        let ur = pkr.h2.mul(&vr_prime)?;
+        Ok(RevocationClaimInitData {
+            v_prime: vr_prime,
+            u: ur
+        })
+    }
+
+    fn _gen_c_list_params(claim: &NonRevocationClaim) -> Result<NonRevocProofXList, CryptoError> {
+        let rho = GroupOrderElement::new()?;
+        let r = GroupOrderElement::new()?;
+        let r_prime = GroupOrderElement::new()?;
+        let r_prime_prime = GroupOrderElement::new()?;
+        let r_prime_prime_prime = GroupOrderElement::new()?;
+        let o = GroupOrderElement::new()?;
+        let o_prime = GroupOrderElement::new()?;
+        let m = rho.add_mod(&claim.c)?;
+        let m_prime = r.add_mod(&r_prime_prime)?;
+        let t = o.add_mod(&claim.c)?;
+        let t_prime = o_prime.add_mod(&r_prime_prime)?;
+        let m2 = GroupOrderElement::from_bytes(&claim.m2.to_bytes()?)?;
+
+        Ok(NonRevocProofXList {
+            rho: rho,
+            r: r,
+            r_prime: r_prime,
+            r_prime_prime: r_prime_prime,
+            r_prime_prime_prime: r_prime_prime_prime,
+            o: o,
+            o_prime: o_prime,
+            m: m,
+            m_prime: m_prime,
+            t: t,
+            t_prime: t_prime,
+            m2: m2,
+            s: claim.v,
+            c: claim.c
+        })
+    }
+
+    fn _create_c_list_values(claim: &NonRevocationClaim, params: &NonRevocProofXList,
+                             pkr: &RevocationPublicKey) -> Result<NonRevocProofCList, CryptoError> {
+        let e = pkr.h
+            .mul(&params.rho)?
+            .add(
+                &pkr.htilde.mul(&params.o)?
+            )?;
+
+        let d = pkr.g
+            .mul(&params.r)?
+            .add(
+                &pkr.htilde.mul(&params.o_prime)?
+            )?;
+
+        let a = claim.sigma
+            .add(
+                &pkr.htilde.mul(&params.rho)?
+            )?;
+
+        let g = claim.gi
+            .add(
+                &pkr.htilde.mul(&params.r)?
+            )?;
+
+        let w = claim.witness.omega
+            .add(
+                &pkr.htilde.mul(&params.r_prime)?
+            )?;
+
+        let s = claim.witness.sigmai
+            .add(
+                &pkr.htilde.mul(&params.r_prime_prime)?
+            )?;
+
+        let u = claim.witness.ui
+            .add(
+                &pkr.htilde.mul(&params.r_prime_prime_prime)?
+            )?;
+
+        Ok(NonRevocProofCList {
+            e: e,
+            d: d,
+            a: a,
+            g: g,
+            w: w,
+            s: s,
+            u: u
+        })
+    }
+
+    fn _gen_tau_list_params() -> Result<NonRevocProofXList, CryptoError> {
+        Ok(NonRevocProofXList {
+            rho: GroupOrderElement::new()?,
+            r: GroupOrderElement::new()?,
+            r_prime: GroupOrderElement::new()?,
+            r_prime_prime: GroupOrderElement::new()?,
+            r_prime_prime_prime: GroupOrderElement::new()?,
+            o: GroupOrderElement::new()?,
+            o_prime: GroupOrderElement::new()?,
+            m: GroupOrderElement::new()?,
+            m_prime: GroupOrderElement::new()?,
+            t: GroupOrderElement::new()?,
+            t_prime: GroupOrderElement::new()?,
+            s: GroupOrderElement::new()?,
+            c: GroupOrderElement::new()?,
+            m2: GroupOrderElement::new()?,
+        })
+    }
+
+    pub fn _create_tau_list_value() -> Result<NonRevocProofTauList, CryptoError> {
+        Ok(NonRevocProofTauList {
+            t1: Pair {},
+            t2: Pair {},
+            t3: Pair {},
+            t4: Pair {},
+            t5: Pair {},
+            t6: Pair {},
+            t7: Pair {},
+            t8: Pair {}
+        })
+    }
+
+    fn _finalize_non_revocation_proof(init_proof: &NonRevocInitProof, c_h: &BigNumber) -> Result<NonRevocProof, CryptoError> {
+        let ch_num_z = bignum_to_group_element(&c_h)?;
+        let mut x_list: Vec<GroupOrderElement> = Vec::new();
+
+        for (x, y) in init_proof.tau_list_params.as_list()?.iter().zip(init_proof.c_list_params.as_list()?.iter()) {
+            x_list.push(x.sub_mod(
+                &ch_num_z.add_mod(&y)?
+            )?);
+        }
+
+        Ok(NonRevocProof {
+            x_list: NonRevocProofXList::from_list(x_list),
+            c_list: init_proof.c_list.clone()
+        })
+    }
+
+
+    fn _init_non_revocation_proof(claim: &NonRevocationClaim, accum: &Accumulator, pkr: &RevocationPublicKey) -> Result<NonRevocInitProof, CryptoError> {
+        let mut c_list: Vec<PointG1> = Vec::new();
+        let mut tau_list: Vec<Pair> = Vec::new();
+
+        let c_list_params = Prover::_gen_c_list_params(&claim)?;
+        let proof_c_list = Prover::_create_c_list_values(&claim, &c_list_params, &pkr)?;
+        c_list.extend_from_slice(&proof_c_list.as_list()?);
+
+        let tau_list_params = Prover::_gen_tau_list_params()?;
+        let proof_tau_list = Prover::_create_tau_list_value()?;
+        tau_list.extend_from_slice(&proof_tau_list.as_list()?);
+
+        Ok(NonRevocInitProof {
+            c_list_params: c_list_params,
+            tau_list_params: tau_list_params,
+            c_list: proof_c_list,
+            tau_list: proof_tau_list
+        })
     }
 }
 
@@ -523,9 +730,11 @@ mod tests {
         let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
         let proof_input = mocks::get_proof_input();
         let claims = mocks::get_all_claims().unwrap();
+        let pkr = mocks::get_public_key_revocation().unwrap();
+        let accum = mocks::get_accumulator().unwrap();
         let prover = Prover::new();
 
-        let res = prover.present_proof(proof_input, claims, &nonce, pk, ms);
+        let res = prover.present_proof(proof_input, claims, nonce, pk, ms, pkr, accum);
 
         assert!(res.is_ok());
     }
@@ -561,7 +770,9 @@ mod tests {
         let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
         let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
-        let res = Prover::_prepare_proof(proof_claims, &nonce, &pk, &ms);
+        let pkr = mocks::get_public_key_revocation().unwrap();
+        let accum = mocks::get_accumulator().unwrap();
+        let res = Prover::_prepare_proof(proof_claims, &nonce, &pk, &pkr, &accum, &ms);
 
         assert!(res.is_ok());
         let proof = res.unwrap();
@@ -665,6 +876,34 @@ mod tests {
 pub mod mocks {
     use super::*;
     use services::crypto::anoncreds::types::{PrimaryClaim, PrimaryEqualInitProof, PrimaryPrecicateGEInitProof, PrimaryInitProof, ProofInput, Claims};
+
+    pub fn get_public_key_revocation() -> Result<RevocationPublicKey, CryptoError> {
+        Ok(RevocationPublicKey {
+            g: PointG1 {},
+            h: PointG1 {},
+            h0: PointG1 {},
+            h1: PointG1 {},
+            h2: PointG1 {},
+            htilde: PointG1 {},
+            u: PointG1 {},
+            pk: PointG1 {},
+            y: PointG1 {},
+            x: GroupOrderElement {}
+        })
+    }
+
+    pub fn get_accumulator() -> Result<Accumulator, CryptoError> {
+        let mut v: HashSet<i32> = HashSet::new();
+        v.insert(1);
+
+        Ok(Accumulator {
+            l: 5,
+            v: v,
+            acc: PointG1 {},
+            current_i: 2,
+            ia: "110".to_string()
+        })
+    }
 
     pub fn get_predicate() -> Predicate {
         Predicate {
@@ -845,7 +1084,8 @@ pub mod mocks {
 
     pub fn get_claims_object() -> Result<Claims, CryptoError> {
         Ok(Claims {
-            primary_claim: get_primary_claim()?
+            primary_claim: get_primary_claim()?,
+            non_revocation_claim: None
         })
     }
 

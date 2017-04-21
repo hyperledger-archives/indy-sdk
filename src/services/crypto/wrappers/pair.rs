@@ -1,21 +1,15 @@
 use errors::crypto::CryptoError;
 
-pub struct PointG1 {
+#[derive(Copy, Clone)]
+pub struct PointG1 {}
 
-}
-
-pub struct PointG2 {
-
-}
+pub struct PointG2 {}
 
 #[derive(Copy, Clone)]
-pub struct GroupOrderElement {
+pub struct GroupOrderElement {}
 
-}
-
-pub struct Pair {
-
-}
+#[derive(Copy, Clone)]
+pub struct Pair {}
 
 impl PointG1 {
     pub fn new() -> Result<PointG1, CryptoError> {
@@ -57,6 +51,11 @@ impl GroupOrderElement {
 
     pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         //need to use rmod after add
+        unimplemented!()
+    }
+
+    pub fn sub_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+        //need to use modneg if sub is negative
         unimplemented!()
     }
 

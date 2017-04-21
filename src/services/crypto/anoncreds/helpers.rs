@@ -5,6 +5,7 @@ extern crate openssl;
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::constants::LARGE_MVECT;
 use services::crypto::wrappers::bn::BigNumber;
+use services::crypto::wrappers::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
@@ -106,6 +107,14 @@ pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>)
         res.insert(k.clone(), v.clone()?);
     }
     Ok(res)
+}
+
+pub fn group_element_to_bignum(el: &GroupOrderElement) -> Result<BigNumber, CryptoError> {
+    Ok(BigNumber::from_bytes(&el.to_bytes()?)?)
+}
+
+pub fn bignum_to_group_element(num: &BigNumber) -> Result<GroupOrderElement, CryptoError> {
+    Ok(GroupOrderElement::from_bytes(&num.to_bytes()?)?)
 }
 
 #[cfg(test)]

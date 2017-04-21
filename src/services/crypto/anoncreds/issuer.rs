@@ -248,7 +248,8 @@ impl Issuer {
         let c1 = Issuer::_issue_primary_claim(&pk, &sk, &claim_request.u, &context, &attributes)?;
 
         Ok(Claims {
-            primary_claim: c1
+            primary_claim: c1,
+            non_revocation_claim: None
         })
     }
 

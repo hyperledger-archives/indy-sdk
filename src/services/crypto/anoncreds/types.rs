@@ -1,5 +1,5 @@
 use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
@@ -60,7 +60,7 @@ pub struct SecretKey {
 pub struct ClaimRequest {
     pub user_id: String,
     pub u: BigNumber,
-    //    ur: BigNumber
+    pub ur: Option<PointG1>
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -84,7 +84,7 @@ pub struct ClaimInitData {
 
 pub struct Claims {
     pub primary_claim: PrimaryClaim,
-    //nonRevocClai,
+    pub non_revocation_claim: Option<NonRevocationClaim>
 }
 
 #[derive(Debug)]
@@ -117,13 +117,13 @@ pub struct FullProof {
 }
 
 pub struct Proof {
-    pub primary_proof: PrimaryProof
-    //non_revocation_proof
+    pub primary_proof: PrimaryProof,
+    pub non_revoc_proof: Option<NonRevocProof>
 }
 
 pub struct InitProof {
     pub primary_init_proof: PrimaryInitProof,
-    //nonRevocInitProof
+    pub non_revoc_init_proof: Option<NonRevocInitProof>
 }
 
 pub struct PrimaryInitProof {
@@ -183,6 +183,94 @@ pub struct PrimaryPredicateGEProof {
     pub predicate: Predicate
 }
 
+pub struct RevocationClaimInitData {
+    pub u: PointG1,
+    pub v_prime: GroupOrderElement
+}
+
+pub struct Witness {
+    pub sigmai: PointG1,
+    pub ui: PointG1,
+    pub gi: PointG1,
+    pub omega: PointG1,
+    pub v: HashSet<i32>
+}
+
+pub struct NonRevocationClaim {
+    pub ia: String,
+    pub sigma: PointG1,
+    pub c: GroupOrderElement,
+    pub v: GroupOrderElement,
+    pub gi: PointG1,
+    pub witness: Witness,
+    pub i: i32,
+    pub m2: BigNumber
+}
+
+pub struct NonRevocProofXList {
+    pub rho: GroupOrderElement,
+    pub r: GroupOrderElement,
+    pub r_prime: GroupOrderElement,
+    pub r_prime_prime: GroupOrderElement,
+    pub r_prime_prime_prime: GroupOrderElement,
+    pub o: GroupOrderElement,
+    pub o_prime: GroupOrderElement,
+    pub m: GroupOrderElement,
+    pub m_prime: GroupOrderElement,
+    pub t: GroupOrderElement,
+    pub t_prime: GroupOrderElement,
+    pub m2: GroupOrderElement,
+    pub s: GroupOrderElement,
+    pub c: GroupOrderElement
+}
+
+pub struct NonRevocProofTauList {
+    pub t1: Pair,
+    pub t2: Pair,
+    pub t3: Pair,
+    pub t4: Pair,
+    pub t5: Pair,
+    pub t6: Pair,
+    pub t7: Pair,
+    pub t8: Pair
+}
+
+#[derive(Clone)]
+pub struct NonRevocProofCList {
+    pub e: PointG1,
+    pub d: PointG1,
+    pub a: PointG1,
+    pub g: PointG1,
+    pub w: PointG1,
+    pub s: PointG1,
+    pub u: PointG1
+}
+
+pub struct Accumulator {
+    pub l: i32,
+    pub v: HashSet<i32>,
+    pub acc: PointG1,
+    pub current_i: i32,
+    pub ia: String
+}
+
+pub struct NonRevocInitProof {
+    pub c_list_params: NonRevocProofXList,
+    pub tau_list_params: NonRevocProofXList,
+    pub c_list: NonRevocProofCList,
+    pub tau_list: NonRevocProofTauList
+}
+
+pub struct NonRevocProof {
+    pub x_list: NonRevocProofXList,
+    pub c_list: NonRevocProofCList
+}
+
+pub struct AccumulatorPublicKey {
+    pub z: PointG1,
+    pub seq_id: i32
+}
+
 
 //impl block
 impl PrimaryClaim {
@@ -192,15 +280,29 @@ impl PrimaryClaim {
     }
 }
 
+impl NonRevocationClaim {
+    pub fn update_v(&mut self, v_prime: &GroupOrderElement) -> Result<(), CryptoError> {
+        self.v = self.v.add_mod(v_prime)?;
+        Ok(())
+    }
+}
+
 impl Claims {
-    pub fn prepare_primary_claim(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
+    pub fn init_primary_claim(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
         self.primary_claim.update_vprime(v_prime)?;
+        Ok(())
+    }
+
+    pub fn init_non_revocation_claim(&mut self, v_prime: &GroupOrderElement) -> Result<(), CryptoError> {
+        if let Some(ref mut non_revocation_claim) = self.non_revocation_claim {
+            non_revocation_claim.update_v(v_prime)?;
+        }
         Ok(())
     }
 }
 
 impl PrimaryEqualInitProof {
-    pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         Ok(vec![self.a_prime.clone()?])
     }
 
@@ -210,7 +312,7 @@ impl PrimaryEqualInitProof {
 }
 
 impl PrimaryPrecicateGEInitProof {
-    pub fn as_c_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
         Ok(&self.c_list)
     }
 
@@ -220,10 +322,10 @@ impl PrimaryPrecicateGEInitProof {
 }
 
 impl PrimaryInitProof {
-    pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut c_list: Vec<BigNumber> = self.eq_proof.as_c_list()?;
+    pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
+        let mut c_list: Vec<BigNumber> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
-            c_list.clone_from_vector(ge_proof.as_c_list()?)?;
+            c_list.clone_from_vector(ge_proof.as_list()?)?;
         }
         Ok(c_list)
     }
@@ -234,5 +336,55 @@ impl PrimaryInitProof {
             tau_list.clone_from_vector(ge_proof.as_tau_list()?)?;
         }
         Ok(tau_list)
+    }
+}
+
+impl NonRevocProofCList {
+    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+        Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
+    }
+}
+
+impl NonRevocProofTauList {
+    pub fn as_list(&self) -> Result<Vec<Pair>, CryptoError> {
+        Ok(vec![self.t1, self.t2, self.t3, self.t4, self.t5, self.t6, self.t7, self.t8])
+    }
+}
+
+impl NonRevocInitProof {
+    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+        let vec = self.c_list.as_list()?;
+        Ok(vec)
+    }
+
+    pub fn as_tau_list(&self) -> Result<Vec<Pair>, CryptoError> {
+        let vec = self.tau_list.as_list()?;
+        Ok(vec)
+    }
+}
+
+impl NonRevocProofXList {
+    pub fn as_list(&self) -> Result<Vec<GroupOrderElement>, CryptoError> {
+        Ok(vec![self.rho, self.o, self.c, self.o_prime, self.m, self.m_prime, self.t, self.t_prime,
+                self.m2, self.s, self.r, self.r_prime, self.r_prime_prime, self.r_prime_prime_prime])
+    }
+
+    pub fn from_list(seq: Vec<GroupOrderElement>) -> NonRevocProofXList {
+        NonRevocProofXList {
+            rho: seq[0],
+            o: seq[1],
+            c: seq[2],
+            o_prime: seq[3],
+            m: seq[4],
+            m_prime: seq[5],
+            t: seq[6],
+            t_prime: seq[7],
+            m2: seq[8],
+            s: seq[9],
+            r: seq[10],
+            r_prime: seq[11],
+            r_prime_prime: seq[12],
+            r_prime_prime_prime: seq[13]
+        }
     }
 }

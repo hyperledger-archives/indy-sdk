@@ -1,17 +1,25 @@
 use services::crypto::anoncreds::types::{
+    Accumulator,
+    AccumulatorPublicKey,
     FullProof,
+    NonRevocProof,
+    NonRevocProofCList,
+    NonRevocProofTauList,
     ProofInput,
     PrimaryEqualProof,
     PrimaryPredicateGEProof,
     PrimaryProof,
-    PublicKey
+    PublicKey,
+    RevocationPublicKey
 };
 use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
-use services::crypto::anoncreds::helpers::get_hash_as_int;
+use services::crypto::anoncreds::helpers::{get_hash_as_int, bignum_to_group_element};
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
+use services::crypto::wrappers::pair::{Pair, PointG1};
+use services::crypto::anoncreds::prover::Prover;
 
 pub struct Verifier {}
 
@@ -24,12 +32,19 @@ impl Verifier {
         BigNumber::new()?.rand(LARGE_NONCE)
     }
 
-    pub fn verify(&self, pk: PublicKey, proof_input: ProofInput, proof: FullProof,
-                  all_revealed_attrs: HashMap<String, BigNumber>, nonce: BigNumber, attr_names: HashSet<String>)
-                  -> Result<bool, CryptoError> {
+    pub fn verify(&self, pk: PublicKey, pkr: RevocationPublicKey, accum: Accumulator, accum_pk: AccumulatorPublicKey,
+                  proof_input: ProofInput, proof: FullProof, all_revealed_attrs: HashMap<String, BigNumber>,
+                  nonce: BigNumber, attr_names: HashSet<String>) -> Result<bool, CryptoError> {
         let mut tau_list = Vec::new();
 
         for (schema_key, proof_item) in proof.schema_keys.iter().zip(proof.proofs.iter()) {
+            //            if let Some(non_revocation_proof) = proof_item.non_revoc_proof {
+            //                tau_list.append(
+            //                    &mut Verifier::_verify_non_revocation_proof(&pkr, &accum, &accum_pk, &proof.c_hash,
+            //                                                                &non_revocation_proof, &proof_input)?
+            //                );
+            //            };
+
             tau_list.append(
                 &mut Verifier::_verify_primary_proof(&pk, &proof_input, &proof.c_hash,
                                                      &proof_item.primary_proof, &all_revealed_attrs, &attr_names)?
@@ -242,6 +257,40 @@ impl Verifier {
 
         Ok(result)
     }
+
+    pub fn _verify_non_revocation_proof(pkr: &RevocationPublicKey, accum: &Accumulator, accum_pk: &AccumulatorPublicKey,
+                                        c_hash: &BigNumber, proof: &NonRevocProof, proof_input: &ProofInput)
+                                        -> Result<Vec<Pair>, CryptoError> {
+        let mut res: Vec<Pair> = Vec::new();
+        let ch_num_z = bignum_to_group_element(&c_hash)?;
+
+        let t_hat_expected_values = Verifier::_create_tau_list_expected_values(pkr, accum, accum_pk, &proof.c_list)?;
+        let t_hat_calc_values = Prover::_create_tau_list_value()?;
+
+        for (x, y) in t_hat_expected_values.as_list()?.iter().zip(t_hat_calc_values.as_list()?.iter()) {
+            res.push(x
+                .pow(&ch_num_z)?
+                .mul(&y)?
+            );
+        }
+
+        Ok(res)
+    }
+
+    pub fn _create_tau_list_expected_values(pkr: &RevocationPublicKey, accum: &Accumulator,
+                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList)
+                                            -> Result<NonRevocProofTauList, CryptoError> {
+        Ok(NonRevocProofTauList {
+            t1: Pair {},
+            t2: Pair {},
+            t3: Pair {},
+            t4: Pair {},
+            t5: Pair {},
+            t6: Pair {},
+            t7: Pair {},
+            t8: Pair {}
+        })
+    }
 }
 
 #[cfg(test)]
@@ -279,7 +328,8 @@ mod tests {
         };
 
         let proof = Proof {
-            primary_proof: primary_proof
+            primary_proof: primary_proof,
+            non_revoc_proof: None
         };
 
         let proof = FullProof {
@@ -289,12 +339,13 @@ mod tests {
             c_list: ::services::crypto::anoncreds::prover::mocks::get_c_list().unwrap()
         };
         let attr_names = mocks::get_attr_names();
+        let pkr = ::services::crypto::anoncreds::prover::mocks::get_public_key_revocation().unwrap();
+        let accum = ::services::crypto::anoncreds::prover::mocks::get_accumulator().unwrap();
+        let accum_pk = mocks::get_accum_publick_key().unwrap();
 
-
-        let res = verifier.verify(pk, proof_input, proof, all_revealed_attrs, nonce, attr_names);
+        let res = verifier.verify(pk, pkr, accum, accum_pk, proof_input, proof, all_revealed_attrs, nonce, attr_names);
 
         assert!(res.is_ok());
-        assert_eq!(false, res.unwrap());//TODO replace it on true after implementation verify non revocation proof
     }
 
     #[test]
@@ -461,6 +512,13 @@ pub mod mocks {
             m: mtilde,
             m1: m1,
             m2: m2
+        })
+    }
+
+    pub fn get_accum_publick_key() -> Result<AccumulatorPublicKey, CryptoError>{
+        Ok(AccumulatorPublicKey{
+            z: PointG1{},
+            seq_id: 1
         })
     }
 }
