@@ -1,8 +1,6 @@
 extern crate ring;
 extern crate rustc_serialize;
 
-use std::fmt::Display;
-
 use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder };
 use self::ring::digest::{ Algorithm, SHA256 };
 
@@ -17,7 +15,7 @@ use self::merkletree::*;
 
 static DIGEST: &'static Algorithm = &SHA256;
 
-impl<T: AsRef<[u8]> + Clone + Display> MerkleTree<T> {
+impl MerkleTree {
     fn count_bits(v: usize) -> usize {
         let mut ret = 0;
         let mut val = v;
@@ -28,7 +26,7 @@ impl<T: AsRef<[u8]> + Clone + Display> MerkleTree<T> {
         return ret;
     }
 
-    pub fn append(&mut self, node: T) {
+    pub fn append(&mut self, node: TreeLeafData) {
         if self.count == 0 {
             // empty tree
             self.root = Tree::new_leaf(self.algorithm, node);
@@ -37,9 +35,9 @@ impl<T: AsRef<[u8]> + Clone + Display> MerkleTree<T> {
             // add to right subtree
             match self.root.clone() {
                 Tree::Node { ref left, ref right, .. } => {
-                    let mut iter = right.iter().map(|x| (*x).clone()).collect::<Vec<T>>();
+                    let mut iter = right.iter().map(|x| (*x).clone()).collect::<Vec<TreeLeafData>>();
                     iter.push(node);
-                    let new_right = MerkleTree::<T>::from_vec(self.algorithm, iter);
+                    let new_right = MerkleTree::from_vec(self.algorithm, iter);
                     let combined_hash = self.algorithm.hash_nodes(
                         left.hash(),
                         new_right.root_hash() as &Vec<u8>
@@ -58,7 +56,7 @@ impl<T: AsRef<[u8]> + Clone + Display> MerkleTree<T> {
         else
         {
             // add tree layer
-            let new_right = MerkleTree::<T>::from_vec(self.algorithm, vec![ node ]);
+            let new_right = MerkleTree::from_vec(self.algorithm, vec![ node ]);
             match self.root.clone() {
                 Tree::Node { ref left, ref right, ref hash } => {
                     let combined_hash = self.algorithm.hash_nodes(
@@ -92,7 +90,7 @@ impl<T: AsRef<[u8]> + Clone + Display> MerkleTree<T> {
     }
 }
 
-impl<T: AsRef<[u8]> + Encodable> Encodable for MerkleTree<T> {
+impl Encodable for MerkleTree {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         s.emit_enum("MerkleTree", |s| {
             self.root.encode(s)
@@ -100,8 +98,8 @@ impl<T: AsRef<[u8]> + Encodable> Encodable for MerkleTree<T> {
     }
 }
 
-impl<T: AsRef<[u8]> + Decodable + Display> Decodable for MerkleTree<T> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<MerkleTree<T>, D::Error> {
+impl Decodable for MerkleTree {
+    fn decode<D: Decoder>(d: &mut D) -> Result<MerkleTree, D::Error> {
         let r = Tree::decode(d);
         match r {
             Ok(root) => {
@@ -129,11 +127,11 @@ mod tests {
     #[test]
     fn test_merkletree_append() {
         let values = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
-        let mut mt = MerkleTree::<&str>::from_vec(DIGEST, vec![]);
+        let mut mt = MerkleTree::from_vec(DIGEST, vec![]);
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(&i);
+            mt.append(String::from(i));
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
@@ -141,7 +139,8 @@ mod tests {
 
     #[test]
     fn test_valid_proof() {
-        let values    = (1..10).map(|x| vec![x]).collect::<Vec<_>>();
+        let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
+        let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
         let tree      = MerkleTree::from_vec(DIGEST, values.clone());
         let root_hash = tree.root_hash();
 
@@ -155,12 +154,13 @@ mod tests {
 
     #[test]
     fn test_merkletree_serialize() {
-        let values = vec![ "1", "2", "3" ];
-        let mt = MerkleTree::<&str>::from_vec(DIGEST, values.clone());
+        let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
+        let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
+        let mt = MerkleTree::from_vec(DIGEST, values.clone());
         println!("serialize mt: h={}, c={}, rhash={}", mt.height, mt.count, json::encode(&mt.root_hash()).unwrap());
         let serialized = json::encode(&mt).unwrap();
         println!("serialize: {}", serialized);
-        let newmt :MerkleTree<String> = json::decode(serialized.as_str()).unwrap();
+        let newmt: MerkleTree = json::decode(serialized.as_str()).unwrap();
         println!("serialize newmt: h={}, c={}", newmt.height, newmt.count);
 
         let mut collected = Vec::new();
