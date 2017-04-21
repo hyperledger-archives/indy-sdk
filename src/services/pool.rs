@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::thread;
+use utils::sequence::SequenceUtils;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Socket>>,
@@ -60,8 +61,8 @@ impl PoolService {
 
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
-        let pool_id: i32 = CommandExecutor::get_new_id();
-        let cmd_id: i32 = CommandExecutor::get_new_id();
+        let pool_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = SequenceUtils::get_next_id();
         thread::spawn(move || { PoolService::run(recv_cmd_sock, pool_id, cmd_id); });
         self.pools.borrow_mut().insert(pool_id, send_cmd_sock);
         self.pools_names.borrow_mut().insert(name.to_string(), pool_id);

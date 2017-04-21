@@ -41,18 +41,9 @@ lazy_static! {
     static ref COMMAND_EXECUTOR: Mutex<CommandExecutor> = Mutex::new(CommandExecutor::new());
 }
 
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT; //TODO use AtomicI32
-}
-
 impl CommandExecutor {
     pub fn instance<'mutex>() -> MutexGuard<'mutex, CommandExecutor> {
         COMMAND_EXECUTOR.lock().unwrap()
-    }
-
-    pub fn get_new_id() -> i32 {
-        (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
     }
 
     fn new() -> CommandExecutor {
