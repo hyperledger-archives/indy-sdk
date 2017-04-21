@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: ci/ubuntu.dockerfile
-    command: cargo test --color=always
+    command: cargo test --color=always -- --nocapture
     volumes:
       - ".:/home/sovrin/sovrin-client-rust"
     working_dir: /home/sovrin/sovrin-client-rust
