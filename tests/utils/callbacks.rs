@@ -1,8 +1,8 @@
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::collections::HashMap;
-
 use sovrin::api::ErrorCode;
+
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::Mutex;
 
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -27,6 +27,7 @@ impl CallbacksHelpers {
         let mut callbacks = CREATE_POOL_LEDGER_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
+
         (command_handle, Some(create_pool_ledger_callback))
     }
 

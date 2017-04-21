@@ -82,17 +82,17 @@ impl Issuer {
     }
 
     fn _generate_revocation_keys() -> Result<(RevocationPublicKey, RevocationSecretKey), CryptoError> {
-        let mut h = PointG1::new()?;
+        let h = PointG1::new()?;
         let h0 = PointG1::new()?;
         let h1 = PointG1::new()?;
         let h2 = PointG1::new()?;
-        let mut g = PointG1::new()?;
+        let g = PointG1::new()?;
         let htilde = PointG1::new()?;
         let u = PointG1::new()?;
-        let mut x = GroupOrderElement::new()?;
-        let mut sk = GroupOrderElement::new()?;
-        let pk = g.mul(&mut sk)?;
-        let y = h.mul(&mut x)?;
+        let x = GroupOrderElement::new()?;
+        let sk = GroupOrderElement::new()?;
+        let pk = g.mul(&sk)?;
+        let y = h.mul(&x)?;
         Ok((
             RevocationPublicKey {
                 g: g,
@@ -111,6 +111,19 @@ impl Issuer {
                 sk: sk
             }
         ))
+    }
+
+    pub fn issue_accumulator(pkr: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
+        let gamma = GroupOrderElement::new()?;
+        let mut g: Vec<PointG1> = Vec::new();
+        let g_count = 2 * max_claim_num;
+
+        for i in 0..g_count {
+            if i != max_claim_num + 1 {
+
+            }
+        }
+        unimplemented!();
     }
 
     fn _issuer_primary_claim() {}
