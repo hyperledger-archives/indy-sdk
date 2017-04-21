@@ -1,3 +1,4 @@
+extern crate zmq;
 use std::error;
 use std::io;
 use std::fmt;
@@ -51,6 +52,12 @@ impl error::Error for PoolError {
 impl From<io::Error> for PoolError {
     fn from(err: io::Error) -> PoolError {
         PoolError::Io(err)
+    }
+}
+
+impl From<zmq::Error> for PoolError {
+    fn from(err: zmq::Error) -> PoolError {
+        PoolError::Io(io::Error::from(err))
     }
 }
 
