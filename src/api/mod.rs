@@ -45,13 +45,16 @@ pub enum ErrorCode {
 
     // Wallet errors
     // Caller passed invalid wallet handle
-    WalletInvalidHandle,
+    WalletInvalidHandle = 200,
 
     // Unknown type of wallet was passed on create_wallet
-    WalletUnknownTypeError = 200,
+    WalletUnknownTypeError,
 
     // Attempt to register already existing wallet type
     WalletTypeAlreadyRegisteredError,
+
+    // Attempt to create wallet with name used for another exists wallet
+    WalletAlreadyExistsError,
 
     // Requested entity id isn't present in wallet
     WalletNotFoundError,
@@ -65,7 +68,11 @@ pub enum ErrorCode {
     // Trying to use wallet with pool that has different name
     WalletIncompatiblePoolError,
 
+    // Trying to open wallet with invalid configuration
     WalletInvalidConfiguration,
+
+    // Error in wallet backend
+    WalletBackendError,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
@@ -107,6 +114,7 @@ pub enum ErrorCode {
 
     CryptoInvalidUserRevocIndex,
 
+    // Error in crypto backend
     CryptoBackendError,
 
     AnoncredsNotIssuedError,

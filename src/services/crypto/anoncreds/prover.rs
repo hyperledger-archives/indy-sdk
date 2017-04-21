@@ -50,13 +50,13 @@ impl Prover {
 
     pub fn create_claim_request(&self, pk: PublicKey, ms: BigNumber, prover_id: String)
                                 -> Result<(ClaimRequest, ClaimInitData), CryptoError> {
-        let claim_init_data = try!(Prover::_gen_claim_init_data(&pk, &ms));
+        let claim_init_data = Prover::_gen_claim_init_data(&pk, &ms)?;
         //TODO non revocation claim part  Ur = None if not reqNonRevoc else await self._genUr(schemaId)
 
         Ok((
             ClaimRequest {
                 user_id: prover_id.clone(),
-                u: try!(claim_init_data.u.clone())
+                u: claim_init_data.u.clone()?
             },
             claim_init_data
         ))
@@ -67,28 +67,26 @@ impl Prover {
     //        let mut res: Vec<(ClaimRequest, ClaimInitData)> = Vec::new();
     //        for &d in data.iter() {
     //            let (pk, ms, prover_id) = d;
-    //            res.push(try!(Prover::create_claim_request(&self, &pk, &ms, &prover_id)));
+    //            res.push(Prover::create_claim_request(&self, &pk, &ms, &prover_id)?);
     //        }
     //        Ok(res)
     //    }
 
     pub fn process_claim<'a>(&self, claims: &'a mut Claims, claim_init_data: ClaimInitData)
                              -> Result<&'a mut Claims, CryptoError> {
-        try!(claims.prepare_primary_claim(&claim_init_data.v_prime));
+        claims.prepare_primary_claim(&claim_init_data.v_prime)?;
         Ok(claims)
     }
 
     fn _gen_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CryptoError> {
-        let v_prime = try!(BigNumber::new()?.rand(LARGE_VPRIME));
+        let v_prime = BigNumber::new()?.rand(LARGE_VPRIME)?;
 
-        let result_mul = try!(public_key.rms.mod_exp(&ms, &public_key.n, None));
+        let result_mul = public_key.rms.mod_exp(&ms, &public_key.n, None)?;
 
-        let u = try!(
-            public_key.s
-                .mod_exp(&v_prime, &public_key.n, None)?
-                .mul(&result_mul, None)?
-                .modulus(&public_key.n, None)
-        );
+        let u = public_key.s
+            .mod_exp(&v_prime, &public_key.n, None)?
+            .mul(&result_mul, None)?
+            .modulus(&public_key.n, None)?;
 
         Ok(ClaimInitData {
             u: u,
@@ -99,8 +97,8 @@ impl Prover {
     pub fn present_proof(&self, proof_input: ProofInput, all_claims: HashMap<SchemaKey, Claims>,
                          nonce: &BigNumber, pk: PublicKey, ms: BigNumber)
                          -> Result<(FullProof, HashMap<String, BigNumber>), CryptoError> {
-        let (claims, revealed_attrs_with_values) = try!(Prover::_find_claims(proof_input, all_claims));
-        let proof = try!(Prover::_prepare_proof(claims, &nonce, &pk, &ms));
+        let (claims, revealed_attrs_with_values) = Prover::_find_claims(proof_input, all_claims)?;
+        let proof = Prover::_prepare_proof(claims, &nonce, &pk, &ms)?;
         Ok((proof, revealed_attrs_with_values))
     }
 
@@ -122,7 +120,7 @@ impl Prover {
                 match claim.primary_claim.encoded_attributes.get(revealed_attr) {
                     Some(value) => {
                         revealed_attrs_for_claim.insert(revealed_attr.clone());
-                        revealed_attrs_with_values.insert(revealed_attr.clone(), try!(value.clone()));
+                        revealed_attrs_with_values.insert(revealed_attr.clone(), value.clone()?);
                     },
                     _ => { not_found_revealed_attrs.insert(revealed_attr.clone()); }
                 };
