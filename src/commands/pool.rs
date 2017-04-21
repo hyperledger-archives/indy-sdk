@@ -92,11 +92,7 @@ impl PoolCommandExecutor {
     }
 
     fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, PoolError>) + Send>) {
-        let config: String = match config {
-            Some(s) => String::from(s),
-            None => format!("{{\"genesis_txn\": \"{}.txn\"}}", name),
-        };
-        match self.pool_service.open(name, config.as_str()) {
+        match self.pool_service.open(name, config.unwrap_or("TODO: default config")) { //TODO
             Err(err) => { cb(Err(err)); }
             Ok(id) => { self.pending_cbs_opening.borrow_mut().insert(id, cb); }
         };
