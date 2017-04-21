@@ -15,6 +15,9 @@ use services::crypto::anoncreds::types::{
     ClaimRequest,
     Claims,
     NonRevocationClaim,
+    NonRevocProofCList,
+    NonRevocProofTauList,
+    NonRevocProofXList,
     PrimaryClaim,
     PublicKey,
     RevocationPublicKey,
@@ -252,6 +255,36 @@ impl Issuer {
         accumulator.borrow_mut().acc = accumulator.borrow().acc.sub(element)?;
         let timestamp = time::now_utc().to_timespec().sec;
         Ok((accumulator, timestamp))
+    }
+
+    fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+                               params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+        let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
+        let t2 = proof_c.e.mul(&params.c)?
+            .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
+            .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
+//        T3 = ((cmod.pair(proofC.A, pk.h) ** params.c) *
+//            (cmod.pair(pk.htilde, pk.h) ** params.r)) / \
+//        ((cmod.pair(pk.htilde, pk.y) ** params.rho) *
+//            (cmod.pair(pk.htilde, pk.h) ** params.m) *
+//            (cmod.pair(pk.h1, pk.h) ** params.m2) *
+//            (cmod.pair(pk.h2, pk.h) ** params.s))
+//        T4 = (cmod.pair(pk.htilde, accum.acc) ** params.r) * \
+//        (cmod.pair(1 / pk.g, pk.htilde) ** params.rPrime)
+        let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
+//        T6 = (proofC.D ** params.rPrimePrime) * (pk.g ** -params.mPrime) * (
+//            pk.htilde ** -params.tPrime)
+//        T7 = (cmod.pair(pk.pk * proofC.G, pk.htilde) ** params.rPrimePrime) * \
+//        (cmod.pair(pk.htilde, pk.htilde) ** -params.mPrime) * \
+//        (cmod.pair(pk.htilde, proofC.S) ** params.r)
+//        T8 = (cmod.pair(pk.htilde, pk.u) ** params.r) * \
+//        (cmod.pair(1 / pk.g, pk.htilde) ** params.rPrimePrimePrime)
+//        return NonRevocProofTauList(T1, T2, T3, T4, T5, T6, T7, T8)
+        unimplemented!();
+    }
+
+    fn _create_tau_list_expected_values() {
+        
     }
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
