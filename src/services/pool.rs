@@ -52,16 +52,13 @@ impl PoolService {
         }
 
         let zmq_ctx = zmq::Context::new();
-        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
+        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
         let inproc_sock_name: String = format!("inproc://pool_{}", name);
-        if recv_cmd_sock.bind(inproc_sock_name.as_str()).is_err() {
-            return Err(PoolError::Io(Error::new(ErrorKind::ConnectionRefused, "Can't bind inproc socket")));
-        }
 
-        if send_cmd_sock.connect(inproc_sock_name.as_str()).is_err() {
-            return Err(PoolError::Io(Error::new(ErrorKind::ConnectionRefused, "Can't connect to inproc socket")));
-        }
+        recv_cmd_sock.bind(inproc_sock_name.as_str())?;
+
+        send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         let pool_id: i32 = CommandExecutor::get_new_id();
         let cmd_id: i32 = CommandExecutor::get_new_id();
