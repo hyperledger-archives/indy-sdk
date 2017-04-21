@@ -43,3 +43,4 @@ rustc-serialize = "0.3"
 sodiumoxide = {version = "0.0.14", optional = true}
 zmq = "0.8.1"
 lazy_static = "0.2"
+ring = "^0.6.0"
