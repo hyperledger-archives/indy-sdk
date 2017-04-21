@@ -1,8 +1,9 @@
 use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
-use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::CopyFrom;
+use services::crypto::anoncreds::helpers::AppendBigNumArray;
+use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
 
 pub enum ByteOrder {
     Big,
@@ -84,7 +85,7 @@ pub struct ClaimInitData {
 
 pub struct Claims {
     pub primary_claim: PrimaryClaim,
-    pub non_revocation_claim: Option<NonRevocationClaim>
+    pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
 }
 
 #[derive(Debug)]
@@ -113,7 +114,7 @@ pub struct FullProof {
     pub c_hash: BigNumber,
     pub schema_keys: Vec<SchemaKey>,
     pub proofs: Vec<Proof>,
-    pub c_list: Vec<BigNumber>
+    pub c_list: Vec<Vec<u8>>
 }
 
 pub struct Proof {
@@ -246,6 +247,7 @@ pub struct NonRevocProofCList {
     pub u: PointG1
 }
 
+#[derive(Clone)]
 pub struct Accumulator {
     pub l: i32,
     pub v: HashSet<i32>,
@@ -275,7 +277,7 @@ pub struct AccumulatorPublicKey {
 //impl block
 impl PrimaryClaim {
     pub fn update_vprime(&mut self, v_prime: &BigNumber) -> Result<(), CryptoError> {
-        self.v_prime = self.v_prime.add(&v_prime)?;
+        self.v_prime = self.v_prime.add(v_prime)?;
         Ok(())
     }
 }
@@ -295,7 +297,7 @@ impl Claims {
 
     pub fn init_non_revocation_claim(&mut self, v_prime: &GroupOrderElement) -> Result<(), CryptoError> {
         if let Some(ref mut non_revocation_claim) = self.non_revocation_claim {
-            non_revocation_claim.update_v(v_prime)?;
+            non_revocation_claim.borrow_mut().update_v(v_prime)?;
         }
         Ok(())
     }
@@ -322,10 +324,10 @@ impl PrimaryPrecicateGEInitProof {
 }
 
 impl PrimaryInitProof {
-    pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         let mut c_list: Vec<BigNumber> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
-            c_list.clone_from_vector(ge_proof.as_list()?)?;
+            c_list.append_vec(ge_proof.as_list()?)?;
         }
         Ok(c_list)
     }
@@ -333,7 +335,7 @@ impl PrimaryInitProof {
     pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         let mut tau_list: Vec<BigNumber> = self.eq_proof.as_tau_list()?;
         for ge_proof in self.ge_proofs.iter() {
-            tau_list.clone_from_vector(ge_proof.as_tau_list()?)?;
+            tau_list.append_vec(ge_proof.as_tau_list()?)?;
         }
         Ok(tau_list)
     }
@@ -352,7 +354,7 @@ impl NonRevocProofTauList {
 }
 
 impl NonRevocInitProof {
-    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CryptoError> {
         let vec = self.c_list.as_list()?;
         Ok(vec)
     }

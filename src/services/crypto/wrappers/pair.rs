@@ -1,4 +1,5 @@
 use errors::crypto::CryptoError;
+use services::crypto::anoncreds::helpers::BytesView;
 
 #[derive(Copy, Clone)]
 pub struct PointG1 {}
@@ -35,6 +36,14 @@ impl PointG1 {
 
     pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
         unimplemented!();
+    }
+
+    pub fn new_inf() -> Result<PointG1, CryptoError> {
+        unimplemented!()
+    }
+
+    pub fn sub(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
+        unimplemented!()
     }
 }
 
@@ -108,5 +117,23 @@ impl Pair {
 
     pub fn from_bytes(b: &[u8]) -> Result<Pair, CryptoError> {
         unimplemented!();
+    }
+}
+
+impl BytesView for Pair {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl BytesView for PointG1 {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl BytesView for GroupOrderElement {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
     }
 }

@@ -12,6 +12,7 @@ use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::num::ParseIntError;
 use std::error::Error;
+use services::crypto::anoncreds::helpers::BytesView;
 
 pub struct BigNumberContext {
     openssl_bn_context: BigNumContext
@@ -81,7 +82,7 @@ impl BigNumber {
         }
     }
 
-    pub fn rand(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn rand(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::rand(&mut bn.openssl_bn, size as i32, MSB_MAYBE_ZERO, false)?;
         Ok(bn)
@@ -286,18 +287,16 @@ impl BigNumber {
         })
     }
 
-    pub fn hash_array(nums: &Vec<BigNumber>) -> Result<Vec<u8>, CryptoError> {
+    pub fn hash_array(nums: &Vec<Vec<u8>>) -> Result<Vec<u8>, CryptoError> {
         let mut sha256 = Hasher::new(MessageDigest::sha256())?;
 
         for num in nums.iter() {
-            let array_bytes: Vec<u8> = num.to_bytes()?;
-
             let index =
-                array_bytes.iter()
+                num.iter()
                     .position(|&value| value != 0)
-                    .unwrap_or(array_bytes.len());
+                    .unwrap_or(num.len());
 
-            sha256.update(&array_bytes[index..])?;
+            sha256.update(&num[index..])?;
         }
 
         Ok(sha256.finish()?)
@@ -324,6 +323,12 @@ impl PartialEq for BigNumber {
     }
 }
 
+impl BytesView for BigNumber {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
         CryptoError::BackendError(err.description().to_string())
@@ -345,8 +350,8 @@ mod tests {
         ::env_logger::init().unwrap();
 
         let bn = BigNumber::new().unwrap();
-        let start = bn.rand(250).unwrap();
-        let end = bn.rand(300).unwrap();
+        let start = BigNumber::rand(250).unwrap();
+        let end = BigNumber::rand(300).unwrap();
         let random_prime = bn.generate_prime_in_range(&start, &end).unwrap();
         assert!(start < random_prime);
         assert!(end > random_prime);

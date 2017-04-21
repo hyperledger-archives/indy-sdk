@@ -30,7 +30,7 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
     Ok(result)
 }
 
-pub fn get_hash_as_int(nums: &mut Vec<BigNumber>) -> Result<BigNumber, CryptoError> {
+pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError> {
     nums.sort();
 
     let mut hashed_array: Vec<u8> = BigNumber::hash_array(&nums)?;
@@ -59,7 +59,7 @@ pub fn get_mtilde(unrevealed_attrs: &HashMap<String, BigNumber>)
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for (attr, _) in unrevealed_attrs.iter() {
-        mtilde.insert(attr.clone(), BigNumber::new()?.rand(LARGE_MVECT)?);
+        mtilde.insert(attr.clone(), BigNumber::rand(LARGE_MVECT)?);
     }
     Ok(mtilde)
 }
@@ -87,12 +87,30 @@ pub fn four_squares(delta: i64) -> Result<HashMap<String, BigNumber>, CryptoErro
     }
 }
 
-pub trait CopyFrom {
-    fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError>;
+pub trait BytesView {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError>;
 }
 
-impl CopyFrom for Vec<BigNumber> {
-    fn clone_from_vector(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError> {
+
+pub trait AppendByteArray {
+    fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CryptoError>;
+}
+
+impl AppendByteArray for Vec<Vec<u8>> {
+    fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CryptoError> {
+        for el in other.iter() {
+            self.push(el.to_bytes()?);
+        }
+        Ok(())
+    }
+}
+
+pub trait AppendBigNumArray {
+    fn append_vec(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError>;
+}
+
+impl AppendBigNumArray for Vec<BigNumber> {
+    fn append_vec(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError> {
         for el in other.iter() {
             self.push(el.clone()?);
         }
@@ -132,8 +150,8 @@ mod tests {
     #[test]
     fn get_hash_as_int_works() {
         let mut nums = vec![
-            BigNumber::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa94d3fdf6abfbff").unwrap(),
-            BigNumber::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa9168615ccbc546").unwrap()
+            BigNumber::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa94d3fdf6abfbff").unwrap().to_bytes().unwrap(),
+            BigNumber::from_hex("ff9d2eedfee9cffd9ef6dbffedff3fcbef4caecb9bffe79bfa9168615ccbc546").unwrap().to_bytes().unwrap()
         ];
         let res = get_hash_as_int(&mut nums);
 

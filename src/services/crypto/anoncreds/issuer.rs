@@ -115,7 +115,7 @@ impl Issuer {
 
     pub fn issue_accumulator(pkr: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
         let gamma = GroupOrderElement::new()?;
-        let mut g: Vec<PointG1> = Vec::new();
+        let g: Vec<PointG1> = Vec::new();
         let g_count = 2 * max_claim_num;
 
         for i in 0..g_count {
@@ -156,7 +156,7 @@ impl Issuer {
         let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little)?;
         let user_id_encoded = Issuer::_encode_attribute(&user_id, ByteOrder::Little)?;
         let mut s = vec![
-            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?
+            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
         ];
         let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
         let h = get_hash_as_int(&mut s)?
@@ -235,7 +235,7 @@ impl Issuer {
     }
 
     fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
-        let a = BigNumber::new()?.rand(LARGE_VPRIME_PRIME)?;
+        let a = BigNumber::rand(LARGE_VPRIME_PRIME)?;
         let b = BigNumber::from_u32(2)?
             .exp(&BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)?, None)?;
         let v_prime_prime = bitwise_or_big_int(&a, &b)?;
