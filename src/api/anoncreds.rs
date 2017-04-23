@@ -126,8 +126,8 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// claim_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
-///      "attr1" : "value1",
-///      "attr2" : "value2"
+///      "attr1" : ["value1", "value1_as_int"],
+///      "attr2" : ["value2", "value2_as_int"]
 ///     }
 /// claim_def_seq_no: seq no of a claim definition transaction in Ledger
 /// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
@@ -276,15 +276,19 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Gets all claim offers stored for the given issuer DID (see prover_store_claim_offer).
+/// Gets all stored claim offers (see prover_store_claim_offer).
+/// A filter can be specified to get claim offers for specific Issuer only.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// isseur_did: isser DID find claim offers for
+/// filter_json: optional filter to get claim offers for specific Issuer only
+///        {
+///            "issuer_did": string
+///        }
 ///
 /// #Returns
-/// A json with a ist of claim offers for this issuer.
+/// A json with a ist of claim offers for the filter.
 ///
 /// #Errors
 /// Common*
@@ -292,7 +296,7 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
                                              wallet_handle: i32,
-                                             isseur_did: *const c_char,
+                                             filter_json: *const c_char,
                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                   claim_offers_json: *const c_char
                                              )>) -> ErrorCode {
@@ -302,7 +306,7 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetClaimOffers(
             wallet_handle,
-            isseur_did,
+            filter_json,
             Box::new(move |result| {
                 let (err, claim_offers_json) = result_to_err_code_1!(result, String::new());
                 let claim_offers_json = CStringUtils::string_to_cstring(claim_offers_json);
@@ -368,7 +372,6 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 ///            "issuer_did": string,
 ///            "claim_def_seq_no": string
 ///        }
-/// schema_json: schema json associated with a schema_seq_no in the claim_offer
 /// claim_def_json: claim definition json associated with a schema_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
 /// cb: Callback that takes command result as parameter.
@@ -384,23 +387,20 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
                                                        wallet_handle: i32,
                                                        claim_offer_json: *const c_char,
-                                                       schema_json: *const c_char,
                                                        claim_def_json: *const c_char,
                                                        master_secret_name: *const c_char,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             claim_req_json: *const c_char
                                                        )>) -> ErrorCode {
     check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreClaimRequest(
             wallet_handle,
             claim_offer_json,
-            schema_json,
             claim_def_json,
             master_secret_name,
             Box::new(move |result| {
@@ -462,69 +462,121 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parses the given proof_request json and gets the information about required claims (wallet keys identifying claims)
-/// and corresponding schemas, issuer keys revocation registries, etc. (ledger transaction seq_no).
-/// A proof request may request multiple claims from different schemas and different issuers.
+
+/// Gets human readable claims according to the filter.
+/// If filter is NULL, then all claims are returned.
+/// Claims can be filtered by Issuer and/or Schema, or by proof_request.
+/// If filtered by pool_request, than all claims matching the given proof_request are returned
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
-/// command_handle: command handle to map callback to user context.
-/// proof_request_json: proof request as a json
+/// filter_json: filter for claims
+///     {
+///         "issuer_did": string,
+///         "schema_seq_no": string,
+///         "claim_def_seq_no": string,
+///         "proof_request": string
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Parsed Proof json containing information about needed claims, schemas, keys, revocation registries, etc.
-/// {
-///    "nonce": string
-///    "claims":[
-///        {
-///            "claim_wallet_key": string,
-///            "claim_def_seq_no": string,
-///            "revoc_reg_seq_no": string,
-///            "revealed_attrs": string,
-///            "predicates": string
-///        }],
-/// }
+/// claims json
 ///
 /// #Errors
 /// Annoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_parse_proof_request(command_handle: i32,
-                                                wallet_handle: i32,
-                                                proof_request_json: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                     parsed_proof_request_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
+pub extern fn sovrin_prover_get_claims(command_handle: i32,
+                                        wallet_handle: i32,
+                                        filter_json: *const c_char,
+                                        cb: Option<extern fn(
+                                            xcommand_handle: i32, err: ErrorCode,
+                                            claims_json: *const c_char
+                                        )>) -> ErrorCode {
+    check_useful_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::ParseProofRequest(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetClaims(
             wallet_handle,
-            proof_request_json,
+            claims_json,
             Box::new(move |result| {
-                let (err, parsed_proof_request_json) = result_to_err_code_1!(result, String::new());
-                let parsed_proof_request_json = CStringUtils::string_to_cstring(parsed_proof_request_json);
+                let (err, claims_json) = result_to_err_code_1!(result, String::new());
+                let claims_json = CStringUtils::string_to_cstring(claims_json);
 
-                cb(command_handle, err, parsed_proof_request_json.as_ptr())
+                cb(command_handle, err, claims_json.as_ptr())
             })
         ))));
 
     result_to_err_code!(result)
 }
 
+/// Gets human readable claims matching the given proof request.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// proof_request_json: proof request json
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// json with claims for the given pool request.
+/// Claim consists of human-readable attributes (key-value map), schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+///     {
+///         "requested_attr1_id": [claim1, claim2],
+///         "requested_attr2_id": [],
+///         "requested_attr3_id": [claim3],
+///     }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn sovrin_prover_get_claims_for_pool_req(command_handle: i32,
+                                        wallet_handle: i32,
+                                        proof_request_json: *const c_char,
+                                        cb: Option<extern fn(
+                                            xcommand_handle: i32, err: ErrorCode,
+                                            claims_json: *const c_char
+                                        )>) -> ErrorCode {
+    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-/// Creates a proof according to the given parsed proof request (see sovrin_prover_parse_proof_request).
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetClaimsForProofReq(
+            wallet_handle,
+            proof_request_json,
+            Box::new(move |result| {
+                let (err, claims_json) = result_to_err_code_1!(result, String::new());
+                let claims_json = CStringUtils::string_to_cstring(claims_json);
+
+                cb(command_handle, err, claims_json.as_ptr())
+            })
+        ))));
+
+    result_to_err_code!(result)
+}
+
+/// Creates a proof according to the given proof request
+/// Either a corresponding claim with revealed attributes or self-attested attribute must be provided
+/// for each requested attribute (see sovrin_prover_get_claims_for_pool_req).
 /// A proof request may request multiple claims from different schemas and different issuers.
 /// All required schemas, public keys and revocation registries must be provided.
 /// The proof request also contains nonce.
-/// The proof contains proofs for each schema with corresponding seq_no of claim_def and revoc_reg transactions in Ledger.
+/// The proof contains either proof or self-attested attribute value for each requested attribute.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// proof_request_json: proof request as a json
+/// proof_req_json: proof request json as come from the verifier
+/// requested_claims_json: either a claim or self-attested attribute for each requested attribute
+///     {
+///         "requested_attr1_id": [claim1_seq_no_in_wallet, revealed attribute1],
+///         "requested_attr2_id": [self_attested_attribute],
+///         "requested_attr3_id": [claim2_seq_no_in_wallet, revealed attribute2]
+///         "requested_attr4_id": [claim2_seq_no_in_wallet, revealed attribute3]
+///     }
 /// schemas_jsons: all schema jsons participating in the proof request
 /// claim_def_jsons: all claim definition jsons participating in the proof request
 /// revoc_regs_jsons: all revocation registry jsons participating in the proof request
@@ -532,16 +584,13 @@ pub extern fn sovrin_prover_parse_proof_request(command_handle: i32,
 ///
 /// #Returns
 /// Proof json
-/// {
-///    "proofs":[
-///        {
-///            "proof": string,
-///            "claim_def_seq_no": string,
-///            "revoc_reg_seq_no": string,
-///            "revealed_attr_values": array,
-///        }],
-///    "aggregated_proof": object
-/// }
+///  Each proof consists of a proof and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+///     {
+///         "requested_attr1_id": [proof1],
+///         "requested_attr2_id": [self_attested_attribute],
+///         "requested_attr3_id": [proof2]
+///         "requested_attr4_id": [proof3]
+///     }
 ///
 /// #Errors
 /// Annoncreds*
@@ -550,22 +599,25 @@ pub extern fn sovrin_prover_parse_proof_request(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_prover_create_proof(command_handle: i32,
                                          wallet_handle: i32,
-                                         parsed_proof_request_json: *const c_char,
+                                         proof_req_json: *const c_char,
+                                         requested_claims_json: *const c_char,
                                          schemas_json: *const c_char,
                                          claim_defs_json: *const c_char,
                                          revoc_regs_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               proof_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(parsed_proof_request_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(proof_req_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(requested_claims_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateProof(
             wallet_handle,
-            parsed_proof_request_json,
+            proof_req_json,
+            requested_claims_json,
             schemas_json,
             claim_defs_json,
             revoc_regs_json,
@@ -586,21 +638,15 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// proof_request_initial_json: initial proof request as sent by the verifier
-/// proof_request_disclosed_json: an updated by the prover proof_request if the prover doesn't want
-/// to disclose all the information from the initial proof_request.
-/// Disclosed pool request contains information participating in the proof only.
-/// proof_json: proof as a json
-/// {
-///    "proofs":[
-///        {
-///            "proof": string,
-///            "claim_def_seq_no": string,
-///            "revoc_reg_seq_no": string,
-///            "revealed_attr_values": array,
-///        }],
-///    "aggregated_proof": object
-/// }
+/// proof_request_json: initial proof request as sent by the verifier
+/// proof_json: proof json
+///  Each proof consists of a proof and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+///     {
+///         "requested_attr1_id": [proof1],
+///         "requested_attr2_id": [self_attested_attribute],
+///         "requested_attr3_id": [proof2]
+///         "requested_attr4_id": [proof3]
+///     }
 /// schemas_jsons: all schema jsons participating in the proof
 /// claim_defs_jsons: all claim definition jsons participating in the proof
 /// revoc_regs_jsons: all revocation registry jsons participating in the proof
@@ -616,27 +662,24 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
                                            wallet_handle: i32,
-                                           proof_request_initial_json: *const c_char,
-                                           proof_request_disclosed_json: *const c_char,
+                                           proof_request_json: *const c_char,
                                            proof_json: *const c_char,
                                            schemas_json: *const c_char,
                                            claim_defs_jsons: *const c_char,
                                            revoc_regs_json: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 valid: bool)>) -> ErrorCode {
-    check_useful_c_str!(proof_request_initial_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(proof_request_disclosed_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam8);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
+    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Verifier(VerifierCommand::VerifyProof(
             wallet_handle,
-            proof_request_initial_json,
-            proof_request_disclosed_json,
+            proof_request_json,
             proof_json,
             schemas_json,
             claim_defs_jsons,
