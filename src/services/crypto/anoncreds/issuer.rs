@@ -15,6 +15,9 @@ use services::crypto::anoncreds::types::{
     ClaimRequest,
     Claims,
     NonRevocationClaim,
+    NonRevocProofCList,
+    NonRevocProofTauList,
+    NonRevocProofXList,
     PrimaryClaim,
     PublicKey,
     RevocationPublicKey,
@@ -256,6 +259,70 @@ impl Issuer {
         accumulator.borrow_mut().acc = accumulator.borrow().acc.sub(element)?;
         let timestamp = time::now_utc().to_timespec().sec;
         Ok((accumulator, timestamp))
+    }
+
+    pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+                               params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+        let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
+        let t2 = proof_c.e.mul(&params.c)?
+            .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
+            .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
+        let t3 = Pair::pair(&proof_c.a, &pk_r.h)?.pow(&params.c)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.r)?)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
+                .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.m)?)?
+                .mul(&Pair::pair(&pk_r.h1, &pk_r.h)?.pow(&params.m2)?)?
+                .mul(&Pair::pair(&pk_r.h2, &pk_r.h)?.pow(&params.s)?)?)?.inverse()?;
+        let t4 = Pair::pair(&pk_r.htilde, &accumulator.acc)?
+            .pow(&params.r)?
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime)?)?;
+        let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
+        let t6 = proof_c.d.mul(&params.r_prime_prime)?
+            .add(&pk_r.g.mul(&params.m_prime.mod_neg()?)?)?
+            .add(&pk_r.htilde.mul(&params.t_prime.mod_neg()?)?)?;
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.htilde)?.pow(&params.r_prime_prime)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.htilde)?.pow(&params.m_prime.mod_neg()?)?)?
+            .mul(&Pair::pair(&pk_r.htilde, &proof_c.s)?.pow(&params.r)?)?;
+        let t8 = Pair::pair(&pk_r.htilde, &pk_r.u)?.pow(&params.r)?
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime_prime_prime)?)?;
+
+        Ok(NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        })
+    }
+
+    pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+                                        accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+        let t1 = proof_c.e;
+        let t2 = PointG1::new_inf()?;
+        let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
+            .mul(&Pair::pair(&proof_c.a, &pk_r.y)?.inverse()?)?;
+        let t4 = Pair::pair(&proof_c.g, &accumulator.acc)?
+            .mul(&Pair::pair(&pk_r.g, &proof_c.w)?.mul(&accum_pk.z)?.inverse()?)?;
+        let t5 = proof_c.d;
+        let t6 = PointG1::new_inf()?;
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &proof_c.s)?
+            .mul(&Pair::pair(&pk_r.g, &pk_r.g)?.inverse()?)?;
+        let t8 = Pair::pair(&proof_c.g, &pk_r.u)?
+            .mul(&Pair::pair(&pk_r.g, &proof_c.u)?.inverse()?)?;
+
+        Ok(NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        })
     }
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,

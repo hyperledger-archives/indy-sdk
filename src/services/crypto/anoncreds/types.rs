@@ -156,12 +156,12 @@ pub struct NonRevocProofXList {
 }
 
 pub struct NonRevocProofTauList {
-    pub t1: Pair,
-    pub t2: Pair,
+    pub t1: PointG1,
+    pub t2: PointG1,
     pub t3: Pair,
     pub t4: Pair,
-    pub t5: Pair,
-    pub t6: Pair,
+    pub t5: PointG1,
+    pub t6: PointG1,
     pub t7: Pair,
     pub t8: Pair
 }
@@ -323,15 +323,16 @@ impl PrimaryInitProof {
     }
 }
 
-impl NonRevocProofCList {
-    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
-        Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
+impl NonRevocProofTauList {
+    pub fn as_slice(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        Ok(vec![self.t1.to_bytes()?, self.t2.to_bytes()?, self.t3.to_bytes()?, self.t4.to_bytes()?,
+                self.t5.to_bytes()?, self.t6.to_bytes()?, self.t7.to_bytes()?, self.t8.to_bytes()?])
     }
 }
 
-impl NonRevocProofTauList {
-    pub fn as_list(&self) -> Result<Vec<Pair>, CryptoError> {
-        Ok(vec![self.t1, self.t2, self.t3, self.t4, self.t5, self.t6, self.t7, self.t8])
+impl NonRevocProofCList {
+    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+        Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
     }
 }
 
@@ -341,8 +342,8 @@ impl NonRevocInitProof {
         Ok(vec)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Pair>, CryptoError> {
-        let vec = self.tau_list.as_list()?;
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        let vec = self.tau_list.as_slice()?;
         Ok(vec)
     }
 }
