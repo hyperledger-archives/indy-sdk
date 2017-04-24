@@ -6,9 +6,12 @@ use self::libc::c_int;
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::{fmt, fs, thread};
+use std::{env, fmt, fs, io, path, thread};
 use std::fmt::Debug;
-use std::io::Write;
+use std::fs::Metadata;
+use std::io::{BufRead, Error, ErrorKind, Write};
+use std::path::{Path, PathBuf};
+use rustc_serialize;
 use rustc_serialize::json;
 use zmq;
 
@@ -29,6 +32,58 @@ struct Pool {
     worker: Option<thread::JoinHandle<()>>,
 }
 
+struct PoolWorker {
+    cmd_sock: zmq::Socket,
+    open_cmd_id: i32,
+    pool_id: i32,
+    nodes: Vec<RemoteNode>,
+}
+
+impl PoolWorker {
+    fn connect_to_known_nodes(&mut self) {
+        let f = fs::File::open("pool_transactions_sandbox").expect("open file"); //FIXME use file for the pool
+        let mut reader = io::BufReader::new(&f);
+        for line in reader.lines() {
+            let line: String = line.expect("read transaction line");
+            let mut rn: RemoteNode = RemoteNode::new(line.as_str());
+            let ctx: zmq::Context = zmq::Context::new();
+            rn.connect(&ctx);
+            rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
+            self.nodes.push(rn);
+        }
+    }
+
+    pub fn run(&mut self) {
+        self.connect_to_known_nodes();
+        let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
+        ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
+        for ref node in &self.nodes {
+            let s: &zmq::Socket = node.zsock.as_ref().unwrap();
+            ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
+        }
+        CommandExecutor::instance().send(Command::Pool(
+            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))); //TODO send only after catch-up?
+        loop {
+            trace!("zmq poll loop >>");
+            let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
+            trace!("zmq poll loop ...");
+            for ref node in &self.nodes {
+                let s: &zmq::Socket = node.zsock.as_ref().unwrap();
+                trace!("{:?}", s.recv_string(zmq::DONTWAIT));
+            }
+            let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
+            trace!("{:?}", cmd);
+            if cmd.is_ok() {
+                if "exit".eq(cmd.unwrap().expect("non-string command").as_str()) {
+                    break;
+                }
+            }
+            trace!("zmq poll loop << ret {:?}", r);
+        }
+        info!("zmq poll loop finished");
+    }
+}
+
 impl Pool {
     pub fn new(name: &str, cmd_id: i32) -> Result<Pool, PoolError> {
         let zmq_ctx = zmq::Context::new();
@@ -41,23 +96,19 @@ impl Pool {
 
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
         let pool_id = SequenceUtils::get_next_id();
+        let mut pool_worker: PoolWorker = PoolWorker {
+            cmd_sock: recv_cmd_sock,
+            open_cmd_id: cmd_id,
+            pool_id: pool_id,
+            nodes: Vec::new(),
+        };
 
         Ok(Pool {
             name: name.to_string(),
             id: pool_id,
             send_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
-                let mut socks_to_poll: [zmq::PollItem; 1] = [
-                    recv_cmd_sock.as_poll_item(zmq::POLLIN),
-                ];
-                CommandExecutor::instance().send(Command::Pool(
-                    PoolCommand::OpenAck(cmd_id, Ok(pool_id)))); //TODO send only after catch-up?
-                loop {
-                    trace!("zmq poll loop >>");
-                    let r = zmq::poll(&mut socks_to_poll, -1);
-                    //FIXME implement
-                    trace!("zmq poll loop << ret {:?}, at cmd sock {:?}", r, recv_cmd_sock.recv_string(0));
-                }
+                pool_worker.run();
             })),
         })
     }
