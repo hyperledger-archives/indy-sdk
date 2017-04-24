@@ -1,11 +1,20 @@
 @startuml
+skinparam ParticipantPadding 20
+skinparam BoxPadding 20
+
 title Libsovrin anoncreds
 scale 0.9
+
+
+box "Issuer" #LightBlue
 participant "Walleted Issuer" as IW
 actor Issuer as I
+endbox
 
-participant "Walleted Prover" as PW
+box "Prover"
 actor Prover as P
+participant "Walleted Prover" as PW
+endbox
 
 actor Verifier as V
 
@@ -15,7 +24,7 @@ participant "Ledger" as L
 note over IW, L #white
     dashed arrows: a value from Ledger may be cached (in wallet?)
     <b>bold text</b>: anoncreds libsovrin API call
-    <font color=red>red:</font> anoncreds libsovrin API call
+    <font color=red>red:</font> internal communication with walleted entity
     <font color=green>green:</font> submit/get to/from secure wallet
     <font color=blue>blue:</font> submit/get to/from Ledger
     black: communication between Issuer/Prover/Verifier
@@ -23,83 +32,110 @@ note over IW, L #white
 endnote
 
 
-
+=== Create Claim Definition ==
 I -> IW: <b>1. sovrin_issuer_create_and_store_claim_def
 IW -[#green]> IW: store keys
-IW -[#black]> I: <claim_def>
+IW -> I: <claim_def>
 
-I-[#blue]>L: store claim definition in Ledger
+I-[#blue]>L: send CLAIM_DEF txn
+L-[#blue]>I: <claim definitions's seq_no>
 
 I -> IW: <b>2. sovrin_wallet_set_seq_no_for_value
 IW -[#green]> IW: update key seq_no
-... ...
+
+=== Create Revocation Registry ==
 
 I -> IW: <b>3. sovrin_issuer_create_and_store_revoc_reg
 IW -[#green]> IW: get keys
 IW -[#green]> IW: store revoc reg
-IW -[#black]> I: <revoc_reg>
+IW -> I: <revoc_reg>
 
-I-[#blue]>L: store revoc_reg in Ledger
+I-[#blue]>L: send REVOC_REG txn
+L-[#blue]>I: <revoc_reg's seq_no>
 
 I -> IW: <b>4. sovrin_wallet_set_seq_no_for_value
 IW -[#green]> IW: update revpc_reg seq_no
 
-... ...
+=== Create Master secret ==
 
-I -[#black]> P: send claim offer
-
-P -> P: <b> 5. sovrin_prover_store_claim_offer
-
-... ...
-
-P -> PW: <b>6.sovrin_prover_create_master_secret
+P -> PW: <b>5.sovrin_prover_create_master_secret
 PW -[#green]> PW: store master secret
 
-... ...
+=== Send Claim Offer ==
 
-P -> P: <b>7.sovrin_prover_get_claim_offers
-L -[#blue]-> P: get schema
-L -[#blue]-> P: get claim definition
+I -[#black]> P: send claim offer
+P -> PW: <b> 6. sovrin_prover_store_claim_offer
+
+=== Show Claim Offers in UI ==
+
+P -> PW: <b>7.sovrin_prover_get_claim_offers
+PW -[#green]> PW: get claim offers
+PW -> P: <claim_offers>
+P -> P: show on UI
+
+=== Request and Issue Claims ==
+P -[#blue]-> L: send GET_CLAIM_DEF req
+L -[#blue]-> P: <claim definition>
 
 P -> PW: <b>8.sovrin_prover_create_and_store_claim_req
 PW -[#green]> PW: get master secret
 PW -[#green]> PW: store claim_req
-PW -[#black]> P: <claim_req>
-
-... ...
+PW -> P: <claim_req>
 
 P -[#black]> I: send claim request
 
 I -> IW: <b>9. sovrin_issuer_create_claim
 IW -[#green]> IW: get keys
 IW -[#green]> IW: get revoc reg
-IW -[#black]> I: <update revoc reg>, <claim>
+IW -> I: <update revoc reg>, <claim>
 
-I -[#blue]> L: update revoc reg
+I -[#blue]> L: send REVOC_REG_UPDATE txn
 I -[#black]> P: send claim
 
 P -> PW: <b>10.sovrin_prover_store_claim
 PW -[#green]> PW: get claim request
 PW -[#green]> PW: store claim
 
-... ...
+=== Show Claims on UI ==
+P -> PW: <b>11. sovrin_prover_get_claims
+PW -[#green]> PW: get claims
+PW -> P: <claims>
+P -> P: show on UI
+
+=== Present Claim to 3d Party (proof request)==
 
 V -[#black]> P: send proof request
-
-P -> PW: <b>11.sovrin_prover_parse_proof_request
-PW -[#black]> P: <parsed proof request>
-L -[#blue]-> P: get schema
-L -[#blue]-> P: get claim definition
-L -[#blue]-> P: get revoc_registry
-P -> PW: <b>12.sovrin_prover_create_proof
-P -[#green]> PW: get claim
-PW -[#black]> P: <proof>
-
+|||
+P -> PW: <b>12.sovrin_prover_get_claims_for_pool_req
+PW -> P: <claims for proof request>
+|||
+P -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> P: <schema>
+P -[#blue]-> L: send GET_CLAIM_DEF req
+L -[#blue]-> P: <claim_def>
+P -[#blue]-> L: send GET_REVOC_REG req
+L -[#blue]-> P: <revoc_reg>
+|||
+P -> PW: <b>13.sovrin_prover_create_proof
+PW -[#green]> PW: get claim
+PW -> P: <proof>
+|||
 P -[#black]> V: send proof
+|||
+V -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> V: <schema>
+V -[#blue]-> L: send GET_CLAIM_DEF req
+L -[#blue]-> V: <claim_def>
+V -[#blue]-> L: send GET_REVOC_REG req
+L -[#blue]-> V: <revoc_reg>
+|||
+V -> V: <b>14. sovrin_verifier_verify_proof
 
-L -[#blue]-> V: get schema
-L -[#blue]-> V: get public key
-L -[#blue]-> V: get revoc_reg
-V -> V: <b>13. sovrin_verifier_verify_proof
+=== Revoke Claims ==
+I -> IW: <b>15. sovrin_issuer_revoke_claim
+IW -[#green]> IW: get keys
+IW -[#green]> IW: get revoc reg
+IW -> I: <update revoc reg>
+I -[#blue]> L: send REVOC_REG_UPDATE txn
 
 @enduml
