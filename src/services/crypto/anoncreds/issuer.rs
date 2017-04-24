@@ -294,8 +294,31 @@ impl Issuer {
         })
     }
 
-    fn _create_tau_list_expected_values() {
-        
+    fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+                                        accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+        let t1 = proof_c.e;
+        let t2 = PointG1::new_inf()?;
+        let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
+            .mul(&Pair::pair(&proof_c.a, &pk_r.y)?.inverse()?)?;
+        let t4 = Pair::pair(&proof_c.g, &accumulator.acc)?
+            .mul(&Pair::pair(&pk_r.g, &proof_c.w)?.mul(&accum_pk.z)?.inverse()?)?;
+        let t5 = proof_c.d;
+        let t6 = PointG1::new_inf()?;
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &proof_c.s)?
+            .mul(&Pair::pair(&pk_r.g, &pk_r.g)?.inverse()?)?;
+        let t8 = Pair::pair(&proof_c.g, &pk_r.u)?
+            .mul(&Pair::pair(&pk_r.g, &proof_c.u)?.inverse()?)?;
+
+        Ok(NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        })
     }
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
