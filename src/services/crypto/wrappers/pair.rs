@@ -45,14 +45,6 @@ impl PointG1 {
     pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
         unimplemented!();
     }
-
-    pub fn new_inf() -> Result<PointG1, CryptoError> {
-        unimplemented!()
-    }
-
-    pub fn sub(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
-        unimplemented!()
-    }
 }
 
 impl GroupOrderElement {

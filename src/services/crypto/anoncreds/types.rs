@@ -269,72 +269,7 @@ pub struct RevocationClaimInitData {
     pub v_prime: GroupOrderElement
 }
 
-pub struct Witness {
-    pub sigmai: PointG1,
-    pub ui: PointG1,
-    pub gi: PointG1,
-    pub omega: PointG1,
-    pub v: HashSet<i32>
-}
 
-pub struct NonRevocationClaim {
-    pub ia: String,
-    pub sigma: PointG1,
-    pub c: GroupOrderElement,
-    pub v: GroupOrderElement,
-    pub gi: PointG1,
-    pub witness: Witness,
-    pub i: i32,
-    pub m2: BigNumber
-}
-
-pub struct NonRevocProofXList {
-    pub rho: GroupOrderElement,
-    pub r: GroupOrderElement,
-    pub r_prime: GroupOrderElement,
-    pub r_prime_prime: GroupOrderElement,
-    pub r_prime_prime_prime: GroupOrderElement,
-    pub o: GroupOrderElement,
-    pub o_prime: GroupOrderElement,
-    pub m: GroupOrderElement,
-    pub m_prime: GroupOrderElement,
-    pub t: GroupOrderElement,
-    pub t_prime: GroupOrderElement,
-    pub m2: GroupOrderElement,
-    pub s: GroupOrderElement,
-    pub c: GroupOrderElement
-}
-
-pub struct NonRevocProofTauList {
-    pub t1: Pair,
-    pub t2: Pair,
-    pub t3: Pair,
-    pub t4: Pair,
-    pub t5: Pair,
-    pub t6: Pair,
-    pub t7: Pair,
-    pub t8: Pair
-}
-
-#[derive(Clone)]
-pub struct NonRevocProofCList {
-    pub e: PointG1,
-    pub d: PointG1,
-    pub a: PointG1,
-    pub g: PointG1,
-    pub w: PointG1,
-    pub s: PointG1,
-    pub u: PointG1
-}
-
-#[derive(Clone)]
-pub struct Accumulator {
-    pub l: i32,
-    pub v: HashSet<i32>,
-    pub acc: PointG1,
-    pub current_i: i32,
-    pub ia: String
-}
 
 pub struct NonRevocInitProof {
     pub c_list_params: NonRevocProofXList,
@@ -346,11 +281,6 @@ pub struct NonRevocInitProof {
 pub struct NonRevocProof {
     pub x_list: NonRevocProofXList,
     pub c_list: NonRevocProofCList
-}
-
-pub struct AccumulatorPublicKey {
-    pub z: Pair,
-    pub seq_id: i32
 }
 
 

@@ -151,7 +151,7 @@ impl Prover {
                                       pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey, m2: &BigNumber)
                                       -> Result<(), CryptoError> {
         let mut claim_mut = claim.borrow_mut();
-        claim_mut.v = v_prime.add_mod(&claim_mut.v)?;
+        claim_mut.vr_prime_prime = v_prime.add_mod(&claim_mut.vr_prime_prime)?;
         Prover::_test_witness_credential(claim, pkr, acc, acc_pk, m2)?;
         Ok(())
     }
@@ -368,12 +368,12 @@ impl Prover {
                 accum.v.difference(&mut_claim.witness.v).cloned().collect();
             let mut omega_denom = PointG1::new_inf()?;
             for j in v_old_minus_new.iter() {
-                omega_denom = omega_denom.add(&tails[&(accum.l + 1 - j + mut_claim.i)])?;
+                omega_denom = omega_denom.add(&tails[&(accum.max_claim_num + 1 - j + mut_claim.i)])?;
             }
             let mut omega_num = PointG1::new_inf()?;
             let mut new_omega: PointG1 = mut_claim.witness.omega.clone();
             for j in v_old_minus_new.iter() {
-                omega_num = omega_num.add(&tails[&(accum.l + 1 - j + mut_claim.i)])?;
+                omega_num = omega_num.add(&tails[&(accum.max_claim_num + 1 - j + mut_claim.i)])?;
                 new_omega = new_omega.add(
                     &omega_num.sub(&omega_denom)?
                 )?;
@@ -696,7 +696,7 @@ impl Prover {
             t: t,
             t_prime: t_prime,
             m2: m2,
-            s: claim.v,
+            s: claim.vr_prime_prime,
             c: claim.c
         })
     }
@@ -721,7 +721,7 @@ impl Prover {
                 &pkr.htilde.mul(&params.rho)?
             )?;
 
-        let g = claim.gi
+        let g = claim.g_i
             .add(
                 &pkr.htilde.mul(&params.r)?
             )?;
@@ -731,12 +731,12 @@ impl Prover {
                 &pkr.htilde.mul(&params.r_prime)?
             )?;
 
-        let s = claim.witness.sigmai
+        let s = claim.witness.sigma_i
             .add(
                 &pkr.htilde.mul(&params.r_prime_prime)?
             )?;
 
-        let u = claim.witness.ui
+        let u = claim.witness.u_i
             .add(
                 &pkr.htilde.mul(&params.r_prime_prime_prime)?
             )?;
@@ -982,11 +982,11 @@ pub mod mocks {
         v.insert(1);
 
         Ok(Accumulator {
-            l: 5,
+            max_claim_num: 5,
             v: v,
             acc: PointG1 {},
             current_i: 2,
-            ia: "110".to_string()
+            accumulator_id: 110
         })
     }
 

@@ -523,8 +523,7 @@ pub mod mocks {
 
     pub fn get_accum_publick_key() -> Result<AccumulatorPublicKey, CryptoError> {
         Ok(AccumulatorPublicKey {
-            z: Pair {},
-            seq_id: 1
+            z: Pair {}
         })
     }
 }

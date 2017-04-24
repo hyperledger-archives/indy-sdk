@@ -169,7 +169,7 @@ impl Issuer {
             return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
         }
 
-        let mut i;
+        let i;
 
         if let Some(x) = seq_number {
             i = x;
@@ -186,9 +186,13 @@ impl Issuer {
         let g_i = g.get(&i)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
 
-        let sigma = pk_r.h0
-            .add(&pk_r.h1.mul(&m2)?)?
-            .add(&claim_request.ur)?
+        let sigma = pk_r.h0.add(&pk_r.h1.mul(&m2)?)?;
+
+        if let Some(ur) = claim_request.ur {
+            sigma.add(&ur)?;
+        }
+
+        sigma
             .add(g_i)?
             .add(&pk_r.h2.mul(&vr_prime_prime)?)?
             .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
