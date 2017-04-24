@@ -1,13 +1,13 @@
 extern crate ring;
 use self::ring::digest::Algorithm;
 
-use services::ledger::merkletree::tree::Tree;
+use services::ledger::merkletree::tree::{Tree, TreeLeafData};
 use services::ledger::merkletree::hashutils::HashUtils;
 
 /// An inclusion proof represent the fact that a `value` is a member
 /// of a `MerkleTree` with root hash `root_hash`, and hash function `algorithm`.
 #[derive(Clone, Debug)]
-pub struct Proof<T> {
+pub struct Proof {
 
     /// The hashing algorithm used in the original `MerkleTree`
     pub algorithm: &'static Algorithm,
@@ -19,13 +19,14 @@ pub struct Proof<T> {
     pub lemma: Lemma,
 
     /// The value concerned by this `Proof`
-    pub value: T
+    pub value: TreeLeafData
 }
 
-impl <T> Proof<T> {
+impl Proof {
 
     /// Constructs a new `Proof`
-    pub fn new(algo: &'static Algorithm, root_hash: Vec<u8>, lemma: Lemma, value: T) -> Self {
+    pub fn new(algo: &'static Algorithm, root_hash: Vec<u8>,
+               lemma: Lemma, value: TreeLeafData) -> Self {
         Proof {
             algorithm: algo,
             root_hash: root_hash,
@@ -87,7 +88,7 @@ pub struct Lemma {
 impl Lemma {
 
     /// Attempts to generate a proof that the a value with hash `needle` is a member of the given `tree`.
-    pub fn new<T>(tree: &Tree<T>, needle: &[u8]) -> Option<Lemma> {
+    pub fn new(tree: &Tree, needle: &[u8]) -> Option<Lemma> {
         match *tree {
             Tree::Empty {.. } =>
                 None,
@@ -112,7 +113,7 @@ impl Lemma {
         }
     }
 
-    fn new_tree_proof<T>(hash: &[u8], needle: &[u8], left: &Tree<T>, right: &Tree<T>) -> Option<Lemma> {
+    fn new_tree_proof(hash: &[u8], needle: &[u8], left: &Tree, right: &Tree) -> Option<Lemma> {
         Lemma::new(left, needle)
             .map(|lemma| {
                 let right_hash = right.hash().clone();
