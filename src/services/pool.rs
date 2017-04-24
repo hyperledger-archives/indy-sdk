@@ -4,8 +4,7 @@ extern crate zmq;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fs, thread};
-use std::io::{Error, ErrorKind, Write};
-use std::path::{Path, PathBuf};
+use std::io::Write;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
@@ -46,7 +45,7 @@ impl Pool {
                     recv_cmd_sock.as_poll_item(zmq::POLLIN),
                 ];
                 CommandExecutor::instance().send(Command::Pool(
-                    PoolCommand::OpenAck(cmd_id, Ok(pool_id)))); //TODO send only after catch-up?
+                    PoolCommand::OpenAck(cmd_id, Ok(pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
                 loop {
                     trace!("zmq poll loop >>");
                     let r = zmq::poll(&mut socks_to_poll, -1);
@@ -62,7 +61,8 @@ impl Drop for Pool {
     fn drop(&mut self) {
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
-        self.send_sock.send("exit".as_bytes(), 0); //TODO
+        self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
+        info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
         self.worker.take().unwrap().join().unwrap();
         info!(target: target.as_str(), "Drop finished");
@@ -100,7 +100,7 @@ impl PoolService {
             return Err(PoolError::NotCreated("Already created".to_string()));
         }
 
-        fs::create_dir_all(path.as_path());
+        fs::create_dir_all(path.as_path())?;
 
         path.push(name);
         path.set_extension("txn");
