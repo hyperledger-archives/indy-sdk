@@ -146,14 +146,14 @@ impl ProverCommandExecutor {
                    wallet_handle: i32,
                    filter_json: &str,
                    cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
-        cb(Ok(()));
+        cb(Ok("".to_string()));
     }
 
     fn get_claims_for_proof_req (&self,
                    wallet_handle: i32,
                    proof_req_json: &str,
                    cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
-        cb(Ok(()));
+        cb(Ok("".to_string()));
     }
 
     fn parse_proof_request(&self,
