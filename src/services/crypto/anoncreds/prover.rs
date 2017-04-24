@@ -1337,7 +1337,7 @@ pub mod mocks {
     pub fn get_gvt_claims_object() -> Result<Claims, CryptoError> {
         Ok(Claims {
             primary_claim: get_gvt_primary_claim()?,
-            non_revocation_claim: Some(RefCell::new(get_gvt_non_revocation_claim()))
+            non_revocation_claim: None
         })
     }
 
