@@ -62,12 +62,9 @@ impl Pool {
 
 impl Drop for Pool {
     fn drop(&mut self) {
-        loop {
-            info!("inf loop");
-        }
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
-        self.send_sock.send("exit".as_bytes(), 0);
+        self.send_sock.send("exit".as_bytes(), 0); //TODO
         // Option worker type and this kludge is workaround for rust
         self.worker.take().unwrap().join().unwrap();
         info!(target: target.as_str(), "Drop finished");
