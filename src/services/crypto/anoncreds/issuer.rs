@@ -7,25 +7,34 @@ use services::crypto::anoncreds::constants::{
     LARGE_VPRIME_PRIME
 };
 use services::crypto::anoncreds::types::{
+    Accumulator,
+    AccumulatorPublicKey,
+    AccumulatorSecretKey,
     Attribute,
     ByteOrder,
     ClaimRequest,
     Claims,
+    NonRevocationClaim,
     PrimaryClaim,
     PublicKey,
     RevocationPublicKey,
     RevocationSecretKey,
     Schema,
-    SecretKey
+    SecretKey,
+    Witness
 };
 use services::crypto::anoncreds::helpers::{
     random_qr,
     bitwise_or_big_int,
-    get_hash_as_int
+    get_hash_as_int,
+    transform_u32_to_array_of_u8
 };
 use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1};
-use std::collections::HashMap;
+use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
+
+extern crate time;
 
 pub struct Issuer {}
 
@@ -113,20 +122,137 @@ impl Issuer {
         ))
     }
 
-    pub fn issue_accumulator(pkr: &RevocationPublicKey, accumulator_id: String, max_claim_num: i32) -> Result<(), CryptoError> {
+    pub fn issue_accumulator(pk_r: &RevocationPublicKey, accumulator_id: i32, max_claim_num: i32)
+                             -> Result<(Accumulator, HashMap<i32, PointG1>, AccumulatorPublicKey, AccumulatorSecretKey), CryptoError> {
         let gamma = GroupOrderElement::new()?;
-        let g: Vec<PointG1> = Vec::new();
+        let mut g: HashMap<i32, PointG1> = HashMap::new();
         let g_count = 2 * max_claim_num;
 
         for i in 0..g_count {
             if i != max_claim_num + 1 {
-
+                let i_bytes = transform_u32_to_array_of_u8(i as u32);
+                let mut pow = GroupOrderElement::from_bytes(&i_bytes)?;
+                pow = gamma.pow_mod(&pow)?;
+                g.insert(i, pk_r.g.mul(&pow)?);
             }
         }
-        unimplemented!();
+
+        let mut z = Pair::pair(&pk_r.g, &pk_r.g)?;
+        let mut pow = GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8((max_claim_num + 1) as u32))?;
+        pow = gamma.pow_mod(&pow)?;
+        z = z.pow(&pow)?;
+        let acc = PointG1::new_inf()?;
+        let v: HashSet<i32> = HashSet::new();
+        Ok((
+            Accumulator {
+                accumulator_id: accumulator_id,
+                acc: acc,
+                v: v,
+                max_claim_num: max_claim_num,
+                current_i: 1
+            },
+            g,
+            AccumulatorPublicKey {
+                z: z
+            },
+            AccumulatorSecretKey {
+                gamma: gamma
+            }
+            ))
     }
 
-    fn _issuer_primary_claim() {}
+    fn _issue_non_revocation_claim(accumulator: RefCell<Accumulator>, pk_r: &RevocationPublicKey,
+                                   sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
+                                   sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
+                                   claim_request: &ClaimRequest, seq_number: Option<i32>) -> Result<(NonRevocationClaim, RefCell<Accumulator>, i64), CryptoError> {
+        if accumulator.borrow().is_full() {
+            return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
+        }
+
+        let mut i;
+
+        if let Some(x) = seq_number {
+            i = x;
+        } else {
+            i = accumulator.borrow().current_i;
+        }
+
+        accumulator.borrow_mut().current_i += 1;
+
+        let vr_prime_prime = GroupOrderElement::new()?;
+        let c = GroupOrderElement::new()?;
+        let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
+
+        let g_i = g.get(&i)
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
+
+        let sigma = pk_r.h0
+            .add(&pk_r.h1.mul(&m2)?)?
+            .add(&claim_request.ur)?
+            .add(g_i)?
+            .add(&pk_r.h2.mul(&vr_prime_prime)?)?
+            .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
+
+        let mut omega = PointG1::new_inf()?;
+
+        for j in &accumulator.borrow().v {
+            let index = accumulator.borrow().max_claim_num + 1 - j + i;
+            omega = omega.add(g.get(&index)
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+        }
+
+        let sigma_i = pk_r.g
+            .mul(&sk_r.sk
+                .add_mod(&sk_accum.gamma
+                    .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?
+                .inverse()?)?;
+        let u_i = pk_r.u
+            .mul(&sk_accum.gamma
+                .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?;
+
+        let index = accumulator.borrow().max_claim_num + 1 - i;
+        accumulator.borrow_mut().acc = accumulator.borrow().acc.add(g.get(&index)
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+        accumulator.borrow_mut().v.insert(i);
+
+        let witness = Witness {
+            sigma_i: sigma_i,
+            u_i: u_i,
+            g_i: g_i.clone(),
+            omega: omega,
+            v: accumulator.borrow().v.clone()
+        };
+
+        let timestamp = time::now_utc().to_timespec().sec;
+        let acc_id = accumulator.borrow().accumulator_id;
+
+        Ok(
+            (
+                NonRevocationClaim {
+                    accumulator_id: acc_id,
+                    sigma: sigma,
+                    c: c,
+                    vr_prime_prime: vr_prime_prime,
+                    witness: witness,
+                    g_i: g_i.clone(),
+                    i: i,
+                    m2: m2
+                },
+                accumulator,
+                timestamp
+            )
+        )
+    }
+
+    pub fn revoke(accumulator: RefCell<Accumulator>, g: &HashMap<i32, PointG1>, i: i32) -> Result<(RefCell<Accumulator>, i64), CryptoError> {
+        accumulator.borrow_mut().v.remove(&i);
+        let index: i32 = accumulator.borrow().max_claim_num + 1 - i;
+        let element = g.get(&index)
+            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
+        accumulator.borrow_mut().acc = accumulator.borrow().acc.sub(element)?;
+        let timestamp = time::now_utc().to_timespec().sec;
+        Ok((accumulator, timestamp))
+    }
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
                             attributes: &Vec<Attribute>) -> Result<PrimaryClaim, CryptoError> {
@@ -149,8 +275,6 @@ impl Issuer {
             v_prime: v_prime_prime
         })
     }
-
-    fn _issue_non_revocation_claim() {}
 
     fn _generate_context_attribute(accumulator_id: &String, user_id: &String) -> Result<BigNumber, CryptoError> {
         let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little)?;

@@ -18,11 +18,19 @@ impl PointG1 {
         unimplemented!();
     }
 
+    pub fn new_inf() -> Result<PointG1, CryptoError> {
+        unimplemented!()
+    }
+
     pub fn mul(&self, gr: &GroupOrderElement) -> Result<PointG1, CryptoError> {
         unimplemented!();
     }
 
     pub fn add(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
+        unimplemented!()
+    }
+
+    pub fn sub(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
         unimplemented!()
     }
 
@@ -74,6 +82,10 @@ impl GroupOrderElement {
     }
 
     pub fn inverse(&self) -> Result<GroupOrderElement, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn mod_neg(&self) -> Result<GroupOrderElement, CryptoError> {
         unimplemented!();
     }
 

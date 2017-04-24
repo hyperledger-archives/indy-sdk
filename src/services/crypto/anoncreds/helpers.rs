@@ -30,6 +30,16 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
     Ok(result)
 }
 
+pub fn transform_u32_to_array_of_u8(x:u32) -> Vec<u8> {
+    let mut result: Vec<u8> = Vec::new();
+    for i in (0..4).rev() {
+        let shift = i * 8;
+        let b = (x >> shift) as u8;
+        result.push(b);
+    }
+    result
+}
+
 pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError> {
     nums.sort();
 
@@ -192,5 +202,12 @@ mod tests {
         assert!(revealed.contains_key("name"));
         assert!(unrevealed.contains_key("sex"));
         assert!(unrevealed.contains_key("age"));
+    }
+
+    #[test]
+    fn transform_u32_to_array_of_u8_works() {
+        let int = 1958376517;
+        let answer = vec![116, 186, 116, 69];
+        assert_eq!(transform_u32_to_array_of_u8(int), answer)
     }
 }
