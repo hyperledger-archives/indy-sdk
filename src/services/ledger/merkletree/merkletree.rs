@@ -1,20 +1,20 @@
 extern crate ring;
 use self::ring::digest::Algorithm;
 
-use services::ledger::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator };
-use services::ledger::merkletree::hashutils::{ Hashable, HashUtils };
+use services::ledger::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator, TreeLeafData };
+use services::ledger::merkletree::hashutils::{ HashUtils };
 use services::ledger::merkletree::proof::{ Proof, Lemma };
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.
 #[derive(Clone, Debug)]
-pub struct MerkleTree<T> {
+pub struct MerkleTree {
 
     /// The hashing algorithm used by this Merkle tree
     pub algorithm: &'static Algorithm,
 
     /// The root of the inner binary tree
-    pub root: Tree<T>,
+    pub root: Tree,
 
     /// The height of the tree
     pub height: usize,
@@ -23,12 +23,11 @@ pub struct MerkleTree<T> {
     pub count: usize
 }
 
-impl <T> MerkleTree<T> {
+impl MerkleTree {
 
     /// Constructs a Merkle Tree from a vector of data blocks.
     /// Returns `None` if `values` is empty.
-    pub fn from_vec(algorithm: &'static Algorithm, values: Vec<T>) -> Self
-            where T: Hashable {
+    pub fn from_vec(algorithm: &'static Algorithm, values: Vec<TreeLeafData>) -> Self {
 
         if values.is_empty() {
             return MerkleTree {
@@ -122,8 +121,7 @@ impl <T> MerkleTree<T> {
 
     /// Generate an inclusion proof for the given value.
     /// Returns `None` if the given value is not found in the tree.
-    pub fn gen_proof(&self, value: T) -> Option<Proof<T>>
-            where T: Hashable {
+    pub fn gen_proof(&self, value: TreeLeafData) -> Option<Proof> {
 
         let root_hash  = self.root_hash().clone();
         let leaf_hash  = self.algorithm.hash_leaf(&value);
@@ -134,16 +132,16 @@ impl <T> MerkleTree<T> {
     }
 
     /// Creates an `Iterator` over the values contained in this Merkle tree.
-    pub fn iter(&self) -> LeavesIterator<T> {
+    pub fn iter(&self) -> LeavesIterator {
         self.root.iter()
     }
 
 }
 
-impl <T> IntoIterator for MerkleTree<T> {
+impl IntoIterator for MerkleTree {
 
-    type Item     = T;
-    type IntoIter = LeavesIntoIterator<T>;
+    type Item     = TreeLeafData;
+    type IntoIter = LeavesIntoIterator;
 
     /// Creates a consuming iterator, that is, one that moves each value out of the Merkle tree.
     /// The tree cannot be used after calling this.
@@ -153,10 +151,10 @@ impl <T> IntoIterator for MerkleTree<T> {
 
 }
 
-impl <'a, T> IntoIterator for &'a MerkleTree<T> {
+impl <'a> IntoIterator for &'a MerkleTree {
 
-    type Item     = &'a T;
-    type IntoIter = LeavesIterator<'a, T>;
+    type Item     = &'a TreeLeafData;
+    type IntoIter = LeavesIterator<'a>;
 
     /// Creates a borrowing `Iterator` over the values contained in this Merkle tree.
     fn into_iter(self) -> Self::IntoIter {
