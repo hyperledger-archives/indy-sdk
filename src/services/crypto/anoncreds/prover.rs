@@ -796,6 +796,7 @@ mod tests {
     use services::crypto::anoncreds::verifier;
 
     #[test]
+    #[ignore]
     fn present_proof_works() {
         let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
         let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
@@ -815,6 +816,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn prepare_proof_works() {
         let proof_input = mocks::get_proof_input();
         let claims = mocks::get_all_claims().unwrap();
