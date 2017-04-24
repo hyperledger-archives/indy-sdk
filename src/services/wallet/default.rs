@@ -50,7 +50,7 @@ impl DefaultWalletType {
 }
 
 impl WalletType for DefaultWalletType {
-    fn create(&self, name: &str, config: &str, credentials: &str) -> Result<(), WalletError> {
+    fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
         _open_connection(name)?
             .execute("CREATE TABLE wallet (key TEXT, value TEXT)", &[])?;
         Ok(())
@@ -60,7 +60,7 @@ impl WalletType for DefaultWalletType {
         Ok(fs::remove_file(_db_path(name))?)
     }
 
-    fn open(&self, name: &str, credentials: &str) -> Result<Box<Wallet>, WalletError> {
+    fn open(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
         Ok(Box::new(DefaultWallet::new(name)))
     }
 }
@@ -98,7 +98,7 @@ mod tests {
     #[ignore]
     fn type_create_works() {
         let wallet_type = DefaultWalletType::new();
-        let res = wallet_type.create("wallet1", "config", "credetials");
+        let res = wallet_type.create("wallet1", None, None);
         res.unwrap();
     }
 }
