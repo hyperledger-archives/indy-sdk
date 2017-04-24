@@ -9,8 +9,7 @@ use std::rc::Rc;
 pub enum VerifierCommand {
     VerifyProof(
         i32, // wallet handle
-        String, // proof request initial json
-        String, // proof request disclosed json
+        String, // proof request json
         String, // proof json
         String, // schemas json
         String, // claim defs jsons
@@ -37,20 +36,19 @@ impl VerifierCommandExecutor {
 
     pub fn execute(&self, command: VerifierCommand) {
         match command {
-            VerifierCommand::VerifyProof(wallet_handle, proof_request_initial_json,
-                                         proof_request_disclosed_json, proof_json, schemas_json,
+            VerifierCommand::VerifyProof(wallet_handle, proof_request_json,
+                                         proof_json, schemas_json,
                                          claim_defs_jsons, revoc_regs_json, cb) => {
                 info!(target: "verifier_command_executor", "VerifyProof command received");
-                self.verify_proof(wallet_handle, &proof_request_initial_json,
-                                  &proof_request_disclosed_json, &proof_json, &schemas_json,
+                self.verify_proof(wallet_handle,
+                                  &proof_request_json, &proof_json, &schemas_json,
                                   &claim_defs_jsons, &revoc_regs_json, cb);
             }
         };
     }
 
     fn verify_proof(&self, wallet_handle: i32,
-                    proof_request_initial_json: &str,
-                    proof_request_disclosed_json: &str,
+                    proof_request_json: &str,
                     proof_json: &str,
                     schemas_json: &str,
                     claim_defs_jsons: &str,
