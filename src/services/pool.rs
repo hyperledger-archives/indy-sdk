@@ -1,3 +1,4 @@
+use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fs, thread};
@@ -85,6 +86,27 @@ impl PoolConfig {
         txn += ".txn";
         PoolConfig { genesis_txn: txn }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct NodeData {
+    alias: String,
+    client_ip: String,
+    client_port: u32,
+    node_ip: String,
+    node_port: u32,
+    services: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GenTransaction {
+    data: NodeData,
+    dest: String,
+    identifier: String,
+    #[serde(rename = "txnId")]
+    txn_id: String,
+    #[serde(rename = "type")]
+    txn_type: String,
 }
 
 impl PoolService {
