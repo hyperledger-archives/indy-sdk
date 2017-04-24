@@ -1,7 +1,7 @@
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::BytesView;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct PointG1 {}
 
 pub struct PointG2 {}
