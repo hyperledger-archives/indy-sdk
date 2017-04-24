@@ -1,11 +1,14 @@
+extern crate libc;
+extern crate rust_base58;
 extern crate serde_json;
 
+use self::libc::c_int;
+use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::{fs, thread};
-use std::io::{Error, ErrorKind, Write};
-use std::path::{Path, PathBuf};
-use rustc_serialize;
+use std::{fmt, fs, thread};
+use std::fmt::Debug;
+use std::io::Write;
 use rustc_serialize::json;
 use zmq;
 
@@ -103,6 +106,67 @@ struct GenTransaction {
     txn_id: String,
     #[serde(rename = "type")]
     txn_type: String,
+}
+
+struct RemoteNode {
+    public_key: Vec<u8>,
+    verify_key: Vec<u8>,
+    zaddr: String,
+    zsock: Option<zmq::Socket>,
+}
+
+impl Debug for RemoteNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RemoteNode: {{ public_key: {:?}, verify_key {:?}, zaddr {:?}, zsock is_some {} }}",
+               self.public_key, self.verify_key, self.zaddr, self.zsock.is_some())
+    }
+}
+
+impl RemoteNode {
+    fn new(txn: &str) -> RemoteNode {
+        let gen_tx: GenTransaction = serde_json::from_str(txn).expect("RemoteNode parsing");
+        RemoteNode::from(gen_tx)
+    }
+
+    fn connect(&mut self, ctx: &zmq::Context) {
+        let key_pair = zmq::CurveKeyPair::new().expect("create key pair");
+        let s = ctx.socket(zmq::SocketType::DEALER).expect("socket for Node");
+        s.set_curve_secretkey(key_pair.secret_key.as_str()).expect("set secret key");
+        s.set_curve_publickey(key_pair.public_key.as_str()).expect("set public key");
+        s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
+        s.connect(self.zaddr.as_str()).expect("connect to Node");
+        self.zsock = Some(s);
+    }
+}
+
+impl From<GenTransaction> for RemoteNode {
+    fn from(tx: GenTransaction) -> RemoteNode {
+        fn crypto_sign_ed25519_pk_to_curve25519(pk: &Vec<u8>) -> Vec<u8> {
+            // TODO: fix hack:
+            // this function isn't included to sodiumoxide rust wrappers,
+            // temporary local binding is used to call libsodium-sys function
+            extern {
+                pub fn crypto_sign_ed25519_pk_to_curve25519(
+                    curve25519_pk: *mut [u8; 32],
+                    ed25519_pk: *const [u8; 32]) -> c_int;
+            }
+            let mut from: [u8; 32] = [0; 32];
+            from.clone_from_slice(pk.as_slice());
+            let mut to: [u8; 32] = [0; 32];
+            unsafe {
+                crypto_sign_ed25519_pk_to_curve25519(&mut to, &from);
+            }
+            to.iter().cloned().collect()
+        }
+
+        let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
+        RemoteNode {
+            verify_key: crypto_sign_ed25519_pk_to_curve25519(&public_key),
+            public_key: public_key,
+            zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
+            zsock: None,
+        }
+    }
 }
 
 impl PoolService {
