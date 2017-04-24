@@ -263,24 +263,35 @@ impl Issuer {
         let t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
-//        T3 = ((cmod.pair(proofC.A, pk.h) ** params.c) *
-//            (cmod.pair(pk.htilde, pk.h) ** params.r)) / \
-//        ((cmod.pair(pk.htilde, pk.y) ** params.rho) *
-//            (cmod.pair(pk.htilde, pk.h) ** params.m) *
-//            (cmod.pair(pk.h1, pk.h) ** params.m2) *
-//            (cmod.pair(pk.h2, pk.h) ** params.s))
-//        T4 = (cmod.pair(pk.htilde, accum.acc) ** params.r) * \
-//        (cmod.pair(1 / pk.g, pk.htilde) ** params.rPrime)
+        let t3 = Pair::pair(&proof_c.a, &pk_r.h)?.pow(&params.c)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.r)?)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
+                .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.m)?)?
+                .mul(&Pair::pair(&pk_r.h1, &pk_r.h)?.pow(&params.m2)?)?
+                .mul(&Pair::pair(&pk_r.h2, &pk_r.h)?.pow(&params.s)?)?)?.inverse()?;
+        let t4 = Pair::pair(&pk_r.htilde, &accumulator.acc)?
+            .pow(&params.r)?
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime)?)?;
         let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
-//        T6 = (proofC.D ** params.rPrimePrime) * (pk.g ** -params.mPrime) * (
-//            pk.htilde ** -params.tPrime)
-//        T7 = (cmod.pair(pk.pk * proofC.G, pk.htilde) ** params.rPrimePrime) * \
-//        (cmod.pair(pk.htilde, pk.htilde) ** -params.mPrime) * \
-//        (cmod.pair(pk.htilde, proofC.S) ** params.r)
-//        T8 = (cmod.pair(pk.htilde, pk.u) ** params.r) * \
-//        (cmod.pair(1 / pk.g, pk.htilde) ** params.rPrimePrimePrime)
-//        return NonRevocProofTauList(T1, T2, T3, T4, T5, T6, T7, T8)
-        unimplemented!();
+        let t6 = proof_c.d.mul(&params.r_prime_prime)?
+            .add(&pk_r.g.mul(&params.m_prime.mod_neg()?)?)?
+            .add(&pk_r.htilde.mul(&params.t_prime.mod_neg()?)?)?;
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.htilde)?.pow(&params.r_prime_prime)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.htilde)?.pow(&params.m_prime.mod_neg()?)?)?
+            .mul(&Pair::pair(&pk_r.htilde, &proof_c.s)?.pow(&params.r)?)?;
+        let t8 = Pair::pair(&pk_r.htilde, &pk_r.u)?.pow(&params.r)?
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime_prime_prime)?)?;
+
+        Ok(NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        })
     }
 
     fn _create_tau_list_expected_values() {

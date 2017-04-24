@@ -155,12 +155,12 @@ pub struct NonRevocProofXList {
 }
 
 pub struct NonRevocProofTauList {
-    pub t1: Pair,
-    pub t2: Pair,
+    pub t1: PointG1,
+    pub t2: PointG1,
     pub t3: Pair,
     pub t4: Pair,
-    pub t5: Pair,
-    pub t6: Pair,
+    pub t5: PointG1,
+    pub t6: PointG1,
     pub t7: Pair,
     pub t8: Pair
 }

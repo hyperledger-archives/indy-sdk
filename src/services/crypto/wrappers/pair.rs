@@ -32,6 +32,10 @@ impl PointG1 {
         unimplemented!()
     }
 
+    pub fn neg(&self) -> Result<PointG1, CryptoError> {
+        unimplemented!();
+    }
+
     pub fn to_string(&self) -> Result<String, CryptoError> {
         unimplemented!();
     }
