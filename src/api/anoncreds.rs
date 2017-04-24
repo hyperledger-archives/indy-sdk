@@ -300,7 +300,7 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                   claim_offers_json: *const c_char
                                              )>) -> ErrorCode {
-    check_useful_c_str!(isseur_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
@@ -500,7 +500,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetClaims(
             wallet_handle,
-            claims_json,
+            filter_json,
             Box::new(move |result| {
                 let (err, claims_json) = result_to_err_code_1!(result, String::new());
                 let claims_json = CStringUtils::string_to_cstring(claims_json);
