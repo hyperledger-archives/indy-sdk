@@ -261,7 +261,7 @@ impl Issuer {
         Ok((accumulator, timestamp))
     }
 
-    fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+    pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
                                params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
         let t2 = proof_c.e.mul(&params.c)?
@@ -298,7 +298,7 @@ impl Issuer {
         })
     }
 
-    fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+    pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
                                         accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
         let t1 = proof_c.e;
         let t2 = PointG1::new_inf()?;
