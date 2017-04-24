@@ -1,6 +1,7 @@
 use errors::crypto::CryptoError;
+use services::crypto::anoncreds::helpers::BytesView;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct PointG1 {}
 
 pub struct PointG2 {}
@@ -8,6 +9,7 @@ pub struct PointG2 {}
 #[derive(Copy, Clone)]
 pub struct GroupOrderElement {}
 
+#[derive(Copy, Clone)]
 pub struct Pair {}
 
 impl PointG1 {
@@ -58,6 +60,11 @@ impl GroupOrderElement {
 
     pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         //need to use rmod after add
+        unimplemented!()
+    }
+
+    pub fn sub_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+        //need to use modneg if sub is negative
         unimplemented!()
     }
 
@@ -113,6 +120,32 @@ impl Pair {
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+}
+
+impl BytesView for Pair {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl BytesView for PointG1 {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl BytesView for GroupOrderElement {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl Eq for Pair {}
+
+impl PartialEq for Pair {
+    fn eq(&self, other: &Pair) -> bool {
         unimplemented!();
     }
 }
