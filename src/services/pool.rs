@@ -27,8 +27,6 @@ struct Pool {
 impl Pool {
     pub fn new(name: &str, cmd_id: i32) -> Result<Pool, PoolError> {
         let zmq_ctx = zmq::Context::new();
-        let send_s = zmq_ctx.socket(zmq::SocketType::PAIR)?;
-        let recv_s = zmq_ctx.socket(zmq::SocketType::PAIR)?;
         let zmq_ctx = zmq::Context::new();
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
         let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
@@ -42,10 +40,10 @@ impl Pool {
         Ok(Pool {
             name: name.to_string(),
             id: pool_id,
-            send_sock: send_s,
+            send_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
                 let mut socks_to_poll: [zmq::PollItem; 1] = [
-                    recv_s.as_poll_item(zmq::POLLIN),
+                    recv_cmd_sock.as_poll_item(zmq::POLLIN),
                 ];
                 CommandExecutor::instance().send(Command::Pool(
                     PoolCommand::OpenAck(cmd_id, Ok(pool_id)))); //TODO send only after catch-up?
@@ -53,7 +51,7 @@ impl Pool {
                     trace!("zmq poll loop >>");
                     let r = zmq::poll(&mut socks_to_poll, -1);
                     //FIXME implement
-                    trace!("zmq poll loop << ret {:?}, at cmd sock {:?}", r, recv_s.recv_string(0));
+                    trace!("zmq poll loop << ret {:?}, at cmd sock {:?}", r, recv_cmd_sock.recv_string(0));
                 }
             })),
         })
