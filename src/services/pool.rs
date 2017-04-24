@@ -1,4 +1,5 @@
-use serde_json;
+extern crate serde_json;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fs, thread};
