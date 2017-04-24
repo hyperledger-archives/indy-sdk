@@ -6,12 +6,9 @@ use self::libc::c_int;
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::{env, fmt, fs, io, path, thread};
+use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
-use std::fs::Metadata;
-use std::io::{BufRead, Error, ErrorKind, Write};
-use std::path::{Path, PathBuf};
-use rustc_serialize;
+use std::io::{BufRead, Write};
 use rustc_serialize::json;
 use zmq;
 
@@ -42,7 +39,7 @@ struct PoolWorker {
 impl PoolWorker {
     fn connect_to_known_nodes(&mut self) {
         let f = fs::File::open("pool_transactions_sandbox").expect("open file"); //FIXME use file for the pool
-        let mut reader = io::BufReader::new(&f);
+        let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.expect("read transaction line");
             let mut rn: RemoteNode = RemoteNode::new(line.as_str());
@@ -62,7 +59,7 @@ impl PoolWorker {
             ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
         }
         CommandExecutor::instance().send(Command::Pool(
-            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))); //TODO send only after catch-up?
+            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
         loop {
             trace!("zmq poll loop >>");
             let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
@@ -118,7 +115,8 @@ impl Drop for Pool {
     fn drop(&mut self) {
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
-        self.send_sock.send("exit".as_bytes(), 0); //TODO
+        self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
+        info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
         self.worker.take().unwrap().join().unwrap();
         info!(target: target.as_str(), "Drop finished");
@@ -238,7 +236,7 @@ impl PoolService {
             return Err(PoolError::NotCreated("Already created".to_string()));
         }
 
-        fs::create_dir_all(path.as_path());
+        fs::create_dir_all(path.as_path())?;
 
         path.push(name);
         path.set_extension("txn");

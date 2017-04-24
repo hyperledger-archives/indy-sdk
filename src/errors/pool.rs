@@ -1,4 +1,3 @@
-use rustc_serialize;
 use rustc_serialize::json;
 use std::error;
 use std::io;
