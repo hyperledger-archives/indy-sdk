@@ -1,5 +1,7 @@
 extern crate ring;
-use self::ring::digest::{ Algorithm, Context, Digest, digest };
+use self::ring::digest::{ Algorithm, Context, Digest, digest, SHA256 };
+
+pub static DIGEST: &'static Algorithm = &SHA256;
 
 /// The type of values stored in a `MerkleTree` must implement
 /// this trait, in order for them to be able to be fed
