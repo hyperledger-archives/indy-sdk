@@ -1,6 +1,7 @@
 extern crate serde_json;
 
 use errors::anoncreds::AnoncredsError;
+use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 
 use self::serde_json::Value;
@@ -123,12 +124,10 @@ impl ProverCommandExecutor {
                          claim_offer_json: &str,
                          cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
         let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let claim_offer: ClaimOffer = ClaimOffer::from_str(&claim_offer_json)?;
-
-                    wallet.set(&format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)?;
+            ClaimOffer::from_str(&claim_offer_json)
+                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
+                .and_then(|claim_offer| {
+                    self.wallet_service.set(wallet_handle, &format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)?;
 
                     Ok(())
                 });
@@ -144,13 +143,11 @@ impl ProverCommandExecutor {
                         filter_json: &str,
                         cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let filter: Value = serde_json::from_str(&filter_json)?;
-
+            serde_json::from_str(&filter_json)
+                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
+                .and_then(|filter: Value| {
                     let claim_offers =
-                        wallet.get(&format!("claim_offer {}", &filter["issuer_did"]))?; //TODO LIST METHOD
+                        self.wallet_service.get(wallet_handle, &format!("claim_offer {}", &filter["issuer_did"]))?; //TODO LIST METHOD
 
                     Ok((claim_offers))
                 });
@@ -166,14 +163,12 @@ impl ProverCommandExecutor {
                             master_secret_name: &str,
                             cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
         let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let master_secret = self.crypto_service.anoncreds.prover.generate_master_secret()?;
-
+            self.crypto_service.anoncreds.prover.generate_master_secret()
+                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
+                .and_then(|master_secret| {
                     let master_secret_string = master_secret.to_dec()?;
 
-                    wallet.set(&format!("master_secret {}", &master_secret_name), &master_secret_string)?;
+                    self.wallet_service.set(wallet_handle, &format!("master_secret {}", &master_secret_name), &master_secret_string)?;
 
                     Ok(())
                 });
@@ -191,16 +186,14 @@ impl ProverCommandExecutor {
                                       master_secret_name: &str,
                                       cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
         let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let claim_offer: ClaimOffer = ClaimOffer::from_str(&claim_offer_json)?;
-
+            ClaimOffer::from_str(&claim_offer_json)
+                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
+                .and_then(|claim_offer| {
                     let claim_def_json = ClaimDefinition::from_str(&claim_def_json)?;
 
-                    let pk_string = wallet.get(&format!("public_key {}", &claim_offer.issuer_did))?;
-                    let pkr_string = wallet.get(&format!("public_key_revocation {}", &claim_offer.issuer_did))?;
-                    let ms_string = wallet.get(&format!("master_secret {}", master_secret_name))?;
+                    let pk_string = self.wallet_service.get(wallet_handle, &format!("public_key {}", &claim_offer.issuer_did))?;
+                    let pkr_string = self.wallet_service.get(wallet_handle, &format!("public_key_revocation {}", &claim_offer.issuer_did))?;
+                    let ms_string = self.wallet_service.get(wallet_handle,&format!("master_secret {}", master_secret_name))?;
 
                     let pk = PublicKey::from_str(&pk_string)?;
                     let pkr = RevocationPublicKey::from_str(&pkr_string)?;

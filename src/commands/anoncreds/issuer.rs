@@ -1,6 +1,7 @@
 extern crate serde_json;
 
 use errors::anoncreds::AnoncredsError;
+use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 
 use services::crypto::CryptoService;
@@ -100,11 +101,9 @@ impl IssuerCommandExecutor {
                              signature_type: Option<&str>,
                              cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
         let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let schema = Schema::from_str(schema_json)?;
-
+            Schema::from_str(schema_json)
+                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
+                .and_then(|schema| {
                     let ((pk, sk), (pkr, skr)) =
                         self.crypto_service.anoncreds.issuer.generate_keys(schema)?;
 
@@ -113,10 +112,11 @@ impl IssuerCommandExecutor {
                     let pkr_json = RevocationPublicKey::to_string(&pkr)?;
                     let skr_json = RevocationSecretKey::to_string(&skr)?;
 
-                    wallet.set(&format!("public_key {}", &issuer_did), &pk_json)?;
-                    wallet.set(&format!("secret_key {}", &issuer_did), &sk_json)?;
-                    wallet.set(&format!("public_key_revocation {}", &issuer_did), &pkr_json)?;
-                    wallet.set(&format!("secret_key_revocation {}", &issuer_did), &skr_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("public_key {}", &issuer_did), &pk_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("secret_key {}", &issuer_did), &sk_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("public_key_revocation {}", &issuer_did), &pkr_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("secret_key_revocation {}", &issuer_did), &skr_json)?;
+
 
                     let claim_def = ClaimDefinition {
                         public_key: pk_json,
@@ -142,11 +142,9 @@ impl IssuerCommandExecutor {
                                    max_claim_num: i32,
                                    cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
         let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let pkr_json = wallet.get(&format!("public_key_revocation {}", &issuer_did))?;
-
+            self.wallet_service.get(wallet_handle, &format!("public_key_revocation {}", &issuer_did))
+                .map_err(|err| AnoncredsError::WalletError(WalletError::InvalidDataFormat(err.to_string())))
+                .and_then(|pkr_json| {
                     let pkr = RevocationPublicKey::from_str(&pkr_json)?;
 
                     let (acc, tails, acc_pk, acc_sk) =
@@ -157,10 +155,10 @@ impl IssuerCommandExecutor {
                     let acc_pk_json = AccumulatorPublicKey::to_string(&acc_pk)?;
                     let acc_sk_json = AccumulatorSecretKey::to_string(&acc_sk)?;
 
-                    wallet.set(&format!("accumulator {}", &issuer_did), &acc_json)?;
-                    wallet.set(&format!("tails {}", &issuer_did), &tails_json)?;
-                    wallet.set(&format!("accumulator_pk {}", &issuer_did), &acc_pk_json)?;
-                    wallet.set(&format!("accumulator_sk {}", &issuer_did), &acc_sk_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("accumulator {}", &issuer_did), &acc_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("tails {}", &issuer_did), &tails_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("accumulator_pk {}", &issuer_did), &acc_pk_json)?;
+                    self.wallet_service.set(wallet_handle, &format!("accumulator_sk {}", &issuer_did), &acc_sk_json)?;
 
                     Ok((acc_json, "".to_string()))
                 });

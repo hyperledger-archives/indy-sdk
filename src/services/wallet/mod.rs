@@ -49,8 +49,8 @@ impl JsonEncodable for WalletDescriptor {}
 impl <'a>JsonDecodable<'a> for WalletDescriptor {}
 
 pub struct WalletService {
-    pub types: RefCell<HashMap<&'static str, Box<WalletType>>>,
-    pub wallets: RefCell<HashMap<i32, Box<Wallet>>>
+    types: RefCell<HashMap<&'static str, Box<WalletType>>>,
+    wallets: RefCell<HashMap<i32, Box<Wallet>>>
 }
 
 impl WalletService {
