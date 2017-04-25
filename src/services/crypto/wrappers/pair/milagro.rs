@@ -11,8 +11,6 @@ extern crate rand;
 use self::rand::os::{OsRng};
 use self::rand::Rng;
 
-static GEN_G1: ECP = ECP::new_bigs(&CURVE_Gx, &CURVE_Gy);
-
 fn random_mod_order() -> Result<BIG, CryptoError> {
     let mut seed: [u8; 32] = [0; 32];
     let mut os_rng = OsRng::new().unwrap();
@@ -43,7 +41,8 @@ pub struct Pair {
 impl PointG1 {
     pub fn new() -> Result<PointG1, CryptoError> {
         // generate random point from the group G1
-        let mut point = GEN_G1;
+        let gen_g1: ECP = ECP::new_bigs(&CURVE_Gx, &CURVE_Gy);
+        let mut point = gen_g1;
         ECP::mul(&mut point, &random_mod_order()?);
         Ok(PointG1 {
             point: point
