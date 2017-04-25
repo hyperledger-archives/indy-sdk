@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::error;
 use std::fmt;
 
@@ -80,9 +82,9 @@ impl From<WalletError> for AnoncredsError {
     }
 }
 
-impl From<CommonError> for AnoncredsError {
-    fn from(err: CommonError) -> AnoncredsError {
-        AnoncredsError::CommonError(err)
+impl From<serde_json::Error> for AnoncredsError {
+    fn from(err: serde_json::Error) -> AnoncredsError {
+        AnoncredsError::CommonError(CommonError::InvalidStructure(err.to_string()))
     }
 }
 
