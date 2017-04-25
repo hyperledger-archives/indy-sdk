@@ -127,8 +127,7 @@ impl ProverCommandExecutor {
             self.wallet_service.wallets.borrow().get(&wallet_handle)
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
-                    let claim_offer: ClaimOffer = ClaimOffer::decode(&claim_offer_json)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let claim_offer: ClaimOffer = ClaimOffer::decode(&claim_offer_json)?;
 
                     wallet.set(&format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)?;
 
@@ -149,10 +148,10 @@ impl ProverCommandExecutor {
             self.wallet_service.wallets.borrow().get(&wallet_handle)
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
-                    let filter: Value = serde_json::from_str(&filter_json)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let filter: Value = serde_json::from_str(&filter_json)?;
 
-                    let claim_offers = wallet.get(&format!("claim_offer {}", &filter["issuer_did"]))?; //TODO LIST METHOD
+                    let claim_offers =
+                        wallet.get(&format!("claim_offer {}", &filter["issuer_did"]))?; //TODO LIST METHOD
 
                     Ok((claim_offers))
                 });
@@ -208,25 +207,20 @@ impl ProverCommandExecutor {
 
                     let ms_string = wallet.get(&format!("master_secret {}", master_secret_name))?;
 
-                    let pk = PublicKey::decode(&pk_string)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let pk = PublicKey::decode(&pk_string)?;
 
-                    let pkr = RevocationPublicKey::decode(&pkr_string)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let pkr = RevocationPublicKey::decode(&pkr_string)?;
 
                     let ms = BigNumber::from_dec(&ms_string)?;
 
                     let (claim_request, claim_init_data, revocation_claim_init_data) =
                         self.crypto_service.anoncreds.prover.create_claim_request(pk, pkr, ms, "1".to_string(), true)?;
 
-                    let claim_request_json = ClaimRequest::encode(&claim_request)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let claim_request_json = ClaimRequest::encode(&claim_request)?;
 
-                    let claim_init_data_json = ClaimRequest::encode(&claim_request)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let claim_init_data_json = ClaimRequest::encode(&claim_request);
 
-                    let revocation_claim_init_data_json = ClaimRequest::encode(&claim_request)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let revocation_claim_init_data_json = ClaimRequest::encode(&claim_request)?;
 
                     Ok(claim_request_json)
                 });

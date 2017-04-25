@@ -1,7 +1,6 @@
 extern crate serde_json;
 
 use errors::anoncreds::AnoncredsError;
-use errors::common::CommonError;
 use errors::wallet::WalletError;
 
 use services::crypto::CryptoService;
@@ -104,21 +103,15 @@ impl IssuerCommandExecutor {
             self.wallet_service.wallets.borrow().get(&wallet_handle)
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
-                    let schema = Schema::decode(schema_json)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let schema = Schema::decode(schema_json)?;
 
                     let ((pk, sk), (pkr, skr)) =
-                        self.crypto_service.anoncreds.issuer.generate_keys(schema)
-                            .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                        self.crypto_service.anoncreds.issuer.generate_keys(schema)?;
 
-                    let pk_json = PublicKey::encode(&pk)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
-                    let sk_json = SecretKey::encode(&sk)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
-                    let pkr_json = RevocationPublicKey::encode(&pkr)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
-                    let skr_json = RevocationSecretKey::encode(&skr)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let pk_json = PublicKey::encode(&pk)?;
+                    let sk_json = SecretKey::encode(&sk)?;
+                    let pkr_json = RevocationPublicKey::encode(&pkr)?;
+                    let skr_json = RevocationSecretKey::encode(&skr)?;
 
                     wallet.set(&format!("public_key {}", &issuer_did), &pk_json)?;
                     wallet.set(&format!("secret_key {}", &issuer_did), &sk_json)?;
@@ -131,8 +124,7 @@ impl IssuerCommandExecutor {
                         signature_type: signature_type.unwrap_or("CL").to_string()
                     };
 
-                    let claim_def_json = ClaimDefinition::encode(&claim_def)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let claim_def_json = ClaimDefinition::encode(&claim_def)?;
 
                     Ok((claim_def_json, "".to_string())) //TODO unique ID
                 });
@@ -155,20 +147,15 @@ impl IssuerCommandExecutor {
                 .and_then(|wallet| {
                     let pkr_json = wallet.get(&format!("public_key_revocation {}", &issuer_did))?;
 
-                    let pkr = RevocationPublicKey::decode(&pkr_json)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let pkr = RevocationPublicKey::decode(&pkr_json)?;
 
                     let (acc, tails, acc_pk, acc_sk) =
                         self.crypto_service.anoncreds.issuer.issue_accumulator(&pkr, claim_def_seq_no, max_claim_num)?;
 
-                    let acc_json = Accumulator::encode(&acc)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
-                    let tails_json = serde_json::to_string(&tails)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
-                    let acc_pk_json = AccumulatorPublicKey::encode(&acc_pk)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
-                    let acc_sk_json = AccumulatorSecretKey::encode(&acc_sk)
-                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
+                    let acc_json = Accumulator::encode(&acc)?;
+                    let tails_json = serde_json::to_string(&tails)?;
+                    let acc_pk_json = AccumulatorPublicKey::encode(&acc_pk)?;
+                    let acc_sk_json = AccumulatorSecretKey::encode(&acc_sk)?;
 
                     wallet.set(&format!("accumulator {}", &issuer_did), &acc_json)?;
 
