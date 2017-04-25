@@ -94,6 +94,7 @@ pub struct Witness {
     pub v: HashSet<i32>
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimRequest {
     pub user_id: String,
     pub u: BigNumber,
@@ -410,3 +411,7 @@ impl<'a> JsonDecodable<'a> for AccumulatorPublicKey {}
 impl JsonEncodable for AccumulatorSecretKey {}
 
 impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}
+
+impl JsonEncodable for ClaimRequest {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequest {}

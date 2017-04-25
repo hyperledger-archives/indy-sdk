@@ -17,9 +17,6 @@ use services::crypto::anoncreds::types::{
     Schema,
     SecretKey
 };
-use services::crypto::wrappers::pair::{PointG1};
-use std::cell::RefCell;
-use std::collections::HashMap;
 use types::claim_definition::ClaimDefinition;
 use utils::json::{JsonEncodable, JsonDecodable};
 
@@ -222,30 +219,6 @@ impl IssuerCommandExecutor {
                     revoc_reg_seq_no: i32,
                     user_revoc_index: i32,
                     cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
-        let result =
-            self.wallet_service.wallets.borrow().get(&wallet_handle)
-                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
-                .and_then(|wallet| {
-                    let acc_json = RefCell::new(Rewallet.get(&format!("accumulator {}", &issuer_did))
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?);
-
-                    let tails: HashMap<i32, PointG1> = serde_json::to_string(&tails)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
-
-                    let (acc, timestamp) =
-                        self.crypto_service.anoncreds.issuer.revoke(&acc_json, &tails, &user_revoc_index)
-                            .map_err(|err| AnoncredsError::CryptoError(CryptoError::BackendError(err.to_string())))?;
-
-
-                    wallet.set(&format!("accumulator_sk {}", &issuer_did), &acc_sk_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
-
-                    Ok((acc_json, "".to_string()))
-                });
-
-        match result {
-            Ok(revoc_registry_json) => cb(Ok(revoc_registry_json)),
-            Err(err) => cb(Err(err))
-        }
+        cb(Ok("".to_string()));
     }
 }

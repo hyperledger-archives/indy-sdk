@@ -1,6 +1,6 @@
-use utils::json::{JsonEncodable};
+use utils::json::{JsonDecodable, JsonEncodable};
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ClaimDefinition {
     pub public_key: String,
     pub schema: String,
@@ -8,3 +8,4 @@ pub struct ClaimDefinition {
 }
 
 impl JsonEncodable for ClaimDefinition {}
+impl<'a> JsonDecodable<'a> for ClaimDefinition {}
