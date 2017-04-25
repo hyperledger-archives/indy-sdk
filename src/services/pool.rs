@@ -63,19 +63,22 @@ impl PoolWorker {
         loop {
             trace!("zmq poll loop >>");
             let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
-            trace!("zmq poll loop ...");
-            for ref node in &self.nodes {
-                let s: &zmq::Socket = node.zsock.as_ref().unwrap();
-                trace!("{:?}", s.recv_string(zmq::DONTWAIT));
-            }
-            let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
-            trace!("{:?}", cmd);
-            if cmd.is_ok() {
-                if "exit".eq(cmd.unwrap().expect("non-string command").as_str()) {
-                    break;
+            trace!("zmq poll loop ... {:?}", r);
+            for i in 0..self.nodes.len() {
+                if ss_to_poll[1 + i].is_readable() {
+                    self.nodes[i].recv_msg().expect("recv msg");
                 }
             }
-            trace!("zmq poll loop << ret {:?}", r);
+            if ss_to_poll[0].is_readable() {
+                let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
+                trace!("cmd {:?}", cmd);
+                if cmd.is_ok() {
+                    if "exit".eq(cmd.unwrap().expect("non-string command").as_str()) {
+                        break;
+                    }
+                }
+            }
+            trace!("zmq poll loop <<");
         }
         info!("zmq poll loop finished");
     }
@@ -83,7 +86,6 @@ impl PoolWorker {
 
 impl Pool {
     pub fn new(name: &str, cmd_id: i32) -> Result<Pool, PoolError> {
-        let zmq_ctx = zmq::Context::new();
         let zmq_ctx = zmq::Context::new();
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
         let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
@@ -158,6 +160,7 @@ struct GenTransaction {
 }
 
 struct RemoteNode {
+    name: String,
     public_key: Vec<u8>,
     verify_key: Vec<u8>,
     zaddr: String,
@@ -185,6 +188,21 @@ impl RemoteNode {
         s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
         s.connect(self.zaddr.as_str()).expect("connect to Node");
         self.zsock = Some(s);
+    }
+
+    fn recv_msg(&self) -> Result<Option<String>, PoolError> {
+        impl From<Vec<u8>> for PoolError {
+            fn from(_: Vec<u8>) -> Self {
+                PoolError::Io(io::Error::from(io::ErrorKind::InvalidData))
+            }
+        }
+        let msg: String = self.zsock.as_ref().unwrap().recv_string(zmq::DONTWAIT)??;
+        info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
+
+        match msg.as_ref() {
+            "po" | "pi" => Ok(None), //TODO send pong, update last available?
+            _ => Ok(Some(msg))
+        }
     }
 }
 
@@ -214,6 +232,7 @@ impl From<GenTransaction> for RemoteNode {
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
+            name: tx.data.alias,
         }
     }
 }
