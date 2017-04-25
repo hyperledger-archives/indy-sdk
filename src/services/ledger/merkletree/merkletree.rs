@@ -1,17 +1,11 @@
-extern crate ring;
-use self::ring::digest::Algorithm;
-
 use services::ledger::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator, TreeLeafData };
-use services::ledger::merkletree::hashutils::{ HashUtils };
+use services::ledger::merkletree::hashutils::{ HashUtils, DIGEST };
 use services::ledger::merkletree::proof::{ Proof, Lemma };
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MerkleTree {
-
-    /// The hashing algorithm used by this Merkle tree
-    pub algorithm: &'static Algorithm,
 
     /// The root of the inner binary tree
     pub root: Tree,
@@ -27,12 +21,11 @@ impl MerkleTree {
 
     /// Constructs a Merkle Tree from a vector of data blocks.
     /// Returns `None` if `values` is empty.
-    pub fn from_vec(algorithm: &'static Algorithm, values: Vec<TreeLeafData>) -> Self {
+    pub fn from_vec(values: Vec<TreeLeafData>) -> Self {
 
         if values.is_empty() {
             return MerkleTree {
-                algorithm: algorithm,
-                root: Tree::empty(algorithm.hash_empty()),
+                root: Tree::empty(DIGEST.hash_empty()),
                 height: 0,
                 count: 0
             };
@@ -43,7 +36,7 @@ impl MerkleTree {
         let mut cur    = Vec::with_capacity(count);
 
         for v in values {
-            let leaf = Tree::new_leaf(algorithm, v);
+            let leaf = Tree::new_leaf(v);
             cur.push(leaf);
         }
 
@@ -57,7 +50,7 @@ impl MerkleTree {
                     let left  = cur.remove(0);
                     let right = cur.remove(0);
 
-                    let combined_hash = algorithm.hash_nodes(
+                    let combined_hash = DIGEST.hash_nodes(
                         left.hash(),
                         right.hash()
                     );
@@ -82,7 +75,6 @@ impl MerkleTree {
         let root = cur.remove(0);
 
         MerkleTree {
-            algorithm: algorithm,
             root: root,
             height: height,
             count: count
@@ -97,7 +89,7 @@ impl MerkleTree {
     /// Returns the hex root hash of Merkle tree
     pub fn root_hash_hex(&self) -> String {
         let rh = self.root.hash();
-        let mut ret:String = String::with_capacity(self.algorithm.output_len*2);
+        let mut ret:String = String::with_capacity(DIGEST.output_len*2);
         for i in rh {
             ret.push_str(&format!("{:02x}", i));
         }
@@ -124,10 +116,10 @@ impl MerkleTree {
     pub fn gen_proof(&self, value: TreeLeafData) -> Option<Proof> {
 
         let root_hash  = self.root_hash().clone();
-        let leaf_hash  = self.algorithm.hash_leaf(&value);
+        let leaf_hash  = DIGEST.hash_leaf(&value);
 
         Lemma::new(&self.root, leaf_hash.as_ref()).map(|lemma|
-            Proof::new(self.algorithm, root_hash, lemma, value)
+            Proof::new(DIGEST, root_hash, lemma, value)
         )
     }
 

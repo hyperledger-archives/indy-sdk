@@ -15,6 +15,9 @@ use services::crypto::anoncreds::types::{
     ClaimRequest,
     Claims,
     NonRevocationClaim,
+    NonRevocProofCList,
+    NonRevocProofTauList,
+    NonRevocProofXList,
     PrimaryClaim,
     PublicKey,
     RevocationPublicKey,
@@ -158,7 +161,7 @@ impl Issuer {
             AccumulatorSecretKey {
                 gamma: gamma
             }
-            ))
+        ))
     }
 
     fn _issue_non_revocation_claim(accumulator: RefCell<Accumulator>, pk_r: &RevocationPublicKey,
@@ -186,9 +189,13 @@ impl Issuer {
         let g_i = g.get(&i)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
 
-        let sigma = pk_r.h0
-            .add(&pk_r.h1.mul(&m2)?)?
-            .add(&claim_request.ur)?
+        let sigma = pk_r.h0.add(&pk_r.h1.mul(&m2)?)?;
+
+        if let Some(ur) = claim_request.ur {
+            sigma.add(&ur)?;
+        }
+
+        sigma
             .add(g_i)?
             .add(&pk_r.h2.mul(&vr_prime_prime)?)?
             .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
@@ -254,6 +261,70 @@ impl Issuer {
         Ok((accumulator, timestamp))
     }
 
+    pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+                               params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+        let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
+        let t2 = proof_c.e.mul(&params.c)?
+            .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
+            .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
+        let t3 = Pair::pair(&proof_c.a, &pk_r.h)?.pow(&params.c)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.r)?)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
+                .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.m)?)?
+                .mul(&Pair::pair(&pk_r.h1, &pk_r.h)?.pow(&params.m2)?)?
+                .mul(&Pair::pair(&pk_r.h2, &pk_r.h)?.pow(&params.s)?)?)?.inverse()?;
+        let t4 = Pair::pair(&pk_r.htilde, &accumulator.acc)?
+            .pow(&params.r)?
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime)?)?;
+        let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
+        let t6 = proof_c.d.mul(&params.r_prime_prime)?
+            .add(&pk_r.g.mul(&params.m_prime.mod_neg()?)?)?
+            .add(&pk_r.htilde.mul(&params.t_prime.mod_neg()?)?)?;
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.htilde)?.pow(&params.r_prime_prime)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.htilde)?.pow(&params.m_prime.mod_neg()?)?)?
+            .mul(&Pair::pair(&pk_r.htilde, &proof_c.s)?.pow(&params.r)?)?;
+        let t8 = Pair::pair(&pk_r.htilde, &pk_r.u)?.pow(&params.r)?
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime_prime_prime)?)?;
+
+        Ok(NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        })
+    }
+
+    pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
+                                        accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+        let t1 = proof_c.e;
+        let t2 = PointG1::new_inf()?;
+        let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
+            .mul(&Pair::pair(&proof_c.a, &pk_r.y)?.inverse()?)?;
+        let t4 = Pair::pair(&proof_c.g, &accumulator.acc)?
+            .mul(&Pair::pair(&pk_r.g, &proof_c.w)?.mul(&accum_pk.z)?.inverse()?)?;
+        let t5 = proof_c.d;
+        let t6 = PointG1::new_inf()?;
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &proof_c.s)?
+            .mul(&Pair::pair(&pk_r.g, &pk_r.g)?.inverse()?)?;
+        let t8 = Pair::pair(&proof_c.g, &pk_r.u)?
+            .mul(&Pair::pair(&pk_r.g, &proof_c.u)?.inverse()?)?;
+
+        Ok(NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        })
+    }
+
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
                             attributes: &Vec<Attribute>) -> Result<PrimaryClaim, CryptoError> {
         let v_prime_prime = Issuer::_generate_v_prime_prime()?;
@@ -280,7 +351,7 @@ impl Issuer {
         let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little)?;
         let user_id_encoded = Issuer::_encode_attribute(&user_id, ByteOrder::Little)?;
         let mut s = vec![
-            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?
+            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
         ];
         let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
         let h = get_hash_as_int(&mut s)?
@@ -359,7 +430,7 @@ impl Issuer {
     }
 
     fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
-        let a = BigNumber::new()?.rand(LARGE_VPRIME_PRIME)?;
+        let a = BigNumber::rand(LARGE_VPRIME_PRIME)?;
         let b = BigNumber::from_u32(2)?
             .exp(&BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)?, None)?;
         let v_prime_prime = bitwise_or_big_int(&a, &b)?;
@@ -372,7 +443,8 @@ impl Issuer {
         let c1 = Issuer::_issue_primary_claim(&pk, &sk, &claim_request.u, &context, &attributes)?;
 
         Ok(Claims {
-            primary_claim: c1
+            primary_claim: c1,
+            non_revocation_claim: None
         })
     }
 
@@ -412,7 +484,7 @@ mod tests {
 
     #[test]
     fn encode_attributes_works() {
-        assert_eq!(mocks::get_encoded_attributes().unwrap(), Issuer::_encode_attributes(&mocks::get_attributes()).unwrap());
+        assert_eq!(mocks::get_gvt_encoded_attributes().unwrap(), Issuer::_encode_attributes(&mocks::get_gvt_attributes()).unwrap());
     }
 
     #[test]
@@ -429,7 +501,7 @@ mod tests {
         let public_key = mocks::get_pk().unwrap();
         let secret_key = mocks::get_secret_key();
         let context_attribute = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
-        let attributes = mocks::get_encoded_attributes().unwrap();
+        let attributes = mocks::get_gvt_encoded_attributes().unwrap();
         let v = BigNumber::from_dec("5237513942984418438429595379849430501110274945835879531523435677101657022026899212054747703201026332785243221088006425007944260107143086435227014329174143861116260506019310628220538205630726081406862023584806749693647480787838708606386447727482772997839699379017499630402117304253212246286800412454159444495341428975660445641214047184934669036997173182682771745932646179140449435510447104436243207291913322964918630514148730337977117021619857409406144166574010735577540583316493841348453073326447018376163876048624924380855323953529434806898415857681702157369526801730845990252958130662749564283838280707026676243727830151176995470125042111348846500489265328810592848939081739036589553697928683006514398844827534478669492201064874941684905413964973517155382540340695991536826170371552446768460042588981089470261358687308").unwrap();
         let u = BigNumber::from_dec("72637991796589957272144423539998982864769854130438387485781642285237707120228376409769221961371420625002149758076600738245408098270501483395353213773728601101770725294535792756351646443825391806535296461087756781710547778467803194521965309091287301376623972321639262276779134586366620773325502044026364814032821517244814909708610356590687571152567177116075706850536899272749781370266769562695357044719529245223811232258752001942940813585440938291877640445002571323841625932424781535818087233087621479695522263178206089952437764196471098717335358765920438275944490561172307673744212256272352897964947435086824617146019").unwrap();
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
@@ -441,7 +513,7 @@ mod tests {
 pub mod mocks {
     use super::*;
 
-    pub fn get_attributes() -> Vec<Attribute> {
+    pub fn get_gvt_attributes() -> Vec<Attribute> {
         let attributes: Vec<Attribute> = vec![
             Attribute {
                 name: "name".to_string(),
@@ -467,12 +539,35 @@ pub mod mocks {
         attributes
     }
 
-    pub fn get_encoded_attributes() -> Result<HashMap<String, BigNumber>, CryptoError> {
+    pub fn get_xyz_attributes() -> Vec<Attribute> {
+        let attributes: Vec<Attribute> = vec![
+            Attribute {
+                name: "status".to_string(),
+                value: "partial".to_string(),
+                encode: true
+            },
+            Attribute {
+                name: "period".to_string(),
+                value: "8".to_string(),
+                encode: false
+            }
+        ];
+        attributes
+    }
+
+    pub fn get_gvt_encoded_attributes() -> Result<HashMap<String, BigNumber>, CryptoError> {
         let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         encoded_attributes.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335")?);
         encoded_attributes.insert("age".to_string(), BigNumber::from_dec("28")?);
         encoded_attributes.insert("sex".to_string(), BigNumber::from_dec("5944657099558967239210949258394887428692050081607692519917050011144233115103")?);
         encoded_attributes.insert("height".to_string(), BigNumber::from_dec("175")?);
+        Ok(encoded_attributes)
+    }
+
+    pub fn get_xyz_encoded_attributes() -> Result<HashMap<String, BigNumber>, CryptoError> {
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
+        encoded_attributes.insert("status".to_string(), BigNumber::from_dec("51792877103171595686471452153480627530895")?);
+        encoded_attributes.insert("period".to_string(), BigNumber::from_dec("8")?);
         Ok(encoded_attributes)
     }
 

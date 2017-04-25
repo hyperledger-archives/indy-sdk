@@ -1,12 +1,9 @@
-extern crate ring;
-extern crate rustc_serialize;
-
 use std::cmp;
 
-use self::ring::digest::{ Algorithm, Digest };
-use self::rustc_serialize::{ Encodable, Encoder, Decodable, Decoder };
+extern crate ring;
+use self::ring::digest::{ Digest };
 
-use services::ledger::merkletree::hashutils::{ HashUtils };
+use services::ledger::merkletree::hashutils::{ HashUtils, DIGEST };
 
 pub use services::ledger::merkletree::proof::{
     Proof,
@@ -17,7 +14,7 @@ pub use services::ledger::merkletree::proof::{
 pub type TreeLeafData = String;
 
 /// Binary Tree where leaves hold a stand-alone value.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Tree {
     Empty {
         hash: Vec<u8>
@@ -52,9 +49,9 @@ impl Tree {
     }
 
     /// Create a new leaf
-    pub fn new_leaf(algo: &'static Algorithm, value: TreeLeafData) -> Tree {
+    pub fn new_leaf(value: TreeLeafData) -> Tree {
 
-        let hash = algo.hash_leaf(&value);
+        let hash = DIGEST.hash_leaf(&value);
         Tree::new(hash, value)
     }
 
@@ -93,74 +90,6 @@ impl Tree {
     }
 }
 
-impl Encodable for Tree {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        match *self {
-            Tree::Empty { ref hash, .. } => {
-                s.emit_struct("node", 4, |s| {
-                    s.emit_struct_field("type", 0, |s| { s.emit_str("empty") })?;
-                    s.emit_struct_field("hash", 1, |s| { hash.encode(s) })?;
-                    s.emit_struct_field("", 2, |s| { s.emit_str("") })?;
-                    s.emit_struct_field("", 3, |s| { s.emit_str("") })?;
-                    Ok(())
-                })
-            }
-            Tree::Node { ref hash, ref left, ref right, .. } => {
-                s.emit_struct("node", 4, |s| {
-                    s.emit_struct_field("type", 0, |s| { s.emit_str("node") })?;
-                    s.emit_struct_field("hash", 1, |s| { hash.encode(s) })?;
-                    s.emit_struct_field("left", 2, |s| { left.encode(s) })?;
-                    s.emit_struct_field("right", 3, |s| { right.encode(s) })?;
-                    Ok(())
-                })
-            }
-            Tree::Leaf { ref hash, ref value, .. } => {
-                s.emit_struct("node", 4, |s| {
-                    s.emit_struct_field("type", 0, |s| { s.emit_str("leaf") })?;
-                    s.emit_struct_field("hash", 1, |s| { hash.encode(s) })?;
-                    s.emit_struct_field("value", 2, |s| { value.encode(s) })?;
-                    s.emit_struct_field("", 3, |s| { s.emit_str("") })?;
-                    Ok(())
-                })
-            }
-        }
-    }
-}
-
-impl Decodable for Tree {
-    fn decode<D: Decoder>(d: &mut D) -> Result<Tree, D::Error> {
-        d.read_struct("node", 4, |d| {
-            let nodetype = d.read_struct_field("type", 0, |d| { d.read_str() })?;
-            let hash = d.read_struct_field("hash", 0, |d| { Vec::<u8>::decode(d) })?;
-            match nodetype.as_ref() {
-                "empty" => {
-                    Ok(Tree::Empty{
-                        hash: hash
-                    })
-                }
-                "node" => {
-                    let left = d.read_struct_field("left", 1, |d| { Tree::decode(d) })?;
-                    let right = d.read_struct_field("right", 2, |d| { Tree::decode(d) })?;
-                    Ok(Tree::Node{
-                        hash: hash,
-                        left: Box::new(left),
-                        right: Box::new(right)
-                    })
-                }
-                "leaf" => {
-                    let value = d.read_struct_field("value", 1, |d| { TreeLeafData::decode(d) })?;
-                    Ok(Tree::Leaf{
-                        hash: hash,
-                        value: value
-                    })
-                }
-                _ => {
-                    Err(d.error("bad node type"))
-                }
-            }
-        })
-    }
-}
 
 /// An borrowing iterator over the leaves of a `Tree`.
 /// Adapted from http://codereview.stackexchange.com/q/110283.
