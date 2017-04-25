@@ -1,7 +1,7 @@
 extern crate serde_json;
 
 use errors::anoncreds::AnoncredsError;
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use errors::wallet::WalletError;
 
 use self::serde_json::Value;
@@ -128,10 +128,9 @@ impl ProverCommandExecutor {
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
                     let claim_offer: ClaimOffer = ClaimOffer::decode(&claim_offer_json)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
-                    wallet.set(&format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)?;
 
                     Ok(())
                 });
@@ -151,10 +150,9 @@ impl ProverCommandExecutor {
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
                     let filter: Value = serde_json::from_str(&filter_json)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
-                    let claim_offers = wallet.get(&format!("claim_offer {}", &filter["issuer_did"])) //TODO LIST METHOD
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    let claim_offers = wallet.get(&format!("claim_offer {}", &filter["issuer_did"]))?; //TODO LIST METHOD
 
                     Ok((claim_offers))
                 });
@@ -173,14 +171,11 @@ impl ProverCommandExecutor {
             self.wallet_service.wallets.borrow().get(&wallet_handle)
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
-                    let master_secret = self.crypto_service.anoncreds.prover.generate_master_secret()
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::BackendError(err.to_string())))?;
+                    let master_secret = self.crypto_service.anoncreds.prover.generate_master_secret()?;
 
-                    let master_secret_string = master_secret.to_dec()
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    let master_secret_string = master_secret.to_dec()?;
 
-                    wallet.set(&format!("master_secret {}", &master_secret_name), &master_secret_string)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("master_secret {}", &master_secret_name), &master_secret_string)?;
 
                     Ok(())
                 });
@@ -202,41 +197,36 @@ impl ProverCommandExecutor {
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
                     let claim_offer: ClaimOffer = ClaimOffer::decode(&claim_offer_json)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let claim_def_json = ClaimDefinition::decode(&claim_def_json)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
-                    let pk_string = wallet.get(&format!("public_key {}", &claim_offer.issuer_did))
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    let pk_string = wallet.get(&format!("public_key {}", &claim_offer.issuer_did))?;
 
-                    let pkr_string = wallet.get(&format!("public_key_revocation {}", &claim_offer.issuer_did))
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    let pkr_string = wallet.get(&format!("public_key_revocation {}", &claim_offer.issuer_did))?;
 
-                    let ms_string = wallet.get(&format!("master_secret {}", master_secret_name))
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    let ms_string = wallet.get(&format!("master_secret {}", master_secret_name))?;
 
                     let pk = PublicKey::decode(&pk_string)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let pkr = RevocationPublicKey::decode(&pkr_string)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
-                    let ms = BigNumber::from_dec(&ms_string)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                    let ms = BigNumber::from_dec(&ms_string)?;
 
                     let (claim_request, claim_init_data, revocation_claim_init_data) =
-                        self.crypto_service.anoncreds.prover.create_claim_request(pk, pkr, ms, "1".to_string(), true)
-                            .map_err(|err| AnoncredsError::CryptoError(CryptoError::BackendError(err.to_string())))?;
+                        self.crypto_service.anoncreds.prover.create_claim_request(pk, pkr, ms, "1".to_string(), true)?;
 
                     let claim_request_json = ClaimRequest::encode(&claim_request)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let claim_init_data_json = ClaimRequest::encode(&claim_request)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let revocation_claim_init_data_json = ClaimRequest::encode(&claim_request)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     Ok(claim_request_json)
                 });

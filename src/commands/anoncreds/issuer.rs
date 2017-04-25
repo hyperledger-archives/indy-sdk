@@ -1,7 +1,7 @@
 extern crate serde_json;
 
 use errors::anoncreds::AnoncredsError;
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use errors::wallet::WalletError;
 
 use services::crypto::CryptoService;
@@ -104,33 +104,26 @@ impl IssuerCommandExecutor {
             self.wallet_service.wallets.borrow().get(&wallet_handle)
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
-                    let schema: Schema = Schema::decode(schema_json)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                    let schema = Schema::decode(schema_json)
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let ((pk, sk), (pkr, skr)) =
                         self.crypto_service.anoncreds.issuer.generate_keys(schema)
-                            .map_err(|err| AnoncredsError::CryptoError(CryptoError::BackendError(err.to_string())))?;
+                            .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let pk_json = PublicKey::encode(&pk)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
                     let sk_json = SecretKey::encode(&sk)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
                     let pkr_json = RevocationPublicKey::encode(&pkr)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
                     let skr_json = RevocationSecretKey::encode(&skr)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
-                    wallet.set(&format!("public_key {}", &issuer_did), &pk_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
-
-                    wallet.set(&format!("secret_key {}", &issuer_did), &sk_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
-
-                    wallet.set(&format!("public_key_revocation {}", &issuer_did), &pkr_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
-
-                    wallet.set(&format!("secret_key_revocation {}", &issuer_did), &skr_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("public_key {}", &issuer_did), &pk_json)?;
+                    wallet.set(&format!("secret_key {}", &issuer_did), &sk_json)?;
+                    wallet.set(&format!("public_key_revocation {}", &issuer_did), &pkr_json)?;
+                    wallet.set(&format!("secret_key_revocation {}", &issuer_did), &skr_json)?;
 
                     let claim_def = ClaimDefinition {
                         public_key: pk_json,
@@ -139,7 +132,7 @@ impl IssuerCommandExecutor {
                     };
 
                     let claim_def_json = ClaimDefinition::encode(&claim_def)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     Ok((claim_def_json, "".to_string())) //TODO unique ID
                 });
@@ -160,36 +153,30 @@ impl IssuerCommandExecutor {
             self.wallet_service.wallets.borrow().get(&wallet_handle)
                 .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
                 .and_then(|wallet| {
-                    let pkr_json = wallet.get(&format!("public_key_revocation {}", &issuer_did))
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    let pkr_json = wallet.get(&format!("public_key_revocation {}", &issuer_did))?;
 
                     let pkr = RevocationPublicKey::decode(&pkr_json)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
                     let (acc, tails, acc_pk, acc_sk) =
-                        self.crypto_service.anoncreds.issuer.issue_accumulator(&pkr, claim_def_seq_no, max_claim_num)
-                            .map_err(|err| AnoncredsError::CryptoError(CryptoError::BackendError(err.to_string())))?;
+                        self.crypto_service.anoncreds.issuer.issue_accumulator(&pkr, claim_def_seq_no, max_claim_num)?;
 
                     let acc_json = Accumulator::encode(&acc)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
                     let tails_json = serde_json::to_string(&tails)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
                     let acc_pk_json = AccumulatorPublicKey::encode(&acc_pk)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
                     let acc_sk_json = AccumulatorSecretKey::encode(&acc_sk)
-                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                        .map_err(|err| CommonError::InvalidStructure(err.to_string()))?;
 
-                    wallet.set(&format!("accumulator {}", &issuer_did), &acc_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("accumulator {}", &issuer_did), &acc_json)?;
 
-                    wallet.set(&format!("tails {}", &issuer_did), &tails_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("tails {}", &issuer_did), &tails_json)?;
 
-                    wallet.set(&format!("accumulator_pk {}", &issuer_did), &acc_pk_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("accumulator_pk {}", &issuer_did), &acc_pk_json)?;
 
-                    wallet.set(&format!("accumulator_sk {}", &issuer_did), &acc_sk_json)
-                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+                    wallet.set(&format!("accumulator_sk {}", &issuer_did), &acc_sk_json)?;
 
                     Ok((acc_json, "".to_string()))
                 });
