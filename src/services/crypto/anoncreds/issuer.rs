@@ -169,7 +169,7 @@ impl Issuer {
             return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
         }
 
-        let mut i;
+        let i;
 
         if let Some(x) = seq_number {
             i = x;

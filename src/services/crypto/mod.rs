@@ -7,10 +7,10 @@ use self::wrappers::ed25519::ED25519;
 use self::wrappers::xsalsa20::XSalsa20;
 
 pub struct CryptoService {
-    anoncreds: Anoncreds,
-    base58: Base58,
-    ed25519: ED25519,
-    xsalsa20: XSalsa20
+    pub anoncreds: Anoncreds,
+    pub base58: Base58,
+    pub ed25519: ED25519,
+    pub xsalsa20: XSalsa20
 }
 
 impl CryptoService {

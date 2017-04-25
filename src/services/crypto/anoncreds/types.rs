@@ -3,6 +3,7 @@ use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::CopyFrom;
+use utils::json::{JsonEncodable, JsonDecodable};
 
 pub enum ByteOrder {
     Big,
@@ -16,14 +17,14 @@ pub struct SchemaKey {
     pub issue_id: String
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
     pub name: String,
     pub version: String,
     pub attribute_names: HashSet<String>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PublicKey {
     pub n: BigNumber,
     pub s: BigNumber,
@@ -33,6 +34,7 @@ pub struct PublicKey {
     pub z: BigNumber
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
     pub h: PointG1,
@@ -46,12 +48,13 @@ pub struct RevocationPublicKey {
     pub x: GroupOrderElement
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationSecretKey {
     pub x: GroupOrderElement,
     pub sk: GroupOrderElement
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SecretKey {
     pub p: BigNumber,
     pub q: BigNumber
@@ -316,3 +319,23 @@ impl PrimaryInitProof {
         Ok(tau_list)
     }
 }
+
+impl JsonEncodable for Schema {}
+
+impl<'a> JsonDecodable<'a> for Schema {}
+
+impl JsonEncodable for PublicKey {}
+
+impl<'a> JsonDecodable<'a> for PublicKey {}
+
+impl JsonEncodable for SecretKey {}
+
+impl<'a> JsonDecodable<'a> for SecretKey {}
+
+impl JsonEncodable for RevocationPublicKey {}
+
+impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
+
+impl JsonEncodable for RevocationSecretKey {}
+
+impl<'a> JsonDecodable<'a> for RevocationSecretKey {}

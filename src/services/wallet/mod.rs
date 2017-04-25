@@ -14,7 +14,7 @@ use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-trait Wallet {
+pub trait Wallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError>;
     fn get(&self, key: &str) -> Result<String, WalletError>;
 }
@@ -25,7 +25,7 @@ trait WalletType {
     fn open(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 struct WalletDescriptor {
     pool_name: String,
     xtype: String,
@@ -44,11 +44,11 @@ impl WalletDescriptor {
 
 impl JsonEncodable for WalletDescriptor {}
 
-impl JsonDecodable for WalletDescriptor {}
+impl <'a>JsonDecodable<'a> for WalletDescriptor {}
 
 pub struct WalletService {
-    types: RefCell<HashMap<&'static str, Box<WalletType>>>,
-    wallets: RefCell<HashMap<i32, Box<Wallet>>>
+    pub types: RefCell<HashMap<&'static str, Box<WalletType>>>,
+    pub wallets: RefCell<HashMap<i32, Box<Wallet>>>
 }
 
 impl WalletService {

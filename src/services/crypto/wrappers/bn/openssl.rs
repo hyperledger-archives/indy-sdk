@@ -2,12 +2,16 @@ use errors::crypto::CryptoError;
 
 extern crate openssl;
 extern crate int_traits;
+extern crate serde;
 
 use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
 use self::openssl::hash::{hash, MessageDigest, Hasher};
+use self::serde::ser::{Serialize, Serializer, Error as SError};
+use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
+use std::fmt;
 use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::num::ParseIntError;
@@ -324,6 +328,35 @@ impl PartialEq for BigNumber {
     }
 }
 
+impl Serialize for BigNumber {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        serializer.serialize_newtype_struct("BigNumber", &self.to_dec().map_err(SError::custom)?)
+    }
+}
+
+impl<'a> Deserialize<'a> for BigNumber {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        struct BigNumberVisitor;
+
+        impl<'a> Visitor<'a> for BigNumberVisitor {
+            type Value = BigNumber;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("expected BigNumber")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<BigNumber, E>
+                where E: DError
+            {
+                Ok(BigNumber::from_dec(value).map_err(DError::custom)?)
+            }
+        }
+
+        deserializer.deserialize_str(BigNumberVisitor)
+    }
+}
+
+
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
         CryptoError::BackendError(err.description().to_string())
@@ -341,6 +374,8 @@ mod tests {
     use super::*;
     use utils::logger::LoggerUtils;
 
+    extern crate serde_json;
+
     #[test]
     fn generate_prime_in_range_works() {
         LoggerUtils::init();
@@ -351,5 +386,28 @@ mod tests {
         let random_prime = bn.generate_prime_in_range(&start, &end).unwrap();
         assert!(start < random_prime);
         assert!(end > random_prime);
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct Test {
+        field: BigNumber
+    }
+
+    #[test]
+    fn serialize_works() {
+        let s = Test { field: BigNumber::from_dec("1").unwrap() };
+        let serialized = serde_json::to_string(&s);
+
+        assert!(serialized.is_ok());
+        assert_eq!("{\"field\":\"1\"}", serialized.unwrap());
+    }
+
+    #[test]
+    fn deserialize_works() {
+        let s = "{\"field\":\"1\"}";
+        let bn: Result<Test, _> = serde_json::from_str(&s);
+
+        assert!(bn.is_ok());
+        assert_eq!("1", bn.unwrap().field.to_dec().unwrap());
     }
 }

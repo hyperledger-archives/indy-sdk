@@ -1,8 +1,19 @@
 use errors::anoncreds::AnoncredsError;
+use errors::crypto::CryptoError;
+use errors::wallet::WalletError;
 
 use services::crypto::CryptoService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
+use services::crypto::anoncreds::types::{
+    Schema,
+    PublicKey,
+    SecretKey,
+    RevocationPublicKey,
+    RevocationSecretKey
+};
+use types::claim_definition::ClaimDefinition;
+use utils::json::{JsonEncodable, JsonDecodable};
 
 use std::rc::Rc;
 
@@ -38,9 +49,9 @@ pub enum IssuerCommand {
 }
 
 pub struct IssuerCommandExecutor {
-    crypto_service: Rc<CryptoService>,
-    pool_service: Rc<PoolService>,
-    wallet_service: Rc<WalletService>
+    pub crypto_service: Rc<CryptoService>,
+    pub pool_service: Rc<PoolService>,
+    pub wallet_service: Rc<WalletService>
 }
 
 impl IssuerCommandExecutor {
@@ -84,7 +95,56 @@ impl IssuerCommandExecutor {
                              schema_json: &str,
                              signature_type: Option<&str>,
                              cb: Box<Fn(Result<(String, i32), AnoncredsError>) + Send>) {
-        cb(Ok(("".to_string(), 0)));
+        let result =
+            self.wallet_service.wallets.borrow().get(&wallet_handle)
+                .ok_or_else(|| AnoncredsError::WalletError(WalletError::InvalidHandle(format!("{}", wallet_handle))))
+                .and_then(|wallet| {
+                    let schema: Schema = Schema::decode(schema_json)
+                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+
+                    let ((pk, sk), (pkr, skr)) =
+                        self.crypto_service.anoncreds.issuer.generate_keys(schema)
+                            .map_err(|err| AnoncredsError::CryptoError(CryptoError::BackendError(err.to_string())))?;
+
+                    let pk_json = PublicKey::encode(&pk)
+                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                    let sk_json = SecretKey::encode(&sk)
+                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                    let pkr_json = RevocationPublicKey::encode(&pkr)
+                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+                    let skr_json = RevocationSecretKey::encode(&skr)
+                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+
+                    let pk_key = format!("public_key {}", &issuer_did);
+
+                    wallet.set(&pk_key, &pk_json)
+                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+
+                    wallet.set(&format!("secret_key {}", &issuer_did), &sk_json)
+                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+
+                    wallet.set(&format!("public_key_revocation {}", &issuer_did), &pkr_json)
+                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+
+                    wallet.set(&format!("secret_key_revocation {}", &issuer_did), &skr_json)
+                        .map_err(|err| AnoncredsError::WalletError(WalletError::BackendError(err.to_string())))?;
+
+                    let claim_def = ClaimDefinition {
+                        public_key: pk_json,
+                        schema: schema_json.to_string(),
+                        signature_type: signature_type.unwrap_or("CL").to_string()
+                    };
+
+                    let claim_def_json = ClaimDefinition::encode(&claim_def)
+                        .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))?;
+
+                    Ok((claim_def_json, 1))
+                });
+
+        match result {
+            Ok((claim_def_json, unique_number)) => cb(Ok((claim_def_json, unique_number))),
+            Err(err) => cb(Err(err))
+        }
     }
 
     fn create_and_store_revocation(&self,

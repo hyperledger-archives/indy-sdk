@@ -8,6 +8,9 @@ extern crate log;
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate serde_derive;
+
 extern crate rustc_serialize;
 
 // Not that to use macroses from util inside of other modules it must me loaded first!
@@ -18,6 +21,7 @@ pub mod api;
 mod commands;
 mod errors;
 mod services;
+mod types;
 
 #[cfg(test)]
 mod tests {

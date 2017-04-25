@@ -1,13 +1,18 @@
-use errors::crypto::CryptoError;
+extern crate serde;
 
-#[derive(Copy, Clone)]
+use errors::crypto::CryptoError;
+use self::serde::ser::{Serialize, Serializer};
+use self::serde::de::{Deserialize, Deserializer,};
+
+#[derive(Copy, Clone, Debug)]
 pub struct PointG1 {}
 
 pub struct PointG2 {}
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct GroupOrderElement {}
 
+#[derive(Copy, Clone, Debug)]
 pub struct Pair {}
 
 impl PointG1 {
@@ -113,6 +118,42 @@ impl Pair {
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+}
+
+impl Serialize for GroupOrderElement {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        unimplemented!();
+    }
+}
+
+impl<'a> Deserialize<'a> for GroupOrderElement {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        unimplemented!();
+    }
+}
+
+impl Serialize for PointG1 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        unimplemented!();
+    }
+}
+
+impl<'a> Deserialize<'a> for PointG1 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        unimplemented!();
+    }
+}
+
+impl Serialize for Pair {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        unimplemented!();
+    }
+}
+
+impl<'a> Deserialize<'a> for Pair {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
         unimplemented!();
     }
 }
