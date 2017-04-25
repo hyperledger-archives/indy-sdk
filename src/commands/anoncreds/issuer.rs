@@ -158,11 +158,8 @@ impl IssuerCommandExecutor {
                     let acc_sk_json = AccumulatorSecretKey::encode(&acc_sk)?;
 
                     wallet.set(&format!("accumulator {}", &issuer_did), &acc_json)?;
-
                     wallet.set(&format!("tails {}", &issuer_did), &tails_json)?;
-
                     wallet.set(&format!("accumulator_pk {}", &issuer_did), &acc_pk_json)?;
-
                     wallet.set(&format!("accumulator_sk {}", &issuer_did), &acc_sk_json)?;
 
                     Ok((acc_json, "".to_string()))
