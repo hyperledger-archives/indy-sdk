@@ -61,14 +61,17 @@ pub struct SecretKey {
     pub q: BigNumber
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccumulatorPublicKey {
     pub z: Pair
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccumulatorSecretKey {
     pub gamma: GroupOrderElement
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Accumulator {
     pub accumulator_id: i32,
     pub acc: PointG1,
@@ -395,3 +398,15 @@ impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
 impl JsonEncodable for RevocationSecretKey {}
 
 impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
+
+impl JsonEncodable for Accumulator {}
+
+impl<'a> JsonDecodable<'a> for Accumulator {}
+
+impl JsonEncodable for AccumulatorPublicKey {}
+
+impl<'a> JsonDecodable<'a> for AccumulatorPublicKey {}
+
+impl JsonEncodable for AccumulatorSecretKey {}
+
+impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}

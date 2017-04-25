@@ -290,7 +290,6 @@ mod tests {
     use services::crypto::anoncreds::types::{SchemaKey, Proof};
 
     #[test]
-    #[ignore]
     fn verify_test() {
         let verifier = Verifier::new();
 

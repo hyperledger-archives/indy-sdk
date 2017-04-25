@@ -39,7 +39,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
                                                        signature_type: *const c_char,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             claim_def_json: *const c_char,
-                                                                            claim_def_wallet_key: i32
+                                                                            claim_def_wallet_key: *const c_char
                                                        )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
@@ -53,10 +53,11 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
             schema_json,
             signature_type,
             Box::new(move |result| {
-                let (err, claim_def_json, claim_def_wallet_key) = result_to_err_code_2!(result, String::new(), 0);
+                let (err, claim_def_json, claim_def_wallet_key) = result_to_err_code_2!(result, String::new(), String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
+                let claim_def_wallet_key = CStringUtils::string_to_cstring(claim_def_wallet_key);
 
-                cb(command_handle, err, claim_def_json.as_ptr(), claim_def_wallet_key)
+                cb(command_handle, err, claim_def_json.as_ptr(), claim_def_wallet_key.as_ptr())
             })
         ))));
 

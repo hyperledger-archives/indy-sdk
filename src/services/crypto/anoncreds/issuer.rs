@@ -125,7 +125,7 @@ impl Issuer {
         ))
     }
 
-    pub fn issue_accumulator(pk_r: &RevocationPublicKey, accumulator_id: i32, max_claim_num: i32)
+    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, accumulator_id: i32, max_claim_num: i32)
                              -> Result<(Accumulator, HashMap<i32, PointG1>, AccumulatorPublicKey, AccumulatorSecretKey), CryptoError> {
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
