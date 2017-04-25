@@ -15,8 +15,7 @@ pub enum CommonError {
     InvalidParam7(String),
     InvalidParam8(String),
     InvalidParam9(String),
-    InvalidState(String),
-    InvalidStructure(String)
+    InvalidState(String)
 }
 
 impl fmt::Display for CommonError {
@@ -31,8 +30,7 @@ impl fmt::Display for CommonError {
             CommonError::InvalidParam7(ref description) => write!(f, "Invalid param 4: {}", description),
             CommonError::InvalidParam8(ref description) => write!(f, "Invalid param 4: {}", description),
             CommonError::InvalidParam9(ref description) => write!(f, "Invalid param 4: {}", description),
-            CommonError::InvalidState(ref description) => write!(f, "Invalid library state: {}", description),
-            CommonError::InvalidStructure(ref description) => write!(f, "Invalid object: {}", description)
+            CommonError::InvalidState(ref description) => write!(f, "Invalid library state: {}", description)
         }
     }
 }
@@ -49,8 +47,7 @@ impl error::Error for CommonError {
             CommonError::InvalidParam7(ref description) => description,
             CommonError::InvalidParam8(ref description) => description,
             CommonError::InvalidParam9(ref description) => description,
-            CommonError::InvalidState(ref description) => description,
-            CommonError::InvalidStructure(ref description) => description
+            CommonError::InvalidState(ref description) => description
         }
     }
 
@@ -65,8 +62,7 @@ impl error::Error for CommonError {
             CommonError::InvalidParam7(ref description) => None,
             CommonError::InvalidParam8(ref description) => None,
             CommonError::InvalidParam9(ref description) => None,
-            CommonError::InvalidState(ref description) => None,
-            CommonError::InvalidStructure(ref description) => None
+            CommonError::InvalidState(ref description) => None
         }
     }
 }
@@ -83,8 +79,7 @@ impl ToErrorCode for CommonError {
             CommonError::InvalidParam7(ref description) => ErrorCode::CommonInvalidParam7,
             CommonError::InvalidParam8(ref description) => ErrorCode::CommonInvalidParam8,
             CommonError::InvalidParam9(ref description) => ErrorCode::CommonInvalidParam9,
-            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState,
-            CommonError::InvalidStructure(ref description) => ErrorCode::InvalidStructure
+            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState
         }
     }
 }

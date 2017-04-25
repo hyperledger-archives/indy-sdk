@@ -216,9 +216,9 @@ fn _wallet_config_path(name: &str) -> PathBuf {
 //    use super::*;
 
 //    #[test]
-//    fn json_decode_works() {
+//    fn json_from_str_works() {
 //        let json = "{key1: \"value1\", key2: \"value2\"}";
 //
-//        json::decode(json).unwrap();
+//        json::from_str(json).unwrap();
 //    }
 //}
