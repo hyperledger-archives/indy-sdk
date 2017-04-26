@@ -1,4 +1,7 @@
+extern crate serde_json;
+
 use std::error;
+use std::error::Error;
 use std::io;
 use std::fmt;
 
@@ -88,5 +91,11 @@ impl ToErrorCode for WalletError {
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
         WalletError::IOError(err)
+    }
+}
+
+impl From<serde_json::Error> for WalletError {
+    fn from(err: serde_json::Error) -> WalletError {
+        WalletError::InvalidConfig((err.description().to_string()))
     }
 }

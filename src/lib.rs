@@ -6,11 +6,12 @@
 extern crate log;
 
 #[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
 extern crate lazy_static;
 
-extern crate rustc_serialize;
-
-// Not that to use macroses from util inside of other modules it must me loaded first!
+// Note that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
 mod utils;
 
