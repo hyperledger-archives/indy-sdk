@@ -287,7 +287,7 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::types::{SchemaKey, Proof};
+    use services::crypto::anoncreds::types::{Proof};
 
     #[test]
     #[ignore]
@@ -308,7 +308,7 @@ mod tests {
             ts: None,
             pubseq_no: None
         };
-        let schema_key = SchemaKey { name: "GVT".to_string(), version: "1.0".to_string(), issue_id: "issuer1".to_string() };
+        let schema_key = prover::mocks::get_gvt_schema_key();
 
         let eq_proof = mocks::get_eq_proof().unwrap();
         let ge_proof = mocks::get_ge_proof().unwrap();

@@ -269,8 +269,6 @@ pub struct RevocationClaimInitData {
     pub v_prime: GroupOrderElement
 }
 
-
-
 pub struct NonRevocInitProof {
     pub c_list_params: NonRevocProofXList,
     pub tau_list_params: NonRevocProofXList,
@@ -285,6 +283,26 @@ pub struct NonRevocProof {
 
 
 //impl block
+
+impl SchemaKey {
+    pub fn new(name: String, version: String, issuer_id: String) -> SchemaKey {
+        SchemaKey {
+            name: name,
+            version: version,
+            issue_id: issuer_id
+        }
+    }
+}
+
+impl NonRevocProof {
+    pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
+        NonRevocProof {
+            x_list: x_list,
+            c_list: c_list
+        }
+    }
+}
+
 impl PrimaryEqualInitProof {
     pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         Ok(vec![self.a_prime.clone()?])
@@ -349,27 +367,37 @@ impl NonRevocInitProof {
 }
 
 impl NonRevocProofXList {
+    pub fn new(rho: GroupOrderElement, r: GroupOrderElement, r_prime: GroupOrderElement,
+               r_prime_prime: GroupOrderElement, r_prime_prime_prime: GroupOrderElement,
+               o: GroupOrderElement, o_prime: GroupOrderElement, m: GroupOrderElement,
+               m_prime: GroupOrderElement, t: GroupOrderElement, t_prime: GroupOrderElement,
+               m2: GroupOrderElement, s: GroupOrderElement,
+               c: GroupOrderElement) -> NonRevocProofXList {
+        NonRevocProofXList {
+            rho: rho,
+            r: r,
+            r_prime: r_prime,
+            r_prime_prime: r_prime_prime,
+            r_prime_prime_prime: r_prime_prime_prime,
+            o: o,
+            o_prime: o_prime,
+            m: m,
+            m_prime: m_prime,
+            t: t,
+            t_prime: t_prime,
+            m2: m2,
+            s: s,
+            c: c
+        }
+    }
+
     pub fn as_list(&self) -> Result<Vec<GroupOrderElement>, CryptoError> {
         Ok(vec![self.rho, self.o, self.c, self.o_prime, self.m, self.m_prime, self.t, self.t_prime,
                 self.m2, self.s, self.r, self.r_prime, self.r_prime_prime, self.r_prime_prime_prime])
     }
 
     pub fn from_list(seq: Vec<GroupOrderElement>) -> NonRevocProofXList {
-        NonRevocProofXList {
-            rho: seq[0],
-            o: seq[1],
-            c: seq[2],
-            o_prime: seq[3],
-            m: seq[4],
-            m_prime: seq[5],
-            t: seq[6],
-            t_prime: seq[7],
-            m2: seq[8],
-            s: seq[9],
-            r: seq[10],
-            r_prime: seq[11],
-            r_prime_prime: seq[12],
-            r_prime_prime_prime: seq[13]
-        }
+        NonRevocProofXList::new(seq[0], seq[1], seq[2], seq[3], seq[4], seq[5], seq[6], seq[7],
+                                seq[8], seq[9], seq[10], seq[11], seq[12], seq[13])
     }
 }
