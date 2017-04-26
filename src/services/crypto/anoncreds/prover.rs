@@ -83,11 +83,7 @@ impl Prover {
             } else { (None, None) };
 
         Ok((
-            ClaimRequest {
-                user_id: prover_id.clone(),
-                u: primary_claim_init_data.u.clone()?,
-                ur: ur
-            },
+            ClaimRequest::new(prover_id.clone(), primary_claim_init_data.u.clone()?, ur),
             primary_claim_init_data,
             revocation_primary_claim_init_data
         ))

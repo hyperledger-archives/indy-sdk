@@ -204,6 +204,16 @@ pub struct ClaimRequest {
     pub ur: Option<PointG1>
 }
 
+impl ClaimRequest {
+    pub fn new(user_id: String, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
+        ClaimRequest {
+            user_id: user_id,
+            u: u,
+            ur: ur
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Predicate {
     pub attr_name: String,
