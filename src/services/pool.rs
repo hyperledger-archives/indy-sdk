@@ -1,3 +1,4 @@
+extern crate base64;
 extern crate libc;
 extern crate rust_base58;
 extern crate serde_json;
@@ -15,6 +16,7 @@ use zmq;
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
+use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::sequence::SequenceUtils;
 use utils::environment::EnvironmentUtils;
 
@@ -34,6 +36,46 @@ struct PoolWorker {
     open_cmd_id: i32,
     pool_id: i32,
     nodes: Vec<RemoteNode>,
+    merkle_tree: MerkleTree,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug)]
+struct LedgerStatus {
+    txnSeqNo: usize,
+    merkleRoot: String,
+    op: String,
+    ledgerType: u8,
+}
+
+impl Default for LedgerStatus {
+    fn default() -> LedgerStatus {
+        LedgerStatus {
+            op: "LEDGER_STATUS".to_string(),
+            ledgerType: 0,
+            merkleRoot: "".to_string(),
+            txnSeqNo: 0,
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug)]
+enum OperationType {
+    CONSISTENCY_PROOF,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug)]
+struct CommonMsg { //TODO almost all fields Option<> or find better approach
+    seqNoEnd: usize,
+    seqNoStart: usize,
+    ledgerType: usize,
+    hashes: Vec<String>,
+    op: OperationType,
+    oldMerkleRoot: String,
+    newMerkleRoot: String,
+    batch: Option<Vec<CommonMsg>>,
 }
 
 impl PoolWorker {
@@ -47,26 +89,57 @@ impl PoolWorker {
             rn.connect(&ctx);
             rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
             self.nodes.push(rn);
+            self.merkle_tree.append(line);
+        }
+        info!("merkle tree {:?}", self.merkle_tree);
+    }
+
+
+    fn process_msg(&self, msg: String, src: &RemoteNode) {
+        let resp: Option<String> = if msg.eq("po") {
+            //sending ledger status
+            //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
+            let ls: LedgerStatus = LedgerStatus {
+                txnSeqNo: self.nodes.len(),
+                merkleRoot: base64::encode(self.merkle_tree.root_hash()),
+                ..Default::default()
+            };
+            Some(serde_json::to_string(&ls).unwrap())
+        } else {
+            let msg: CommonMsg = serde_json::from_str(msg.as_str()).unwrap();
+            match msg.op {
+                _ => { info!("unhandled msg {:?}", msg); None }
+            }
+        };
+        if resp.is_some() {
+            src.zsock.as_ref().unwrap().send(resp.unwrap().as_bytes(), zmq::DONTWAIT).expect("send resp msg");
         }
     }
 
+
     pub fn run(&mut self) {
         self.connect_to_known_nodes();
+
         let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
         ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
         for ref node in &self.nodes {
             let s: &zmq::Socket = node.zsock.as_ref().unwrap();
             ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
         }
+
         CommandExecutor::instance().send(Command::Pool(
             PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
+
         loop {
             trace!("zmq poll loop >>");
             let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
             trace!("zmq poll loop ... {:?}", r);
             for i in 0..self.nodes.len() {
                 if ss_to_poll[1 + i].is_readable() {
-                    self.nodes[i].recv_msg().expect("recv msg");
+                    let msg: Option<String> = self.nodes[i].recv_msg().expect("recv msg");
+                    if msg.is_some() {
+                        self.process_msg(msg.unwrap(), &self.nodes[i])
+                    }
                 }
             }
             if ss_to_poll[0].is_readable() {
@@ -100,6 +173,7 @@ impl Pool {
             open_cmd_id: cmd_id,
             pool_id: pool_id,
             nodes: Vec::new(),
+            merkle_tree: MerkleTree::from_vec(Vec::new())
         };
 
         Ok(Pool {
@@ -200,7 +274,7 @@ impl RemoteNode {
         info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
 
         match msg.as_ref() {
-            "po" | "pi" => Ok(None), //TODO send pong, update last available?
+            "pi" => Ok(None), //TODO send pong
             _ => Ok(Some(msg))
         }
     }
