@@ -65,10 +65,10 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'cargo test-xunit'
+                sh 'cargo test -- --nocapture'
             }
             finally {
-                junit 'test-results.xml'
+                //junit 'test-results.xml'
             }
         }
     }
