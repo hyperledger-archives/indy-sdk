@@ -53,8 +53,9 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
             schema_json,
             signature_type,
             Box::new(move |result| {
-                let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), 0);
+                let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
+                let claim_def_uuid = CStringUtils::string_to_cstring(claim_def_uuid);
 
                 cb(command_handle, err, claim_def_json.as_ptr(), claim_def_uuid.as_ptr())
             })
@@ -167,8 +168,6 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(revoc_reg_seq_no, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(user_revoc_index, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()

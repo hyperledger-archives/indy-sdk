@@ -81,7 +81,7 @@ impl IssuerCommandExecutor {
                              issuer_did: &str,
                              schema_json: &str,
                              signature_type: Option<&str>,
-                             cb: Box<Fn(Result<(String, i32), AnoncredsError>) + Send>) {
+                             cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
         cb(Ok(("".to_string(), "".to_string())));
     }
 
