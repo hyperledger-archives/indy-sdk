@@ -65,7 +65,7 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'RUST_BACKTRACE=1 cargo test -- --nocapture'
+                sh 'RUST_BACKTRACE=1 cargo test -- --nocapture --test-threads=1'
             }
             finally {
                 //junit 'test-results.xml'
