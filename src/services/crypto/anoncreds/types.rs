@@ -318,6 +318,24 @@ impl PublicKey {
     }
 }
 
+impl RevocationPublicKey {
+    pub fn new(g: PointG1, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
+               u: PointG1, pk: PointG1, y: PointG1, x: GroupOrderElement) -> RevocationPublicKey {
+        RevocationPublicKey {
+            g: g,
+            h: h,
+            h0: h0,
+            h1: h1,
+            h2: h2,
+            htilde: htilde,
+            u: u,
+            pk: pk,
+            y: y,
+            x: x
+        }
+    }
+}
+
 impl NonRevocProof {
     pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
         NonRevocProof {

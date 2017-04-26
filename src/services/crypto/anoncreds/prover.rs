@@ -1359,18 +1359,12 @@ pub mod mocks {
     }
 
     pub fn get_public_key_revocation() -> Result<RevocationPublicKey, CryptoError> {
-        Ok(RevocationPublicKey {
-            g: PointG1::new().unwrap(),
-            h: PointG1::new().unwrap(),
-            h0: PointG1::new().unwrap(),
-            h1: PointG1::new().unwrap(),
-            h2: PointG1::new().unwrap(),
-            htilde: PointG1::new().unwrap(),
-            u: PointG1::new().unwrap(),
-            pk: PointG1::new().unwrap(),
-            y: PointG1::new().unwrap(),
-            x: GroupOrderElement::new().unwrap()
-        })
+        Ok(RevocationPublicKey::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), GroupOrderElement::new().unwrap())
+        )
     }
 
     pub fn get_accumulator() -> Result<Accumulator, CryptoError> {

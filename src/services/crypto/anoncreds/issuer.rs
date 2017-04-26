@@ -99,18 +99,7 @@ impl Issuer {
         let pk = g.mul(&sk)?;
         let y = h.mul(&x)?;
         Ok((
-            RevocationPublicKey {
-                g: g,
-                h: h,
-                h0: h0,
-                h1: h1,
-                h2: h2,
-                htilde: htilde,
-                u: u,
-                pk: pk,
-                y: y,
-                x: x
-            },
+            RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x),
             RevocationSecretKey {
                 x: x,
                 sk: sk
