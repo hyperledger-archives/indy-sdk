@@ -7,7 +7,7 @@ use self::libc::c_int;
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::{fmt, fs, io, thread};
+use std::{cmp, fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
 use rustc_serialize::json;
@@ -37,6 +37,9 @@ struct PoolWorker {
     pool_id: i32,
     nodes: Vec<RemoteNode>,
     merkle_tree: MerkleTree,
+    new_mt_size: usize,
+    new_mt_vote: usize,
+    f: usize,
 }
 
 #[allow(non_snake_case)]
@@ -69,6 +72,23 @@ struct ConsistencyProof {
     newMerkleRoot: String,
 }
 
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct CatchupReq {
+    ledgerType: usize,
+    seqNoStart: usize,
+    seqNoEnd: usize,
+    catchupTill: usize,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug)]
+struct CatchupRep {
+    ledgerType: usize,
+    consProof: Vec<String>,
+    txns: HashMap<String, GenTransaction>,
+}
+
 #[serde(tag = "op")]
 #[derive(Serialize, Deserialize, Debug)]
 enum Message {
@@ -76,6 +96,10 @@ enum Message {
     ConsistencyProof(ConsistencyProof),
     #[serde(rename = "LEDGER_STATUS")]
     LedgerStatus(LedgerStatus),
+    #[serde(rename = "CATCHUP_REQ")]
+    CatchupReq(CatchupReq),
+    #[serde(rename = "CATCHUP_REP")]
+    CatchupRep(CatchupRep),
 }
 
 impl PoolWorker {
@@ -91,9 +115,34 @@ impl PoolWorker {
             self.nodes.push(rn);
             self.merkle_tree.append(line);
         }
+        self.f = self.merkle_tree.count(); //FIXME
         info!("merkle tree {:?}", self.merkle_tree);
     }
 
+    fn start_catchup(&self) {
+        let node_cnt = self.nodes.len();
+        assert!(self.merkle_tree.count() == node_cnt);
+
+        let cnt_to_catchup = self.new_mt_size - self.merkle_tree.count();
+        assert!(cnt_to_catchup > 0);
+        let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
+        let mut catchup_req = CatchupReq {
+            ledgerType: 0,
+            seqNoStart: node_cnt,
+            seqNoEnd: node_cnt + portion - 1,
+            catchupTill: self.new_mt_size,
+        };
+        for node in &self.nodes {
+            node.send_msg(&Message::CatchupReq(catchup_req.clone()));
+            catchup_req.seqNoStart += portion;
+            catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
+                                            catchup_req.catchupTill - 1);
+        }
+    }
+
+    fn process_catchup(&mut self, catchup: &CatchupRep) {
+        unimplemented!();
+    }
 
     fn process_msg(&mut self, msg: &String, src_ind: usize) {
         let resp: Option<String> = if msg.eq("po") {
@@ -109,6 +158,24 @@ impl PoolWorker {
         } else {
             let msg: Message = serde_json::from_str(msg.as_str()).unwrap();
             match msg {
+                Message::LedgerStatus(ledger_status) => {
+                    //TODO nothing?
+                }
+                Message::ConsistencyProof(cons_proof) => {
+                    trace!("{:?}", cons_proof);
+                    if cons_proof.seqNoStart == self.merkle_tree.count()
+                        && cons_proof.seqNoEnd > self.merkle_tree.count() {
+                        self.new_mt_size = cmp::max(cons_proof.seqNoEnd, self.new_mt_size);
+                        self.new_mt_vote += 1;
+                        debug!("merkle tree expected size now {}", self.new_mt_size);
+                    }
+                    if self.new_mt_vote == self.f {
+                        self.start_catchup();
+                    }
+                }
+                Message::CatchupRep(catchup) => {
+                    self.process_catchup(&catchup);
+                }
                 _ => {
                     info!("unhandled msg {:?}", msg);
                 }
@@ -185,7 +252,10 @@ impl Pool {
             open_cmd_id: cmd_id,
             pool_id: pool_id,
             nodes: Vec::new(),
-            merkle_tree: MerkleTree::from_vec(Vec::new())
+            merkle_tree: MerkleTree::from_vec(Vec::new()),
+            new_mt_size: 0,
+            new_mt_vote: 0,
+            f: 0,
         };
 
         Ok(Pool {
@@ -289,6 +359,13 @@ impl RemoteNode {
             "pi" => Ok(None), //TODO send pong
             _ => Ok(Some(msg))
         }
+    }
+
+    fn send_msg(&self, msg: &Message) {
+        info!("Sending {:?}", msg);
+        self.zsock.as_ref().unwrap()
+            .send_str(serde_json::to_string(msg).unwrap().as_str(), zmq::DONTWAIT)
+            .unwrap();
     }
 }
 
