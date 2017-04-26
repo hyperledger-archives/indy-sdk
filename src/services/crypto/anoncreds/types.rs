@@ -345,6 +345,15 @@ impl RevocationSecretKey {
     }
 }
 
+impl SecretKey {
+    pub fn new(p: BigNumber, q: BigNumber) -> SecretKey {
+        SecretKey {
+            p: p,
+            q: q
+        }
+    }
+}
+
 impl NonRevocProof {
     pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
         NonRevocProof {
