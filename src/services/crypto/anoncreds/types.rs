@@ -336,6 +336,15 @@ impl RevocationPublicKey {
     }
 }
 
+impl RevocationSecretKey {
+    pub fn new(x: GroupOrderElement, sk: GroupOrderElement) -> RevocationSecretKey {
+        RevocationSecretKey {
+            x: x,
+            sk: sk
+        }
+    }
+}
+
 impl NonRevocProof {
     pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
         NonRevocProof {

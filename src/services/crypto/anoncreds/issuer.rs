@@ -100,10 +100,7 @@ impl Issuer {
         let y = h.mul(&x)?;
         Ok((
             RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x),
-            RevocationSecretKey {
-                x: x,
-                sk: sk
-            }
+            RevocationSecretKey::new(x, sk)
         ))
     }
 
