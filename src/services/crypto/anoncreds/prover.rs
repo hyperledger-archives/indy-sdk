@@ -1121,32 +1121,32 @@ pub mod mocks {
 
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {
         NonRevocProofCList {
-            e: PointG1{},
-            d: PointG1{},
-            a: PointG1{},
-            g: PointG1{},
-            w: PointG1{},
-            s: PointG1{},
-            u: PointG1{}
+            e: PointG1::new().unwrap(),
+            d: PointG1::new().unwrap(),
+            a: PointG1::new().unwrap(),
+            g: PointG1::new().unwrap(),
+            w: PointG1::new().unwrap(),
+            s: PointG1::new().unwrap(),
+            u: PointG1::new().unwrap()
         }
     }
 
     pub fn get_non_revocation_proof_x_list() -> NonRevocProofXList {
         NonRevocProofXList {
-            rho: GroupOrderElement{},
-            r: GroupOrderElement{},
-            r_prime: GroupOrderElement{},
-            r_prime_prime: GroupOrderElement{},
-            r_prime_prime_prime: GroupOrderElement{},
-            o: GroupOrderElement{},
-            o_prime: GroupOrderElement{},
-            m: GroupOrderElement{},
-            m_prime: GroupOrderElement{},
-            t: GroupOrderElement{},
-            t_prime: GroupOrderElement{},
-            m2: GroupOrderElement{},
-            s: GroupOrderElement{},
-            c: GroupOrderElement{}
+            rho: GroupOrderElement::new().unwrap(),
+            r: GroupOrderElement::new().unwrap(),
+            r_prime: GroupOrderElement::new().unwrap(),
+            r_prime_prime: GroupOrderElement::new().unwrap(),
+            r_prime_prime_prime: GroupOrderElement::new().unwrap(),
+            o: GroupOrderElement::new().unwrap(),
+            o_prime: GroupOrderElement::new().unwrap(),
+            m: GroupOrderElement::new().unwrap(),
+            m_prime: GroupOrderElement::new().unwrap(),
+            t: GroupOrderElement::new().unwrap(),
+            t_prime: GroupOrderElement::new().unwrap(),
+            m2: GroupOrderElement::new().unwrap(),
+            s: GroupOrderElement::new().unwrap(),
+            c: GroupOrderElement::new().unwrap()
         }
     }
 
