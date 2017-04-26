@@ -20,6 +20,57 @@ impl MerkleTree {
         return ret;
     }
 
+    pub fn hash_hex(rh: &Vec<u8>) -> String {
+        let mut ret:String = String::with_capacity(DIGEST.output_len*2);
+        for i in rh {
+            ret.push_str(&format!("{:02x}", i));
+        }
+        return ret;
+    }
+
+    pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
+        match from {
+            &Tree::Empty{ ref hash, .. } => {
+                assert!(false);
+                return None;
+            },
+            &Tree::Node{ ref left, ref right, ref hash, .. } => {
+                if hash == required_hash {
+                    return Some(from);
+                } else {
+                    let right = MerkleTree::find_hash(right, required_hash);
+                    match right {
+                        Some(r) => {
+                            return Some(r);
+                        },
+                        None => {
+                            let left = MerkleTree::find_hash(left, required_hash);
+                            match left {
+                                Some(r) => {
+                                    return Some(r);
+                                },
+                                None => {
+                                    return None;
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            &Tree::Leaf{ ref hash, .. } => {
+                if hash == required_hash {
+                    return Some(from);
+                } else {
+                    return None;
+                }
+            }
+        }
+    }
+
+    pub fn consistency_proof(new_hash: &Vec<u8>, proof: &Vec<Vec<u8>>) -> bool {
+        return true;
+    }
+
     pub fn append(&mut self, node: TreeLeafData) {
         if self.count == 0 {
             // empty tree
@@ -106,6 +157,39 @@ mod tests {
             r+=1;
         }
         assert_eq!(mt.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c");
+    }
+
+    #[test]
+    fn test_merkletree_find_hash() {
+        let values = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
+        let mut mt = MerkleTree::from_vec(vec![]);
+        println!("root(0)={}", mt.root_hash_hex());
+        let mut r = 1;
+        for i in values {
+            mt.append(String::from(i));
+            println!("root({})={}", r, mt.root_hash_hex());
+            r+=1;
+        }
+
+        let mut rh: Vec<u8>;
+
+        rh = vec![ 0xe8, 0xbc, 0xd9, 0x7e, 0x34, 0x96, 0x93, 0xdc,
+                   0xfe, 0xc0, 0x54, 0xfe, 0x21, 0x9a, 0xb3, 0x57,
+                   0xb7, 0x5d, 0x3c, 0x1c, 0xd9, 0xf8, 0xbe, 0x17,
+                   0x67, 0xf6, 0x09, 0x0f, 0x9c, 0x86, 0xf9, 0xfd ];
+        assert!(MerkleTree::find_hash(&mt.root, &rh) != None);
+
+        rh = vec![ 0x22, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c,
+                   0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73, 0x8c, 0x95,
+                   0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15,
+                   0xbf, 0x77, 0xda, 0x19, 0x9d, 0xfd, 0x92, 0x0c ];
+        assert!(MerkleTree::find_hash(&mt.root, &rh) != None);
+
+        rh = vec![ 0x23, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c,
+                   0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73, 0x8c, 0x95,
+                   0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15,
+                   0xbf, 0x77, 0xda, 0x19, 0x9d, 0xfd, 0x92, 0x0d ];
+        assert!(MerkleTree::find_hash(&mt.root, &rh) == None);
     }
 
     #[test]
