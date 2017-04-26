@@ -23,12 +23,12 @@ name = "sovrin"
 path = "src/main.rs"
 
 [features]
-default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "milagro_crypto"]
+default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_milagro"]
 bn_openssl = ["openssl", "int_traits"]
 ed25519_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 xsalsa20_sodium = ["sodiumoxide"]
-milagro_crypto = ["milagro-crypto"]
+pair_milagro = ["milagro-crypto"]
 
 [dependencies]
 int_traits = { version = "0.1.1", optional = true }
