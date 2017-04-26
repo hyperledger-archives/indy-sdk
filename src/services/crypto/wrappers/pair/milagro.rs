@@ -16,7 +16,7 @@ fn random_mod_order() -> Result<BIG, CryptoError> {
     let mut os_rng = OsRng::new().unwrap();
     os_rng.fill_bytes(&mut seed);
     let mut rng = Random::new(seed);
-    Ok(BIG::randomnum(&CURVE_Order, &mut rng))
+    Ok(BIG::randomnum(unsafe {&CURVE_Order}, &mut rng))
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -41,7 +41,7 @@ pub struct Pair {
 impl PointG1 {
     pub fn new() -> Result<PointG1, CryptoError> {
         // generate random point from the group G1
-        let gen_g1: ECP = ECP::new_bigs(&CURVE_Gx, &CURVE_Gy);
+        let gen_g1: ECP = ECP::new_bigs(unsafe {&CURVE_Gx}, unsafe {&CURVE_Gy});
         let mut point = gen_g1;
         ECP::mul(&mut point, &random_mod_order()?);
         Ok(PointG1 {
@@ -110,13 +110,13 @@ impl GroupOrderElement {
         let mut base = self.bn;
         let mut pow = e.bn;
         Ok(GroupOrderElement {
-            bn: BIG::powmod(&mut base, &mut pow, &CURVE_Order)
+            bn: BIG::powmod(&mut base, &mut pow, unsafe {&CURVE_Order})
         })
     }
 
     pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         let mut sum = BIG::add(&self.bn, &r.bn);
-        BIG::rmod(&mut sum, &CURVE_Order);
+        BIG::rmod(&mut sum, unsafe {&CURVE_Order});
         Ok(GroupOrderElement {
             bn: sum
         })
@@ -127,7 +127,7 @@ impl GroupOrderElement {
         let mut sub = BIG::sub(&self.bn, &r.bn);
         if sub < BIG::default() {
             let mut r: BIG = BIG::default();
-            BIG::modneg(&mut r, &mut sub, &CURVE_Order);
+            BIG::modneg(&mut r, &mut sub, unsafe {&CURVE_Order});
             Ok(GroupOrderElement {
                 bn: r
             })
@@ -140,20 +140,20 @@ impl GroupOrderElement {
 
     pub fn mul_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         Ok(GroupOrderElement {
-            bn: BIG::modmul(&self.bn, &r.bn, &CURVE_Order)
+            bn: BIG::modmul(&self.bn, &r.bn, unsafe {&CURVE_Order})
         })
     }
 
     pub fn inverse(&self) -> Result<GroupOrderElement, CryptoError> {
         Ok(GroupOrderElement {
-            bn: BIG::invmodp(&self.bn, &CURVE_Order)
+            bn: BIG::invmodp(&self.bn, unsafe {&CURVE_Order})
         })
     }
 
     pub fn mod_neg(&self) -> Result<GroupOrderElement, CryptoError> {
         let mut r: BIG = BIG::default();
         let mut bn = self.bn;
-        BIG::modneg(&mut r, &mut bn, &CURVE_Order);
+        BIG::modneg(&mut r, &mut bn, unsafe {&CURVE_Order});
         Ok(GroupOrderElement {
             bn: r
         })

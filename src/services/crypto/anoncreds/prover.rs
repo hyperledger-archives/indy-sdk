@@ -23,7 +23,6 @@ use services::crypto::anoncreds::types::{
     NonRevocProof,
     NonRevocProofCList,
     NonRevocInitProof,
-    NonRevocProofTauList,
     NonRevocProofXList,
     Proof,
     ProofClaims,
