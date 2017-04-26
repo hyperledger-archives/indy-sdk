@@ -518,8 +518,8 @@ pub mod mocks {
     }
 
     pub fn get_accum_publick_key() -> Result<AccumulatorPublicKey, CryptoError> {
-        Ok(AccumulatorPublicKey {
-            z: Pair::pair(&PointG1::new().unwrap(), &PointG1::new().unwrap()).unwrap()
-        })
+        Ok(AccumulatorPublicKey::new(
+            Pair::pair(&PointG1::new().unwrap(), &PointG1::new().unwrap()).unwrap()
+        ))
     }
 }

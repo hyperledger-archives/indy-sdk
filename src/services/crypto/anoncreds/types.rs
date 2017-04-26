@@ -354,6 +354,14 @@ impl SecretKey {
     }
 }
 
+impl AccumulatorPublicKey {
+    pub fn new(z: Pair) -> AccumulatorPublicKey {
+        AccumulatorPublicKey {
+            z: z
+        }
+    }
+}
+
 impl NonRevocProof {
     pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
         NonRevocProof {

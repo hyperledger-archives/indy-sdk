@@ -131,9 +131,7 @@ impl Issuer {
                 current_i: 1
             },
             g,
-            AccumulatorPublicKey {
-                z: z
-            },
+            AccumulatorPublicKey::new(z),
             AccumulatorSecretKey {
                 gamma: gamma
             }
