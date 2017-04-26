@@ -1,57 +1,31 @@
+extern crate serde_json;
 extern crate zmq;
 
-use commands::Command;
-use commands::CommandExecutor;
-use commands::pool::PoolCommand;
-use errors::pool::PoolError;
-use self::zmq::Socket;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::{Error, ErrorKind};
-use std::thread;
+use std::{fs, thread};
+use std::io::Write;
+
+use commands::{Command, CommandExecutor};
+use commands::pool::PoolCommand;
+use errors::pool::PoolError;
 use utils::sequence::SequenceUtils;
+use utils::environment::EnvironmentUtils;
 
 pub struct PoolService {
-    pools: RefCell<HashMap<i32, Socket>>,
-    pools_names: RefCell<HashMap<String, i32>>,
+    pools: RefCell<HashMap<i32, Pool>>,
 }
 
-impl PoolService {
-    pub fn new() -> PoolService {
-        PoolService {
-            pools: RefCell::new(HashMap::new()),
-            pools_names: RefCell::new(HashMap::new()),
-        }
-    }
+struct Pool {
+    name: String,
+    id: i32,
+    send_sock: zmq::Socket,
+    worker: Option<thread::JoinHandle<()>>,
+}
 
-    fn run(cmd_sock: Socket, pool_id: i32, cmd_id: i32) {
-        let mut socks_to_poll: [zmq::PollItem; 1] = [
-            cmd_sock.as_poll_item(zmq::POLLIN),
-        ];
-        CommandExecutor::instance().send(Command::Pool(
-            PoolCommand::OpenAck(cmd_id, Ok(pool_id)))); //TODO send only after catch-up?
-        loop {
-            trace!("zmq poll loop >>");
-            let r = zmq::poll(&mut socks_to_poll, -1);
-            //FIXME implement
-            trace!("zmq poll loop << ret {:?}, at cmd sock {:?}", r, cmd_sock.recv_string(0));
-        }
-    }
-
-    pub fn create(&self, name: &str, config: &str) -> Result<(), PoolError> {
-        unimplemented!()
-    }
-
-    pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        unimplemented!()
-    }
-
-    pub fn open(&self, name: &str, config: &str) -> Result<i32, PoolError> {
-        if self.pools_names.borrow().contains_key(&name.to_string()) {
-            // TODO change error
-            return Err(PoolError::InvalidHandle("Already opened".to_string()));
-        }
-
+impl Pool {
+    pub fn new(name: &str, cmd_id: i32) -> Result<Pool, PoolError> {
+        let zmq_ctx = zmq::Context::new();
         let zmq_ctx = zmq::Context::new();
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
         let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
@@ -60,12 +34,108 @@ impl PoolService {
         recv_cmd_sock.bind(inproc_sock_name.as_str())?;
 
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
+        let pool_id = SequenceUtils::get_next_id();
 
-        let pool_id: i32 = SequenceUtils::get_next_id();
+        Ok(Pool {
+            name: name.to_string(),
+            id: pool_id,
+            send_sock: send_cmd_sock,
+            worker: Some(thread::spawn(move || {
+                let mut socks_to_poll: [zmq::PollItem; 1] = [
+                    recv_cmd_sock.as_poll_item(zmq::POLLIN),
+                ];
+                CommandExecutor::instance().send(Command::Pool(
+                    PoolCommand::OpenAck(cmd_id, Ok(pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
+                loop {
+                    trace!("zmq poll loop >>");
+                    let r = zmq::poll(&mut socks_to_poll, -1);
+                    //FIXME implement
+                    trace!("zmq poll loop << ret {:?}, at cmd sock {:?}", r, recv_cmd_sock.recv_string(0));
+                }
+            })),
+        })
+    }
+}
+
+impl Drop for Pool {
+    fn drop(&mut self) {
+        let target = format!("pool{}", self.name);
+        info!(target: target.as_str(), "Drop started");
+        self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
+        info!(target: target.as_str(), "Drop wait worker");
+        // Option worker type and this kludge is workaround for rust
+        self.worker.take().unwrap().join().unwrap();
+        info!(target: target.as_str(), "Drop finished");
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct PoolConfig {
+    genesis_txn: String
+}
+
+impl PoolConfig {
+    fn default(name: &str) -> PoolConfig {
+        let mut txn = name.to_string();
+        txn += ".txn";
+        PoolConfig { genesis_txn: txn }
+    }
+}
+
+impl PoolService {
+    pub fn new() -> PoolService {
+        PoolService {
+            pools: RefCell::new(HashMap::new()),
+        }
+    }
+
+    pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
+        let mut path = EnvironmentUtils::pool_path(name);
+        let pool_config: PoolConfig = match config {
+            Some(config) => serde_json::from_str(config)?,
+            None => PoolConfig::default(name)
+        };
+
+        if path.as_path().exists() {
+            return Err(PoolError::NotCreated("Already created".to_string()));
+        }
+
+        fs::create_dir_all(path.as_path())?;
+
+        path.push(name);
+        path.set_extension("txn");
+        fs::copy(&pool_config.genesis_txn, path.as_path())?;
+        path.pop();
+
+        path.push("config");
+        path.set_extension("json");
+        let mut f: fs::File = fs::File::create(path.as_path())?;
+        f.write(serde_json::to_string(&pool_config)?.as_bytes())?;
+        f.flush()?;
+
+        // TODO probably create another one file pool.json with pool description,
+        // but now there is no info to save (except name witch equal to directory)
+
+        Ok(())
+    }
+
+    pub fn delete(&self, name: &str) -> Result<(), PoolError> {
+        unimplemented!()
+    }
+
+    pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
+        for pool in self.pools.borrow().values() {
+            if name.eq(pool.name.as_str()) {
+                //TODO change error
+                return Err(PoolError::InvalidHandle("Already opened".to_string()));
+            }
+        }
+
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        thread::spawn(move || { PoolService::run(recv_cmd_sock, pool_id, cmd_id); });
-        self.pools.borrow_mut().insert(pool_id, send_cmd_sock);
-        self.pools_names.borrow_mut().insert(name.to_string(), pool_id);
+        let new_pool = Pool::new(name, cmd_id)?;
+        //FIXME process config: check None (use default), transfer to Pool instance
+
+        self.pools.borrow_mut().insert(new_pool.id, new_pool);
         return Ok(cmd_id);
     }
 
@@ -75,6 +145,12 @@ impl PoolService {
 
     pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
         unimplemented!()
+    }
+
+    pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
+        self.pools.borrow().get(&handle).map_or(
+            Err(PoolError::InvalidHandle("Doesn't exists".to_string())),
+            |pool: &Pool| Ok(pool.name.clone()))
     }
 }
 
