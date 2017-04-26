@@ -78,18 +78,8 @@ impl Issuer {
         let rms = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, None)?;
         let rctxt = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, None)?;
         Ok((
-            PublicKey {
-                n: n,
-                rms: rms,
-                rctxt: rctxt,
-                r: r,
-                s: s,
-                z: z
-            },
-            SecretKey {
-                p: p_prime,
-                q: q_prime
-            }
+            PublicKey::new(n, s, rms, r, rctxt, z),
+            SecretKey::new(p_prime, q_prime)
         ))
     }
 
@@ -106,22 +96,8 @@ impl Issuer {
         let pk = g.mul(&sk)?;
         let y = h.mul(&x)?;
         Ok((
-            RevocationPublicKey {
-                g: g,
-                h: h,
-                h0: h0,
-                h1: h1,
-                h2: h2,
-                htilde: htilde,
-                u: u,
-                pk: pk,
-                y: y,
-                x: x
-            },
-            RevocationSecretKey {
-                x: x,
-                sk: sk
-            }
+            RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x),
+            RevocationSecretKey::new(x, sk)
         ))
     }
 
@@ -147,20 +123,10 @@ impl Issuer {
         let acc = PointG1::new_inf()?;
         let v: HashSet<i32> = HashSet::new();
         Ok((
-            Accumulator {
-                accumulator_id: accumulator_id,
-                acc: acc,
-                v: v,
-                max_claim_num: max_claim_num,
-                current_i: 1
-            },
+            Accumulator::new(accumulator_id, acc, v, max_claim_num, 1),
             g,
-            AccumulatorPublicKey {
-                z: z
-            },
-            AccumulatorSecretKey {
-                gamma: gamma
-            }
+            AccumulatorPublicKey::new(z),
+            AccumulatorSecretKey::new(gamma)
         ))
     }
 
@@ -222,14 +188,7 @@ impl Issuer {
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         accumulator.borrow_mut().v.insert(i);
 
-        let witness = Witness {
-            sigma_i: sigma_i,
-            u_i: u_i,
-            g_i: g_i.clone(),
-            omega: omega,
-            v: accumulator.borrow().v.clone()
-        };
-
+        let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.borrow().v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
         let acc_id = accumulator.borrow().accumulator_id;
 
@@ -515,42 +474,18 @@ pub mod mocks {
 
     pub fn get_gvt_attributes() -> Vec<Attribute> {
         let attributes: Vec<Attribute> = vec![
-            Attribute {
-                name: "name".to_string(),
-                value: "Alex".to_string(),
-                encode: true
-            },
-            Attribute {
-                name: "age".to_string(),
-                value: "28".to_string(),
-                encode: false
-            },
-            Attribute {
-                name: "sex".to_string(),
-                value: "male".to_string(),
-                encode: true
-            },
-            Attribute {
-                name: "height".to_string(),
-                value: "175".to_string(),
-                encode: false
-            }
+            Attribute::new("name".to_string(), "Alex".to_string(), true),
+            Attribute::new("age".to_string(), "28".to_string(), false),
+            Attribute::new("sex".to_string(), "male".to_string(), true),
+            Attribute::new("height".to_string(), "175".to_string(), false)
         ];
         attributes
     }
 
     pub fn get_xyz_attributes() -> Vec<Attribute> {
         let attributes: Vec<Attribute> = vec![
-            Attribute {
-                name: "status".to_string(),
-                value: "partial".to_string(),
-                encode: true
-            },
-            Attribute {
-                name: "period".to_string(),
-                value: "8".to_string(),
-                encode: false
-            }
+            Attribute::new("status".to_string(), "partial".to_string(), true),
+            Attribute::new("period".to_string(), "8".to_string(), false)
         ];
         attributes
     }
@@ -572,10 +507,10 @@ pub mod mocks {
     }
 
     pub fn get_secret_key() -> SecretKey {
-        SecretKey {
-            p: BigNumber::from_dec("157329491389375793912190594961134932804032426403110797476730107804356484516061051345332763141806005838436304922612495876180233509449197495032194146432047460167589034147716097417880503952139805241591622353828629383332869425029086898452227895418829799945650973848983901459733426212735979668835984691928193677469").unwrap(),
-            q: BigNumber::from_dec("151323892648373196579515752826519683836764873607632072057591837216698622729557534035138587276594156320800768525825023728398410073692081011811496168877166664537052088207068061172594879398773872352920912390983199416927388688319207946493810449203702100559271439586753256728900713990097168484829574000438573295723").unwrap()
-        }
+        SecretKey::new(
+            BigNumber::from_dec("157329491389375793912190594961134932804032426403110797476730107804356484516061051345332763141806005838436304922612495876180233509449197495032194146432047460167589034147716097417880503952139805241591622353828629383332869425029086898452227895418829799945650973848983901459733426212735979668835984691928193677469").unwrap(),
+            BigNumber::from_dec("151323892648373196579515752826519683836764873607632072057591837216698622729557534035138587276594156320800768525825023728398410073692081011811496168877166664537052088207068061172594879398773872352920912390983199416927388688319207946493810449203702100559271439586753256728900713990097168484829574000438573295723").unwrap()
+        )
     }
 
     pub fn get_pk() -> Result<PublicKey, CryptoError> {
@@ -591,6 +526,6 @@ pub mod mocks {
         let rctxt = BigNumber::from_dec("77129119521935975385795386930301402827628026853991528755303486255023263353142617098662225360498227999564663438861313570702364984107826653399214544314002820732458443871729599318191904265844432709910182014204478532265518566229953111318413830009256162339443077098917698777223763712267731802804425167444165048596271025553618253855465562660530445682078873631967934956107222619891473818051441942768338388425312823594456990243766677728754477201176089151138798586336262283249409402074987943625960454785501038059209634637204497573094989557296328178873844804605590768348774565136642366470996059740224170274762372312531963184654")?;
         let z = BigNumber::from_dec("55164544925922114758373643773121488212903100773688663772257168750760838562077540114734459902014369305346806516101767509487128278169584105585138623374643674838487232408713159693511105298301789373764578281065365292802332455328842835614608027129883137292324033168485729810074426971615144489078436563295402449746541981155232849178606822309310700682675942602404109375598809372735287212196379089816519481644996930522775604565458855945697714216633192192613598668941671920105596720544264146532180330974698466182799108850159851058132630467033919618658033816306014912309279430724013987717126519405488323062369100827358874261055")?;
 
-        Ok(PublicKey { n: n, r: r, s: s, rms: rms, rctxt: rctxt, z: z })
+        Ok(PublicKey::new(n, s, rms, r, rctxt, z))
     }
 }
