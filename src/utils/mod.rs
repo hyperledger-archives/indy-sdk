@@ -12,3 +12,6 @@ pub mod logger;
 pub mod result;
 
 pub mod sequence;
+
+#[macro_use]
+pub mod test;
