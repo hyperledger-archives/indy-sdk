@@ -44,14 +44,12 @@ struct PoolWorker {
 struct LedgerStatus {
     txnSeqNo: usize,
     merkleRoot: String,
-    op: String,
     ledgerType: u8,
 }
 
 impl Default for LedgerStatus {
     fn default() -> LedgerStatus {
         LedgerStatus {
-            op: "LEDGER_STATUS".to_string(),
             ledgerType: 0,
             merkleRoot: "".to_string(),
             txnSeqNo: 0,
@@ -59,23 +57,25 @@ impl Default for LedgerStatus {
     }
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug)]
-enum OperationType {
-    CONSISTENCY_PROOF,
-}
-
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
-struct CommonMsg { //TODO almost all fields Option<> or find better approach
+struct ConsistencyProof {
+    //TODO almost all fields Option<> or find better approach
     seqNoEnd: usize,
     seqNoStart: usize,
     ledgerType: usize,
     hashes: Vec<String>,
-    op: OperationType,
     oldMerkleRoot: String,
     newMerkleRoot: String,
-    batch: Option<Vec<CommonMsg>>,
+}
+
+#[serde(tag = "op")]
+#[derive(Serialize, Deserialize, Debug)]
+enum Message {
+    #[serde(rename = "CONSISTENCY_PROOF")]
+    ConsistencyProof(ConsistencyProof),
+    #[serde(rename = "LEDGER_STATUS")]
+    LedgerStatus(LedgerStatus),
 }
 
 impl PoolWorker {
@@ -104,11 +104,15 @@ impl PoolWorker {
                 merkleRoot: base64::encode(self.merkle_tree.root_hash()),
                 ..Default::default()
             };
-            Some(serde_json::to_string(&ls).unwrap())
+            let msg: Message = Message::LedgerStatus(ls);
+            Some(serde_json::to_string(&msg).unwrap())
         } else {
-            let msg: CommonMsg = serde_json::from_str(msg.as_str()).unwrap();
-            match msg.op {
-                _ => { info!("unhandled msg {:?}", msg); None }
+            let msg: Message = serde_json::from_str(msg.as_str()).unwrap();
+            match msg {
+                _ => {
+                    info!("unhandled msg {:?}", msg);
+                    None
+                }
             }
         };
         if resp.is_some() {
