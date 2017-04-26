@@ -158,20 +158,30 @@ impl Prover {
     }
 
     pub fn _test_witness_credential(claim: &RefCell<NonRevocationClaim>, pkr: &RevocationPublicKey, acc: &Accumulator,
-                                    acc_pk: &AccumulatorPublicKey, m2: &BigNumber) -> Result<(), CryptoError> {
-        let z_calc = Pair {}.mul(&Pair {}.inverse()?)?;
+                                    acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CryptoError> {
+        let z_calc = Pair::pair(&claim.borrow().g_i, &acc.acc)?
+            .mul(&Pair::pair(&pkr.g, &claim.borrow().witness.omega)?.inverse()?)?;
         if z_calc != acc_pk.z {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
 
-        let pair_gg_calc = Pair {};
-        let pair_gg = Pair {};
+        let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.borrow().g_i)?, &claim.borrow().witness.sigma_i)?;
+        let pair_gg = Pair::pair(&pkr.g, &pkr.g)?;
         if pair_gg_calc != pair_gg {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
 
-        let pair_h1 = Pair {};
-        let pair_h2 = Pair {};
+        let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
+
+        let pair_h1 = Pair::pair(&claim.borrow().sigma, &pkr.y.add(&pkr.h.mul(&claim.borrow().c)?)?)?;
+        let pair_h2 = Pair::pair(
+            &pkr.h0
+                .add(&pkr.h1.mul(&m2)?)?
+                .add(&pkr.h2.mul(&claim.borrow().vr_prime_prime)?)?
+                .add(&claim.borrow().g_i)?,
+            &pkr.h
+        )?;
+
         if pair_h1 != pair_h2 {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
@@ -1387,16 +1397,16 @@ pub mod mocks {
 
     pub fn get_public_key_revocation() -> Result<RevocationPublicKey, CryptoError> {
         Ok(RevocationPublicKey {
-            g: PointG1 {},
-            h: PointG1 {},
-            h0: PointG1 {},
-            h1: PointG1 {},
-            h2: PointG1 {},
-            htilde: PointG1 {},
-            u: PointG1 {},
-            pk: PointG1 {},
-            y: PointG1 {},
-            x: GroupOrderElement {}
+            g: PointG1::new().unwrap(),
+            h: PointG1::new().unwrap(),
+            h0: PointG1::new().unwrap(),
+            h1: PointG1::new().unwrap(),
+            h2: PointG1::new().unwrap(),
+            htilde: PointG1::new().unwrap(),
+            u: PointG1::new().unwrap(),
+            pk: PointG1::new().unwrap(),
+            y: PointG1::new().unwrap(),
+            x: GroupOrderElement::new().unwrap()
         })
     }
 
@@ -1407,7 +1417,7 @@ pub mod mocks {
         Ok(Accumulator {
             max_claim_num: 5,
             v: v,
-            acc: PointG1 {},
+            acc: PointG1::new().unwrap(),
             current_i: 2,
             accumulator_id: 110
         })
@@ -1416,16 +1426,16 @@ pub mod mocks {
 
     pub fn get_tails() -> HashMap<i32, PointG1> {
         let mut res: HashMap<i32, PointG1> = HashMap::new();
-        res.insert(1, PointG1 {});
+        res.insert(1, PointG1::new().unwrap());
         res
     }
 
     pub fn get_witness() -> Witness {
         Witness {
-            sigma_i: PointG1 {},
-            u_i: PointG1 {},
-            g_i: PointG1 {},
-            omega: PointG1 {},
+            sigma_i: PointG1::new().unwrap(),
+            u_i: PointG1::new().unwrap(),
+            g_i: PointG1::new().unwrap(),
+            omega: PointG1::new().unwrap(),
             v: HashSet::from_iter(vec![1].iter().cloned()),
         }
     }
@@ -1433,13 +1443,13 @@ pub mod mocks {
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
         NonRevocationClaim {
             accumulator_id: 100,
-            sigma: PointG1 {},
-            c: GroupOrderElement {},
-            vr_prime_prime: GroupOrderElement {},
+            sigma: PointG1::new().unwrap(),
+            c: GroupOrderElement::new().unwrap(),
+            vr_prime_prime: GroupOrderElement::new().unwrap(),
             witness: get_witness(),
-            g_i: PointG1 {},
+            g_i: PointG1::new().unwrap(),
             i: 1,
-            m2: GroupOrderElement {}
+            m2: GroupOrderElement::new().unwrap()
         }
     }
 }

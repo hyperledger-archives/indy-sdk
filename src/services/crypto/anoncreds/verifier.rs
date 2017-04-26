@@ -18,7 +18,7 @@ use services::crypto::anoncreds::helpers::{AppendByteArray, get_hash_as_int, big
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
-use services::crypto::wrappers::pair::Pair;
+use services::crypto::wrappers::pair::{Pair, PointG1};
 use services::crypto::anoncreds::issuer::Issuer;
 use services::crypto::anoncreds::prover;
 
@@ -519,7 +519,7 @@ pub mod mocks {
 
     pub fn get_accum_publick_key() -> Result<AccumulatorPublicKey, CryptoError> {
         Ok(AccumulatorPublicKey {
-            z: Pair {}
+            z: Pair::pair(&PointG1::new().unwrap(), &PointG1::new().unwrap()).unwrap()
         })
     }
 }
