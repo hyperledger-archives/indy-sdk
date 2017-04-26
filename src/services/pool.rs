@@ -6,7 +6,7 @@ extern crate serde_json;
 use self::libc::c_int;
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, BinaryHeap};
 use std::{cmp, fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
@@ -40,6 +40,13 @@ struct PoolWorker {
     new_mt_size: usize,
     new_mt_vote: usize,
     f: usize,
+    pending_catchup: Option<CatchUpProcess>,
+}
+
+
+struct CatchUpProcess {
+    merkle_tree: MerkleTree,
+    pending_reps: BinaryHeap<CatchupRep>,
 }
 
 #[allow(non_snake_case)]
@@ -82,11 +89,31 @@ struct CatchupReq {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct CatchupRep {
     ledgerType: usize,
     consProof: Vec<String>,
     txns: HashMap<String, GenTransaction>,
+}
+
+impl CatchupRep {
+    fn min_tx(&self) -> usize {
+        use std;
+        assert!(!self.txns.is_empty());
+        (self.txns.keys().min().unwrap().parse::<usize>()).unwrap()
+    }
+}
+
+impl cmp::Ord for CatchupRep {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        other.min_tx().cmp(&self.min_tx())
+    }
+}
+
+impl cmp::PartialOrd for CatchupRep {
+    fn partial_cmp(&self, other: &CatchupRep) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[serde(tag = "op")]
@@ -119,7 +146,12 @@ impl PoolWorker {
         info!("merkle tree {:?}", self.merkle_tree);
     }
 
-    fn start_catchup(&self) {
+    fn start_catchup(&mut self) {
+        assert!(self.pending_catchup.is_none());
+        self.pending_catchup = Some(CatchUpProcess {
+            merkle_tree: self.merkle_tree.clone(),
+            pending_reps: BinaryHeap::new(),
+        });
         let node_cnt = self.nodes.len();
         assert!(self.merkle_tree.count() == node_cnt);
 
@@ -128,20 +160,36 @@ impl PoolWorker {
         let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
             ledgerType: 0,
-            seqNoStart: node_cnt,
-            seqNoEnd: node_cnt + portion - 1,
+            seqNoStart: node_cnt + 1,
+            seqNoEnd: node_cnt + 1 + portion - 1,
             catchupTill: self.new_mt_size,
         };
         for node in &self.nodes {
             node.send_msg(&Message::CatchupReq(catchup_req.clone()));
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
-                                            catchup_req.catchupTill - 1);
+                                            catchup_req.catchupTill);
         }
     }
 
-    fn process_catchup(&mut self, catchup: &CatchupRep) {
-        unimplemented!();
+    fn process_catchup(&mut self, catchup: CatchupRep) {
+        trace!("append {:?}", catchup);
+        let mut process = self.pending_catchup.as_mut().unwrap();
+        process.pending_reps.push(catchup);
+        while !process.pending_reps.is_empty()
+            && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
+            let mut first_resp = process.pending_reps.pop().unwrap();
+            while !first_resp.txns.is_empty() {
+                let key = first_resp.min_tx().to_string();
+                let new_gen_tx = serde_json::to_string(&first_resp.txns.remove(&key)).unwrap();
+                trace!("append to tree {}", new_gen_tx);
+                process.merkle_tree.append(
+                    new_gen_tx
+                );
+            }
+        }
+        trace!("updated mt {:?}", process.merkle_tree);
+        trace!("updated mt hash {}", base64::encode(process.merkle_tree.root_hash()));
     }
 
     fn process_msg(&mut self, msg: &String, src_ind: usize) {
@@ -174,7 +222,7 @@ impl PoolWorker {
                     }
                 }
                 Message::CatchupRep(catchup) => {
-                    self.process_catchup(&catchup);
+                    self.process_catchup(catchup);
                 }
                 _ => {
                     info!("unhandled msg {:?}", msg);
@@ -256,6 +304,7 @@ impl Pool {
             new_mt_size: 0,
             new_mt_vote: 0,
             f: 0,
+            pending_catchup: None,
         };
 
         Ok(Pool {
@@ -294,7 +343,7 @@ impl PoolConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 struct NodeData {
     alias: String,
     client_ip: String,
@@ -304,7 +353,7 @@ struct NodeData {
     services: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 struct GenTransaction {
     data: NodeData,
     dest: String,
