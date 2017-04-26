@@ -188,14 +188,7 @@ impl Issuer {
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         accumulator.borrow_mut().v.insert(i);
 
-        let witness = Witness {
-            sigma_i: sigma_i,
-            u_i: u_i,
-            g_i: g_i.clone(),
-            omega: omega,
-            v: accumulator.borrow().v.clone()
-        };
-
+        let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.borrow().v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
         let acc_id = accumulator.borrow().accumulator_id;
 

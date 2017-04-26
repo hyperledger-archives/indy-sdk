@@ -185,6 +185,19 @@ pub struct Witness {
     pub v: HashSet<i32>
 }
 
+impl Witness {
+    pub fn new(sigma_i: PointG1, u_i: PointG1, g_i: PointG1, omega: PointG1,
+               v: HashSet<i32>) -> Witness {
+        Witness {
+            sigma_i: sigma_i,
+            u_i: u_i,
+            g_i: g_i,
+            omega: omega,
+            v: v
+        }
+    }
+}
+
 pub struct ClaimRequest {
     pub user_id: String,
     pub u: BigNumber,

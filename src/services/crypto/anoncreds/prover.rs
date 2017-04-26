@@ -1382,13 +1382,9 @@ pub mod mocks {
     }
 
     pub fn get_witness() -> Witness {
-        Witness {
-            sigma_i: PointG1::new().unwrap(),
-            u_i: PointG1::new().unwrap(),
-            g_i: PointG1::new().unwrap(),
-            omega: PointG1::new().unwrap(),
-            v: HashSet::from_iter(vec![1].iter().cloned()),
-        }
+        Witness::new(PointG1::new().unwrap(), PointG1::new().unwrap(), PointG1::new().unwrap(),
+                     PointG1::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned())
+        )
     }
 
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
