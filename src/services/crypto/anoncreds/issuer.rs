@@ -474,42 +474,18 @@ pub mod mocks {
 
     pub fn get_gvt_attributes() -> Vec<Attribute> {
         let attributes: Vec<Attribute> = vec![
-            Attribute {
-                name: "name".to_string(),
-                value: "Alex".to_string(),
-                encode: true
-            },
-            Attribute {
-                name: "age".to_string(),
-                value: "28".to_string(),
-                encode: false
-            },
-            Attribute {
-                name: "sex".to_string(),
-                value: "male".to_string(),
-                encode: true
-            },
-            Attribute {
-                name: "height".to_string(),
-                value: "175".to_string(),
-                encode: false
-            }
+            Attribute::new("name".to_string(), "Alex".to_string(), true),
+            Attribute::new("age".to_string(), "28".to_string(), false),
+            Attribute::new("sex".to_string(), "male".to_string(), true),
+            Attribute::new("height".to_string(), "175".to_string(), false)
         ];
         attributes
     }
 
     pub fn get_xyz_attributes() -> Vec<Attribute> {
         let attributes: Vec<Attribute> = vec![
-            Attribute {
-                name: "status".to_string(),
-                value: "partial".to_string(),
-                encode: true
-            },
-            Attribute {
-                name: "period".to_string(),
-                value: "8".to_string(),
-                encode: false
-            }
+            Attribute::new("status".to_string(), "partial".to_string(), true),
+            Attribute::new("period".to_string(), "8".to_string(), false)
         ];
         attributes
     }

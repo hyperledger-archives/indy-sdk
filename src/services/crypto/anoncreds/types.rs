@@ -238,6 +238,16 @@ pub struct Attribute {
     pub encode: bool
 }
 
+impl Attribute {
+    pub fn new(name: String, value: String, encode: bool) -> Attribute {
+        Attribute {
+            name: name,
+            value: value,
+            encode: encode
+        }
+    }
+}
+
 pub struct ClaimInitData {
     pub u: BigNumber,
     pub v_prime: BigNumber
