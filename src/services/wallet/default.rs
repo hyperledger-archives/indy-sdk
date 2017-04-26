@@ -53,7 +53,6 @@ impl WalletType for DefaultWalletType {
     fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
         let path = _db_path(name);
         if path.exists() {
-            println!("---------3-> path exists {:?}", path);
             return Err(WalletError::AlreadyExists(name.to_string()))
         }
 
@@ -63,8 +62,6 @@ impl WalletType for DefaultWalletType {
     }
 
     fn delete(&self, name: &str) -> Result<(), WalletError> {
-        println!("---------2-> path {:?}", _db_path(name));
-        println!("---------2-> path.exists() {:?}", _db_path(name).exists());
         Ok(fs::remove_file(_db_path(name))?)
     }
 
@@ -82,13 +79,11 @@ fn _db_path(name: &str) -> PathBuf {
 fn _open_connection(name: &str) -> Result<Connection, WalletError> {
     let path = _db_path(name);
     if !path.parent().unwrap().exists() {
-        println!("---------1-> path doesn't eists {:?}", path);
         fs::DirBuilder::new()
             .recursive(true)
             .create(path.parent().unwrap())?;
     }
 
-    println!("---------1-> path {:?}", path);
     Ok(Connection::open(path)?)
 }
 
