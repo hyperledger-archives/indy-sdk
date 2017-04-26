@@ -284,12 +284,36 @@ pub struct NonRevocProof {
 
 //impl block
 
+impl Schema {
+    pub fn new(name: String, version: String, attributes_names: HashSet<String>) -> Schema {
+        Schema {
+            name: name,
+            version: version,
+            attribute_names: attributes_names
+        }
+    }
+}
+
 impl SchemaKey {
     pub fn new(name: String, version: String, issuer_id: String) -> SchemaKey {
         SchemaKey {
             name: name,
             version: version,
             issue_id: issuer_id
+        }
+    }
+}
+
+impl PublicKey {
+    pub fn new(n: BigNumber, s: BigNumber, rms: BigNumber, r: HashMap<String, BigNumber>,
+               rctxt: BigNumber, z: BigNumber) -> PublicKey {
+        PublicKey {
+            n: n,
+            s: s,
+            rms: rms,
+            r: r,
+            rctxt: rctxt,
+            z: z
         }
     }
 }
