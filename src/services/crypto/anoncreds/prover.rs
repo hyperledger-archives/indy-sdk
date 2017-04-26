@@ -1139,19 +1139,11 @@ pub mod mocks {
     }
 
     pub fn get_gvt_predicate() -> Predicate {
-        Predicate {
-            attr_name: "age".to_string(),
-            p_type: "ge".to_string(),
-            value: 18
-        }
+        Predicate::new("age".to_string(), "ge".to_string(), 18)
     }
 
     pub fn get_xyz_predicate() -> Predicate {
-        Predicate {
-            attr_name: "period".to_string(),
-            p_type: "ge".to_string(),
-            value: 8
-        }
+        Predicate::new("period".to_string(), "ge".to_string(), 8)
     }
 
     pub fn get_gvt_primary_claim() -> Result<PrimaryClaim, CryptoError> {

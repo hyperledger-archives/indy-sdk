@@ -221,6 +221,16 @@ pub struct Predicate {
     pub value: i32
 }
 
+impl Predicate {
+    pub fn new(attr_name: String, p_type: String, value: i32) -> Predicate {
+        Predicate {
+            attr_name: attr_name,
+            p_type: p_type,
+            value: value
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Attribute {
     pub name: String,
