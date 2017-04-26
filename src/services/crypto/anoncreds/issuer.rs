@@ -123,13 +123,7 @@ impl Issuer {
         let acc = PointG1::new_inf()?;
         let v: HashSet<i32> = HashSet::new();
         Ok((
-            Accumulator {
-                accumulator_id: accumulator_id,
-                acc: acc,
-                v: v,
-                max_claim_num: max_claim_num,
-                current_i: 1
-            },
+            Accumulator::new(accumulator_id, acc, v, max_claim_num, 1),
             g,
             AccumulatorPublicKey::new(z),
             AccumulatorSecretKey::new(gamma)

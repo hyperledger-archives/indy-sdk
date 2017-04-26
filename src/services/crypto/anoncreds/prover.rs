@@ -1371,13 +1371,7 @@ pub mod mocks {
         let mut v: HashSet<i32> = HashSet::new();
         v.insert(1);
 
-        Ok(Accumulator {
-            max_claim_num: 5,
-            v: v,
-            acc: PointG1::new().unwrap(),
-            current_i: 2,
-            accumulator_id: 110
-        })
+        Ok(Accumulator::new(110, PointG1::new().unwrap(), v, 5, 2))
     }
 
 

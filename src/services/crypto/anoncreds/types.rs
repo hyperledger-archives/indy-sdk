@@ -370,6 +370,19 @@ impl AccumulatorSecretKey {
     }
 }
 
+impl Accumulator {
+    pub fn new(accumulator_id: i32, acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
+               current_i: i32) -> Accumulator {
+        Accumulator {
+            accumulator_id: accumulator_id,
+            acc: acc,
+            v: v,
+            max_claim_num: max_claim_num,
+            current_i: current_i
+        }
+    }
+}
+
 impl NonRevocProof {
     pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
         NonRevocProof {
