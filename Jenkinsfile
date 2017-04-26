@@ -68,7 +68,7 @@ def testUbuntu() {
                 sh 'RUST_TEST_THREADS=1 cargo xunit-test'
             }
             finally {
-                //junit 'test-results.xml'
+                junit 'test-results.xml'
             }
         }
     }
