@@ -128,17 +128,25 @@ enum Message {
 }
 
 impl PoolWorker {
-    fn connect_to_known_nodes(&mut self) {
+    fn restore_merkle_tree(&mut self) {
         let f = fs::File::open("pool_transactions_sandbox").expect("open file"); //FIXME use file for the pool
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.expect("read transaction line");
-            let mut rn: RemoteNode = RemoteNode::new(line.as_str());
-            let ctx: zmq::Context = zmq::Context::new();
+            self.merkle_tree.append(line);
+        }
+    }
+
+    fn connect_to_known_nodes(&mut self) {
+        if self.merkle_tree.is_empty() {
+            self.restore_merkle_tree();
+        }
+        let ctx: zmq::Context = zmq::Context::new();
+        for gen_txn in &self.merkle_tree {
+            let mut rn: RemoteNode = RemoteNode::new(gen_txn.as_str());
             rn.connect(&ctx);
             rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
             self.nodes.push(rn);
-            self.merkle_tree.append(line);
         }
         self.f = self.merkle_tree.count(); //FIXME
         info!("merkle tree {:?}", self.merkle_tree);
@@ -172,22 +180,38 @@ impl PoolWorker {
 
     fn process_catchup(&mut self, catchup: CatchupRep) {
         trace!("append {:?}", catchup);
-        let mut process = self.pending_catchup.as_mut().unwrap();
-        process.pending_reps.push(catchup);
-        while !process.pending_reps.is_empty()
-            && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
-            let mut first_resp = process.pending_reps.pop().unwrap();
-            while !first_resp.txns.is_empty() {
-                let key = first_resp.min_tx().to_string();
-                let new_gen_tx = serde_json::to_string(&first_resp.txns.remove(&key)).unwrap();
-                trace!("append to tree {}", new_gen_tx);
-                process.merkle_tree.append(
-                    new_gen_tx
-                );
+        let catchup_finished = {
+            let mut process = self.pending_catchup.as_mut().unwrap();
+            process.pending_reps.push(catchup);
+            while !process.pending_reps.is_empty()
+                && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
+                let mut first_resp = process.pending_reps.pop().unwrap();
+                while !first_resp.txns.is_empty() {
+                    let key = first_resp.min_tx().to_string();
+                    let new_gen_tx = serde_json::to_string(&first_resp.txns.remove(&key)).unwrap();
+                    trace!("append to tree {}", new_gen_tx);
+                    process.merkle_tree.append(
+                        new_gen_tx
+                    );
+                }
             }
+            trace!("updated mt hash {}, tree {:?}", base64::encode(process.merkle_tree.root_hash()), process.merkle_tree);
+            if &process.merkle_tree.count() == &self.new_mt_size {
+                //TODO check also root hash?
+                true
+            } else {
+                false
+            }
+        };
+        if catchup_finished {
+            self.finish_catchup();
         }
-        trace!("updated mt {:?}", process.merkle_tree);
-        trace!("updated mt hash {}", base64::encode(process.merkle_tree.root_hash()));
+    }
+
+    fn finish_catchup(&mut self) {
+        self.merkle_tree = self.pending_catchup.take().unwrap().merkle_tree;
+        self.nodes.clear();
+        self.connect_to_known_nodes();
     }
 
     fn process_msg(&mut self, msg: &String, src_ind: usize) {
