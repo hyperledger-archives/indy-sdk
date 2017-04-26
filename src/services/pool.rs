@@ -2,6 +2,7 @@ extern crate base64;
 extern crate libc;
 extern crate rust_base58;
 extern crate serde_json;
+extern crate zmq;
 
 use self::libc::c_int;
 use self::rust_base58::FromBase58;
@@ -10,8 +11,6 @@ use std::collections::{HashMap, BinaryHeap};
 use std::{cmp, fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
-use rustc_serialize::json;
-use zmq;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
@@ -98,7 +97,6 @@ struct CatchupRep {
 
 impl CatchupRep {
     fn min_tx(&self) -> usize {
-        use std;
         assert!(!self.txns.is_empty());
         (self.txns.keys().min().unwrap().parse::<usize>()).unwrap()
     }
@@ -330,7 +328,7 @@ impl Drop for Pool {
     }
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 struct PoolConfig {
     genesis_txn: String
 }
@@ -459,7 +457,7 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
-            Some(config) => json::decode(config)?,
+            Some(config) => serde_json::from_str(config)?,
             None => PoolConfig::default(name)
         };
 
@@ -477,7 +475,7 @@ impl PoolService {
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path())?;
-        f.write(json::encode(&pool_config)?.as_bytes())?;
+        f.write(serde_json::to_string(&pool_config)?.as_bytes())?;
         f.flush()?;
 
         // TODO probably create another one file pool.json with pool description,

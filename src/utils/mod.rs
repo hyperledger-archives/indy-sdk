@@ -11,6 +11,4 @@ pub mod logger;
 #[macro_use]
 pub mod result;
 
-pub mod json;
-
 pub mod sequence;
