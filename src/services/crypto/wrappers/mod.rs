@@ -10,6 +10,8 @@ pub mod ed25519;
 #[path = "base58/rust_base58.rs"]
 pub mod base58;
 
+#[cfg(feature = "pair_milagro")]
+#[path = "pair/milagro.rs"]
 pub mod pair;
 
 #[cfg(feature = "xsalsa20_sodium")]

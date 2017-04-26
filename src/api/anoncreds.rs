@@ -105,9 +105,9 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
             Box::new(move |result| {
                 let (err, revoc_reg_json, revoc_reg_wallet_key) = result_to_err_code_2!(result, String::new(), String::new());
                 let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
-                let revoc_reg_wallet_key = CStringUtils::string_to_cstring(revoc_reg_wallet_key);
+                let revoc_reg_uuid = CStringUtils::string_to_cstring(revoc_reg_wallet_key);
 
-                cb(command_handle, err, revoc_reg_json.as_ptr(), revoc_reg_wallet_key.as_ptr())
+                cb(command_handle, err, revoc_reg_json.as_ptr(), revoc_reg_uuid.as_ptr())
             })
         ))));
 
@@ -122,7 +122,7 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// claim_req_json: a claim request with a blinded secret
-///     from the user (returned by prover_create_and_store_claim_req)
+///     from the user (returned by prover_create_and_store_claim_req).
 ///     Also contains claim_def_seq_no and issuer_did
 ///     Example:
 ///     {
@@ -168,7 +168,7 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
@@ -279,18 +279,25 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 }
 
 /// Gets all stored claim offers (see prover_store_claim_offer).
-/// A filter can be specified to get claim offers for specific Issuer only.
+/// A filter can be specified to get claim offers for specific Issuer, claim_def or schema only.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// filter_json: optional filter to get claim offers for specific Issuer only
+/// filter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only
+///     Each of the filters is optional and can be combines
 ///        {
-///            "issuer_did": string
+///            "issuer_did": string,
+///            "claim_def_seq_no": string,
+///            "schema_seq_no": string
 ///        }
 ///
 /// #Returns
-/// A json with a ist of claim offers for the filter.
+/// A json with a list of claim offers for the filter.
+///        {
+///            [{"issuer_did": string,
+///            "claim_def_seq_no": string}]
+///        }
 ///
 /// #Errors
 /// Common*
@@ -358,6 +365,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
     result_to_err_code!(result)
 }
 
+
 /// Creates a clam request json for the given claim offer and stores it in a secure wallet.
 /// The claim offer contains the information about Issuer (DID, claim_def_seq_no),
 /// and the schema (schema_seq_no).
@@ -374,12 +382,17 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 ///            "issuer_did": string,
 ///            "claim_def_seq_no": string
 ///        }
-/// claim_def_json: claim definition json associated with a schema_seq_no in the claim_offer
+/// claim_def_json: claim definition json associated with a claim_def_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// Claim request json.
+///     {
+///      "blinded_ms" : <blinded_master_secret>,
+///      "claim_def_seq_no" : <claim_def_seq_no>,
+///      "issuer_did" : <issuer_did>
+///     }
 ///
 /// #Errors
 /// Annoncreds*
@@ -428,8 +441,9 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// claims_json: claim json:
 ///     {
-///         "claim": string,
-///         "claim_def_seq_no", string,
+///         "claim": {attr1:[value, value_as_int]}
+///         "signature": <signature>,
+///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no", string
 ///     }
 /// cb: Callback that takes command result as parameter.
@@ -467,8 +481,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 
 /// Gets human readable claims according to the filter.
 /// If filter is NULL, then all claims are returned.
-/// Claims can be filtered by Issuer and/or Schema, or by proof_request.
-/// If filtered by pool_request, than all claims matching the given proof_request are returned
+/// Claims can be filtered by Issuer, claim_def and/or Schema.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -477,13 +490,17 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 ///         "issuer_did": string,
 ///         "schema_seq_no": string,
 ///         "claim_def_seq_no": string,
-///         "proof_request": string
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// claims json
-///
+///     [{
+///         "claim_uuid": <string>,
+///         "attrs": [{"attr_name" : "attr_value"}],
+///         "claim_def_seq_no": string,
+///         "revoc_reg_seq_no": string,
+///     }]
 /// #Errors
 /// Annoncreds*
 /// Common*
@@ -519,15 +536,31 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// proof_request_json: proof request json
+///     {
+///         "nonce": string,
+///         "requested_attr1_uuid": <attr_info>,
+///         "requested_attr2_uuid": <attr_info>,
+///         "requested_attr3_uuid": <attr_info>,
+///         "requested_predicate_1_uuid": <predicate_info>,
+///         "requested_predicate_2_uuid": <predicate_info>,
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// json with claims for the given pool request.
-/// Claim consists of human-readable attributes (key-value map), schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
 ///     {
-///         "requested_attr1_id": [claim1, claim2],
-///         "requested_attr2_id": [],
-///         "requested_attr3_id": [claim3],
+///         "requested_attr1_uuid": [claim1, claim2],
+///         "requested_attr2_uuid": [],
+///         "requested_attr3_uuid": [claim3],
+///         "requested_predicate_1_uuid": [claim1, claim3],
+///         "requested_predicate_2_uuid": [claim2],
+///     }, where claim is
+///     {
+///         "claim_uuid": <string>,
+///         "attrs": [{"attr_name" : "attr_value"}],
+///         "claim_def_seq_no": string,
+///         "revoc_reg_seq_no": string,
 ///     }
 ///
 /// #Errors
@@ -535,7 +568,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claims_for_pool_req(command_handle: i32,
+pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
                                         wallet_handle: i32,
                                         proof_request_json: *const c_char,
                                         cb: Option<extern fn(
@@ -561,7 +594,7 @@ pub extern fn sovrin_prover_get_claims_for_pool_req(command_handle: i32,
 }
 
 /// Creates a proof according to the given proof request
-/// Either a corresponding claim with revealed attributes or self-attested attribute must be provided
+/// Either a corresponding claim with optionally revealed attributes or self-attested attribute must be provided
 /// for each requested attribute (see sovrin_prover_get_claims_for_pool_req).
 /// A proof request may request multiple claims from different schemas and different issuers.
 /// All required schemas, public keys and revocation registries must be provided.
@@ -572,26 +605,65 @@ pub extern fn sovrin_prover_get_claims_for_pool_req(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// proof_req_json: proof request json as come from the verifier
+///     {
+///         "nonce": string,
+///         "requested_attr1_uuid": <attr_info>,
+///         "requested_attr2_uuid": <attr_info>,
+///         "requested_attr3_uuid": <attr_info>,
+///         "requested_predicate_1_uuid": <predicate_info>,
+///         "requested_predicate_2_uuid": <predicate_info>,
+///     }
 /// requested_claims_json: either a claim or self-attested attribute for each requested attribute
 ///     {
-///         "requested_attr1_id": [claim1_seq_no_in_wallet, revealed attribute1],
-///         "requested_attr2_id": [self_attested_attribute],
-///         "requested_attr3_id": [claim2_seq_no_in_wallet, revealed attribute2]
-///         "requested_attr4_id": [claim2_seq_no_in_wallet, revealed attribute3]
+///         "requested_attr1_uuid": [claim1_uuid_in_wallet, true <reveal_attr>],
+///         "requested_attr2_uuid": [self_attested_attribute],
+///         "requested_attr3_uuid": [claim2_seq_no_in_wallet, false]
+///         "requested_attr4_uuid": [claim2_seq_no_in_wallet, true]
+///         "requested_predicate_1_uuid": [claim2_seq_no_in_wallet],
+///         "requested_predicate_2_uuid": [claim3_seq_no_in_wallet],
 ///     }
 /// schemas_jsons: all schema jsons participating in the proof request
+///     {
+///         "claim1_uuid_in_wallet": <schema1>,
+///         "claim2_uuid_in_wallet": <schema2>,
+///         "claim3_uuid_in_wallet": <schema3>,
+///     }
+///
 /// claim_def_jsons: all claim definition jsons participating in the proof request
+///     {
+///         "claim1_uuid_in_wallet": <claim_def1>,
+///         "claim2_uuid_in_wallet": <claim_def2>,
+///         "claim3_uuid_in_wallet": <claim_def3>,
+///     }
 /// revoc_regs_jsons: all revocation registry jsons participating in the proof request
+///     {
+///         "claim1_uuid_in_wallet": <revoc_reg1>,
+///         "claim2_uuid_in_wallet": <revoc_reg2>,
+///         "claim3_uuid_in_wallet": <revoc_reg3>,
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// Proof json
-///  Each proof consists of a proof and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// For each requested attribute either a proof (with optionally revealed attribute value) or
+/// self-attested attribute value is provided.
+/// Each proof is associated with a claim and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// There ais also aggregated proof part common for all claim proofs.
 ///     {
-///         "requested_attr1_id": [proof1],
-///         "requested_attr2_id": [self_attested_attribute],
-///         "requested_attr3_id": [proof2]
-///         "requested_attr4_id": [proof3]
+///         "requested": {
+///             "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+///             "requested_attr2_id": [self_attested_attribute],
+///             "requested_attr3_id": [claim_proof2_uuid]
+///             "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
+///             "requested_predicate_1_uuid": [claim_proof2_uuid],
+///             "requested_predicate_2_uuid": [claim_proof3_uuid],
+///         }
+///         "claim_proofs": {
+///             "claim_proof1_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
+///             "claim_proof2_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
+///             "claim_proof3_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no]
+///         },
+///         "aggregated_proof": <aggregated_proof>
 ///     }
 ///
 /// #Errors
@@ -641,17 +713,53 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// proof_request_json: initial proof request as sent by the verifier
-/// proof_json: proof json
-///  Each proof consists of a proof and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
 ///     {
-///         "requested_attr1_id": [proof1],
-///         "requested_attr2_id": [self_attested_attribute],
-///         "requested_attr3_id": [proof2]
-///         "requested_attr4_id": [proof3]
+///         "nonce": string,
+///         "requested_attr1_uuid": <attr_info>,
+///         "requested_attr2_uuid": <attr_info>,
+///         "requested_attr3_uuid": <attr_info>,
+///         "requested_predicate_1_uuid": <predicate_info>,
+///         "requested_predicate_2_uuid": <predicate_info>,
+///     }
+/// proof_json: proof json
+/// For each requested attribute either a proof (with optionally revealed attribute value) or
+/// self-attested attribute value is provided.
+/// Each proof is associated with a claim and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// There ais also aggregated proof part common for all claim proofs.
+///     {
+///         "requested": {
+///             "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+///             "requested_attr2_id": [self_attested_attribute],
+///             "requested_attr3_id": [claim_proof2_uuid]
+///             "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
+///             "requested_predicate_1_uuid": [claim_proof2_uuid],
+///             "requested_predicate_2_uuid": [claim_proof3_uuid],
+///         }
+///         "claim_proofs": {
+///             "claim_proof1_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
+///             "claim_proof2_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
+///             "claim_proof3_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no]
+///         },
+///         "aggregated_proof": <aggregated_proof>
 ///     }
 /// schemas_jsons: all schema jsons participating in the proof
+///         {
+///             "claim_proof1_uuid": <schema>,
+///             "claim_proof2_uuid": <schema>,
+///             "claim_proof3_uuid": <schema>
+///         }
 /// claim_defs_jsons: all claim definition jsons participating in the proof
+///         {
+///             "claim_proof1_uuid": <claim_def>,
+///             "claim_proof2_uuid": <claim_def>,
+///             "claim_proof3_uuid": <claim_def>
+///         }
 /// revoc_regs_jsons: all revocation registry jsons participating in the proof
+///         {
+///             "claim_proof1_uuid": <revoc_reg>,
+///             "claim_proof2_uuid": <revoc_reg>,
+///             "claim_proof3_uuid": <revoc_reg>
+///         }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
