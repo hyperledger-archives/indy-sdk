@@ -132,9 +132,7 @@ impl Issuer {
             },
             g,
             AccumulatorPublicKey::new(z),
-            AccumulatorSecretKey {
-                gamma: gamma
-            }
+            AccumulatorSecretKey::new(gamma)
         ))
     }
 

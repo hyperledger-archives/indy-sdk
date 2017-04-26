@@ -362,6 +362,14 @@ impl AccumulatorPublicKey {
     }
 }
 
+impl AccumulatorSecretKey {
+    pub fn new(gamma: GroupOrderElement) -> AccumulatorSecretKey {
+        AccumulatorSecretKey {
+            gamma: gamma
+        }
+    }
+}
+
 impl NonRevocProof {
     pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
         NonRevocProof {
