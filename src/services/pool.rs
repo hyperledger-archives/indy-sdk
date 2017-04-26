@@ -95,7 +95,7 @@ impl PoolWorker {
     }
 
 
-    fn process_msg(&self, msg: String, src: &RemoteNode) {
+    fn process_msg(&mut self, msg: &String, src_ind: usize) {
         let resp: Option<String> = if msg.eq("po") {
             //sending ledger status
             //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
@@ -111,12 +111,12 @@ impl PoolWorker {
             match msg {
                 _ => {
                     info!("unhandled msg {:?}", msg);
-                    None
                 }
             }
+            None
         };
         if resp.is_some() {
-            src.zsock.as_ref().unwrap().send(resp.unwrap().as_bytes(), zmq::DONTWAIT).expect("send resp msg");
+            self.nodes[src_ind].zsock.as_ref().unwrap().send(resp.unwrap().as_bytes(), zmq::DONTWAIT).expect("send resp msg");
         }
     }
 
@@ -124,37 +124,45 @@ impl PoolWorker {
     pub fn run(&mut self) {
         self.connect_to_known_nodes();
 
-        let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
-        ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
-        for ref node in &self.nodes {
-            let s: &zmq::Socket = node.zsock.as_ref().unwrap();
-            ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
-        }
-
         CommandExecutor::instance().send(Command::Pool(
             PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
 
         loop {
             trace!("zmq poll loop >>");
-            let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
-            trace!("zmq poll loop ... {:?}", r);
-            for i in 0..self.nodes.len() {
-                if ss_to_poll[1 + i].is_readable() {
-                    let msg: Option<String> = self.nodes[i].recv_msg().expect("recv msg");
-                    if msg.is_some() {
-                        self.process_msg(msg.unwrap(), &self.nodes[i])
+            let mut msgs_to_handle: Vec<(String, usize)> = Vec::new();
+            {
+                let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
+                ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
+                for ref node in &self.nodes {
+                    let s: &zmq::Socket = node.zsock.as_ref().unwrap();
+                    ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
+                }
+
+                let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
+                trace!("zmq poll loop ... {:?}", r);
+                for i in 0..self.nodes.len() {
+                    if ss_to_poll[1 + i].is_readable() {
+                        let msg: Option<String> = self.nodes[i].recv_msg().expect("recv msg");
+                        if msg.is_some() {
+                            msgs_to_handle.push((msg.unwrap(), i));
+                        }
+                    }
+                }
+                if ss_to_poll[0].is_readable() {
+                    let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
+                    trace!("cmd {:?}", cmd);
+                    if cmd.is_ok() {
+                        if "exit".eq(cmd.unwrap().expect("non-string command").as_str()) {
+                            break;
+                        }
                     }
                 }
             }
-            if ss_to_poll[0].is_readable() {
-                let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
-                trace!("cmd {:?}", cmd);
-                if cmd.is_ok() {
-                    if "exit".eq(cmd.unwrap().expect("non-string command").as_str()) {
-                        break;
-                    }
-                }
+
+            for &(ref msg, rn_ind) in &msgs_to_handle {
+                self.process_msg(msg, rn_ind);
             }
+
             trace!("zmq poll loop <<");
         }
         info!("zmq poll loop finished");
