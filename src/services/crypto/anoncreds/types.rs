@@ -11,6 +11,33 @@ pub enum ByteOrder {
     Little
 }
 
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ClaimDefinition {
+    pub public_key: PublicKey,
+    pub public_key_revocation: RevocationPublicKey,
+    pub schema_seq_no: i32,
+    pub signature_type: String
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ClaimDefinitionPrivate {
+    pub secret_key: SecretKey,
+    pub secret_key_revocation: RevocationSecretKey
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct RevocationRegistry {
+    pub claim_def_seq_no: i32,
+    pub acc: Accumulator,
+    pub acc_pk: AccumulatorPublicKey,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct RevocationRegistryPrivate {
+    pub acc_sk: AccumulatorSecretKey,
+    pub tails: HashMap<i32, PointG1>
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SchemaKey {
     pub name: String,
@@ -22,7 +49,8 @@ pub struct SchemaKey {
 pub struct Schema {
     pub name: String,
     pub version: String,
-    pub attribute_names: HashSet<String>
+    pub attribute_names: HashSet<String>,
+    pub seq_no: i32
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,7 +101,7 @@ pub struct AccumulatorSecretKey {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Accumulator {
-    pub accumulator_id: i32,
+    //pub accumulator_id: i32, TODO looks like field is not needed
     pub acc: PointG1,
     pub v: HashSet<i32>,
     pub max_claim_num: i32,
@@ -96,7 +124,7 @@ pub struct Witness {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimRequest {
-    pub user_id: String,
+    pub user_id: i32,
     pub u: BigNumber,
     pub ur: Option<PointG1>
 }
@@ -277,7 +305,6 @@ pub struct RevocationClaimInitData {
 }
 
 
-
 pub struct NonRevocInitProof {
     pub c_list_params: NonRevocProofXList,
     pub tau_list_params: NonRevocProofXList,
@@ -290,7 +317,7 @@ pub struct NonRevocProof {
     pub c_list: NonRevocProofCList
 }
 
-//impl block
+
 impl PrimaryEqualInitProof {
     pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
         Ok(vec![self.a_prime.clone()?])
@@ -379,6 +406,63 @@ impl NonRevocProofXList {
         }
     }
 }
+
+impl ClaimDefinition {
+    pub fn new(public_key: PublicKey, public_key_revocation: RevocationPublicKey,
+               schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
+        ClaimDefinition {
+            public_key: public_key,
+            public_key_revocation: public_key_revocation,
+            schema_seq_no: schema_seq_no,
+            signature_type: signature_type
+        }
+    }
+}
+
+impl ClaimDefinitionPrivate {
+    pub fn new(secret_key: SecretKey, secret_key_revocation: RevocationSecretKey) -> ClaimDefinitionPrivate {
+        ClaimDefinitionPrivate {
+            secret_key: secret_key,
+            secret_key_revocation: secret_key_revocation
+        }
+    }
+}
+
+impl RevocationRegistry {
+    pub fn new(acc: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
+        RevocationRegistry {
+            acc: acc,
+            acc_pk: acc_pk,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+impl RevocationRegistryPrivate {
+    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
+        RevocationRegistryPrivate {
+            acc_sk: acc_sk,
+            tails: tails
+        }
+    }
+}
+
+impl JsonEncodable for ClaimDefinition {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinition {}
+
+impl JsonEncodable for ClaimDefinitionPrivate {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
+
+
+impl JsonEncodable for RevocationRegistry {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistry {}
+
+impl JsonEncodable for RevocationRegistryPrivate {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
 
 impl JsonEncodable for Schema {}
 

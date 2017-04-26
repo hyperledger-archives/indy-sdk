@@ -72,7 +72,7 @@ impl Prover {
     }
 
     pub fn create_claim_request(&self, pk: PublicKey, pkr: RevocationPublicKey, ms: BigNumber,
-                                prover_id: String, req_non_revoc: bool)
+                                prover_id: i32, req_non_revoc: bool)
                                 -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
         let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
 
@@ -84,7 +84,7 @@ impl Prover {
 
         Ok((
             ClaimRequest {
-                user_id: prover_id.clone(),
+                user_id: prover_id,
                 u: primary_claim_init_data.u.clone()?,
                 ur: ur
             },
@@ -118,16 +118,6 @@ impl Prover {
             u: ur
         })
     }
-
-    //    pub fn create_claim_requests(&self, data: Vec<(&PublicKey, &BigNumber, &String)>)
-    //                                 -> Result<Vec<(ClaimRequest, ClaimInitData)>, CryptoError> {
-    //        let mut res: Vec<(ClaimRequest, ClaimInitData)> = Vec::new();
-    //        for &d in data.iter() {
-    //            let (pk, ms, prover_id) = d;
-    //            res.push(Prover::create_claim_request(&self, &pk, &ms, &prover_id)?);
-    //        }
-    //        Ok(res)
-    //    }
 
     pub fn process_claim(&self, claims: RefCell<Claims>, primary_claim_init_data: ClaimInitData,
                          revocation_claim_init_data: RevocationClaimInitData,
@@ -1405,8 +1395,7 @@ pub mod mocks {
             max_claim_num: 5,
             v: v,
             acc: PointG1 {},
-            current_i: 2,
-            accumulator_id: 110
+            current_i: 2
         })
     }
 

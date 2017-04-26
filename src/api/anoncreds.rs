@@ -39,7 +39,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
                                                        signature_type: *const c_char,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             claim_def_json: *const c_char,
-                                                                            claim_def_wallet_key: *const c_char
+                                                                            claim_def_uuid: *const c_char
                                                        )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
@@ -47,17 +47,17 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreKeys(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimDefinition(
             wallet_handle,
             issuer_did,
             schema_json,
             signature_type,
             Box::new(move |result| {
-                let (err, claim_def_json, claim_def_wallet_key) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
-                let claim_def_wallet_key = CStringUtils::string_to_cstring(claim_def_wallet_key);
+                let claim_def_uuid = CStringUtils::string_to_cstring(claim_def_uuid);
 
-                cb(command_handle, err, claim_def_json.as_ptr(), claim_def_wallet_key.as_ptr())
+                cb(command_handle, err, claim_def_json.as_ptr(), claim_def_uuid.as_ptr())
             })
         ))));
 
@@ -91,13 +91,13 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                        max_claim_num: i32,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             revoc_reg_json: *const c_char,
-                                                                            revoc_reg_wallet_key: *const c_char
+                                                                            revoc_reg_uuid: *const c_char
                                                        )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreRevocation(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreRevocationRegistry(
             wallet_handle,
             issuer_did,
             claim_def_seq_no,
@@ -121,16 +121,21 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// issuer_did: a DID of the issuer signing transactions to the Ledger
 /// claim_req_json: a claim request with a blinded secret
 ///     from the user (returned by prover_create_and_store_claim_req)
+///     Also contains claim_def_seq_no and issuer_did
+///     Example:
+///     {
+///      "blinded_ms" : <blinded_master_secret>,
+///      "claim_def_seq_no" : <claim_def_seq_no>,
+///      "issuer_did" : <issuer_did>
+///     }
 /// claim_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
 ///      "attr1" : ["value1", "value1_as_int"],
 ///      "attr2" : ["value2", "value2_as_int"]
 ///     }
-/// claim_def_seq_no: seq no of a claim definition transaction in Ledger
 /// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of a new user in the revocation registry (optional; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
@@ -140,7 +145,8 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Claim json containing issued claim, and claim_def_seq_no and revoc_reg_seq_no
 /// used for issuance
 ///     {
-///         "claim": string,
+///         "claim": <see claim_json above>,
+///         "signature": <signature>,
 ///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no", string
 ///     }
@@ -154,17 +160,14 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
-                                         issuer_did: *const c_char,
-                                         claim_def_seq_no: i32,
                                          revoc_reg_seq_no: i32,
-                                         user_revoc_index: i32,
+                                         user_revoc_index: Option<i32>,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               revoc_reg_update_json: *const c_char,
                                                               xclaim_json: *const c_char
                                          )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -172,8 +175,6 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
             wallet_handle,
             claim_req_json,
             claim_json,
-            issuer_did,
-            claim_def_seq_no,
             revoc_reg_seq_no,
             user_revoc_index,
             Box::new(move |result| {

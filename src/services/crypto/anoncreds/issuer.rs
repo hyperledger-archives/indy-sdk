@@ -4,7 +4,8 @@ use services::crypto::anoncreds::constants::{
     LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
     LARGE_PRIME,
-    LARGE_VPRIME_PRIME
+    LARGE_VPRIME_PRIME,
+    SIGNATURE_TYPE
 };
 use services::crypto::anoncreds::types::{
     Accumulator,
@@ -12,6 +13,8 @@ use services::crypto::anoncreds::types::{
     AccumulatorSecretKey,
     Attribute,
     ByteOrder,
+    ClaimDefinition,
+    ClaimDefinitionPrivate,
     ClaimRequest,
     Claims,
     NonRevocationClaim,
@@ -22,6 +25,8 @@ use services::crypto::anoncreds::types::{
     PublicKey,
     RevocationPublicKey,
     RevocationSecretKey,
+    RevocationRegistry,
+    RevocationRegistryPrivate,
     Schema,
     SecretKey,
     Witness
@@ -45,12 +50,15 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: Schema) -> Result<((PublicKey, SecretKey), (RevocationPublicKey, RevocationSecretKey)), CryptoError> {
-        Ok((Issuer::_generate_keys(&schema)?, Issuer::_generate_revocation_keys()?))
-    }
+    pub fn generate_keys(&self, schema: Schema, signature_type: Option<&str>) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+        let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
+        let (pk, sk) = Issuer::_generate_keys(&schema)?;
+        let (pkr, skr) = Issuer::_generate_revocation_keys()?;
 
-    pub fn create_claim() {
-        //Generate context attribute here
+        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, signature_type);
+        let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
+
+        Ok((claim_definition, claim_definition_private))
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
@@ -125,8 +133,8 @@ impl Issuer {
         ))
     }
 
-    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, accumulator_id: i32, max_claim_num: i32)
-                             -> Result<(Accumulator, HashMap<i32, PointG1>, AccumulatorPublicKey, AccumulatorSecretKey), CryptoError> {
+    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
+                             -> Result<(RevocationRegistry, RevocationRegistryPrivate), CryptoError> {
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let g_count = 2 * max_claim_num;
@@ -146,39 +154,41 @@ impl Issuer {
         z = z.pow(&pow)?;
         let acc = PointG1::new_inf()?;
         let v: HashSet<i32> = HashSet::new();
-        Ok((
-            Accumulator {
-                accumulator_id: accumulator_id,
-                acc: acc,
-                v: v,
-                max_claim_num: max_claim_num,
-                current_i: 1
-            },
-            g,
-            AccumulatorPublicKey {
-                z: z
-            },
-            AccumulatorSecretKey {
-                gamma: gamma
-            }
-        ))
+
+        let acc = Accumulator {
+            acc: acc,
+            v: v,
+            max_claim_num: max_claim_num,
+            current_i: 1
+        };
+
+        let acc_pk = AccumulatorPublicKey {
+            z: z
+        };
+
+        let acc_sk = AccumulatorSecretKey {
+            gamma: gamma
+        };
+
+        let revocation_registry = RevocationRegistry::new(acc, acc_pk, claim_def_seq_no);
+        let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g);
+
+        Ok((revocation_registry, revocation_registry_private))
     }
 
     fn _issue_non_revocation_claim(accumulator: RefCell<Accumulator>, pk_r: &RevocationPublicKey,
                                    sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
                                    sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
-                                   claim_request: &ClaimRequest, seq_number: Option<i32>) -> Result<(NonRevocationClaim, RefCell<Accumulator>, i64), CryptoError> {
+                                   revoc_reg_seq_no: i32, ur: &PointG1, seq_number: Option<i32>) ->
+                                   Result<(NonRevocationClaim, RefCell<Accumulator>, i64), CryptoError> {
         if accumulator.borrow().is_full() {
             return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
         }
 
-        let i;
-
-        if let Some(x) = seq_number {
-            i = x;
-        } else {
-            i = accumulator.borrow().current_i;
-        }
+        let i = match seq_number {
+            Some(x) => x,
+            _ => accumulator.borrow().current_i
+        };
 
         accumulator.borrow_mut().current_i += 1;
 
@@ -189,16 +199,12 @@ impl Issuer {
         let g_i = g.get(&i)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
 
-        let sigma = pk_r.h0.add(&pk_r.h1.mul(&m2)?)?;
-
-        if let Some(ur) = claim_request.ur {
-            sigma.add(&ur)?;
-        }
-
-        sigma
-            .add(g_i)?
-            .add(&pk_r.h2.mul(&vr_prime_prime)?)?
-            .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
+        let sigma =
+            pk_r.h0.add(&pk_r.h1.mul(&m2)?)?
+                .add(&ur)?
+                .add(g_i)?
+                .add(&pk_r.h2.mul(&vr_prime_prime)?)?
+                .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
 
         let mut omega = PointG1::new_inf()?;
 
@@ -231,12 +237,11 @@ impl Issuer {
         };
 
         let timestamp = time::now_utc().to_timespec().sec;
-        let acc_id = accumulator.borrow().accumulator_id;
 
         Ok(
             (
                 NonRevocationClaim {
-                    accumulator_id: acc_id,
+                    accumulator_id: revoc_reg_seq_no,
                     sigma: sigma,
                     c: c,
                     vr_prime_prime: vr_prime_prime,
@@ -262,7 +267,7 @@ impl Issuer {
     }
 
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                               params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                   params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
         let t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
@@ -299,7 +304,7 @@ impl Issuer {
     }
 
     pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                                        accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
         let t1 = proof_c.e;
         let t2 = PointG1::new_inf()?;
         let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
@@ -325,8 +330,56 @@ impl Issuer {
         })
     }
 
+    pub fn create_claim(&self, claim_definition: ClaimDefinition, claim_definition_private: ClaimDefinitionPrivate,
+                        revocation_registry: RevocationRegistry, revocation_registry_private: RevocationRegistryPrivate,
+                        claim_request: ClaimRequest, attributes: HashMap<String, Vec<String>>, user_revoc_index: Option<i32>,
+                        revoc_reg_seq_no: i32) -> Result<Claims, CryptoError> {
+        let context = Issuer::_generate_context_attribute(revocation_registry.claim_def_seq_no, claim_request.user_id)?;
+        let primary_claim =
+            Issuer::_issue_primary_claim(
+                &claim_definition.public_key,
+                &claim_definition_private.secret_key,
+                &claim_request.u,
+                &context,
+                &attributes
+            )?;
+
+        let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
+        if let Some(ur) = claim_request.ur {
+            let (claim, acc, timestamp) = Issuer::_issue_non_revocation_claim(
+                RefCell::new(revocation_registry.acc),
+                &claim_definition.public_key_revocation,
+                &claim_definition_private.secret_key_revocation,
+                &revocation_registry_private.tails,
+                &revocation_registry_private.acc_sk,
+                &context,
+                revoc_reg_seq_no,
+                &ur,
+                user_revoc_index
+            )?;
+            non_revocation_claim = Some(RefCell::new(claim));
+        };
+
+        Ok(Claims {
+            primary_claim: primary_claim,
+            non_revocation_claim: non_revocation_claim
+        })
+    }
+
+    fn _generate_context_attribute(accumulator_id: i32, user_id: i32) -> Result<BigNumber, CryptoError> {
+        let accumulator_id_encoded = Issuer::_encode_attribute(accumulator_id, ByteOrder::Little)?;
+        let user_id_encoded = Issuer::_encode_attribute(user_id, ByteOrder::Little)?;
+        let mut s = vec![
+            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
+        ];
+        let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
+        let h = get_hash_as_int(&mut s)?
+            .modulus(&pow_2, None)?;
+        Ok(h)
+    }
+
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
-                            attributes: &Vec<Attribute>) -> Result<PrimaryClaim, CryptoError> {
+                            attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CryptoError> {
         let v_prime_prime = Issuer::_generate_v_prime_prime()?;
         let e_start = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_E_START)?, None)?;
         let e_end = BigNumber::from_u32(2)?
@@ -335,7 +388,15 @@ impl Issuer {
 
         let e = e_start.generate_prime_in_range(&e_start, &e_end)?;
 
-        let encoded_attributes = Issuer::_encode_attributes(&attributes)?;
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
+        for (key, val) in attributes.iter() {
+            encoded_attributes.insert(
+                key.clone(),
+                BigNumber::from_dec(val.get(2)
+                    .ok_or(CryptoError::InvalidStructure("Encoded value not found in attributes".to_string()))?)?
+            );
+        }
+
         let a = Issuer::_sign(public_key, secret_key, context_attribute, &encoded_attributes, &v_prime_prime, u, &e)?;
 
         Ok(PrimaryClaim {
@@ -347,24 +408,12 @@ impl Issuer {
         })
     }
 
-    fn _generate_context_attribute(accumulator_id: &String, user_id: &String) -> Result<BigNumber, CryptoError> {
-        let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little)?;
-        let user_id_encoded = Issuer::_encode_attribute(&user_id, ByteOrder::Little)?;
-        let mut s = vec![
-            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
-        ];
-        let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
-        let h = get_hash_as_int(&mut s)?
-            .modulus(&pow_2, None)?;
-        Ok(h)
-    }
-
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             attributes: &HashMap<String, BigNumber>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
+             encoded_attributes: &HashMap<String, BigNumber>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut rx = BigNumber::from_u32(1)?;
         let mut context = BigNumber::new_context()?;
 
-        for (key, value) in attributes {
+        for (key, value) in encoded_attributes {
             let pk_r = public_key.r.get(key)
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
             rx = rx.mul(
@@ -395,8 +444,9 @@ impl Issuer {
         Ok(a)
     }
 
-    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
-        let mut result = BigNumber::hash(&attribute.as_bytes())?;
+    fn _encode_attribute(attribute: i32, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
+        let mut result = BigNumber::hash(attribute.to_string().as_bytes())?;
+
         let index = result.iter().position(|&value| value == 0);
         if let Some(position) = index {
             result.truncate(position);
@@ -405,18 +455,6 @@ impl Issuer {
             result.reverse();
         }
         Ok(BigNumber::from_bytes(&result)?)
-    }
-
-    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, BigNumber>, CryptoError> {
-        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
-        for i in attributes {
-            if i.encode {
-                encoded_attributes.insert(i.name.clone(), Issuer::_encode_attribute(&i.value, ByteOrder::Big)?);
-            } else {
-                encoded_attributes.insert(i.name.clone(), BigNumber::from_dec(&i.value.to_string())?);
-            }
-        }
-        Ok(encoded_attributes)
     }
 
     fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
@@ -436,32 +474,6 @@ impl Issuer {
         let v_prime_prime = bitwise_or_big_int(&a, &b)?;
         Ok(v_prime_prime)
     }
-
-    pub fn issue_claim(&self, pk: PublicKey, sk: SecretKey, accumulator_id: String, user_id: String,
-                       claim_request: ClaimRequest, attributes: Vec<Attribute>) -> Result<Claims, CryptoError> {
-        let context = Issuer::_generate_context_attribute(&accumulator_id, &user_id)?;
-        let c1 = Issuer::_issue_primary_claim(&pk, &sk, &claim_request.u, &context, &attributes)?;
-
-        Ok(Claims {
-            primary_claim: c1,
-            non_revocation_claim: None
-        })
-    }
-
-    //        fn issue_claims(&self, data: Vec<(&PublicKey, &SecretKey, &String, &String, Rc<ClaimRequest>, Rc<Vec<Rc<Attribute>>>)>)
-    //                        -> Result<HashMap<Rc<Schema>, Claims>, CryptoError> {
-    //            let mut res: Vec<Claims> = Vec::new();
-    //
-    //            for d in data {
-    //                let (pk, sk, accumulator_id, user_id, claim_req, attributes) = d;
-    //                let context = Issuer::_generate_context_attribute(accumulator_id, user_id)?;
-    //
-    //                res.push(
-    //                    Issuer::issue_claim(&self, pk, sk, accumulator_id, user_id, claim_req.clone(), attributes.clone())?
-    //                );
-    //            }
-    //            Ok(res)
-    //        }
 }
 
 #[cfg(test)]
@@ -470,29 +482,17 @@ mod tests {
 
     #[test]
     fn encode_attribute_works_short_hash() {
-        let test_str = "Alexer5435";
-        let test_answer = "62794";
+        let test_str = 5435;
+        let test_answer = "83761840706354868391674207739241454863743470852830526299004654280720761327142";
         assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
-    }
-
-    #[test]
-    fn encode_attribute_works_long_hash() {
-        let test_str = "Alexer";
-        let test_answer = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
-        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
-    }
-
-    #[test]
-    fn encode_attributes_works() {
-        assert_eq!(mocks::get_gvt_encoded_attributes().unwrap(), Issuer::_encode_attributes(&mocks::get_gvt_attributes()).unwrap());
     }
 
     #[test]
     fn generate_context_attribute_works() {
-        let accumulator_id = "110".to_string();
-        let user_id = "111".to_string();
+        let accumulator_id = 110;
+        let user_id = 111;
         let answer = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
-        let result = Issuer::_generate_context_attribute(&accumulator_id, &user_id).unwrap();
+        let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
 
