@@ -50,11 +50,19 @@ impl PointG1 {
     }
 
     pub fn new_inf() -> Result<PointG1, CryptoError> {
-        unimplemented!()
+        let mut r = ECP::default();
+        ECP::inf(&mut r);
+        Ok(PointG1 {
+            point: r
+        })
     }
 
-    pub fn mul(&self, gr: &GroupOrderElement) -> Result<PointG1, CryptoError> {
-        unimplemented!();
+    pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG1, CryptoError> {
+        let mut r = self.point;
+        ECP::mul(&mut r, &e.bn);
+        Ok(PointG1 {
+            point: r
+        })
     }
 
     pub fn add(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
@@ -62,11 +70,19 @@ impl PointG1 {
     }
 
     pub fn sub(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
-        unimplemented!()
+        let mut r = self.point;
+        ECP::sub(&mut r, &q.point);
+        Ok(PointG1 {
+            point: r
+        })
     }
 
     pub fn neg(&self) -> Result<PointG1, CryptoError> {
-        unimplemented!();
+        let mut r = self.point;
+        ECP::neg(&mut r);
+        Ok(PointG1 {
+            point: r
+        })
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
