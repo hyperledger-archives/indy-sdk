@@ -32,7 +32,7 @@ fn sovrin_create_pool_ledger_can_be_called() {
 
     let pool_name = CString::new("test_open").unwrap();
     let pool_config = CString::new("{\"genesis_txn\": \"./test_open_src.txn\"}").unwrap();
-    std::fs::File::create("./test_open_src.txn");
+    std::fs::File::create("./test_open_src.txn").unwrap();
 
     let err = sovrin_create_pool_ledger_config(command_handle,
                                                pool_name.as_ptr(),
@@ -42,8 +42,8 @@ fn sovrin_create_pool_ledger_can_be_called() {
     assert_eq!(ErrorCode::Success, err);
 
     let err = receiver.recv().unwrap();
-    std::fs::remove_file("./test_open_src.txn");
-    std::fs::remove_dir_all(EnvironmentUtils::pool_path("test_open"));
+    std::fs::remove_file("./test_open_src.txn").unwrap();
+    std::fs::remove_dir_all(EnvironmentUtils::pool_path("test_open")).unwrap();
     assert_eq!(ErrorCode::Success, err);
 }
 
