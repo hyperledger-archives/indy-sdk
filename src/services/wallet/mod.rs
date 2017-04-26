@@ -1,10 +1,11 @@
+extern crate serde_json;
+
 mod default;
 
 use self::default::DefaultWalletType;
 
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
-use utils::json::{JsonEncodable, JsonDecodable};
 use utils::sequence::SequenceUtils;
 
 use std::cell::RefCell;
@@ -25,7 +26,7 @@ trait WalletType {
     fn open(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 struct WalletDescriptor {
     pool_name: String,
     xtype: String,
@@ -41,10 +42,6 @@ impl WalletDescriptor {
         }
     }
 }
-
-impl JsonEncodable for WalletDescriptor {}
-
-impl JsonDecodable for WalletDescriptor {}
 
 pub struct WalletService {
     types: RefCell<HashMap<&'static str, Box<WalletType>>>,
@@ -100,13 +97,11 @@ impl WalletService {
 
         let mut descriptor_file = File::create(_wallet_descriptor_path(name))?;
         descriptor_file
-            .write_all(
-                &WalletDescriptor::new(pool_name, xtype, name)
-                    .encode()
-                    .unwrap() // TODO: FIXME: Provide error mapping!!!
+            .write_all({
+                serde_json::to_string(&WalletDescriptor::new(pool_name, xtype, name))?
                     .as_str()
                     .as_bytes()
-            )?;
+            })?;
         descriptor_file.sync_all()?;
 
         if config.is_some() {
@@ -119,22 +114,19 @@ impl WalletService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), WalletError> {
-        let desciptor = {
-            let mut descriptor_json = String::new();
-            WalletDescriptor::decode({
-                let mut descriptor_file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
-                descriptor_file.read_to_string(&mut descriptor_json)?;
-                descriptor_json.as_str()
-            }).unwrap() // FIXME: Provide type mapping
-        };
-
+        let mut descriptor_json = String::new();
+        let descriptor: WalletDescriptor = serde_json::from_str({
+            let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
+            file.read_to_string(&mut descriptor_json)?;
+            descriptor_json.as_str()
+        })?;
 
         let wallet_types = self.types.borrow();
-        if !wallet_types.contains_key(desciptor.xtype.as_str()) {
-            return Err(WalletError::UnknownType(desciptor.xtype));
+        if !wallet_types.contains_key(descriptor.xtype.as_str()) {
+            return Err(WalletError::UnknownType(descriptor.xtype));
         }
 
-        let wallet_type = wallet_types.get(desciptor.xtype.as_str()).unwrap();
+        let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
         wallet_type.delete(name)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
@@ -142,22 +134,20 @@ impl WalletService {
     }
 
     pub fn open(&self, pool_name: &str, name: &str, credentials: Option<&str>) -> Result<i32, WalletError> {
-        let desciptor = {
-            let mut descriptor_json = String::new();
-            WalletDescriptor::decode({
-                let mut descriptor_file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
-                descriptor_file.read_to_string(&mut descriptor_json)?;
-                descriptor_json.as_str()
-            }).unwrap() // FIXME: Provide type mapping
-        };
+        let mut descriptor_json = String::new();
+        let descriptor: WalletDescriptor = serde_json::from_str({
+            let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
+            file.read_to_string(&mut descriptor_json)?;
+            descriptor_json.as_str()
+        })?;
 
-        if desciptor.pool_name != pool_name {
+        if descriptor.pool_name != pool_name {
             return Err(WalletError::IncorrectPool(pool_name.to_string()));
         }
 
         let wallet_types = self.types.borrow();
-        if !wallet_types.contains_key(desciptor.xtype.as_str()) {
-            return Err(WalletError::UnknownType(desciptor.xtype));
+        if !wallet_types.contains_key(descriptor.xtype.as_str()) {
+            return Err(WalletError::UnknownType(descriptor.xtype));
         }
 
         let config = {
@@ -173,7 +163,7 @@ impl WalletService {
             }
         };
 
-        let wallet_type = wallet_types.get(desciptor.xtype.as_str()).unwrap();
+        let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
         let wallet = wallet_type.open(name, config.as_ref().map(String::as_str), credentials)?;
 
         let wallet_handle = SequenceUtils::get_next_id();
@@ -190,7 +180,7 @@ impl WalletService {
 
     pub fn set(&self, handle: i32, key: &str, value: &str) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.set(key,value),
+            Some(wallet) => wallet.set(key, value),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }

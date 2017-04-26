@@ -1,11 +1,11 @@
+extern crate serde_json;
+extern crate zmq;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fs, thread};
 use std::io::{Error, ErrorKind, Write};
 use std::path::{Path, PathBuf};
-use rustc_serialize;
-use rustc_serialize::json;
-use zmq;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
@@ -69,7 +69,7 @@ impl Drop for Pool {
     }
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 struct PoolConfig {
     genesis_txn: String
 }
@@ -92,7 +92,7 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
-            Some(config) => json::decode(config)?,
+            Some(config) => serde_json::from_str(config)?,
             None => PoolConfig::default(name)
         };
 
@@ -110,7 +110,7 @@ impl PoolService {
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path())?;
-        f.write(json::encode(&pool_config)?.as_bytes())?;
+        f.write(serde_json::to_string(&pool_config)?.as_bytes())?;
         f.flush()?;
 
         // TODO probably create another one file pool.json with pool description,

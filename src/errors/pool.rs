@@ -1,10 +1,10 @@
-use rustc_serialize;
-use rustc_serialize::json;
+extern crate zmq;
+extern crate serde_json;
+
 use std::error;
 use std::io;
 use std::fmt;
 use std::error::Error;
-use zmq;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -64,14 +64,8 @@ impl From<zmq::Error> for PoolError {
     }
 }
 
-impl From<json::DecoderError> for PoolError {
-    fn from(err: json::DecoderError) -> PoolError {
-        PoolError::InvalidConfiguration(err.description().to_string())
-    }
-}
-
-impl From<json::EncoderError> for PoolError {
-    fn from(err: json::EncoderError) -> PoolError {
+impl From<serde_json::Error> for PoolError {
+    fn from(err: serde_json::Error) -> PoolError {
         PoolError::InvalidConfiguration(err.description().to_string())
     }
 }
