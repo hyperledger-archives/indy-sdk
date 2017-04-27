@@ -386,16 +386,7 @@ impl Issuer {
         let t8 = Pair::pair(&pk_r.htilde, &pk_r.u)?.pow(&params.r)?
             .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime_prime_prime)?)?;
 
-        Ok(NonRevocProofTauList {
-            t1: t1,
-            t2: t2,
-            t3: t3,
-            t4: t4,
-            t5: t5,
-            t6: t6,
-            t7: t7,
-            t8: t8
-        })
+        Ok(NonRevocProofTauList::new(t1, t2, t3, t4, t5, t6, t7, t8))
     }
 
     pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
@@ -413,16 +404,7 @@ impl Issuer {
         let t8 = Pair::pair(&proof_c.g, &pk_r.u)?
             .mul(&Pair::pair(&pk_r.g, &proof_c.u)?.inverse()?)?;
 
-        Ok(NonRevocProofTauList {
-            t1: t1,
-            t2: t2,
-            t3: t3,
-            t4: t4,
-            t5: t5,
-            t6: t6,
-            t7: t7,
-            t8: t8
-        })
+        Ok(NonRevocProofTauList::new(t1, t2, t3, t4, t5, t6, t7, t8))
     }
 }
 
