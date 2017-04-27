@@ -434,7 +434,7 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// claim json:
+/// claims_json: claim json:
 ///     {
 ///         "claim": {attr1:[value, value_as_int]}
 ///         "signature": <signature>,
