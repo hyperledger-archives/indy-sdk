@@ -4,13 +4,41 @@ use errors::crypto::CryptoError;
 use services::crypto::anoncreds::helpers::AppendBigNumArray;
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
+use utils::json::{JsonEncodable, JsonDecodable};
 
 pub enum ByteOrder {
     Big,
     Little
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ClaimDefinition {
+    pub public_key: PublicKey,
+    pub public_key_revocation: RevocationPublicKey,
+    pub schema_seq_no: i32,
+    pub signature_type: String
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ClaimDefinitionPrivate {
+    pub secret_key: SecretKey,
+    pub secret_key_revocation: RevocationSecretKey
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct RevocationRegistry {
+    pub claim_def_seq_no: i32,
+    pub acc: Accumulator,
+    pub acc_pk: AccumulatorPublicKey,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct RevocationRegistryPrivate {
+    pub acc_sk: AccumulatorSecretKey,
+    pub tails: HashMap<i32, PointG1>
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SchemaKey {
     pub name: String,
     pub version: String,
@@ -27,24 +55,26 @@ impl SchemaKey {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
     pub name: String,
     pub version: String,
-    pub attribute_names: HashSet<String>
+    pub attribute_names: HashSet<String>,
+    pub seq_no: i32
 }
 
 impl Schema {
-    pub fn new(name: String, version: String, attributes_names: HashSet<String>) -> Schema {
+    pub fn new(name: String, version: String, attributes_names: HashSet<String>, seq_no: i32) -> Schema {
         Schema {
             name: name,
             version: version,
-            attribute_names: attributes_names
+            attribute_names: attributes_names,
+            seq_no: seq_no
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PublicKey {
     pub n: BigNumber,
     pub s: BigNumber,
@@ -68,6 +98,7 @@ impl PublicKey {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
     pub h: PointG1,
@@ -99,6 +130,7 @@ impl RevocationPublicKey {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationSecretKey {
     pub x: GroupOrderElement,
     pub sk: GroupOrderElement
@@ -113,7 +145,7 @@ impl RevocationSecretKey {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SecretKey {
     pub p: BigNumber,
     pub q: BigNumber
@@ -128,6 +160,7 @@ impl SecretKey {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccumulatorPublicKey {
     pub z: Pair
 }
@@ -140,6 +173,7 @@ impl AccumulatorPublicKey {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccumulatorSecretKey {
     pub gamma: GroupOrderElement
 }
@@ -152,8 +186,8 @@ impl AccumulatorSecretKey {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Accumulator {
-    pub accumulator_id: i32,
     pub acc: PointG1,
     pub v: HashSet<i32>,
     pub max_claim_num: i32,
@@ -161,10 +195,9 @@ pub struct Accumulator {
 }
 
 impl Accumulator {
-    pub fn new(accumulator_id: i32, acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
+    pub fn new(acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
                current_i: i32) -> Accumulator {
         Accumulator {
-            accumulator_id: accumulator_id,
             acc: acc,
             v: v,
             max_claim_num: max_claim_num,
@@ -177,6 +210,7 @@ impl Accumulator {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Witness {
     pub sigma_i: PointG1,
     pub u_i: PointG1,
@@ -198,14 +232,15 @@ impl Witness {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimRequest {
-    pub user_id: String,
+    pub user_id: i32,
     pub u: BigNumber,
     pub ur: Option<PointG1>
 }
 
 impl ClaimRequest {
-    pub fn new(user_id: String, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
+    pub fn new(user_id: i32, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
         ClaimRequest {
             user_id: user_id,
             u: u,
@@ -231,44 +266,27 @@ impl Predicate {
     }
 }
 
-#[derive(Debug)]
-pub struct Attribute {
-    pub name: String,
-    pub value: String,
-    pub encode: bool
-}
-
-impl Attribute {
-    pub fn new(name: String, value: String, encode: bool) -> Attribute {
-        Attribute {
-            name: name,
-            value: value,
-            encode: encode
-        }
-    }
-}
-
 pub struct ClaimInitData {
     pub u: BigNumber,
     pub v_prime: BigNumber
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub primary_claim: PrimaryClaim,
     pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PrimaryClaim {
-    pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber,
     pub a: BigNumber,
     pub e: BigNumber,
     pub v_prime: BigNumber
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct NonRevocationClaim {
-    pub accumulator_id: i32,
     pub sigma: PointG1,
     pub c: GroupOrderElement,
     pub vr_prime_prime: GroupOrderElement,
@@ -376,7 +394,8 @@ pub struct ProofInput {
 pub struct ProofClaims {
     pub claims: Claims,
     pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Predicate>
+    pub predicates: Vec<Predicate>,
+    pub encoded_attributes: HashMap<String, BigNumber>
 }
 
 pub struct FullProof {
@@ -528,3 +547,96 @@ impl NonRevocProof {
         }
     }
 }
+
+impl ClaimDefinition {
+    pub fn new(public_key: PublicKey, public_key_revocation: RevocationPublicKey,
+               schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
+        ClaimDefinition {
+            public_key: public_key,
+            public_key_revocation: public_key_revocation,
+            schema_seq_no: schema_seq_no,
+            signature_type: signature_type
+        }
+    }
+}
+
+impl ClaimDefinitionPrivate {
+    pub fn new(secret_key: SecretKey, secret_key_revocation: RevocationSecretKey) -> ClaimDefinitionPrivate {
+        ClaimDefinitionPrivate {
+            secret_key: secret_key,
+            secret_key_revocation: secret_key_revocation
+        }
+    }
+}
+
+impl RevocationRegistry {
+    pub fn new(acc: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
+        RevocationRegistry {
+            acc: acc,
+            acc_pk: acc_pk,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+impl RevocationRegistryPrivate {
+    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
+        RevocationRegistryPrivate {
+            acc_sk: acc_sk,
+            tails: tails
+        }
+    }
+}
+
+impl JsonEncodable for ClaimDefinition {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinition {}
+
+impl JsonEncodable for ClaimDefinitionPrivate {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
+
+
+impl JsonEncodable for RevocationRegistry {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistry {}
+
+impl JsonEncodable for RevocationRegistryPrivate {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
+
+impl JsonEncodable for Schema {}
+
+impl<'a> JsonDecodable<'a> for Schema {}
+
+impl JsonEncodable for PublicKey {}
+
+impl<'a> JsonDecodable<'a> for PublicKey {}
+
+impl JsonEncodable for SecretKey {}
+
+impl<'a> JsonDecodable<'a> for SecretKey {}
+
+impl JsonEncodable for RevocationPublicKey {}
+
+impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
+
+impl JsonEncodable for RevocationSecretKey {}
+
+impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
+
+impl JsonEncodable for Accumulator {}
+
+impl<'a> JsonDecodable<'a> for Accumulator {}
+
+impl JsonEncodable for AccumulatorPublicKey {}
+
+impl<'a> JsonDecodable<'a> for AccumulatorPublicKey {}
+
+impl JsonEncodable for AccumulatorSecretKey {}
+
+impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}
+
+impl JsonEncodable for ClaimRequest {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequest {}

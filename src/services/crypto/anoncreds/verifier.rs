@@ -20,7 +20,6 @@ use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
 use services::crypto::wrappers::pair::{Pair, PointG1};
 use services::crypto::anoncreds::issuer::Issuer;
-use services::crypto::anoncreds::prover;
 
 pub struct Verifier {}
 
@@ -288,6 +287,7 @@ impl Verifier {
 mod tests {
     use super::*;
     use services::crypto::anoncreds::types::{Proof};
+    use services::crypto::anoncreds::prover;
 
     #[test]
     #[ignore]
@@ -453,6 +453,7 @@ mod tests {
 
 pub mod mocks {
     use super::*;
+    use ::services::crypto::anoncreds::prover;
 
     pub fn get_attr_names() -> HashSet<String> {
         let mut attr_names: HashSet<String> = HashSet::new();
