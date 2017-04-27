@@ -286,7 +286,7 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::types::{SchemaKey, Proof};
+    use services::crypto::anoncreds::types::{Proof};
     use services::crypto::anoncreds::prover;
 
     #[test]

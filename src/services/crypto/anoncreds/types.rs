@@ -266,23 +266,6 @@ impl Predicate {
     }
 }
 
-#[derive(Debug)]
-pub struct Attribute {
-    pub name: String,
-    pub value: String,
-    pub encode: bool
-}
-
-impl Attribute {
-    pub fn new(name: String, value: String, encode: bool) -> Attribute {
-        Attribute {
-            name: name,
-            value: value,
-            encode: encode
-        }
-    }
-}
-
 pub struct ClaimInitData {
     pub u: BigNumber,
     pub v_prime: BigNumber
@@ -296,7 +279,6 @@ pub struct Claims {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PrimaryClaim {
-    pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber,
     pub a: BigNumber,
     pub e: BigNumber,
@@ -413,7 +395,8 @@ pub struct ProofInput {
 pub struct ProofClaims {
     pub claims: Claims,
     pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Predicate>
+    pub predicates: Vec<Predicate>,
+    pub encoded_attributes: HashMap<String, BigNumber>
 }
 
 pub struct FullProof {

@@ -14,8 +14,8 @@ extern crate rand;
 
 use self::rand::os::{OsRng};
 use self::rand::Rng;
-use self::serde::ser::{Serialize, Serializer, Error as SError};
-use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
+use self::serde::ser::{Serialize, Serializer};
+use self::serde::de::{Deserialize, Deserializer};
 
 fn random_mod_order() -> Result<BIG, CryptoError> {
     let mut seed: [u8; 32] = [0; 32];

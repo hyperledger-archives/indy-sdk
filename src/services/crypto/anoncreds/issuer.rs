@@ -11,7 +11,6 @@ use services::crypto::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AccumulatorSecretKey,
-    Attribute,
     ByteOrder,
     ClaimDefinition,
     ClaimDefinitionPrivate,
@@ -277,19 +276,9 @@ impl Issuer {
 
         let e = e_start.generate_prime_in_range(&e_start, &e_end)?;
 
-        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
-        for (key, val) in attributes.iter() {
-            encoded_attributes.insert(
-                key.clone(),
-                BigNumber::from_dec(val.get(2)
-                    .ok_or(CryptoError::InvalidStructure("Encoded value not found in attributes".to_string()))?)?
-            );
-        }
-
-        let a = Issuer::_sign(public_key, secret_key, context_attribute, &encoded_attributes, &v_prime_prime, u, &e)?;
+        let a = Issuer::_sign(public_key, secret_key, context_attribute, &attributes, &v_prime_prime, u, &e)?;
 
         Ok(PrimaryClaim {
-            encoded_attributes: encoded_attributes,
             m2: context_attribute.clone()?,
             a: a,
             e: e,
@@ -298,15 +287,18 @@ impl Issuer {
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             encoded_attributes: &HashMap<String, BigNumber>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
+             attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut rx = BigNumber::from_u32(1)?;
         let mut context = BigNumber::new_context()?;
 
-        for (key, value) in encoded_attributes {
+        for (key, value) in attributes {
             let pk_r = public_key.r.get(key)
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
+            let cur_val = value.get(1)
+                .ok_or(CryptoError::InvalidStructure(format!("Encoded value by key '{}' not found in attributes", key)))?;
+
             rx = rx.mul(
-                &pk_r.mod_exp(&value, &public_key.n, Some(&mut context))?,
+                &pk_r.mod_exp(&BigNumber::from_dec(cur_val)?, &public_key.n, Some(&mut context))?,
                 Some(&mut context)
             )?;
         }
@@ -464,7 +456,7 @@ mod tests {
         let public_key = mocks::get_pk().unwrap();
         let secret_key = mocks::get_secret_key();
         let context_attribute = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
-        let attributes = mocks::get_gvt_encoded_attributes().unwrap();
+        let attributes = mocks::get_gvt_attributes();
         let v = BigNumber::from_dec("5237513942984418438429595379849430501110274945835879531523435677101657022026899212054747703201026332785243221088006425007944260107143086435227014329174143861116260506019310628220538205630726081406862023584806749693647480787838708606386447727482772997839699379017499630402117304253212246286800412454159444495341428975660445641214047184934669036997173182682771745932646179140449435510447104436243207291913322964918630514148730337977117021619857409406144166574010735577540583316493841348453073326447018376163876048624924380855323953529434806898415857681702157369526801730845990252958130662749564283838280707026676243727830151176995470125042111348846500489265328810592848939081739036589553697928683006514398844827534478669492201064874941684905413964973517155382540340695991536826170371552446768460042588981089470261358687308").unwrap();
         let u = BigNumber::from_dec("72637991796589957272144423539998982864769854130438387485781642285237707120228376409769221961371420625002149758076600738245408098270501483395353213773728601101770725294535792756351646443825391806535296461087756781710547778467803194521965309091287301376623972321639262276779134586366620773325502044026364814032821517244814909708610356590687571152567177116075706850536899272749781370266769562695357044719529245223811232258752001942940813585440938291877640445002571323841625932424781535818087233087621479695522263178206089952437764196471098717335358765920438275944490561172307673744212256272352897964947435086824617146019").unwrap();
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
@@ -476,21 +468,19 @@ mod tests {
 pub mod mocks {
     use super::*;
 
-    pub fn get_gvt_attributes() -> Vec<Attribute> {
-        let attributes: Vec<Attribute> = vec![
-            Attribute::new("name".to_string(), "Alex".to_string(), true),
-            Attribute::new("age".to_string(), "28".to_string(), false),
-            Attribute::new("sex".to_string(), "male".to_string(), true),
-            Attribute::new("height".to_string(), "175".to_string(), false)
-        ];
+    pub fn get_gvt_attributes() -> HashMap<String, Vec<String>> {
+        let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
+        attributes.insert("name".to_string(), vec!["Alex".to_string(), "1139481716457488690172217916278103335".to_string()]);
+        attributes.insert("age".to_string(), vec!["28".to_string(), "28".to_string()]);
+        attributes.insert("sex".to_string(), vec!["male".to_string(), "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()]);
+        attributes.insert("height".to_string(), vec!["175".to_string(), "175".to_string()]);
         attributes
     }
 
-    pub fn get_xyz_attributes() -> Vec<Attribute> {
-        let attributes: Vec<Attribute> = vec![
-            Attribute::new("status".to_string(), "partial".to_string(), true),
-            Attribute::new("period".to_string(), "8".to_string(), false)
-        ];
+    pub fn get_xyz_attributes() -> HashMap<String, Vec<String>> {
+        let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
+        attributes.insert("status".to_string(), vec!["partial".to_string(), "51792877103171595686471452153480627530895".to_string()]);
+        attributes.insert("period".to_string(), vec!["8".to_string(), "28".to_string()]);
         attributes
     }
 
