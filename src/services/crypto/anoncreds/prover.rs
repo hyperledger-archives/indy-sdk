@@ -1367,7 +1367,6 @@ pub mod mocks {
 
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
         NonRevocationClaim {
-            accumulator_id: 100,
             sigma: PointG1::new().unwrap(),
             c: GroupOrderElement::new().unwrap(),
             vr_prime_prime: GroupOrderElement::new().unwrap(),

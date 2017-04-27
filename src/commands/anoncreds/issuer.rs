@@ -96,28 +96,29 @@ impl IssuerCommandExecutor {
                                          schema_json: &str,
                                          signature_type: Option<&str>,
                                          cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
-        let result = Ok(())
-            .and_then(|_| {
-                let schema = Schema::from_str(schema_json)?;
+        let result = self._create_and_store_claim_definition(wallet_handle, issuer_did, schema_json, signature_type);
+        cb(result)
+    }
 
-                let (claim_definition, claim_definition_private) =
-                    self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type)?;
+    fn _create_and_store_claim_definition(&self,
+                                          wallet_handle: i32,
+                                          issuer_did: &str,
+                                          schema_json: &str,
+                                          signature_type: Option<&str>, ) -> Result<(String, String), AnoncredsError> {
+        let schema = Schema::from_str(schema_json)?;
 
-                let claim_definition_json = ClaimDefinition::to_string(&claim_definition)?;
-                let claim_definition_private_json = ClaimDefinitionPrivate::to_string(&claim_definition_private)?;
+        let (claim_definition, claim_definition_private) =
+            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type)?;
 
-                let uuid = Uuid::new_v4().to_string();
+        let claim_definition_json = ClaimDefinition::to_string(&claim_definition)?;
+        let claim_definition_private_json = ClaimDefinitionPrivate::to_string(&claim_definition_private)?;
 
-                self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &uuid), &claim_definition_json)?;
-                self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &uuid), &claim_definition_private_json)?;
+        let uuid = Uuid::new_v4().to_string();
 
-                Ok((claim_definition_json, uuid))
-            });
+        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &uuid), &claim_definition_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &uuid), &claim_definition_private_json)?;
 
-        match result {
-            Ok((claim_definition_json, uuid)) => cb(Ok((claim_definition_json, uuid))),
-            Err(err) => cb(Err(err))
-        }
+        Ok((claim_definition_json, uuid))
     }
 
     fn create_and_store_revocation_registry(&self,
@@ -126,30 +127,31 @@ impl IssuerCommandExecutor {
                                             claim_def_seq_no: i32,
                                             max_claim_num: i32,
                                             cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
-        let result = Ok(())
-            .and_then(|_| {
-                let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_def_seq_no))?;
-                let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
-                let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
+        let result = self._create_and_store_revocation_registry(wallet_handle, issuer_did, claim_def_seq_no, max_claim_num);
+        cb(result)
+    }
 
-                let (revocation_registry, revocation_registry_private) =
-                    self.crypto_service.anoncreds.issuer.issue_accumulator(&claim_def.public_key_revocation, max_claim_num, claim_def_seq_no)?;
+    fn _create_and_store_revocation_registry(&self,
+                                             wallet_handle: i32,
+                                             issuer_did: &str,
+                                             claim_def_seq_no: i32,
+                                             max_claim_num: i32) -> Result<(String, String), AnoncredsError> {
+        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_def_seq_no))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+        let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
 
-                let uuid = Uuid::new_v4().to_string();
+        let (revocation_registry, revocation_registry_private) =
+            self.crypto_service.anoncreds.issuer.issue_accumulator(&claim_def.public_key_revocation, max_claim_num, claim_def_seq_no)?;
 
-                let revocation_registry_json = RevocationRegistry::to_string(&revocation_registry)?;
-                let revocation_registry_private_json = RevocationRegistryPrivate::to_string(&revocation_registry_private)?;
+        let uuid = Uuid::new_v4().to_string();
 
-                self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &uuid), &revocation_registry_json)?;
-                self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &uuid), &revocation_registry_private_json)?;
+        let revocation_registry_json = RevocationRegistry::to_string(&revocation_registry)?;
+        let revocation_registry_private_json = RevocationRegistryPrivate::to_string(&revocation_registry_private)?;
 
-                Ok((revocation_registry_json, uuid))
-            });
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &uuid), &revocation_registry_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &uuid), &revocation_registry_private_json)?;
 
-        match result {
-            Ok((revocation_registry_json, uuid)) => cb(Ok((revocation_registry_json, uuid))),
-            Err(err) => cb(Err(err))
-        }
+        Ok((revocation_registry_json, uuid))
     }
 
     fn create_and_store_claim(&self,
@@ -159,51 +161,57 @@ impl IssuerCommandExecutor {
                               revoc_reg_seq_no: i32,
                               user_revoc_index: Option<i32>,
                               cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
-        let result = Ok(())
-            .and_then(|_| {
-                let claim_req_json: ClaimRequestJson = serde_json::from_str(claim_req_json)?;
+        let result = self._create_and_store_claim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index);
+        cb(result)
+    }
 
-                let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_req_json.claim_def_seq_no))?;
-                let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
-                let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_uuid))?;
+    fn _create_and_store_claim(&self,
+                               wallet_handle: i32,
+                               claim_req_json: &str,
+                               claim_json: &str,
+                               revoc_reg_seq_no: i32,
+                               user_revoc_index: Option<i32>) -> Result<(String, String), AnoncredsError> {
+        let claim_req_json: ClaimRequestJson = serde_json::from_str(claim_req_json)?;
 
-                let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
-                let claim_def_private = ClaimDefinitionPrivate::from_str(&claim_def_private_json)?;
+        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_req_json.claim_def_seq_no))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_uuid))?;
 
-                let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &claim_req_json.claim_def_seq_no))?;
-                let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-                let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
+        let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
+        let claim_def_private = ClaimDefinitionPrivate::from_str(&claim_def_private_json)?;
 
-                let revocation_registry = RevocationRegistry::from_str(&revocation_registry_json)?;
-                let revocation_registry_private = RevocationRegistryPrivate::from_str(&revocation_registry_private_json)?;
+        let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &claim_req_json.claim_def_seq_no))?;
+        let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
+        let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
 
-                let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
+        let revocation_registry = RevocationRegistry::from_str(&revocation_registry_json)?;
+        let revocation_registry_private = RevocationRegistryPrivate::from_str(&revocation_registry_private_json)?;
 
-                let revocation_registry = RefCell::new(revocation_registry);
+        let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
 
-                let claims = self.crypto_service.anoncreds.issuer.create_claim(
-                    &claim_def,
-                    &claim_def_private,
-                    &revocation_registry,
-                    &revocation_registry_private,
-                    &claim_req_json.claim_request,
-                    &attributes,
-                    user_revoc_index,
-                    revoc_reg_seq_no
-                )?;
+        let revocation_registry = RefCell::new(revocation_registry);
 
-                let revoc_reg_update_json = RevocationRegistry::to_string(&revocation_registry.borrow())?;
+        let claims = self.crypto_service.anoncreds.issuer.create_claim(
+            &claim_def,
+            &claim_def_private,
+            &revocation_registry,
+            &revocation_registry_private,
+            &claim_req_json.claim_request,
+            &attributes,
+            user_revoc_index
+        )?;
 
-                let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims);
-                let claim_json = ClaimJson::to_string(&claim_json)?;
+        let revoc_reg_update_json = RevocationRegistry::to_string(&revocation_registry.borrow())?;
 
-                Ok((revoc_reg_update_json, claim_json))
-            });
+        let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims);
+        let claim_json = ClaimJson::to_string(&claim_json)?;
 
-        match result {
-            Ok((revoc_reg_update_json, claim_json)) => cb(Ok((revoc_reg_update_json, claim_json))),
-            Err(err) => cb(Err(err))
-        }
+        let uuid = Uuid::new_v4().to_string();
+
+        self.wallet_service.set(wallet_handle, &format!("claim::{}", &uuid), &claim_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revoc_reg_update_json)?;
+
+        Ok((revoc_reg_update_json, claim_json))
     }
 
     fn revoke_claim(&self,

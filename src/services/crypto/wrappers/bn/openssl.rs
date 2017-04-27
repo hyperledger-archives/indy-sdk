@@ -42,19 +42,19 @@ impl BigNumber {
         })
     }
 
-    pub fn generate_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn generate_prime(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::generate_prime(&mut bn.openssl_bn, size as i32, false, None, None)?;
         Ok(bn)
     }
 
-    pub fn generate_safe_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn generate_safe_prime(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::generate_prime(&mut bn.openssl_bn, (size + 1) as i32, true, None, None)?;
         Ok(bn)
     }
 
-    pub fn generate_prime_in_range(&self, start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {
+    pub fn generate_prime_in_range(start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut prime;
         let mut iteration = 0;
         let mut bn_ctx = BigNumber::new_context()?;
@@ -385,10 +385,9 @@ mod tests {
     fn generate_prime_in_range_works() {
         LoggerUtils::init();
 
-        let bn = BigNumber::new().unwrap();
         let start = BigNumber::rand(250).unwrap();
         let end = BigNumber::rand(300).unwrap();
-        let random_prime = bn.generate_prime_in_range(&start, &end).unwrap();
+        let random_prime = BigNumber::generate_prime_in_range(&start, &end).unwrap();
         assert!(start < random_prime);
         assert!(end > random_prime);
     }

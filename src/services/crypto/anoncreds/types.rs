@@ -287,7 +287,6 @@ pub struct PrimaryClaim {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NonRevocationClaim {
-    pub accumulator_id: i32,
     pub sigma: PointG1,
     pub c: GroupOrderElement,
     pub vr_prime_prime: GroupOrderElement,
