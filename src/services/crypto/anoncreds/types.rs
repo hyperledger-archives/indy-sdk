@@ -210,6 +210,7 @@ impl Accumulator {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Witness {
     pub sigma_i: PointG1,
     pub u_i: PointG1,
@@ -287,12 +288,13 @@ pub struct ClaimInitData {
     pub v_prime: BigNumber
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub primary_claim: PrimaryClaim,
     pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PrimaryClaim {
     pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber,
@@ -301,6 +303,7 @@ pub struct PrimaryClaim {
     pub v_prime: BigNumber
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct NonRevocationClaim {
     pub accumulator_id: i32,
     pub sigma: PointG1,

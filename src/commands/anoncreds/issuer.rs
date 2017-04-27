@@ -16,8 +16,9 @@ use services::crypto::anoncreds::types::{
 };
 use std::rc::Rc;
 use std::collections::HashMap;
-use types::ClaimRequestJson;
+use types::{ClaimRequestJson, ClaimJson};
 use utils::json::{JsonDecodable, JsonEncodable};
+use std::cell::RefCell;
 
 pub enum IssuerCommand {
     CreateAndStoreClaimDefinition(
@@ -178,22 +179,29 @@ impl IssuerCommandExecutor {
 
                 let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
 
+                let revocation_registry = RefCell::new(revocation_registry);
+
                 let claims = self.crypto_service.anoncreds.issuer.create_claim(
-                    claim_def,
-                    claim_def_private,
-                    revocation_registry,
-                    revocation_registry_private,
-                    claim_req_json.claim_request,
-                    attributes,
+                    &claim_def,
+                    &claim_def_private,
+                    &revocation_registry,
+                    &revocation_registry_private,
+                    &claim_req_json.claim_request,
+                    &attributes,
                     user_revoc_index,
                     revoc_reg_seq_no
                 )?;
 
-                Ok(("".to_string(), "".to_string()))
+                let revoc_reg_update_json = RevocationRegistry::to_string(&revocation_registry.borrow())?;
+
+                let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims);
+                let claim_json = ClaimJson::to_string(&claim_json)?;
+
+                Ok((revoc_reg_update_json, claim_json))
             });
 
         match result {
-            Ok((claim_definition_json, uuid)) => cb(Ok(("".to_string(), "".to_string()))),
+            Ok((revoc_reg_update_json, claim_json)) => cb(Ok((revoc_reg_update_json, claim_json))),
             Err(err) => cb(Err(err))
         }
     }
