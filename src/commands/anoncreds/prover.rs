@@ -194,9 +194,16 @@ impl ProverCommandExecutor {
 
     fn store_claim(&self,
                    wallet_handle: i32,
-                   claims_json: &str,
+                   claim_json: &str,
                    cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
-        cb(Ok(()));
+        cb(self._store_claim(wallet_handle, claim_json));
+    }
+
+    fn _store_claim(&self, wallet_handle: i32, claim_json: &str) -> Result<(), AnoncredsError> {
+        //TODO: transform claim with master_secret
+        let uuid = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim_json::{}", &uuid), &claim_json)?;
+        Ok(())
     }
 
     fn get_claims(&self,
