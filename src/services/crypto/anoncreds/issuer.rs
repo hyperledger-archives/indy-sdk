@@ -262,7 +262,7 @@ impl Issuer {
                                    sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
                                    ur: &PointG1, seq_number: Option<i32>) ->
                                    Result<(NonRevocationClaim, i64), CryptoError> {
-        let ref accumulator = revocation_registry.borrow_mut().acc;
+        let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
             return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
@@ -273,7 +273,7 @@ impl Issuer {
             _ => accumulator.current_i
         };
 
-        revocation_registry.borrow_mut().acc.current_i += 1;
+        accumulator.current_i += 1;
 
         let vr_prime_prime = GroupOrderElement::new()?;
         let c = GroupOrderElement::new()?;
@@ -307,9 +307,9 @@ impl Issuer {
                 .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?;
 
         let index = accumulator.max_claim_num + 1 - i;
-        revocation_registry.borrow_mut().acc.acc = accumulator.acc.add(g.get(&index)
+        accumulator.acc = accumulator.acc.add(g.get(&index)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
-        revocation_registry.borrow_mut().acc.v.insert(i);
+        accumulator.v.insert(i);
 
         let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
@@ -351,14 +351,15 @@ impl Issuer {
         Ok(v_prime_prime)
     }
 
-    pub fn revoke(accumulator: RefCell<Accumulator>, g: &HashMap<i32, PointG1>, i: i32) -> Result<(RefCell<Accumulator>, i64), CryptoError> {
-        accumulator.borrow_mut().v.remove(&i);
-        let index: i32 = accumulator.borrow().max_claim_num + 1 - i;
+    pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>, g: &HashMap<i32, PointG1>, i: i32) -> Result<i64, CryptoError> {
+        let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
+        accumulator.v.remove(&i);
+        let index: i32 = accumulator.max_claim_num + 1 - i;
         let element = g.get(&index)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
-        accumulator.borrow_mut().acc = accumulator.borrow().acc.sub(element)?;
+        accumulator.acc = accumulator.acc.sub(element)?;
         let timestamp = time::now_utc().to_timespec().sec;
-        Ok((accumulator, timestamp))
+        Ok(timestamp)
     }
 
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,

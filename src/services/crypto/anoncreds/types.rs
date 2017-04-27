@@ -28,7 +28,7 @@ pub struct ClaimDefinitionPrivate {
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RevocationRegistry {
     pub claim_def_seq_no: i32,
-    pub acc: Accumulator,
+    pub accumulator: Accumulator,
     pub acc_pk: AccumulatorPublicKey,
 }
 
@@ -160,7 +160,7 @@ impl SecretKey {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AccumulatorPublicKey {
     pub z: Pair
 }
@@ -173,7 +173,7 @@ impl AccumulatorPublicKey {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AccumulatorSecretKey {
     pub gamma: GroupOrderElement
 }
@@ -249,7 +249,7 @@ impl ClaimRequest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Predicate {
     pub attr_name: String,
     pub p_type: String,
@@ -627,9 +627,9 @@ impl ClaimDefinitionPrivate {
 }
 
 impl RevocationRegistry {
-    pub fn new(acc: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
+    pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
         RevocationRegistry {
-            acc: acc,
+            accumulator: accumulator,
             acc_pk: acc_pk,
             claim_def_seq_no: claim_def_seq_no
         }

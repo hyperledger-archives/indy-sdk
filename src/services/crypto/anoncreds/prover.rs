@@ -171,17 +171,18 @@ impl Prover {
         Ok(())
     }
 
-    pub fn present_proof(&self, pk: PublicKey, ms: BigNumber, pkr: RevocationPublicKey,
-                         accum: Accumulator, proof_input: ProofInput, all_claims: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>,
-                         nonce: BigNumber, tails: HashMap<i32, PointG1>,
-                         params: NonRevocProofXList, proof_c: NonRevocProofCList)
-                         -> Result<(FullProof, HashMap<String, BigNumber>), CryptoError> {
-        let (claims, revealed_attrs_with_values) = Prover::_find_claims(proof_input, all_claims)?;
-        let proof = Prover::_prepare_proof(claims, &nonce, &pk, &pkr, accum, &ms, &tails, &params, &proof_c)?;
-        Ok((proof, revealed_attrs_with_values))
-    }
+    //TODO looks like this function is not needed
+//    pub fn present_proof(&self, pk: PublicKey, ms: BigNumber, pkr: RevocationPublicKey,
+//                         accum: Accumulator, proof_input: ProofInput, all_claims: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>,
+//                         nonce: BigNumber, tails: HashMap<i32, PointG1>,
+//                         params: NonRevocProofXList, proof_c: NonRevocProofCList)
+//                         -> Result<(FullProof, HashMap<String, BigNumber>), CryptoError> {
+//        let (claims, revealed_attrs_with_values) = Prover::_find_claims(proof_input, all_claims)?;
+//        let proof = Prover::_prepare_proof(claims, &nonce, &pk, &pkr, accum, &ms, &tails, &params, &proof_c)?;
+//        Ok((proof, revealed_attrs_with_values))
+//    }
 
-    fn _find_claims(proof_input: ProofInput, all_claims: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>)
+    fn find_claims(&self, proof_input: ProofInput, all_claims: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>)
                     -> Result<(HashMap<SchemaKey, ProofClaims>, HashMap<String, BigNumber>), CryptoError> {
         let predicates = HashSet::<Predicate>::from_iter(proof_input.predicates.iter().cloned());
 
@@ -238,7 +239,7 @@ impl Prover {
         Ok((proof_claims, revealed_attrs_with_values))
     }
 
-    fn _prepare_proof(claims: HashMap<SchemaKey, ProofClaims>, nonce: &BigNumber, pk: &PublicKey,
+    fn prepare_proof(&self, claims: HashMap<SchemaKey, ProofClaims>, nonce: &BigNumber, pk: &PublicKey,
                       pkr: &RevocationPublicKey, accum: Accumulator, ms: &BigNumber,
                       tails: &HashMap<i32, PointG1>, params: &NonRevocProofXList,
                       proof_c: &NonRevocProofCList)
@@ -363,12 +364,16 @@ impl Prover {
                 accum.v.difference(&mut_claim.witness.v).cloned().collect();
             let mut omega_denom = PointG1::new_inf()?;
             for j in v_old_minus_new.iter() {
-                omega_denom = omega_denom.add(&tails[&(accum.max_claim_num + 1 - j + mut_claim.i)])?;
+                omega_denom = omega_denom.add(
+                    tails.get(&(accum.max_claim_num + 1 - j + mut_claim.i))
+                        .ok_or(CryptoError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
             }
             let mut omega_num = PointG1::new_inf()?;
             let mut new_omega: PointG1 = mut_claim.witness.omega.clone();
             for j in v_old_minus_new.iter() {
-                omega_num = omega_num.add(&tails[&(accum.max_claim_num + 1 - j + mut_claim.i)])?;
+                omega_num = omega_num.add(
+                    tails.get(&(accum.max_claim_num + 1 - j + mut_claim.i))
+                        .ok_or(CryptoError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
                 new_omega = new_omega.add(
                     &omega_num.sub(&omega_denom)?
                 )?;
@@ -754,24 +759,24 @@ mod tests {
     use super::*;
     use services::crypto::anoncreds::verifier;
 
-    #[test]
-    fn present_proof_works() {
-        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
-        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
-        let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
-        let proof_input = mocks::get_proof_input();
-        let claims = mocks::get_all_claims().unwrap();
-        let pkr = mocks::get_public_key_revocation().unwrap();
-        let accum = mocks::get_accumulator().unwrap();
-        let prover = Prover::new();
-        let tails = mocks::get_tails();
-        let params = mocks::get_non_revocation_proof_x_list();
-        let proof_c = mocks::get_non_revocation_proof_c_list();
-
-        let res = prover.present_proof(pk, ms, pkr, accum, proof_input, claims, nonce, tails, params, proof_c);
-
-        assert!(res.is_ok());
-    }
+//    #[test]
+//    fn present_proof_works() {
+//        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
+//        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
+//        let nonce = BigNumber::from_dec("857756808827034158288410").unwrap();
+//        let proof_input = mocks::get_proof_input();
+//        let claims = mocks::get_all_claims().unwrap();
+//        let pkr = mocks::get_public_key_revocation().unwrap();
+//        let accum = mocks::get_accumulator().unwrap();
+//        let prover = Prover::new();
+//        let tails = mocks::get_tails();
+//        let params = mocks::get_non_revocation_proof_x_list();
+//        let proof_c = mocks::get_non_revocation_proof_c_list();
+//
+//        let res = prover.present_proof(pk, ms, pkr, accum, proof_input, claims, nonce, tails, params, proof_c);
+//
+//        assert!(res.is_ok());
+//    }
 
     #[test]
     fn prepare_proof_works() {
@@ -780,7 +785,10 @@ mod tests {
         let schema_key = mocks::get_gvt_schema_key();
         let params = mocks::get_non_revocation_proof_x_list();
         let proof_c = mocks::get_non_revocation_proof_c_list();
-        let res = Prover::_find_claims(proof_input, claims);
+
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
+
         assert!(res.is_ok());
         let (proof_claims, revealed_attrs) = res.unwrap();
 
@@ -790,7 +798,9 @@ mod tests {
         let pkr = mocks::get_public_key_revocation().unwrap();
         let accum = mocks::get_accumulator().unwrap();
         let tails = mocks::get_tails();
-        let res = Prover::_prepare_proof(proof_claims, &nonce, &pk, &pkr, accum, &ms, &tails, &params, &proof_c);
+
+        let prover = Prover::new();
+        let res = prover.prepare_proof(proof_claims, &nonce, &pk, &pkr, accum, &ms, &tails, &params, &proof_c);
 
         assert!(res.is_ok());
         let proof = res.unwrap();
@@ -907,7 +917,8 @@ mod find_claims_tests {
         };
         let claims = mocks::get_all_claims().unwrap();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
 
         assert!(res.is_ok());
         let (proof_claims, revealed_attrs) = res.unwrap();
@@ -927,7 +938,8 @@ mod find_claims_tests {
         let claims = mocks::get_all_claims().unwrap();
         let schema_key = mocks::get_gvt_schema_key();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
 
         assert!(res.is_ok());
 
@@ -952,7 +964,9 @@ mod find_claims_tests {
         let claims = mocks::get_all_claims().unwrap();
         let schema_key = mocks::get_gvt_schema_key();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
+
         assert!(res.is_ok());
         let (proof_claims, revealed_attrs) = res.unwrap();
 
@@ -977,7 +991,9 @@ mod find_claims_tests {
         let schema_gvt_key = mocks::get_gvt_schema_key();
         let schema_xyz_key = mocks::get_xyz_schema_key();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
+
         assert!(res.is_ok());
         let (proof_claims, revealed_attrs) = res.unwrap();
 
@@ -1005,7 +1021,9 @@ mod find_claims_tests {
         let schema_gvt_key = mocks::get_gvt_schema_key();
         let schema_xyz_key = mocks::get_xyz_schema_key();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
+
         assert!(res.is_ok());
         let (proof_claims, revealed_attrs) = res.unwrap();
 
@@ -1033,7 +1051,9 @@ mod find_claims_tests {
         let schema_gvt_key = mocks::get_gvt_schema_key();
         let schema_xyz_key = mocks::get_xyz_schema_key();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
+
         assert!(res.is_ok());
         let (proof_claims, revealed_attrs) = res.unwrap();
 
@@ -1064,7 +1084,8 @@ mod find_claims_tests {
         };
         let claims = mocks::get_all_claims().unwrap();
 
-        let res = Prover::_find_claims(proof_input, claims);
+        let prover = Prover::new();
+        let res = prover.find_claims(proof_input, claims);
         assert!(res.is_err());
     }
 }
