@@ -1,5 +1,7 @@
 extern crate serde_json;
+extern crate uuid;
 
+use self::uuid::Uuid;
 use errors::anoncreds::AnoncredsError;
 use services::crypto::CryptoService;
 use services::pool::PoolService;
@@ -109,20 +111,14 @@ impl ProverCommandExecutor {
                          wallet_handle: i32,
                          claim_offer_json: &str,
                          cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
-        unimplemented!();
-//        let result =
-//            ClaimOffer::from_str(&claim_offer_json)
-//                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
-//                .and_then(|claim_offer| {
-//                    self.wallet_service.set(wallet_handle, &format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)?;
-//
-//                    Ok(())
-//                });
-//
-//        match result {
-//            Ok(()) => cb(Ok(())),
-//            Err(err) => cb(Err(err))
-//        }
+        cb(self._store_claim_offer(wallet_handle, claim_offer_json));
+    }
+
+    fn _store_claim_offer(&self, wallet_handle: i32,  claim_offer_json: &str) -> Result<(), AnoncredsError> {
+        let uuid = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim_offer_json::{}", &uuid), &claim_offer_json)?;
+
+        Ok(())
     }
 
     fn get_claim_offers(&self,
