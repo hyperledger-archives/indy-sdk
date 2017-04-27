@@ -47,7 +47,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreKeys(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimDefinition(
             wallet_handle,
             issuer_did,
             schema_json,
@@ -56,7 +56,6 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
                 let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
                 let claim_def_uuid = CStringUtils::string_to_cstring(claim_def_uuid);
-
                 cb(command_handle, err, claim_def_json.as_ptr(), claim_def_uuid.as_ptr())
             })
         ))));
@@ -97,7 +96,7 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreRevocation(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreRevocationRegistry(
             wallet_handle,
             issuer_did,
             claim_def_seq_no,
@@ -106,7 +105,6 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
                 let (err, revoc_reg_json, revoc_reg_wallet_key) = result_to_err_code_2!(result, String::new(), String::new());
                 let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
                 let revoc_reg_uuid = CStringUtils::string_to_cstring(revoc_reg_wallet_key);
-
                 cb(command_handle, err, revoc_reg_json.as_ptr(), revoc_reg_uuid.as_ptr())
             })
         ))));
@@ -161,7 +159,7 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
                                          revoc_reg_seq_no: i32,
-                                         user_revoc_index: i32,
+                                         user_revoc_index: Option<i32>,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               revoc_reg_update_json: *const c_char,
                                                               xclaim_json: *const c_char
@@ -231,7 +229,6 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
             Box::new(move |result| {
                 let (err, revoc_reg_update_json) = result_to_err_code_1!(result, String::new());
                 let revoc_reg_update_json = CStringUtils::string_to_cstring(revoc_reg_update_json);
-
                 cb(command_handle, err, revoc_reg_update_json.as_ptr())
             })
         ))));
@@ -319,7 +316,6 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
             Box::new(move |result| {
                 let (err, claim_offers_json) = result_to_err_code_1!(result, String::new());
                 let claim_offers_json = CStringUtils::string_to_cstring(claim_offers_json);
-
                 cb(command_handle, err, claim_offers_json.as_ptr())
             })
         ))));
@@ -421,7 +417,6 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
             Box::new(move |result| {
                 let (err, claim_req_json) = result_to_err_code_1!(result, String::new());
                 let claim_req_json = CStringUtils::string_to_cstring(claim_req_json);
-
                 cb(command_handle, err, claim_req_json.as_ptr())
             })
         ))));
@@ -523,7 +518,6 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
             Box::new(move |result| {
                 let (err, claims_json) = result_to_err_code_1!(result, String::new());
                 let claims_json = CStringUtils::string_to_cstring(claims_json);
-
                 cb(command_handle, err, claims_json.as_ptr())
             })
         ))));
@@ -585,7 +579,6 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
             Box::new(move |result| {
                 let (err, claims_json) = result_to_err_code_1!(result, String::new());
                 let claims_json = CStringUtils::string_to_cstring(claims_json);
-
                 cb(command_handle, err, claims_json.as_ptr())
             })
         ))));
@@ -698,7 +691,6 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
             Box::new(move |result| {
                 let (err, proof_json) = result_to_err_code_1!(result, String::new());
                 let proof_json = CStringUtils::string_to_cstring(proof_json);
-
                 cb(command_handle, err, proof_json.as_ptr())
             })
         ))));

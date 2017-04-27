@@ -4,14 +4,16 @@ use services::crypto::anoncreds::constants::{
     LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
     LARGE_PRIME,
-    LARGE_VPRIME_PRIME
+    LARGE_VPRIME_PRIME,
+    SIGNATURE_TYPE
 };
 use services::crypto::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AccumulatorSecretKey,
-    Attribute,
     ByteOrder,
+    ClaimDefinition,
+    ClaimDefinitionPrivate,
     ClaimRequest,
     Claims,
     NonRevocationClaim,
@@ -22,6 +24,8 @@ use services::crypto::anoncreds::types::{
     PublicKey,
     RevocationPublicKey,
     RevocationSecretKey,
+    RevocationRegistry,
+    RevocationRegistryPrivate,
     Schema,
     SecretKey,
     Witness
@@ -45,17 +49,20 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: Schema) -> Result<((PublicKey, SecretKey), (RevocationPublicKey, RevocationSecretKey)), CryptoError> {
-        Ok((Issuer::_generate_keys(&schema)?, Issuer::_generate_revocation_keys()?))
-    }
+    pub fn generate_keys(&self, schema: Schema, signature_type: Option<&str>) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+        let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
+        let (pk, sk) = Issuer::_generate_keys(&schema)?;
+        let (pkr, skr) = Issuer::_generate_revocation_keys()?;
 
-    pub fn create_claim() {
-        //Generate context attribute here
+        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, signature_type);
+        let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
+
+        Ok((claim_definition, claim_definition_private))
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
-        let p = BigNumber::new()?.generate_safe_prime(LARGE_PRIME)?;
-        let q = BigNumber::new()?.generate_safe_prime(LARGE_PRIME)?;
+        let p = BigNumber::generate_safe_prime(LARGE_PRIME)?;
+        let q = BigNumber::generate_safe_prime(LARGE_PRIME)?;
 
         let mut p_prime = p.sub(&BigNumber::from_u32(1)?)?;
         p_prime.div_word(2)?;
@@ -101,8 +108,18 @@ impl Issuer {
         ))
     }
 
-    pub fn issue_accumulator(pk_r: &RevocationPublicKey, accumulator_id: i32, max_claim_num: i32)
-                             -> Result<(Accumulator, HashMap<i32, PointG1>, AccumulatorPublicKey, AccumulatorSecretKey), CryptoError> {
+    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
+        let mut result = p
+            .mul(&q, None)?
+            .sub_word(3)?
+            .rand_range()?;
+        result.add_word(2)?;
+
+        Ok(result)
+    }
+
+    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
+                             -> Result<(RevocationRegistry, RevocationRegistryPrivate), CryptoError> {
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let g_count = 2 * max_claim_num;
@@ -122,31 +139,141 @@ impl Issuer {
         z = z.pow(&pow)?;
         let acc = PointG1::new_inf()?;
         let v: HashSet<i32> = HashSet::new();
-        Ok((
-            Accumulator::new(accumulator_id, acc, v, max_claim_num, 1),
-            g,
-            AccumulatorPublicKey::new(z),
-            AccumulatorSecretKey::new(gamma)
-        ))
+
+        let acc = Accumulator::new(acc, v, max_claim_num, 1);
+        let acc_pk = AccumulatorPublicKey::new(z);
+        let acc_sk = AccumulatorSecretKey::new(gamma);
+
+        let revocation_registry = RevocationRegistry::new(acc, acc_pk, claim_def_seq_no);
+        let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g);
+
+        Ok((revocation_registry, revocation_registry_private))
     }
 
-    fn _issue_non_revocation_claim(accumulator: RefCell<Accumulator>, pk_r: &RevocationPublicKey,
+    pub fn create_claim(&self, claim_definition: &ClaimDefinition, claim_definition_private: &ClaimDefinitionPrivate,
+                        revocation_registry: &RefCell<RevocationRegistry>, revocation_registry_private: &RevocationRegistryPrivate,
+                        claim_request: &ClaimRequest, attributes: &HashMap<String, Vec<String>>,
+                        user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
+        let context_attribute = Issuer::_generate_context_attribute(revocation_registry.borrow().claim_def_seq_no, claim_request.user_id)?;
+
+        let primary_claim =
+            Issuer::_issue_primary_claim(
+                &claim_definition.public_key,
+                &claim_definition_private.secret_key,
+                &claim_request.u,
+                &context_attribute,
+                attributes
+            )?;
+
+        let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
+        if let Some(ur) = claim_request.ur {
+            let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
+                revocation_registry,
+                &claim_definition.public_key_revocation,
+                &claim_definition_private.secret_key_revocation,
+                &revocation_registry_private.tails,
+                &revocation_registry_private.acc_sk,
+                &context_attribute,
+                &ur,
+                user_revoc_index
+            )?;
+            non_revocation_claim = Some(RefCell::new(claim));
+        };
+
+        Ok(Claims {
+            primary_claim: primary_claim,
+            non_revocation_claim: non_revocation_claim
+        })
+    }
+
+    fn _generate_context_attribute(accumulator_id: i32, user_id: i32) -> Result<BigNumber, CryptoError> {
+        let accumulator_id_encoded = Issuer::_encode_attribute(accumulator_id, ByteOrder::Little)?;
+        let user_id_encoded = Issuer::_encode_attribute(user_id, ByteOrder::Little)?;
+        let mut s = vec![
+            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
+        ];
+        let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
+        let h = get_hash_as_int(&mut s)?
+            .modulus(&pow_2, None)?;
+        Ok(h)
+    }
+
+    fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
+                            attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CryptoError> {
+        let v_prime_prime = Issuer::_generate_v_prime_prime()?;
+        let e_start = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_E_START)?, None)?;
+        let e_end = BigNumber::from_u32(2)?
+            .exp(&BigNumber::from_u32(LARGE_E_END_RANGE)?, None)?
+            .add(&e_start)?;
+
+        let e = BigNumber::generate_prime_in_range(&e_start, &e_end)?;
+
+        let a = Issuer::_sign(public_key, secret_key, context_attribute, &attributes, &v_prime_prime, u, &e)?;
+
+        Ok(PrimaryClaim {
+            m2: context_attribute.clone()?,
+            a: a,
+            e: e,
+            v_prime: v_prime_prime
+        })
+    }
+
+    fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
+             attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
+        let mut rx = BigNumber::from_u32(1)?;
+        let mut context = BigNumber::new_context()?;
+
+        for (key, value) in attributes {
+            let pk_r = public_key.r.get(key)
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
+            let cur_val = value.get(1)
+                .ok_or(CryptoError::InvalidStructure(format!("Encoded value by key '{}' not found in attributes", key)))?;
+
+            rx = rx.mul(
+                &pk_r.mod_exp(&BigNumber::from_dec(cur_val)?, &public_key.n, Some(&mut context))?,
+                Some(&mut context)
+            )?;
+        }
+
+        let pk_rctxt_pow = public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context))?;
+        rx = rx.mul(&pk_rctxt_pow, Some(&mut context))?;
+
+        if u != &BigNumber::from_u32(0)? {
+            let module = u.modulus(&public_key.n, Some(&mut context))?;
+            rx = rx.mul(&module, Some(&mut context))?;
+        }
+
+        let n = secret_key.p.mul(&secret_key.q, Some(&mut context))?;
+        let mut e_inverse = e.modulus(&n, Some(&mut context))?;
+
+        let mut a = public_key.s
+            .mod_exp(&v, &public_key.n, Some(&mut context))?
+            .mul(&rx, Some(&mut context))?;
+        a = public_key.z.mod_div(&a, &public_key.n)?;
+
+        e_inverse = e_inverse.inverse(&n, Some(&mut context))?;
+        a = a.mod_exp(&e_inverse, &public_key.n, Some(&mut context))?;
+
+        Ok(a)
+    }
+
+    fn _issue_non_revocation_claim(revocation_registry: &RefCell<RevocationRegistry>, pk_r: &RevocationPublicKey,
                                    sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
                                    sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
-                                   claim_request: &ClaimRequest, seq_number: Option<i32>) -> Result<(NonRevocationClaim, RefCell<Accumulator>, i64), CryptoError> {
-        if accumulator.borrow().is_full() {
+                                   ur: &PointG1, seq_number: Option<i32>) ->
+                                   Result<(NonRevocationClaim, i64), CryptoError> {
+        let ref accumulator = revocation_registry.borrow_mut().acc;
+
+        if accumulator.is_full() {
             return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
         }
 
-        let i;
+        let i = match seq_number {
+            Some(x) => x,
+            _ => accumulator.current_i
+        };
 
-        if let Some(x) = seq_number {
-            i = x;
-        } else {
-            i = accumulator.borrow().current_i;
-        }
-
-        accumulator.borrow_mut().current_i += 1;
+        revocation_registry.borrow_mut().acc.current_i += 1;
 
         let vr_prime_prime = GroupOrderElement::new()?;
         let c = GroupOrderElement::new()?;
@@ -155,21 +282,17 @@ impl Issuer {
         let g_i = g.get(&i)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
 
-        let sigma = pk_r.h0.add(&pk_r.h1.mul(&m2)?)?;
-
-        if let Some(ur) = claim_request.ur {
-            sigma.add(&ur)?;
-        }
-
-        sigma
-            .add(g_i)?
-            .add(&pk_r.h2.mul(&vr_prime_prime)?)?
-            .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
+        let sigma =
+            pk_r.h0.add(&pk_r.h1.mul(&m2)?)?
+                .add(&ur)?
+                .add(g_i)?
+                .add(&pk_r.h2.mul(&vr_prime_prime)?)?
+                .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
 
         let mut omega = PointG1::new_inf()?;
 
-        for j in &accumulator.borrow().v {
-            let index = accumulator.borrow().max_claim_num + 1 - j + i;
+        for j in &accumulator.v {
+            let index = accumulator.max_claim_num + 1 - j + i;
             omega = omega.add(g.get(&index)
                 .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         }
@@ -183,19 +306,17 @@ impl Issuer {
             .mul(&sk_accum.gamma
                 .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?;
 
-        let index = accumulator.borrow().max_claim_num + 1 - i;
-        accumulator.borrow_mut().acc = accumulator.borrow().acc.add(g.get(&index)
+        let index = accumulator.max_claim_num + 1 - i;
+        revocation_registry.borrow_mut().acc.acc = accumulator.acc.add(g.get(&index)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
-        accumulator.borrow_mut().v.insert(i);
+        revocation_registry.borrow_mut().acc.v.insert(i);
 
-        let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.borrow().v.clone());
+        let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
-        let acc_id = accumulator.borrow().accumulator_id;
 
         Ok(
             (
                 NonRevocationClaim {
-                    accumulator_id: acc_id,
                     sigma: sigma,
                     c: c,
                     vr_prime_prime: vr_prime_prime,
@@ -204,10 +325,30 @@ impl Issuer {
                     i: i,
                     m2: m2
                 },
-                accumulator,
                 timestamp
             )
         )
+    }
+
+    fn _encode_attribute(attribute: i32, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
+        let mut result = BigNumber::hash(attribute.to_string().as_bytes())?;
+
+        let index = result.iter().position(|&value| value == 0);
+        if let Some(position) = index {
+            result.truncate(position);
+        }
+        if let ByteOrder::Little = byte_order {
+            result.reverse();
+        }
+        Ok(BigNumber::from_bytes(&result)?)
+    }
+
+    fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
+        let a = BigNumber::rand(LARGE_VPRIME_PRIME)?;
+        let b = BigNumber::from_u32(2)?
+            .exp(&BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)?, None)?;
+        let v_prime_prime = bitwise_or_big_int(&a, &b)?;
+        Ok(v_prime_prime)
     }
 
     pub fn revoke(accumulator: RefCell<Accumulator>, g: &HashMap<i32, PointG1>, i: i32) -> Result<(RefCell<Accumulator>, i64), CryptoError> {
@@ -221,7 +362,7 @@ impl Issuer {
     }
 
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                               params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                   params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
         let t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
@@ -258,7 +399,7 @@ impl Issuer {
     }
 
     pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                                        accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
         let t1 = proof_c.e;
         let t2 = PointG1::new_inf()?;
         let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
@@ -283,144 +424,6 @@ impl Issuer {
             t8: t8
         })
     }
-
-    fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
-                            attributes: &Vec<Attribute>) -> Result<PrimaryClaim, CryptoError> {
-        let v_prime_prime = Issuer::_generate_v_prime_prime()?;
-        let e_start = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_E_START)?, None)?;
-        let e_end = BigNumber::from_u32(2)?
-            .exp(&BigNumber::from_u32(LARGE_E_END_RANGE)?, None)?
-            .add(&e_start)?;
-
-        let e = e_start.generate_prime_in_range(&e_start, &e_end)?;
-
-        let encoded_attributes = Issuer::_encode_attributes(&attributes)?;
-        let a = Issuer::_sign(public_key, secret_key, context_attribute, &encoded_attributes, &v_prime_prime, u, &e)?;
-
-        Ok(PrimaryClaim {
-            encoded_attributes: encoded_attributes,
-            m2: context_attribute.clone()?,
-            a: a,
-            e: e,
-            v_prime: v_prime_prime
-        })
-    }
-
-    fn _generate_context_attribute(accumulator_id: &String, user_id: &String) -> Result<BigNumber, CryptoError> {
-        let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id, ByteOrder::Little)?;
-        let user_id_encoded = Issuer::_encode_attribute(&user_id, ByteOrder::Little)?;
-        let mut s = vec![
-            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
-        ];
-        let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
-        let h = get_hash_as_int(&mut s)?
-            .modulus(&pow_2, None)?;
-        Ok(h)
-    }
-
-    fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             attributes: &HashMap<String, BigNumber>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
-        let mut rx = BigNumber::from_u32(1)?;
-        let mut context = BigNumber::new_context()?;
-
-        for (key, value) in attributes {
-            let pk_r = public_key.r.get(key)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
-            rx = rx.mul(
-                &pk_r.mod_exp(&value, &public_key.n, Some(&mut context))?,
-                Some(&mut context)
-            )?;
-        }
-
-        let pk_rctxt_pow = public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context))?;
-        rx = rx.mul(&pk_rctxt_pow, Some(&mut context))?;
-
-        if u != &BigNumber::from_u32(0)? {
-            let module = u.modulus(&public_key.n, Some(&mut context))?;
-            rx = rx.mul(&module, Some(&mut context))?;
-        }
-
-        let n = secret_key.p.mul(&secret_key.q, Some(&mut context))?;
-        let mut e_inverse = e.modulus(&n, Some(&mut context))?;
-
-        let mut a = public_key.s
-            .mod_exp(&v, &public_key.n, Some(&mut context))?
-            .mul(&rx, Some(&mut context))?;
-        a = public_key.z.mod_div(&a, &public_key.n)?;
-
-        e_inverse = e_inverse.inverse(&n, Some(&mut context))?;
-        a = a.mod_exp(&e_inverse, &public_key.n, Some(&mut context))?;
-
-        Ok(a)
-    }
-
-    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
-        let mut result = BigNumber::hash(&attribute.as_bytes())?;
-        let index = result.iter().position(|&value| value == 0);
-        if let Some(position) = index {
-            result.truncate(position);
-        }
-        if let ByteOrder::Little = byte_order {
-            result.reverse();
-        }
-        Ok(BigNumber::from_bytes(&result)?)
-    }
-
-    fn _encode_attributes(attributes: &Vec<Attribute>) -> Result<HashMap<String, BigNumber>, CryptoError> {
-        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
-        for i in attributes {
-            if i.encode {
-                encoded_attributes.insert(i.name.clone(), Issuer::_encode_attribute(&i.value, ByteOrder::Big)?);
-            } else {
-                encoded_attributes.insert(i.name.clone(), BigNumber::from_dec(&i.value.to_string())?);
-            }
-        }
-        Ok(encoded_attributes)
-    }
-
-    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
-        let mut result = p
-            .mul(&q, None)?
-            .sub_word(3)?
-            .rand_range()?;
-        result.add_word(2)?;
-
-        Ok(result)
-    }
-
-    fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
-        let a = BigNumber::rand(LARGE_VPRIME_PRIME)?;
-        let b = BigNumber::from_u32(2)?
-            .exp(&BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)?, None)?;
-        let v_prime_prime = bitwise_or_big_int(&a, &b)?;
-        Ok(v_prime_prime)
-    }
-
-    pub fn issue_claim(&self, pk: PublicKey, sk: SecretKey, accumulator_id: String, user_id: String,
-                       claim_request: ClaimRequest, attributes: Vec<Attribute>) -> Result<Claims, CryptoError> {
-        let context = Issuer::_generate_context_attribute(&accumulator_id, &user_id)?;
-        let c1 = Issuer::_issue_primary_claim(&pk, &sk, &claim_request.u, &context, &attributes)?;
-
-        Ok(Claims {
-            primary_claim: c1,
-            non_revocation_claim: None
-        })
-    }
-
-    //        fn issue_claims(&self, data: Vec<(&PublicKey, &SecretKey, &String, &String, Rc<ClaimRequest>, Rc<Vec<Rc<Attribute>>>)>)
-    //                        -> Result<HashMap<Rc<Schema>, Claims>, CryptoError> {
-    //            let mut res: Vec<Claims> = Vec::new();
-    //
-    //            for d in data {
-    //                let (pk, sk, accumulator_id, user_id, claim_req, attributes) = d;
-    //                let context = Issuer::_generate_context_attribute(accumulator_id, user_id)?;
-    //
-    //                res.push(
-    //                    Issuer::issue_claim(&self, pk, sk, accumulator_id, user_id, claim_req.clone(), attributes.clone())?
-    //                );
-    //            }
-    //            Ok(res)
-    //        }
 }
 
 #[cfg(test)]
@@ -429,29 +432,17 @@ mod tests {
 
     #[test]
     fn encode_attribute_works_short_hash() {
-        let test_str = "Alexer5435";
-        let test_answer = "62794";
+        let test_str = 5435;
+        let test_answer = "83761840706354868391674207739241454863743470852830526299004654280720761327142";
         assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
-    }
-
-    #[test]
-    fn encode_attribute_works_long_hash() {
-        let test_str = "Alexer";
-        let test_answer = "93838255634171043313693932530283701522875554780708470423762684802192372035729";
-        assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
-    }
-
-    #[test]
-    fn encode_attributes_works() {
-        assert_eq!(mocks::get_gvt_encoded_attributes().unwrap(), Issuer::_encode_attributes(&mocks::get_gvt_attributes()).unwrap());
     }
 
     #[test]
     fn generate_context_attribute_works() {
-        let accumulator_id = "110".to_string();
-        let user_id = "111".to_string();
+        let accumulator_id = 110;
+        let user_id = 111;
         let answer = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
-        let result = Issuer::_generate_context_attribute(&accumulator_id, &user_id).unwrap();
+        let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
 
@@ -460,7 +451,7 @@ mod tests {
         let public_key = mocks::get_pk().unwrap();
         let secret_key = mocks::get_secret_key();
         let context_attribute = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
-        let attributes = mocks::get_gvt_encoded_attributes().unwrap();
+        let attributes = mocks::get_gvt_attributes();
         let v = BigNumber::from_dec("5237513942984418438429595379849430501110274945835879531523435677101657022026899212054747703201026332785243221088006425007944260107143086435227014329174143861116260506019310628220538205630726081406862023584806749693647480787838708606386447727482772997839699379017499630402117304253212246286800412454159444495341428975660445641214047184934669036997173182682771745932646179140449435510447104436243207291913322964918630514148730337977117021619857409406144166574010735577540583316493841348453073326447018376163876048624924380855323953529434806898415857681702157369526801730845990252958130662749564283838280707026676243727830151176995470125042111348846500489265328810592848939081739036589553697928683006514398844827534478669492201064874941684905413964973517155382540340695991536826170371552446768460042588981089470261358687308").unwrap();
         let u = BigNumber::from_dec("72637991796589957272144423539998982864769854130438387485781642285237707120228376409769221961371420625002149758076600738245408098270501483395353213773728601101770725294535792756351646443825391806535296461087756781710547778467803194521965309091287301376623972321639262276779134586366620773325502044026364814032821517244814909708610356590687571152567177116075706850536899272749781370266769562695357044719529245223811232258752001942940813585440938291877640445002571323841625932424781535818087233087621479695522263178206089952437764196471098717335358765920438275944490561172307673744212256272352897964947435086824617146019").unwrap();
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
@@ -472,21 +463,19 @@ mod tests {
 pub mod mocks {
     use super::*;
 
-    pub fn get_gvt_attributes() -> Vec<Attribute> {
-        let attributes: Vec<Attribute> = vec![
-            Attribute::new("name".to_string(), "Alex".to_string(), true),
-            Attribute::new("age".to_string(), "28".to_string(), false),
-            Attribute::new("sex".to_string(), "male".to_string(), true),
-            Attribute::new("height".to_string(), "175".to_string(), false)
-        ];
+    pub fn get_gvt_attributes() -> HashMap<String, Vec<String>> {
+        let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
+        attributes.insert("name".to_string(), vec!["Alex".to_string(), "1139481716457488690172217916278103335".to_string()]);
+        attributes.insert("age".to_string(), vec!["28".to_string(), "28".to_string()]);
+        attributes.insert("sex".to_string(), vec!["male".to_string(), "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()]);
+        attributes.insert("height".to_string(), vec!["175".to_string(), "175".to_string()]);
         attributes
     }
 
-    pub fn get_xyz_attributes() -> Vec<Attribute> {
-        let attributes: Vec<Attribute> = vec![
-            Attribute::new("status".to_string(), "partial".to_string(), true),
-            Attribute::new("period".to_string(), "8".to_string(), false)
-        ];
+    pub fn get_xyz_attributes() -> HashMap<String, Vec<String>> {
+        let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
+        attributes.insert("status".to_string(), vec!["partial".to_string(), "51792877103171595686471452153480627530895".to_string()]);
+        attributes.insert("period".to_string(), vec!["8".to_string(), "28".to_string()]);
         attributes
     }
 

@@ -10,9 +10,9 @@ use services::crypto::anoncreds::prover::Prover;
 use services::crypto::anoncreds::verifier::Verifier;
 
 pub struct Anoncreds {
-    issuer: Issuer,
-    prover: Prover,
-    verifier: Verifier
+    pub issuer: Issuer,
+    pub prover: Prover,
+    pub verifier: Verifier
 }
 
 impl Anoncreds {

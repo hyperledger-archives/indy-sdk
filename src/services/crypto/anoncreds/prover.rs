@@ -72,7 +72,7 @@ impl Prover {
     }
 
     pub fn create_claim_request(&self, pk: PublicKey, pkr: RevocationPublicKey, ms: BigNumber,
-                                prover_id: String, req_non_revoc: bool)
+                                prover_id: i32, req_non_revoc: bool)
                                 -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
         let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
 
@@ -83,7 +83,7 @@ impl Prover {
             } else { (None, None) };
 
         Ok((
-            ClaimRequest::new(prover_id.clone(), primary_claim_init_data.u.clone()?, ur),
+            ClaimRequest::new(prover_id, primary_claim_init_data.u.clone()?, ur),
             primary_claim_init_data,
             revocation_primary_claim_init_data
         ))
@@ -114,16 +114,6 @@ impl Prover {
             u: ur
         })
     }
-
-    //    pub fn create_claim_requests(&self, data: Vec<(&PublicKey, &BigNumber, &String)>)
-    //                                 -> Result<Vec<(ClaimRequest, ClaimInitData)>, CryptoError> {
-    //        let mut res: Vec<(ClaimRequest, ClaimInitData)> = Vec::new();
-    //        for &d in data.iter() {
-    //            let (pk, ms, prover_id) = d;
-    //            res.push(Prover::create_claim_request(&self, &pk, &ms, &prover_id)?);
-    //        }
-    //        Ok(res)
-    //    }
 
     pub fn process_claim(&self, claims: RefCell<Claims>, primary_claim_init_data: ClaimInitData,
                          revocation_claim_init_data: RevocationClaimInitData,
@@ -185,7 +175,7 @@ impl Prover {
     }
 
     pub fn present_proof(&self, pk: PublicKey, ms: BigNumber, pkr: RevocationPublicKey,
-                         accum: Accumulator, proof_input: ProofInput, all_claims: HashMap<SchemaKey, Claims>,
+                         accum: Accumulator, proof_input: ProofInput, all_claims: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>,
                          nonce: BigNumber, tails: HashMap<i32, PointG1>,
                          params: NonRevocProofXList, proof_c: NonRevocProofCList)
                          -> Result<(FullProof, HashMap<String, BigNumber>), CryptoError> {
@@ -194,7 +184,7 @@ impl Prover {
         Ok((proof, revealed_attrs_with_values))
     }
 
-    fn _find_claims(proof_input: ProofInput, all_claims: HashMap<SchemaKey, Claims>)
+    fn _find_claims(proof_input: ProofInput, all_claims: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>)
                     -> Result<(HashMap<SchemaKey, ProofClaims>, HashMap<String, BigNumber>), CryptoError> {
         let predicates = HashSet::<Predicate>::from_iter(proof_input.predicates.iter().cloned());
 
@@ -204,12 +194,12 @@ impl Prover {
         let mut found_revealed_attrs: HashSet<String> = HashSet::new();
         let mut found_predicates: HashSet<Predicate> = HashSet::new();
 
-        for (schema_key, claim) in all_claims {
+        for (schema_key, (claim, encoded_attributes)) in all_claims {
             let mut revealed_attrs_for_claim: HashSet<String> = HashSet::new();
             let mut predicates_for_claim: Vec<Predicate> = Vec::new();
 
             for revealed_attr in proof_input.revealed_attrs.iter() {
-                if let Some(value) = claim.primary_claim.encoded_attributes.get(revealed_attr) {
+                if let Some(value) = encoded_attributes.get(revealed_attr) {
                     revealed_attrs_for_claim.insert(revealed_attr.clone());
                     found_revealed_attrs.insert(revealed_attr.clone());
                     revealed_attrs_with_values.insert(revealed_attr.clone(), value.clone()?);
@@ -217,7 +207,7 @@ impl Prover {
             }
 
             for predicate in predicates.iter() {
-                if let Some(value) = claim.primary_claim.encoded_attributes.get(&predicate.attr_name) {
+                if let Some(value) = encoded_attributes.get(&predicate.attr_name) {
                     predicates_for_claim.push(predicate.clone());
                     found_predicates.insert(predicate.clone());
                 }
@@ -229,7 +219,8 @@ impl Prover {
                     ProofClaims {
                         claims: claim,
                         revealed_attrs: revealed_attrs_for_claim,
-                        predicates: predicates_for_claim
+                        predicates: predicates_for_claim,
+                        encoded_attributes: encoded_attributes
                     }
                 );
             }
@@ -273,7 +264,7 @@ impl Prover {
                 non_revoc_init_proof = Some(proof);
             }
 
-            let primary_init_proof = Prover::_init_proof(pk, &claim.claims.primary_claim, &claim.revealed_attrs,
+            let primary_init_proof = Prover::_init_proof(pk, &claim.claims.primary_claim, &claim.encoded_attributes, &claim.revealed_attrs,
                                                          &claim.predicates, &m1_tilde, m2_tilde)?;
 
             c_list.append_vec(&primary_init_proof.as_c_list()?)?;
@@ -322,14 +313,14 @@ impl Prover {
         })
     }
 
-    fn _init_proof(pk: &PublicKey, c1: &PrimaryClaim, revealed_attrs: &HashSet<String>,
-                   predicates: &Vec<Predicate>, m1_t: &BigNumber, m2_t: Option<BigNumber>)
-                   -> Result<PrimaryInitProof, CryptoError> {
-        let eq_proof = Prover::_init_eq_proof(&pk, c1, revealed_attrs, m1_t, m2_t)?;
+    fn _init_proof(pk: &PublicKey, c1: &PrimaryClaim, encoded_attributes: &HashMap<String, BigNumber>,
+                   revealed_attrs: &HashSet<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
+                   m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CryptoError> {
+        let eq_proof = Prover::_init_eq_proof(&pk, c1, encoded_attributes, revealed_attrs, m1_t, m2_t)?;
         let mut ge_proofs: Vec<PrimaryPrecicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
-            let ge_proof = Prover::_init_ge_proof(&pk, &eq_proof, c1, predicate)?;
+            let ge_proof = Prover::_init_ge_proof(&pk, &eq_proof, encoded_attributes, predicate)?;
             ge_proofs.push(ge_proof);
         }
 
@@ -393,7 +384,7 @@ impl Prover {
         Ok(claim)
     }
 
-    fn _init_eq_proof(pk: &PublicKey, c1: &PrimaryClaim, revealed_attrs: &HashSet<String>,
+    fn _init_eq_proof(pk: &PublicKey, c1: &PrimaryClaim, encoded_attributes: &HashMap<String, BigNumber>, revealed_attrs: &HashSet<String>,
                       m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
 
@@ -403,7 +394,7 @@ impl Prover {
         let etilde = BigNumber::rand(LARGE_ETILDE)?;
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
-        let (_, unrevealed_attrs) = split_revealed_attrs(&c1.encoded_attributes, &revealed_attrs)?;
+        let (_, unrevealed_attrs) = split_revealed_attrs(&encoded_attributes, &revealed_attrs)?;
 
         let mtilde = get_mtilde(&unrevealed_attrs)?;
 
@@ -440,19 +431,19 @@ impl Prover {
                 m2_tilde: m2_tilde,
                 unrevealed_attrs: unrevealed_attrs_keys,
                 revealed_attrs: revealed_attrs.to_owned(),
-                encoded_attributes: clone_bignum_map(&c1.encoded_attributes)?,
+                encoded_attributes: clone_bignum_map(&encoded_attributes)?,
                 m2: c1.m2.clone()?
             }
         )
     }
 
     fn _init_ge_proof(pk: &PublicKey, eq_proof: &PrimaryEqualInitProof,
-                      c1: &PrimaryClaim, predicate: &Predicate)
+                      encoded_attributes: &HashMap<String, BigNumber>, predicate: &Predicate)
                       -> Result<PrimaryPrecicateGEInitProof, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
         let (k, value) = (&predicate.attr_name, predicate.value);
 
-        let attr_value = c1.encoded_attributes.get(&k[..])
+        let attr_value = encoded_attributes.get(&k[..])
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in c1.encoded_attributes", k)))?
             .to_dec()?
             .parse::<i64>()?;
@@ -832,8 +823,9 @@ mod tests {
 
         let predicate = mocks::get_gvt_predicate();
         let predicates = vec![predicate];
+        let encoded_attributes = ::services::crypto::anoncreds::issuer::mocks::get_gvt_encoded_attributes().unwrap();
 
-        let res = Prover::_init_proof(&pk, &claim, &revealed_attrs, &predicates, &m1_t, Some(m2_t));
+        let res = Prover::_init_proof(&pk, &claim, &encoded_attributes, &revealed_attrs, &predicates, &m1_t, Some(m2_t));
 
         assert!(res.is_ok());
     }
@@ -856,8 +848,9 @@ mod tests {
         let revealed_attrs = mocks::get_revealed_attrs();
         let m1_tilde = BigNumber::from_dec("20554727940819369326014641184530501354910647573675182869425936210096839572607668409914698991106462531285749034656225912602388073825301987260007503795251066596411635150527632122753436503433718591016459070120101222755097222430234659312260718456091642186018776302305461905689611699638337017633125375611816940513").unwrap();
         let m2_tilde = BigNumber::from_dec("16671323881112214075050803663994936491012584417594560689195094027107661300937657821043816616156630021832958023103922089938711420140268942156607658040346011543375150241260098945906899591014316416228707861053280225472704227325664170495642648330074579132108248889585289945913996297683901740061991151163537424592").unwrap();
+        let encoded_attributes = ::services::crypto::anoncreds::issuer::mocks::get_gvt_encoded_attributes().unwrap();
 
-        let res = Prover::_init_eq_proof(&pk, &claim, &revealed_attrs, &m1_tilde, Some(m2_tilde));
+        let res = Prover::_init_eq_proof(&pk, &claim, &encoded_attributes, &revealed_attrs, &m1_tilde, Some(m2_tilde));
 
         assert!(res.is_ok());
 
@@ -887,10 +880,10 @@ mod tests {
     fn init_ge_proof_works() {
         let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
         let eq_proof = mocks::get_primary_equal_init_proof().unwrap();
-        let claim = mocks::get_gvt_primary_claim().unwrap();
         let predicate = mocks::get_gvt_predicate();
+        let encoded_attributes = ::services::crypto::anoncreds::issuer::mocks::get_gvt_encoded_attributes().unwrap();
 
-        let res = Prover::_init_ge_proof(&pk, &eq_proof, &claim, &predicate);
+        let res = Prover::_init_ge_proof(&pk, &eq_proof, &encoded_attributes, &predicate);
         assert!(res.is_ok());
     }
 
@@ -1151,7 +1144,6 @@ pub mod mocks {
         let encoded_attributes = ::services::crypto::anoncreds::issuer::mocks::get_gvt_encoded_attributes()?;
 
         Ok(PrimaryClaim {
-            encoded_attributes: encoded_attributes,
             m2: BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451")?,
             a: BigNumber::from_dec("9718041686050466417394454846401911338135485472714675418729730425836367006101286571902254065185334609278478268966285580036221254487921329959035516004179696181846182303481304972520273119065229082628152074260549403953056671718537655331440869269274745137172330211653292094784431599793709932507153005886317395811504324510211401461248180054115028194976434036098410711049411182121148080258018668634613727512389415141820208171799071602314334918435751431063443005717167277426824339725300642890836588704754116628420091486522215319582218755888011754179925774397148116144684399342679279867598851549078956970579995906560499116598")?,
             e: BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930098340478263817667896272954429430903")?,
@@ -1164,7 +1156,6 @@ pub mod mocks {
         let encoded_attributes = ::services::crypto::anoncreds::issuer::mocks::get_xyz_encoded_attributes()?;
 
         Ok(PrimaryClaim {
-            encoded_attributes: encoded_attributes,
             m2: BigNumber::from_dec("15286000759172100591377181600470463901016563303508229099256868461439682297960")?,
             a: BigNumber::from_dec("43408781019273294664105361779296865998719682917162544589998989929119545158736110398354782373487097567916720068393146407442522759465524978086454753905759545793463313344124355771811443434314961068264817560048863706416774950086764986003208711210634999865569049808488287390632316256564719056299637763267375333211821087200077890030359272146222631266721181554111124044208681571037538573069584354422205830667741943035073249429293717545002649455447823576929844586944437312395399980004204881381972730440043243134325220149938181771288726598116075075695030469920172383286087838334125452986626866574002045592988278504479246651359")?,
             e: BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930308170826250847785686506076097675457")?,
@@ -1333,16 +1324,16 @@ pub mod mocks {
         })
     }
 
-    pub fn get_all_claims() -> Result<HashMap<SchemaKey, Claims>, CryptoError> {
-        let mut res: HashMap<SchemaKey, Claims> = HashMap::new();
-        res.insert(get_gvt_schema_key(), get_gvt_claims_object()?);
+    pub fn get_all_claims() -> Result<HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>, CryptoError> {
+        let mut res: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)> = HashMap::new();
+        res.insert(get_gvt_schema_key(), (get_gvt_claims_object()?, ::services::crypto::anoncreds::issuer::mocks::get_gvt_encoded_attributes()?));
         Ok(res)
     }
 
-    pub fn get_all_claims_2_rows() -> Result<HashMap<SchemaKey, Claims>, CryptoError> {
-        let mut res: HashMap<SchemaKey, Claims> = HashMap::new();
-        res.insert(get_gvt_schema_key(), get_gvt_claims_object()?);
-        res.insert(get_xyz_schema_key(), get_xyz_claims_object()?);
+    pub fn get_all_claims_2_rows() -> Result<HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)>, CryptoError> {
+        let mut res: HashMap<SchemaKey, (Claims, HashMap<String, BigNumber>)> = HashMap::new();
+        res.insert(get_gvt_schema_key(), (get_gvt_claims_object()?, ::services::crypto::anoncreds::issuer::mocks::get_gvt_encoded_attributes()?));
+        res.insert(get_xyz_schema_key(), (get_xyz_claims_object()?, ::services::crypto::anoncreds::issuer::mocks::get_xyz_encoded_attributes()?));
         Ok(res)
     }
 
@@ -1358,8 +1349,7 @@ pub mod mocks {
     pub fn get_accumulator() -> Result<Accumulator, CryptoError> {
         let mut v: HashSet<i32> = HashSet::new();
         v.insert(1);
-
-        Ok(Accumulator::new(110, PointG1::new().unwrap(), v, 5, 2))
+        Ok(Accumulator::new(PointG1::new().unwrap(), v, 5, 2))
     }
 
 
@@ -1377,7 +1367,6 @@ pub mod mocks {
 
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
         NonRevocationClaim {
-            accumulator_id: 100,
             sigma: PointG1::new().unwrap(),
             c: GroupOrderElement::new().unwrap(),
             vr_prime_prime: GroupOrderElement::new().unwrap(),
