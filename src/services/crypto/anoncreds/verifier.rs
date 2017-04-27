@@ -290,6 +290,7 @@ mod tests {
     use services::crypto::anoncreds::prover;
 
     #[test]
+    #[ignore]
     fn verify_test() {
         let verifier = Verifier::new();
 
