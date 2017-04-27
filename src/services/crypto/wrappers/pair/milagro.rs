@@ -70,7 +70,11 @@ impl PointG1 {
     }
 
     pub fn add(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
-        unimplemented!()
+        let mut r = self.point;
+        ECP::add(&mut r, &q.point);
+        Ok(PointG1 {
+            point: r
+        })
     }
 
     pub fn sub(&self, q: &PointG1) -> Result<PointG1, CryptoError> {

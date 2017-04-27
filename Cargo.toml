@@ -36,7 +36,7 @@ env_logger = "0.4.2"
 libc = "0.2.21"
 log = "0.3.7"
 openssl = { version = "0.9.9", optional = true }
-milagro-crypto = { version = "0.1.4", optional = true }
+milagro-crypto = { version = "0.1.5", optional = true }
 rand = "0.3"
 rusqlite = "0.10.1"
 rust-base58 = {version = "0.0.4", optional = true}

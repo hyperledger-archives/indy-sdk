@@ -83,11 +83,7 @@ impl Prover {
             } else { (None, None) };
 
         Ok((
-            ClaimRequest {
-                user_id: prover_id,
-                u: primary_claim_init_data.u.clone()?,
-                ur: ur
-            },
+            ClaimRequest::new(prover_id, primary_claim_init_data.u.clone()?, ur),
             primary_claim_init_data,
             revocation_primary_claim_init_data
         ))
@@ -684,22 +680,8 @@ impl Prover {
         let t_prime = o_prime.add_mod(&r_prime_prime)?;
         let m2 = GroupOrderElement::from_bytes(&claim.m2.to_bytes()?)?;
 
-        Ok(NonRevocProofXList {
-            rho: rho,
-            r: r,
-            r_prime: r_prime,
-            r_prime_prime: r_prime_prime,
-            r_prime_prime_prime: r_prime_prime_prime,
-            o: o,
-            o_prime: o_prime,
-            m: m,
-            m_prime: m_prime,
-            t: t,
-            t_prime: t_prime,
-            m2: m2,
-            s: claim.vr_prime_prime,
-            c: claim.c
-        })
+        Ok(NonRevocProofXList::new(rho, r, r_prime, r_prime_prime, r_prime_prime_prime, o, o_prime,
+                                   m, m_prime, t, t_prime, m2, claim.vr_prime_prime, claim.c))
     }
 
     fn _create_c_list_values(claim: &RefCell<NonRevocationClaim>, params: &NonRevocProofXList,
@@ -754,22 +736,13 @@ impl Prover {
     }
 
     fn _gen_tau_list_params() -> Result<NonRevocProofXList, CryptoError> {
-        Ok(NonRevocProofXList {
-            rho: GroupOrderElement::new()?,
-            r: GroupOrderElement::new()?,
-            r_prime: GroupOrderElement::new()?,
-            r_prime_prime: GroupOrderElement::new()?,
-            r_prime_prime_prime: GroupOrderElement::new()?,
-            o: GroupOrderElement::new()?,
-            o_prime: GroupOrderElement::new()?,
-            m: GroupOrderElement::new()?,
-            m_prime: GroupOrderElement::new()?,
-            t: GroupOrderElement::new()?,
-            t_prime: GroupOrderElement::new()?,
-            s: GroupOrderElement::new()?,
-            c: GroupOrderElement::new()?,
-            m2: GroupOrderElement::new()?,
-        })
+        Ok(NonRevocProofXList::new(GroupOrderElement::new()?, GroupOrderElement::new()?,
+                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
+                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
+                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
+                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
+                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
+                                   GroupOrderElement::new()?, GroupOrderElement::new()?))
     }
 
     fn _finalize_non_revocation_proof(init_proof: &NonRevocInitProof, c_h: &BigNumber) -> Result<NonRevocProof, CryptoError> {
@@ -782,10 +755,7 @@ impl Prover {
             )?);
         }
 
-        Ok(NonRevocProof {
-            x_list: NonRevocProofXList::from_list(x_list),
-            c_list: init_proof.c_list.clone()
-        })
+        Ok(NonRevocProof::new(NonRevocProofXList::from_list(x_list), init_proof.c_list.clone()))
     }
 }
 
@@ -1132,54 +1102,36 @@ pub mod mocks {
     }
 
     pub fn get_non_revocation_proof_x_list() -> NonRevocProofXList {
-        NonRevocProofXList {
-            rho: GroupOrderElement::new().unwrap(),
-            r: GroupOrderElement::new().unwrap(),
-            r_prime: GroupOrderElement::new().unwrap(),
-            r_prime_prime: GroupOrderElement::new().unwrap(),
-            r_prime_prime_prime: GroupOrderElement::new().unwrap(),
-            o: GroupOrderElement::new().unwrap(),
-            o_prime: GroupOrderElement::new().unwrap(),
-            m: GroupOrderElement::new().unwrap(),
-            m_prime: GroupOrderElement::new().unwrap(),
-            t: GroupOrderElement::new().unwrap(),
-            t_prime: GroupOrderElement::new().unwrap(),
-            m2: GroupOrderElement::new().unwrap(),
-            s: GroupOrderElement::new().unwrap(),
-            c: GroupOrderElement::new().unwrap()
-        }
+        NonRevocProofXList::new(GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap(),
+                                GroupOrderElement::new().unwrap())
     }
 
     pub fn get_gvt_schema_key() -> SchemaKey {
-        SchemaKey {
-            name: "GVT".to_string(),
-            version: "1.0".to_string(),
-            issue_id: "issuer1".to_string()
-        }
+        SchemaKey::new("GVT".to_string(), "1.0".to_string(), "issuer1".to_string())
     }
 
     pub fn get_xyz_schema_key() -> SchemaKey {
-        SchemaKey {
-            name: "XYZ".to_string(),
-            version: "1.0".to_string(),
-            issue_id: "issuer1".to_string()
-        }
+        SchemaKey::new("XYZ".to_string(), "1.0".to_string(), "issuer1".to_string())
     }
 
     pub fn get_gvt_predicate() -> Predicate {
-        Predicate {
-            attr_name: "age".to_string(),
-            p_type: "ge".to_string(),
-            value: 18
-        }
+        Predicate::new("age".to_string(), "ge".to_string(), 18)
     }
 
     pub fn get_xyz_predicate() -> Predicate {
-        Predicate {
-            attr_name: "period".to_string(),
-            p_type: "ge".to_string(),
-            value: 8
-        }
+        Predicate::new("period".to_string(), "ge".to_string(), 8)
     }
 
     pub fn get_gvt_primary_claim() -> Result<PrimaryClaim, CryptoError> {
@@ -1383,30 +1335,18 @@ pub mod mocks {
     }
 
     pub fn get_public_key_revocation() -> Result<RevocationPublicKey, CryptoError> {
-        Ok(RevocationPublicKey {
-            g: PointG1::new().unwrap(),
-            h: PointG1::new().unwrap(),
-            h0: PointG1::new().unwrap(),
-            h1: PointG1::new().unwrap(),
-            h2: PointG1::new().unwrap(),
-            htilde: PointG1::new().unwrap(),
-            u: PointG1::new().unwrap(),
-            pk: PointG1::new().unwrap(),
-            y: PointG1::new().unwrap(),
-            x: GroupOrderElement::new().unwrap()
-        })
+        Ok(RevocationPublicKey::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), PointG1::new().unwrap(),
+                                    PointG1::new().unwrap(), GroupOrderElement::new().unwrap())
+        )
     }
 
     pub fn get_accumulator() -> Result<Accumulator, CryptoError> {
         let mut v: HashSet<i32> = HashSet::new();
         v.insert(1);
-
-        Ok(Accumulator {
-            max_claim_num: 5,
-            v: v,
-            acc: PointG1::new().unwrap(),
-            current_i: 2,
-        })
+        Ok(Accumulator::new( PointG1::new().unwrap(), v, 5, 2))
     }
 
 
@@ -1417,13 +1357,9 @@ pub mod mocks {
     }
 
     pub fn get_witness() -> Witness {
-        Witness {
-            sigma_i: PointG1::new().unwrap(),
-            u_i: PointG1::new().unwrap(),
-            g_i: PointG1::new().unwrap(),
-            omega: PointG1::new().unwrap(),
-            v: HashSet::from_iter(vec![1].iter().cloned()),
-        }
+        Witness::new(PointG1::new().unwrap(), PointG1::new().unwrap(), PointG1::new().unwrap(),
+                     PointG1::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned())
+        )
     }
 
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
