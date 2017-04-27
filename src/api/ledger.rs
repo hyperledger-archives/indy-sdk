@@ -48,7 +48,6 @@ pub extern fn sign_and_submit_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 let request_result_json = CStringUtils::string_to_cstring(request_result_json);
-
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
@@ -88,7 +87,6 @@ pub extern fn submit_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 let request_result_json = CStringUtils::string_to_cstring(request_result_json);
-
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
@@ -127,7 +125,6 @@ pub extern fn build_get_ddo_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -182,7 +179,6 @@ pub extern fn build_nym_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -232,7 +228,6 @@ pub extern fn build_attrib_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -273,7 +268,6 @@ pub extern fn build_get_attrib_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -311,7 +305,6 @@ pub extern fn build_get_nym_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -349,7 +342,6 @@ pub extern fn build_schema_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -387,7 +379,6 @@ pub extern fn build_get_schema_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -429,7 +420,6 @@ pub extern fn build_claim_def_txn(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -466,7 +456,6 @@ pub extern fn build_get_claim_def_txn(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -508,7 +497,6 @@ pub extern fn build_node_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));

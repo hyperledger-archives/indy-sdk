@@ -19,6 +19,7 @@ pub mod api;
 mod commands;
 mod errors;
 mod services;
+mod types;
 
 #[cfg(test)]
 mod tests {

@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::error;
 use std::fmt;
 
@@ -57,8 +59,26 @@ impl ToErrorCode for AnoncredsError {
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
             AnoncredsError::ProofRejected(ref description) => ErrorCode::ProofRejected,
             AnoncredsError::CryptoError(ref err) => err.to_error_code(),
-            AnoncredsError::WalletError(ref err) => err.to_error_code(),
+            AnoncredsError::WalletError(ref err) => err.to_error_code()
         }
+    }
+}
+
+impl From<CryptoError> for AnoncredsError {
+    fn from(err: CryptoError) -> AnoncredsError {
+        AnoncredsError::CryptoError(err)
+    }
+}
+
+impl From<WalletError> for AnoncredsError {
+    fn from(err: WalletError) -> AnoncredsError {
+        AnoncredsError::WalletError(err)
+    }
+}
+
+impl From<serde_json::Error> for AnoncredsError {
+    fn from(err: serde_json::Error) -> AnoncredsError {
+        AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string()))
     }
 }
 

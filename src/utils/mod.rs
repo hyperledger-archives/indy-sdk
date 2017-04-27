@@ -12,3 +12,5 @@ pub mod logger;
 pub mod result;
 
 pub mod sequence;
+
+pub mod json;

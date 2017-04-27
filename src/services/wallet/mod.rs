@@ -14,8 +14,9 @@ use std::fs;
 use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use utils::json::{JsonDecodable, JsonEncodable};
 
-trait Wallet {
+pub trait Wallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError>;
     fn get(&self, key: &str) -> Result<String, WalletError>;
 }
@@ -42,6 +43,10 @@ impl WalletDescriptor {
         }
     }
 }
+
+impl JsonEncodable for WalletDescriptor {}
+
+impl <'a>JsonDecodable<'a> for WalletDescriptor {}
 
 pub struct WalletService {
     types: RefCell<HashMap<&'static str, Box<WalletType>>>,
@@ -211,9 +216,9 @@ fn _wallet_config_path(name: &str) -> PathBuf {
 //    use super::*;
 
 //    #[test]
-//    fn json_decode_works() {
+//    fn json_from_str_works() {
 //        let json = "{key1: \"value1\", key2: \"value2\"}";
 //
-//        json::decode(json).unwrap();
+//        json::from_str(json).unwrap();
 //    }
 //}
