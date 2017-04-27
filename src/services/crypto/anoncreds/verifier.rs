@@ -452,6 +452,7 @@ mod tests {
 
 pub mod mocks {
     use super::*;
+    use ::services::crypto::anoncreds::prover;
 
     pub fn get_attr_names() -> HashSet<String> {
         let mut attr_names: HashSet<String> = HashSet::new();

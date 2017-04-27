@@ -38,14 +38,13 @@ pub struct RevocationRegistryPrivate {
     pub tails: HashMap<i32, PointG1>
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SchemaKey {
     pub name: String,
     pub version: String,
     pub issue_id: String
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 impl SchemaKey {
     pub fn new(name: String, version: String, issuer_id: String) -> SchemaKey {
         SchemaKey {
@@ -56,6 +55,7 @@ impl SchemaKey {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
     pub name: String,
     pub version: String,
@@ -239,7 +239,7 @@ pub struct ClaimRequest {
 }
 
 impl ClaimRequest {
-    pub fn new(user_id: String, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
+    pub fn new(user_id: i32, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
         ClaimRequest {
             user_id: user_id,
             u: u,
@@ -513,16 +513,6 @@ pub struct PrimaryPredicateGEProof {
     pub alpha: BigNumber,
     pub t: HashMap<String, BigNumber>,
     pub predicate: Predicate
-}
-
-impl PrimaryEqualInitProof {
-    pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![self.a_prime.clone()?])
-    }
-
-    pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![self.t.clone()?])
-    }
 }
 
 impl PrimaryPrecicateGEInitProof {
