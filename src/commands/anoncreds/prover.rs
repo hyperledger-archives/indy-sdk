@@ -23,6 +23,7 @@ pub enum ProverCommand {
         Box<Fn(Result<(), AnoncredsError>) + Send>),
     CreateAndStoreClaimRequest(
         i32, // wallet handle
+        String, // prover_did
         String, // claim offer json
         String, // claim def json
         String, // master secret name
@@ -80,10 +81,10 @@ impl ProverCommandExecutor {
                 info!(target: "prover_command_executor", "CreateMasterSecret command received");
                 self.create_master_secret(wallet_handle, &master_secret_name, cb);
             },
-            ProverCommand::CreateAndStoreClaimRequest(wallet_handle, claim_offer_json,
+            ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
                                                       claim_def_json, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
-                self.create_and_store_claim_request(wallet_handle, &claim_offer_json,
+                self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
                                                     &claim_def_json, &master_secret_name, cb);
             },
             ProverCommand::StoreClaim(wallet_handle, claims_json, cb) => {
@@ -157,6 +158,7 @@ impl ProverCommandExecutor {
 
     fn create_and_store_claim_request(&self,
                                       wallet_handle: i32,
+                                      prover_did: &str,
                                       claim_offer_json: &str,
                                       claim_def_json: &str,
                                       master_secret_name: &str,
