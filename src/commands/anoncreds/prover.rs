@@ -146,22 +146,13 @@ impl ProverCommandExecutor {
                             wallet_handle: i32,
                             master_secret_name: &str,
                             cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
-        unimplemented!();
-//        let result =
-//            self.crypto_service.anoncreds.prover.generate_master_secret()
-//                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
-//                .and_then(|master_secret| {
-//                    let master_secret_string = master_secret.to_dec()?;
-//
-//                    self.wallet_service.set(wallet_handle, &format!("master_secret {}", &master_secret_name), &master_secret_string)?;
-//
-//                    Ok(())
-//                });
-//
-//        match result {
-//            Ok(()) => cb(Ok(())),
-//            Err(err) => cb(Err(err))
-//        }
+        cb(self._create_master_secret(wallet_handle, master_secret_name))
+    }
+
+    fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), AnoncredsError> {
+        let master_secret = self.crypto_service.anoncreds.prover.generate_master_secret()?;
+        self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret.to_dec()?)?;
+        Ok(())
     }
 
     fn create_and_store_claim_request(&self,
