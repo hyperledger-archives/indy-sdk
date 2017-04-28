@@ -1,10 +1,8 @@
 extern crate base64;
-extern crate libc;
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq;
 
-use self::libc::c_int;
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::{HashMap, BinaryHeap};
@@ -16,8 +14,9 @@ use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::sequence::SequenceUtils;
+use utils::crypto::Ed25519ToCurve25519;
 use utils::environment::EnvironmentUtils;
+use utils::sequence::SequenceUtils;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -442,27 +441,9 @@ impl RemoteNode {
 
 impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
-        fn crypto_sign_ed25519_pk_to_curve25519(pk: &Vec<u8>) -> Vec<u8> {
-            // TODO: fix hack:
-            // this function isn't included to sodiumoxide rust wrappers,
-            // temporary local binding is used to call libsodium-sys function
-            extern {
-                pub fn crypto_sign_ed25519_pk_to_curve25519(
-                    curve25519_pk: *mut [u8; 32],
-                    ed25519_pk: *const [u8; 32]) -> c_int;
-            }
-            let mut from: [u8; 32] = [0; 32];
-            from.clone_from_slice(pk.as_slice());
-            let mut to: [u8; 32] = [0; 32];
-            unsafe {
-                crypto_sign_ed25519_pk_to_curve25519(&mut to, &from);
-            }
-            to.iter().cloned().collect()
-        }
-
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: crypto_sign_ed25519_pk_to_curve25519(&public_key),
+            verify_key: Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&public_key),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,

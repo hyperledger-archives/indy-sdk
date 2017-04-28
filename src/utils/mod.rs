@@ -14,3 +14,5 @@ pub mod result;
 pub mod sequence;
 
 pub mod json;
+
+pub mod crypto;
