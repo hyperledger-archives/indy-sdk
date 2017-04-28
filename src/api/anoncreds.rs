@@ -373,6 +373,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// prover_did: a DID of the prover
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
@@ -397,20 +398,23 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
                                                        wallet_handle: i32,
+                                                       prover_did: *const c_char,
                                                        claim_offer_json: *const c_char,
                                                        claim_def_json: *const c_char,
                                                        master_secret_name: *const c_char,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             claim_req_json: *const c_char
                                                        )>) -> ErrorCode {
-    check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreClaimRequest(
             wallet_handle,
+            prover_did,
             claim_offer_json,
             claim_def_json,
             master_secret_name,

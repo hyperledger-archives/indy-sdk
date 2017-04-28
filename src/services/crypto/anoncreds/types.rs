@@ -271,10 +271,29 @@ pub struct ClaimInitData {
     pub v_prime: BigNumber
 }
 
+impl ClaimInitData {
+    pub fn new(u: BigNumber, v_prime: BigNumber) -> ClaimInitData {
+        ClaimInitData {
+            u: u,
+            v_prime: v_prime
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub primary_claim: PrimaryClaim,
     pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
+}
+
+impl Claims {
+    pub fn new(primary_claim: PrimaryClaim,
+               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> Claims {
+        Claims {
+            primary_claim: primary_claim,
+            non_revocation_claim: non_revocation_claim
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -283,6 +302,17 @@ pub struct PrimaryClaim {
     pub a: BigNumber,
     pub e: BigNumber,
     pub v_prime: BigNumber
+}
+
+impl PrimaryClaim {
+    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v_prime: BigNumber) -> PrimaryClaim {
+        PrimaryClaim {
+            m2: m2,
+            a: a,
+            e: e,
+            v_prime: v_prime
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -361,6 +391,20 @@ pub struct NonRevocProofTauList {
 }
 
 impl NonRevocProofTauList {
+    pub fn new(t1: PointG1, t2: PointG1, t3: Pair, t4: Pair, t5: PointG1, t6: PointG1, t7: Pair,
+               t8: Pair) -> NonRevocProofTauList {
+        NonRevocProofTauList {
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            t4: t4,
+            t5: t5,
+            t6: t6,
+            t7: t7,
+            t8: t8
+        }
+    }
+
     pub fn as_slice(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
         Ok(vec![self.t1.to_bytes()?, self.t2.to_bytes()?, self.t3.to_bytes()?, self.t4.to_bytes()?,
                 self.t5.to_bytes()?, self.t6.to_bytes()?, self.t7.to_bytes()?, self.t8.to_bytes()?])
@@ -379,6 +423,19 @@ pub struct NonRevocProofCList {
 }
 
 impl NonRevocProofCList {
+    pub fn new(e: PointG1, d: PointG1, a: PointG1, g: PointG1, w: PointG1, s: PointG1,
+               u: PointG1) -> NonRevocProofCList {
+        NonRevocProofCList {
+            e: e,
+            d: d,
+            a: a,
+            g: g,
+            w: w,
+            s: s,
+            u: u
+        }
+    }
+
     pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
         Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
     }

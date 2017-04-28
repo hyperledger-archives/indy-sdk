@@ -1,5 +1,7 @@
 extern crate serde_json;
+extern crate uuid;
 
+use self::uuid::Uuid;
 use errors::anoncreds::AnoncredsError;
 use services::crypto::CryptoService;
 use services::pool::PoolService;
@@ -21,6 +23,7 @@ pub enum ProverCommand {
         Box<Fn(Result<(), AnoncredsError>) + Send>),
     CreateAndStoreClaimRequest(
         i32, // wallet handle
+        String, // prover_did
         String, // claim offer json
         String, // claim def json
         String, // master secret name
@@ -78,10 +81,10 @@ impl ProverCommandExecutor {
                 info!(target: "prover_command_executor", "CreateMasterSecret command received");
                 self.create_master_secret(wallet_handle, &master_secret_name, cb);
             },
-            ProverCommand::CreateAndStoreClaimRequest(wallet_handle, claim_offer_json,
+            ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
                                                       claim_def_json, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
-                self.create_and_store_claim_request(wallet_handle, &claim_offer_json,
+                self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
                                                     &claim_def_json, &master_secret_name, cb);
             },
             ProverCommand::StoreClaim(wallet_handle, claims_json, cb) => {
@@ -109,20 +112,14 @@ impl ProverCommandExecutor {
                          wallet_handle: i32,
                          claim_offer_json: &str,
                          cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
-        unimplemented!();
-//        let result =
-//            ClaimOffer::from_str(&claim_offer_json)
-//                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
-//                .and_then(|claim_offer| {
-//                    self.wallet_service.set(wallet_handle, &format!("claim_offer {}", &claim_offer.issuer_did), claim_offer_json)?;
-//
-//                    Ok(())
-//                });
-//
-//        match result {
-//            Ok(()) => cb(Ok(())),
-//            Err(err) => cb(Err(err))
-//        }
+        cb(self._store_claim_offer(wallet_handle, claim_offer_json));
+    }
+
+    fn _store_claim_offer(&self, wallet_handle: i32,  claim_offer_json: &str) -> Result<(), AnoncredsError> {
+        let uuid = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim_offer_json::{}", &uuid), &claim_offer_json)?;
+
+        Ok(())
     }
 
     fn get_claim_offers(&self,
@@ -150,26 +147,18 @@ impl ProverCommandExecutor {
                             wallet_handle: i32,
                             master_secret_name: &str,
                             cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
-        unimplemented!();
-//        let result =
-//            self.crypto_service.anoncreds.prover.generate_master_secret()
-//                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
-//                .and_then(|master_secret| {
-//                    let master_secret_string = master_secret.to_dec()?;
-//
-//                    self.wallet_service.set(wallet_handle, &format!("master_secret {}", &master_secret_name), &master_secret_string)?;
-//
-//                    Ok(())
-//                });
-//
-//        match result {
-//            Ok(()) => cb(Ok(())),
-//            Err(err) => cb(Err(err))
-//        }
+        cb(self._create_master_secret(wallet_handle, master_secret_name))
+    }
+
+    fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), AnoncredsError> {
+        let master_secret = self.crypto_service.anoncreds.prover.generate_master_secret()?;
+        self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret.to_dec()?)?;
+        Ok(())
     }
 
     fn create_and_store_claim_request(&self,
                                       wallet_handle: i32,
+                                      prover_did: &str,
                                       claim_offer_json: &str,
                                       claim_def_json: &str,
                                       master_secret_name: &str,
@@ -209,7 +198,14 @@ impl ProverCommandExecutor {
                    wallet_handle: i32,
                    claims_json: &str,
                    cb: Box<Fn(Result<(), AnoncredsError>) + Send>) {
-        cb(Ok(()));
+        cb(self._store_claim(wallet_handle, claims_json));
+    }
+
+    fn _store_claim(&self, wallet_handle: i32, claims_json: &str) -> Result<(), AnoncredsError> {
+        //TODO: transform claim with master_secret
+        let uuid = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim_json::{}", &uuid), &claims_json)?;
+        Ok(())
     }
 
     fn get_claims(&self,
