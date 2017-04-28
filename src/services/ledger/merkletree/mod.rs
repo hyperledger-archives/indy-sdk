@@ -67,7 +67,72 @@ impl MerkleTree {
         }
     }
 
-    pub fn consistency_proof(&self, new_hash: &Vec<u8>, proof: &Vec<Vec<u8>>) -> bool {
+    pub fn consistency_proof(&self,
+                             new_root_hash: &Vec<u8>, new_size: usize,
+                             proof: &Vec<Vec<u8>>) -> bool {
+        if self.count == 0 {
+            // empty old tree
+            return true;
+        }
+        if self.count == new_size && self.root_hash() == new_root_hash {
+            // identical trees
+            return true;
+        }
+        if self.count > new_size {
+            // old tree is bigger!
+            assert!(false);
+            return false;
+        }
+
+        let mut old_node = self.count - 1;
+        let mut new_node = new_size - 1;
+
+        while old_node % 2 != 0 {
+            old_node = old_node / 2;
+            new_node = new_node / 2;
+        }
+
+        let mut proofs = proof.iter();
+        let mut old_hash: Vec<u8>;
+        let mut new_hash: Vec<u8>;
+
+        if old_node != 0 {
+            new_hash = proofs.next().unwrap().to_vec();
+            old_hash = proofs.next().unwrap().to_vec();
+        } else {
+            new_hash = self.root_hash().to_vec();
+            old_hash = self.root_hash().to_vec();
+        }
+
+        while old_node != 0 {
+            if old_node % 2 != 0 {
+                let next_proof = proofs.next().unwrap();
+                old_hash = DIGEST.hash_nodes(next_proof, &old_hash).as_ref().into();
+                new_hash = DIGEST.hash_nodes(next_proof, &new_hash).as_ref().into();
+            } else if old_node < new_node {
+                new_hash = DIGEST.hash_nodes(&new_hash,
+                                             proofs.next().unwrap()).as_ref().into();
+            }
+            old_node = old_node / 2;
+            new_node = new_node / 2;
+        }
+
+        while new_node != 0 {
+            let n = proofs.next().unwrap();
+            new_hash = DIGEST.hash_nodes(&new_hash, n).as_ref().into();
+            new_node = new_node / 2;
+        }
+/*
+        if new_hash != new_root_hash {
+            // new hash differs
+            return false;
+        }
+
+        if old_hash != self.root_hash() {
+            // old hash differs
+            return false;
+        }
+*/
         return true;
     }
 
@@ -226,6 +291,7 @@ mod tests {
                                            0x15, 0x5c, 0xef, 0x8d, 0xfd, 0x5b, 0xa5, 0x4c,
                                            0x05, 0xab, 0xb9, 0x19, 0xa4, 0xc0, 0x8c, 0x86,
                                            0x32, 0xb0, 0x79, 0xfb, 0x1e, 0x1e, 0x5e, 0x7c ],
+                                     5,
                                      &proofs));
     }
 
