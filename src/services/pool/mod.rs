@@ -1,3 +1,5 @@
+mod types;
+
 extern crate base64;
 extern crate rust_base58;
 extern crate serde_json;
@@ -13,6 +15,7 @@ use std::io::{BufRead, Write};
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
+use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::Ed25519ToCurve25519;
 use utils::environment::EnvironmentUtils;
@@ -39,91 +42,6 @@ struct PoolWorker {
     new_mt_vote: usize,
     f: usize,
     pending_catchup: Option<CatchUpProcess>,
-}
-
-
-struct CatchUpProcess {
-    merkle_tree: MerkleTree,
-    pending_reps: BinaryHeap<CatchupRep>,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
-struct LedgerStatus {
-    txnSeqNo: usize,
-    merkleRoot: String,
-    ledgerType: u8,
-}
-
-impl Default for LedgerStatus {
-    fn default() -> LedgerStatus {
-        LedgerStatus {
-            ledgerType: 0,
-            merkleRoot: "".to_string(),
-            txnSeqNo: 0,
-        }
-    }
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
-struct ConsistencyProof {
-    //TODO almost all fields Option<> or find better approach
-    seqNoEnd: usize,
-    seqNoStart: usize,
-    ledgerType: usize,
-    hashes: Vec<String>,
-    oldMerkleRoot: String,
-    newMerkleRoot: String,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct CatchupReq {
-    ledgerType: usize,
-    seqNoStart: usize,
-    seqNoEnd: usize,
-    catchupTill: usize,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
-struct CatchupRep {
-    ledgerType: usize,
-    consProof: Vec<String>,
-    txns: HashMap<String, GenTransaction>,
-}
-
-impl CatchupRep {
-    fn min_tx(&self) -> usize {
-        assert!(!self.txns.is_empty());
-        (self.txns.keys().min().unwrap().parse::<usize>()).unwrap()
-    }
-}
-
-impl cmp::Ord for CatchupRep {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        other.min_tx().cmp(&self.min_tx())
-    }
-}
-
-impl cmp::PartialOrd for CatchupRep {
-    fn partial_cmp(&self, other: &CatchupRep) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-#[serde(tag = "op")]
-#[derive(Serialize, Deserialize, Debug)]
-enum Message {
-    #[serde(rename = "CONSISTENCY_PROOF")]
-    ConsistencyProof(ConsistencyProof),
-    #[serde(rename = "LEDGER_STATUS")]
-    LedgerStatus(LedgerStatus),
-    #[serde(rename = "CATCHUP_REQ")]
-    CatchupReq(CatchupReq),
-    #[serde(rename = "CATCHUP_REP")]
-    CatchupRep(CatchupRep),
 }
 
 impl PoolWorker {
@@ -351,40 +269,6 @@ impl Drop for Pool {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct PoolConfig {
-    genesis_txn: String
-}
-
-impl PoolConfig {
-    fn default(name: &str) -> PoolConfig {
-        let mut txn = name.to_string();
-        txn += ".txn";
-        PoolConfig { genesis_txn: txn }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-struct NodeData {
-    alias: String,
-    client_ip: String,
-    client_port: u32,
-    node_ip: String,
-    node_port: u32,
-    services: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-struct GenTransaction {
-    data: NodeData,
-    dest: String,
-    identifier: String,
-    #[serde(rename = "txnId")]
-    txn_id: String,
-    #[serde(rename = "type")]
-    txn_type: String,
-}
-
 struct RemoteNode {
     name: String,
     public_key: Vec<u8>,
@@ -463,7 +347,7 @@ impl PoolService {
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
             Some(config) => serde_json::from_str(config)?,
-            None => PoolConfig::default(name)
+            None => PoolConfig::default_for_name(name)
         };
 
         if path.as_path().exists() {
