@@ -296,6 +296,7 @@ impl RemoteNode {
         s.set_curve_secretkey(key_pair.secret_key.as_str()).expect("set secret key");
         s.set_curve_publickey(key_pair.public_key.as_str()).expect("set public key");
         s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
+        s.set_linger(0).expect("set linger"); //TODO set correct timeout
         s.connect(self.zaddr.as_str()).expect("connect to Node");
         self.zsock = Some(s);
     }
