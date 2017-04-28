@@ -479,4 +479,58 @@ mod tests {
         drop_test();
         assert!(true, "No crashes on PoolService::drop");
     }
+
+    #[test]
+    fn pool_service_remote_node_can_connect_and_ping_pong() {
+        let (gt, handle) = nodes_emulator::start();
+        let mut rn: RemoteNode = RemoteNode::from(gt);
+        let ctx = zmq::Context::new();
+        rn.connect(&ctx);
+        rn.zsock.as_ref().expect("sock").send_str("pi", zmq::DONTWAIT).expect("send");
+        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, 100).expect("poll");
+        assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
+        handle.join().expect("join");
+    }
+
+    mod nodes_emulator {
+        extern crate sodiumoxide;
+
+        use services::pool::rust_base58::ToBase58;
+        use std::thread;
+        use super::*;
+
+        pub fn start() -> (GenTransaction, thread::JoinHandle<()>) {
+            let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
+            let pkc = Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
+            let skc = Ed25519ToCurve25519::crypto_sign_ed25519_sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let ctx = zmq::Context::new();
+            let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+            let gt = GenTransaction {
+                identifier: "".to_string(),
+                data: NodeData {
+                    alias: "n1".to_string(),
+                    services: Vec::new(),
+                    client_port: 9701,
+                    client_ip: "0.0.0.0".to_string(),
+                    node_ip: "".to_string(),
+                    node_port: 0,
+                },
+                txn_id: "".to_string(),
+                txn_type: "0".to_string(),
+                dest: (&pk.0 as &[u8]).to_base58(),
+            };
+            let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
+            s.set_curve_publickey(zmq::z85_encode(pkc.as_slice()).unwrap().as_str()).expect("set public key");
+            s.set_curve_secretkey(zmq::z85_encode(skc.as_slice()).unwrap().as_str()).expect("set secret key");
+            s.set_curve_server(true).expect("set curve server");
+            s.bind(addr.as_str()).expect("bind");
+            let handle = thread::spawn(move || {
+                if s.poll(zmq::POLLIN, 100).expect("poll") == 1 {
+                    let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
+                    s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
+                }
+            });
+            (gt, handle)
+        }
+    }
 }
