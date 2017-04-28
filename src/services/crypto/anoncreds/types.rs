@@ -22,7 +22,7 @@ pub struct ClaimDefinition {
 #[derive(Deserialize, Debug, Serialize)]
 pub struct ClaimDefinitionPrivate {
     pub secret_key: SecretKey,
-    pub secret_key_revocation: RevocationSecretKey
+    pub secret_key_revocation: Option<RevocationSecretKey>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -175,7 +175,7 @@ impl RevocationPublicKey {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RevocationSecretKey {
     pub x: GroupOrderElement,
     pub sk: GroupOrderElement
@@ -665,7 +665,7 @@ impl ClaimDefinition {
 }
 
 impl ClaimDefinitionPrivate {
-    pub fn new(secret_key: SecretKey, secret_key_revocation: RevocationSecretKey) -> ClaimDefinitionPrivate {
+    pub fn new(secret_key: SecretKey, secret_key_revocation: Option<RevocationSecretKey>) -> ClaimDefinitionPrivate {
         ClaimDefinitionPrivate {
             secret_key: secret_key,
             secret_key_revocation: secret_key_revocation

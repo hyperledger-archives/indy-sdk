@@ -99,7 +99,8 @@ impl IssuerCommandExecutor {
                                          signature_type: Option<&str>,
                                          create_non_revoc: bool,
                                          cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
-        let result = self._create_and_store_claim_definition(wallet_handle, issuer_did, schema_json, signature_type);
+        let result = self._create_and_store_claim_definition(wallet_handle, issuer_did, schema_json,
+                                                             signature_type, create_non_revoc);
         cb(result)
     }
 
@@ -107,11 +108,11 @@ impl IssuerCommandExecutor {
                                           wallet_handle: i32,
                                           issuer_did: &str,
                                           schema_json: &str,
-                                          signature_type: Option<&str>, ) -> Result<(String, String), AnoncredsError> {
+                                          signature_type: Option<&str>, create_non_revoc: bool) -> Result<(String, String), AnoncredsError> {
         let schema = Schema::from_str(schema_json)?;
 
         let (claim_definition, claim_definition_private) =
-            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type)?;
+            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_string(&claim_definition)?;
         let claim_definition_private_json = ClaimDefinitionPrivate::to_string(&claim_definition_private)?;
@@ -197,8 +198,8 @@ impl IssuerCommandExecutor {
         let revocation_registry = RefCell::new(revocation_registry);
 
         let claims = self.crypto_service.anoncreds.issuer.create_claim(
-            &claim_def,
-            &claim_def_private,
+            claim_def,
+            claim_def_private,
             &revocation_registry,
             &revocation_registry_private,
             &claim_req_json.blinded_ms,
