@@ -71,19 +71,19 @@ impl Prover {
         BigNumber::rand(LARGE_MASTER_SECRET)
     }
 
-    pub fn create_claim_request(&self, pk: PublicKey, pkr: RevocationPublicKey, ms: BigNumber,
-                                prover_id: i32, req_non_revoc: bool)
+    pub fn create_claim_request(&self, pk: PublicKey, pkr: Option<RevocationPublicKey>, ms: BigNumber,
+                                prover_did: &str)
                                 -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
         let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
 
         let (ur, revocation_primary_claim_init_data) =
-            if req_non_revoc {
-                let revocation_claim_init_data = Prover::_generate_revocation_claim_init_data(&pkr)?;
+            if let Some(pk_r) = pkr {
+                let revocation_claim_init_data = Prover::_generate_revocation_claim_init_data(&pk_r)?;
                 (Some(revocation_claim_init_data.u.clone()), Some(revocation_claim_init_data))
             } else { (None, None) };
 
         Ok((
-            ClaimRequest::new(prover_id, primary_claim_init_data.u.clone()?, ur),
+            ClaimRequest::new(prover_did.to_string(), primary_claim_init_data.u.clone()?, ur),
             primary_claim_init_data,
             revocation_primary_claim_init_data
         ))

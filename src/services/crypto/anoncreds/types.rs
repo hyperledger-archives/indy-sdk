@@ -14,7 +14,7 @@ pub enum ByteOrder {
 #[derive(Deserialize, Debug, Serialize)]
 pub struct ClaimDefinition {
     pub public_key: PublicKey,
-    pub public_key_revocation: RevocationPublicKey,
+    pub public_key_revocation: Option<RevocationPublicKey>,
     pub schema_seq_no: i32,
     pub signature_type: String
 }
@@ -23,6 +23,51 @@ pub struct ClaimDefinition {
 pub struct ClaimDefinitionPrivate {
     pub secret_key: SecretKey,
     pub secret_key_revocation: RevocationSecretKey
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimJson {
+    pub claim: HashMap<String, Vec<String>>,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: i32,
+    pub signature: Claims
+}
+
+impl ClaimJson {
+    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
+               signature: Claims) -> ClaimJson {
+        ClaimJson {
+            claim: claim,
+            claim_def_seq_no: claim_def_seq_no,
+            revoc_reg_seq_no: revoc_reg_seq_no,
+            signature: signature
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimOffer {
+    pub issuer_did: String,
+    pub claim_def_seq_no: i32
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimRequestJson {
+    pub blinded_ms: ClaimRequest,
+    pub claim_def_seq_no: i32,
+    pub issuer_did: String
+}
+
+impl ClaimRequestJson {
+    pub fn new(claim_request: ClaimRequest, claim_def_seq_no: i32,
+               issuer_did: String, ) -> ClaimRequestJson {
+        ClaimRequestJson {
+            blinded_ms: claim_request,
+            claim_def_seq_no: claim_def_seq_no,
+            issuer_did: issuer_did
+
+        }
+    }
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -234,15 +279,15 @@ impl Witness {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimRequest {
-    pub user_id: i32,
+    pub prover_did: String,
     pub u: BigNumber,
     pub ur: Option<PointG1>
 }
 
 impl ClaimRequest {
-    pub fn new(user_id: i32, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
+    pub fn new(prover_did: String, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
         ClaimRequest {
-            user_id: user_id,
+            prover_did: prover_did,
             u: u,
             ur: ur
         }
@@ -266,6 +311,7 @@ impl Predicate {
     }
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct ClaimInitData {
     pub u: BigNumber,
     pub v_prime: BigNumber
@@ -567,6 +613,7 @@ impl PrimaryPrecicateGEInitProof {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct RevocationClaimInitData {
     pub u: PointG1,
     pub v_prime: GroupOrderElement
@@ -606,7 +653,7 @@ impl NonRevocProof {
 }
 
 impl ClaimDefinition {
-    pub fn new(public_key: PublicKey, public_key_revocation: RevocationPublicKey,
+    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>,
                schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
         ClaimDefinition {
             public_key: public_key,
@@ -653,6 +700,25 @@ impl JsonEncodable for ClaimDefinitionPrivate {}
 
 impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
 
+impl JsonEncodable for ClaimInitData {}
+
+impl<'a> JsonDecodable<'a> for ClaimInitData {}
+
+impl JsonEncodable for ClaimJson {}
+
+impl<'a> JsonDecodable<'a> for ClaimJson {}
+
+impl JsonEncodable for ClaimOffer {}
+
+impl<'a> JsonDecodable<'a> for ClaimOffer {}
+
+impl JsonEncodable for ClaimRequestJson {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
+
+impl JsonEncodable for RevocationClaimInitData {}
+
+impl<'a> JsonDecodable<'a> for RevocationClaimInitData {}
 
 impl JsonEncodable for RevocationRegistry {}
 
