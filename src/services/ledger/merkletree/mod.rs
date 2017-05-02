@@ -213,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn test_merkletree_append() {
+    fn append_works() {
         let values = vec![
             "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
@@ -231,7 +231,7 @@ mod tests {
     }
 
     #[test]
-    fn test_merkletree_find_hash() {
+    fn find_hash_works() {
         let values = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
         let mut mt = MerkleTree::from_vec(vec![]);
         println!("root(0)={}", mt.root_hash_hex());
@@ -267,7 +267,7 @@ mod tests {
     }
 
     #[test]
-    fn test_consistency_proof() {
+    fn consistency_proof_works_for_valid_proof() {
         let values = vec![
             "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}" ];
@@ -304,7 +304,7 @@ mod tests {
     }
 
     #[test]
-    fn test_valid_proof() {
+    fn gen_proof_and_proof_validate_work() {
         let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
         let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
         let tree      = MerkleTree::from_vec(values.clone());
@@ -319,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn test_merkletree_serialize() {
+    fn serialize_works() {
         let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
         let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
         let mt = MerkleTree::from_vec(values.clone());
