@@ -2,20 +2,25 @@ use services::crypto::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AttributeInfo,
-    FullProof,
+    //    FullProof,
     NonRevocProof,
-    NonRevocProofCList,
-    NonRevocProofXList,
+    //    NonRevocProofCList,
+    //    NonRevocProofXList,
     NonRevocProofTauList,
     ProofInput,
     PrimaryEqualProof,
     PrimaryPredicateGEProof,
-    PrimaryProof,
+    //    PrimaryProof,
     PublicKey,
-    RevocationPublicKey
+    RevocationPublicKey,
+    //    ProofJson,
+    //    ProofRequestJson,
+    //    ClaimDefinition,
+    //    RevocationRegistry,
+    //    Schema
 };
-use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
-use services::crypto::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
+use services::crypto::anoncreds::constants::{/*LARGE_E_START,*/ ITERATION, LARGE_NONCE};
+use services::crypto::anoncreds::helpers::{/*AppendByteArray, get_hash_as_int,*/bignum_to_group_element};
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
@@ -33,98 +38,119 @@ impl Verifier {
         BigNumber::rand(LARGE_NONCE)
     }
 
-//    pub fn verify(&self, pk: PublicKey, pkr: RevocationPublicKey, accum: Accumulator, accum_pk: AccumulatorPublicKey,
-//                  proof_input: ProofInput, proof: FullProof, all_revealed_attrs: HashMap<String, BigNumber>,
-//                  nonce: BigNumber, attr_names: HashSet<String>, params: NonRevocProofXList,
-//                  proof_c: NonRevocProofCList) -> Result<bool, CryptoError> {
-//        let mut tau_list: Vec<Vec<u8>> = Vec::new();
-//
-//        for (schema_key, proof_item) in proof.schema_keys.iter().zip(proof.proofs.iter()) {
-//            if let Some(ref non_revocation_proof) = proof_item.non_revoc_proof {
-//                tau_list.extend_from_slice(
-//                    &Verifier::_verify_non_revocation_proof(&pkr, &accum, &accum_pk, &proof.c_hash,
-//                                                            &non_revocation_proof, &proof_input,
-//                                                            &params, &proof_c)?.as_slice()?
-//                );
-//            };
-//
-//            tau_list.append_vec(
-//                &Verifier::_verify_primary_proof(&pk, &proof_input, &proof.c_hash,
-//                                                 &proof_item.primary_proof, &all_revealed_attrs, &attr_names)?
-//            )?;
-//        }
-//
-//        let mut values: Vec<Vec<u8>> = Vec::new();
-//
-//        values.push(nonce.to_bytes()?);
-//        values.extend_from_slice(&tau_list);
-//        values.extend_from_slice(&proof.c_list);
-//
-//        let c_hver = get_hash_as_int(&mut values)?;
-//
-//        Ok(c_hver == proof.c_hash)
-//    }
-//
-//    fn _verify_primary_proof(pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber,
-//                             primary_proof: &PrimaryProof, all_revealed_attrs: &HashMap<String, BigNumber>,
-//                             attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
-//        let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof,
-//                                                                   c_hash, all_revealed_attrs, attr_names)?;
-//
-//        for ge_proof in primary_proof.ge_proofs.iter() {
-//            t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
-//        }
-//        Ok(t_hat)
-//    }
-//
-//    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
-//                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
-//        let unrevealed_attr_names: HashSet<String> =
-//            attr_names
-//                .difference(&proof.revealed_attr_names)
-//                .map(|attr| attr.to_owned())
-//                .collect::<HashSet<String>>();
-//
-//        let t1: BigNumber = Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
-//                                               &proof.m1, &proof.m2, &unrevealed_attr_names)?;
-//
-//        let mut ctx = BigNumber::new_context()?;
-//        let mut rar = BigNumber::from_dec("1")?;
-//
-//        for attr_name in proof.revealed_attr_names.iter() {
-//            let cur_r = pk.r.get(attr_name)
-//                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr_name)))?;
-//            let cur_attr = all_revealed_attrs.get(attr_name)
-//                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in all_revealed_attrs", attr_name)))?;
-//
-//            rar = cur_r
-//                .mod_exp(&cur_attr, &pk.n, Some(&mut ctx))?
-//                .mul(&rar, Some(&mut ctx))?;
-//        }
-//
-//
-//        let tmp: BigNumber =
-//            BigNumber::from_dec("2")?
-//                .exp(
-//                    &BigNumber::from_dec(&LARGE_E_START.to_string())?,
-//                    Some(&mut ctx)
-//                )?;
-//
-//        rar = proof.a_prime
-//            .mod_exp(&tmp, &pk.n, Some(&mut ctx))?
-//            .mul(&rar, Some(&mut ctx))?;
-//
-//        let t2: BigNumber = pk.z
-//            .mod_div(&rar, &pk.n)?
-//            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
-//            .inverse(&pk.n, Some(&mut ctx))?;
-//
-//        let t: BigNumber = t1
-//            .mul(&t2, Some(&mut ctx))?
-//            .modulus(&pk.n, Some(&mut ctx))?;
-//
-//        Ok(vec![t])
-//    }
+    //    pub fn verify(&self,
+    //                  proof: ProofJson,
+    //                  proof_req: ProofRequestJson,
+    //                  claim_defs: HashMap<String, ClaimDefinition>,
+    //                  revoc_regs: HashMap<String, RevocationRegistry>,
+    //                  schemas: HashMap<String, Schema>) -> Result<bool, CryptoError> {
+    //        let mut tau_list: Vec<Vec<u8>> = Vec::new();
+    //
+    //        for (proof_uuid, proof_item) in proof.proofs {
+    //            let claim_definition: ClaimDefinition = claim_defs.get(proof_uuid)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Claim definition is not found")))?;
+    //            let revoc_reg: RevocationRegistry = revoc_regs.get(proof_uuid)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Revocation registry is not found")))?;
+    //            let schema: Schema = schemas.get(proof_uuid)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Schema is not found")))?;
+    //
+    //            if let Some(ref non_revocation_proof) = proof_item.proof.non_revoc_proof {
+    //
+    //                let pkr = &claim_definition.public_key_revocation
+    //                    .ok_or(CryptoError::InvalidStructure("Field public_key_revocation not found".to_string()))?
+    //
+    //                tau_list.extend_from_slice(
+    //                    &Verifier::_verify_non_revocation_proof(
+    //                        pkr,
+    //                        &revoc_reg.accumulator,
+    //                        &revoc_reg.acc_pk,
+    //                        &proof.aggregated_proof.c_hash,
+    //                        &non_revocation_proof,
+    //                        proof_req)?.as_slice()?
+    //                );
+    //            };
+    //
+    //            tau_list.append_vec(
+    //                &Verifier::_verify_primary_proof(&claim_definition.public_key,
+    //                                                 &proof_req,
+    //                                                 &proof.aggregated_proof.c_hash,
+    //                                                 &proof_item.primary_proof,
+    //                                                 &all_revealed_attrs,
+    //                                                 &attr_names)?
+    //            )?;
+    //        }
+    //
+    //        let mut values: Vec<Vec<u8>> = Vec::new();
+    //
+    //        values.push(nonce.to_bytes()?);
+    //        values.extend_from_slice(&tau_list);
+    //        values.extend_from_slice(&proof.c_list);
+    //
+    //        let c_hver = get_hash_as_int(&mut values)?;
+    //
+    //        Ok(c_hver == proof.c_hash)
+    //    }
+    //
+    //    fn _verify_primary_proof(pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber,
+    //                             primary_proof: &PrimaryProof, all_revealed_attrs: &HashMap<String, BigNumber>,
+    //                             attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
+    //        let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof,
+    //                                                                   c_hash, all_revealed_attrs, attr_names)?;
+    //
+    //        for ge_proof in primary_proof.ge_proofs.iter() {
+    //            t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
+    //        }
+    //        Ok(t_hat)
+    //    }
+    //
+    //    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
+    //                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
+    //        let unrevealed_attr_names: HashSet<String> =
+    //            attr_names
+    //                .difference(&proof.revealed_attr_names)
+    //                .map(|attr| attr.to_owned())
+    //                .collect::<HashSet<String>>();
+    //
+    //        let t1: BigNumber = Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
+    //                                               &proof.m1, &proof.m2, &unrevealed_attr_names)?;
+    //
+    //        let mut ctx = BigNumber::new_context()?;
+    //        let mut rar = BigNumber::from_dec("1")?;
+    //
+    //        for attr_name in proof.revealed_attr_names.iter() {
+    //            let cur_r = pk.r.get(attr_name)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr_name)))?;
+    //            let cur_attr = all_revealed_attrs.get(attr_name)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in all_revealed_attrs", attr_name)))?;
+    //
+    //            rar = cur_r
+    //                .mod_exp(&cur_attr, &pk.n, Some(&mut ctx))?
+    //                .mul(&rar, Some(&mut ctx))?;
+    //        }
+    //
+    //
+    //        let tmp: BigNumber =
+    //            BigNumber::from_dec("2")?
+    //                .exp(
+    //                    &BigNumber::from_dec(&LARGE_E_START.to_string())?,
+    //                    Some(&mut ctx)
+    //                )?;
+    //
+    //        rar = proof.a_prime
+    //            .mod_exp(&tmp, &pk.n, Some(&mut ctx))?
+    //            .mul(&rar, Some(&mut ctx))?;
+    //
+    //        let t2: BigNumber = pk.z
+    //            .mod_div(&rar, &pk.n)?
+    //            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
+    //            .inverse(&pk.n, Some(&mut ctx))?;
+    //
+    //        let t: BigNumber = t1
+    //            .mul(&t2, Some(&mut ctx))?
+    //            .modulus(&pk.n, Some(&mut ctx))?;
+    //
+    //        Ok(vec![t])
+    //    }
 
     fn _verify_ge_predicate(pk: &PublicKey, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
@@ -263,13 +289,12 @@ impl Verifier {
 
     pub fn _verify_non_revocation_proof(pkr: &RevocationPublicKey, accum: &Accumulator, accum_pk: &AccumulatorPublicKey,
                                         c_hash: &BigNumber, proof: &NonRevocProof,
-                                        proof_input: &ProofInput, params: &NonRevocProofXList,
-                                        proof_c: &NonRevocProofCList)
+                                        proof_input: &ProofInput)
                                         -> Result<NonRevocProofTauList, CryptoError> {
         let ch_num_z = bignum_to_group_element(&c_hash)?;
 
         let t_hat_expected_values = Issuer::_create_tau_list_expected_values(pkr, accum, accum_pk, &proof.c_list)?;
-        let t_hat_calc_values = Issuer::_create_tau_list_values(&pkr, &accum, &params, &proof_c)?;
+        let t_hat_calc_values = Issuer::_create_tau_list_values(&pkr, &accum, &proof.x_list, &proof.c_list)?;
 
         Ok(NonRevocProofTauList::new(
             t_hat_expected_values.t1.mul(&ch_num_z)?.add(&t_hat_calc_values.t1)?,
@@ -287,7 +312,7 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::types::{Proof};
+    //    use services::crypto::anoncreds::types::Proof;
     use services::crypto::anoncreds::prover;
 
     //    #[test]
@@ -350,7 +375,7 @@ mod tests {
     //
     //        assert!(res.is_ok());
     //    }
-//
+    //
     //    #[test]
     //    fn verify_equlity_test() {
     //        let proof = mocks::get_eq_proof().unwrap();

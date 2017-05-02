@@ -866,7 +866,7 @@ pub struct ClaimProof {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateProofJson {
+pub struct ProofJson {
     pub proofs: HashMap<String, ClaimProof>,
     pub aggregated_proof: AggregatedProof,
     pub requested_proof: RequestedProofJson
@@ -972,6 +972,6 @@ impl JsonEncodable for AttributeInfo {}
 
 impl<'a> JsonDecodable<'a> for AttributeInfo {}
 
-impl JsonEncodable for CreateProofJson {}
+impl JsonEncodable for ProofJson {}
 
-impl<'a> JsonDecodable<'a> for CreateProofJson {}
+impl<'a> JsonDecodable<'a> for ProofJson {}

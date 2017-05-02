@@ -8,7 +8,7 @@ use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use services::crypto::anoncreds::types::AttributeInfo;
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {

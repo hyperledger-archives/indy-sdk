@@ -3,7 +3,7 @@ extern crate uuid;
 
 use self::uuid::Uuid;
 use errors::anoncreds::AnoncredsError;
-use errors::crypto::CryptoError;
+//use errors::crypto::CryptoError;
 use services::crypto::CryptoService;
 use services::crypto::wrappers::bn::BigNumber;
 use services::pool::PoolService;
@@ -15,9 +15,9 @@ use services::crypto::anoncreds::types::{
     Schema,
     RevocationRegistry,
     Claims,
-    CreateProofJson,
-    NonRevocProofXList,
-    NonRevocProofCList,
+    ProofJson,
+//    NonRevocProofXList,
+//    NonRevocProofCList,
     ClaimInfo,
     ProofClaimsJson,
     ProofRequestJson,
@@ -104,7 +104,7 @@ impl ProverCommandExecutor {
             ProverCommand::CreateMasterSecret(wallet_handle, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateMasterSecret command received");
                 self.create_master_secret(wallet_handle, &master_secret_name, cb);
-            },
+            }
             ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
                                                       claim_def_json, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
@@ -237,7 +237,7 @@ impl ProverCommandExecutor {
             &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
         let primary_claim_init_data = ClaimInitData::from_str(&primary_claim_init_data_json)?;
 
-        let revocation_claim_init_data_json  = self.wallet_service.get(
+        let revocation_claim_init_data_json = self.wallet_service.get(
             wallet_handle,
             &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
         let revocation_claim_init_data = RevocationClaimInitData::from_str(&revocation_claim_init_data_json)?;
@@ -315,7 +315,7 @@ impl ProverCommandExecutor {
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_jsons)?;
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_def_jsons)?;
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_jsons)?;
-        let requested_claims: RequestedClaimsJson = RequestedClaimsJson::from_str(revoc_regs_jsons)?;
+        let requested_claims: RequestedClaimsJson = RequestedClaimsJson::from_str(requested_claims_json)?;
 
         let mut claims: HashMap<String, ClaimJson> = HashMap::new();
 
@@ -347,12 +347,12 @@ impl ProverCommandExecutor {
         let requested_proof = self.crypto_service.anoncreds.prover.prepare_requested_proof_response(&proof_req,
                                                                                                     &requested_claims,
                                                                                                     &attributes)?;
-        let proof_claims_json = CreateProofJson {
+        let proof_claims_json = ProofJson {
             proofs: proofs,
             aggregated_proof: aggregated_proof,
             requested_proof: requested_proof
         };
-        let proof_claims_json = CreateProofJson::to_string(&proof_claims_json)?;
+        let proof_claims_json = ProofJson::to_string(&proof_claims_json)?;
 
         Ok(proof_claims_json)
     }
