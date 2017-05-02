@@ -1,7 +1,7 @@
 use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::AppendBigNumArray;
+use services::crypto::anoncreds::helpers::{AppendBigNumArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use utils::json::{JsonEncodable, JsonDecodable};
@@ -25,7 +25,7 @@ pub struct ClaimDefinitionPrivate {
     pub secret_key_revocation: RevocationSecretKey
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct RevocationRegistry {
     pub claim_def_seq_no: i32,
     pub accumulator: Accumulator,
@@ -96,9 +96,20 @@ impl PublicKey {
             z: z
         }
     }
+
+    pub fn clone(&self) -> Result<PublicKey, CryptoError> {
+        Ok(PublicKey {
+            s: self.n.clone()?,
+            n: self.n.clone()?,
+            rms: self.rms.clone()?,
+            r: clone_bignum_map(&self.r)?,
+            rctxt: self.rctxt.clone()?,
+            z: self.z.clone()?
+        })
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
     pub h: PointG1,
@@ -186,7 +197,7 @@ impl AccumulatorSecretKey {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Accumulator {
     pub acc: PointG1,
     pub v: HashSet<i32>,
@@ -250,14 +261,19 @@ impl ClaimRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub enum PredicateType {
+    GE
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Predicate {
     pub attr_name: String,
-    pub p_type: String,
+    pub p_type: PredicateType,
     pub value: i32
 }
 
 impl Predicate {
-    pub fn new(attr_name: String, p_type: String, value: i32) -> Predicate {
+    pub fn new(attr_name: String, p_type: PredicateType, value: i32) -> Predicate {
         Predicate {
             attr_name: attr_name,
             p_type: p_type,
@@ -326,6 +342,7 @@ pub struct NonRevocationClaim {
     pub m2: GroupOrderElement
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct NonRevocProofXList {
     pub rho: GroupOrderElement,
     pub r: GroupOrderElement,
@@ -411,7 +428,7 @@ impl NonRevocProofTauList {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NonRevocProofCList {
     pub e: PointG1,
     pub d: PointG1,
@@ -449,10 +466,29 @@ pub struct ProofInput {
 }
 
 pub struct ProofClaims {
-    pub claims: Claims,
-    pub revealed_attrs: HashSet<String>,
+    pub claim_json: ClaimJson,
+    pub schema: Schema,
+    pub claim_definition: ClaimDefinition,
+    pub revocation_registry: RevocationRegistry,
+    pub revealed_attrs: Vec<AttributeInfo>,
     pub predicates: Vec<Predicate>,
-    pub encoded_attributes: HashMap<String, BigNumber>
+    pub unrevealed_attrs: Vec<AttributeInfo>
+}
+
+impl ProofClaims {
+    pub fn new(claim_json: ClaimJson, schema: Schema, claim_definition: ClaimDefinition,
+               revocation_registry: RevocationRegistry, predicates: Vec<Predicate>,
+               revealed_attrs: Vec<AttributeInfo>, unrevealed_attrs: Vec<AttributeInfo>) -> ProofClaims {
+        ProofClaims {
+            claim_json: claim_json,
+            schema: schema,
+            claim_definition: claim_definition,
+            revocation_registry: revocation_registry,
+            revealed_attrs: revealed_attrs,
+            predicates: predicates,
+            unrevealed_attrs: unrevealed_attrs
+        }
+    }
 }
 
 pub struct FullProof {
@@ -462,6 +498,7 @@ pub struct FullProof {
     pub c_list: Vec<Vec<u8>>
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
     pub primary_proof: PrimaryProof,
     pub non_revoc_proof: Option<NonRevocProof>
@@ -470,6 +507,15 @@ pub struct Proof {
 pub struct InitProof {
     pub primary_init_proof: PrimaryInitProof,
     pub non_revoc_init_proof: Option<NonRevocInitProof>
+}
+
+impl InitProof {
+    pub fn new(primary_init_proof: PrimaryInitProof, non_revoc_init_proof: Option<NonRevocInitProof>) -> InitProof {
+        InitProof {
+            primary_init_proof: primary_init_proof,
+            non_revoc_init_proof: non_revoc_init_proof
+        }
+    }
 }
 
 pub struct PrimaryInitProof {
@@ -495,6 +541,7 @@ impl PrimaryInitProof {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryProof {
     pub eq_proof: PrimaryEqualProof,
     pub ge_proofs: Vec<PrimaryPredicateGEProof>
@@ -510,9 +557,6 @@ pub struct PrimaryEqualInitProof {
     pub mtilde: HashMap<String, BigNumber>,
     pub m1_tilde: BigNumber,
     pub m2_tilde: BigNumber,
-    pub unrevealed_attrs: HashSet<String>,
-    pub revealed_attrs: HashSet<String>,
-    pub encoded_attributes: HashMap<String, BigNumber>,
     pub m2: BigNumber
 }
 
@@ -538,8 +582,9 @@ pub struct PrimaryPrecicateGEInitProof {
     pub t: HashMap<String, BigNumber>
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryEqualProof {
-    pub revealed_attr_names: HashSet<String>,
+    pub revealed_attr_names: Vec<AttributeInfo>,
     pub a_prime: BigNumber,
     pub e: BigNumber,
     pub v: BigNumber,
@@ -548,6 +593,7 @@ pub struct PrimaryEqualProof {
     pub m2: BigNumber
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryPredicateGEProof {
     pub u: HashMap<String, BigNumber>,
     pub r: HashMap<String, BigNumber>,
@@ -591,6 +637,7 @@ impl NonRevocInitProof {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NonRevocProof {
     pub x_list: NonRevocProofXList,
     pub c_list: NonRevocProofCList
@@ -614,6 +661,15 @@ impl ClaimDefinition {
             schema_seq_no: schema_seq_no,
             signature_type: signature_type
         }
+    }
+
+    pub fn clone(&self) -> Result<ClaimDefinition, CryptoError> {
+        Ok(ClaimDefinition {
+            public_key: self.public_key.clone()?,
+            public_key_revocation: self.public_key_revocation.clone(),
+            schema_seq_no: self.schema_seq_no.clone(),
+            signature_type: self.signature_type.clone(),
+        })
     }
 }
 
@@ -644,6 +700,198 @@ impl RevocationRegistryPrivate {
         }
     }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AttributeInfo {
+    pub schema_seq_no: i32,
+    pub name: String
+}
+
+impl AttributeInfo {
+    pub fn new(schema_seq_no: i32, name: String) -> AttributeInfo {
+        AttributeInfo {
+            schema_seq_no: schema_seq_no,
+            name: name
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimOffer {
+    pub issuer_did: String,
+    pub claim_def_seq_no: i32
+}
+
+impl ClaimOffer {
+    pub fn new(issuer_did: String, claim_def_seq_no: i32) -> ClaimOffer {
+        ClaimOffer {
+            issuer_did: issuer_did,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimRequestJson {
+    pub claim_request: ClaimRequest,
+    pub issuer_did: String,
+    pub claim_def_seq_no: i32
+}
+
+impl ClaimRequestJson {
+    pub fn new(claim_request: ClaimRequest, issuer_did: String, claim_def_seq_no: i32) -> ClaimRequestJson {
+        ClaimRequestJson {
+            claim_request: claim_request,
+            issuer_did: issuer_did,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimJson {
+    pub claim: HashMap<String, Vec<String>>,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: i32,
+    pub signature: Claims
+}
+
+impl ClaimJson {
+    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
+               signature: Claims) -> ClaimJson {
+        ClaimJson {
+            claim: claim,
+            claim_def_seq_no: claim_def_seq_no,
+            revoc_reg_seq_no: revoc_reg_seq_no,
+            signature: signature
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ClaimInfo {
+    pub claim_uuid: String,
+    pub attrs: HashMap<String, String>,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: i32,
+    pub schema_seq_no: i32
+}
+
+impl ClaimInfo {
+    pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
+               revoc_reg_seq_no: i32, schema_seq_no: i32) -> ClaimInfo {
+        ClaimInfo {
+            claim_uuid: claim_uuid,
+            attrs: attrs,
+            claim_def_seq_no: claim_def_seq_no,
+            revoc_reg_seq_no: revoc_reg_seq_no,
+            schema_seq_no: schema_seq_no
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProofClaimsJson {
+    pub attrs: HashMap<String, Vec<ClaimInfo>>,
+    pub predicates: HashMap<String, Vec<ClaimInfo>>
+}
+
+impl ProofClaimsJson {
+    pub fn new(attrs: HashMap<String, Vec<ClaimInfo>>, predicates: HashMap<String, Vec<ClaimInfo>>) -> ProofClaimsJson {
+        ProofClaimsJson {
+            attrs: attrs,
+            predicates: predicates
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProofRequestJson {
+    pub nonce: BigNumber,
+    pub requested_attrs: HashMap<String, AttributeInfo>,
+    pub requested_predicates: HashMap<String, Predicate>
+}
+
+impl ProofRequestJson {
+    pub fn new(nonce: BigNumber, requested_attr: HashMap<String, AttributeInfo>,
+               requested_predicate: HashMap<String, Predicate>) -> ProofRequestJson {
+        ProofRequestJson {
+            nonce: nonce,
+            requested_attrs: requested_attr,
+            requested_predicates: requested_predicate
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RequestedClaimsJson {
+    pub self_attested_attributes: HashMap<String, String>,
+    pub requested_attrs: HashMap<String, (String, bool)>,
+    pub requested_predicates: HashMap<String, String>
+}
+
+impl RequestedClaimsJson {
+    pub fn new(self_attested_attributes: HashMap<String, String>, requested_attrs: HashMap<String, (String, bool)>,
+               requested_predicates: HashMap<String, String>) -> RequestedClaimsJson {
+        RequestedClaimsJson {
+            self_attested_attributes: self_attested_attributes,
+            requested_attrs: requested_attrs,
+            requested_predicates: requested_predicates
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AggregatedProof {
+    pub c_hash: BigNumber,
+    pub c_list: Vec<Vec<u8>>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RequestedProofJson {
+    pub revealed_attrs: HashMap<String, (String, String, String)>,
+    pub unrevealed_attrs: HashMap<String, String>,
+    pub self_attested_attrs: HashMap<String, String>,
+    pub predicates: HashMap<String, String>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimProof {
+    pub proof: Proof,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: i32
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateProofJson {
+    pub proofs: HashMap<String, ClaimProof>,
+    pub aggregated_proof: AggregatedProof,
+    pub requested_proof: RequestedProofJson
+}
+
+impl JsonEncodable for ClaimOffer {}
+
+impl<'a> JsonDecodable<'a> for ClaimOffer {}
+
+impl JsonEncodable for ClaimRequestJson {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
+
+impl JsonEncodable for ClaimJson {}
+
+impl<'a> JsonDecodable<'a> for ClaimJson {}
+
+impl JsonEncodable for ProofRequestJson {}
+
+impl<'a> JsonDecodable<'a> for ProofRequestJson {}
+
+impl JsonEncodable for ProofClaimsJson {}
+
+impl<'a> JsonDecodable<'a> for ProofClaimsJson {}
+
+impl JsonEncodable for RequestedClaimsJson {}
+
+impl<'a> JsonDecodable<'a> for RequestedClaimsJson {}
 
 impl JsonEncodable for ClaimDefinition {}
 
@@ -697,3 +945,23 @@ impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}
 impl JsonEncodable for ClaimRequest {}
 
 impl<'a> JsonDecodable<'a> for ClaimRequest {}
+
+impl JsonEncodable for Claims {}
+
+impl<'a> JsonDecodable<'a> for Claims {}
+
+impl JsonEncodable for NonRevocProofXList {}
+
+impl<'a> JsonDecodable<'a> for NonRevocProofXList {}
+
+impl JsonEncodable for NonRevocProofCList {}
+
+impl<'a> JsonDecodable<'a> for NonRevocProofCList {}
+
+impl JsonEncodable for AttributeInfo {}
+
+impl<'a> JsonDecodable<'a> for AttributeInfo {}
+
+impl JsonEncodable for CreateProofJson {}
+
+impl<'a> JsonDecodable<'a> for CreateProofJson {}

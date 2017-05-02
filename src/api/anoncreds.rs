@@ -490,6 +490,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 ///     [{
 ///         "claim_uuid": <string>,
 ///         "attrs": [{"attr_name" : "attr_value"}],
+///         "schema_seq_no": string,
 ///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no": string,
 ///     }]
@@ -550,6 +551,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 ///     {
 ///         "claim_uuid": <string>,
 ///         "attrs": [{"attr_name" : "attr_value"}],
+///         "schema_seq_no": string,
 ///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no": string,
 ///     }

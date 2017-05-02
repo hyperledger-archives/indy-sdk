@@ -12,11 +12,12 @@ use services::crypto::anoncreds::types::{
     ClaimDefinitionPrivate,
     RevocationRegistry,
     RevocationRegistryPrivate,
-    Schema
+    Schema,
+    ClaimRequestJson,
+    ClaimJson
 };
 use std::rc::Rc;
 use std::collections::HashMap;
-use types::{ClaimRequestJson, ClaimJson, RevocationRegistryJson};
 use utils::json::{JsonDecodable, JsonEncodable};
 use std::cell::RefCell;
 
@@ -144,11 +145,6 @@ impl IssuerCommandExecutor {
         self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &uuid), &revocation_registry_json)?;
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &uuid), &revocation_registry_private_json)?;
 
-        let revocation_registry_json = RevocationRegistryJson::new(claim_def_seq_no, revocation_registry.accumulator.acc,
-                                                                   revocation_registry.accumulator.v, revocation_registry.acc_pk);
-
-        let revocation_registry_json = RevocationRegistryJson::to_string(&revocation_registry_json)?;
-
         Ok((revocation_registry_json, uuid))
     }
 
@@ -199,20 +195,14 @@ impl IssuerCommandExecutor {
             user_revoc_index
         )?;
 
-        let revocation_registry = revocation_registry.borrow();
-
-        let revocation_registry_json = RevocationRegistry::to_string(&revocation_registry)?;
+        let revocation_registry_json = RevocationRegistry::to_string(&revocation_registry.borrow())?;
 
         let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims);
         let claim_json = ClaimJson::to_string(&claim_json)?;
 
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revocation_registry_json)?;
 
-        let revoc_reg_updated = RevocationRegistryJson::new(claim_req_json.claim_def_seq_no, revocation_registry.accumulator.acc.clone(),
-                                                                revocation_registry.accumulator.v.clone(), revocation_registry.acc_pk.clone());
-        let revoc_reg_update_json = RevocationRegistryJson::to_string(&revoc_reg_updated)?;
-
-        Ok((revoc_reg_update_json, claim_json))
+        Ok((revocation_registry_json, claim_json))
     }
 
     fn revoke_claim(&self,
@@ -245,14 +235,8 @@ impl IssuerCommandExecutor {
             user_revoc_index
         )?;
 
-        let revocation_registry = revocation_registry.borrow();
-
-        let revoc_reg_update_json = RevocationRegistry::to_string(&revocation_registry)?;
+        let revoc_reg_update_json = RevocationRegistry::to_string(&revocation_registry.borrow())?;
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revoc_reg_update_json)?;
-
-        let revoc_reg_updated = RevocationRegistryJson::new(claim_def_seq_no, revocation_registry.accumulator.acc.clone(),
-                                                            revocation_registry.accumulator.v.clone(), revocation_registry.acc_pk.clone());
-        let revoc_reg_update_json = RevocationRegistryJson::to_string(&revoc_reg_updated)?;
 
         Ok(revoc_reg_update_json)
     }
