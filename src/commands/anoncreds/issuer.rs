@@ -10,6 +10,8 @@ use services::wallet::WalletService;
 use services::crypto::anoncreds::types::{
     ClaimDefinition,
     ClaimDefinitionPrivate,
+    ClaimJson,
+    ClaimRequestJson,
     RevocationRegistry,
     RevocationRegistryPrivate,
     Schema,
@@ -26,6 +28,7 @@ pub enum IssuerCommand {
         i32, // wallet handle
         String, // schema json
         Option<String>, // signature type
+        bool,
         Box<Fn(Result<(String, String), AnoncredsError>) + Send>),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
@@ -66,10 +69,10 @@ impl IssuerCommandExecutor {
 
     pub fn execute(&self, command: IssuerCommand) {
         match command {
-            IssuerCommand::CreateAndStoreClaimDefinition(wallet_handle, schema_json, signature_type, cb) => {
+            IssuerCommand::CreateAndStoreClaimDefinition(wallet_handle, schema_json, signature_type, create_non_revoc, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreClaim command received");
                 self.create_and_store_claim_definition(wallet_handle, &schema_json,
-                                                       signature_type.as_ref().map(String::as_str), cb);
+                                                       signature_type.as_ref().map(String::as_str), create_non_revoc, cb);
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, claim_def_seq_no, max_claim_num, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
@@ -92,19 +95,21 @@ impl IssuerCommandExecutor {
                                          wallet_handle: i32,
                                          schema_json: &str,
                                          signature_type: Option<&str>,
+                                         create_non_revoc: bool,
                                          cb: Box<Fn(Result<(String, String), AnoncredsError>) + Send>) {
-        let result = self._create_and_store_claim_definition(wallet_handle, schema_json, signature_type);
+        let result = self._create_and_store_claim_definition(wallet_handle, schema_json,
+                                                             signature_type, create_non_revoc);
         cb(result)
     }
 
     fn _create_and_store_claim_definition(&self,
                                           wallet_handle: i32,
                                           schema_json: &str,
-                                          signature_type: Option<&str>, ) -> Result<(String, String), AnoncredsError> {
+                                          signature_type: Option<&str>, create_non_revoc: bool) -> Result<(String, String), AnoncredsError> {
         let schema = Schema::from_str(schema_json)?;
 
         let (claim_definition, claim_definition_private) =
-            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type)?;
+            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_string(&claim_definition)?;
         let claim_definition_private_json = ClaimDefinitionPrivate::to_string(&claim_definition_private)?;
@@ -134,8 +139,10 @@ impl IssuerCommandExecutor {
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
         let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
 
+        let pk_r = claim_def.public_key_revocation.ok_or(AnoncredsError::NotIssuedError("Revocation Public Key for this claim definition".to_string()))?;
+
         let (revocation_registry, revocation_registry_private) =
-            self.crypto_service.anoncreds.issuer.issue_accumulator(&claim_def.public_key_revocation, max_claim_num, claim_def_seq_no)?;
+            self.crypto_service.anoncreds.issuer.issue_accumulator(&pk_r, max_claim_num, claim_def_seq_no)?;
 
         let uuid = Uuid::new_v4().to_string();
 
@@ -186,11 +193,11 @@ impl IssuerCommandExecutor {
         let revocation_registry = RefCell::new(revocation_registry);
 
         let claims = self.crypto_service.anoncreds.issuer.create_claim(
-            &claim_def,
-            &claim_def_private,
+            claim_def,
+            claim_def_private,
             &revocation_registry,
             &revocation_registry_private,
-            &claim_req_json.claim_request,
+            &claim_req_json.blinded_ms,
             &attributes,
             user_revoc_index
         )?;

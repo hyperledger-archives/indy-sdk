@@ -34,6 +34,7 @@ use self::libc::c_char;
 /// Common*
 /// Wallet*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
                                               wallet_handle: i32,
                                               did_json: *const c_char,
@@ -81,6 +82,7 @@ pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
 /// Common*
 /// Wallet*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_replace_keys(command_handle: i32,
                                    wallet_handle: i32,
                                    did: *const c_char,
@@ -129,6 +131,7 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 /// Common*
 /// Wallet*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_store_their_did(command_handle: i32,
                                       wallet_handle: i32,
                                       identity_json: *const c_char,
@@ -166,6 +169,7 @@ pub  extern fn sovrin_store_their_did(command_handle: i32,
 /// Common*
 /// Wallet*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_sign(command_handle: i32,
                            wallet_handle: i32,
                            did: *const c_char,
@@ -214,6 +218,7 @@ pub  extern fn sovrin_sign(command_handle: i32,
 /// Wallet*
 /// Ledger*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_verify_signature(command_handle: i32,
                                        wallet_handle: i32,
                                        did: *const c_char,
@@ -263,6 +268,7 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
 /// Wallet*
 /// Ledger*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_encrypt(command_handle: i32,
                               wallet_handle: i32,
                               did: *const c_char,
@@ -306,6 +312,7 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
 /// Common*
 /// Wallet*
 /// Crypto*
+#[no_mangle]
 pub  extern fn sovrin_decrypt(command_handle: i32,
                               wallet_handle: i32,
                               did: *const c_char,
