@@ -42,6 +42,7 @@ struct PoolWorker {
     new_mt_vote: usize,
     f: usize,
     pending_catchup: Option<CatchUpProcess>,
+    name: String,
 }
 
 impl PoolWorker {
@@ -244,6 +245,7 @@ impl Pool {
             new_mt_vote: 0,
             f: 0,
             pending_catchup: None,
+            name: name.to_string(),
         };
 
         Ok(Pool {
@@ -479,6 +481,50 @@ mod tests {
 
         drop_test();
         assert!(true, "No crashes on PoolService::drop");
+    }
+
+    impl Default for PoolWorker {
+        fn default() -> Self {
+            PoolWorker {
+                merkle_tree: MerkleTree::from_vec(Vec::new()),
+                pool_id: 0,
+                cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                f: 0,
+                pending_catchup: None,
+                open_cmd_id: 0,
+                nodes: Vec::new(),
+                new_mt_size: 0,
+                new_mt_vote: 0,
+                name: "".to_string(),
+            }
+        }
+    }
+
+    #[test]
+    fn pool_service_test_restore_merkle_tree() {
+        let txns_src = format!("{}\n{}\n{}\n{}\n",
+                               "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
+                               "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
+                               "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"192.168.1.35\",\"client_port\":9706,\"node_ip\":\"192.168.1.35\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
+                               "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"192.168.1.35\",\"client_port\":9708,\"node_ip\":\"192.168.1.35\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
+        let pool_name = "test";
+        let mut path = ::utils::environment::EnvironmentUtils::pool_path(pool_name);
+        fs::create_dir_all(path.as_path()).unwrap();
+        path.push(pool_name);
+        path.set_extension("txn");
+        let mut f = fs::File::create(path.as_path()).unwrap();
+        f.write(txns_src.as_bytes()).unwrap();
+        f.flush().unwrap();
+        f.sync_all().unwrap();
+
+        let mut pw: PoolWorker = PoolWorker {
+            name: pool_name.to_string(),
+            ..Default::default()
+        };
+        pw.restore_merkle_tree();
+
+        assert_eq!(pw.merkle_tree.count(), 4, "test restored MT size");
+        assert_eq!(pw.merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
     }
 
     #[test]
