@@ -16,6 +16,8 @@ use std::fs;
 
 use std::ptr::null;
 
+use std::time::Duration;
+
 use utils::callbacks::CallbacksHelpers;
 
 use std::sync::mpsc::{channel};
@@ -43,7 +45,7 @@ fn sovrin_create_pool_ledger_can_be_called() {
 
     assert_eq!(ErrorCode::Success, err);
 
-    let err = receiver.recv().unwrap();
+    let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
     std::fs::remove_file("./test_open_src.txn").unwrap();
     std::fs::remove_dir_all(EnvironmentUtils::pool_path("test_open")).unwrap();
     assert_eq!(ErrorCode::Success, err);
@@ -77,7 +79,7 @@ fn sovrin_open_pool_ledger_can_be_called() {
                                       callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = receiver.recv().unwrap();
+    let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     //TODO separate test to check error after open the same pool multiply times
@@ -88,6 +90,6 @@ fn sovrin_open_pool_ledger_can_be_called() {
                                       callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = receiver.recv().unwrap();
+    let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
     assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, err);
 }
