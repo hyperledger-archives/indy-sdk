@@ -7,25 +7,28 @@ use errors::crypto::CryptoError;
 use services::crypto::CryptoService;
 use services::crypto::wrappers::bn::BigNumber;
 use services::pool::PoolService;
-use services::crypto::anoncreds::types::{
-    ClaimInitData,
-    ClaimDefinition,
-    ClaimJson,
-    ClaimOffer,
-    ClaimRequestJson,
-    Claims,
-    RevocationClaimInitData,
-    RevocationRegistry
-};
 use utils::json::{JsonDecodable, JsonEncodable};
 use services::wallet::WalletService;
 use std::rc::Rc;
 use services::crypto::anoncreds::types::{
-    ClaimDefinition, Schema, RevocationRegistry, Claims, CreateProofJson, NonRevocProofXList, NonRevocProofCList,
-    ClaimInfo, ProofClaimsJson, ProofRequestJson, RequestedClaimsJson, ClaimJson};
-use utils::json::{JsonDecodable, JsonEncodable};
+    ClaimDefinition,
+    Schema,
+    RevocationRegistry,
+    Claims,
+    CreateProofJson,
+    NonRevocProofXList,
+    NonRevocProofCList,
+    ClaimInfo,
+    ProofClaimsJson,
+    ProofRequestJson,
+    RequestedClaimsJson,
+    ClaimJson,
+    ClaimOffer,
+    ClaimInitData,
+    RevocationClaimInitData,
+    ClaimRequestJson
+};
 use std::collections::HashMap;
-use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::PointG1;
 use std::cell::RefCell;
 
@@ -205,7 +208,7 @@ impl ProverCommandExecutor {
                 &revocation_claim_init_data_json)?;
         }
 
-        let claim_request = ClaimRequestJson::new(claim_request, claim_offer.claim_def_seq_no, claim_offer.issuer_did);
+        let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.claim_def_seq_no);
         let claim_request_json = ClaimRequestJson::to_string(&claim_request)?;
 
         Ok(claim_request_json)

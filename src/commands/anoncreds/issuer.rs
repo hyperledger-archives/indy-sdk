@@ -14,9 +14,7 @@ use services::crypto::anoncreds::types::{
     ClaimRequestJson,
     RevocationRegistry,
     RevocationRegistryPrivate,
-    Schema,
-    ClaimRequestJson,
-    ClaimJson
+    Schema
 };
 use std::rc::Rc;
 use std::collections::HashMap;
@@ -197,7 +195,7 @@ impl IssuerCommandExecutor {
             claim_def_private,
             &revocation_registry,
             &revocation_registry_private,
-            &claim_req_json.blinded_ms,
+            &claim_req_json.claim_request,
             &attributes,
             user_revoc_index
         )?;

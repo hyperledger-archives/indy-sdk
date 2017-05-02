@@ -25,9 +25,6 @@ pub struct ClaimDefinitionPrivate {
     pub secret_key_revocation: Option<RevocationSecretKey>
 }
 
-<<<<<<< HEAD
-#[derive(Clone, Deserialize, Debug, Serialize)]
-=======
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
@@ -48,33 +45,8 @@ impl ClaimJson {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimOffer {
-    pub issuer_did: String,
-    pub claim_def_seq_no: i32
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimRequestJson {
-    pub blinded_ms: ClaimRequest,
-    pub claim_def_seq_no: i32,
-    pub issuer_did: String
-}
-
-impl ClaimRequestJson {
-    pub fn new(claim_request: ClaimRequest, claim_def_seq_no: i32,
-               issuer_did: String, ) -> ClaimRequestJson {
-        ClaimRequestJson {
-            blinded_ms: claim_request,
-            claim_def_seq_no: claim_def_seq_no,
-            issuer_did: issuer_did
-
-        }
-    }
-}
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
->>>>>>> master
 pub struct RevocationRegistry {
     pub claim_def_seq_no: i32,
     pub accumulator: Accumulator,
@@ -220,11 +192,7 @@ impl SecretKey {
     }
 }
 
-<<<<<<< HEAD
 #[derive(Clone, Debug, Serialize, Deserialize)]
-=======
-#[derive(Debug, Serialize, Deserialize, Clone)]
->>>>>>> master
 pub struct AccumulatorPublicKey {
     pub z: Pair
 }
@@ -250,11 +218,7 @@ impl AccumulatorSecretKey {
     }
 }
 
-<<<<<<< HEAD
 #[derive(Clone, Debug, Serialize, Deserialize)]
-=======
-#[derive(Debug, Serialize, Deserialize, Clone)]
->>>>>>> master
 pub struct Accumulator {
     pub acc: PointG1,
     pub v: HashSet<i32>,
@@ -278,7 +242,7 @@ impl Accumulator {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Witness {
     pub sigma_i: PointG1,
     pub u_i: PointG1,
@@ -389,7 +353,7 @@ impl PrimaryClaim {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NonRevocationClaim {
     pub sigma: PointG1,
     pub c: GroupOrderElement,
@@ -807,26 +771,6 @@ impl ClaimRequestJson {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimJson {
-    pub claim: HashMap<String, Vec<String>>,
-    pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32,
-    pub signature: Claims
-}
-
-impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
-               signature: Claims) -> ClaimJson {
-        ClaimJson {
-            claim: claim,
-            claim_def_seq_no: claim_def_seq_no,
-            revoc_reg_seq_no: revoc_reg_seq_no,
-            signature: signature
-        }
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClaimInfo {
     pub claim_uuid: String,
@@ -964,18 +908,6 @@ impl JsonEncodable for ClaimInitData {}
 
 impl<'a> JsonDecodable<'a> for ClaimInitData {}
 
-impl JsonEncodable for ClaimJson {}
-
-impl<'a> JsonDecodable<'a> for ClaimJson {}
-
-impl JsonEncodable for ClaimOffer {}
-
-impl<'a> JsonDecodable<'a> for ClaimOffer {}
-
-impl JsonEncodable for ClaimRequestJson {}
-
-impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
-
 impl JsonEncodable for Claims {}
 
 impl<'a> JsonDecodable<'a> for Claims {}
@@ -1027,10 +959,6 @@ impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}
 impl JsonEncodable for ClaimRequest {}
 
 impl<'a> JsonDecodable<'a> for ClaimRequest {}
-
-impl JsonEncodable for Claims {}
-
-impl<'a> JsonDecodable<'a> for Claims {}
 
 impl JsonEncodable for NonRevocProofXList {}
 
