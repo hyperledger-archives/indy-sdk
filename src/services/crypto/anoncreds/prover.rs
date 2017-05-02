@@ -38,6 +38,7 @@ use services::crypto::anoncreds::types::{
     PublicKey,
     RevocationClaimInitData,
     RevocationPublicKey,
+    RevocationRegistry,
     SchemaKey
 };
 use services::crypto::anoncreds::helpers::{
@@ -71,19 +72,19 @@ impl Prover {
         BigNumber::rand(LARGE_MASTER_SECRET)
     }
 
-    pub fn create_claim_request(&self, pk: PublicKey, pkr: RevocationPublicKey, ms: BigNumber,
-                                prover_id: i32, req_non_revoc: bool)
+    pub fn create_claim_request(&self, pk: PublicKey, pkr: Option<RevocationPublicKey>, ms: BigNumber,
+                                prover_did: &str)
                                 -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
         let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
 
         let (ur, revocation_primary_claim_init_data) =
-            if req_non_revoc {
-                let revocation_claim_init_data = Prover::_generate_revocation_claim_init_data(&pkr)?;
+            if let Some(pk_r) = pkr {
+                let revocation_claim_init_data = Prover::_generate_revocation_claim_init_data(&pk_r)?;
                 (Some(revocation_claim_init_data.u.clone()), Some(revocation_claim_init_data))
             } else { (None, None) };
 
         Ok((
-            ClaimRequest::new(prover_id, primary_claim_init_data.u.clone()?, ur),
+            ClaimRequest::new(prover_did.to_string(), primary_claim_init_data.u.clone()?, ur),
             primary_claim_init_data,
             revocation_primary_claim_init_data
         ))
@@ -112,16 +113,20 @@ impl Prover {
         })
     }
 
-    pub fn process_claim(&self, claims: RefCell<Claims>, primary_claim_init_data: ClaimInitData,
-                         revocation_claim_init_data: RevocationClaimInitData,
-                         pkr: RevocationPublicKey, acc: Accumulator, acc_pk: AccumulatorPublicKey, m2: BigNumber)
-                         -> Result<RefCell<Claims>, CryptoError> {
+    pub fn process_claim(&self, claims: &RefCell<Claims>, primary_claim_init_data: ClaimInitData,
+                         revocation_claim_init_data: Option<RevocationClaimInitData>,
+                         pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
+                         -> Result<(), CryptoError> {
         Prover::_init_primary_claim(&claims, &primary_claim_init_data.v_prime)?;
         if let Some(ref non_revocation_claim) = claims.borrow().non_revocation_claim {
-            Prover::_init_non_revocation_claim(non_revocation_claim, &revocation_claim_init_data.v_prime,
-                                               &pkr, &acc, &acc_pk, &m2)?;
+            Prover::_init_non_revocation_claim(non_revocation_claim,
+                                               &revocation_claim_init_data.ok_or(CryptoError::InvalidStructure("Field v_prime not found".to_string()))?.v_prime,
+                                               &pkr.ok_or(CryptoError::InvalidStructure("Field pkr not found".to_string()))?,
+                                               &revoc_reg.clone().ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc,
+                                               &revoc_reg.ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk,
+                                               &BigNumber::from_bytes(&non_revocation_claim.borrow().m2.to_bytes()?)?)?;
         }
-        Ok(claims)
+        Ok(())
     }
 
     pub fn _init_primary_claim(claim: &RefCell<Claims>, v_prime: &BigNumber) -> Result<(), CryptoError> {

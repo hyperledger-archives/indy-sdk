@@ -49,11 +49,15 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: Schema, signature_type: Option<&str>) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+    pub fn generate_keys(&self, schema: Schema, signature_type: Option<&str>,
+                         create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
-        let (pkr, skr) = Issuer::_generate_revocation_keys()?;
-
+        let (pkr, skr) = if create_non_revoc {
+            Issuer::_generate_revocation_keys()?
+        } else {
+            (None, None)
+        };
         let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, signature_type);
         let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
 
@@ -90,7 +94,7 @@ impl Issuer {
         ))
     }
 
-    fn _generate_revocation_keys() -> Result<(RevocationPublicKey, RevocationSecretKey), CryptoError> {
+    fn _generate_revocation_keys() -> Result<(Option<RevocationPublicKey>, Option<RevocationSecretKey>), CryptoError> {
         let h = PointG1::new()?;
         let h0 = PointG1::new()?;
         let h1 = PointG1::new()?;
@@ -103,8 +107,8 @@ impl Issuer {
         let pk = g.mul(&sk)?;
         let y = h.mul(&x)?;
         Ok((
-            RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x),
-            RevocationSecretKey::new(x, sk)
+            Some(RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x)),
+            Some(RevocationSecretKey::new(x, sk))
         ))
     }
 
@@ -150,11 +154,11 @@ impl Issuer {
         Ok((revocation_registry, revocation_registry_private))
     }
 
-    pub fn create_claim(&self, claim_definition: &ClaimDefinition, claim_definition_private: &ClaimDefinitionPrivate,
+    pub fn create_claim(&self, claim_definition: ClaimDefinition, claim_definition_private: ClaimDefinitionPrivate,
                         revocation_registry: &RefCell<RevocationRegistry>, revocation_registry_private: &RevocationRegistryPrivate,
                         claim_request: &ClaimRequest, attributes: &HashMap<String, Vec<String>>,
                         user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
-        let context_attribute = Issuer::_generate_context_attribute(revocation_registry.borrow().claim_def_seq_no, claim_request.user_id)?;
+        let context_attribute = Issuer::_generate_context_attribute(revocation_registry.borrow().claim_def_seq_no, &claim_request.prover_did)?;
 
         let primary_claim =
             Issuer::_issue_primary_claim(
@@ -166,15 +170,15 @@ impl Issuer {
             )?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
-        if let Some(ur) = claim_request.ur {
+        if let Some(ref pk_r) = claim_definition.public_key_revocation {
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
                 revocation_registry,
-                &claim_definition.public_key_revocation,
-                &claim_definition_private.secret_key_revocation,
+                &pk_r,
+                &claim_definition_private.secret_key_revocation.ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
                 &revocation_registry_private.tails,
                 &revocation_registry_private.acc_sk,
                 &context_attribute,
-                &ur,
+                &claim_request.ur.ok_or(CryptoError::InvalidStructure("Field ur not found".to_string()))?,
                 user_revoc_index
             )?;
             non_revocation_claim = Some(RefCell::new(claim));
@@ -186,11 +190,11 @@ impl Issuer {
         })
     }
 
-    fn _generate_context_attribute(accumulator_id: i32, user_id: i32) -> Result<BigNumber, CryptoError> {
-        let accumulator_id_encoded = Issuer::_encode_attribute(accumulator_id, ByteOrder::Little)?;
-        let user_id_encoded = Issuer::_encode_attribute(user_id, ByteOrder::Little)?;
+    fn _generate_context_attribute(accumulator_id: i32, prover_did: &str) -> Result<BigNumber, CryptoError> {
+        let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id.to_string(), ByteOrder::Little)?;
+        let prover_did_encoded = Issuer::_encode_attribute(prover_did, ByteOrder::Little)?;
         let mut s = vec![
-            bitwise_or_big_int(&accumulator_id_encoded, &user_id_encoded)?.to_bytes()?
+            bitwise_or_big_int(&accumulator_id_encoded, &prover_did_encoded)?.to_bytes()?
         ];
         let pow_2 = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_MASTER_SECRET)?, None)?;
         let h = get_hash_as_int(&mut s)?
@@ -330,8 +334,8 @@ impl Issuer {
         )
     }
 
-    fn _encode_attribute(attribute: i32, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
-        let mut result = BigNumber::hash(attribute.to_string().as_bytes())?;
+    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
+        let mut result = BigNumber::hash(attribute.as_bytes())?;
 
         let index = result.iter().position(|&value| value == 0);
         if let Some(position) = index {
@@ -414,7 +418,7 @@ mod tests {
 
     #[test]
     fn encode_attribute_works_short_hash() {
-        let test_str = 5435;
+        let test_str = "5435";
         let test_answer = "83761840706354868391674207739241454863743470852830526299004654280720761327142";
         assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
     }
@@ -422,7 +426,7 @@ mod tests {
     #[test]
     fn generate_context_attribute_works() {
         let accumulator_id = 110;
-        let user_id = 111;
+        let user_id = "111";
         let answer = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
         let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);

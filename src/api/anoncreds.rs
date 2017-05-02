@@ -21,6 +21,7 @@ use self::libc::c_char;
 /// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
 /// schema_json: schema as a json
 /// signature_type: signature type (optional). Currently only 'CL' is supported.
+/// create_non_revoc: whether to request non-revocation claim.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -37,6 +38,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
                                                        issuer_did: *const c_char,
                                                        schema_json: *const c_char,
                                                        signature_type: *const c_char,
+                                                       create_non_revoc: bool,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             claim_def_json: *const c_char,
                                                                             claim_def_uuid: *const c_char
@@ -52,6 +54,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
             issuer_did,
             schema_json,
             signature_type,
+            create_non_revoc,
             Box::new(move |result| {
                 let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
