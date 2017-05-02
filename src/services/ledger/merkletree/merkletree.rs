@@ -14,7 +14,10 @@ pub struct MerkleTree {
     pub height: usize,
 
     /// The number of leaf nodes in the tree
-    pub count: usize
+    pub count: usize,
+
+    /// The number of nodes in the tree
+    pub nodes_count: usize
 }
 
 impl MerkleTree {
@@ -27,11 +30,13 @@ impl MerkleTree {
             return MerkleTree {
                 root: Tree::empty(DIGEST.hash_empty()),
                 height: 0,
-                count: 0
+                count: 0,
+                nodes_count: 0
             };
         }
 
-        let count      = values.len();
+        let count = values.len();
+        let mut nodes_count = 0;
         let mut height = 0;
         let mut cur    = Vec::with_capacity(count);
 
@@ -62,6 +67,7 @@ impl MerkleTree {
                     };
 
                     next.push(node);
+                    nodes_count+=1;
                 }
             }
 
@@ -77,7 +83,8 @@ impl MerkleTree {
         MerkleTree {
             root: root,
             height: height,
-            count: count
+            count: count,
+            nodes_count: nodes_count
         }
     }
 
@@ -154,4 +161,3 @@ impl <'a> IntoIterator for &'a MerkleTree {
     }
 
 }
-

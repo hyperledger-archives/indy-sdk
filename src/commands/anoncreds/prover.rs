@@ -4,9 +4,22 @@ extern crate uuid;
 use self::uuid::Uuid;
 use errors::anoncreds::AnoncredsError;
 use services::crypto::CryptoService;
+use services::crypto::wrappers::bn::BigNumber;
 use services::pool::PoolService;
+use services::crypto::anoncreds::types::{
+    ClaimInitData,
+    ClaimDefinition,
+    ClaimJson,
+    ClaimOffer,
+    ClaimRequestJson,
+    Claims,
+    RevocationClaimInitData,
+    RevocationRegistry
+};
+use utils::json::{JsonDecodable, JsonEncodable};
 use services::wallet::WalletService;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 pub enum ProverCommand {
     StoreClaimOffer(
@@ -163,35 +176,45 @@ impl ProverCommandExecutor {
                                       claim_def_json: &str,
                                       master_secret_name: &str,
                                       cb: Box<Fn(Result<String, AnoncredsError>) + Send>) {
-        unimplemented!();
-//        let result =
-//            ClaimOffer::from_str(&claim_offer_json)
-//                .map_err(|err| AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string())))
-//                .and_then(|claim_offer| {
-//                    let claim_def_json = ClaimDefinition::from_str(&claim_def_json)?;
-//
-//                    let pk_string = self.wallet_service.get(wallet_handle, &format!("public_key {}", &claim_offer.issuer_did))?;
-//                    let pkr_string = self.wallet_service.get(wallet_handle, &format!("public_key_revocation {}", &claim_offer.issuer_did))?;
-//                    let ms_string = self.wallet_service.get(wallet_handle,&format!("master_secret {}", master_secret_name))?;
-//
-//                    let pk = PublicKey::from_str(&pk_string)?;
-//                    let pkr = RevocationPublicKey::from_str(&pkr_string)?;
-//                    let ms = BigNumber::from_dec(&ms_string)?;
-//
-//                    let (claim_request, claim_init_data, revocation_claim_init_data) =
-//                        self.crypto_service.anoncreds.prover.create_claim_request(pk, pkr, ms, "1".to_string(), true)?;
-//
-//                    let claim_request_json = ClaimRequest::to_string(&claim_request)?;
-//                    let claim_init_data_json = ClaimRequest::to_string(&claim_request);
-//                    let revocation_claim_init_data_json = ClaimRequest::to_string(&claim_request)?;
-//
-//                    Ok(claim_request_json)
-//                });
-//
-//        match result {
-//            Ok(claim_request_json) => cb(Ok(claim_request_json)),
-//            Err(err) => cb(Err(err))
-//        }
+        cb(self._create_and_store_claim_request(wallet_handle, prover_did, claim_offer_json,
+                                                claim_def_json, master_secret_name))
+    }
+
+    fn _create_and_store_claim_request(&self, wallet_handle: i32,
+                                       prover_did: &str,
+                                       claim_offer_json: &str,
+                                       claim_def_json: &str,
+                                       master_secret_name: &str) -> Result<String, AnoncredsError> {
+        let master_secret_str = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &master_secret_name))?;
+        let master_secret = BigNumber::from_dec(&master_secret_str)?;
+        let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
+        let claim_offer = ClaimOffer::from_str(&claim_offer_json)?;
+
+        let (claim_request,
+            primary_claim_init_data,
+            revocation_claim_init_data) = self.crypto_service.anoncreds.prover.
+            create_claim_request(claim_def.public_key,
+                                 claim_def.public_key_revocation,
+                                 master_secret, prover_did)?;
+
+        let primary_claim_init_data_json = ClaimInitData::to_string(&primary_claim_init_data)?;
+        self.wallet_service.set(
+            wallet_handle,
+            &format!("primary_claim_init_data::{}", &claim_offer.claim_def_seq_no),
+            &primary_claim_init_data_json)?;
+
+        if let Some(data) = revocation_claim_init_data {
+            let revocation_claim_init_data_json = RevocationClaimInitData::to_string(&data)?;
+            self.wallet_service.set(
+                wallet_handle,
+                &format!("revocation_claim_init_data::{}", &claim_offer.claim_def_seq_no),
+                &revocation_claim_init_data_json)?;
+        }
+
+        let claim_request = ClaimRequestJson::new(claim_request, claim_offer.claim_def_seq_no, claim_offer.issuer_did);
+        let claim_request_json = ClaimRequestJson::to_string(&claim_request)?;
+
+        Ok(claim_request_json)
     }
 
     fn store_claim(&self,
@@ -202,9 +225,40 @@ impl ProverCommandExecutor {
     }
 
     fn _store_claim(&self, wallet_handle: i32, claims_json: &str) -> Result<(), AnoncredsError> {
-        //TODO: transform claim with master_secret
-        let uuid = Uuid::new_v4().to_string();
-        self.wallet_service.set(wallet_handle, &format!("claim_json::{}", &uuid), &claims_json)?;
+        let claim_json = ClaimJson::from_str(&claims_json)?;
+
+        let revocation_registry_uuid = self.wallet_service.get(
+            wallet_handle,
+            &format!("revocation_registry_uuid::{}", &claim_json.revoc_reg_seq_no))?;
+        let revocation_registry_json = self.wallet_service.get(
+            wallet_handle,
+            &format!("revocation_registry::{}", &revocation_registry_uuid))?;
+        let revocation_registry = RevocationRegistry::from_str(&revocation_registry_json)?;
+
+        let primary_claim_init_data_json = self.wallet_service.get(
+            wallet_handle,
+            &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
+        let primary_claim_init_data = ClaimInitData::from_str(&primary_claim_init_data_json)?;
+
+        let revocation_claim_init_data_json  = self.wallet_service.get(
+            wallet_handle,
+            &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
+        let revocation_claim_init_data = RevocationClaimInitData::from_str(&revocation_claim_init_data_json)?;
+
+        let claim_def_uuid = self.wallet_service.get(
+            wallet_handle,
+            &format!("claim_definition_uuid::{}", &claim_json.claim_def_seq_no))?;
+        let claim_def_json = self.wallet_service.get(
+            wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+        let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
+
+        let signature = RefCell::new(claim_json.signature);
+        self.crypto_service.anoncreds.prover.process_claim(
+            &signature, primary_claim_init_data, Some(revocation_claim_init_data),
+            claim_def.public_key_revocation, Some(revocation_registry))?;
+
+        let signature_json = Claims::to_string(&signature.borrow())?;
+        self.wallet_service.set(wallet_handle, &format!("signature::{}", &claim_json.claim_def_seq_no), &signature_json)?;
         Ok(())
     }
 
