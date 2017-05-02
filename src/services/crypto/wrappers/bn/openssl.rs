@@ -8,7 +8,7 @@ use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
-use self::openssl::hash::{hash, MessageDigest, Hasher};
+use self::openssl::hash::{hash2, MessageDigest, Hasher};
 use self::serde::ser::{Serialize, Serializer, Error as SError};
 use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
 use std::fmt;
@@ -154,7 +154,7 @@ impl BigNumber {
     }
 
     pub fn hash(data: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        Ok(hash(MessageDigest::sha256(), data)?)
+        Ok(hash2(MessageDigest::sha256(), data)?.to_vec())
     }
 
     pub fn add(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
@@ -303,7 +303,7 @@ impl BigNumber {
             sha256.update(&num[index..])?;
         }
 
-        Ok(sha256.finish()?)
+        Ok(sha256.finish2()?.to_vec())
     }
 }
 
