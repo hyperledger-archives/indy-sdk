@@ -532,6 +532,19 @@ mod tests {
     }
 
     #[test]
+    fn pool_service_pool_worker_test_connect() {
+        let mut pw: PoolWorker = Default::default();
+        let (gt, handle) = nodes_emulator::start();
+        pw.merkle_tree.append(serde_json::to_string(&gt).unwrap());
+
+        pw.connect_to_known_nodes();
+
+        let emulator_msgs: Vec<String> = handle.join().unwrap();
+        assert_eq!(1, emulator_msgs.len());
+        assert_eq!("pi", emulator_msgs[0]);
+    }
+
+    #[test]
     fn pool_service_remote_node_can_connect_and_ping_pong() {
         let (gt, handle) = nodes_emulator::start();
         let mut rn: RemoteNode = RemoteNode::from(gt);
