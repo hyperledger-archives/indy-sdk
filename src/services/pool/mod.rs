@@ -47,7 +47,10 @@ struct PoolWorker {
 
 impl PoolWorker {
     fn restore_merkle_tree(&mut self) {
-        let f = fs::File::open("pool_transactions_sandbox").expect("open file"); //FIXME use file for the pool
+        let mut p = EnvironmentUtils::pool_path(self.name.as_str());
+        p.push(&self.name);
+        p.set_extension("txn");
+        let f = fs::File::open(p).expect("open file");
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.expect("read transaction line");
