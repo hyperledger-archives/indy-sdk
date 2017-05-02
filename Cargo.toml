@@ -35,7 +35,7 @@ int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 libc = "0.2.21"
 log = "0.3.7"
-openssl = { version = "0.9.9", optional = true }
+openssl = { version = "0.9.11", optional = true }
 milagro-crypto = { version = "0.1.6", optional = true }
 rand = "0.3"
 rusqlite = "0.10.1"
