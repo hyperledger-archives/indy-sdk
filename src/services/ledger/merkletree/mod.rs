@@ -20,14 +20,6 @@ impl MerkleTree {
         return ret;
     }
 
-    pub fn hash_hex(rh: &Vec<u8>) -> String {
-        let mut ret:String = String::with_capacity(DIGEST.output_len*2);
-        for i in rh {
-            ret.push_str(&format!("{:02x}", i));
-        }
-        return ret;
-    }
-
     pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
         match from {
             &Tree::Empty{ ref hash, .. } => {
@@ -70,21 +62,21 @@ impl MerkleTree {
     pub fn consistency_proof(&self,
                              new_root_hash: &Vec<u8>, new_size: usize,
                              proof: &Vec<Vec<u8>>) -> bool {
-        if self.count == 0 {
+        if self.nodes_count == 0 {
             // empty old tree
             return true;
         }
-        if self.count == new_size && self.root_hash() == new_root_hash {
+        if self.nodes_count == new_size && self.root_hash() == new_root_hash {
             // identical trees
             return true;
         }
-        if self.count > new_size {
+        if self.nodes_count > new_size {
             // old tree is bigger!
             assert!(false);
             return false;
         }
 
-        let mut old_node = self.count - 1;
+        let mut old_node = self.nodes_count - 1;
         let mut new_node = new_size - 1;
 
         while old_node % 2 != 0 {
@@ -98,10 +90,10 @@ impl MerkleTree {
 
         if old_node != 0 {
             new_hash = proofs.next().unwrap().to_vec();
-            old_hash = proofs.next().unwrap().to_vec();
+            old_hash = new_hash.clone();
         } else {
             new_hash = self.root_hash().to_vec();
-            old_hash = self.root_hash().to_vec();
+            old_hash = new_hash.clone();
         }
 
         while old_node != 0 {
@@ -122,17 +114,17 @@ impl MerkleTree {
             new_hash = DIGEST.hash_nodes(&new_hash, n).as_ref().into();
             new_node = new_node / 2;
         }
-/*
-        if new_hash != new_root_hash {
+
+        if new_hash != *new_root_hash {
             // new hash differs
             return false;
         }
 
-        if old_hash != self.root_hash() {
+        if old_hash != *self.root_hash() {
             // old hash differs
             return false;
         }
-*/
+
         return true;
     }
 
@@ -140,6 +132,7 @@ impl MerkleTree {
         if self.count == 0 {
             // empty tree
             self.root = Tree::new_leaf(node);
+            self.count += 1;
         }
         else if Self::count_bits(self.count) != 1 {
             // add to right subtree
@@ -156,7 +149,9 @@ impl MerkleTree {
                         left: (*left).clone(),
                         right: Box::new(new_right.root),
                         hash: combined_hash.as_ref().into()
-                    }
+                    };
+                    self.count += 1;
+                    self.nodes_count += 1;
                 }
                 _ => {
                     assert!(false);
@@ -177,7 +172,9 @@ impl MerkleTree {
                         left: Box::new(self.root.clone()),
                         right: Box::new(new_right.root),
                         hash: combined_hash.as_ref().into()
-                    }
+                    };
+                    self.count += 1;
+                    self.nodes_count += 1;
                 }
                 Tree::Leaf { ref hash, ref value } => {
                     let combined_hash = DIGEST.hash_nodes(
@@ -188,7 +185,9 @@ impl MerkleTree {
                         left: Box::new(Tree::new_leaf((*value).clone())),
                         right: Box::new(new_right.root),
                         hash: combined_hash.as_ref().into()
-                    }
+                    };
+                    self.count += 1;
+                    self.nodes_count += 1;
                 }
                 _ => {
                     assert!(false);
@@ -196,7 +195,6 @@ impl MerkleTree {
             }
             self.height += 1;
         }
-        self.count += 1;
     }
 }
 
@@ -205,6 +203,14 @@ impl MerkleTree {
 mod tests {
     use super::*;
     use self::serde_json;
+
+    fn hash_hex(rh: &Vec<u8>) -> String {
+        let mut ret:String = String::with_capacity(DIGEST.output_len*2);
+        for i in rh {
+            ret.push_str(&format!("{:02x}", i));
+        }
+        return ret;
+    }
 
     #[test]
     fn test_merkletree_append() {
@@ -235,6 +241,9 @@ mod tests {
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
+
+        assert!(mt.count == 9);
+        assert!(mt.nodes_count == 8);
 
         let mut rh: Vec<u8>;
 
@@ -286,12 +295,11 @@ mod tests {
                   0x61, 0x4d, 0x7f, 0x5a, 0x68, 0x72, 0x60, 0xd6 ]
         ];
 
-
-        assert!(mt.consistency_proof(&vec![0x12 as u8, 0x85, 0x07, 0x0c, 0xf0, 0x1d, 0xeb, 0xc1,
-                                           0x15, 0x5c, 0xef, 0x8d, 0xfd, 0x5b, 0xa5, 0x4c,
-                                           0x05, 0xab, 0xb9, 0x19, 0xa4, 0xc0, 0x8c, 0x86,
-                                           0x32, 0xb0, 0x79, 0xfb, 0x1e, 0x1e, 0x5e, 0x7c ],
-                                     5,
+        assert!(mt.consistency_proof(&vec![0x77 as u8, 0xf1, 0x5a, 0x58, 0x07, 0xfd, 0xaa, 0x56,
+                                           0x51, 0x28, 0xc5, 0x8f, 0x59, 0x1f, 0x4f, 0x03,
+                                           0x25, 0x81, 0xfe, 0xe7, 0xd8, 0x61, 0x99, 0xae,
+                                           0xf8, 0xae, 0xac, 0x7b, 0x05, 0x80, 0xbe, 0x0a ],
+                                     2,
                                      &proofs));
     }
 
