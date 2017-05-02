@@ -48,6 +48,7 @@ struct PoolWorker {
 impl PoolWorker {
     fn restore_merkle_tree(&mut self) {
         let mut p = EnvironmentUtils::pool_path(self.name.as_str());
+        //TODO firstly try to deserialize merkle tree
         p.push(&self.name);
         p.set_extension("txn");
         let f = fs::File::open(p).expect("open file");
@@ -504,7 +505,7 @@ mod tests {
     }
 
     #[test]
-    fn pool_service_test_restore_merkle_tree() {
+    fn pool_service_pool_worker_test_restore_merkle_tree_from_genesis_txns() {
         let txns_src = format!("{}\n{}\n{}\n{}\n",
                                "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
                                "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
