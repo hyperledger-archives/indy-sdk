@@ -70,7 +70,7 @@ impl ClaimRequestJson {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistry {
     pub claim_def_seq_no: i32,
     pub acc: Accumulator,
@@ -205,7 +205,7 @@ impl SecretKey {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AccumulatorPublicKey {
     pub z: Pair
 }
@@ -231,7 +231,7 @@ impl AccumulatorSecretKey {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Accumulator {
     pub acc: PointG1,
     pub v: HashSet<i32>,
@@ -715,6 +715,10 @@ impl<'a> JsonDecodable<'a> for ClaimOffer {}
 impl JsonEncodable for ClaimRequestJson {}
 
 impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
+
+impl JsonEncodable for Claims {}
+
+impl<'a> JsonDecodable<'a> for Claims {}
 
 impl JsonEncodable for RevocationClaimInitData {}
 

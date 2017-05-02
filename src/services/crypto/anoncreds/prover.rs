@@ -38,6 +38,7 @@ use services::crypto::anoncreds::types::{
     PublicKey,
     RevocationClaimInitData,
     RevocationPublicKey,
+    RevocationRegistry,
     SchemaKey
 };
 use services::crypto::anoncreds::helpers::{
@@ -112,16 +113,20 @@ impl Prover {
         })
     }
 
-    pub fn process_claim(&self, claims: RefCell<Claims>, primary_claim_init_data: ClaimInitData,
-                         revocation_claim_init_data: RevocationClaimInitData,
-                         pkr: RevocationPublicKey, acc: Accumulator, acc_pk: AccumulatorPublicKey, m2: BigNumber)
-                         -> Result<RefCell<Claims>, CryptoError> {
+    pub fn process_claim(&self, claims: &RefCell<Claims>, primary_claim_init_data: ClaimInitData,
+                         revocation_claim_init_data: Option<RevocationClaimInitData>,
+                         pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
+                         -> Result<(), CryptoError> {
         Prover::_init_primary_claim(&claims, &primary_claim_init_data.v_prime)?;
         if let Some(ref non_revocation_claim) = claims.borrow().non_revocation_claim {
-            Prover::_init_non_revocation_claim(non_revocation_claim, &revocation_claim_init_data.v_prime,
-                                               &pkr, &acc, &acc_pk, &m2)?;
+            Prover::_init_non_revocation_claim(non_revocation_claim,
+                                               &revocation_claim_init_data.ok_or(CryptoError::InvalidStructure("Field v_prime not found".to_string()))?.v_prime,
+                                               &pkr.ok_or(CryptoError::InvalidStructure("Field pkr not found".to_string()))?,
+                                               &revoc_reg.clone().ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc,
+                                               &revoc_reg.ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk,
+                                               &BigNumber::from_bytes(&non_revocation_claim.borrow().m2.to_bytes()?)?)?;
         }
-        Ok(claims)
+        Ok(())
     }
 
     pub fn _init_primary_claim(claim: &RefCell<Claims>, v_prime: &BigNumber) -> Result<(), CryptoError> {

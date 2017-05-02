@@ -186,7 +186,7 @@ impl IssuerCommandExecutor {
         let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
         let claim_def_private = ClaimDefinitionPrivate::from_str(&claim_def_private_json)?;
 
-        let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &claim_req_json.claim_def_seq_no))?;
+        let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &revoc_reg_seq_no))?;
         let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
         let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
 
