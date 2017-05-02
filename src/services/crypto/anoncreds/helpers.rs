@@ -8,8 +8,8 @@ use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
-use std::collections::{HashMap, HashSet};
-
+use std::collections::HashMap;
+use services::crypto::anoncreds::types::AttributeInfo;
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let random = n
@@ -49,36 +49,21 @@ pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError
     BigNumber::from_bytes(&hashed_array[..])
 }
 
-pub fn split_revealed_attrs(encoded_attrs: &HashMap<String, BigNumber>, revealed_ttrs: &HashSet<String>)
-                            -> Result<(HashMap<String, BigNumber>, HashMap<String, BigNumber>), CryptoError> {
-    let mut ar: HashMap<String, BigNumber> = HashMap::new();
-    let mut aur: HashMap<String, BigNumber> = HashMap::new();
-
-    for (attr, value) in encoded_attrs.iter() {
-        if revealed_ttrs.contains(attr) {
-            ar.insert(attr.clone(), value.clone()?);
-        } else {
-            aur.insert(attr.clone(), value.clone()?);
-        }
-    }
-    Ok((ar, aur))
-}
-
-pub fn get_mtilde(unrevealed_attrs: &HashMap<String, BigNumber>)
+pub fn get_mtilde(unrevealed_attrs: &Vec<AttributeInfo>)
                   -> Result<HashMap<String, BigNumber>, CryptoError> {
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
-    for (attr, _) in unrevealed_attrs.iter() {
-        mtilde.insert(attr.clone(), BigNumber::rand(LARGE_MVECT)?);
+    for attr in unrevealed_attrs.iter() {
+        mtilde.insert(attr.name.clone(), BigNumber::rand(LARGE_MVECT)?);
     }
     Ok(mtilde)
 }
 
-fn largest_square_less_than(delta: i64) -> i64 {
-    (delta as f64).sqrt().floor() as i64
+fn largest_square_less_than(delta: i32) -> i32 {
+    (delta as f64).sqrt().floor() as i32
 }
 
-pub fn four_squares(delta: i64) -> Result<HashMap<String, BigNumber>, CryptoError> {
+pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CryptoError> {
     let u1 = largest_square_less_than(delta);
     let u2 = largest_square_less_than(delta - u1.pow(2));
     let u3 = largest_square_less_than(delta - u1.pow(2) - u2.pow(2));
@@ -171,7 +156,7 @@ mod tests {
 
     #[test]
     fn four_squares_works() {
-        let res = four_squares(10 as i64);
+        let res = four_squares(10 as i32);
 
         assert!(res.is_ok());
         let res_data = res.unwrap();
@@ -180,28 +165,6 @@ mod tests {
         assert_eq!("1".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
         assert_eq!("0".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
         assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
-    }
-
-    #[test]
-    fn split_revealed_attrs_works() {
-        let mut encoded_attrs: HashMap<String, BigNumber> = HashMap::new();
-        encoded_attrs.insert("name".to_string(), BigNumber::from_dec("1").unwrap());
-        encoded_attrs.insert("age".to_string(), BigNumber::from_dec("1").unwrap());
-        encoded_attrs.insert("sex".to_string(), BigNumber::from_dec("1").unwrap());
-
-        let revealed_attrs = ::services::crypto::anoncreds::prover::mocks::get_revealed_attrs();
-
-        let res = split_revealed_attrs(&encoded_attrs, &revealed_attrs);
-
-        assert!(res.is_ok());
-
-        let (revealed, unrevealed) = res.unwrap();
-
-        assert_eq!(1, revealed.len());
-        assert_eq!(2, unrevealed.len());
-        assert!(revealed.contains_key("name"));
-        assert!(unrevealed.contains_key("sex"));
-        assert!(unrevealed.contains_key("age"));
     }
 
     #[test]
