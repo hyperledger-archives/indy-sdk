@@ -55,7 +55,7 @@ pub struct ConsistencyProof {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct CatchupReq {
     pub ledgerType: usize,
     pub seqNoStart: usize,

@@ -545,6 +545,30 @@ mod tests {
     }
 
     #[test]
+    fn pool_service_pool_worker_test_start_catchup() {
+        let mut pw: PoolWorker = Default::default();
+        let (gt, handle) = nodes_emulator::start();
+        pw.merkle_tree.append(serde_json::to_string(&gt).unwrap());
+        let mut rn: RemoteNode = RemoteNode::from(gt);
+        rn.connect(&zmq::Context::new());
+        pw.nodes.push(rn);
+        pw.new_mt_size = 2;
+
+        pw.start_catchup();
+
+        let emulator_msgs: Vec<String> = handle.join().unwrap();
+        assert_eq!(1, emulator_msgs.len());
+        let expected_resp: CatchupReq = CatchupReq {
+            ledgerType: 0,
+            seqNoStart: 2,
+            seqNoEnd: 2,
+            catchupTill: 2,
+        };
+        let act_resp: CatchupReq = serde_json::from_str(emulator_msgs[0].as_str()).unwrap();
+        assert_eq!(expected_resp, act_resp);
+    }
+
+    #[test]
     fn pool_service_remote_node_can_connect_and_ping_pong() {
         let (gt, handle) = nodes_emulator::start();
         let mut rn: RemoteNode = RemoteNode::from(gt);
