@@ -550,7 +550,7 @@ mod tests {
         use std::thread;
         use super::*;
 
-        pub fn start() -> (GenTransaction, thread::JoinHandle<()>) {
+        pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let pkc = Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
             let skc = Ed25519ToCurve25519::crypto_sign_ed25519_sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
@@ -576,10 +576,13 @@ mod tests {
             s.set_curve_server(true).expect("set curve server");
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {
+                let mut received_msgs: Vec<String> = Vec::new();
                 if s.poll(zmq::POLLIN, 100).expect("poll") == 1 {
                     let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
                     s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
+                    received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
                 }
+                received_msgs
             });
             (gt, handle)
         }
