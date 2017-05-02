@@ -12,6 +12,8 @@ use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledge
 mod environment;
 use environment::EnvironmentUtils;
 
+use std::fs;
+
 use std::ptr::null;
 
 use utils::callbacks::CallbacksHelpers;
@@ -61,10 +63,16 @@ fn sovrin_open_pool_ledger_can_be_called() {
 
     let (command_handle, callback) = CallbacksHelpers::closure_to_open_pool_ledger_cb(cb);
 
-    let pool_name = CString::new("test1").unwrap();
+    let pool_name: String = "test1".to_string();
+    let c_pool_name = CString::new(pool_name.as_str()).unwrap();
+    let mut path = environment::EnvironmentUtils::pool_path(pool_name.as_str());
+    fs::create_dir_all(path.as_path()).unwrap();
+    path.push(pool_name);
+    path.set_extension("txn");
+    fs::File::create(path.as_path()).unwrap();
 
     let err = sovrin_open_pool_ledger(command_handle,
-                                      pool_name.as_ptr(),
+                                      c_pool_name.as_ptr(),
                                       null(),
                                       callback);
 
@@ -74,9 +82,8 @@ fn sovrin_open_pool_ledger_can_be_called() {
 
     //TODO separate test to check error after open the same pool multiply times
     let (command_handle, callback) = CallbacksHelpers::closure_to_open_pool_ledger_cb(cb2);
-    let pool_name = CString::new("test1").unwrap();
     let err = sovrin_open_pool_ledger(command_handle,
-                                      pool_name.as_ptr(),
+                                      c_pool_name.as_ptr(),
                                       null(),
                                       callback);
 
