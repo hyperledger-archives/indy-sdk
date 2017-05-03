@@ -18,7 +18,7 @@ use std::num::ParseIntError;
 use std::error::Error;
 use services::crypto::anoncreds::helpers::BytesView;
 
-#[cfg(feature = "mock_function")]
+#[cfg(test)]
 use services::crypto::anoncreds::constants::{
     LARGE_NONCE,
     LARGE_ETILDE,
@@ -99,14 +99,14 @@ impl BigNumber {
         }
     }
 
-    #[cfg(not(feature = "mock_function"))]
+    #[cfg(not(test))]
     pub fn rand(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::rand(&mut bn.openssl_bn, size as i32, MSB_MAYBE_ZERO, false)?;
         Ok(bn)
     }
 
-    #[cfg(feature = "mock_function")]
+    #[cfg(test)]
     pub fn rand(size: usize) -> Result<BigNumber, CryptoError> {
         match size {
             LARGE_NONCE => Ok(BigNumber::from_dec("526193306511429638192053")?),
