@@ -11,6 +11,174 @@ pub enum ByteOrder {
     Little
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Accumulator {
+    pub acc: PointG1,
+    pub v: HashSet<i32>,
+    pub max_claim_num: i32,
+    pub current_i: i32
+}
+
+impl Accumulator {
+    pub fn new(acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
+               current_i: i32) -> Accumulator {
+        Accumulator {
+            acc: acc,
+            v: v,
+            max_claim_num: max_claim_num,
+            current_i: current_i
+        }
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.current_i > self.max_claim_num
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AccumulatorPublicKey {
+    pub z: Pair
+}
+
+impl AccumulatorPublicKey {
+    pub fn new(z: Pair) -> AccumulatorPublicKey {
+        AccumulatorPublicKey {
+            z: z
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AccumulatorSecretKey {
+    pub gamma: GroupOrderElement
+}
+
+impl AccumulatorSecretKey {
+    pub fn new(gamma: GroupOrderElement) -> AccumulatorSecretKey {
+        AccumulatorSecretKey {
+            gamma: gamma
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AggregatedProof {
+    pub c_hash: BigNumber,
+    pub c_list: Vec<Vec<u8>>
+}
+
+impl AggregatedProof {
+    pub fn new(c_hash: BigNumber, c_list: Vec<Vec<u8>>) -> AggregatedProof {
+        AggregatedProof {
+            c_hash: c_hash,
+            c_list: c_list
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AttributeInfo {
+    pub schema_seq_no: i32,
+    pub name: String
+}
+
+impl AttributeInfo {
+    pub fn new(schema_seq_no: i32, name: String) -> AttributeInfo {
+        AttributeInfo {
+            schema_seq_no: schema_seq_no,
+            name: name
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimOffer {
+    pub issuer_did: String,
+    pub claim_def_seq_no: i32
+}
+
+impl ClaimOffer {
+    pub fn new(issuer_did: String, claim_def_seq_no: i32) -> ClaimOffer {
+        ClaimOffer {
+            issuer_did: issuer_did,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimRequestJson {
+    pub claim_request: ClaimRequest,
+    pub issuer_did: String,
+    pub claim_def_seq_no: i32
+}
+
+impl ClaimRequestJson {
+    pub fn new(claim_request: ClaimRequest, issuer_did: String, claim_def_seq_no: i32) -> ClaimRequestJson {
+        ClaimRequestJson {
+            claim_request: claim_request,
+            issuer_did: issuer_did,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ClaimInfo {
+    pub claim_uuid: String,
+    pub attrs: HashMap<String, String>,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: i32,
+    pub schema_seq_no: i32
+}
+
+impl ClaimInfo {
+    pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
+               revoc_reg_seq_no: i32, schema_seq_no: i32) -> ClaimInfo {
+        ClaimInfo {
+            claim_uuid: claim_uuid,
+            attrs: attrs,
+            claim_def_seq_no: claim_def_seq_no,
+            revoc_reg_seq_no: revoc_reg_seq_no,
+            schema_seq_no: schema_seq_no
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimRequest {
+    pub prover_did: String,
+    pub u: BigNumber,
+    pub ur: Option<PointG1>
+}
+
+impl ClaimRequest {
+    pub fn new(prover_did: String, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
+        ClaimRequest {
+            prover_did: prover_did,
+            u: u,
+            ur: ur
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimProof {
+    pub proof: Proof,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: i32
+}
+
+impl ClaimProof {
+    pub fn new(proof: Proof, claim_def_seq_no: i32, revoc_reg_seq_no: i32) -> ClaimProof {
+        ClaimProof {
+            proof: proof,
+            claim_def_seq_no: claim_def_seq_no,
+            revoc_reg_seq_no: revoc_reg_seq_no
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Serialize)]
 pub struct ClaimDefinition {
     pub public_key: PublicKey,
@@ -19,10 +187,71 @@ pub struct ClaimDefinition {
     pub signature_type: String
 }
 
+impl ClaimDefinition {
+    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>,
+               schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
+        ClaimDefinition {
+            public_key: public_key,
+            public_key_revocation: public_key_revocation,
+            schema_seq_no: schema_seq_no,
+            signature_type: signature_type
+        }
+    }
+
+    pub fn clone(&self) -> Result<ClaimDefinition, CryptoError> {
+        Ok(ClaimDefinition {
+            public_key: self.public_key.clone()?,
+            public_key_revocation: self.public_key_revocation.clone(),
+            schema_seq_no: self.schema_seq_no.clone(),
+            signature_type: self.signature_type.clone(),
+        })
+    }
+}
+
 #[derive(Deserialize, Debug, Serialize)]
 pub struct ClaimDefinitionPrivate {
     pub secret_key: SecretKey,
     pub secret_key_revocation: Option<RevocationSecretKey>
+}
+
+impl ClaimDefinitionPrivate {
+    pub fn new(secret_key: SecretKey, secret_key_revocation: Option<RevocationSecretKey>) -> ClaimDefinitionPrivate {
+        ClaimDefinitionPrivate {
+            secret_key: secret_key,
+            secret_key_revocation: secret_key_revocation
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Claims {
+    pub primary_claim: PrimaryClaim,
+    pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
+}
+
+impl Claims {
+    pub fn new(primary_claim: PrimaryClaim,
+               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> Claims {
+        Claims {
+            primary_claim: primary_claim,
+            non_revocation_claim: non_revocation_claim
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ClaimInitData {
+    pub u: BigNumber,
+    pub v_prime: BigNumber
+}
+
+impl ClaimInitData {
+    pub fn new(u: BigNumber, v_prime: BigNumber) -> ClaimInitData {
+        ClaimInitData {
+            u: u,
+            v_prime: v_prime
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -44,7 +273,6 @@ impl ClaimJson {
         }
     }
 }
-
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistry {
@@ -192,56 +420,6 @@ impl SecretKey {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AccumulatorPublicKey {
-    pub z: Pair
-}
-
-impl AccumulatorPublicKey {
-    pub fn new(z: Pair) -> AccumulatorPublicKey {
-        AccumulatorPublicKey {
-            z: z
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AccumulatorSecretKey {
-    pub gamma: GroupOrderElement
-}
-
-impl AccumulatorSecretKey {
-    pub fn new(gamma: GroupOrderElement) -> AccumulatorSecretKey {
-        AccumulatorSecretKey {
-            gamma: gamma
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Accumulator {
-    pub acc: PointG1,
-    pub v: HashSet<i32>,
-    pub max_claim_num: i32,
-    pub current_i: i32
-}
-
-impl Accumulator {
-    pub fn new(acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
-               current_i: i32) -> Accumulator {
-        Accumulator {
-            acc: acc,
-            v: v,
-            max_claim_num: max_claim_num,
-            current_i: current_i
-        }
-    }
-
-    pub fn is_full(&self) -> bool {
-        self.current_i > self.max_claim_num
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Witness {
     pub sigma_i: PointG1,
@@ -264,23 +442,6 @@ impl Witness {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ClaimRequest {
-    pub prover_did: String,
-    pub u: BigNumber,
-    pub ur: Option<PointG1>
-}
-
-impl ClaimRequest {
-    pub fn new(prover_did: String, u: BigNumber, ur: Option<PointG1>) -> ClaimRequest {
-        ClaimRequest {
-            prover_did: prover_did,
-            u: u,
-            ur: ur
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum PredicateType {
     GE
@@ -299,37 +460,6 @@ impl Predicate {
             attr_name: attr_name,
             p_type: p_type,
             value: value
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct ClaimInitData {
-    pub u: BigNumber,
-    pub v_prime: BigNumber
-}
-
-impl ClaimInitData {
-    pub fn new(u: BigNumber, v_prime: BigNumber) -> ClaimInitData {
-        ClaimInitData {
-            u: u,
-            v_prime: v_prime
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Claims {
-    pub primary_claim: PrimaryClaim,
-    pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
-}
-
-impl Claims {
-    pub fn new(primary_claim: PrimaryClaim,
-               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> Claims {
-        Claims {
-            primary_claim: primary_claim,
-            non_revocation_claim: non_revocation_claim
         }
     }
 }
@@ -675,36 +805,6 @@ impl NonRevocProof {
     }
 }
 
-impl ClaimDefinition {
-    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>,
-               schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
-        ClaimDefinition {
-            public_key: public_key,
-            public_key_revocation: public_key_revocation,
-            schema_seq_no: schema_seq_no,
-            signature_type: signature_type
-        }
-    }
-
-    pub fn clone(&self) -> Result<ClaimDefinition, CryptoError> {
-        Ok(ClaimDefinition {
-            public_key: self.public_key.clone()?,
-            public_key_revocation: self.public_key_revocation.clone(),
-            schema_seq_no: self.schema_seq_no.clone(),
-            signature_type: self.signature_type.clone(),
-        })
-    }
-}
-
-impl ClaimDefinitionPrivate {
-    pub fn new(secret_key: SecretKey, secret_key_revocation: Option<RevocationSecretKey>) -> ClaimDefinitionPrivate {
-        ClaimDefinitionPrivate {
-            secret_key: secret_key,
-            secret_key_revocation: secret_key_revocation
-        }
-    }
-}
-
 impl RevocationRegistry {
     pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
         RevocationRegistry {
@@ -720,75 +820,6 @@ impl RevocationRegistryPrivate {
         RevocationRegistryPrivate {
             acc_sk: acc_sk,
             tails: tails
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AttributeInfo {
-    pub schema_seq_no: i32,
-    pub name: String
-}
-
-impl AttributeInfo {
-    pub fn new(schema_seq_no: i32, name: String) -> AttributeInfo {
-        AttributeInfo {
-            schema_seq_no: schema_seq_no,
-            name: name
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimOffer {
-    pub issuer_did: String,
-    pub claim_def_seq_no: i32
-}
-
-impl ClaimOffer {
-    pub fn new(issuer_did: String, claim_def_seq_no: i32) -> ClaimOffer {
-        ClaimOffer {
-            issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimRequestJson {
-    pub claim_request: ClaimRequest,
-    pub issuer_did: String,
-    pub claim_def_seq_no: i32
-}
-
-impl ClaimRequestJson {
-    pub fn new(claim_request: ClaimRequest, issuer_did: String, claim_def_seq_no: i32) -> ClaimRequestJson {
-        ClaimRequestJson {
-            claim_request: claim_request,
-            issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ClaimInfo {
-    pub claim_uuid: String,
-    pub attrs: HashMap<String, String>,
-    pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32,
-    pub schema_seq_no: i32
-}
-
-impl ClaimInfo {
-    pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
-               revoc_reg_seq_no: i32, schema_seq_no: i32) -> ClaimInfo {
-        ClaimInfo {
-            claim_uuid: claim_uuid,
-            attrs: attrs,
-            claim_def_seq_no: claim_def_seq_no,
-            revoc_reg_seq_no: revoc_reg_seq_no,
-            schema_seq_no: schema_seq_no
         }
     }
 }
@@ -845,24 +876,11 @@ impl RequestedClaimsJson {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AggregatedProof {
-    pub c_hash: BigNumber,
-    pub c_list: Vec<Vec<u8>>
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProofJson {
     pub revealed_attrs: HashMap<String, (String, String, String)>,
     pub unrevealed_attrs: HashMap<String, String>,
     pub self_attested_attrs: HashMap<String, String>,
     pub predicates: HashMap<String, String>
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ClaimProof {
-    pub proof: Proof,
-    pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32
 }
 
 #[derive(Debug, Serialize, Deserialize)]

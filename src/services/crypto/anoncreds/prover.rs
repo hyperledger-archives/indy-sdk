@@ -392,20 +392,15 @@ impl Prover {
                 non_revoc_proof: non_revoc_proof
             };
 
-            let claim_proof = ClaimProof {
-                proof: proof,
-                claim_def_seq_no: proof_claim.claim_json.claim_def_seq_no,
-                revoc_reg_seq_no: proof_claim.claim_json.revoc_reg_seq_no
-            };
+            let claim_proof = ClaimProof::new(proof,
+                                              proof_claim.claim_json.claim_def_seq_no,
+                                              proof_claim.claim_json.revoc_reg_seq_no);
 
             proofs.insert(proof_claim_uuid.clone(), claim_proof);
             attributes.insert(proof_claim_uuid.clone(), proof_claim.claim_json.claim.clone());
         }
 
-        let aggregated_proof = AggregatedProof {
-            c_hash: c_h,
-            c_list: c_list
-        };
+        let aggregated_proof = AggregatedProof::new(c_h, c_list);
 
         Ok((proofs, attributes, aggregated_proof))
     }
