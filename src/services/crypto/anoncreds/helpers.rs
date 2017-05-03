@@ -9,7 +9,6 @@ use services::crypto::wrappers::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::HashMap;
-use services::crypto::anoncreds::types::AttributeInfo;
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let random = n
@@ -49,12 +48,12 @@ pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError
     BigNumber::from_bytes(&hashed_array[..])
 }
 
-pub fn get_mtilde(unrevealed_attrs: &Vec<AttributeInfo>)
+pub fn get_mtilde(unrevealed_attrs: &Vec<String>)
                   -> Result<HashMap<String, BigNumber>, CryptoError> {
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for attr in unrevealed_attrs.iter() {
-        mtilde.insert(attr.name.clone(), BigNumber::rand(LARGE_MVECT)?);
+        mtilde.insert(attr.clone(), BigNumber::rand(LARGE_MVECT)?);
     }
     Ok(mtilde)
 }

@@ -59,23 +59,6 @@ pub struct RevocationRegistryPrivate {
     pub tails: HashMap<i32, PointG1>
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SchemaKey {
-    pub name: String,
-    pub version: String,
-    pub issue_id: String
-}
-
-impl SchemaKey {
-    pub fn new(name: String, version: String, issuer_id: String) -> SchemaKey {
-        SchemaKey {
-            name: name,
-            version: version,
-            issue_id: issuer_id
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
     pub name: String,
@@ -480,27 +463,20 @@ impl NonRevocProofCList {
     }
 }
 
-pub struct ProofInput {
-    pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Predicate>,
-    pub ts: Option<String>,
-    pub pubseq_no: Option<String>
-}
-
 pub struct ProofClaims {
     pub claim_json: ClaimJson,
     pub schema: Schema,
     pub claim_definition: ClaimDefinition,
     pub revocation_registry: RevocationRegistry,
-    pub revealed_attrs: Vec<AttributeInfo>,
-    pub predicates: Vec<Predicate>,
-    pub unrevealed_attrs: Vec<AttributeInfo>
+    pub revealed_attrs: Vec<String>,
+    pub unrevealed_attrs: Vec<String>,
+    pub predicates: Vec<Predicate>
 }
 
 impl ProofClaims {
     pub fn new(claim_json: ClaimJson, schema: Schema, claim_definition: ClaimDefinition,
                revocation_registry: RevocationRegistry, predicates: Vec<Predicate>,
-               revealed_attrs: Vec<AttributeInfo>, unrevealed_attrs: Vec<AttributeInfo>) -> ProofClaims {
+               revealed_attrs: Vec<String>, unrevealed_attrs: Vec<String>) -> ProofClaims {
         ProofClaims {
             claim_json: claim_json,
             schema: schema,
@@ -513,17 +489,19 @@ impl ProofClaims {
     }
 }
 
-pub struct FullProof {
-    pub c_hash: BigNumber,
-    pub schema_keys: Vec<SchemaKey>,
-    pub proofs: Vec<Proof>,
-    pub c_list: Vec<Vec<u8>>
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
     pub primary_proof: PrimaryProof,
     pub non_revoc_proof: Option<NonRevocProof>
+}
+
+impl Proof {
+    pub fn new(primary_proof: PrimaryProof, non_revoc_proof: Option<NonRevocProof>) -> Proof {
+        Proof {
+            primary_proof: primary_proof,
+            non_revoc_proof: non_revoc_proof
+        }
+    }
 }
 
 pub struct InitProof {
@@ -606,7 +584,7 @@ pub struct PrimaryPrecicateGEInitProof {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryEqualProof {
-    pub revealed_attr_names: Vec<AttributeInfo>,
+    pub revealed_attrs: HashMap<String, String>,
     pub a_prime: BigNumber,
     pub e: BigNumber,
     pub v: BigNumber,

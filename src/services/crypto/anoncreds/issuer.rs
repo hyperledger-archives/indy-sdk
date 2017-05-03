@@ -466,6 +466,20 @@ pub mod mocks {
         attributes
     }
 
+    pub fn get_gvt_encoded_revealed_attributes() -> HashMap<String, String> {
+        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
+        encoded_attributes.insert("name".to_string(), "1139481716457488690172217916278103335".to_string());
+        encoded_attributes
+    }
+
+    pub fn get_gvt_encoded_unrevealed_attributes() -> HashMap<String, String> {
+        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
+        encoded_attributes.insert("age".to_string(), "28".to_string());
+        encoded_attributes.insert("sex".to_string(), "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string());
+        encoded_attributes.insert("height".to_string(), "175".to_string());
+        encoded_attributes
+    }
+
     pub fn get_gvt_encoded_attributes() -> Result<HashMap<String, BigNumber>, CryptoError> {
         let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
         encoded_attributes.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335")?);
