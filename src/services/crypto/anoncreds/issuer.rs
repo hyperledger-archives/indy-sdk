@@ -49,7 +49,8 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: Schema, signature_type: Option<&str>,
+
+    pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
                          create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
@@ -65,6 +66,10 @@ impl Issuer {
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
+        if schema.attribute_names.len() == 0 {
+            return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
+        }
+
         let p = BigNumber::generate_safe_prime(LARGE_PRIME)?;
         let q = BigNumber::generate_safe_prime(LARGE_PRIME)?;
 
@@ -154,9 +159,13 @@ impl Issuer {
         Ok((revocation_registry, revocation_registry_private))
     }
 
-    pub fn create_claim(&self, claim_definition: ClaimDefinition, claim_definition_private: ClaimDefinitionPrivate,
-                        revocation_registry: &RefCell<RevocationRegistry>, revocation_registry_private: &RevocationRegistryPrivate,
-                        claim_request: &ClaimRequest, attributes: &HashMap<String, Vec<String>>,
+    pub fn create_claim(&self,
+                        claim_definition: ClaimDefinition,
+                        claim_definition_private: ClaimDefinitionPrivate,
+                        revocation_registry: &RefCell<RevocationRegistry>,
+                        revocation_registry_private: &RevocationRegistryPrivate,
+                        claim_request: &ClaimRequest,
+                        attributes: &HashMap<String, Vec<String>>,
                         user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
         let context_attribute = Issuer::_generate_context_attribute(revocation_registry.borrow().claim_def_seq_no, &claim_request.prover_did)?;
 
@@ -410,7 +419,53 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encode_attribute_works_short_hash() {
+    fn generate_claim_definition_without_revocation_part_works() {
+        let issuer = Issuer::new();
+        let schema = mocks::get_gvt_schema();
+        let signature_type = None;
+        let create_non_revoc = false;
+
+        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        assert!(result.is_ok());
+
+        let (claim_definition, claim_definition_private) = result.unwrap();
+
+        assert!(claim_definition.public_key_revocation.is_none());
+        assert!(claim_definition_private.secret_key_revocation.is_none());
+    }
+
+    #[test]
+    fn generate_claim_definition_with_revocation_part_works() {
+        let issuer = Issuer::new();
+        let schema = mocks::get_gvt_schema();
+        let signature_type = None;
+        let create_non_revoc = true;
+
+        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        assert!(result.is_ok());
+
+        let (claim_definition, claim_definition_private) = result.unwrap();
+
+        assert!(claim_definition.public_key_revocation.is_some());
+        assert!(claim_definition_private.secret_key_revocation.is_some());
+    }
+
+    #[test]
+    fn generate_claim_definition_without_attributes_does_not_works() {
+        let issuer = Issuer::new();
+        let mut schema = mocks::get_gvt_schema();
+        let signature_type = None;
+        let create_non_revoc = false;
+
+        let empty_attrs: HashSet<String> = HashSet::new();
+        schema.attribute_names = empty_attrs;
+
+        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn encode_attribute_works() {
         let test_str = "5435";
         let test_answer = "83761840706354868391674207739241454863743470852830526299004654280720761327142";
         assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
@@ -424,7 +479,7 @@ mod tests {
         let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
-
+    
     #[test]
     fn sign_works() {
         let public_key = mocks::get_pk();
@@ -442,6 +497,21 @@ mod tests {
 pub mod mocks {
     use super::*;
 
+    pub fn get_gvt_schema() -> Schema {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert("name".to_string());
+        attr_names.insert("age".to_string());
+        attr_names.insert("height".to_string());
+        attr_names.insert("sex".to_string());
+
+        Schema {
+            name: "gvt".to_string(),
+            version: "1.0".to_string(),
+            attribute_names: attr_names,
+            seq_no: 1
+        }
+    }
+
     pub fn get_gvt_attributes() -> HashMap<String, Vec<String>> {
         let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
         attributes.insert("name".to_string(), vec!["Alex".to_string(), "1139481716457488690172217916278103335".to_string()]);
@@ -454,7 +524,7 @@ pub mod mocks {
     pub fn get_xyz_attributes() -> HashMap<String, Vec<String>> {
         let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
         attributes.insert("status".to_string(), vec!["partial".to_string(), "51792877103171595686471452153480627530895".to_string()]);
-        attributes.insert("period".to_string(), vec!["8".to_string(), "28".to_string()]);
+        attributes.insert("period".to_string(), vec!["8".to_string(), "8".to_string()]);
         attributes
     }
 
@@ -478,6 +548,22 @@ pub mod mocks {
         encoded_attributes.insert("status".to_string(), BigNumber::from_dec("51792877103171595686471452153480627530895").unwrap());
         encoded_attributes.insert("period".to_string(), BigNumber::from_dec("8").unwrap());
         encoded_attributes
+    }
+
+    pub fn get_xyz_row_attributes() -> HashMap<String, String> {
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        attributes.insert("status".to_string(), "partial".to_string());
+        attributes.insert("period".to_string(), "8".to_string());
+        attributes
+    }
+
+    pub fn get_gvt_row_attributes() -> HashMap<String, String> {
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        attributes.insert("name".to_string(), "Alex".to_string());
+        attributes.insert("age".to_string(), "28".to_string());
+        attributes.insert("sex".to_string(), "male".to_string());
+        attributes.insert("height".to_string(), "175".to_string());
+        attributes
     }
 
     pub fn get_secret_key() -> SecretKey {

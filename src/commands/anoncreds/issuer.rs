@@ -107,7 +107,7 @@ impl IssuerCommandExecutor {
         let schema = Schema::from_str(schema_json)?;
 
         let (claim_definition, claim_definition_private) =
-            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type, create_non_revoc)?;
+            self.crypto_service.anoncreds.issuer.generate_claim_definition(schema, signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_string(&claim_definition)?;
         let claim_definition_private_json = ClaimDefinitionPrivate::to_string(&claim_definition_private)?;
