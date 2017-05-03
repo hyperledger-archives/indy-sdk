@@ -1,20 +1,26 @@
 use services::crypto::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
-    FullProof,
+    AttributeInfo,
+    //    FullProof,
     NonRevocProof,
-    NonRevocProofCList,
-    NonRevocProofXList,
+    //    NonRevocProofCList,
+    //    NonRevocProofXList,
     NonRevocProofTauList,
     ProofInput,
     PrimaryEqualProof,
     PrimaryPredicateGEProof,
-    PrimaryProof,
+    //    PrimaryProof,
     PublicKey,
-    RevocationPublicKey
+    RevocationPublicKey,
+    //    ProofJson,
+    //    ProofRequestJson,
+    //    ClaimDefinition,
+    //    RevocationRegistry,
+    //    Schema
 };
-use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
-use services::crypto::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
+use services::crypto::anoncreds::constants::{/*LARGE_E_START,*/ ITERATION, LARGE_NONCE};
+use services::crypto::anoncreds::helpers::{/*AppendByteArray, get_hash_as_int,*/bignum_to_group_element};
 use services::crypto::wrappers::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
@@ -32,98 +38,119 @@ impl Verifier {
         BigNumber::rand(LARGE_NONCE)
     }
 
-    pub fn verify(&self, pk: PublicKey, pkr: RevocationPublicKey, accum: Accumulator, accum_pk: AccumulatorPublicKey,
-                  proof_input: ProofInput, proof: FullProof, all_revealed_attrs: HashMap<String, BigNumber>,
-                  nonce: BigNumber, attr_names: HashSet<String>, params: NonRevocProofXList,
-                  proof_c: NonRevocProofCList) -> Result<bool, CryptoError> {
-        let mut tau_list: Vec<Vec<u8>> = Vec::new();
-
-        for (schema_key, proof_item) in proof.schema_keys.iter().zip(proof.proofs.iter()) {
-            if let Some(ref non_revocation_proof) = proof_item.non_revoc_proof {
-                tau_list.extend_from_slice(
-                    &Verifier::_verify_non_revocation_proof(&pkr, &accum, &accum_pk, &proof.c_hash,
-                                                            &non_revocation_proof, &proof_input,
-                                                            &params, &proof_c)?.as_slice()?
-                );
-            };
-
-            tau_list.append_vec(
-                &Verifier::_verify_primary_proof(&pk, &proof_input, &proof.c_hash,
-                                                 &proof_item.primary_proof, &all_revealed_attrs, &attr_names)?
-            )?;
-        }
-
-        let mut values: Vec<Vec<u8>> = Vec::new();
-
-        values.push(nonce.to_bytes()?);
-        values.extend_from_slice(&tau_list);
-        values.extend_from_slice(&proof.c_list);
-
-        let c_hver = get_hash_as_int(&mut values)?;
-
-        Ok(c_hver == proof.c_hash)
-    }
-
-    fn _verify_primary_proof(pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber,
-                             primary_proof: &PrimaryProof, all_revealed_attrs: &HashMap<String, BigNumber>,
-                             attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof,
-                                                                   c_hash, all_revealed_attrs, attr_names)?;
-
-        for ge_proof in primary_proof.ge_proofs.iter() {
-            t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
-        }
-        Ok(t_hat)
-    }
-
-    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
-                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
-        let unrevealed_attr_names: HashSet<String> =
-            attr_names
-                .difference(&proof.revealed_attr_names)
-                .map(|attr| attr.to_owned())
-                .collect::<HashSet<String>>();
-
-        let t1: BigNumber = Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
-                                               &proof.m1, &proof.m2, &unrevealed_attr_names)?;
-
-        let mut ctx = BigNumber::new_context()?;
-        let mut rar = BigNumber::from_dec("1")?;
-
-        for attr_name in proof.revealed_attr_names.iter() {
-            let cur_r = pk.r.get(attr_name)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr_name)))?;
-            let cur_attr = all_revealed_attrs.get(attr_name)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in all_revealed_attrs", attr_name)))?;
-
-            rar = cur_r
-                .mod_exp(&cur_attr, &pk.n, Some(&mut ctx))?
-                .mul(&rar, Some(&mut ctx))?;
-        }
-
-
-        let tmp: BigNumber =
-            BigNumber::from_dec("2")?
-                .exp(
-                    &BigNumber::from_dec(&LARGE_E_START.to_string())?,
-                    Some(&mut ctx)
-                )?;
-
-        rar = proof.a_prime
-            .mod_exp(&tmp, &pk.n, Some(&mut ctx))?
-            .mul(&rar, Some(&mut ctx))?;
-
-        let t2: BigNumber = pk.z
-            .mod_div(&rar, &pk.n)?
-            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
-            .inverse(&pk.n, Some(&mut ctx))?;
-
-        let t: BigNumber = t1
-            .mul(&t2, Some(&mut ctx))?
-            .modulus(&pk.n, Some(&mut ctx))?;
-
-        Ok(vec![t])
-    }
+    //    pub fn verify(&self,
+    //                  proof: ProofJson,
+    //                  proof_req: ProofRequestJson,
+    //                  claim_defs: HashMap<String, ClaimDefinition>,
+    //                  revoc_regs: HashMap<String, RevocationRegistry>,
+    //                  schemas: HashMap<String, Schema>) -> Result<bool, CryptoError> {
+    //        let mut tau_list: Vec<Vec<u8>> = Vec::new();
+    //
+    //        for (proof_uuid, proof_item) in proof.proofs {
+    //            let claim_definition: ClaimDefinition = claim_defs.get(proof_uuid)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Claim definition is not found")))?;
+    //            let revoc_reg: RevocationRegistry = revoc_regs.get(proof_uuid)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Revocation registry is not found")))?;
+    //            let schema: Schema = schemas.get(proof_uuid)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Schema is not found")))?;
+    //
+    //            if let Some(ref non_revocation_proof) = proof_item.proof.non_revoc_proof {
+    //
+    //                let pkr = &claim_definition.public_key_revocation
+    //                    .ok_or(CryptoError::InvalidStructure("Field public_key_revocation not found".to_string()))?
+    //
+    //                tau_list.extend_from_slice(
+    //                    &Verifier::_verify_non_revocation_proof(
+    //                        pkr,
+    //                        &revoc_reg.accumulator,
+    //                        &revoc_reg.acc_pk,
+    //                        &proof.aggregated_proof.c_hash,
+    //                        &non_revocation_proof,
+    //                        proof_req)?.as_slice()?
+    //                );
+    //            };
+    //
+    //            tau_list.append_vec(
+    //                &Verifier::_verify_primary_proof(&claim_definition.public_key,
+    //                                                 &proof_req,
+    //                                                 &proof.aggregated_proof.c_hash,
+    //                                                 &proof_item.primary_proof,
+    //                                                 &all_revealed_attrs,
+    //                                                 &attr_names)?
+    //            )?;
+    //        }
+    //
+    //        let mut values: Vec<Vec<u8>> = Vec::new();
+    //
+    //        values.push(nonce.to_bytes()?);
+    //        values.extend_from_slice(&tau_list);
+    //        values.extend_from_slice(&proof.c_list);
+    //
+    //        let c_hver = get_hash_as_int(&mut values)?;
+    //
+    //        Ok(c_hver == proof.c_hash)
+    //    }
+    //
+    //    fn _verify_primary_proof(pk: &PublicKey, proof_input: &ProofInput, c_hash: &BigNumber,
+    //                             primary_proof: &PrimaryProof, all_revealed_attrs: &HashMap<String, BigNumber>,
+    //                             attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
+    //        let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof,
+    //                                                                   c_hash, all_revealed_attrs, attr_names)?;
+    //
+    //        for ge_proof in primary_proof.ge_proofs.iter() {
+    //            t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
+    //        }
+    //        Ok(t_hat)
+    //    }
+    //
+    //    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber,
+    //                        all_revealed_attrs: &HashMap<String, BigNumber>, attr_names: &HashSet<String>) -> Result<Vec<BigNumber>, CryptoError> {
+    //        let unrevealed_attr_names: HashSet<String> =
+    //            attr_names
+    //                .difference(&proof.revealed_attr_names)
+    //                .map(|attr| attr.to_owned())
+    //                .collect::<HashSet<String>>();
+    //
+    //        let t1: BigNumber = Verifier::calc_teq(&pk, &proof.a_prime, &proof.e, &proof.v, &proof.m,
+    //                                               &proof.m1, &proof.m2, &unrevealed_attr_names)?;
+    //
+    //        let mut ctx = BigNumber::new_context()?;
+    //        let mut rar = BigNumber::from_dec("1")?;
+    //
+    //        for attr_name in proof.revealed_attr_names.iter() {
+    //            let cur_r = pk.r.get(attr_name)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr_name)))?;
+    //            let cur_attr = all_revealed_attrs.get(attr_name)
+    //                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in all_revealed_attrs", attr_name)))?;
+    //
+    //            rar = cur_r
+    //                .mod_exp(&cur_attr, &pk.n, Some(&mut ctx))?
+    //                .mul(&rar, Some(&mut ctx))?;
+    //        }
+    //
+    //
+    //        let tmp: BigNumber =
+    //            BigNumber::from_dec("2")?
+    //                .exp(
+    //                    &BigNumber::from_dec(&LARGE_E_START.to_string())?,
+    //                    Some(&mut ctx)
+    //                )?;
+    //
+    //        rar = proof.a_prime
+    //            .mod_exp(&tmp, &pk.n, Some(&mut ctx))?
+    //            .mul(&rar, Some(&mut ctx))?;
+    //
+    //        let t2: BigNumber = pk.z
+    //            .mod_div(&rar, &pk.n)?
+    //            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
+    //            .inverse(&pk.n, Some(&mut ctx))?;
+    //
+    //        let t: BigNumber = t1
+    //            .mul(&t2, Some(&mut ctx))?
+    //            .modulus(&pk.n, Some(&mut ctx))?;
+    //
+    //        Ok(vec![t])
+    //    }
 
     fn _verify_ge_predicate(pk: &PublicKey, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
@@ -225,15 +252,15 @@ impl Verifier {
 
     pub fn calc_teq(pk: &PublicKey, a_prime: &BigNumber, e: &BigNumber, v: &BigNumber,
                     mtilde: &HashMap<String, BigNumber>, m1tilde: &BigNumber, m2tilde: &BigNumber,
-                    unrevealed_attr_names: &HashSet<String>) -> Result<BigNumber, CryptoError> {
+                    unrevealed_attrs: &Vec<AttributeInfo>) -> Result<BigNumber, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
         let mut result: BigNumber = BigNumber::from_dec("1")?;
 
-        for k in unrevealed_attr_names.iter() {
-            let cur_r = pk.r.get(k)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", k)))?;
-            let cur_m = mtilde.get(k)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in mtilde", k)))?;
+        for k in unrevealed_attrs.iter() {
+            let cur_r = pk.r.get(&k.name)
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", &k.name)))?;
+            let cur_m = mtilde.get(&k.name)
+                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in mtilde", &k.name)))?;
 
             result = cur_r
                 .mod_exp(&cur_m, &pk.n, Some(&mut ctx))?
@@ -262,13 +289,12 @@ impl Verifier {
 
     pub fn _verify_non_revocation_proof(pkr: &RevocationPublicKey, accum: &Accumulator, accum_pk: &AccumulatorPublicKey,
                                         c_hash: &BigNumber, proof: &NonRevocProof,
-                                        proof_input: &ProofInput, params: &NonRevocProofXList,
-                                        proof_c: &NonRevocProofCList)
+                                        proof_input: &ProofInput)
                                         -> Result<NonRevocProofTauList, CryptoError> {
         let ch_num_z = bignum_to_group_element(&c_hash)?;
 
         let t_hat_expected_values = Issuer::_create_tau_list_expected_values(pkr, accum, accum_pk, &proof.c_list)?;
-        let t_hat_calc_values = Issuer::_create_tau_list_values(&pkr, &accum, &params, &proof_c)?;
+        let t_hat_calc_values = Issuer::_create_tau_list_values(&pkr, &accum, &proof.x_list, &proof.c_list)?;
 
         Ok(NonRevocProofTauList::new(
             t_hat_expected_values.t1.mul(&ch_num_z)?.add(&t_hat_calc_values.t1)?,
@@ -286,96 +312,96 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::types::{Proof};
+    //    use services::crypto::anoncreds::types::Proof;
     use services::crypto::anoncreds::prover;
 
-    #[test]
-    #[ignore]
-    fn verify_test() {
-        let verifier = Verifier::new();
-
-        let mut all_revealed_attrs = HashMap::new();
-        all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
-
-        let nonce = BigNumber::from_dec("150136900874297269339868").unwrap();
-
-        let predicate = prover::mocks::get_gvt_predicate();
-        let revealed_attrs = prover::mocks::get_revealed_attrs();
-
-        let proof_input = ProofInput {
-            revealed_attrs: revealed_attrs,
-            predicates: vec![predicate],
-            ts: None,
-            pubseq_no: None
-        };
-        let schema_key = prover::mocks::get_gvt_schema_key();
-
-        let eq_proof = mocks::get_eq_proof().unwrap();
-        let ge_proof = mocks::get_ge_proof().unwrap();
-        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
-
-        let primary_proof = PrimaryProof {
-            eq_proof: eq_proof,
-            ge_proofs: vec![ge_proof]
-        };
-
-        let proof = Proof {
-            primary_proof: primary_proof,
-            non_revoc_proof: None
-        };
-
-        let mut c_list: Vec<Vec<u8>> = Vec::new();
-        c_list.push(BigNumber::from_dec("40419298688137869960380469261905532334637639358156591584198474730159922131845236332832025717302613443181736582484815352622543977612852994735900017491040605701377167257840237093127235154905233147231624795995550192527737607707481813233736307936765338317096333960487846640715651848248086837945953304627391859983207411514951469156988685936443758957189790705690990639460733132695525553505807698837031674923144499907591301228015553240722485660599743846214527228665753677346129919027033129697444096042970703607475089467398949054480185324997053077334850238886591657619835566943199882335077289734306701560214493298329372650208").unwrap().to_bytes().unwrap());
-        c_list.push(BigNumber::from_dec("47324660473671124619766812292419966979218618321195442620378932643647808062884161914306007419982240044457291065692968166148732382413212489017818981907451810722427822947434701298426390923083851509190004176754308805544221591456757905034099563880547910682773230595375415855727922588298088826548392572988130537249508717978384646013947582546019729481146325021203427278860772516903057439582612008766763139310189576482839673644190743850755863703998143105224320265752122772813607076484126428361088197863213824404833756768819688779202461859342789097743829182212846809717194485567647846915198890325457736010590303357798473896700").unwrap().to_bytes().unwrap());
-        c_list.push(BigNumber::from_dec("66450517869982062342267997954977032094273479808003128223349391866956221490486227999714708210796649990670474598595144373853545114810461129311488376523373030855652459048816291000188287472254577785187966494209478499264992271438571724964296278469527432908172064052750006541558566871906132838361892473377520708599782848821918665128705358243638618866198451401258608314504494676177177947997456537352832881339718141901132664969277082920274734598386059889447857289735878564021235996969965313779742103257439235693097049742098377325618673992118875810433536654414222034985875962188702260416140781008765351079345681492041353915517").unwrap().to_bytes().unwrap());
-        c_list.push(BigNumber::from_dec("78070105827196661040600041337907173457854153272544487321115604386049561730740327194221314976259005306609156189248394958383576900423218823055146785779218825861357426069962919084354758074120740816717011931695486881373830741590805899909505141118332615581712873355033382526097135102214961582694467049685680521168599662570089045106588071095868679795860083477878392645086886419842393734377034091691861772354369870695105905981921915221671803577058964332747681671537519176296905411380141019477128072347200017918410813327520323098847715450370454307294123150568469231654825506721027060142669757561165103933103053528023034511606").unwrap().to_bytes().unwrap());
-        c_list.push(BigNumber::from_dec("83200684536414956340494235687534491849084621311799273540992839950256544160417513543839780900524522144337818273323604172338904806642960330906344496013294511314421085013454657603118717753084155308020373268668810396333088299295804908264158817923391623116540755548965302906724851186886232431450985279429884730164260492598022651383336322153593491103199117187195782444754665111992163534318072330538584638714508386890137616826706777205862989966213285981526090164444190640439286605077153051456582398200856066916720632647408699812551248250054268483664698756596786352565981324521663234607300070180614929105425712839420242514321").unwrap().to_bytes().unwrap());
-
-        let proof = FullProof {
-            c_hash: BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap(),
-            schema_keys: vec![schema_key],
-            proofs: vec![proof],
-            c_list: c_list
-        };
-        let attr_names = mocks::get_attr_names();
-        let pkr = prover::mocks::get_public_key_revocation().unwrap();
-        let accum = prover::mocks::get_accumulator().unwrap();
-        let accum_pk = mocks::get_accum_publick_key().unwrap();
-        let params = prover::mocks::get_non_revocation_proof_x_list();
-        let proof_c = prover::mocks::get_non_revocation_proof_c_list();
-
-        let res = verifier.verify(pk, pkr, accum, accum_pk, proof_input, proof, all_revealed_attrs,
-                                  nonce, attr_names, params, proof_c);
-
-        assert!(res.is_ok());
-    }
-
-    #[test]
-    fn verify_equlity_test() {
-        let proof = mocks::get_eq_proof().unwrap();
-        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
-        let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
-
-        let mut all_revealed_attrs = HashMap::new();
-        all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
-
-        let attr_names = mocks::get_attr_names();
-
-        let res: Result<Vec<BigNumber>, CryptoError> = Verifier::_verify_equality(
-            &pk,
-            &proof,
-            &c_h,
-            &all_revealed_attrs,
-            &attr_names
-        );
-
-        assert!(res.is_ok());
-        assert_eq!("8587651374942675536728753067347608709923065423222685438966198646355384235605146057750016685007100765028881800702364440231217947350369743\
-    7857804979183199263295761778145588965111459517594719543696782791489766042732025814161437109818972963936021789845879318003605961256519820582781422914\
-    97483852459936553097915975160943885654662856194246459692268230399812271607008648333989067502873781526028636897730244216695340964909830792881918581540\
-    43873141931971315451530757661716555801069654237014399171221318077704626190288641508984014104319842941642570762210967615676477710700081132170451096239\
-    93976701236193875603478579771137394", res.unwrap()[0].to_dec().unwrap());
-    }
+    //    #[test]
+    //    #[ignore]
+    //    fn verify_test() {
+    //        let verifier = Verifier::new();
+    //
+    //        let mut all_revealed_attrs = HashMap::new();
+    //        all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
+    //
+    //        let nonce = BigNumber::from_dec("150136900874297269339868").unwrap();
+    //
+    //        let predicate = prover::mocks::get_gvt_predicate();
+    //        let revealed_attrs = prover::mocks::get_revealed_attrs();
+    //
+    //        let proof_input = ProofInput {
+    //            revealed_attrs: revealed_attrs,
+    //            predicates: vec![predicate],
+    //            ts: None,
+    //            pubseq_no: None
+    //        };
+    //        let schema_key = prover::mocks::get_gvt_schema_key();
+    //
+    //        let eq_proof = mocks::get_eq_proof().unwrap();
+    //        let ge_proof = mocks::get_ge_proof().unwrap();
+    //        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
+    //
+    //        let primary_proof = PrimaryProof {
+    //            eq_proof: eq_proof,
+    //            ge_proofs: vec![ge_proof]
+    //        };
+    //
+    //        let proof = Proof {
+    //            primary_proof: primary_proof,
+    //            non_revoc_proof: None
+    //        };
+    //
+    //        let mut c_list: Vec<Vec<u8>> = Vec::new();
+    //        c_list.push(BigNumber::from_dec("40419298688137869960380469261905532334637639358156591584198474730159922131845236332832025717302613443181736582484815352622543977612852994735900017491040605701377167257840237093127235154905233147231624795995550192527737607707481813233736307936765338317096333960487846640715651848248086837945953304627391859983207411514951469156988685936443758957189790705690990639460733132695525553505807698837031674923144499907591301228015553240722485660599743846214527228665753677346129919027033129697444096042970703607475089467398949054480185324997053077334850238886591657619835566943199882335077289734306701560214493298329372650208").unwrap().to_bytes().unwrap());
+    //        c_list.push(BigNumber::from_dec("47324660473671124619766812292419966979218618321195442620378932643647808062884161914306007419982240044457291065692968166148732382413212489017818981907451810722427822947434701298426390923083851509190004176754308805544221591456757905034099563880547910682773230595375415855727922588298088826548392572988130537249508717978384646013947582546019729481146325021203427278860772516903057439582612008766763139310189576482839673644190743850755863703998143105224320265752122772813607076484126428361088197863213824404833756768819688779202461859342789097743829182212846809717194485567647846915198890325457736010590303357798473896700").unwrap().to_bytes().unwrap());
+    //        c_list.push(BigNumber::from_dec("66450517869982062342267997954977032094273479808003128223349391866956221490486227999714708210796649990670474598595144373853545114810461129311488376523373030855652459048816291000188287472254577785187966494209478499264992271438571724964296278469527432908172064052750006541558566871906132838361892473377520708599782848821918665128705358243638618866198451401258608314504494676177177947997456537352832881339718141901132664969277082920274734598386059889447857289735878564021235996969965313779742103257439235693097049742098377325618673992118875810433536654414222034985875962188702260416140781008765351079345681492041353915517").unwrap().to_bytes().unwrap());
+    //        c_list.push(BigNumber::from_dec("78070105827196661040600041337907173457854153272544487321115604386049561730740327194221314976259005306609156189248394958383576900423218823055146785779218825861357426069962919084354758074120740816717011931695486881373830741590805899909505141118332615581712873355033382526097135102214961582694467049685680521168599662570089045106588071095868679795860083477878392645086886419842393734377034091691861772354369870695105905981921915221671803577058964332747681671537519176296905411380141019477128072347200017918410813327520323098847715450370454307294123150568469231654825506721027060142669757561165103933103053528023034511606").unwrap().to_bytes().unwrap());
+    //        c_list.push(BigNumber::from_dec("83200684536414956340494235687534491849084621311799273540992839950256544160417513543839780900524522144337818273323604172338904806642960330906344496013294511314421085013454657603118717753084155308020373268668810396333088299295804908264158817923391623116540755548965302906724851186886232431450985279429884730164260492598022651383336322153593491103199117187195782444754665111992163534318072330538584638714508386890137616826706777205862989966213285981526090164444190640439286605077153051456582398200856066916720632647408699812551248250054268483664698756596786352565981324521663234607300070180614929105425712839420242514321").unwrap().to_bytes().unwrap());
+    //
+    //        let proof = FullProof {
+    //            c_hash: BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap(),
+    //            schema_keys: vec![schema_key],
+    //            proofs: vec![proof],
+    //            c_list: c_list
+    //        };
+    //        let attr_names = mocks::get_attr_names();
+    //        let pkr = prover::mocks::get_public_key_revocation().unwrap();
+    //        let accum = prover::mocks::get_accumulator().unwrap();
+    //        let accum_pk = mocks::get_accum_publick_key().unwrap();
+    //        let params = prover::mocks::get_non_revocation_proof_x_list();
+    //        let proof_c = prover::mocks::get_non_revocation_proof_c_list();
+    //
+    //        let res = verifier.verify(pk, pkr, accum, accum_pk, proof_input, proof, all_revealed_attrs,
+    //                                  nonce, attr_names, params, proof_c);
+    //
+    //        assert!(res.is_ok());
+    //    }
+    //
+    //    #[test]
+    //    fn verify_equlity_test() {
+    //        let proof = mocks::get_eq_proof().unwrap();
+    //        let pk = ::services::crypto::anoncreds::issuer::mocks::get_pk().unwrap();
+    //        let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
+    //
+    //        let mut all_revealed_attrs = HashMap::new();
+    //        all_revealed_attrs.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
+    //
+    //        let attr_names = mocks::get_attr_names();
+    //
+    //        let res: Result<Vec<BigNumber>, CryptoError> = Verifier::_verify_equality(
+    //            &pk,
+    //            &proof,
+    //            &c_h,
+    //            &all_revealed_attrs,
+    //            &attr_names
+    //        );
+    //
+    //        assert!(res.is_ok());
+    //        assert_eq!("8587651374942675536728753067347608709923065423222685438966198646355384235605146057750016685007100765028881800702364440231217947350369743\
+    //        7857804979183199263295761778145588965111459517594719543696782791489766042732025814161437109818972963936021789845879318003605961256519820582781422914\
+    //        97483852459936553097915975160943885654662856194246459692268230399812271607008648333989067502873781526028636897730244216695340964909830792881918581540\
+    //        43873141931971315451530757661716555801069654237014399171221318077704626190288641508984014104319842941642570762210967615676477710700081132170451096239\
+    //        93976701236193875603478579771137394", res.unwrap()[0].to_dec().unwrap());
+    //    }
 
     #[test]
     fn _verify_ge_predicate_works() {
@@ -389,19 +415,19 @@ mod tests {
         let res_data = res.unwrap();
 
         assert_eq!("590677196901723818020415922807296116426887937783467552329163347868728175050285426810380554550521915469309366010293784655561646989461816914001376856160959474\
-    724414209525842689549578189455824659628722854086979862112126227427503673036934175777141430158851152801070493790103722897828582782870163648640848483116640936376249697914\
-    633137312593554018309295958591096901852088786667038390724116720409279123241545342232722741939277853790638731624274772561371001348651265045334956091681420778381377735879\
-    68669689592641726487646825879342092157114737380151398135267202044295696236084701682251092338479916535603864922996074284941502", res_data[0].to_dec().unwrap());
+        724414209525842689549578189455824659628722854086979862112126227427503673036934175777141430158851152801070493790103722897828582782870163648640848483116640936376249697914\
+        633137312593554018309295958591096901852088786667038390724116720409279123241545342232722741939277853790638731624274772561371001348651265045334956091681420778381377735879\
+        68669689592641726487646825879342092157114737380151398135267202044295696236084701682251092338479916535603864922996074284941502", res_data[0].to_dec().unwrap());
 
         assert_eq!("543920569174455471552712599639581440766547705711484869326147123041712949811245262311199901062814754524825877546701435180039685252325466998614308056075575752\
-    3012229141304994213488418248472205210074847942832434112795278331835277383464971076923322954858384250535611705097886772449075174912745310975145629869588136613587711321262\
-    7728458751804045531877233822168791389059182616293449039452340074699209366938385424160688825799810090127647002083194688148464107036527938948376814931919821538192884074388\
-    857130767228996607411418624748269121453442291957717517888961515288426522014549478484314078535183196345054464060687989571272", res_data[4].to_dec().unwrap());
+        3012229141304994213488418248472205210074847942832434112795278331835277383464971076923322954858384250535611705097886772449075174912745310975145629869588136613587711321262\
+        7728458751804045531877233822168791389059182616293449039452340074699209366938385424160688825799810090127647002083194688148464107036527938948376814931919821538192884074388\
+        857130767228996607411418624748269121453442291957717517888961515288426522014549478484314078535183196345054464060687989571272", res_data[4].to_dec().unwrap());
 
         assert_eq!("5291248239406641292396471233645296793027806694289670593845325691604331838238498977162512644007769726817609527208308190348307854043130390623053807510337254881\
-    53385441651181164838096995680599793153167424540679236858880383788178608357393234960916139159480841866618336282250341768534336113015828670517732010317195575756736857228019\
-    99959821781284558791752968988627903716556541708694042188547572928871840445046338355043889462205730182388607688269913628444534146082714639049648123224230863440138867623776\
-    549927089094790233964941899325435455174972634582611070515233787127321158133866337540066814079592094148393576048620611972", res_data[5].to_dec().unwrap());
+        53385441651181164838096995680599793153167424540679236858880383788178608357393234960916139159480841866618336282250341768534336113015828670517732010317195575756736857228019\
+        99959821781284558791752968988627903716556541708694042188547572928871840445046338355043889462205730182388607688269913628444534146082714639049648123224230863440138867623776\
+        549927089094790233964941899325435455174972634582611070515233787127321158133866337540066814079592094148393576048620611972", res_data[5].to_dec().unwrap());
     }
 
     #[test]
@@ -418,19 +444,19 @@ mod tests {
         let res_data = res.unwrap();
 
         assert_eq!("66763809913905005196685504127801735117197865238790458248607529048879049233469065301125917408730585682472169276319924014654607203248656655401523177550968\
-    79005126037514992260570317766093693503820466315473651774235097627461187468560528498637265821197064092074734183979312736841571077239362785443096285343022325743749493\
-    115671111253247628251990871764988964166665374208195759750683082601207244879323795625125414213912754126587933035233507317880982815199471233315480695428246221116099530\
-    2762582265012461801281742135973017791914100890332877707316728113640973774147232476482160263443368393229756851203511677358619849710094360", res_data[1].to_dec().unwrap());
+        79005126037514992260570317766093693503820466315473651774235097627461187468560528498637265821197064092074734183979312736841571077239362785443096285343022325743749493\
+        115671111253247628251990871764988964166665374208195759750683082601207244879323795625125414213912754126587933035233507317880982815199471233315480695428246221116099530\
+        2762582265012461801281742135973017791914100890332877707316728113640973774147232476482160263443368393229756851203511677358619849710094360", res_data[1].to_dec().unwrap());
 
         assert_eq!("1696893728060613826189455641919714506779750280465195946299906248745222420050846334948115499804146149236210969719663609022008928047696210368681129164314195\
-    73961162181255619271925974300906611593381407468871521942852472844008029827907111131222578449896833731023679346466149116169563017889291210126870245249099669006944487937\
-    701186090023854916946824876428968293209784770081426960793331644949561007921128739917551308870397017309196194046088818137669808278548338892856171583731467477794490146449\
-    84371272994658213772000759824325978473230458194532365204418256638583185120380190225687161021928828234401021859449125311307071", res_data[4].to_dec().unwrap());
+        73961162181255619271925974300906611593381407468871521942852472844008029827907111131222578449896833731023679346466149116169563017889291210126870245249099669006944487937\
+        701186090023854916946824876428968293209784770081426960793331644949561007921128739917551308870397017309196194046088818137669808278548338892856171583731467477794490146449\
+        84371272994658213772000759824325978473230458194532365204418256638583185120380190225687161021928828234401021859449125311307071", res_data[4].to_dec().unwrap());
 
         assert_eq!("7393309861349259392630193573257336708857960195548821598928169647822585190694497646718777350819780512754931147438702100908573008083971392605400292392558068639\
-    6426790932973170010764749286999115602174793097294839591793292822808780386838139840847178284597133066509806751359097256406292722692372335587138313303601933346125677119170\
-    3745548456402537166527941377105628418709499120225110517191272248627626095292045349794519230242306378755919873322083068080833514101587864250782718259987761547941791394977\
-    87217811540121982252785628801722587508068009691576296044178037535833166612637915579540102026829676380055826672922204922443", res_data[5].to_dec().unwrap());
+        6426790932973170010764749286999115602174793097294839591793292822808780386838139840847178284597133066509806751359097256406292722692372335587138313303601933346125677119170\
+        3745548456402537166527941377105628418709499120225110517191272248627626095292045349794519230242306378755919873322083068080833514101587864250782718259987761547941791394977\
+        87217811540121982252785628801722587508068009691576296044178037535833166612637915579540102026829676380055826672922204922443", res_data[5].to_dec().unwrap());
     }
 
     #[test]
@@ -445,9 +471,9 @@ mod tests {
 
         assert!(res.is_ok());
         assert_eq!("44674566012490574873221338726897300898913972309497258940219569980165585727901128041268469063382008728753943624549705899352321456091543114868302412585283526922\
-    48482588030725250950307379112600430281021015407801054038315353187338898917957982724509886210242668120433945426431434030155726888483222722925281121829536918755833970204795\
-    18277688063064207469055405971871717892031608853055468434231459862469415223592109268515989593021324862858241499053669862628606497232449247691824831224716135821088977103328\
-    37686070090582706144278719293684893116662729424191599602937927245245078018737281020133694291784582308345229012480867237", res.unwrap().to_dec().unwrap());
+        48482588030725250950307379112600430281021015407801054038315353187338898917957982724509886210242668120433945426431434030155726888483222722925281121829536918755833970204795\
+        18277688063064207469055405971871717892031608853055468434231459862469415223592109268515989593021324862858241499053669862628606497232449247691824831224716135821088977103328\
+        37686070090582706144278719293684893116662729424191599602937927245245078018737281020133694291784582308345229012480867237", res.unwrap().to_dec().unwrap());
     }
 }
 
@@ -504,8 +530,8 @@ pub mod mocks {
         let m2 = BigNumber::from_dec("1323766290428560718316650362032141006992517904653586088737644821361547649912995176966509589375485991923219004461467056332846596210374933277433111217288600965656096366761598274718188430661014172306546555075331860671882382331826185116501265994994392187563331774320231157973439421596164605280733821402123058645")?;
 
 
-        let mut revealed_attr_names: HashSet<String> = HashSet::new();
-        revealed_attr_names.insert("name".to_string());
+        let mut revealed_attr_names: Vec<AttributeInfo> = Vec::new();
+        revealed_attr_names.push(AttributeInfo { schema_seq_no: 1, name: "name".to_string() });
 
         Ok(PrimaryEqualProof {
             revealed_attr_names: revealed_attr_names,
