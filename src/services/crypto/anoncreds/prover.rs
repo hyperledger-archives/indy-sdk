@@ -34,7 +34,7 @@ use services::crypto::anoncreds::types::{
     PrimaryEqualInitProof,
     PrimaryEqualProof,
     PrimaryInitProof,
-    PrimaryPrecicateGEInitProof,
+    PrimaryPredicateGEInitProof,
     PrimaryPredicateGEProof,
     PrimaryProof,
     PublicKey,
@@ -110,10 +110,7 @@ impl Prover {
     fn _generate_revocation_claim_init_data(pkr: &RevocationPublicKey) -> Result<RevocationClaimInitData, CryptoError> {
         let vr_prime = GroupOrderElement::new()?;
         let ur = pkr.h2.mul(&vr_prime)?;
-        Ok(RevocationClaimInitData {
-            v_prime: vr_prime,
-            u: ur
-        })
+        Ok(RevocationClaimInitData::new(ur, vr_prime))
     }
 
     pub fn process_claim(&self, claims: &RefCell<Claims>, primary_claim_init_data: ClaimInitData,
@@ -390,52 +387,38 @@ impl Prover {
                 non_revoc_proof: non_revoc_proof
             };
 
-            let claim_proof = ClaimProof {
-                proof: proof,
-                claim_def_seq_no: proof_claim.claim_json.claim_def_seq_no,
-                revoc_reg_seq_no: proof_claim.claim_json.revoc_reg_seq_no
-            };
+            let claim_proof = ClaimProof::new(proof,
+                                              proof_claim.claim_json.claim_def_seq_no,
+                                              proof_claim.claim_json.revoc_reg_seq_no);
 
             proofs.insert(proof_claim_uuid.clone(), claim_proof);
             attributes.insert(proof_claim_uuid.clone(), proof_claim.claim_json.claim.clone());
         }
 
-        let aggregated_proof = AggregatedProof {
-            c_hash: c_h,
-            c_list: c_list
-        };
+        let aggregated_proof = AggregatedProof::new(c_h, c_list);
 
         let (revealed_attrs, unrevealed_attrs) = Prover::_split_attributes(&proof_req, requested_claims, &attributes)?;
 
-        let requested_proof = RequestedProofJson {
-            revealed_attrs: revealed_attrs,
-            unrevealed_attrs: unrevealed_attrs,
-            self_attested_attrs: requested_claims.self_attested_attributes.clone(),
-            predicates: requested_claims.requested_predicates.clone()
-        };
+        let requested_proof = RequestedProofJson::new(
+            revealed_attrs, unrevealed_attrs, requested_claims.self_attested_attributes.clone(),
+            requested_claims.requested_predicates.clone()
+        );
 
-        Ok(ProofJson {
-            proofs: proofs,
-            aggregated_proof: aggregated_proof,
-            requested_proof: requested_proof
-        })
+        Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
     }
 
     fn _init_proof(pk: &PublicKey, c1: &PrimaryClaim, attributes: &HashMap<String, Vec<String>>,
                    unrevealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
                    m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CryptoError> {
         let eq_proof = Prover::_init_eq_proof(&pk, c1, unrevealed_attrs, m1_t, m2_t)?;
-        let mut ge_proofs: Vec<PrimaryPrecicateGEInitProof> = Vec::new();
+        let mut ge_proofs: Vec<PrimaryPredicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
             let ge_proof = Prover::_init_ge_proof(&pk, &eq_proof.mtilde, attributes, predicate)?;
             ge_proofs.push(ge_proof);
         }
 
-        Ok(PrimaryInitProof {
-            eq_proof: eq_proof,
-            ge_proofs: ge_proofs
-        })
+        Ok(PrimaryInitProof::new(eq_proof, ge_proofs))
     }
 
     fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
@@ -449,12 +432,7 @@ impl Prover {
         let tau_list_params = Prover::_gen_tau_list_params()?;
         let proof_tau_list = Issuer::_create_tau_list_values(&pkr, &accum, &tau_list_params, &proof_c_list)?;
 
-        Ok(NonRevocInitProof {
-            c_list_params: c_list_params,
-            tau_list_params: tau_list_params,
-            c_list: proof_c_list,
-            tau_list: proof_tau_list
-        })
+        Ok(NonRevocInitProof::new(c_list_params, tau_list_params, proof_c_list, proof_tau_list))
     }
 
     fn _update_non_revocation_claim(claim: &RefCell<NonRevocationClaim>,
@@ -525,24 +503,16 @@ impl Prover {
             &pk, &aprime, &etilde, &vtilde, &mtilde, &m1_tilde, &m2_tilde, &unrevealed_attrs)?;
 
         Ok(
-            PrimaryEqualInitProof {
-                a_prime: aprime,
-                t: t,
-                etilde: etilde,
-                eprime: eprime,
-                vtilde: vtilde,
-                vprime: vprime,
-                mtilde: mtilde,
-                m1_tilde: m1_tilde.clone()?,
-                m2_tilde: m2_tilde,
-                m2: c1.m2.clone()?
-            }
+            PrimaryEqualInitProof::new(
+                aprime, t, etilde, eprime, vtilde, vprime, mtilde,
+                m1_tilde.clone()?, m2_tilde, c1.m2.clone()?
+            )
         )
     }
 
     fn _init_ge_proof(pk: &PublicKey, mtilde: &HashMap<String, BigNumber>,
                       encoded_attributes: &HashMap<String, Vec<String>>, predicate: &Predicate)
-                      -> Result<PrimaryPrecicateGEInitProof, CryptoError> {
+                      -> Result<PrimaryPredicateGEInitProof, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
         let (k, value) = (&predicate.attr_name, predicate.value);
 
@@ -613,17 +583,9 @@ impl Prover {
 
         let tau_list = Verifier::calc_tge(&pk, &utilde, &rtilde, &mj, &alphatilde, &t)?;
 
-        Ok(PrimaryPrecicateGEInitProof {
-            c_list: c_list,
-            tau_list: tau_list,
-            u: u,
-            u_tilde: utilde,
-            r: r,
-            r_tilde: rtilde,
-            alpha_tilde: alphatilde,
-            predicate: predicate.clone(),
-            t: t
-        })
+        Ok(PrimaryPredicateGEInitProof::new(
+            c_list, tau_list, u, utilde, r, rtilde, alphatilde, predicate.clone(), t
+        ))
     }
 
     fn _finalize_eq_proof(ms: &BigNumber, init_proof: &PrimaryEqualInitProof, c_h: &BigNumber,
@@ -679,18 +641,12 @@ impl Prover {
             );
         }
 
-        Ok(PrimaryEqualProof {
-            e: e,
-            v: v,
-            m: m,
-            m1: m1,
-            m2: m2,
-            a_prime: init_proof.a_prime.clone()?,
-            revealed_attrs: revealed_attrs_with_values
-        })
+        Ok(PrimaryEqualProof::new(
+            revealed_attrs_with_values, init_proof.a_prime.clone()?, e, v, m, m1, m2
+        ))
     }
 
-    fn _finalize_ge_proof(c_h: &BigNumber, init_proof: &PrimaryPrecicateGEInitProof,
+    fn _finalize_ge_proof(c_h: &BigNumber, init_proof: &PrimaryPredicateGEInitProof,
                           eq_proof: &PrimaryEqualProof) -> Result<PrimaryPredicateGEProof, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
         let mut u: HashMap<String, BigNumber> = HashMap::new();
@@ -744,14 +700,9 @@ impl Prover {
         let mj = eq_proof.m.get(&init_proof.predicate.attr_name)
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.m", init_proof.predicate.attr_name)))?;
 
-        Ok(PrimaryPredicateGEProof {
-            u: u,
-            r: r,
-            alpha: alpha,
-            mj: mj.clone()?,
-            t: clone_bignum_map(&init_proof.t)?,
-            predicate: init_proof.predicate.clone()
-        })
+        Ok(PrimaryPredicateGEProof::new(
+            u, r, mj.clone()?, alpha, clone_bignum_map(&init_proof.t)?, init_proof.predicate.clone()
+        ))
     }
 
     fn _finalize_proof(ms: &BigNumber, init_proof: &PrimaryInitProof, c_h: &BigNumber,
@@ -765,10 +716,7 @@ impl Prover {
             ge_proofs.push(ge_proof);
         }
 
-        Ok(PrimaryProof {
-            eq_proof: eq_proof,
-            ge_proofs: ge_proofs
-        })
+        Ok(PrimaryProof::new(eq_proof, ge_proofs))
     }
 
     fn _gen_c_list_params(claim: &RefCell<NonRevocationClaim>) -> Result<NonRevocProofXList, CryptoError> {
@@ -1230,18 +1178,10 @@ pub mod mocks {
         let m2_tilde = BigNumber::from_dec("33970939655505026872690051065527896936826240486176548712174703648151652129591217103741946892383483806205993341432925544541557374346350172352729633028700077053528659741067902223562294772771229606274461374185549251388524318740149589263256424345429891975622057372801133454251096604596597737126641279540347411289").unwrap();
         let m2 = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
 
-        PrimaryEqualInitProof {
-            a_prime: a_prime,
-            t: t,
-            etilde: e_tilde,
-            eprime: e_prime,
-            vtilde: v_tilde,
-            vprime: v_prime,
-            mtilde: mtilde,
-            m1_tilde: m1_tilde,
-            m2_tilde: m2_tilde,
-            m2: m2
-        }
+        PrimaryEqualInitProof::new(
+            a_prime, t , e_tilde, e_prime, v_tilde, v_prime, mtilde,
+            m1_tilde, m2_tilde, m2
+        )
     }
 
     pub fn get_c_list() -> Vec<BigNumber> {
@@ -1265,7 +1205,7 @@ pub mod mocks {
         tau_list
     }
 
-    pub fn get_primary_ge_init_proof() -> PrimaryPrecicateGEInitProof {
+    pub fn get_primary_ge_init_proof() -> PrimaryPredicateGEInitProof {
         let c_list: Vec<BigNumber> = get_c_list();
         let tau_list: Vec<BigNumber> = get_tau_list();
 
@@ -1305,24 +1245,13 @@ pub mod mocks {
         t.insert("0".to_string(), BigNumber::from_dec("40419298688137869960380469261905532334637639358156591584198474730159922131845236332832025717302613443181736582484815352622543977612852994735900017491040605701377167257840237093127235154905233147231624795995550192527737607707481813233736307936765338317096333960487846640715651848248086837945953304627391859983207411514951469156988685936443758957189790705690990639460733132695525553505807698837031674923144499907591301228015553240722485660599743846214527228665753677346129919027033129697444096042970703607475089467398949054480185324997053077334850238886591657619835566943199882335077289734306701560214493298329372650208").unwrap());
         t.insert("DELTA".to_string(), BigNumber::from_dec("83200684536414956340494235687534491849084621311799273540992839950256544160417513543839780900524522144337818273323604172338904806642960330906344496013294511314421085013454657603118717753084155308020373268668810396333088299295804908264158817923391623116540755548965302906724851186886232431450985279429884730164260492598022651383336322153593491103199117187195782444754665111992163534318072330538584638714508386890137616826706777205862989966213285981526090164444190640439286605077153051456582398200856066916720632647408699812551248250054268483664698756596786352565981324521663234607300070180614929105425712839420242514321").unwrap());
 
-        PrimaryPrecicateGEInitProof {
-            c_list: c_list,
-            tau_list: tau_list,
-            u: u,
-            u_tilde: u_tilde,
-            r: r,
-            r_tilde: r_tilde,
-            alpha_tilde: alpha_tilde,
-            predicate: predicate,
-            t: t
-        }
+        PrimaryPredicateGEInitProof::new(
+            c_list, tau_list, u, u_tilde, r, r_tilde, alpha_tilde, predicate, t
+        )
     }
 
     pub fn get_primary_init_proof() -> PrimaryInitProof {
-        PrimaryInitProof {
-            eq_proof: get_primary_equal_init_proof(),
-            ge_proofs: vec![get_primary_ge_init_proof()]
-        }
+        PrimaryInitProof::new(get_primary_equal_init_proof(), vec![get_primary_ge_init_proof()])
     }
 
     pub fn get_gvt_claims_object() -> Claims {
@@ -1354,20 +1283,18 @@ pub mod mocks {
     }
 
     pub fn get_witness() -> Witness {
-        Witness::new(PointG1::new().unwrap(), PointG1::new().unwrap(), PointG1::new().unwrap(),
-                     PointG1::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned())
+        Witness::new(
+                PointG1::new().unwrap(), PointG1::new().unwrap(), PointG1::new().unwrap(),
+                PointG1::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned()
+            )
         )
     }
 
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
-        NonRevocationClaim {
-            sigma: PointG1::new().unwrap(),
-            c: GroupOrderElement::new().unwrap(),
-            vr_prime_prime: GroupOrderElement::new().unwrap(),
-            witness: get_witness(),
-            g_i: PointG1::new().unwrap(),
-            i: 1,
-            m2: GroupOrderElement::new().unwrap()
-        }
+        NonRevocationClaim::new(
+            PointG1::new().unwrap(), GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(), get_witness(),
+            PointG1::new().unwrap(), 1, GroupOrderElement::new().unwrap()
+        )
     }
 }

@@ -320,15 +320,7 @@ impl Issuer {
 
         Ok(
             (
-                NonRevocationClaim {
-                    sigma: sigma,
-                    c: c,
-                    vr_prime_prime: vr_prime_prime,
-                    witness: witness,
-                    g_i: g_i.clone(),
-                    i: i,
-                    m2: m2
-                },
+                NonRevocationClaim::new(sigma, c, vr_prime_prime, witness, g_i.clone(), i, m2),
                 timestamp
             )
         )
