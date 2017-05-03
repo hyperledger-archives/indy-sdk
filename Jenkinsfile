@@ -65,7 +65,7 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'cargo test-xunit'
+                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
             }
             finally {
                 junit 'test-results.xml'
