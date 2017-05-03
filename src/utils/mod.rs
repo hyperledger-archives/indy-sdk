@@ -1,5 +1,7 @@
 pub mod environment;
 
+pub mod json;
+
 #[macro_use]
 pub mod cstring;
 
@@ -13,6 +15,7 @@ pub mod result;
 
 pub mod sequence;
 
-pub mod json;
-
 pub mod crypto;
+
+#[macro_use]
+pub mod test;

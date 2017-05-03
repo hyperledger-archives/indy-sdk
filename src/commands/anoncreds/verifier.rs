@@ -73,12 +73,18 @@ impl VerifierCommandExecutor {
                      schemas_json: &str,
                      claim_defs_jsons: &str,
                      revoc_regs_json: &str) -> Result<bool, AnoncredsError> {
-        let proof_req: ProofRequestJson = ProofRequestJson::from_str(proof_request_json)?;
+        let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_request_json)?;
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)?;
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_defs_jsons)?;
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_json)?;
-        let proof_claims_json = ProofJson::from_str(&proof_json)?;
+        let proof_claims: ProofJson = ProofJson::from_json(&proof_json)?;
 
-        Ok(false)
+        let result = self.crypto_service.anoncreds.verifier.verify(&proof_claims,
+                                                                   &proof_req.nonce,
+                                                                   &claim_defs,
+                                                                   &revoc_regs,
+                                                                   &schemas)?;
+
+        Ok(result)
     }
 }
