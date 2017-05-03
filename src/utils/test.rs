@@ -14,7 +14,7 @@ impl TestUtils {
 }
 
 macro_rules! assert_match {
-    ($var:expr, $pattern:pat) => (
+    ($pattern:pat, $var:expr) => (
         assert!(match $var {
             $pattern => true,
             _ => false

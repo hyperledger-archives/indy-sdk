@@ -78,6 +78,27 @@ impl Wallet for DefaultWallet {
         Ok(record.value)
     }
 
+    fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
+        let connection = _open_connection(self.name.as_str())?;
+        let mut stmt = connection.prepare("SELECT key, value, time_created FROM wallet WHERE key like ?1 order by key")?;
+        let records = stmt.query_map(&[&format!("{}%", key_prefix)], |row| {
+            DefaultWalletRecord {
+                key: row.get(0),
+                value: row.get(1),
+                time_created: row.get(2)
+            }
+        })?;
+
+        let mut key_values = Vec::new();
+
+        for record in records {
+            let key_value = record?;
+            key_values.push((key_value.key, key_value.value));
+        }
+
+        Ok(key_values)
+    }
+
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
         let record = _open_connection(self.name.as_str())?
             .query_row(
@@ -124,15 +145,14 @@ impl WalletType for DefaultWalletType {
     }
 
     fn open(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
-
         let config = match config {
             Some(config) => DefaultWalletRuntimeConfig::from_json(config)?,
             None => DefaultWalletRuntimeConfig::default()
         };
 
-//        let config = config
-//            .map(DefaultWalletRuntimeConfig::from_json)?
-//            .unwrap_or_default();
+        //        let config = config
+        //            .map(DefaultWalletRuntimeConfig::from_json)?
+        //            .unwrap_or_default();
 
         // FIXME: parse and implement credentials!!!
         Ok(Box::new(
@@ -202,7 +222,7 @@ mod tests {
         wallet_type.create("wallet1", None, None).unwrap();
 
         let res = wallet_type.create("wallet1", None, None);
-        assert_match!(res, Err(WalletError::AlreadyExists(_)));
+        assert_match!(Err(WalletError::AlreadyExists(_)), res);
 
         TestUtils::cleanup_sovrin_home();
     }
@@ -273,7 +293,7 @@ mod tests {
 
         let wallet = wallet_type.open("wallet1", None, None).unwrap();
         let value = wallet.get("key1");
-        assert_match!(value,  Err(WalletError::NotFound(_)));
+        assert_match!(Err(WalletError::NotFound(_)), value);
 
         TestUtils::cleanup_sovrin_home();
     }
@@ -310,7 +330,32 @@ mod tests {
         thread::sleep(Duration::new(2, 0));
 
         let value = wallet.get_not_expired("key1");
-        assert_match!(value,  Err(WalletError::NotFound(_)));
+        assert_match!(Err(WalletError::NotFound(_)), value);
+
+        TestUtils::cleanup_sovrin_home();
+    }
+
+    #[test]
+    fn wallet_list_works() {
+        TestUtils::cleanup_sovrin_home();
+
+        let wallet_type = DefaultWalletType::new();
+        wallet_type.create("wallet1", None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", None, None).unwrap();
+
+        wallet.set("key1::subkey1", "value1").unwrap();
+        wallet.set("key1::subkey2", "value2").unwrap();
+
+        let mut key_values = wallet.list("key1::").unwrap();
+        assert_eq!(2, key_values.len());
+
+        let (key, value) = key_values.pop().unwrap();
+        assert_eq!("key1::subkey2", key);
+        assert_eq!("value2", value);
+
+        let (key, value) = key_values.pop().unwrap();
+        assert_eq!("key1::subkey1", key);
+        assert_eq!("value1", value);
 
         TestUtils::cleanup_sovrin_home();
     }
