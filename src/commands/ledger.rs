@@ -1,9 +1,12 @@
 use errors::ledger::LedgerError;
+use errors::pool::PoolError;
 
 use services::crypto::CryptoService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 pub enum LedgerCommand {
@@ -73,6 +76,7 @@ pub struct LedgerCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
+    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, LedgerError>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -83,6 +87,7 @@ impl LedgerCommandExecutor {
             crypto_service: crypto_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
+            send_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -151,7 +156,11 @@ impl LedgerCommandExecutor {
                       handle: i32,
                       request_json: &str,
                       cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
+        match x {
+            Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
+            Err(err) => { cb(Err(LedgerError::PoolError(err))); }
+        };
     }
 
     fn build_get_ddo_request(&self,

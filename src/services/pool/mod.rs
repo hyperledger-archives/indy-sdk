@@ -8,7 +8,7 @@ extern crate zmq;
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::{HashMap, BinaryHeap};
-use std::{cmp, fmt, fs, io, thread};
+use std::{cmp, fmt, fs, io, thread, usize};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
 
@@ -211,15 +211,25 @@ impl PoolWorker {
                     let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
                     trace!("cmd {:?}", cmd);
                     if cmd.is_ok() {
-                        if "exit".eq(cmd.unwrap().expect("non-string command").as_str()) {
+                        let cmd = cmd.unwrap().expect("non-string command");
+                        if "exit".eq(cmd.as_str()) {
                             break;
+                        } else {
+                            msgs_to_handle.push((cmd, usize::MAX));
                         }
                     }
                 }
             }
 
             for &(ref msg, rn_ind) in &msgs_to_handle {
-                self.process_msg(msg, rn_ind);
+                if rn_ind == usize::MAX {
+                    for node in &self.nodes {
+                        let node: &RemoteNode = node;
+                        node.send_str(msg);
+                    }
+                } else {
+                    self.process_msg(msg, rn_ind);
+                }
             }
 
             trace!("zmq poll loop <<");
@@ -260,6 +270,10 @@ impl Pool {
                 pool_worker.run();
             })),
         })
+    }
+
+    pub fn send_tx(&self, cmd_id: i32, json: &str) {
+        self.send_sock.send_str(json, 0).expect("send to cmd sock");
     }
 }
 
@@ -322,11 +336,15 @@ impl RemoteNode {
         }
     }
 
-    fn send_msg(&self, msg: &Message) {
-        info!("Sending {:?}", msg);
+    fn send_str(&self, str: &str) {
+        info!("Sending {:?}", str);
         self.zsock.as_ref().unwrap()
-            .send_str(serde_json::to_string(msg).unwrap().as_str(), zmq::DONTWAIT)
+            .send_str(str, zmq::DONTWAIT)
             .unwrap();
+    }
+
+    fn send_msg(&self, msg: &Message) {
+        self.send_str(serde_json::to_string(msg).unwrap().as_str());
     }
 }
 
@@ -398,6 +416,12 @@ impl PoolService {
 
         self.pools.borrow_mut().insert(new_pool.id, new_pool);
         return Ok(cmd_id);
+    }
+
+    pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.borrow().get(&handle).unwrap().send_tx(cmd_id, json);
+        Ok(cmd_id)
     }
 
     pub fn close(&self, handle: i32) -> Result<(), PoolError> {
@@ -485,6 +509,26 @@ mod tests {
 
         drop_test();
         assert!(true, "No crashes on PoolService::drop");
+    }
+
+    #[test]
+    fn pool_send_tx_works() {
+        let name = "test";
+        let zmq_ctx = zmq::Context::new();
+        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let inproc_sock_name: String = format!("inproc://pool_{}", name);
+        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+        let pool = Pool {
+            worker: Some(thread::spawn(|| {})),
+            name: name.to_string(),
+            id: 0,
+            send_sock: send_cmd_sock,
+        };
+        let test_data = "str_instead_of_tx_json";
+        pool.send_tx(0, test_data);
+        assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
     }
 
     impl Default for PoolWorker {
