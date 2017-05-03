@@ -1,7 +1,7 @@
 use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::{AppendBigNumArray, clone_bignum_map};
+use services::crypto::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use utils::json::{JsonEncodable, JsonDecodable};
@@ -524,16 +524,16 @@ pub struct PrimaryInitProof {
 }
 
 impl PrimaryInitProof {
-    pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut c_list: Vec<BigNumber> = self.eq_proof.as_list()?;
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        let mut c_list: Vec<Vec<u8>> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
             c_list.append_vec(ge_proof.as_list()?)?;
         }
         Ok(c_list)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut tau_list: Vec<BigNumber> = self.eq_proof.as_tau_list()?;
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        let mut tau_list: Vec<Vec<u8>> = self.eq_proof.as_tau_list()?;
         for ge_proof in self.ge_proofs.iter() {
             tau_list.append_vec(ge_proof.as_tau_list()?)?;
         }
@@ -561,12 +561,12 @@ pub struct PrimaryEqualInitProof {
 }
 
 impl PrimaryEqualInitProof {
-    pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![self.a_prime.clone()?])
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        Ok(vec![self.a_prime.to_bytes()?])
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![self.t.clone()?])
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        Ok(vec![self.t.to_bytes()?])
     }
 }
 
