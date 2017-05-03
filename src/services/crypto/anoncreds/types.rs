@@ -1,7 +1,7 @@
 use services::crypto::wrappers::bn::BigNumber;
 use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::{AppendBigNumArray, clone_bignum_map};
+use services::crypto::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use utils::json::{JsonEncodable, JsonDecodable};
@@ -57,23 +57,6 @@ pub struct RevocationRegistry {
 pub struct RevocationRegistryPrivate {
     pub acc_sk: AccumulatorSecretKey,
     pub tails: HashMap<i32, PointG1>
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SchemaKey {
-    pub name: String,
-    pub version: String,
-    pub issue_id: String
-}
-
-impl SchemaKey {
-    pub fn new(name: String, version: String, issuer_id: String) -> SchemaKey {
-        SchemaKey {
-            name: name,
-            version: version,
-            issue_id: issuer_id
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -480,27 +463,20 @@ impl NonRevocProofCList {
     }
 }
 
-pub struct ProofInput {
-    pub revealed_attrs: HashSet<String>,
-    pub predicates: Vec<Predicate>,
-    pub ts: Option<String>,
-    pub pubseq_no: Option<String>
-}
-
 pub struct ProofClaims {
     pub claim_json: ClaimJson,
     pub schema: Schema,
     pub claim_definition: ClaimDefinition,
     pub revocation_registry: RevocationRegistry,
-    pub revealed_attrs: Vec<AttributeInfo>,
-    pub predicates: Vec<Predicate>,
-    pub unrevealed_attrs: Vec<AttributeInfo>
+    pub revealed_attrs: Vec<String>,
+    pub unrevealed_attrs: Vec<String>,
+    pub predicates: Vec<Predicate>
 }
 
 impl ProofClaims {
     pub fn new(claim_json: ClaimJson, schema: Schema, claim_definition: ClaimDefinition,
                revocation_registry: RevocationRegistry, predicates: Vec<Predicate>,
-               revealed_attrs: Vec<AttributeInfo>, unrevealed_attrs: Vec<AttributeInfo>) -> ProofClaims {
+               revealed_attrs: Vec<String>, unrevealed_attrs: Vec<String>) -> ProofClaims {
         ProofClaims {
             claim_json: claim_json,
             schema: schema,
@@ -513,17 +489,19 @@ impl ProofClaims {
     }
 }
 
-pub struct FullProof {
-    pub c_hash: BigNumber,
-    pub schema_keys: Vec<SchemaKey>,
-    pub proofs: Vec<Proof>,
-    pub c_list: Vec<Vec<u8>>
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
     pub primary_proof: PrimaryProof,
     pub non_revoc_proof: Option<NonRevocProof>
+}
+
+impl Proof {
+    pub fn new(primary_proof: PrimaryProof, non_revoc_proof: Option<NonRevocProof>) -> Proof {
+        Proof {
+            primary_proof: primary_proof,
+            non_revoc_proof: non_revoc_proof
+        }
+    }
 }
 
 pub struct InitProof {
@@ -546,16 +524,16 @@ pub struct PrimaryInitProof {
 }
 
 impl PrimaryInitProof {
-    pub fn as_c_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut c_list: Vec<BigNumber> = self.eq_proof.as_list()?;
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        let mut c_list: Vec<Vec<u8>> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
             c_list.append_vec(ge_proof.as_list()?)?;
         }
         Ok(c_list)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        let mut tau_list: Vec<BigNumber> = self.eq_proof.as_tau_list()?;
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        let mut tau_list: Vec<Vec<u8>> = self.eq_proof.as_tau_list()?;
         for ge_proof in self.ge_proofs.iter() {
             tau_list.append_vec(ge_proof.as_tau_list()?)?;
         }
@@ -583,12 +561,12 @@ pub struct PrimaryEqualInitProof {
 }
 
 impl PrimaryEqualInitProof {
-    pub fn as_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![self.a_prime.clone()?])
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        Ok(vec![self.a_prime.to_bytes()?])
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<BigNumber>, CryptoError> {
-        Ok(vec![self.t.clone()?])
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        Ok(vec![self.t.to_bytes()?])
     }
 }
 
@@ -606,7 +584,7 @@ pub struct PrimaryPrecicateGEInitProof {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryEqualProof {
-    pub revealed_attr_names: Vec<AttributeInfo>,
+    pub revealed_attrs: HashMap<String, String>,
     pub a_prime: BigNumber,
     pub e: BigNumber,
     pub v: BigNumber,

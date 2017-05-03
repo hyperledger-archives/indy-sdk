@@ -9,7 +9,6 @@ use services::crypto::wrappers::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::HashMap;
-use services::crypto::anoncreds::types::AttributeInfo;
 
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let random = n
@@ -30,8 +29,8 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
     Ok(result)
 }
 
-pub fn transform_u32_to_array_of_u8(x:u32) -> Vec<u8> {
-    let mut result:  Vec<u8> = vec![0; 28];
+pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
+    let mut result: Vec<u8> = vec![0; 28];
     for i in (0..4).rev() {
         let shift = i * 8;
         let b = (x >> shift) as u8;
@@ -49,12 +48,12 @@ pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError
     BigNumber::from_bytes(&hashed_array[..])
 }
 
-pub fn get_mtilde(unrevealed_attrs: &Vec<AttributeInfo>)
+pub fn get_mtilde(unrevealed_attrs: &Vec<String>)
                   -> Result<HashMap<String, BigNumber>, CryptoError> {
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for attr in unrevealed_attrs.iter() {
-        mtilde.insert(attr.name.clone(), BigNumber::rand(LARGE_MVECT)?);
+        mtilde.insert(attr.clone(), BigNumber::rand(LARGE_MVECT)?);
     }
     Ok(mtilde)
 }
@@ -86,7 +85,6 @@ pub trait BytesView {
     fn to_bytes(&self) -> Result<Vec<u8>, CryptoError>;
 }
 
-
 pub trait AppendByteArray {
     fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CryptoError>;
 }
@@ -95,19 +93,6 @@ impl AppendByteArray for Vec<Vec<u8>> {
     fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CryptoError> {
         for el in other.iter() {
             self.push(el.to_bytes()?);
-        }
-        Ok(())
-    }
-}
-
-pub trait AppendBigNumArray {
-    fn append_vec(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError>;
-}
-
-impl AppendBigNumArray for Vec<BigNumber> {
-    fn append_vec(&mut self, other: &Vec<BigNumber>) -> Result<(), CryptoError> {
-        for el in other.iter() {
-            self.push(el.clone()?);
         }
         Ok(())
     }

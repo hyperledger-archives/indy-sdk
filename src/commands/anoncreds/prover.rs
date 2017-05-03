@@ -3,7 +3,6 @@ extern crate uuid;
 
 use self::uuid::Uuid;
 use errors::anoncreds::AnoncredsError;
-//use errors::crypto::CryptoError;
 use services::crypto::CryptoService;
 use services::crypto::wrappers::bn::BigNumber;
 use services::pool::PoolService;
@@ -16,8 +15,6 @@ use services::crypto::anoncreds::types::{
     RevocationRegistry,
     Claims,
     ProofJson,
-//    NonRevocProofXList,
-//    NonRevocProofCList,
     ClaimInfo,
     ProofClaimsJson,
     ProofRequestJson,
@@ -331,28 +328,16 @@ impl ProverCommandExecutor {
         let tails = self.wallet_service.get(wallet_handle, &format!("tails"))?;
         let tails: HashMap<i32, PointG1> = serde_json::from_str(&tails)?;
 
-        let proof_claims = self.crypto_service.anoncreds.prover.prepare_proof_claims(&proof_req,
-                                                                                     &schemas,
-                                                                                     &claim_defs,
-                                                                                     &revoc_regs,
-                                                                                     &requested_claims,
-                                                                                     claims)?;
+        let proof_claims = self.crypto_service.anoncreds.prover.create_proof(claims,
+                                                                             &proof_req,
+                                                                             &schemas,
+                                                                             &claim_defs,
+                                                                             &revoc_regs,
+                                                                             &requested_claims,
+                                                                             &ms,
+                                                                             &tails)?;
 
-        let (proofs, attributes, aggregated_proof) =
-            self.crypto_service.anoncreds.prover.create_proof(proof_claims,
-                                                              &proof_req.nonce,
-                                                              &ms,
-                                                              &tails)?;
-
-        let requested_proof = self.crypto_service.anoncreds.prover.prepare_requested_proof_response(&proof_req,
-                                                                                                    &requested_claims,
-                                                                                                    &attributes)?;
-        let proof_claims_json = ProofJson {
-            proofs: proofs,
-            aggregated_proof: aggregated_proof,
-            requested_proof: requested_proof
-        };
-        let proof_claims_json = ProofJson::to_string(&proof_claims_json)?;
+        let proof_claims_json = ProofJson::to_string(&proof_claims)?;
 
         Ok(proof_claims_json)
     }
