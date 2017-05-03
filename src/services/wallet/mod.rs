@@ -19,6 +19,8 @@ use utils::json::{JsonDecodable, JsonEncodable};
 pub trait Wallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError>;
     fn get(&self, key: &str) -> Result<String, WalletError>;
+    fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError>;
+    fn get_not_expired(&self, key: &str) -> Result<String, WalletError>;
 }
 
 trait WalletType {
@@ -46,7 +48,7 @@ impl WalletDescriptor {
 
 impl JsonEncodable for WalletDescriptor {}
 
-impl <'a>JsonDecodable<'a> for WalletDescriptor {}
+impl<'a> JsonDecodable<'a> for WalletDescriptor {}
 
 pub struct WalletService {
     types: RefCell<HashMap<&'static str, Box<WalletType>>>,
@@ -69,12 +71,17 @@ impl WalletService {
                                    config: &str,
                                    credentials: &str) -> Result<(), WalletError>,
                         open: fn(name: &str,
+                                 config: &str,
                                  credentials: &str) -> Result<i32, WalletError>,
                         set: extern fn(handle: i32,
                                        key: &str, sub_key: &str,
                                        value: &str) -> Result<(), WalletError>,
                         get: extern fn(handle: i32,
                                        key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
+                        list: extern fn(handle: i32,
+                                       key: &str, sub_key: &str) -> Result<(Vec<(String, String)>, i32), WalletError>,
+                        get_not_expired: extern fn(handle: i32,
+                                                   key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
                         close: extern fn(handle: i32) -> Result<(), WalletError>,
                         delete: extern fn(name: &str) -> Result<(), WalletError>) {
         unimplemented!();
@@ -193,6 +200,20 @@ impl WalletService {
     pub fn get(&self, handle: i32, key: &str) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&handle) {
             Some(wallet) => wallet.get(key),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
+    }
+
+    pub fn list(&self, handle: i32, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(wallet) => wallet.list(key_prefix),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
+    }
+
+    pub fn get_not_expired(&self, handle: i32, key: &str) -> Result<String, WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(wallet) => wallet.get_not_expired(key),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
