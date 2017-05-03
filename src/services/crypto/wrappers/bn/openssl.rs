@@ -2,12 +2,16 @@ use errors::crypto::CryptoError;
 
 extern crate openssl;
 extern crate int_traits;
+extern crate serde;
 
 use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
 use self::openssl::error::ErrorStack;
-use self::openssl::hash::{hash, MessageDigest, Hasher};
+use self::openssl::hash::{hash2, MessageDigest, Hasher};
+use self::serde::ser::{Serialize, Serializer, Error as SError};
+use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
+use std::fmt;
 use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::num::ParseIntError;
@@ -38,19 +42,19 @@ impl BigNumber {
         })
     }
 
-    pub fn generate_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn generate_prime(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::generate_prime(&mut bn.openssl_bn, size as i32, false, None, None)?;
         Ok(bn)
     }
 
-    pub fn generate_safe_prime(&self, size: usize) -> Result<BigNumber, CryptoError> {
+    pub fn generate_safe_prime(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::generate_prime(&mut bn.openssl_bn, (size + 1) as i32, true, None, None)?;
         Ok(bn)
     }
 
-    pub fn generate_prime_in_range(&self, start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {
+    pub fn generate_prime_in_range(start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut prime;
         let mut iteration = 0;
         let mut bn_ctx = BigNumber::new_context()?;
@@ -150,7 +154,7 @@ impl BigNumber {
     }
 
     pub fn hash(data: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        Ok(hash(MessageDigest::sha256(), data)?)
+        Ok(hash2(MessageDigest::sha256(), data)?.to_vec())
     }
 
     pub fn add(&self, a: &BigNumber) -> Result<BigNumber, CryptoError> {
@@ -299,7 +303,7 @@ impl BigNumber {
             sha256.update(&num[index..])?;
         }
 
-        Ok(sha256.finish()?)
+        Ok(sha256.finish2()?.to_vec())
     }
 }
 
@@ -329,6 +333,35 @@ impl BytesView for BigNumber {
     }
 }
 
+impl Serialize for BigNumber {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        serializer.serialize_newtype_struct("BigNumber", &self.to_dec().map_err(SError::custom)?)
+    }
+}
+
+impl<'a> Deserialize<'a> for BigNumber {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        struct BigNumberVisitor;
+
+        impl<'a> Visitor<'a> for BigNumberVisitor {
+            type Value = BigNumber;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("expected BigNumber")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<BigNumber, E>
+                where E: DError
+            {
+                Ok(BigNumber::from_dec(value).map_err(DError::custom)?)
+            }
+        }
+
+        deserializer.deserialize_str(BigNumberVisitor)
+    }
+}
+
+
 impl From<ErrorStack> for CryptoError {
     fn from(err: ErrorStack) -> CryptoError {
         CryptoError::BackendError(err.description().to_string())
@@ -346,15 +379,39 @@ mod tests {
     use super::*;
     use utils::logger::LoggerUtils;
 
+    extern crate serde_json;
+
     #[test]
     fn generate_prime_in_range_works() {
         LoggerUtils::init();
 
-        let bn = BigNumber::new().unwrap();
         let start = BigNumber::rand(250).unwrap();
         let end = BigNumber::rand(300).unwrap();
-        let random_prime = bn.generate_prime_in_range(&start, &end).unwrap();
+        let random_prime = BigNumber::generate_prime_in_range(&start, &end).unwrap();
         assert!(start < random_prime);
         assert!(end > random_prime);
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct Test {
+        field: BigNumber
+    }
+
+    #[test]
+    fn serialize_works() {
+        let s = Test { field: BigNumber::from_dec("1").unwrap() };
+        let serialized = serde_json::to_string(&s);
+
+        assert!(serialized.is_ok());
+        assert_eq!("{\"field\":\"1\"}", serialized.unwrap());
+    }
+
+    #[test]
+    fn deserialize_works() {
+        let s = "{\"field\":\"1\"}";
+        let bn: Result<Test, _> = serde_json::from_str(&s);
+
+        assert!(bn.is_ok());
+        assert_eq!("1", bn.unwrap().field.to_dec().unwrap());
     }
 }

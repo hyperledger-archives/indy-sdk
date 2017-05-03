@@ -30,7 +30,7 @@ use self::libc::c_char;
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn sign_and_submit_request(command_handle: i32,
+pub extern fn sovrin_sign_and_submit_request(command_handle: i32,
                                       wallet_handle: i32,
                                       submitter_did: *const c_char,
                                       request_json: *const c_char,
@@ -48,7 +48,6 @@ pub extern fn sign_and_submit_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 let request_result_json = CStringUtils::string_to_cstring(request_result_json);
-
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
@@ -73,7 +72,7 @@ pub extern fn sign_and_submit_request(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn submit_request(command_handle: i32,
+pub extern fn sovrin_submit_request(command_handle: i32,
                              pool_handle: i32,
                              request_json: *const c_char,
                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -88,7 +87,6 @@ pub extern fn submit_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 let request_result_json = CStringUtils::string_to_cstring(request_result_json);
-
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
@@ -111,7 +109,7 @@ pub extern fn submit_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_get_ddo_request(command_handle: i32,
+pub extern fn sovrin_build_get_ddo_request(command_handle: i32,
                                     submitter_did: *const c_char,
                                     target_did: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -127,7 +125,6 @@ pub extern fn build_get_ddo_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -154,7 +151,7 @@ pub extern fn build_get_ddo_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_nym_request(command_handle: i32,
+pub extern fn sovrin_build_nym_request(command_handle: i32,
                                 submitter_did: *const c_char,
                                 target_did: *const c_char,
                                 verkey: *const c_char,
@@ -182,7 +179,6 @@ pub extern fn build_nym_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -207,7 +203,7 @@ pub extern fn build_nym_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_attrib_request(command_handle: i32,
+pub extern fn sovrin_build_attrib_request(command_handle: i32,
                                    submitter_did: *const c_char,
                                    target_did: *const c_char,
                                    hash: *const c_char,
@@ -232,7 +228,6 @@ pub extern fn build_attrib_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -254,7 +249,7 @@ pub extern fn build_attrib_request(command_handle: i32,
 ///
 /// #Errors
 /// Common*
-pub extern fn build_get_attrib_request(command_handle: i32,
+pub extern fn sovrin_build_get_attrib_request(command_handle: i32,
                                        submitter_did: *const c_char,
                                        target_did: *const c_char,
                                        data: *const c_char,
@@ -273,7 +268,6 @@ pub extern fn build_get_attrib_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -295,7 +289,7 @@ pub extern fn build_get_attrib_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_get_nym_request(command_handle: i32,
+pub extern fn sovrin_build_get_nym_request(command_handle: i32,
                                     submitter_did: *const c_char,
                                     target_did: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -311,7 +305,6 @@ pub extern fn build_get_nym_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -333,7 +326,7 @@ pub extern fn build_get_nym_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_schema_request(command_handle: i32,
+pub extern fn sovrin_build_schema_request(command_handle: i32,
                                    submitter_did: *const c_char,
                                    data: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -349,7 +342,6 @@ pub extern fn build_schema_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -371,7 +363,7 @@ pub extern fn build_schema_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_get_schema_request(command_handle: i32,
+pub extern fn sovrin_build_get_schema_request(command_handle: i32,
                                        submitter_did: *const c_char,
                                        data: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -387,7 +379,6 @@ pub extern fn build_get_schema_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -410,7 +401,7 @@ pub extern fn build_get_schema_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_claim_def_txn(command_handle: i32,
+pub extern fn sovrin_build_claim_def_txn(command_handle: i32,
                                   submitter_did: *const c_char,
                                   xref: *const c_char,
                                   data: *const c_char,
@@ -429,7 +420,6 @@ pub extern fn build_claim_def_txn(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -450,7 +440,7 @@ pub extern fn build_claim_def_txn(command_handle: i32,
 ///
 /// #Errors
 /// Common*
-pub extern fn build_get_claim_def_txn(command_handle: i32,
+pub extern fn sovrin_build_get_claim_def_txn(command_handle: i32,
                                       submitter_did: *const c_char,
                                       xref: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -466,7 +456,6 @@ pub extern fn build_get_claim_def_txn(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -489,7 +478,7 @@ pub extern fn build_get_claim_def_txn(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn build_node_request(command_handle: i32,
+pub extern fn sovrin_build_node_request(command_handle: i32,
                                  submitter_did: *const c_char,
                                  target_did: *const c_char,
                                  data: *const c_char,
@@ -508,7 +497,6 @@ pub extern fn build_node_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
-
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
