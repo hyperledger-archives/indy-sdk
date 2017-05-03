@@ -11,6 +11,11 @@ pub enum ByteOrder {
     Little
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub enum PredicateType {
+    GE
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Accumulator {
     pub acc: PointG1,
@@ -274,194 +279,16 @@ impl ClaimJson {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
-pub struct RevocationRegistry {
-    pub claim_def_seq_no: i32,
-    pub accumulator: Accumulator,
-    pub acc_pk: AccumulatorPublicKey,
+pub struct InitProof {
+    pub primary_init_proof: PrimaryInitProof,
+    pub non_revoc_init_proof: Option<NonRevocInitProof>
 }
 
-#[derive(Deserialize, Debug, Serialize)]
-pub struct RevocationRegistryPrivate {
-    pub acc_sk: AccumulatorSecretKey,
-    pub tails: HashMap<i32, PointG1>
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Schema {
-    pub name: String,
-    pub version: String,
-    pub attribute_names: HashSet<String>,
-    pub seq_no: i32
-}
-
-impl Schema {
-    pub fn new(name: String, version: String, attributes_names: HashSet<String>, seq_no: i32) -> Schema {
-        Schema {
-            name: name,
-            version: version,
-            attribute_names: attributes_names,
-            seq_no: seq_no
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PublicKey {
-    pub n: BigNumber,
-    pub s: BigNumber,
-    pub rms: BigNumber,
-    pub r: HashMap<String, BigNumber>,
-    pub rctxt: BigNumber,
-    pub z: BigNumber
-}
-
-impl PublicKey {
-    pub fn new(n: BigNumber, s: BigNumber, rms: BigNumber, r: HashMap<String, BigNumber>,
-               rctxt: BigNumber, z: BigNumber) -> PublicKey {
-        PublicKey {
-            n: n,
-            s: s,
-            rms: rms,
-            r: r,
-            rctxt: rctxt,
-            z: z
-        }
-    }
-
-    pub fn clone(&self) -> Result<PublicKey, CryptoError> {
-        Ok(PublicKey {
-            s: self.n.clone()?,
-            n: self.n.clone()?,
-            rms: self.rms.clone()?,
-            r: clone_bignum_map(&self.r)?,
-            rctxt: self.rctxt.clone()?,
-            z: self.z.clone()?
-        })
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct RevocationPublicKey {
-    pub g: PointG1,
-    pub h: PointG1,
-    pub h0: PointG1,
-    pub h1: PointG1,
-    pub h2: PointG1,
-    pub htilde: PointG1,
-    pub u: PointG1,
-    pub pk: PointG1,
-    pub y: PointG1,
-    pub x: GroupOrderElement
-}
-
-impl RevocationPublicKey {
-    pub fn new(g: PointG1, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
-               u: PointG1, pk: PointG1, y: PointG1, x: GroupOrderElement) -> RevocationPublicKey {
-        RevocationPublicKey {
-            g: g,
-            h: h,
-            h0: h0,
-            h1: h1,
-            h2: h2,
-            htilde: htilde,
-            u: u,
-            pk: pk,
-            y: y,
-            x: x
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct RevocationSecretKey {
-    pub x: GroupOrderElement,
-    pub sk: GroupOrderElement
-}
-
-impl RevocationSecretKey {
-    pub fn new(x: GroupOrderElement, sk: GroupOrderElement) -> RevocationSecretKey {
-        RevocationSecretKey {
-            x: x,
-            sk: sk
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SecretKey {
-    pub p: BigNumber,
-    pub q: BigNumber
-}
-
-impl SecretKey {
-    pub fn new(p: BigNumber, q: BigNumber) -> SecretKey {
-        SecretKey {
-            p: p,
-            q: q
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Witness {
-    pub sigma_i: PointG1,
-    pub u_i: PointG1,
-    pub g_i: PointG1,
-    pub omega: PointG1,
-    pub v: HashSet<i32>
-}
-
-impl Witness {
-    pub fn new(sigma_i: PointG1, u_i: PointG1, g_i: PointG1, omega: PointG1,
-               v: HashSet<i32>) -> Witness {
-        Witness {
-            sigma_i: sigma_i,
-            u_i: u_i,
-            g_i: g_i,
-            omega: omega,
-            v: v
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub enum PredicateType {
-    GE
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub struct Predicate {
-    pub attr_name: String,
-    pub p_type: PredicateType,
-    pub value: i32
-}
-
-impl Predicate {
-    pub fn new(attr_name: String, p_type: PredicateType, value: i32) -> Predicate {
-        Predicate {
-            attr_name: attr_name,
-            p_type: p_type,
-            value: value
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct PrimaryClaim {
-    pub m2: BigNumber,
-    pub a: BigNumber,
-    pub e: BigNumber,
-    pub v_prime: BigNumber
-}
-
-impl PrimaryClaim {
-    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v_prime: BigNumber) -> PrimaryClaim {
-        PrimaryClaim {
-            m2: m2,
-            a: a,
-            e: e,
-            v_prime: v_prime
+impl InitProof {
+    pub fn new(primary_init_proof: PrimaryInitProof, non_revoc_init_proof: Option<NonRevocInitProof>) -> InitProof {
+        InitProof {
+            primary_init_proof: primary_init_proof,
+            non_revoc_init_proof: non_revoc_init_proof
         }
     }
 }
@@ -475,6 +302,21 @@ pub struct NonRevocationClaim {
     pub g_i: PointG1,
     pub i: i32,
     pub m2: GroupOrderElement
+}
+
+impl NonRevocationClaim {
+    pub fn new(sigma: PointG1, c: GroupOrderElement, vr_prime_prime: GroupOrderElement,
+               witness: Witness, g_i: PointG1, i: i32, m2: GroupOrderElement) -> NonRevocationClaim {
+        NonRevocationClaim {
+            sigma: sigma,
+            c: c,
+            vr_prime_prime: vr_prime_prime,
+            witness: witness,
+            g_i: g_i,
+            i: i,
+            m2: m2
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -593,6 +435,121 @@ impl NonRevocProofCList {
     }
 }
 
+pub struct NonRevocInitProof {
+    pub c_list_params: NonRevocProofXList,
+    pub tau_list_params: NonRevocProofXList,
+    pub c_list: NonRevocProofCList,
+    pub tau_list: NonRevocProofTauList
+}
+
+impl NonRevocInitProof {
+    pub fn new(c_list_params: NonRevocProofXList, tau_list_params: NonRevocProofXList,
+               c_list: NonRevocProofCList, tau_list: NonRevocProofTauList) -> NonRevocInitProof {
+        NonRevocInitProof {
+            c_list_params: c_list_params,
+            tau_list_params: tau_list_params,
+            c_list: c_list,
+            tau_list: tau_list
+        }
+    }
+
+    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+        let vec = self.c_list.as_list()?;
+        Ok(vec)
+    }
+
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+        let vec = self.tau_list.as_slice()?;
+        Ok(vec)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NonRevocProof {
+    pub x_list: NonRevocProofXList,
+    pub c_list: NonRevocProofCList
+}
+
+impl NonRevocProof {
+    pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
+        NonRevocProof {
+            x_list: x_list,
+            c_list: c_list
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PublicKey {
+    pub n: BigNumber,
+    pub s: BigNumber,
+    pub rms: BigNumber,
+    pub r: HashMap<String, BigNumber>,
+    pub rctxt: BigNumber,
+    pub z: BigNumber
+}
+
+impl PublicKey {
+    pub fn new(n: BigNumber, s: BigNumber, rms: BigNumber, r: HashMap<String, BigNumber>,
+               rctxt: BigNumber, z: BigNumber) -> PublicKey {
+        PublicKey {
+            n: n,
+            s: s,
+            rms: rms,
+            r: r,
+            rctxt: rctxt,
+            z: z
+        }
+    }
+
+    pub fn clone(&self) -> Result<PublicKey, CryptoError> {
+        Ok(PublicKey {
+            s: self.n.clone()?,
+            n: self.n.clone()?,
+            rms: self.rms.clone()?,
+            r: clone_bignum_map(&self.r)?,
+            rctxt: self.rctxt.clone()?,
+            z: self.z.clone()?
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub struct Predicate {
+    pub attr_name: String,
+    pub p_type: PredicateType,
+    pub value: i32
+}
+
+impl Predicate {
+    pub fn new(attr_name: String, p_type: PredicateType, value: i32) -> Predicate {
+        Predicate {
+            attr_name: attr_name,
+            p_type: p_type,
+            value: value
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PrimaryClaim {
+    pub m2: BigNumber,
+    pub a: BigNumber,
+    pub e: BigNumber,
+    pub v_prime: BigNumber
+}
+
+impl PrimaryClaim {
+    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v_prime: BigNumber) -> PrimaryClaim {
+        PrimaryClaim {
+            m2: m2,
+            a: a,
+            e: e,
+            v_prime: v_prime
+        }
+    }
+}
+
 pub struct ProofClaims {
     pub claim_json: ClaimJson,
     pub schema: Schema,
@@ -634,26 +591,20 @@ impl Proof {
     }
 }
 
-pub struct InitProof {
-    pub primary_init_proof: PrimaryInitProof,
-    pub non_revoc_init_proof: Option<NonRevocInitProof>
-}
-
-impl InitProof {
-    pub fn new(primary_init_proof: PrimaryInitProof, non_revoc_init_proof: Option<NonRevocInitProof>) -> InitProof {
-        InitProof {
-            primary_init_proof: primary_init_proof,
-            non_revoc_init_proof: non_revoc_init_proof
-        }
-    }
-}
-
 pub struct PrimaryInitProof {
     pub eq_proof: PrimaryEqualInitProof,
-    pub ge_proofs: Vec<PrimaryPrecicateGEInitProof>
+    pub ge_proofs: Vec<PrimaryPredicateGEInitProof>
 }
 
 impl PrimaryInitProof {
+    pub fn new(eq_proof: PrimaryEqualInitProof,
+               ge_proofs: Vec<PrimaryPredicateGEInitProof>) -> PrimaryInitProof {
+        PrimaryInitProof {
+            eq_proof: eq_proof,
+            ge_proofs: ge_proofs
+        }
+    }
+
     pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
         let mut c_list: Vec<Vec<u8>> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
@@ -677,6 +628,15 @@ pub struct PrimaryProof {
     pub ge_proofs: Vec<PrimaryPredicateGEProof>
 }
 
+impl PrimaryProof {
+    pub fn new(eq_proof: PrimaryEqualProof, ge_proofs: Vec<PrimaryPredicateGEProof>) -> PrimaryProof {
+        PrimaryProof {
+            eq_proof: eq_proof,
+            ge_proofs: ge_proofs
+        }
+    }
+}
+
 pub struct PrimaryEqualInitProof {
     pub a_prime: BigNumber,
     pub t: BigNumber,
@@ -691,6 +651,23 @@ pub struct PrimaryEqualInitProof {
 }
 
 impl PrimaryEqualInitProof {
+    pub fn new(a_prime: BigNumber, t: BigNumber, etilde: BigNumber, eprime: BigNumber,
+               vtilde: BigNumber, vprime: BigNumber, mtilde: HashMap<String, BigNumber>,
+               m1_tilde: BigNumber, m2_tilde: BigNumber, m2: BigNumber) -> PrimaryEqualInitProof {
+        PrimaryEqualInitProof {
+            a_prime: a_prime,
+            t: t,
+            etilde: etilde,
+            eprime: eprime,
+            vtilde: vtilde,
+            vprime: vprime,
+            mtilde: mtilde,
+            m1_tilde: m1_tilde,
+            m2_tilde: m2_tilde,
+            m2: m2
+        }
+    }
+
     pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
         Ok(vec![self.a_prime.to_bytes()?])
     }
@@ -700,7 +677,7 @@ impl PrimaryEqualInitProof {
     }
 }
 
-pub struct PrimaryPrecicateGEInitProof {
+pub struct PrimaryPredicateGEInitProof {
     pub c_list: Vec<BigNumber>,
     pub tau_list: Vec<BigNumber>,
     pub u: HashMap<String, BigNumber>,
@@ -710,6 +687,33 @@ pub struct PrimaryPrecicateGEInitProof {
     pub alpha_tilde: BigNumber,
     pub predicate: Predicate,
     pub t: HashMap<String, BigNumber>
+}
+
+impl PrimaryPredicateGEInitProof {
+    pub fn new(c_list: Vec<BigNumber>, tau_list: Vec<BigNumber>, u: HashMap<String, BigNumber>,
+               u_tilde: HashMap<String, BigNumber>, r: HashMap<String, BigNumber>,
+               r_tilde: HashMap<String, BigNumber>, alpha_tilde: BigNumber, predicate: Predicate,
+               t: HashMap<String, BigNumber>) -> PrimaryPredicateGEInitProof {
+        PrimaryPredicateGEInitProof {
+            c_list: c_list,
+            tau_list: tau_list,
+            u: u,
+            u_tilde: u_tilde,
+            r: r,
+            r_tilde: r_tilde,
+            alpha_tilde: alpha_tilde,
+            predicate: predicate,
+            t: t
+        }
+    }
+
+    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+        Ok(&self.c_list)
+    }
+
+    pub fn as_tau_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+        Ok(&self.tau_list)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -723,6 +727,22 @@ pub struct PrimaryEqualProof {
     pub m2: BigNumber
 }
 
+impl PrimaryEqualProof {
+    pub fn new(revealed_attrs: HashMap<String, String>, a_prime: BigNumber, e: BigNumber,
+               v: BigNumber,m: HashMap<String, BigNumber>, m1: BigNumber,
+               m2: BigNumber) -> PrimaryEqualProof {
+        PrimaryEqualProof {
+            revealed_attrs: revealed_attrs,
+            a_prime: a_prime,
+            e: e,
+            v: v,
+            m: m,
+            m1: m1,
+            m2: m2
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryPredicateGEProof {
     pub u: HashMap<String, BigNumber>,
@@ -733,71 +753,17 @@ pub struct PrimaryPredicateGEProof {
     pub predicate: Predicate
 }
 
-impl PrimaryPrecicateGEInitProof {
-    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
-        Ok(&self.c_list)
-    }
-
-    pub fn as_tau_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
-        Ok(&self.tau_list)
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct RevocationClaimInitData {
-    pub u: PointG1,
-    pub v_prime: GroupOrderElement
-}
-
-pub struct NonRevocInitProof {
-    pub c_list_params: NonRevocProofXList,
-    pub tau_list_params: NonRevocProofXList,
-    pub c_list: NonRevocProofCList,
-    pub tau_list: NonRevocProofTauList
-}
-
-impl NonRevocInitProof {
-    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CryptoError> {
-        let vec = self.c_list.as_list()?;
-        Ok(vec)
-    }
-
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
-        let vec = self.tau_list.as_slice()?;
-        Ok(vec)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct NonRevocProof {
-    pub x_list: NonRevocProofXList,
-    pub c_list: NonRevocProofCList
-}
-
-impl NonRevocProof {
-    pub fn new(x_list: NonRevocProofXList, c_list: NonRevocProofCList) -> NonRevocProof {
-        NonRevocProof {
-            x_list: x_list,
-            c_list: c_list
-        }
-    }
-}
-
-impl RevocationRegistry {
-    pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
-        RevocationRegistry {
-            accumulator: accumulator,
-            acc_pk: acc_pk,
-            claim_def_seq_no: claim_def_seq_no
-        }
-    }
-}
-
-impl RevocationRegistryPrivate {
-    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
-        RevocationRegistryPrivate {
-            acc_sk: acc_sk,
-            tails: tails
+impl PrimaryPredicateGEProof {
+    pub fn new(u: HashMap<String, BigNumber>, r: HashMap<String, BigNumber>, mj: BigNumber,
+               alpha: BigNumber, t: HashMap<String, BigNumber>,
+               predicate: Predicate) -> PrimaryPredicateGEProof {
+        PrimaryPredicateGEProof {
+            u: u,
+            r: r,
+            mj: mj,
+            alpha: alpha,
+            t: t,
+            predicate: predicate
         }
     }
 }
@@ -835,6 +801,109 @@ impl ProofRequestJson {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProofJson {
+    pub proofs: HashMap<String, ClaimProof>,
+    pub aggregated_proof: AggregatedProof,
+    pub requested_proof: RequestedProofJson
+}
+
+impl ProofJson {
+    pub fn new(proofs: HashMap<String, ClaimProof>, aggregated_proof: AggregatedProof,
+               requested_proof: RequestedProofJson) -> ProofJson {
+        ProofJson {
+            proofs: proofs,
+            aggregated_proof: aggregated_proof,
+            requested_proof: requested_proof
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Serialize, Clone)]
+pub struct RevocationRegistry {
+    pub claim_def_seq_no: i32,
+    pub accumulator: Accumulator,
+    pub acc_pk: AccumulatorPublicKey,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct RevocationRegistryPrivate {
+    pub acc_sk: AccumulatorSecretKey,
+    pub tails: HashMap<i32, PointG1>
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RevocationPublicKey {
+    pub g: PointG1,
+    pub h: PointG1,
+    pub h0: PointG1,
+    pub h1: PointG1,
+    pub h2: PointG1,
+    pub htilde: PointG1,
+    pub u: PointG1,
+    pub pk: PointG1,
+    pub y: PointG1,
+    pub x: GroupOrderElement
+}
+
+impl RevocationPublicKey {
+    pub fn new(g: PointG1, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
+               u: PointG1, pk: PointG1, y: PointG1, x: GroupOrderElement) -> RevocationPublicKey {
+        RevocationPublicKey {
+            g: g,
+            h: h,
+            h0: h0,
+            h1: h1,
+            h2: h2,
+            htilde: htilde,
+            u: u,
+            pk: pk,
+            y: y,
+            x: x
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RevocationSecretKey {
+    pub x: GroupOrderElement,
+    pub sk: GroupOrderElement
+}
+
+impl RevocationSecretKey {
+    pub fn new(x: GroupOrderElement, sk: GroupOrderElement) -> RevocationSecretKey {
+        RevocationSecretKey {
+            x: x,
+            sk: sk
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RevocationClaimInitData {
+    pub u: PointG1,
+    pub v_prime: GroupOrderElement
+}
+
+impl RevocationRegistry {
+    pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
+        RevocationRegistry {
+            accumulator: accumulator,
+            acc_pk: acc_pk,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+impl RevocationRegistryPrivate {
+    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
+        RevocationRegistryPrivate {
+            acc_sk: acc_sk,
+            tails: tails
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedClaimsJson {
     pub self_attested_attributes: HashMap<String, String>,
@@ -861,11 +930,71 @@ pub struct RequestedProofJson {
     pub predicates: HashMap<String, String>
 }
 
+
+
+
+
+
+
+
+
+
+
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Schema {
+    pub name: String,
+    pub version: String,
+    pub attribute_names: HashSet<String>,
+    pub seq_no: i32
+}
+
+impl Schema {
+    pub fn new(name: String, version: String, attributes_names: HashSet<String>, seq_no: i32) -> Schema {
+        Schema {
+            name: name,
+            version: version,
+            attribute_names: attributes_names,
+            seq_no: seq_no
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ProofJson {
-    pub proofs: HashMap<String, ClaimProof>,
-    pub aggregated_proof: AggregatedProof,
-    pub requested_proof: RequestedProofJson
+pub struct SecretKey {
+    pub p: BigNumber,
+    pub q: BigNumber
+}
+
+impl SecretKey {
+    pub fn new(p: BigNumber, q: BigNumber) -> SecretKey {
+        SecretKey {
+            p: p,
+            q: q
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Witness {
+    pub sigma_i: PointG1,
+    pub u_i: PointG1,
+    pub g_i: PointG1,
+    pub omega: PointG1,
+    pub v: HashSet<i32>
+}
+
+impl Witness {
+    pub fn new(sigma_i: PointG1, u_i: PointG1, g_i: PointG1, omega: PointG1,
+               v: HashSet<i32>) -> Witness {
+        Witness {
+            sigma_i: sigma_i,
+            u_i: u_i,
+            g_i: g_i,
+            omega: omega,
+            v: v
+        }
+    }
 }
 
 impl JsonEncodable for ClaimOffer {}
