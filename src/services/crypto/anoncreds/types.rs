@@ -40,6 +40,10 @@ impl Accumulator {
     }
 }
 
+impl JsonEncodable for Accumulator {}
+
+impl<'a> JsonDecodable<'a> for Accumulator {}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AccumulatorPublicKey {
     pub z: Pair
@@ -53,6 +57,10 @@ impl AccumulatorPublicKey {
     }
 }
 
+impl JsonEncodable for AccumulatorPublicKey {}
+
+impl<'a> JsonDecodable<'a> for AccumulatorPublicKey {}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AccumulatorSecretKey {
     pub gamma: GroupOrderElement
@@ -65,6 +73,10 @@ impl AccumulatorSecretKey {
         }
     }
 }
+
+impl JsonEncodable for AccumulatorSecretKey {}
+
+impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AggregatedProof {
@@ -96,6 +108,10 @@ impl AttributeInfo {
     }
 }
 
+impl JsonEncodable for AttributeInfo {}
+
+impl<'a> JsonDecodable<'a> for AttributeInfo {}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
@@ -110,6 +126,10 @@ impl ClaimOffer {
         }
     }
 }
+
+impl JsonEncodable for ClaimOffer {}
+
+impl<'a> JsonDecodable<'a> for ClaimOffer {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimRequestJson {
@@ -127,6 +147,10 @@ impl ClaimRequestJson {
         }
     }
 }
+
+impl JsonEncodable for ClaimRequestJson {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClaimInfo {
@@ -166,6 +190,10 @@ impl ClaimRequest {
         }
     }
 }
+
+impl JsonEncodable for ClaimRequest {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequest {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimProof {
@@ -213,6 +241,10 @@ impl ClaimDefinition {
     }
 }
 
+impl JsonEncodable for ClaimDefinition {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinition {}
+
 #[derive(Deserialize, Debug, Serialize)]
 pub struct ClaimDefinitionPrivate {
     pub secret_key: SecretKey,
@@ -227,6 +259,10 @@ impl ClaimDefinitionPrivate {
         }
     }
 }
+
+impl JsonEncodable for ClaimDefinitionPrivate {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
@@ -244,6 +280,10 @@ impl Claims {
     }
 }
 
+impl JsonEncodable for Claims {}
+
+impl<'a> JsonDecodable<'a> for Claims {}
+
 #[derive(Deserialize, Serialize)]
 pub struct ClaimInitData {
     pub u: BigNumber,
@@ -258,6 +298,10 @@ impl ClaimInitData {
         }
     }
 }
+
+impl JsonEncodable for ClaimInitData {}
+
+impl<'a> JsonDecodable<'a> for ClaimInitData {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimJson {
@@ -278,6 +322,10 @@ impl ClaimJson {
         }
     }
 }
+
+impl JsonEncodable for ClaimJson {}
+
+impl<'a> JsonDecodable<'a> for ClaimJson {}
 
 pub struct InitProof {
     pub primary_init_proof: PrimaryInitProof,
@@ -373,6 +421,10 @@ impl NonRevocProofXList {
     }
 }
 
+impl JsonEncodable for NonRevocProofXList {}
+
+impl<'a> JsonDecodable<'a> for NonRevocProofXList {}
+
 pub struct NonRevocProofTauList {
     pub t1: PointG1,
     pub t2: PointG1,
@@ -434,6 +486,10 @@ impl NonRevocProofCList {
         Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
     }
 }
+
+impl JsonEncodable for NonRevocProofCList {}
+
+impl<'a> JsonDecodable<'a> for NonRevocProofCList {}
 
 pub struct NonRevocInitProof {
     pub c_list_params: NonRevocProofXList,
@@ -513,6 +569,10 @@ impl PublicKey {
         })
     }
 }
+
+impl JsonEncodable for PublicKey {}
+
+impl<'a> JsonDecodable<'a> for PublicKey {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Predicate {
@@ -783,6 +843,10 @@ impl ProofClaimsJson {
     }
 }
 
+impl JsonEncodable for ProofClaimsJson {}
+
+impl<'a> JsonDecodable<'a> for ProofClaimsJson {}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequestJson {
     pub nonce: BigNumber,
@@ -800,6 +864,10 @@ impl ProofRequestJson {
         }
     }
 }
+
+impl JsonEncodable for ProofRequestJson {}
+
+impl<'a> JsonDecodable<'a> for ProofRequestJson {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProofJson {
@@ -819,18 +887,50 @@ impl ProofJson {
     }
 }
 
+impl JsonEncodable for ProofJson {}
+
+impl<'a> JsonDecodable<'a> for ProofJson {}
+
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistry {
     pub claim_def_seq_no: i32,
     pub accumulator: Accumulator,
-    pub acc_pk: AccumulatorPublicKey,
+    pub acc_pk: AccumulatorPublicKey
 }
+
+impl RevocationRegistry {
+    pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey,
+               claim_def_seq_no: i32) -> RevocationRegistry {
+        RevocationRegistry {
+            accumulator: accumulator,
+            acc_pk: acc_pk,
+            claim_def_seq_no: claim_def_seq_no
+        }
+    }
+}
+
+impl JsonEncodable for RevocationRegistry {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistry {}
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RevocationRegistryPrivate {
     pub acc_sk: AccumulatorSecretKey,
     pub tails: HashMap<i32, PointG1>
 }
+
+impl RevocationRegistryPrivate {
+    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
+        RevocationRegistryPrivate {
+            acc_sk: acc_sk,
+            tails: tails
+        }
+    }
+}
+
+impl JsonEncodable for RevocationRegistryPrivate {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RevocationPublicKey {
@@ -864,6 +964,10 @@ impl RevocationPublicKey {
     }
 }
 
+impl JsonEncodable for RevocationPublicKey {}
+
+impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RevocationSecretKey {
     pub x: GroupOrderElement,
@@ -879,30 +983,28 @@ impl RevocationSecretKey {
     }
 }
 
+impl JsonEncodable for RevocationSecretKey {}
+
+impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RevocationClaimInitData {
     pub u: PointG1,
     pub v_prime: GroupOrderElement
 }
 
-impl RevocationRegistry {
-    pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey, claim_def_seq_no: i32) -> RevocationRegistry {
-        RevocationRegistry {
-            accumulator: accumulator,
-            acc_pk: acc_pk,
-            claim_def_seq_no: claim_def_seq_no
+impl RevocationClaimInitData {
+    pub fn new(u: PointG1, v_prime: GroupOrderElement) -> RevocationClaimInitData {
+        RevocationClaimInitData {
+            u: u,
+            v_prime: v_prime
         }
     }
 }
 
-impl RevocationRegistryPrivate {
-    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
-        RevocationRegistryPrivate {
-            acc_sk: acc_sk,
-            tails: tails
-        }
-    }
-}
+impl JsonEncodable for RevocationClaimInitData {}
+
+impl<'a> JsonDecodable<'a> for RevocationClaimInitData {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedClaimsJson {
@@ -922,6 +1024,10 @@ impl RequestedClaimsJson {
     }
 }
 
+impl JsonEncodable for RequestedClaimsJson {}
+
+impl<'a> JsonDecodable<'a> for RequestedClaimsJson {}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProofJson {
     pub revealed_attrs: HashMap<String, (String, String, String)>,
@@ -930,16 +1036,19 @@ pub struct RequestedProofJson {
     pub predicates: HashMap<String, String>
 }
 
-
-
-
-
-
-
-
-
-
-
+impl RequestedProofJson {
+    pub fn new(revealed_attrs: HashMap<String, (String, String, String)>,
+               unrevealed_attrs: HashMap<String, String>,
+               self_attested_attrs: HashMap<String, String>,
+               predicates: HashMap<String, String>) -> RequestedProofJson {
+        RequestedProofJson {
+            revealed_attrs: revealed_attrs,
+            unrevealed_attrs: unrevealed_attrs,
+            self_attested_attrs: self_attested_attrs,
+            predicates: predicates
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
@@ -960,6 +1069,10 @@ impl Schema {
     }
 }
 
+impl JsonEncodable for Schema {}
+
+impl<'a> JsonDecodable<'a> for Schema {}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SecretKey {
     pub p: BigNumber,
@@ -974,6 +1087,10 @@ impl SecretKey {
         }
     }
 }
+
+impl JsonEncodable for SecretKey {}
+
+impl<'a> JsonDecodable<'a> for SecretKey {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Witness {
@@ -996,107 +1113,3 @@ impl Witness {
         }
     }
 }
-
-impl JsonEncodable for ClaimOffer {}
-
-impl<'a> JsonDecodable<'a> for ClaimOffer {}
-
-impl JsonEncodable for ClaimRequestJson {}
-
-impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
-
-impl JsonEncodable for ClaimJson {}
-
-impl<'a> JsonDecodable<'a> for ClaimJson {}
-
-impl JsonEncodable for ProofRequestJson {}
-
-impl<'a> JsonDecodable<'a> for ProofRequestJson {}
-
-impl JsonEncodable for ProofClaimsJson {}
-
-impl<'a> JsonDecodable<'a> for ProofClaimsJson {}
-
-impl JsonEncodable for RequestedClaimsJson {}
-
-impl<'a> JsonDecodable<'a> for RequestedClaimsJson {}
-
-impl JsonEncodable for ClaimDefinition {}
-
-impl<'a> JsonDecodable<'a> for ClaimDefinition {}
-
-impl JsonEncodable for ClaimDefinitionPrivate {}
-
-impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
-
-impl JsonEncodable for ClaimInitData {}
-
-impl<'a> JsonDecodable<'a> for ClaimInitData {}
-
-impl JsonEncodable for Claims {}
-
-impl<'a> JsonDecodable<'a> for Claims {}
-
-impl JsonEncodable for RevocationClaimInitData {}
-
-impl<'a> JsonDecodable<'a> for RevocationClaimInitData {}
-
-impl JsonEncodable for RevocationRegistry {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistry {}
-
-impl JsonEncodable for RevocationRegistryPrivate {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
-
-impl JsonEncodable for Schema {}
-
-impl<'a> JsonDecodable<'a> for Schema {}
-
-impl JsonEncodable for PublicKey {}
-
-impl<'a> JsonDecodable<'a> for PublicKey {}
-
-impl JsonEncodable for SecretKey {}
-
-impl<'a> JsonDecodable<'a> for SecretKey {}
-
-impl JsonEncodable for RevocationPublicKey {}
-
-impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
-
-impl JsonEncodable for RevocationSecretKey {}
-
-impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
-
-impl JsonEncodable for Accumulator {}
-
-impl<'a> JsonDecodable<'a> for Accumulator {}
-
-impl JsonEncodable for AccumulatorPublicKey {}
-
-impl<'a> JsonDecodable<'a> for AccumulatorPublicKey {}
-
-impl JsonEncodable for AccumulatorSecretKey {}
-
-impl<'a> JsonDecodable<'a> for AccumulatorSecretKey {}
-
-impl JsonEncodable for ClaimRequest {}
-
-impl<'a> JsonDecodable<'a> for ClaimRequest {}
-
-impl JsonEncodable for NonRevocProofXList {}
-
-impl<'a> JsonDecodable<'a> for NonRevocProofXList {}
-
-impl JsonEncodable for NonRevocProofCList {}
-
-impl<'a> JsonDecodable<'a> for NonRevocProofCList {}
-
-impl JsonEncodable for AttributeInfo {}
-
-impl<'a> JsonDecodable<'a> for AttributeInfo {}
-
-impl JsonEncodable for ProofJson {}
-
-impl<'a> JsonDecodable<'a> for ProofJson {}

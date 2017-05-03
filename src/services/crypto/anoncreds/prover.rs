@@ -110,10 +110,7 @@ impl Prover {
     fn _generate_revocation_claim_init_data(pkr: &RevocationPublicKey) -> Result<RevocationClaimInitData, CryptoError> {
         let vr_prime = GroupOrderElement::new()?;
         let ur = pkr.h2.mul(&vr_prime)?;
-        Ok(RevocationClaimInitData {
-            v_prime: vr_prime,
-            u: ur
-        })
+        Ok(RevocationClaimInitData::new(ur, vr_prime))
     }
 
     pub fn process_claim(&self, claims: &RefCell<Claims>, primary_claim_init_data: ClaimInitData,
@@ -402,12 +399,10 @@ impl Prover {
 
         let (revealed_attrs, unrevealed_attrs) = Prover::_split_attributes(&proof_req, requested_claims, &attributes)?;
 
-        let requested_proof = RequestedProofJson {
-            revealed_attrs: revealed_attrs,
-            unrevealed_attrs: unrevealed_attrs,
-            self_attested_attrs: requested_claims.self_attested_attributes.clone(),
-            predicates: requested_claims.requested_predicates.clone()
-        };
+        let requested_proof = RequestedProofJson::new(
+            revealed_attrs, unrevealed_attrs, requested_claims.self_attested_attributes.clone(),
+            requested_claims.requested_predicates.clone()
+        );
 
         Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
     }
