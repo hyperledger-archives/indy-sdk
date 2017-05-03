@@ -411,6 +411,10 @@ impl From<ParseIntError> for CryptoError {
 mod tests {
     use super::*;
     use utils::logger::LoggerUtils;
+    use services::crypto::anoncreds::constants::{
+        LARGE_UTILDE,
+        LARGE_RTILDE,
+    };
 
     extern crate serde_json;
 
