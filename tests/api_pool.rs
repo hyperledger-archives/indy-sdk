@@ -8,8 +8,11 @@ mod utils;
 
 use sovrin::api::ErrorCode;
 use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledger};
+use sovrin::api::ledger::sovrin_submit_request;
+
 #[path = "../src/utils/environment.rs"]
 mod environment;
+
 use environment::EnvironmentUtils;
 
 use std::fs;
@@ -92,4 +95,50 @@ fn sovrin_open_pool_ledger_can_be_called() {
     assert_eq!(ErrorCode::Success, err);
     let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
     assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, err);
+}
+
+#[test]
+#[ignore] //required nodes pool available from CI
+fn sovrin_submit_request_can_be_called() {
+    //TODO call create pool ledger before open
+    let (sender, receiver) = channel();
+    let cb = Box::new(move |err, handle| {
+        sender.send((err, handle)).unwrap();
+    });
+    let (command_handle, callback) = CallbacksHelpers::closure_to_open_pool_ledger_cb(cb);
+    let pool_name = CString::new("test").unwrap();
+    let err = sovrin_open_pool_ledger(command_handle,
+                                      pool_name.as_ptr(),
+                                      null(),
+                                      callback);
+    assert_eq!(ErrorCode::Success, err);
+    let (err, pool_handle) = receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+    std::thread::sleep(std::time::Duration::from_secs(1)); //TODO
+
+    let (sender, receiver) = channel();
+    let cb_send = Box::new(move |err, resp| {
+        sender.send((err, resp)).unwrap();
+    });
+    let json = "{\
+            \"reqId\":1491566332010860,\
+            \"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\
+            \"operation\":{\
+                \"type\":\"105\",\
+                \"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\
+            },\
+            \"signature\":\"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV\"\
+        }\
+        ";
+    let req = CString::new(json).unwrap();
+    let (command_handle, callback) = CallbacksHelpers::closure_to_send_tx_cb(cb_send);
+
+    let err = sovrin_submit_request(command_handle,
+                                    pool_handle,
+                                    req.as_ptr(),
+                                    callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let recv = receiver.recv_timeout(std::time::Duration::from_secs(1));
+    recv.unwrap(); //TODO check data in ok
 }
