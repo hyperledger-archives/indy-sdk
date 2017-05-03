@@ -5,6 +5,7 @@ use super::{Wallet, WalletType};
 
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
+use utils::json::JsonDecodable;
 
 use self::rusqlite::Connection;
 use self::time::Timespec;
@@ -14,28 +15,44 @@ use std::fs;
 use std::path::PathBuf;
 use std::ops::Sub;
 
-struct DefaultWallet {
-    name: String,
+#[derive(Deserialize)]
+struct DefaultWalletRuntimeConfig {
     freshness_time: i64
 }
 
-impl DefaultWallet {
-    fn new(name: &str, freshness_time: i64) -> DefaultWallet {
-        DefaultWallet {
-            name: name.to_string(),
-            freshness_time: freshness_time
-        }
+impl<'a> JsonDecodable<'a> for DefaultWalletRuntimeConfig {}
+
+impl Default for DefaultWalletRuntimeConfig {
+    fn default() -> Self {
+        DefaultWalletRuntimeConfig { freshness_time: 1000 }
     }
 }
 
-struct WalletRecord {
+#[derive(Deserialize)]
+struct DefaultWalletCredentials {}
+
+impl<'a> JsonDecodable<'a> for DefaultWalletCredentials {}
+
+struct DefaultWalletRecord {
     key: String,
     value: String,
     time_created: Timespec
 }
 
-struct WalletConfig {
-    freshness_time: i64
+struct DefaultWallet {
+    name: String,
+    config: DefaultWalletRuntimeConfig
+}
+
+impl DefaultWallet {
+    fn new(name: &str,
+           config: DefaultWalletRuntimeConfig,
+           credentials: DefaultWalletCredentials) -> DefaultWallet {
+        DefaultWallet {
+            name: name.to_string(),
+            config: config
+        }
+    }
 }
 
 impl Wallet for DefaultWallet {
@@ -52,7 +69,7 @@ impl Wallet for DefaultWallet {
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
                 &[&key.to_string()], |row| {
-                    WalletRecord {
+                    DefaultWalletRecord {
                         key: row.get(0),
                         value: row.get(1),
                         time_created: row.get(2)
@@ -66,15 +83,15 @@ impl Wallet for DefaultWallet {
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
                 &[&key.to_string()], |row| {
-                    WalletRecord {
+                    DefaultWalletRecord {
                         key: row.get(0),
                         value: row.get(1),
                         time_created: row.get(2)
                     }
                 })?;
 
-        if self.freshness_time != 0
-            && time::get_time().sub(record.time_created).num_seconds() > self.freshness_time {
+        if self.config.freshness_time != 0
+            && time::get_time().sub(record.time_created).num_seconds() > self.config.freshness_time {
             return Err(WalletError::NotFound(key.to_string()))
         }
 
@@ -107,8 +124,22 @@ impl WalletType for DefaultWalletType {
     }
 
     fn open(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
-        // FIXME: parse config for freshness_time!!!
-        Ok(Box::new(DefaultWallet::new(name, 10000)))
+
+        let config = match config {
+            Some(config) => DefaultWalletRuntimeConfig::from_json(config)?,
+            None => DefaultWalletRuntimeConfig::default()
+        };
+
+//        let config = config
+//            .map(DefaultWalletRuntimeConfig::from_json)?
+//            .unwrap_or_default();
+
+        // FIXME: parse and implement credentials!!!
+        Ok(Box::new(
+            DefaultWallet::new(
+                name,
+                config,
+                DefaultWalletCredentials {})))
     }
 }
 
@@ -272,11 +303,11 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", Some("{\"freshness_time\": 1}"), None).unwrap();
         wallet.set("key1", "value1").unwrap();
 
         // Wait until value expires
-        thread::sleep(Duration::new(3, 0));
+        thread::sleep(Duration::new(2, 0));
 
         let value = wallet.get_not_expired("key1");
         assert_match!(value,  Err(WalletError::NotFound(_)));

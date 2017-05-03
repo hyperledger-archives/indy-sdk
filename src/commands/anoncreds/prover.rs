@@ -181,8 +181,8 @@ impl ProverCommandExecutor {
                                        master_secret_name: &str) -> Result<String, AnoncredsError> {
         let master_secret_str = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &master_secret_name))?;
         let master_secret = BigNumber::from_dec(&master_secret_str)?;
-        let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
-        let claim_offer = ClaimOffer::from_str(&claim_offer_json)?;
+        let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
+        let claim_offer = ClaimOffer::from_json(&claim_offer_json)?;
 
         let (claim_request,
             primary_claim_init_data,
@@ -191,14 +191,14 @@ impl ProverCommandExecutor {
                                  claim_def.public_key_revocation,
                                  master_secret, prover_did)?;
 
-        let primary_claim_init_data_json = ClaimInitData::to_string(&primary_claim_init_data)?;
+        let primary_claim_init_data_json = ClaimInitData::to_json(&primary_claim_init_data)?;
         self.wallet_service.set(
             wallet_handle,
             &format!("primary_claim_init_data::{}", &claim_offer.claim_def_seq_no),
             &primary_claim_init_data_json)?;
 
         if let Some(data) = revocation_claim_init_data {
-            let revocation_claim_init_data_json = RevocationClaimInitData::to_string(&data)?;
+            let revocation_claim_init_data_json = RevocationClaimInitData::to_json(&data)?;
             self.wallet_service.set(
                 wallet_handle,
                 &format!("revocation_claim_init_data::{}", &claim_offer.claim_def_seq_no),
@@ -206,7 +206,7 @@ impl ProverCommandExecutor {
         }
 
         let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.claim_def_seq_no);
-        let claim_request_json = ClaimRequestJson::to_string(&claim_request)?;
+        let claim_request_json = ClaimRequestJson::to_json(&claim_request)?;
 
         Ok(claim_request_json)
     }
@@ -219,7 +219,7 @@ impl ProverCommandExecutor {
     }
 
     fn _store_claim(&self, wallet_handle: i32, claims_json: &str) -> Result<(), AnoncredsError> {
-        let claim_json = ClaimJson::from_str(&claims_json)?;
+        let claim_json = ClaimJson::from_json(&claims_json)?;
 
         let revocation_registry_uuid = self.wallet_service.get(
             wallet_handle,
@@ -227,31 +227,31 @@ impl ProverCommandExecutor {
         let revocation_registry_json = self.wallet_service.get(
             wallet_handle,
             &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-        let revocation_registry = RevocationRegistry::from_str(&revocation_registry_json)?;
+        let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)?;
 
         let primary_claim_init_data_json = self.wallet_service.get(
             wallet_handle,
             &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
-        let primary_claim_init_data = ClaimInitData::from_str(&primary_claim_init_data_json)?;
+        let primary_claim_init_data = ClaimInitData::from_json(&primary_claim_init_data_json)?;
 
         let revocation_claim_init_data_json = self.wallet_service.get(
             wallet_handle,
             &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
-        let revocation_claim_init_data = RevocationClaimInitData::from_str(&revocation_claim_init_data_json)?;
+        let revocation_claim_init_data = RevocationClaimInitData::from_json(&revocation_claim_init_data_json)?;
 
         let claim_def_uuid = self.wallet_service.get(
             wallet_handle,
             &format!("claim_definition_uuid::{}", &claim_json.claim_def_seq_no))?;
         let claim_def_json = self.wallet_service.get(
             wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
-        let claim_def = ClaimDefinition::from_str(&claim_def_json)?;
+        let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
 
         let signature = RefCell::new(claim_json.signature);
         self.crypto_service.anoncreds.prover.process_claim(
             &signature, primary_claim_init_data, Some(revocation_claim_init_data),
             claim_def.public_key_revocation, Some(revocation_registry))?;
 
-        let signature_json = Claims::to_string(&signature.borrow())?;
+        let signature_json = Claims::to_json(&signature.borrow())?;
         self.wallet_service.set(wallet_handle, &format!("signature::{}", &claim_json.claim_def_seq_no), &signature_json)?;
         Ok(())
     }
@@ -274,7 +274,7 @@ impl ProverCommandExecutor {
     fn _get_claims_for_proof_req(&self,
                                  wallet_handle: i32,
                                  proof_req_json: &str, ) -> Result<String, AnoncredsError> {
-        let proof_req: ProofRequestJson = ProofRequestJson::from_str(proof_req_json)?;
+        let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_req_json)?;
 
         //        let claims = wallet.list("claims")  TODO get all claims from wallet
         let claims: Vec<ClaimInfo> = Vec::new();
@@ -285,7 +285,7 @@ impl ProverCommandExecutor {
 
         let proof_claims = ProofClaimsJson::new(attributes, predicates);
 
-        let proof_claims_json = ProofClaimsJson::to_string(&proof_claims)?;
+        let proof_claims_json = ProofClaimsJson::to_json(&proof_claims)?;
 
         Ok(proof_claims_json)
     }
@@ -308,17 +308,17 @@ impl ProverCommandExecutor {
                      schemas_jsons: &str,
                      claim_def_jsons: &str,
                      revoc_regs_jsons: &str) -> Result<String, AnoncredsError> {
-        let proof_req: ProofRequestJson = ProofRequestJson::from_str(proof_req_json)?;
+        let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_req_json)?;
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_jsons)?;
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_def_jsons)?;
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_jsons)?;
-        let requested_claims: RequestedClaimsJson = RequestedClaimsJson::from_str(requested_claims_json)?;
+        let requested_claims: RequestedClaimsJson = RequestedClaimsJson::from_json(requested_claims_json)?;
 
         let mut claims: HashMap<String, ClaimJson> = HashMap::new();
 
         for claim_uuid in claim_defs.keys() {
             let claim_json = self.wallet_service.get(wallet_handle, &format!("claim::{}", &claim_uuid))?;
-            let claim = ClaimJson::from_str(&claim_json)?;
+            let claim = ClaimJson::from_json(&claim_json)?;
             claims.insert(claim_uuid.clone(), claim);
         }
 
@@ -337,7 +337,7 @@ impl ProverCommandExecutor {
                                                                              &ms,
                                                                              &tails)?;
 
-        let proof_claims_json = ProofJson::to_string(&proof_claims)?;
+        let proof_claims_json = ProofJson::to_json(&proof_claims)?;
 
         Ok(proof_claims_json)
     }

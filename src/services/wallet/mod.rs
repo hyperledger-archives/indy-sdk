@@ -47,7 +47,7 @@ impl WalletDescriptor {
 
 impl JsonEncodable for WalletDescriptor {}
 
-impl <'a>JsonDecodable<'a> for WalletDescriptor {}
+impl<'a> JsonDecodable<'a> for WalletDescriptor {}
 
 pub struct WalletService {
     types: RefCell<HashMap<&'static str, Box<WalletType>>>,
@@ -78,7 +78,7 @@ impl WalletService {
                         get: extern fn(handle: i32,
                                        key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
                         get_not_expired: extern fn(handle: i32,
-                                       key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
+                                                   key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
                         close: extern fn(handle: i32) -> Result<(), WalletError>,
                         delete: extern fn(name: &str) -> Result<(), WalletError>) {
         unimplemented!();
