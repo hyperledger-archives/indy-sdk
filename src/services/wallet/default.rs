@@ -14,7 +14,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::ops::Sub;
 
-pub struct DefaultWallet {
+struct DefaultWallet {
     name: String,
     freshness_time: i64
 }
