@@ -232,8 +232,7 @@ impl Prover {
                 .ok_or(CryptoError::InvalidStructure(format!("Schema not found")))?;
             let claim_definition = claim_defs.get(&claim_uuid)
                 .ok_or(CryptoError::InvalidStructure(format!("Claim definition not found")))?;
-            let revocation_registry = revoc_regs.get(&claim_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Revocation registry not found")))?;
+            let revocation_registry = revoc_regs.get(&claim_uuid);
 
             let mut predicates_for_claim: Vec<Predicate> = Vec::new();
 
@@ -265,7 +264,7 @@ impl Prover {
             let proof_claim = ProofClaims::new(claim,
                                                schema.clone(),
                                                claim_definition.clone()?,
-                                               revocation_registry.clone(),
+                                               revocation_registry.map(|r| r.clone()),
                                                predicates_for_claim,
                                                revealed_attrs_for_claim,
                                                unrevealed_attrs_for_claim);
@@ -330,7 +329,9 @@ impl Prover {
 
             if let Some(ref non_revocation_claim) = proof_claim.claim_json.signature.non_revocation_claim.clone() {
                 let proof = Prover::_init_non_revocation_proof(non_revocation_claim,
-                                                               &proof_claim.revocation_registry.accumulator,
+                                                               &proof_claim.revocation_registry.clone()
+                                                                   .ok_or(CryptoError::InvalidStructure("Revocation registry not found".to_string()))?
+                                                                   .accumulator,
                                                                &proof_claim.claim_definition.public_key_revocation.clone()
                                                                    .ok_or(CryptoError::InvalidStructure("Field public_key_revocation not found".to_string()))?,
                                                                tails)?;
@@ -832,6 +833,48 @@ mod tests {
     }
 
     #[test]
+    fn prepare_proof_claims_works() {
+        let proof_req = mocks::get_proof_req_json();
+        let mut schemas: HashMap<String, Schema> = HashMap::new();
+        schemas.insert("1".to_string(), issuer::mocks::get_gvt_schema());
+        schemas.insert("2".to_string(), issuer::mocks::get_xyz_schema());
+
+        let mut claim_defs: HashMap<String, ClaimDefinition> = HashMap::new();
+        claim_defs.insert("1".to_string(), mocks::get_gvt_claim_definition());
+        claim_defs.insert("2".to_string(), mocks::get_xyz_claim_definition());
+
+        let revoc_regs: HashMap<String, RevocationRegistry> = HashMap::new();
+
+        let requested_claims = mocks::get_requested_claims();
+
+        let mut claims: HashMap<String, ClaimJson> = HashMap::new();
+        claims.insert("1".to_string(), mocks::get_gvt_claims_json());
+        claims.insert("2".to_string(), mocks::get_xyz_claims_json());
+
+        let res = Prover::_prepare_proof_claims(&proof_req, &schemas, &claim_defs, &revoc_regs, &requested_claims, claims);
+        assert!(res.is_ok());
+
+        let proof_claims = res.unwrap();
+
+        assert_eq!(2, proof_claims.len());
+
+        let gvt_proof_claim = proof_claims.get("1").unwrap();
+        assert_eq!(1, gvt_proof_claim.revealed_attrs.len());
+        assert_eq!(1, gvt_proof_claim.unrevealed_attrs.len());
+        assert_eq!(2, gvt_proof_claim.predicates.len());
+
+        assert_eq!(gvt_proof_claim.revealed_attrs[0], "name".to_string());
+        assert_eq!(gvt_proof_claim.unrevealed_attrs[0], "sex".to_string());
+
+        let xyz_proof_claim = proof_claims.get("2").unwrap();
+        assert_eq!(1, xyz_proof_claim.revealed_attrs.len());
+        assert_eq!(0, xyz_proof_claim.unrevealed_attrs.len());
+        assert_eq!(0, xyz_proof_claim.predicates.len());
+
+        assert_eq!(xyz_proof_claim.revealed_attrs[0], "status".to_string());
+    }
+
+    #[test]
     fn init_proof_works() {
         let pk = issuer::mocks::get_pk();
         let claim = mocks::get_gvt_primary_claim();
@@ -1203,6 +1246,7 @@ mod find_claims_tests {
 pub mod mocks {
     use super::*;
     use services::crypto::anoncreds::issuer;
+    use services::crypto::anoncreds::verifier;
     use services::crypto::anoncreds::types::Witness;
     use std::iter::FromIterator;
 
@@ -1423,5 +1467,87 @@ pub mod mocks {
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
         ClaimInfo::new("3".to_string(), attrs, 2, 2, 1)
+    }
+
+    pub fn get_proof_req_json() -> ProofRequestJson {
+        let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
+        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
+        requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
+        requested_attrs.insert("3".to_string(), AttributeInfo::new(1, "sex".to_string()));
+
+        let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
+        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
+        requested_predicates.insert("2".to_string(), Predicate::new("height".to_string(), PredicateType::GE, 180));
+
+        let nonce = BigNumber::from_dec("123432421212").unwrap();
+
+        ProofRequestJson {
+            nonce: nonce,
+            requested_attrs: requested_attrs,
+            requested_predicates: requested_predicates
+        }
+    }
+
+    pub fn get_gvt_claim_definition() -> ClaimDefinition {
+        ClaimDefinition {
+            public_key: issuer::mocks::get_pk(),
+            public_key_revocation: None,
+            schema_seq_no: 1,
+            signature_type: "CL".to_string()
+        }
+    }
+
+    pub fn get_xyz_claim_definition() -> ClaimDefinition {
+        ClaimDefinition {
+            public_key: issuer::mocks::get_pk(),
+            public_key_revocation: None,
+            schema_seq_no: 2,
+            signature_type: "CL".to_string()
+        }
+    }
+
+    pub fn get_revocation_registry() -> RevocationRegistry {
+        RevocationRegistry {
+            claim_def_seq_no: 1,
+            accumulator: mocks::get_accumulator(),
+            acc_pk: verifier::mocks::get_accum_publick_key()
+        }
+    }
+
+    pub fn get_requested_claims() -> RequestedClaimsJson {
+        let self_attested_attributes: HashMap<String, String> = HashMap::new();
+        let mut requested_attrs: HashMap<String, (String, bool)> = HashMap::new();
+        requested_attrs.insert("1".to_string(), ("1".to_string(), true));
+        requested_attrs.insert("2".to_string(), ("2".to_string(), true));
+        requested_attrs.insert("3".to_string(), ("1".to_string(), false));
+
+
+        let mut requested_predicates: HashMap<String, String> = HashMap::new();
+        requested_predicates.insert("1".to_string(), "1".to_string());
+        requested_predicates.insert("2".to_string(), "1".to_string());
+
+        RequestedClaimsJson {
+            self_attested_attributes: self_attested_attributes,
+            requested_attrs: requested_attrs,
+            requested_predicates: requested_predicates
+        }
+    }
+
+    pub fn get_gvt_claims_json() -> ClaimJson {
+        ClaimJson {
+            claim: issuer::mocks::get_gvt_attributes(),
+            claim_def_seq_no: 1,
+            revoc_reg_seq_no: 1,
+            signature: mocks::get_gvt_claims_object()
+        }
+    }
+
+    pub fn get_xyz_claims_json() -> ClaimJson {
+        ClaimJson {
+            claim: issuer::mocks::get_xyz_attributes(),
+            claim_def_seq_no: 1,
+            revoc_reg_seq_no: 1,
+            signature: mocks::get_xyz_claims_object()
+        }
     }
 }

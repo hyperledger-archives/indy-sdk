@@ -512,6 +512,19 @@ pub mod mocks {
         }
     }
 
+    pub fn get_xyz_schema() -> Schema {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert("status".to_string());
+        attr_names.insert("period".to_string());
+
+        Schema {
+            name: "xyz".to_string(),
+            version: "1.0".to_string(),
+            attribute_names: attr_names,
+            seq_no: 2
+        }
+    }
+
     pub fn get_gvt_attributes() -> HashMap<String, Vec<String>> {
         let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
         attributes.insert("name".to_string(), vec!["Alex".to_string(), "1139481716457488690172217916278103335".to_string()]);

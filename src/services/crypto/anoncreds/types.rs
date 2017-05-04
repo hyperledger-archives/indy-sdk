@@ -614,7 +614,7 @@ pub struct ProofClaims {
     pub claim_json: ClaimJson,
     pub schema: Schema,
     pub claim_definition: ClaimDefinition,
-    pub revocation_registry: RevocationRegistry,
+    pub revocation_registry: Option<RevocationRegistry>,
     pub revealed_attrs: Vec<String>,
     pub unrevealed_attrs: Vec<String>,
     pub predicates: Vec<Predicate>
@@ -622,7 +622,7 @@ pub struct ProofClaims {
 
 impl ProofClaims {
     pub fn new(claim_json: ClaimJson, schema: Schema, claim_definition: ClaimDefinition,
-               revocation_registry: RevocationRegistry, predicates: Vec<Predicate>,
+               revocation_registry: Option<RevocationRegistry>, predicates: Vec<Predicate>,
                revealed_attrs: Vec<String>, unrevealed_attrs: Vec<String>) -> ProofClaims {
         ProofClaims {
             claim_json: claim_json,
@@ -789,7 +789,7 @@ pub struct PrimaryEqualProof {
 
 impl PrimaryEqualProof {
     pub fn new(revealed_attrs: HashMap<String, String>, a_prime: BigNumber, e: BigNumber,
-               v: BigNumber,m: HashMap<String, BigNumber>, m1: BigNumber,
+               v: BigNumber, m: HashMap<String, BigNumber>, m1: BigNumber,
                m2: BigNumber) -> PrimaryEqualProof {
         PrimaryEqualProof {
             revealed_attrs: revealed_attrs,
