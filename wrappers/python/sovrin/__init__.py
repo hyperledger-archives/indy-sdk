@@ -5,5 +5,3 @@ from sovrin.ledger import Ledger
 from sovrin.pool import Pool
 from sovrin.signus import Signus
 from sovrin.wallet import Wallet
-
-__all__ = ["Wallet"]
