@@ -9,23 +9,20 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
-use sovrin::api::ErrorCode;
-use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledger};
-use sovrin::api::ledger::sovrin_submit_request;
+use utils::callbacks::CallbacksHelpers;
 
 #[path = "../src/utils/environment.rs"]
 mod environment;
 
 use environment::EnvironmentUtils;
 
+use sovrin::api::ErrorCode;
+use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledger};
+use sovrin::api::ledger::sovrin_submit_request;
+
 use std::fs;
-
 use std::ptr::null;
-
 use std::time::Duration;
-
-use utils::callbacks::CallbacksHelpers;
-
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
 use std::io::Write;
@@ -39,10 +36,11 @@ fn _create_default_pool_transaction_file() {
                        "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"10.0.0.5\",\"client_port\":9708,\"node_ip\":\"10.0.0.5\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
     f.write_all(data.as_bytes()).unwrap();
     f.flush().unwrap();
+    f.sync_all().unwrap();
 }
 
-#[test]
-fn sovrin_create_pool_ledger_can_be_called() {
+fn _create_pool_ledger(pool_name: &str) -> ErrorCode {
+    let c_pool_name = CString::new(pool_name).unwrap();
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err| {
@@ -51,25 +49,42 @@ fn sovrin_create_pool_ledger_can_be_called() {
 
     let (command_handle, callback) = CallbacksHelpers::closure_to_create_pool_ledger_cb(cb);
 
-    let pool_name = CString::new("test_open").unwrap();
     let pool_config = CString::new("{\"genesis_txn\": \"./pool_transactions_sandbox\"}").unwrap();
     _create_default_pool_transaction_file();
 
     let err = sovrin_create_pool_ledger_config(command_handle,
-                                               pool_name.as_ptr(),
+                                               c_pool_name.as_ptr(),
                                                pool_config.as_ptr(),
                                                callback);
 
     assert_eq!(ErrorCode::Success, err);
 
-    let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
-    std::fs::remove_file("./test_open_src.txn").unwrap();
-    std::fs::remove_dir_all(EnvironmentUtils::pool_path("test_open")).unwrap();
+    receiver.recv_timeout(Duration::from_secs(1)).unwrap()
+}
+
+#[test]
+fn sovrin_create_pool_ledger_works() {
+    let pool_name = "test_create_pool";
+    #[allow(unused_must_use)]
+    { fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)); }
+
+    let err = _create_pool_ledger(pool_name);
+
     assert_eq!(ErrorCode::Success, err);
 }
 
 #[test]
-fn sovrin_open_pool_ledger_can_be_called() {
+fn sovrin_open_pool_ledger_works() {
+    let pool_name = "test_open_pool";
+    #[allow(unused_must_use)]
+    { fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)); }
+
+    //create pool
+    let err = _create_pool_ledger(pool_name);
+    assert_eq!(ErrorCode::Success, err);
+
+    //test open pool
+    let c_pool_name = CString::new(pool_name).unwrap();
     let (sender, receiver) = channel();
     let sender2 = sender.clone();
 
@@ -81,14 +96,6 @@ fn sovrin_open_pool_ledger_can_be_called() {
     });
 
     let (command_handle, callback) = CallbacksHelpers::closure_to_open_pool_ledger_cb(cb);
-
-    let pool_name: String = "test1".to_string();
-    let c_pool_name = CString::new(pool_name.as_str()).unwrap();
-    let mut path = environment::EnvironmentUtils::pool_path(pool_name.as_str());
-    fs::create_dir_all(path.as_path()).unwrap();
-    path.push(pool_name);
-    path.set_extension("txn");
-    fs::File::create(path.as_path()).unwrap();
 
     let err = sovrin_open_pool_ledger(command_handle,
                                       c_pool_name.as_ptr(),
@@ -109,41 +116,31 @@ fn sovrin_open_pool_ledger_can_be_called() {
     assert_eq!(ErrorCode::Success, err);
     let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
     assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, err);
+    fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)).unwrap();
 }
 
 #[test]
 #[ignore] //required nodes pool available from CI
-fn sovrin_submit_request_can_be_called() {
-    std::fs::remove_dir_all(EnvironmentUtils::pool_path("test")).unwrap();
+fn sovrin_submit_request_works() {
+    let pool_name = "test_submit_tx";
+    #[allow(unused_must_use)]
+    { fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)); }
     //create pool
-    let (sender, receiver) = channel();
-    let cb = Box::new(move |err| {
-        sender.send(err).unwrap();
-    });
-    let (command_handle, callback) = CallbacksHelpers::closure_to_create_pool_ledger_cb(cb);
-    let pool_name = CString::new("test").unwrap();
-    let pool_config = CString::new("{\"genesis_txn\": \"./pool_transactions_sandbox\"}").unwrap();
-    _create_default_pool_transaction_file();
-    let err = sovrin_create_pool_ledger_config(command_handle,
-                                               pool_name.as_ptr(),
-                                               pool_config.as_ptr(),
-                                               callback);
-    assert_eq!(ErrorCode::Success, err);
-    let err = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
+    let err = _create_pool_ledger(pool_name);
     assert_eq!(ErrorCode::Success, err);
     //open pool
+    let c_pool_name = CString::new(pool_name).unwrap();
     let (sender, receiver) = channel();
     let cb = Box::new(move |err, handle| {
         sender.send((err, handle)).unwrap();
     });
     let (command_handle, callback) = CallbacksHelpers::closure_to_open_pool_ledger_cb(cb);
-    let pool_name = CString::new("test").unwrap();
     let err = sovrin_open_pool_ledger(command_handle,
-                                      pool_name.as_ptr(),
+                                      c_pool_name.as_ptr(),
                                       null(),
                                       callback);
     assert_eq!(ErrorCode::Success, err);
-    let (err, pool_handle) = receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap();
+    let (err, pool_handle) = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
     assert_eq!(ErrorCode::Success, err);
     std::thread::sleep(std::time::Duration::from_secs(1)); //TODO
     //test communication
@@ -170,7 +167,7 @@ fn sovrin_submit_request_can_be_called() {
                                     callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let recv = receiver.recv_timeout(std::time::Duration::from_secs(1));
+    let resp = receiver.recv_timeout(Duration::from_secs(1));
 
     #[derive(Deserialize, Eq, PartialEq, Debug)]
     struct Reply {
@@ -190,7 +187,7 @@ fn sovrin_submit_request_can_be_called() {
             txn_id: "5511e5493c1d37dfa67b73269a392a7aca5b71e9d10ac106adc7f9e552aee560".to_string(),
         }
     };
-    let act_reply: Reply = serde_json::from_str(recv.unwrap().1.as_str()).unwrap();
+    let act_reply: Reply = serde_json::from_str(resp.unwrap().1.as_str()).unwrap();
     assert_eq!(act_reply, exp_reply);
-    //    std::fs::remove_dir_all(EnvironmentUtils::pool_path("test")).unwrap();
+    fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)).unwrap();
 }
