@@ -8,3 +8,5 @@ services:
     volumes:
       - ".:/home/sovrin/sovrin-client-rust"
     working_dir: /home/sovrin/sovrin-client-rust
+    environment:
+        - RUST_TEST_THREADS=1
