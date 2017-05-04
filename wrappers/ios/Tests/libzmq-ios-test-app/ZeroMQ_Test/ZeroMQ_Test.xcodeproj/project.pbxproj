@@ -1,0 +1,409 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		014393C9EBD16387A25BB22B /* libPods-ZeroMQ_Test.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 75C450D12278BD4ED30C427C /* libPods-ZeroMQ_Test.a */; };
+		3E4189441EA4F6C000C23695 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E4189431EA4F6C000C23695 /* main.m */; };
+		3E4189471EA4F6C000C23695 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E4189461EA4F6C000C23695 /* AppDelegate.m */; };
+		3E41894A1EA4F6C000C23695 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E4189491EA4F6C000C23695 /* ViewController.m */; };
+		3E41894D1EA4F6C000C23695 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E41894B1EA4F6C000C23695 /* Main.storyboard */; };
+		3E41894F1EA4F6C000C23695 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E41894E1EA4F6C000C23695 /* Assets.xcassets */; };
+		3E4189521EA4F6C000C23695 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E4189501EA4F6C000C23695 /* LaunchScreen.storyboard */; };
+		3E41895B1EA4F86C00C23695 /* ZeroMQTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E41895A1EA4F86C00C23695 /* ZeroMQTests.mm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		190C254FD70F4036B969D06C /* Pods-ZeroMQ_Test.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZeroMQ_Test.release.xcconfig"; path = "Pods/Target Support Files/Pods-ZeroMQ_Test/Pods-ZeroMQ_Test.release.xcconfig"; sourceTree = "<group>"; };
+		3E41893F1EA4F6C000C23695 /* ZeroMQ_Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZeroMQ_Test.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E4189431EA4F6C000C23695 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		3E4189451EA4F6C000C23695 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		3E4189461EA4F6C000C23695 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		3E4189481EA4F6C000C23695 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		3E4189491EA4F6C000C23695 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		3E41894C1EA4F6C000C23695 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		3E41894E1EA4F6C000C23695 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3E4189511EA4F6C000C23695 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		3E4189531EA4F6C000C23695 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3E4189591EA4F86C00C23695 /* ZeroMQTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZeroMQTests.h; sourceTree = "<group>"; };
+		3E41895A1EA4F86C00C23695 /* ZeroMQTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ZeroMQTests.mm; sourceTree = "<group>"; };
+		3E461F0F1EA7849B00518C14 /* zhelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zhelpers.h; sourceTree = "<group>"; };
+		3E461F101EA7C69E00518C14 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		75C450D12278BD4ED30C427C /* libPods-ZeroMQ_Test.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ZeroMQ_Test.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B85770328740BF0291B829A5 /* Pods-ZeroMQ_Test.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZeroMQ_Test.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ZeroMQ_Test/Pods-ZeroMQ_Test.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3E41893C1EA4F6C000C23695 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				014393C9EBD16387A25BB22B /* libPods-ZeroMQ_Test.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1C7819123763FEFD0EB55B57 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				B85770328740BF0291B829A5 /* Pods-ZeroMQ_Test.debug.xcconfig */,
+				190C254FD70F4036B969D06C /* Pods-ZeroMQ_Test.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+		3E4189361EA4F6C000C23695 = {
+			isa = PBXGroup;
+			children = (
+				3E4189411EA4F6C000C23695 /* ZeroMQ_Test */,
+				3E4189401EA4F6C000C23695 /* Products */,
+				1C7819123763FEFD0EB55B57 /* Pods */,
+				E65E526418F033722D4F7D3B /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		3E4189401EA4F6C000C23695 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E41893F1EA4F6C000C23695 /* ZeroMQ_Test.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3E4189411EA4F6C000C23695 /* ZeroMQ_Test */ = {
+			isa = PBXGroup;
+			children = (
+				3E4189591EA4F86C00C23695 /* ZeroMQTests.h */,
+				3E41895A1EA4F86C00C23695 /* ZeroMQTests.mm */,
+				3E4189451EA4F6C000C23695 /* AppDelegate.h */,
+				3E4189461EA4F6C000C23695 /* AppDelegate.m */,
+				3E4189481EA4F6C000C23695 /* ViewController.h */,
+				3E4189491EA4F6C000C23695 /* ViewController.m */,
+				3E41894B1EA4F6C000C23695 /* Main.storyboard */,
+				3E41894E1EA4F6C000C23695 /* Assets.xcassets */,
+				3E4189501EA4F6C000C23695 /* LaunchScreen.storyboard */,
+				3E4189531EA4F6C000C23695 /* Info.plist */,
+				3E4189421EA4F6C000C23695 /* Supporting Files */,
+				3E461F0F1EA7849B00518C14 /* zhelpers.h */,
+			);
+			path = ZeroMQ_Test;
+			sourceTree = "<group>";
+		};
+		3E4189421EA4F6C000C23695 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				3E4189431EA4F6C000C23695 /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		E65E526418F033722D4F7D3B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3E461F101EA7C69E00518C14 /* MobileCoreServices.framework */,
+				75C450D12278BD4ED30C427C /* libPods-ZeroMQ_Test.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3E41893E1EA4F6C000C23695 /* ZeroMQ_Test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E4189561EA4F6C000C23695 /* Build configuration list for PBXNativeTarget "ZeroMQ_Test" */;
+			buildPhases = (
+				4DCFBE9D9A1935A6153E1AD2 /* [CP] Check Pods Manifest.lock */,
+				3E41893B1EA4F6C000C23695 /* Sources */,
+				3E41893C1EA4F6C000C23695 /* Frameworks */,
+				3E41893D1EA4F6C000C23695 /* Resources */,
+				FDEF5A56EBDEA93A27FC299C /* [CP] Embed Pods Frameworks */,
+				C1798237B131E8ED3DDB6115 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ZeroMQ_Test;
+			productName = ZeroMQ_Test;
+			productReference = 3E41893F1EA4F6C000C23695 /* ZeroMQ_Test.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3E4189371EA4F6C000C23695 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Kirill Neznamov";
+				TargetAttributes = {
+					3E41893E1EA4F6C000C23695 = {
+						CreatedOnToolsVersion = 8.3.1;
+						DevelopmentTeam = ES8QU3D2A4;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 3E41893A1EA4F6C000C23695 /* Build configuration list for PBXProject "ZeroMQ_Test" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3E4189361EA4F6C000C23695;
+			productRefGroup = 3E4189401EA4F6C000C23695 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3E41893E1EA4F6C000C23695 /* ZeroMQ_Test */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3E41893D1EA4F6C000C23695 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E4189521EA4F6C000C23695 /* LaunchScreen.storyboard in Resources */,
+				3E41894F1EA4F6C000C23695 /* Assets.xcassets in Resources */,
+				3E41894D1EA4F6C000C23695 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4DCFBE9D9A1935A6153E1AD2 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		C1798237B131E8ED3DDB6115 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ZeroMQ_Test/Pods-ZeroMQ_Test-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		FDEF5A56EBDEA93A27FC299C /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ZeroMQ_Test/Pods-ZeroMQ_Test-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3E41893B1EA4F6C000C23695 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E41894A1EA4F6C000C23695 /* ViewController.m in Sources */,
+				3E41895B1EA4F86C00C23695 /* ZeroMQTests.mm in Sources */,
+				3E4189471EA4F6C000C23695 /* AppDelegate.m in Sources */,
+				3E4189441EA4F6C000C23695 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		3E41894B1EA4F6C000C23695 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3E41894C1EA4F6C000C23695 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		3E4189501EA4F6C000C23695 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3E4189511EA4F6C000C23695 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		3E4189541EA4F6C000C23695 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3E4189551EA4F6C000C23695 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3E4189571EA4F6C000C23695 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B85770328740BF0291B829A5 /* Pods-ZeroMQ_Test.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = ZeroMQ_Test/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.ZeroMQ-Test";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3E4189581EA4F6C000C23695 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 190C254FD70F4036B969D06C /* Pods-ZeroMQ_Test.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = ZeroMQ_Test/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.ZeroMQ-Test";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3E41893A1EA4F6C000C23695 /* Build configuration list for PBXProject "ZeroMQ_Test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E4189541EA4F6C000C23695 /* Debug */,
+				3E4189551EA4F6C000C23695 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E4189561EA4F6C000C23695 /* Build configuration list for PBXNativeTarget "ZeroMQ_Test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E4189571EA4F6C000C23695 /* Debug */,
+				3E4189581EA4F6C000C23695 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3E4189371EA4F6C000C23695 /* Project object */;
+}

@@ -16,7 +16,7 @@ license = "MIT/Apache-2.0"
 [lib]
 name = "sovrin"
 path = "src/lib.rs"
-crate-type = ["rlib", "dylib"]
+crate-type = ["staticlib","rlib", "dylib"]
 
 [[bin]]
 name = "sovrin"
