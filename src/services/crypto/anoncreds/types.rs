@@ -127,6 +127,15 @@ impl ClaimOffer {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimOfferFilter{
+    pub issuer_did: Option<String>,
+    pub claim_def_seq_no: Option<i32>
+
+}
+
+impl<'a> JsonDecodable<'a> for ClaimOfferFilter {}
+
 impl JsonEncodable for ClaimOffer {}
 
 impl<'a> JsonDecodable<'a> for ClaimOffer {}
@@ -173,6 +182,16 @@ impl ClaimInfo {
         }
     }
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimInfoFilter{
+    pub issuer_did: Option<String>,
+    pub claim_def_seq_no: Option<i32>,
+    pub schema_seq_no: Option<i32>
+
+}
+
+impl<'a> JsonDecodable<'a> for ClaimInfoFilter {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimRequest {
@@ -308,16 +327,18 @@ pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: i32,
+    pub schema_seq_no: i32,
     pub signature: Claims
 }
 
 impl ClaimJson {
     pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
-               signature: Claims) -> ClaimJson {
+               signature: Claims, schema_seq_no: i32) -> ClaimJson {
         ClaimJson {
             claim: claim,
             claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
+            schema_seq_no: schema_seq_no,
             signature: signature
         }
     }

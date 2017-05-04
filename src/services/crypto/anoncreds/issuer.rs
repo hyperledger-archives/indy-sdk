@@ -160,7 +160,7 @@ impl Issuer {
     }
 
     pub fn create_claim(&self,
-                        claim_definition: ClaimDefinition,
+                        claim_definition: &ClaimDefinition,
                         claim_definition_private: ClaimDefinitionPrivate,
                         revocation_registry: &RefCell<RevocationRegistry>,
                         revocation_registry_private: &RevocationRegistryPrivate,
