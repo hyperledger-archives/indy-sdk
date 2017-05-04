@@ -160,11 +160,14 @@ impl Issuer {
         Ok((revocation_registry, revocation_registry_private))
     }
 
-    pub fn create_claim(&self, claim_definition: ClaimDefinition, claim_definition_private: ClaimDefinitionPrivate,
-                        revocation_registry: &RefCell<RevocationRegistry>, revocation_registry_private: &RevocationRegistryPrivate,
-                        claim_request: &ClaimRequest, attributes: &HashMap<String, Vec<String>>,
+    pub fn create_claim(&self, claim_definition: ClaimDefinition,
+                        claim_definition_private: ClaimDefinitionPrivate,
+                        revocation_registry: &Option<RefCell<RevocationRegistry>>,
+                        revocation_registry_private: &Option<RevocationRegistryPrivate>,
+                        claim_request: &ClaimRequest,
+                        attributes: &HashMap<String, Vec<String>>,
                         user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
-        let context_attribute = Issuer::_generate_context_attribute(revocation_registry.borrow().claim_def_seq_no, &claim_request.prover_did)?;
+        let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no, &claim_request.prover_did)?;
 
         let primary_claim =
             Issuer::_issue_primary_claim(
@@ -176,13 +179,14 @@ impl Issuer {
             )?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
-        if let Some(ref pk_r) = claim_definition.public_key_revocation {
+        if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation, revocation_registry, revocation_registry_private){
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
-                revocation_registry,
+                &revoc_reg,
                 &pk_r,
-                &claim_definition_private.secret_key_revocation.ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
-                &revocation_registry_private.tails,
-                &revocation_registry_private.acc_sk,
+                &claim_definition_private.secret_key_revocation
+                    .ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
+                &revoc_reg_priv.tails,
+                &revoc_reg_priv.acc_sk,
                 &context_attribute,
                 &claim_request.ur.ok_or(CryptoError::InvalidStructure("Field ur not found".to_string()))?,
                 user_revoc_index
@@ -422,6 +426,11 @@ mod tests {
         let (claim_definition, claim_definition_private) = issuer.generate_keys(get_gvt_schema(), None, false).unwrap();
         assert_eq!(claim_definition, mocks::get_claim_definition());
         assert_eq!(claim_definition_private, mocks::get_claim_definition_private());
+    }
+
+    #[test]
+    fn create_claim_works() {
+
     }
 
     #[test]

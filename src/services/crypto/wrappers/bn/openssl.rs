@@ -6,7 +6,7 @@ extern crate serde;
 
 use self::int_traits::IntTraits;
 
-use self::openssl::bn::{BigNum, BigNumRef, BigNumContext, MSB_MAYBE_ZERO};
+use self::openssl::bn::{BigNum, BigNumRef, BigNumContext};
 use self::openssl::error::ErrorStack;
 use self::openssl::hash::{hash2, MessageDigest, Hasher};
 use self::serde::ser::{Serialize, Serializer, Error as SError};
@@ -114,7 +114,7 @@ impl BigNumber {
     #[cfg(not(test))]
     pub fn rand(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
-        BigNumRef::rand(&mut bn.openssl_bn, size as i32, MSB_MAYBE_ZERO, false)?;
+        BigNumRef::rand(&mut bn.openssl_bn, size as i32, openssl::bn::MSB_MAYBE_ZERO, false)?;
         Ok(bn)
     }
 

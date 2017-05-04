@@ -199,11 +199,11 @@ impl<'a> JsonDecodable<'a> for ClaimRequest {}
 pub struct ClaimProof {
     pub proof: Proof,
     pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32
+    pub revoc_reg_seq_no: Option<i32>
 }
 
 impl ClaimProof {
-    pub fn new(proof: Proof, claim_def_seq_no: i32, revoc_reg_seq_no: i32) -> ClaimProof {
+    pub fn new(proof: Proof, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>) -> ClaimProof {
         ClaimProof {
             proof: proof,
             claim_def_seq_no: claim_def_seq_no,
@@ -307,12 +307,12 @@ impl<'a> JsonDecodable<'a> for ClaimInitData {}
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
     pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32,
+    pub revoc_reg_seq_no: Option<i32>,
     pub signature: Claims
 }
 
 impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
+    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
                signature: Claims) -> ClaimJson {
         ClaimJson {
             claim: claim,
@@ -913,7 +913,7 @@ impl JsonEncodable for RevocationRegistry {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistry {}
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistryPrivate {
     pub acc_sk: AccumulatorSecretKey,
     pub tails: HashMap<i32, PointG1>
