@@ -1,6 +1,5 @@
 use errors::wallet::WalletError;
 
-use services::pool::PoolService;
 use services::wallet::WalletService;
 
 use std::rc::Rc;
@@ -12,29 +11,28 @@ pub enum WalletCommand {
            Option<String>, // wallet config
            Option<String>, // wallet credentials
            Box<Fn(Result<(), WalletError>) + Send>),
-    Open(i32, // pool handle
-         String, // wallet name
-         Option<String>, // wallet config
+    Open(String, // wallet name
+         Option<String>, // wallet runtime config
          Option<String>, // wallet credentials
          Box<Fn(Result<i32, WalletError>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<(), WalletError>) + Send>),
     Delete(String, // name
+           Option<String>, // wallet credentials
            Box<Fn(Result<(), WalletError>) + Send>),
     SetSeqNoForValue(i32, // wallet handle
                      String, // wallet key
+                     String, // sequence number
                      Box<Fn(Result<(), WalletError>) + Send>)
 }
 
 pub struct WalletCommandExecutor {
-    pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>
 }
 
 impl WalletCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>, wallet_service: Rc<WalletService>) -> WalletCommandExecutor {
+    pub fn new(wallet_service: Rc<WalletService>) -> WalletCommandExecutor {
         WalletCommandExecutor {
-            pool_service: pool_service,
             wallet_service: wallet_service
         }
     }
@@ -46,22 +44,22 @@ impl WalletCommandExecutor {
                 self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
                             config.as_ref().map(String::as_str), credentials.as_ref().map(String::as_str), cb);
             }
-            WalletCommand::Open(pool_handle, name, config, credentials, cb) => {
+            WalletCommand::Open(name, runtime_config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Open command received");
-                self.open(pool_handle, &name, config.as_ref().map(String::as_str),
+                self.open(&name, runtime_config.as_ref().map(String::as_str),
                           credentials.as_ref().map(String::as_str), cb);
             }
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
                 self.close(handle, cb);
             }
-            WalletCommand::Delete(name, cb) => {
+            WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
-                self.delete(&name, cb);
+                self.delete(&name, credentials.as_ref().map(String::as_str), cb);
             }
-            WalletCommand::SetSeqNoForValue(wallet_handle, wallet_key, cb) => {
+            WalletCommand::SetSeqNoForValue(handle, key, seq_no, cb) => {
                 info!(target: "wallet_command_executor", "SetSeqNoForValue command received");
-                self.set_seq_no_for_value(wallet_handle, &wallet_key, cb);
+                self.set_seq_no_for_value(handle, &key, &seq_no, cb);
             }
         };
     }
@@ -77,32 +75,31 @@ impl WalletCommandExecutor {
     }
 
     fn open(&self,
-            pool_handle: i32,
             name: &str,
-            config: Option<&str>,
+            runtime_config: Option<&str>,
             credentials: Option<&str>,
             cb: Box<Fn(Result<i32, WalletError>) + Send>) {
-        //let pool_name = "sandbox"; // TODO: FIXME: Change to pool_service.get_name(handle);
-        //cb(self.wallet_service.open(pool_name, name, config, credentials));
-        cb(Ok(0))
+        cb(self.wallet_service.open(name, runtime_config, credentials));
     }
 
     fn close(&self,
              handle: i32,
              cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(Ok(()));
+        cb(self.wallet_service.close(handle));
     }
 
     fn delete(&self,
               handle: &str,
+              credentials: Option<&str>,
               cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(Ok(()));
+        cb(self.wallet_service.delete(handle, credentials));
     }
 
     fn set_seq_no_for_value(&self,
-                            wallet_handle: i32,
-                            wallet_key: &str,
+                            handle: i32,
+                            key: &str,
+                            seq_no: &str,
                             cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(Ok(()));
+        cb(self.wallet_service.set(handle, &format!("seq_no::{}", seq_no), key));
     }
 }

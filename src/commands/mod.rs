@@ -62,7 +62,7 @@ impl CommandExecutor {
                 let ledger_command_executor = LedgerCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
                 let signus_command_executor = SignusCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
-                let wallet_command_executor = WalletCommandExecutor::new(pool_service.clone(), wallet_service.clone());
+                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
