@@ -1,18 +1,21 @@
 mod types;
 
 extern crate base64;
+extern crate byteorder;
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq;
 
+use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::collections::{HashMap, BinaryHeap};
-use std::{cmp, fmt, fs, io, thread, usize};
+use std::{cmp, fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
 
 use commands::{Command, CommandExecutor};
+use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use self::types::*;
@@ -43,6 +46,7 @@ struct PoolWorker {
     f: usize,
     pending_catchup: Option<CatchUpProcess>,
     name: String,
+    pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
 }
 
 impl PoolWorker {
@@ -72,6 +76,25 @@ impl PoolWorker {
         }
         self.f = self.merkle_tree.count(); //FIXME
         info!("merkle tree {:?}", self.merkle_tree);
+    }
+
+    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
+        let req_id = reply.result.req_id;
+        let mut remove = false;
+        {
+            let mut pend_cmd = self.pending_commands.get_mut(&req_id).unwrap();
+            pend_cmd.reply_cnt += 1;
+            if pend_cmd.reply_cnt == self.f {
+                for &cmd_id in &pend_cmd.cmd_ids {
+                    CommandExecutor::instance().send(
+                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+                }
+                remove = true;
+            }
+        }
+        if remove {
+            self.pending_commands.remove(&req_id);
+        }
     }
 
     fn start_catchup(&mut self) {
@@ -136,8 +159,8 @@ impl PoolWorker {
         self.connect_to_known_nodes();
     }
 
-    fn process_msg(&mut self, msg: &String, src_ind: usize) {
-        let resp: Option<String> = if msg.eq("po") {
+    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) {
+        let resp: Option<String> = if raw_msg.eq("po") {
             //sending ledger status
             //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
             let ls: LedgerStatus = LedgerStatus {
@@ -148,7 +171,7 @@ impl PoolWorker {
             let msg: Message = Message::LedgerStatus(ls);
             Some(serde_json::to_string(&msg).unwrap())
         } else {
-            let msg: Message = serde_json::from_str(msg.as_str()).unwrap();
+            let msg: Message = serde_json::from_str(raw_msg.as_str()).unwrap();
             match msg {
                 Message::LedgerStatus(ledger_status) => {
                     //TODO nothing?
@@ -167,6 +190,9 @@ impl PoolWorker {
                 }
                 Message::CatchupRep(catchup) => {
                     self.process_catchup(catchup);
+                }
+                Message::Reply(reply) => {
+                    self.process_reply(&reply, raw_msg);
                 }
                 _ => {
                     info!("unhandled msg {:?}", msg);
@@ -189,6 +215,7 @@ impl PoolWorker {
         loop {
             trace!("zmq poll loop >>");
             let mut msgs_to_handle: Vec<(String, usize)> = Vec::new();
+            let mut cmds_to_send: Vec<(String, i32)> = Vec::new();
             {
                 let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
                 ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
@@ -208,27 +235,40 @@ impl PoolWorker {
                     }
                 }
                 if ss_to_poll[0].is_readable() {
-                    let cmd = self.cmd_sock.recv_string(zmq::DONTWAIT);
+                    let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT);
                     trace!("cmd {:?}", cmd);
                     if cmd.is_ok() {
-                        let cmd = cmd.unwrap().expect("non-string command");
-                        if "exit".eq(cmd.as_str()) {
+                        let v = cmd.unwrap();
+                        let cmd_s = String::from_utf8(v[0].clone()).expect("non-string command");
+                        if "exit".eq(cmd_s.as_str()) {
                             break;
                         } else {
-                            msgs_to_handle.push((cmd, usize::MAX));
+                            cmds_to_send.push((cmd_s, LittleEndian::read_i32(v[1].as_slice())));
                         }
                     }
                 }
             }
 
             for &(ref msg, rn_ind) in &msgs_to_handle {
-                if rn_ind == usize::MAX {
+                self.process_msg(msg, rn_ind);
+            }
+
+            for &(ref msg, cmd_id) in &cmds_to_send {
+                info!("msg {:?}", msg);
+                let tmp: SimpleRequest = serde_json::from_str(&msg).unwrap();
+                if self.pending_commands.contains_key(&tmp.req_id) {
+                    self.pending_commands.get_mut(&tmp.req_id).unwrap().cmd_ids.push(cmd_id);
+                } else {
+                    let pc = CommandProcess {
+                        cmd_ids: vec!(cmd_id),
+                        nack_cnt: 0,
+                        reply_cnt: 0,
+                    };
+                    self.pending_commands.insert(tmp.req_id, pc);
                     for node in &self.nodes {
                         let node: &RemoteNode = node;
                         node.send_str(msg);
                     }
-                } else {
-                    self.process_msg(msg, rn_ind);
                 }
             }
 
@@ -260,6 +300,7 @@ impl Pool {
             f: 0,
             pending_catchup: None,
             name: name.to_string(),
+            pending_commands: HashMap::new(),
         };
 
         Ok(Pool {
@@ -273,7 +314,9 @@ impl Pool {
     }
 
     pub fn send_tx(&self, cmd_id: i32, json: &str) {
-        self.send_sock.send_str(json, 0).expect("send to cmd sock");
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        self.send_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("send to cmd sock");
     }
 }
 
@@ -544,6 +587,7 @@ mod tests {
                 new_mt_size: 0,
                 new_mt_vote: 0,
                 name: "".to_string(),
+                pending_commands: HashMap::new(),
             }
         }
     }
@@ -586,6 +630,28 @@ mod tests {
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
+    }
+
+    #[test]
+    fn pool_worker_process_reply_works() {
+        let mut pw: PoolWorker = Default::default();
+        pw.f = 1;
+        let pc = super::types::CommandProcess {
+            cmd_ids: Vec::new(),
+            reply_cnt: pw.f - 1,
+            nack_cnt: 0,
+        };
+        let req_id = 1;
+        pw.pending_commands.insert(req_id, pc);
+        let reply = super::types::Reply {
+            result: super::types::Response {
+                req_id: req_id,
+            },
+        };
+
+        pw.process_reply(&reply, &"".to_string());
+
+        assert_eq!(pw.pending_commands.len(), 0);
     }
 
     #[test]

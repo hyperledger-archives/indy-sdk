@@ -90,6 +90,23 @@ impl cmp::PartialOrd for CatchupRep {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Reply {
+    pub result: Response,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Response {
+    pub req_id: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SimpleRequest {
+    pub req_id: u64,
+}
+
 #[serde(tag = "op")]
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
@@ -101,6 +118,12 @@ pub enum Message {
     CatchupReq(CatchupReq),
     #[serde(rename = "CATCHUP_REP")]
     CatchupRep(CatchupRep),
+    #[serde(rename = "REQACK")]
+    ReqACK(Response),
+    #[serde(rename = "REQNACK")]
+    ReqNACK(Response),
+    #[serde(rename = "REPLY")]
+    Reply(Reply),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -119,4 +142,10 @@ impl PoolConfig {
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
     pub pending_reps: BinaryHeap<CatchupRep>,
+}
+
+pub struct CommandProcess {
+    pub nack_cnt: usize,
+    pub reply_cnt: usize,
+    pub cmd_ids: Vec<i32>,
 }
