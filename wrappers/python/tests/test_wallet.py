@@ -1,10 +1,12 @@
-from sovrin_client import SovrinError
-from sovrin_client import SovrinWallet
+import asyncio
 
-a = SovrinWallet()
-ret = a.create_wallet(0,
-                      "pool", "wallet", "wallet-type",
-                      "config", "creds",
-                      lambda h,err: print("cb", h, err))
+from sovrin import SovrinError
+from sovrin import Wallet
 
-print("Hello")
+async def main():
+    await Wallet.create_wallet(None, "wallet", "wallet-type", "config", "creds")
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+loop.close()
