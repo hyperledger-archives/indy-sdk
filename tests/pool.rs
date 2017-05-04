@@ -80,6 +80,7 @@ fn _create_pool_ledger(pool_name: &str) -> ErrorCode {
     let (command_handle, callback) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
     let txn_file_name = EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name));
+    let pool_name = CString::new(pool_name);
     let pool_config = CString::new(format!("{{\"genesis_txn\": \"{}\"}}", txn_file_name)).unwrap();
     fs::File::create(txn_file_name).unwrap();
 
@@ -92,5 +93,5 @@ fn _create_pool_ledger(pool_name: &str) -> ErrorCode {
         return err;
     }
 
-    let err = receiver.recv_timeout(Duration::from_secs(10)).unwrap();
+    receiver.recv_timeout(Duration::from_secs(10)).unwrap();
 }
