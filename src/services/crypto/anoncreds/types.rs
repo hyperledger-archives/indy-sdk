@@ -212,7 +212,7 @@ impl ClaimProof {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinition {
     pub public_key: PublicKey,
     pub public_key_revocation: Option<RevocationPublicKey>,
@@ -245,7 +245,7 @@ impl JsonEncodable for ClaimDefinition {}
 
 impl<'a> JsonDecodable<'a> for ClaimDefinition {}
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinitionPrivate {
     pub secret_key: SecretKey,
     pub secret_key_revocation: Option<RevocationSecretKey>
@@ -535,7 +535,7 @@ impl NonRevocProof {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct PublicKey {
     pub n: BigNumber,
     pub s: BigNumber,
@@ -932,7 +932,7 @@ impl JsonEncodable for RevocationRegistryPrivate {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
     pub h: PointG1,
@@ -968,7 +968,7 @@ impl JsonEncodable for RevocationPublicKey {}
 
 impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct RevocationSecretKey {
     pub x: GroupOrderElement,
     pub sk: GroupOrderElement
@@ -1073,7 +1073,7 @@ impl JsonEncodable for Schema {}
 
 impl<'a> JsonDecodable<'a> for Schema {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct SecretKey {
     pub p: BigNumber,
     pub q: BigNumber

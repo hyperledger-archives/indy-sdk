@@ -32,7 +32,7 @@ pub struct PointG1 {
 
 pub struct PointG2 {}
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct GroupOrderElement {
     bn: BIG
 }
