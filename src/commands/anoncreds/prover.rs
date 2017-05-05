@@ -284,8 +284,8 @@ impl ProverCommandExecutor {
         let claim_json = RefCell::new(claim_json);
 
         self.crypto_service.anoncreds.prover.process_claim(
-            &claim_json, primary_claim_init_data, Some(revocation_claim_init_data),
-            claim_def.public_key_revocation, Some(revocation_registry))?;
+            &claim_json, primary_claim_init_data, revocation_claim_init_data,
+            claim_def.public_key_revocation, revocation_registry)?;
 
         let claim = ClaimJson::to_json(&claim_json.borrow())?;
 

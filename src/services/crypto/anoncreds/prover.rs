@@ -1488,17 +1488,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, 1, 1, 1)
+        ClaimInfo::new("1".to_string(), attrs, 1, Some(1), 1)
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, 2, 1, 2)
+        ClaimInfo::new("2".to_string(), attrs, 2, Some(1), 2)
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, 2, 2, 1)
+        ClaimInfo::new("3".to_string(), attrs, 2, Some(2), 1)
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1569,7 +1569,7 @@ pub mod mocks {
         ClaimJson {
             claim: issuer::mocks::get_gvt_attributes(),
             claim_def_seq_no: 1,
-            revoc_reg_seq_no: 1,
+            revoc_reg_seq_no: Some(1),
             schema_seq_no: 1,
             signature: mocks::get_gvt_claims_object()
         }
@@ -1579,7 +1579,7 @@ pub mod mocks {
         ClaimJson {
             claim: issuer::mocks::get_xyz_attributes(),
             claim_def_seq_no: 2,
-            revoc_reg_seq_no: 1,
+            revoc_reg_seq_no: Some(1),
             schema_seq_no: 2,
             signature: mocks::get_xyz_claims_object()
         }

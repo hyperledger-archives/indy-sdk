@@ -166,13 +166,13 @@ pub struct ClaimInfo {
     pub claim_uuid: String,
     pub attrs: HashMap<String, String>,
     pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32,
+    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32
 }
 
 impl ClaimInfo {
     pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
-               revoc_reg_seq_no: i32, schema_seq_no: i32) -> ClaimInfo {
+               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
@@ -332,7 +332,7 @@ pub struct ClaimJson {
 }
 
 impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
+    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
                signature: Claims, schema_seq_no: i32) -> ClaimJson {
         ClaimJson {
             claim: claim,

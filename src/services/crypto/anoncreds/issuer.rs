@@ -423,12 +423,11 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::verifier::mocks::{get_gvt_schema};
 
     #[test]
     fn generate_keys_works() {
         let issuer = Issuer::new();
-        let (claim_definition, claim_definition_private) = issuer.generate_keys(get_gvt_schema(), None, false).unwrap();
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(mocks::get_gvt_schema(), None, false).unwrap();
         assert_eq!(claim_definition, mocks::get_claim_definition());
         assert_eq!(claim_definition_private, mocks::get_claim_definition_private());
     }
