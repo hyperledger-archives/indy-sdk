@@ -97,13 +97,15 @@ fn sovrin_anoncreds_demo() {
     let (verifier_verify_proof_handle, verifier_verify_proof_callback) = CallbackUtils::closure_to_verifier_verify_proof_cb(verifier_verify_proof_cb);
 
     let pool_name = "pool1";
-    let name = "wallet";
+    let wallet_name = "issuer_wallet";
     let xtype = "default";
 
+    //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
+    //1. Create Wallet
     let err =
         sovrin_create_wallet(create_wallet_command_handle,
                              CString::new(pool_name).unwrap().as_ptr(),
-                             CString::new(name).unwrap().as_ptr(),
+                             CString::new(wallet_name).unwrap().as_ptr(),
                              CString::new(xtype).unwrap().as_ptr(),
                              null(),
                              null(),
@@ -113,9 +115,10 @@ fn sovrin_anoncreds_demo() {
     let err = create_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
+    //2. Open Issuer Wallet. Gets Issuer wallet handle
     let err =
         sovrin_open_wallet(open_wallet_command_handle,
-                           CString::new(name).unwrap().as_ptr(),
+                           CString::new(wallet_name).unwrap().as_ptr(),
                            null(),
                            null(),
                            open_wallet_callback);
@@ -132,6 +135,7 @@ fn sovrin_anoncreds_demo() {
                             \"seq_no\":{}\
                          }}", schema_seq_no);
 
+    // 3. Issuer rreate Claim Definition for Schema
     let err =
         sovrin_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
                                                  wallet_handle,
@@ -147,6 +151,7 @@ fn sovrin_anoncreds_demo() {
 
     let claim_def_seq_no = 1;
 
+    // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
     let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle,
                                                  wallet_handle,
                                                  CString::new(claim_def_uuid).unwrap().as_ptr(),
@@ -157,10 +162,9 @@ fn sovrin_anoncreds_demo() {
     let err = wallet_set_seq_no_for_value_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    //TODO USE ISSUER WALLET AND PROVER WALLET
-
     let master_secret_name = "master_secret";
 
+    // 5. Prover create Master Secret
     let err =
         sovrin_prover_create_master_secret(prover_create_master_secret_command_handle,
                                            wallet_handle,
@@ -174,6 +178,7 @@ fn sovrin_anoncreds_demo() {
     let prover_did = "some_prover_did";
     let claim_offer_json = format!("{{\"issuer_did\":\"some_issuer_did\",\"claim_def_seq_no\":{}}}", claim_def_seq_no);
 
+    // 6. Prover create Claim Request
     let err =
         sovrin_prover_create_and_store_claim_req(prover_create_claim_req_command_handle,
                                                  wallet_handle,
@@ -195,6 +200,7 @@ fn sovrin_anoncreds_demo() {
                            \"age\":[\"28\",\"28\"]\
                      }";
 
+    // 7. Issuer create Claim for Claim Request
     let err =
         sovrin_issuer_create_claim(issuer_create_claim_command_handle,
                                    wallet_handle,
@@ -209,6 +215,7 @@ fn sovrin_anoncreds_demo() {
     println!("xclaim_json {:?}", xclaim_json);
     assert_eq!(ErrorCode::Success, err);
 
+    // 7. Prover process and store Claim
     let err =
         sovrin_prover_store_claim(prover_store_claim_command_handle,
                                   wallet_handle,
@@ -225,6 +232,7 @@ fn sovrin_anoncreds_demo() {
                                    \"requested_predicates\":{{\"predicate1_uuid\":{{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}}}\
                                 }}", schema_seq_no);
 
+    // 8. Prover gets Claims for Proof Request
     let err =
         sovrin_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_handle,
                                                wallet_handle,
@@ -246,6 +254,7 @@ fn sovrin_anoncreds_demo() {
     let claim_defs_json = format!("{{\"{}\":{}}}", claim_def_seq_no, claim_def_json);
     let revoc_regs_jsons = "{}";
 
+    // 9. Prover create Proof for Proof Request
     let err =
         sovrin_prover_create_proof(prover_create_proof_handle,
                                    wallet_handle,
@@ -262,6 +271,7 @@ fn sovrin_anoncreds_demo() {
     println!("proof_json {:?}", proof_json);
     assert_eq!(ErrorCode::Success, err);
 
+    // 9. Verifier verify proof
     let err =
         sovrin_verifier_verify_proof(verifier_verify_proof_handle,
                                      wallet_handle,
