@@ -1,5 +1,12 @@
+// TODO: FIXME: It must be removed after code layout stabilization!
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 extern crate sovrin;
 
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 
@@ -7,6 +14,7 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
+use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
 
@@ -20,6 +28,11 @@ use sovrin::api::anoncreds::{
     sovrin_prover_get_claims_for_proof_req,
     sovrin_prover_create_proof,
     sovrin_verifier_verify_proof
+};
+use sovrin::api::ledger::sovrin_submit_request;
+use sovrin::api::pool::{
+    sovrin_open_pool_ledger,
+    sovrin_create_pool_ledger_config,
 };
 use sovrin::api::wallet::{
     sovrin_create_wallet,
@@ -289,10 +302,83 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
+#[ignore] //required nodes pool available from CI
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
+    let pool_name = "test_submit_tx";
+    let c_pool_name = CString::new(pool_name).unwrap();
 
-    // FIXME: Implement me!!!
+    let (submit_sender, submit_receiver) = channel();
+    let (create_sender, create_receiver) = channel();
+    let (open_sender, open_receiver) = channel();
+    let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
+    let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
+    let send_cb = Box::new(move |err, resp| { submit_sender.send((err, resp)).unwrap(); });
+    let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
+    let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
+    let (command_handle, send_callback) = CallbackUtils::closure_to_send_tx_cb(send_cb);
 
+    // 1. Create ledger config from genesis txn file
+    PoolUtils::create_genesis_txn_file(pool_name);
+    let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
+    let err = sovrin_create_pool_ledger_config(create_command_handle,
+                                               c_pool_name.as_ptr(),
+                                               pool_config.as_ptr(),
+                                               create_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    // 2. Open pool ledger
+    let err = sovrin_open_pool_ledger(open_command_handle,
+                                      c_pool_name.as_ptr(),
+                                      null(),
+                                      open_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    // 3. Send request
+    let request = "{\
+            \"reqId\":1491566332010860,\
+            \"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\
+            \"operation\":{\
+                \"type\":\"105\",\
+                \"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"\
+            },\
+            \"signature\":\"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV\"\
+        }\
+        ";
+    let req = CString::new(request).unwrap();
+    let err = sovrin_submit_request(command_handle,
+                                    pool_handle,
+                                    req.as_ptr(),
+                                    send_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    let act_reply: Reply = serde_json::from_str(resp.as_str()).unwrap();
+    let exp_reply = Reply {
+        op: "REPLY".to_string(),
+        result: ReplyResult {
+            req_id: 1491566332010860,
+            txn_id: "5511e5493c1d37dfa67b73269a392a7aca5b71e9d10ac106adc7f9e552aee560".to_string(),
+        }
+    };
+    assert_eq!(act_reply, exp_reply);
     TestUtils::cleanup_storage();
+
+    #[derive(Deserialize, Eq, PartialEq, Debug)]
+    struct Reply {
+        op: String,
+        result: ReplyResult,
+    }
+
+    #[derive(Deserialize, Eq, PartialEq, Debug)]
+    #[serde(rename_all = "camelCase")]
+    struct ReplyResult {
+        txn_id: String,
+        req_id: u64,
+    }
 }

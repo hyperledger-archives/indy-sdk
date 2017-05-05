@@ -1,12 +1,12 @@
 extern crate libc;
-use self::libc::c_char;
 
 use sovrin::api::ErrorCode;
 
+use self::libc::c_char;
+use std::ffi::CStr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
-use std::ffi::CStr;
 
 
 lazy_static! {
@@ -55,6 +55,31 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(open_pool_ledger_callback))
+    }
+
+    pub fn closure_to_send_tx_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
+                                 -> (i32,
+                                     Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                      request_result_json: *const c_char)>) {
+        lazy_static! {
+            static ref OPEN_POOL_LEDGER_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn send_tx_callback(command_handle: i32, err: ErrorCode, request_result_json: *const c_char) {
+            let mut callbacks = OPEN_POOL_LEDGER_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let str: &CStr =
+                unsafe {
+                    CStr::from_ptr(request_result_json)
+                };
+            cb(err, str.to_str().unwrap().to_string());
+        }
+
+        let mut callbacks = OPEN_POOL_LEDGER_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(send_tx_callback))
     }
 
     pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
