@@ -251,23 +251,28 @@ impl ProverCommandExecutor {
     fn _store_claim(&self, wallet_handle: i32, claims_json: &str) -> Result<(), AnoncredsError> {
         let claim_json = ClaimJson::from_json(&claims_json)?;
 
-        let revocation_registry_uuid = self.wallet_service.get(
-            wallet_handle,
-            &format!("revocation_registry_uuid::{}", &claim_json.revoc_reg_seq_no))?;
-        let revocation_registry_json = self.wallet_service.get(
-            wallet_handle,
-            &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-        let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)?;
+        let mut revocation_registry = None;
+        let mut revocation_claim_init_data = None;
+
+        if let Some(x) = claim_json.revoc_reg_seq_no {
+            let revocation_registry_uuid = self.wallet_service.get(
+                wallet_handle,
+                &format!("revocation_registry_uuid::{}", &x))?;
+            let revocation_registry_json = self.wallet_service.get(
+                wallet_handle,
+                &format!("revocation_registry::{}", &revocation_registry_uuid))?;
+            revocation_registry = Some(RevocationRegistry::from_json(&revocation_registry_json)?);
+
+            let revocation_claim_init_data_json = self.wallet_service.get(
+                wallet_handle,
+                &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
+            revocation_claim_init_data = Some(RevocationClaimInitData::from_json(&revocation_claim_init_data_json)?);
+        }
 
         let primary_claim_init_data_json = self.wallet_service.get(
             wallet_handle,
             &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
         let primary_claim_init_data = ClaimInitData::from_json(&primary_claim_init_data_json)?;
-
-        let revocation_claim_init_data_json = self.wallet_service.get(
-            wallet_handle,
-            &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
-        let revocation_claim_init_data = RevocationClaimInitData::from_json(&revocation_claim_init_data_json)?;
 
         let claim_def_uuid = self.wallet_service.get(
             wallet_handle,
@@ -279,8 +284,8 @@ impl ProverCommandExecutor {
         let claim_json = RefCell::new(claim_json);
 
         self.crypto_service.anoncreds.prover.process_claim(
-            &claim_json, primary_claim_init_data, Some(revocation_claim_init_data),
-            claim_def.public_key_revocation, Some(revocation_registry))?;
+            &claim_json, primary_claim_init_data, revocation_claim_init_data,
+            claim_def.public_key_revocation, revocation_registry)?;
 
         let claim = ClaimJson::to_json(&claim_json.borrow())?;
 
