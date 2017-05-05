@@ -1,4 +1,8 @@
+pub mod types;
+use utils::json::{JsonEncodable, JsonDecodable};
 use errors::signus::SignusError;
+use commands::signus::types::{DIDInfo};
+use services::crypto::wrappers::ed25519::ED25519;
 
 use services::crypto::CryptoService;
 use services::pool::PoolService;
@@ -98,7 +102,13 @@ impl SignusCommandExecutor {
                                walled_handle: i32,
                                did_json: &str,
                                cb: Box<Fn(Result<(String, String, String), SignusError>) + Send>) {
-        cb(Ok(("".to_string(), "".to_string(), "".to_string())));
+        cb(self._create_and_store_my_did(walled_handle, did_json));
+    }
+
+    fn _create_and_store_my_did(&self, walled_handle: i32, did_json: &str) -> Result<(String, String, String), SignusError> {
+        let instance = ED25519::new();
+        let did_info = DIDInfo::from_json(&did_json)?;
+        Ok(("".to_string(), "".to_string(), "".to_string()))
     }
 
     fn replace_keys(&self,
