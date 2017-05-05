@@ -6,7 +6,7 @@ use commands::anoncreds::issuer::{IssuerCommand, IssuerCommandExecutor};
 use commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
 use commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
 
-use services::crypto::CryptoService;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
@@ -25,16 +25,16 @@ pub struct AnoncredsCommandExecutor {
 }
 
 impl AnoncredsCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> AnoncredsCommandExecutor {
         AnoncredsCommandExecutor {
             issuer_command_cxecutor: IssuerCommandExecutor::new(
-                crypto_service.clone(), pool_service.clone(), wallet_service.clone()),
+                anoncreds_service.clone(), pool_service.clone(), wallet_service.clone()),
             prover_command_cxecutor: ProverCommandExecutor::new(
-                crypto_service.clone(), pool_service.clone(), wallet_service.clone()),
+                anoncreds_service.clone(), pool_service.clone(), wallet_service.clone()),
             verifier_command_cxecutor: VerifierCommandExecutor::new(
-                crypto_service.clone(), pool_service.clone(), wallet_service.clone()),
+                anoncreds_service.clone(), pool_service.clone(), wallet_service.clone()),
         }
     }
 

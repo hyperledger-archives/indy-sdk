@@ -1,5 +1,5 @@
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::constants::{
+use services::anoncreds::constants::{
     LARGE_E_START,
     LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
@@ -7,7 +7,7 @@ use services::crypto::anoncreds::constants::{
     LARGE_VPRIME_PRIME,
     SIGNATURE_TYPE
 };
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AccumulatorSecretKey,
@@ -30,14 +30,14 @@ use services::crypto::anoncreds::types::{
     SecretKey,
     Witness
 };
-use services::crypto::anoncreds::helpers::{
+use services::anoncreds::helpers::{
     random_qr,
     bitwise_or_big_int,
     get_hash_as_int,
     transform_u32_to_array_of_u8
 };
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 
@@ -49,7 +49,8 @@ impl Issuer {
     pub fn new() -> Issuer {
         Issuer {}
     }
-    pub fn generate_keys(&self, schema: Schema, signature_type: Option<&str>,
+
+    pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
                          create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
@@ -65,6 +66,10 @@ impl Issuer {
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
+        if schema.attribute_names.len() == 0 {
+            return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
+        }
+
         let p = BigNumber::generate_safe_prime(LARGE_PRIME)?;
         let q = BigNumber::generate_safe_prime(LARGE_PRIME)?;
 
@@ -112,6 +117,12 @@ impl Issuer {
         ))
     }
 
+    #[cfg(test)]
+    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
+        Ok(BigNumber::from_dec("21756443327382027172985704617047967597993694788495380290694324827806324727974811069286883097008098972826137846700650885182803802394920367284736320514617598740869006348763668941791139304299497512001555851506177534398138662287596439312757685115968057647052806345903116050638193978301573172649243964671896070438965753820826200974052042958554415386005813811429117062833340444950490735389201033755889815382997617514953672362380638953231325483081104074039069074312082459855104868061153181218462493120741835250281211598658590317583724763093211076383033803581749876979865965366178002285968278439178209181121479879436785731938")?)
+    }
+
+    #[cfg(not(test))]
     fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
         let mut result = p
             .mul(&q, None)?
@@ -154,11 +165,14 @@ impl Issuer {
         Ok((revocation_registry, revocation_registry_private))
     }
 
-    pub fn create_claim(&self, claim_definition: ClaimDefinition, claim_definition_private: ClaimDefinitionPrivate,
-                        revocation_registry: &RefCell<RevocationRegistry>, revocation_registry_private: &RevocationRegistryPrivate,
-                        claim_request: &ClaimRequest, attributes: &HashMap<String, Vec<String>>,
+    pub fn create_claim(&self, claim_definition: &ClaimDefinition,
+                        claim_definition_private: &ClaimDefinitionPrivate,
+                        revocation_registry: &Option<RefCell<RevocationRegistry>>,
+                        revocation_registry_private: &Option<RevocationRegistryPrivate>,
+                        claim_request: &ClaimRequest,
+                        attributes: &HashMap<String, Vec<String>>,
                         user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
-        let context_attribute = Issuer::_generate_context_attribute(revocation_registry.borrow().claim_def_seq_no, &claim_request.prover_did)?;
+        let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no, &claim_request.prover_did)?;
 
         let primary_claim =
             Issuer::_issue_primary_claim(
@@ -170,13 +184,15 @@ impl Issuer {
             )?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
-        if let Some(ref pk_r) = claim_definition.public_key_revocation {
+        if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation.clone(),
+                                                                                    revocation_registry, revocation_registry_private){
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
-                revocation_registry,
+                &revoc_reg,
                 &pk_r,
-                &claim_definition_private.secret_key_revocation.ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
-                &revocation_registry_private.tails,
-                &revocation_registry_private.acc_sk,
+                &claim_definition_private.secret_key_revocation.clone()
+                    .ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
+                &revoc_reg_priv.tails,
+                &revoc_reg_priv.acc_sk,
                 &context_attribute,
                 &claim_request.ur.ok_or(CryptoError::InvalidStructure("Field ur not found".to_string()))?,
                 user_revoc_index
@@ -410,7 +426,72 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encode_attribute_works_short_hash() {
+    fn generate_keys_works() {
+        let issuer = Issuer::new();
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(mocks::get_gvt_schema(), None, false).unwrap();
+        assert_eq!(claim_definition, mocks::get_claim_definition());
+        assert_eq!(claim_definition_private, mocks::get_claim_definition_private());
+    }
+
+    #[test]
+    fn create_claim_works() {
+
+    }
+
+    #[test]
+    fn generate_v_prime_prime_works() {
+        let result = BigNumber::from_dec("6620937836014079781509458870800001917950459774302786434315639456568768602266735503527631640833663968617512880802104566048179854406925811731340920442625764155409951969854303612644121780700879432308016935250101960876405664503219252820761501606507817390189252221968804450207070282033815280889897882643560437257171838117793768660731379360330750300543760457608638753190279419951706206819943151918535286779337023708838891906829360439545064730288538139152367417882097349210427894031568623898916625312124319876670702064561291393993815290033742478045530118808274555627855247830659187691067893683525651333064738899779446324124393932782261375663033826174482213348732912255948009062641783238846143256448824091556005023241191311617076266099622843011796402959351074671886795391490945230966123230485475995208322766090290573654498779155").unwrap();
+        assert_eq!(Issuer::_generate_v_prime_prime().unwrap(), result);
+    }
+
+    #[test]
+    fn generate_claim_definition_without_revocation_part_works() {
+        let issuer = Issuer::new();
+        let schema = mocks::get_gvt_schema();
+        let signature_type = None;
+        let create_non_revoc = false;
+
+        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        assert!(result.is_ok());
+
+        let (claim_definition, claim_definition_private) = result.unwrap();
+
+        assert!(claim_definition.public_key_revocation.is_none());
+        assert!(claim_definition_private.secret_key_revocation.is_none());
+    }
+
+    #[test]
+    fn generate_claim_definition_with_revocation_part_works() {
+        let issuer = Issuer::new();
+        let schema = mocks::get_gvt_schema();
+        let signature_type = None;
+        let create_non_revoc = true;
+
+        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        assert!(result.is_ok());
+
+        let (claim_definition, claim_definition_private) = result.unwrap();
+
+        assert!(claim_definition.public_key_revocation.is_some());
+        assert!(claim_definition_private.secret_key_revocation.is_some());
+    }
+
+    #[test]
+    fn generate_claim_definition_without_attributes_does_not_works() {
+        let issuer = Issuer::new();
+        let mut schema = mocks::get_gvt_schema();
+        let signature_type = None;
+        let create_non_revoc = false;
+
+        let empty_attrs: HashSet<String> = HashSet::new();
+        schema.attribute_names = empty_attrs;
+
+        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn encode_attribute_works() {
         let test_str = "5435";
         let test_answer = "83761840706354868391674207739241454863743470852830526299004654280720761327142";
         assert_eq!(test_answer, Issuer::_encode_attribute(test_str, ByteOrder::Big).unwrap().to_dec().unwrap());
@@ -424,7 +505,7 @@ mod tests {
         let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
-
+    
     #[test]
     fn sign_works() {
         let public_key = mocks::get_pk();
@@ -442,6 +523,56 @@ mod tests {
 pub mod mocks {
     use super::*;
 
+    pub fn get_claim_definition() -> ClaimDefinition {
+        let mut r: HashMap<String, BigNumber> = HashMap::new();
+        r.insert("sex".to_string(), BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap());
+        r.insert("name".to_string(), BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap());
+        r.insert("age".to_string(), BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap());
+        r.insert("height".to_string(), BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap());
+        let public_key = PublicKey::new(
+            BigNumber::from_dec("89057765651800459030103911598694169835931320404459570102253965466045532669865684092518362135930940112502263498496335250135601124519172068317163741086983519494043168252186111551835366571584950296764626458785776311514968350600732183408950813066589742888246925358509482561838243805468775416479523402043160919428168650069477488093758569936116799246881809224343325540306266957664475026390533069487455816053169001876208052109360113102565642529699056163373190930839656498261278601357214695582219007449398650197048218304260447909283768896882743373383452996855450316360259637079070460616248922547314789644935074980711243164129").unwrap(),
+            BigNumber::from_dec("64684820421150545443421261645532741305438158267230326415141505826951816460650437611148133267480407958360035501128469885271549378871140475869904030424615175830170939416512594291641188403335834762737251794282186335118831803135149622404791467775422384378569231649224208728902565541796896860352464500717052768431523703881746487372385032277847026560711719065512366600220045978358915680277126661923892187090579302197390903902744925313826817940566429968987709582805451008234648959429651259809188953915675063700676546393568304468609062443048457324721450190021552656280473128156273976008799243162970386898307404395608179975243").unwrap(),
+            BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap(),
+            r,
+            BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap(),
+            BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap()
+        );
+        ClaimDefinition::new(public_key, None, 1, "CL".to_string())
+    }
+
+    pub fn get_claim_definition_private() -> ClaimDefinitionPrivate {
+        let secret_key = SecretKey::new(BigNumber::from_dec("149212738775716179659508649034140914067267873385650452563221860367878267143635191771233591587868730221903476199105022913859057555905442876114559838735355652672950963033972314646471235775711934244481758977047119803475879470383993713606231800156950590334088086141997103196482505556481059579729337361392854778311").unwrap(), BigNumber::from_dec("149212738775716179659508649034140914067267873385650452563221860367878267143635191771233591587868730221903476199105022913859057555905442876114559838735355652672950963033972314646471235775711934244481758977047119803475879470383993713606231800156950590334088086141997103196482505556481059579729337361392854778311").unwrap());
+        ClaimDefinitionPrivate::new(secret_key, None)
+    }
+
+    pub fn get_gvt_schema() -> Schema {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert("name".to_string());
+        attr_names.insert("age".to_string());
+        attr_names.insert("height".to_string());
+        attr_names.insert("sex".to_string());
+
+        Schema {
+            name: "gvt".to_string(),
+            version: "1.0".to_string(),
+            attribute_names: attr_names,
+            seq_no: 1
+        }
+    }
+
+    pub fn get_xyz_schema() -> Schema {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert("status".to_string());
+        attr_names.insert("period".to_string());
+
+        Schema {
+            name: "xyz".to_string(),
+            version: "1.0".to_string(),
+            attribute_names: attr_names,
+            seq_no: 2
+        }
+    }
+
     pub fn get_gvt_attributes() -> HashMap<String, Vec<String>> {
         let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
         attributes.insert("name".to_string(), vec!["Alex".to_string(), "1139481716457488690172217916278103335".to_string()]);
@@ -454,7 +585,7 @@ pub mod mocks {
     pub fn get_xyz_attributes() -> HashMap<String, Vec<String>> {
         let mut attributes: HashMap<String, Vec<String>> = HashMap::new();
         attributes.insert("status".to_string(), vec!["partial".to_string(), "51792877103171595686471452153480627530895".to_string()]);
-        attributes.insert("period".to_string(), vec!["8".to_string(), "28".to_string()]);
+        attributes.insert("period".to_string(), vec!["8".to_string(), "8".to_string()]);
         attributes
     }
 
@@ -478,6 +609,22 @@ pub mod mocks {
         encoded_attributes.insert("status".to_string(), BigNumber::from_dec("51792877103171595686471452153480627530895").unwrap());
         encoded_attributes.insert("period".to_string(), BigNumber::from_dec("8").unwrap());
         encoded_attributes
+    }
+
+    pub fn get_xyz_row_attributes() -> HashMap<String, String> {
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        attributes.insert("status".to_string(), "partial".to_string());
+        attributes.insert("period".to_string(), "8".to_string());
+        attributes
+    }
+
+    pub fn get_gvt_row_attributes() -> HashMap<String, String> {
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        attributes.insert("name".to_string(), "Alex".to_string());
+        attributes.insert("age".to_string(), "28".to_string());
+        attributes.insert("sex".to_string(), "male".to_string());
+        attributes.insert("height".to_string(), "175".to_string());
+        attributes
     }
 
     pub fn get_secret_key() -> SecretKey {

@@ -6,7 +6,7 @@ use self::milagro_crypto::ecp::wrappers::ECP;
 use self::milagro_crypto::fp12::wrappers::FP12;
 
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::BytesView;
+use services::anoncreds::helpers::BytesView;
 
 use self::milagro_crypto::randapi::Random;
 
@@ -32,7 +32,7 @@ pub struct PointG1 {
 
 pub struct PointG2 {}
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct GroupOrderElement {
     bn: BIG
 }
@@ -172,9 +172,9 @@ impl GroupOrderElement {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        let mut vec: Vec<u8> = Vec::new();
+        let mut vec: [u8; 32] = [0; 32];
         BIG::toBytes(&mut vec, &self.bn);
-        Ok(vec)
+        Ok(vec.to_vec())
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {

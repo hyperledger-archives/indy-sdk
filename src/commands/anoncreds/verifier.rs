@@ -2,10 +2,10 @@ extern crate serde_json;
 
 use errors::anoncreds::AnoncredsError;
 
-use services::crypto::CryptoService;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     ClaimDefinition,
     Schema,
     ProofRequestJson,
@@ -27,17 +27,17 @@ pub enum VerifierCommand {
 }
 
 pub struct VerifierCommandExecutor {
-    crypto_service: Rc<CryptoService>,
+    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>
 }
 
 impl VerifierCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> VerifierCommandExecutor {
         VerifierCommandExecutor {
-            crypto_service: crypto_service,
+            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
         }
@@ -79,11 +79,11 @@ impl VerifierCommandExecutor {
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_json)?;
         let proof_claims: ProofJson = ProofJson::from_json(&proof_json)?;
 
-        let result = self.crypto_service.anoncreds.verifier.verify(&proof_claims,
-                                                                   &proof_req.nonce,
-                                                                   &claim_defs,
-                                                                   &revoc_regs,
-                                                                   &schemas)?;
+        let result = self.anoncreds_service.verifier.verify(&proof_claims,
+                                                            &proof_req.nonce,
+                                                            &claim_defs,
+                                                            &revoc_regs,
+                                                            &schemas)?;
 
         Ok(result)
     }

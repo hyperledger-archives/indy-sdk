@@ -3,19 +3,25 @@ extern crate milagro_crypto;
 extern crate openssl;
 
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::constants::LARGE_MVECT;
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::GroupOrderElement;
+use services::anoncreds::constants::LARGE_MVECT;
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::HashMap;
 
+#[cfg(not(test))]
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
     let random = n
         .rand_range()?
         .sqr(None)?
         .modulus(&n, None)?;
     Ok(random)
+}
+
+#[cfg(test)]
+pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
+    Ok(BigNumber::from_dec("64684820421150545443421261645532741305438158267230326415141505826951816460650437611148133267480407958360035501128469885271549378871140475869904030424615175830170939416512594291641188403335834762737251794282186335118831803135149622404791467775422384378569231649224208728902565541796896860352464500717052768431523703881746487372385032277847026560711719065512366600220045978358915680277126661923892187090579302197390903902744925313826817940566429968987709582805451008234648959429651259809188953915675063700676546393568304468609062443048457324721450190021552656280473128156273976008799243162970386898307404395608179975243")?)
 }
 
 pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
