@@ -5,6 +5,7 @@ use std::error;
 use std::io;
 use std::fmt;
 use std::error::Error;
+use std::cell::{BorrowError, BorrowMutError};
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -71,6 +72,18 @@ impl From<zmq::Error> for PoolError {
 impl From<serde_json::Error> for PoolError {
     fn from(err: serde_json::Error) -> PoolError {
         PoolError::InvalidConfiguration(err.description().to_string())
+    }
+}
+
+impl From<BorrowError> for PoolError {
+    fn from(err: BorrowError) -> Self {
+        PoolError::InvalidState(err.description().to_string())
+    }
+}
+
+impl From<BorrowMutError> for PoolError {
+    fn from(err: BorrowMutError) -> Self {
+        PoolError::InvalidState(err.description().to_string())
     }
 }
 
