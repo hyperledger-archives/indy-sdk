@@ -1,5 +1,6 @@
 use sovrin::api::ErrorCode;
 use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledger};
+use sovrin::api::ledger::sovrin_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
@@ -75,6 +76,32 @@ impl PoolUtils {
         }
 
         Ok(pool_handle)
+    }
+
+    pub fn send_request(pool_handle: i32, request: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb_send = Box::new(move |err, resp| {
+            sender.send((err, resp)).unwrap();
+        });
+        let req = CString::new(request).unwrap();
+        let (command_handle, callback) = CallbackUtils::closure_to_send_tx_cb(cb_send);
+
+        let err = sovrin_submit_request(command_handle,
+                                        pool_handle,
+                                        req.as_ptr(),
+                                        callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, resp) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(resp)
     }
 
     pub fn create_genesis_txn_file(pool_name: &str) -> PathBuf {
