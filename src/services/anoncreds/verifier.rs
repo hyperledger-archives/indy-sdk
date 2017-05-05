@@ -43,14 +43,12 @@ impl Verifier {
         for (proof_uuid, proof_item) in &proof.proofs {
             let claim_definition = &claim_defs.get(proof_uuid)
                 .ok_or(CryptoError::InvalidStructure(format!("Claim definition is not found")))?;
-            let revoc_reg = revoc_regs.get(proof_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Revocation registry is not found")))?;
             let schema = schemas.get(proof_uuid)
                 .ok_or(CryptoError::InvalidStructure(format!("Schema is not found")))?;
 
-            if let Some(ref non_revocation_proof) = proof_item.proof.non_revoc_proof {
-                let pkr = &claim_definition.public_key_revocation.clone()
-                    .ok_or(CryptoError::InvalidStructure("Field public_key_revocation not found".to_string()))?;
+            if let (Some(ref non_revocation_proof), Some(ref pkr), Some(ref revoc_reg)) = (proof_item.proof.non_revoc_proof.clone(),
+                                                                                           claim_definition.public_key_revocation.clone(),
+                                                                                           revoc_regs.get(proof_uuid)) {
 
                 tau_list.extend_from_slice(
                     &Verifier::_verify_non_revocation_proof(

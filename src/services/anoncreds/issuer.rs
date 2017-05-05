@@ -165,8 +165,8 @@ impl Issuer {
         Ok((revocation_registry, revocation_registry_private))
     }
 
-    pub fn create_claim(&self, claim_definition: ClaimDefinition,
-                        claim_definition_private: ClaimDefinitionPrivate,
+    pub fn create_claim(&self, claim_definition: &ClaimDefinition,
+                        claim_definition_private: &ClaimDefinitionPrivate,
                         revocation_registry: &Option<RefCell<RevocationRegistry>>,
                         revocation_registry_private: &Option<RevocationRegistryPrivate>,
                         claim_request: &ClaimRequest,
@@ -184,11 +184,12 @@ impl Issuer {
             )?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
-        if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation, revocation_registry, revocation_registry_private){
+        if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation.clone(),
+                                                                                    revocation_registry, revocation_registry_private){
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
                 &revoc_reg,
                 &pk_r,
-                &claim_definition_private.secret_key_revocation
+                &claim_definition_private.secret_key_revocation.clone()
                     .ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
                 &revoc_reg_priv.tails,
                 &revoc_reg_priv.acc_sk,

@@ -197,7 +197,7 @@ impl IssuerCommandExecutor {
 
         let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
 
-        let claims = self.crypto_service.anoncreds.issuer.create_claim(
+        let claims = self.anoncreds_service.issuer.create_claim(
             &claim_def,
             &claim_def_private,
             &revocation_registry,

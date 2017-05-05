@@ -388,7 +388,7 @@ impl NonRevocationClaim {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NonRevocProofXList {
     pub rho: GroupOrderElement,
     pub r: GroupOrderElement,
@@ -541,7 +541,7 @@ impl NonRevocInitProof {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NonRevocProof {
     pub x_list: NonRevocProofXList,
     pub c_list: NonRevocProofCList
@@ -581,7 +581,7 @@ impl PublicKey {
 
     pub fn clone(&self) -> Result<PublicKey, CryptoError> {
         Ok(PublicKey {
-            s: self.n.clone()?,
+            s: self.s.clone()?,
             n: self.n.clone()?,
             rms: self.rms.clone()?,
             r: clone_bignum_map(&self.r)?,

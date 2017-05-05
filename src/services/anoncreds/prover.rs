@@ -63,7 +63,7 @@ use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
-
+use std::iter::FromIterator;
 
 pub struct Prover {}
 
@@ -119,9 +119,8 @@ impl Prover {
                          pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
                          -> Result<(), CryptoError> {
 
-        let ref mut primary_claim = claim_json.borrow_mut().signature.primary_claim;
+        Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
 
-        Prover::_init_primary_claim(primary_claim, &primary_claim_init_data.v_prime)?;
         if let Some(ref non_revocation_claim) = claim_json.borrow().signature.non_revocation_claim {
             Prover::_init_non_revocation_claim(non_revocation_claim,
                                                &revocation_claim_init_data.
@@ -137,7 +136,9 @@ impl Prover {
         Ok(())
     }
 
-    pub fn _init_primary_claim(primary_claim: &mut  PrimaryClaim, v_prime: &BigNumber) -> Result<(), CryptoError> {
+    pub fn _init_primary_claim(claim: &RefCell<ClaimJson>, v_prime: &BigNumber) -> Result<(), CryptoError> {
+        //TODO replace ClaimJson on PrimaryClaim
+        let ref mut primary_claim = claim.borrow_mut().signature.primary_claim;
         primary_claim.v_prime = v_prime.add(&primary_claim.v_prime)?;
         Ok(())
     }
@@ -346,9 +347,10 @@ impl Prover {
             }
 
             let primary_init_proof = Prover::_init_proof(&proof_claim.claim_definition.public_key,
+                                                         &proof_claim.schema,
                                                          &proof_claim.claim_json.signature.primary_claim,
                                                          &proof_claim.claim_json.claim,
-                                                         &proof_claim.unrevealed_attrs,
+                                                         &proof_claim.revealed_attrs,
                                                          &proof_claim.predicates,
                                                          &m1_tilde,
                                                          m2_tilde)?;
@@ -385,8 +387,7 @@ impl Prover {
                                                         &init_proof.primary_init_proof,
                                                         &c_h,
                                                         &proof_claim.claim_json.claim,
-                                                        &proof_claim.revealed_attrs,
-                                                        &proof_claim.unrevealed_attrs)?;
+                                                        &proof_claim.revealed_attrs)?;
 
             let proof = Proof {
                 primary_proof: primary_proof,
@@ -413,10 +414,10 @@ impl Prover {
         Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
     }
 
-    fn _init_proof(pk: &PublicKey, c1: &PrimaryClaim, attributes: &HashMap<String, Vec<String>>,
-                   unrevealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
+    fn _init_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, attributes: &HashMap<String, Vec<String>>,
+                   revealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
                    m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CryptoError> {
-        let eq_proof = Prover::_init_eq_proof(&pk, c1, unrevealed_attrs, m1_t, m2_t)?;
+        let eq_proof = Prover::_init_eq_proof(&pk, schema, c1, revealed_attrs, m1_t, m2_t)?;
         let mut ge_proofs: Vec<PrimaryPredicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
@@ -479,8 +480,9 @@ impl Prover {
         Ok(())
     }
 
-    fn _init_eq_proof(pk: &PublicKey, c1: &PrimaryClaim, unrevealed_attrs: &Vec<String>,
+    fn _init_eq_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, revealed_attrs: &Vec<String>,
                       m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CryptoError> {
+
         let mut ctx = BigNumber::new_context()?;
 
         let m2_tilde = m2_t.unwrap_or(BigNumber::rand(LARGE_MVECT)?);
@@ -489,12 +491,23 @@ impl Prover {
         let etilde = BigNumber::rand(LARGE_ETILDE)?;
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
+        let unrevealed_attrs: Vec<String> =
+            schema.attribute_names
+                .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
+                .map(|attr| attr.clone())
+                .collect::<Vec<String>>();
+
         let mtilde = get_mtilde(&unrevealed_attrs)?;
 
         let aprime = pk.s
             .mod_exp(&ra, &pk.n, Some(&mut ctx))?
             .mul(&c1.a, Some(&mut ctx))?
             .modulus(&pk.n, Some(&mut ctx))?;
+
+        let tmp =  pk.s
+            .mod_exp(&ra, &pk.n, Some(&mut ctx))?;
+        let res = c1.a.mul(&tmp, Some(&mut ctx))?.modulus(&pk.n, Some(&mut ctx))?;
+
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
@@ -595,9 +608,17 @@ impl Prover {
     }
 
     fn _finalize_eq_proof(ms: &BigNumber, init_proof: &PrimaryEqualInitProof, c_h: &BigNumber,
-                          encoded_attributes: &HashMap<String, Vec<String>>, unrevealed_attrs: &Vec<String>, revealed_attrs: &Vec<String>)
+                          encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
                           -> Result<PrimaryEqualProof, CryptoError> {
         let mut ctx = BigNumber::new_context()?;
+
+        let keys_hash_set: HashSet<String> = HashSet::from_iter(encoded_attributes.keys().cloned());
+        let unrevealed_attrs: Vec<String> =
+            keys_hash_set
+                .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
+                .map(|attr| attr.clone())
+                .collect::<Vec<String>>();
+
 
         let e = c_h
             .mul(&init_proof.eprime, Some(&mut ctx))?
@@ -712,9 +733,9 @@ impl Prover {
     }
 
     fn _finalize_proof(ms: &BigNumber, init_proof: &PrimaryInitProof, c_h: &BigNumber,
-                       encoded_attributes: &HashMap<String, Vec<String>>, unrevealed_attrs: &Vec<String>, revealed_attrs: &Vec<String>)
+                       encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
                        -> Result<PrimaryProof, CryptoError> {
-        let eq_proof = Prover::_finalize_eq_proof(ms, &init_proof.eq_proof, c_h, encoded_attributes, unrevealed_attrs, revealed_attrs)?;
+        let eq_proof = Prover::_finalize_eq_proof(ms, &init_proof.eq_proof, c_h, encoded_attributes, revealed_attrs)?;
         let mut ge_proofs: Vec<PrimaryPredicateGEProof> = Vec::new();
 
         for init_ge_proof in init_proof.ge_proofs.iter() {
@@ -833,18 +854,18 @@ mod tests {
 
     #[test]
     fn init_primary_claim_works() {
-        let mut primary_claim = mocks::get_gvt_primary_claim();
+        let claim_json = RefCell::new(mocks::get_gvt_claims_json());
         let v_prime = BigNumber::from_dec("21337277489659209697972694275961549241988800625063594810959897509238282352238626810206496164796042921922944861660722790127270481494898810301213699637204250648485409496039792926329367175253071514098050800946366413356551955763141949136004248502185266508852158851178744042138131595587172830689293368213380666221485155781604582222397593802865783047420570234359112294991344669207835283314629238445531337778860979843672592610159700225195191155581629856994556889434019851156913688584355226534153997989337803825600096764199505457938355614863559831818213663754528231270325956208966779676675180767488950507044412716354924086945804065215387295334083509").unwrap();
 
-        let old_value = primary_claim.v_prime.clone().unwrap();
+        let old_value = claim_json.borrow().signature.primary_claim.v_prime.clone().unwrap();
 
-        let res = Prover::_init_primary_claim(&mut primary_claim, &v_prime);
+        let res = Prover::_init_primary_claim(&claim_json, &v_prime);
         assert!(res.is_ok());
 
-        assert_ne!(old_value, primary_claim.v_prime);
+        assert_ne!(old_value, claim_json.borrow().signature.primary_claim.v_prime);
 
         let new_v = BigNumber::from_dec("6477858587997811893327035319417510316563341854132851390093281262022504586945336581881563055213337677056181844572991952555932751996898440671581814053127951224635658321050035511444973918938951286397608407154945420576869136257515796028414378962335588462012678546940230947218473631620847322671867296043124087586400291121388864996880108619720604815227218240238018894734106036749434566128263766145147938204864471079326020636108875736950439614174893113941785014290729562585035442317715573694490415783867707489645644928275501455034338736759260129329435713263029873859553709178436828106858314991461880152652981178848566237411834715936997680351679484278048175488999620056712097674305032686536393318931401622256070852825807510445941751166073917118721482407482663237596774153152864341413225983416965337899803365905987145336353882936").unwrap();
-        assert_eq!(new_v, primary_claim.v_prime);
+        assert_eq!(new_v, claim_json.borrow().signature.primary_claim.v_prime);
     }
 
     #[test]
@@ -893,13 +914,13 @@ mod tests {
     fn init_proof_works() {
         let pk = issuer::mocks::get_pk();
         let claim = mocks::get_gvt_primary_claim();
-        let unrevealed_attrs = mocks::get_unrevealed_attrs();
+        let revealed_attrs = mocks::get_revealed_attrs();
         let m1_t = BigNumber::from_dec("21544287380986891419162473617242441136231665555467324140952028776483657408525689082249184862870856267009773225408151321864247533184196094757877079561221602250888815228824796823045594410522810417051146366939126434027952941761214129885206419097498982142646746254256892181011609282364766769899756219988071473111").unwrap();
         let m2_t = BigNumber::from_dec("20019436401620609773538287054563349105448394091395718060076065683409192012223520437097245209626164187921545268202389347437258706857508181049451308664304690853807529189730523256422813648391821847776735976798445049082387614903898637627680273723153113532585372668244465374990535833762731556501213399533698173874").unwrap();
         let predicates = vec![mocks::get_gvt_predicate()];
         let encoded_attributes = issuer::mocks::get_gvt_attributes();
-
-        let res = Prover::_init_proof(&pk, &claim, &encoded_attributes, &unrevealed_attrs, &predicates, &m1_t, Some(m2_t));
+        let schema = issuer::mocks::get_gvt_schema();
+        let res = Prover::_init_proof(&pk, &schema, &claim, &encoded_attributes, &revealed_attrs, &predicates, &m1_t, Some(m2_t));
 
         assert!(res.is_ok());
     }
@@ -913,7 +934,7 @@ mod tests {
         let revealed_attributes = mocks::get_revealed_attrs();
         let unrevealed_attributes = mocks::get_unrevealed_attrs();
 
-        let res = Prover::_finalize_proof(&ms, &proof, &c_h, &encoded_attributes, &unrevealed_attributes, &revealed_attributes);
+        let res = Prover::_finalize_proof(&ms, &proof, &c_h, &encoded_attributes, &revealed_attributes);
 
         assert!(res.is_ok());
     }
@@ -922,11 +943,12 @@ mod tests {
     fn init_eq_proof_works() {
         let pk = issuer::mocks::get_pk();
         let claim = mocks::get_gvt_primary_claim();
-        let unrevealed_attrs = mocks::get_unrevealed_attrs();
+        let revealed_attrs = mocks::get_revealed_attrs();
         let m1_tilde = BigNumber::from_dec("101699538176051593371744225919046760532786718077106502466570844730111441686747507159918166345843978280307167319698104055171476367527139548387778863611093261001762539719090094485796865232109859717006503205961984033284239500178635203251080574429593379622288524622977721677439771060806446693275003002447037756467").unwrap();
         let m2_tilde = BigNumber::from_dec("31230114293795576487127595372834830220228562310818079039836555160797619323909214967951444512173906589379330228717887451770324874651295781099491258571562527679146158488391908045190667642630077485518774594787164364584431134524117765512651773418307564918922308711232172267389727003411383955005915276810988726136").unwrap();
+        let schema = issuer::mocks::get_gvt_schema();
 
-        let res = Prover::_init_eq_proof(&pk, &claim, &unrevealed_attrs, &m1_tilde, Some(m2_tilde));
+        let res = Prover::_init_eq_proof(&pk, &schema, &claim, &revealed_attrs, &m1_tilde, Some(m2_tilde));
         assert!(res.is_ok());
 
         let eq_proof = res.unwrap();
@@ -945,7 +967,7 @@ mod tests {
         let revealed_attrs = mocks::get_revealed_attrs();
         let attrs = issuer::mocks::get_gvt_attributes();
 
-        let res = Prover::_finalize_eq_proof(&ms, &init_proof, &c_h, &attrs, &unrevealed_attrs, &revealed_attrs);
+        let res = Prover::_finalize_eq_proof(&ms, &init_proof, &c_h, &attrs, &revealed_attrs);
 
         assert!(res.is_ok());
         let proof = res.unwrap();
@@ -1488,17 +1510,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, 1, Some(1), 1)
+        ClaimInfo::new("1".to_string(), attrs, 1, None, 1)
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, 2, Some(1), 2)
+        ClaimInfo::new("2".to_string(), attrs, 2, None, 2)
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, 2, Some(2), 1)
+        ClaimInfo::new("3".to_string(), attrs, 2, None, 1)
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1569,7 +1591,7 @@ pub mod mocks {
         ClaimJson {
             claim: issuer::mocks::get_gvt_attributes(),
             claim_def_seq_no: 1,
-            revoc_reg_seq_no: Some(1),
+            revoc_reg_seq_no: None,
             schema_seq_no: 1,
             signature: mocks::get_gvt_claims_object()
         }
@@ -1579,7 +1601,7 @@ pub mod mocks {
         ClaimJson {
             claim: issuer::mocks::get_xyz_attributes(),
             claim_def_seq_no: 2,
-            revoc_reg_seq_no: Some(1),
+            revoc_reg_seq_no: None,
             schema_seq_no: 2,
             signature: mocks::get_xyz_claims_object()
         }
