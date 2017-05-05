@@ -1,5 +1,5 @@
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::constants::{
+use services::anoncreds::constants::{
     ITERATION,
     LARGE_MASTER_SECRET,
     LARGE_VPRIME,
@@ -12,7 +12,7 @@ use services::crypto::anoncreds::constants::{
     LARGE_M2_TILDE,
     LARGE_ALPHATILDE
 };
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AggregatedProof,
@@ -47,7 +47,7 @@ use services::crypto::anoncreds::types::{
     ClaimJson,
     ProofJson
 };
-use services::crypto::anoncreds::helpers::{
+use services::anoncreds::helpers::{
     AppendByteArray,
     get_mtilde,
     four_squares,
@@ -56,13 +56,13 @@ use services::crypto::anoncreds::helpers::{
     group_element_to_bignum,
     bignum_to_group_element
 };
-use services::crypto::anoncreds::verifier::Verifier;
-use services::crypto::anoncreds::issuer::Issuer;
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use services::anoncreds::verifier::Verifier;
+use services::anoncreds::issuer::Issuer;
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
-use services::crypto::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
+use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
 use std::iter::FromIterator;
 
 pub struct Prover {}
@@ -118,6 +118,7 @@ impl Prover {
                          revocation_claim_init_data: Option<RevocationClaimInitData>,
                          pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
                          -> Result<(), CryptoError> {
+
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
 
         if let Some(ref non_revocation_claim) = claim_json.borrow().signature.non_revocation_claim {
@@ -387,6 +388,7 @@ impl Prover {
                                                         &c_h,
                                                         &proof_claim.claim_json.claim,
                                                         &proof_claim.revealed_attrs)?;
+
             let proof = Proof {
                 primary_proof: primary_proof,
                 non_revoc_proof: non_revoc_proof
@@ -416,7 +418,6 @@ impl Prover {
                    revealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
                    m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CryptoError> {
         let eq_proof = Prover::_init_eq_proof(&pk, schema, c1, revealed_attrs, m1_t, m2_t)?;
-
         let mut ge_proofs: Vec<PrimaryPredicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
@@ -503,11 +504,10 @@ impl Prover {
             .mul(&c1.a, Some(&mut ctx))?
             .modulus(&pk.n, Some(&mut ctx))?;
 
-
         let tmp =  pk.s
             .mod_exp(&ra, &pk.n, Some(&mut ctx))?;
-
         let res = c1.a.mul(&tmp, Some(&mut ctx))?.modulus(&pk.n, Some(&mut ctx))?;
+
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
@@ -613,12 +613,12 @@ impl Prover {
         let mut ctx = BigNumber::new_context()?;
 
         let keys_hash_set: HashSet<String> = HashSet::from_iter(encoded_attributes.keys().cloned());
-
         let unrevealed_attrs: Vec<String> =
             keys_hash_set
                 .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();
+
 
         let e = c_h
             .mul(&init_proof.eprime, Some(&mut ctx))?
@@ -835,8 +835,8 @@ impl Prover {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::verifier;
-    use services::crypto::anoncreds::issuer;
+    use services::anoncreds::verifier;
+    use services::anoncreds::issuer;
 
     #[test]
     fn gen_primary_claim_init_data_works() {
@@ -855,7 +855,6 @@ mod tests {
     #[test]
     fn init_primary_claim_works() {
         let claim_json = RefCell::new(mocks::get_gvt_claims_json());
-
         let v_prime = BigNumber::from_dec("21337277489659209697972694275961549241988800625063594810959897509238282352238626810206496164796042921922944861660722790127270481494898810301213699637204250648485409496039792926329367175253071514098050800946366413356551955763141949136004248502185266508852158851178744042138131595587172830689293368213380666221485155781604582222397593802865783047420570234359112294991344669207835283314629238445531337778860979843672592610159700225195191155581629856994556889434019851156913688584355226534153997989337803825600096764199505457938355614863559831818213663754528231270325956208966779676675180767488950507044412716354924086945804065215387295334083509").unwrap();
 
         let old_value = claim_json.borrow().signature.primary_claim.v_prime.clone().unwrap();
@@ -921,7 +920,6 @@ mod tests {
         let predicates = vec![mocks::get_gvt_predicate()];
         let encoded_attributes = issuer::mocks::get_gvt_attributes();
         let schema = issuer::mocks::get_gvt_schema();
-
         let res = Prover::_init_proof(&pk, &schema, &claim, &encoded_attributes, &revealed_attrs, &predicates, &m1_t, Some(m2_t));
 
         assert!(res.is_ok());
@@ -1301,9 +1299,9 @@ mod find_claims_tests {
 
 pub mod mocks {
     use super::*;
-    use services::crypto::anoncreds::issuer;
-    use services::crypto::anoncreds::verifier;
-    use services::crypto::anoncreds::types::Witness;
+    use services::anoncreds::issuer;
+    use services::anoncreds::verifier;
+    use services::anoncreds::types::Witness;
     use std::iter::FromIterator;
 
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {

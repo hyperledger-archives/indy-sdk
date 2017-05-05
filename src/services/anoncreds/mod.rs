@@ -5,19 +5,19 @@ pub mod prover;
 pub mod types;
 pub mod verifier;
 
-use services::crypto::anoncreds::issuer::Issuer;
-use services::crypto::anoncreds::prover::Prover;
-use services::crypto::anoncreds::verifier::Verifier;
+use services::anoncreds::issuer::Issuer;
+use services::anoncreds::prover::Prover;
+use services::anoncreds::verifier::Verifier;
 
-pub struct Anoncreds {
+pub struct AnoncredsService {
     pub issuer: Issuer,
     pub prover: Prover,
     pub verifier: Verifier
 }
 
-impl Anoncreds {
-    pub fn new() -> Anoncreds {
-        Anoncreds {
+impl AnoncredsService {
+    pub fn new() -> AnoncredsService {
+        AnoncredsService {
             issuer: Issuer::new(),
             prover: Prover::new(),
             verifier: Verifier::new()

@@ -3,9 +3,9 @@ extern crate milagro_crypto;
 extern crate openssl;
 
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::constants::LARGE_MVECT;
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::GroupOrderElement;
+use services::anoncreds::constants::LARGE_MVECT;
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::HashMap;

@@ -1,7 +1,7 @@
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
+use services::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use utils::json::{JsonEncodable, JsonDecodable};
