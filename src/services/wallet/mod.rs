@@ -169,6 +169,8 @@ impl WalletService {
             }
         };
 
+        // FIXME: Check for already opened walled!!!
+
         let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
         let wallet = wallet_type.open(name,
                                       config.as_ref().map(String::as_str),
@@ -235,7 +237,7 @@ mod tests {
     use errors::wallet::WalletError;
     use utils::test::TestUtils;
 
-    use std::time::{Duration};
+    use std::time::Duration;
     use std::thread;
 
     #[test]

@@ -7,6 +7,7 @@ extern crate sovrin;
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
 #[path = "utils/mod.rs"]
 mod utils;
 
