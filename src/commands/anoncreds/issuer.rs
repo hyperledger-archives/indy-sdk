@@ -133,7 +133,7 @@ impl IssuerCommandExecutor {
                                              wallet_handle: i32,
                                              claim_def_seq_no: i32,
                                              max_claim_num: i32) -> Result<(String, String), AnoncredsError> {
-        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_def_seq_no))?;
+        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &claim_def_seq_no))?;
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
 
@@ -172,8 +172,10 @@ impl IssuerCommandExecutor {
                                user_revoc_index: Option<i32>) -> Result<(String, String), AnoncredsError> {
         let claim_req_json: ClaimRequestJson = ClaimRequestJson::from_json(claim_req_json)?;
 
-        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_req_json.claim_def_seq_no))?;
+        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &claim_req_json.claim_def_seq_no))?;
+
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+
         let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_uuid))?;
 
         let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
@@ -196,8 +198,8 @@ impl IssuerCommandExecutor {
         let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
 
         let claims = self.crypto_service.anoncreds.issuer.create_claim(
-            claim_def.clone()?,
-            claim_def_private,
+            &claim_def,
+            &claim_def_private,
             &revocation_registry,
             &revocation_registry_private,
             &claim_req_json.claim_request,
@@ -211,7 +213,9 @@ impl IssuerCommandExecutor {
         }
 
         let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no);
+
         let claim_json = ClaimJson::to_json(&claim_json)?;
+
 
         Ok((revocation_registry_json, claim_json))
     }

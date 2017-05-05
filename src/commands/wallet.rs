@@ -22,7 +22,7 @@ pub enum WalletCommand {
            Box<Fn(Result<(), WalletError>) + Send>),
     SetSeqNoForValue(i32, // wallet handle
                      String, // wallet key
-                     String, // sequence number
+                     i32, // sequence number
                      Box<Fn(Result<(), WalletError>) + Send>)
 }
 
@@ -59,7 +59,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::SetSeqNoForValue(handle, key, seq_no, cb) => {
                 info!(target: "wallet_command_executor", "SetSeqNoForValue command received");
-                self.set_seq_no_for_value(handle, &key, &seq_no, cb);
+                self.set_seq_no_for_value(handle, &key, seq_no, cb);
             }
         };
     }
@@ -98,7 +98,7 @@ impl WalletCommandExecutor {
     fn set_seq_no_for_value(&self,
                             handle: i32,
                             key: &str,
-                            seq_no: &str,
+                            seq_no: i32,
                             cb: Box<Fn(Result<(), WalletError>) + Send>) {
         cb(self.wallet_service.set(handle, &format!("seq_no::{}", seq_no), key));
     }
