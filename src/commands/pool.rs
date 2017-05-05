@@ -57,9 +57,18 @@ impl PoolCommandExecutor {
             }
             PoolCommand::OpenAck(handle, result) => {
                 info!("OpenAck handle {:?}, result {:?}", handle, result);
-                self.open_callbacks.borrow_mut().remove(&handle)
-                    .expect("Expect callback to process ack command")
-                    (result);
+                match self.open_callbacks.try_borrow_mut() {
+                    Ok(mut cbs) => {
+                        match cbs.remove(&handle) {
+                            Some(cb) => cb(result),
+                            None => {
+                                error!("Can't process PoolCommand::OpenAck for handle {} with result {:?} - appropriate callback not found!",
+                                handle, result);
+                            }
+                        }
+                    }
+                    Err(err) => { error!("{:?}", err); }
+                }
             }
             PoolCommand::Close(handle, cb) => {
                 info!(target: "pool_command_executor", "Close command received");
@@ -88,9 +97,16 @@ impl PoolCommandExecutor {
     }
 
     fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, PoolError>) + Send>) {
-        match self.pool_service.open(name, config) {
+        let result = self.pool_service.open(name, config)
+            .and_then(|handle| {
+                match self.open_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, handle)),
+                    Err(err) => Err(PoolError::from(err)),
+                }
+            });
+        match result {
             Err(err) => { cb(Err(err)); }
-            Ok(id) => { self.open_callbacks.borrow_mut().insert(id, cb); }
+            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
     }
 

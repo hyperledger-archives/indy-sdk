@@ -6,18 +6,32 @@ platform :ios, '10.2'
 def appPods
     pod 'libsodium',"~> 1.0.12"
     pod 'libzmq',"~> 4.2.3"
+    pod 'OpenSSL'
+    pod 'milagro'
+    pod 'libsovrin-core'
 end
 
-target 'ZeroMQ_Test' do
-    project 'ZeroMQ_Test'
+target 'libsovrin-test' do
+    project 'libsovrin-test'
+end
+
+target 'libsovrin' do
+    project 'libsovrin'
     appPods
 end
+
+workspace './libsovrin.xcworkspace'
 
 # ignore all warnings from all pods
 #inhibit_all_warnings!
 
 post_install do |installer|
     installer.pods_project.targets.each do |target|
+      if target.name == 'milagro'
+        target.build_configurations.each do |config|
+            config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'AMCL_VERSION_MAJOR=3 AMCL_VERSION_PATCH=0 AMCL_VERSION_MINOR=0 OS=\"IOS\"']
+        end
+      end
       if target.name == 'libzmq'
         target.build_configurations.each do |config|
             config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'ZMQ_BUILD_DRAFT_API=1']
