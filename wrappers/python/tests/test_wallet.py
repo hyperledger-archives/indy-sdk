@@ -1,7 +1,6 @@
 import asyncio
 
-from sovrin import SovrinError
-from sovrin import Wallet
+from sovrin import *
 
 async def main():
     await Wallet.create_wallet(None, "wallet", "wallet-type", "config", "creds")
