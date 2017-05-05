@@ -24,7 +24,7 @@ mod environment;
 
 use std::ptr::null;
 
-use utils::callbacks::CallbacksHelpers;
+use utils::callback::CallbackUtils;
 
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
@@ -78,17 +78,17 @@ fn sovrin_anoncreds_demo() {
         verifier_verify_proof_sender.send((err, valid)).unwrap();
     });
 
-    let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbacksHelpers::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
-    let (create_wallet_command_handle, create_wallet_callback) = CallbacksHelpers::closure_to_create_wallet_cb(create_wallet_cb);
-    let (open_wallet_command_handle, open_wallet_callback) = CallbacksHelpers::closure_to_open_wallet_cb(open_wallet_cb);
-    let (wallet_set_seq_no_for_value_command_handle, wallet_set_seq_no_for_value_callback) = CallbacksHelpers::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb);
-    let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbacksHelpers::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
-    let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbacksHelpers::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
-    let (issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbacksHelpers::closure_to_issuer_create_claim_cb(issuer_create_claim_cb);
-    let (prover_store_claim_command_handle, prover_store_claim_callback) = CallbacksHelpers::closure_to_prover_store_claim_cb(prover_store_claim_cb);
-    let (prover_get_claims_for_proof_req_handle, prover_get_claims_for_proof_req_callback) = CallbacksHelpers::closure_to_prover_get_claims_for_proof_req_cb(prover_get_claims_for_proof_req_cb);
-    let (prover_create_proof_handle, prover_create_proof_callback) = CallbacksHelpers::closure_to_prover_create_proof_cb(prover_create_proof_cb);
-    let (verifier_verify_proof_handle, verifier_verify_proof_callback) = CallbacksHelpers::closure_to_verifier_verify_proof_cb(verifier_verify_proof_cb);
+    let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
+    let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
+    let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
+    let (wallet_set_seq_no_for_value_command_handle, wallet_set_seq_no_for_value_callback) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb);
+    let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
+    let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
+    let (issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::closure_to_issuer_create_claim_cb(issuer_create_claim_cb);
+    let (prover_store_claim_command_handle, prover_store_claim_callback) = CallbackUtils::closure_to_prover_store_claim_cb(prover_store_claim_cb);
+    let (prover_get_claims_for_proof_req_handle, prover_get_claims_for_proof_req_callback) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(prover_get_claims_for_proof_req_cb);
+    let (prover_create_proof_handle, prover_create_proof_callback) = CallbackUtils::closure_to_prover_create_proof_cb(prover_create_proof_cb);
+    let (verifier_verify_proof_handle, verifier_verify_proof_callback) = CallbackUtils::closure_to_verifier_verify_proof_cb(verifier_verify_proof_cb);
 
     let pool_name = "pool1";
     let name = "wallet79";
