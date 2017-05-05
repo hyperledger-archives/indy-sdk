@@ -166,13 +166,13 @@ pub struct ClaimInfo {
     pub claim_uuid: String,
     pub attrs: HashMap<String, String>,
     pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32,
+    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32
 }
 
 impl ClaimInfo {
     pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
-               revoc_reg_seq_no: i32, schema_seq_no: i32) -> ClaimInfo {
+               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
@@ -218,11 +218,11 @@ impl<'a> JsonDecodable<'a> for ClaimRequest {}
 pub struct ClaimProof {
     pub proof: Proof,
     pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32
+    pub revoc_reg_seq_no: Option<i32>
 }
 
 impl ClaimProof {
-    pub fn new(proof: Proof, claim_def_seq_no: i32, revoc_reg_seq_no: i32) -> ClaimProof {
+    pub fn new(proof: Proof, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>) -> ClaimProof {
         ClaimProof {
             proof: proof,
             claim_def_seq_no: claim_def_seq_no,
@@ -231,7 +231,7 @@ impl ClaimProof {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinition {
     pub public_key: PublicKey,
     pub public_key_revocation: Option<RevocationPublicKey>,
@@ -264,7 +264,7 @@ impl JsonEncodable for ClaimDefinition {}
 
 impl<'a> JsonDecodable<'a> for ClaimDefinition {}
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinitionPrivate {
     pub secret_key: SecretKey,
     pub secret_key_revocation: Option<RevocationSecretKey>
@@ -326,13 +326,13 @@ impl<'a> JsonDecodable<'a> for ClaimInitData {}
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
     pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: i32,
+    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub signature: Claims
 }
 
 impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
+    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
                signature: Claims, schema_seq_no: i32) -> ClaimJson {
         ClaimJson {
             claim: claim,
@@ -388,7 +388,7 @@ impl NonRevocationClaim {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NonRevocProofXList {
     pub rho: GroupOrderElement,
     pub r: GroupOrderElement,
@@ -541,7 +541,7 @@ impl NonRevocInitProof {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NonRevocProof {
     pub x_list: NonRevocProofXList,
     pub c_list: NonRevocProofCList
@@ -556,7 +556,7 @@ impl NonRevocProof {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct PublicKey {
     pub n: BigNumber,
     pub s: BigNumber,
@@ -581,7 +581,7 @@ impl PublicKey {
 
     pub fn clone(&self) -> Result<PublicKey, CryptoError> {
         Ok(PublicKey {
-            s: self.n.clone()?,
+            s: self.s.clone()?,
             n: self.n.clone()?,
             rms: self.rms.clone()?,
             r: clone_bignum_map(&self.r)?,
@@ -953,7 +953,7 @@ impl JsonEncodable for RevocationRegistryPrivate {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
     pub h: PointG1,
@@ -989,7 +989,7 @@ impl JsonEncodable for RevocationPublicKey {}
 
 impl<'a> JsonDecodable<'a> for RevocationPublicKey {}
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct RevocationSecretKey {
     pub x: GroupOrderElement,
     pub sk: GroupOrderElement
@@ -1094,7 +1094,7 @@ impl JsonEncodable for Schema {}
 
 impl<'a> JsonDecodable<'a> for Schema {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct SecretKey {
     pub p: BigNumber,
     pub q: BigNumber

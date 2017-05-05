@@ -133,7 +133,7 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///      "attr1" : ["value1", "value1_as_int"],
 ///      "attr2" : ["value2", "value2_as_int"]
 ///     }
-/// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
+/// revoc_reg_seq_no: (Optional) seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of a new user in the revocation registry (optional; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
 ///
@@ -157,10 +157,10 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
-                                         revoc_reg_seq_no: i32,
+                                         revoc_reg_seq_no: Option<i32>,
                                          user_revoc_index: Option<i32>,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              revoc_reg_update_json: *const c_char,
+                                                              revoc_reg_update_json: *const c_char,  //TODO must be OPTIONAL
                                                               xclaim_json: *const c_char
                                          )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
@@ -674,6 +674,7 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
                                          proof_req_json: *const c_char,
                                          requested_claims_json: *const c_char,
                                          schemas_json: *const c_char,
+                                         master_secret_name: *const c_char,
                                          claim_defs_json: *const c_char,
                                          revoc_regs_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -681,9 +682,10 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
     check_useful_c_str!(proof_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(requested_claims_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam7);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam8);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateProof(
@@ -691,6 +693,7 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
             proof_req_json,
             requested_claims_json,
             schemas_json,
+            master_secret_name,
             claim_defs_json,
             revoc_regs_json,
             Box::new(move |result| {
