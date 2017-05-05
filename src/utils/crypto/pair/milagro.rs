@@ -6,7 +6,7 @@ use self::milagro_crypto::ecp::wrappers::ECP;
 use self::milagro_crypto::fp12::wrappers::FP12;
 
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::helpers::BytesView;
+use services::anoncreds::helpers::BytesView;
 
 use self::milagro_crypto::randapi::Random;
 

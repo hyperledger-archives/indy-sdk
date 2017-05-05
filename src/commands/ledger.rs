@@ -1,6 +1,6 @@
 use errors::ledger::LedgerError;
 
-use services::crypto::CryptoService;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
@@ -69,18 +69,18 @@ pub enum LedgerCommand {
 }
 
 pub struct LedgerCommandExecutor {
-    crypto_service: Rc<CryptoService>,
+    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
 }
 
 impl LedgerCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
-            crypto_service: crypto_service,
+            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
         }

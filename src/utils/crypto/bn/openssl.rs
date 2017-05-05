@@ -16,10 +16,10 @@ use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::num::ParseIntError;
 use std::error::Error;
-use services::crypto::anoncreds::helpers::BytesView;
+use services::anoncreds::helpers::BytesView;
 
 #[cfg(test)]
-use services::crypto::anoncreds::constants::{
+use services::anoncreds::constants::{
     LARGE_ALPHATILDE,
     LARGE_NONCE,
     LARGE_ETILDE,
@@ -425,7 +425,7 @@ impl From<ParseIntError> for CryptoError {
 mod tests {
     use super::*;
     use utils::logger::LoggerUtils;
-    use services::crypto::anoncreds::constants::{
+    use services::anoncreds::constants::{
         LARGE_UTILDE,
         LARGE_RTILDE,
     };

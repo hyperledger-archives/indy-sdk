@@ -2,9 +2,10 @@ pub mod types;
 use utils::json::{JsonEncodable, JsonDecodable};
 use errors::signus::SignusError;
 use commands::signus::types::{DIDInfo};
-use services::crypto::wrappers::ed25519::ED25519;
+use utils::crypto::ed25519::ED25519;
 
-use services::crypto::CryptoService;
+use utils::crypto;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
@@ -48,18 +49,18 @@ pub enum SignusCommand {
 }
 
 pub struct SignusCommandExecutor {
-    crypto_service: Rc<CryptoService>,
+    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
 }
 
 impl SignusCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> SignusCommandExecutor {
         SignusCommandExecutor {
-            crypto_service: crypto_service,
+            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
         }

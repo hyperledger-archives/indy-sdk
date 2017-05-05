@@ -1,4 +1,4 @@
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     NonRevocProof,
@@ -13,13 +13,13 @@ use services::crypto::anoncreds::types::{
     RevocationRegistry,
     Schema
 };
-use services::crypto::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
-use services::crypto::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
-use services::crypto::wrappers::bn::BigNumber;
+use services::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
+use services::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
+use utils::crypto::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::crypto::CryptoError;
-use services::crypto::wrappers::pair::{Pair, PointG1};
-use services::crypto::anoncreds::issuer::Issuer;
+use utils::crypto::pair::{Pair, PointG1};
+use services::anoncreds::issuer::Issuer;
 
 pub struct Verifier {}
 
@@ -298,8 +298,8 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::prover;
-    use services::crypto::anoncreds::issuer;
+    use services::anoncreds::prover;
+    use services::anoncreds::issuer;
 
     #[test]
     fn verify_equlity_test() {
@@ -399,8 +399,8 @@ mod tests {
 
 pub mod mocks {
     use super::*;
-    use ::services::crypto::anoncreds::prover;
-    use ::services::crypto::anoncreds::issuer;
+    use ::services::anoncreds::prover;
+    use ::services::anoncreds::issuer;
 
     pub fn get_ge_proof() -> PrimaryPredicateGEProof {
         let mut u = HashMap::new();

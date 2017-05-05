@@ -1,5 +1,5 @@
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::constants::{
+use services::anoncreds::constants::{
     ITERATION,
     LARGE_MASTER_SECRET,
     LARGE_VPRIME,
@@ -12,7 +12,7 @@ use services::crypto::anoncreds::constants::{
     LARGE_M2_TILDE,
     LARGE_ALPHATILDE
 };
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AggregatedProof,
@@ -47,7 +47,7 @@ use services::crypto::anoncreds::types::{
     ClaimJson,
     ProofJson
 };
-use services::crypto::anoncreds::helpers::{
+use services::anoncreds::helpers::{
     AppendByteArray,
     get_mtilde,
     four_squares,
@@ -56,13 +56,13 @@ use services::crypto::anoncreds::helpers::{
     group_element_to_bignum,
     bignum_to_group_element
 };
-use services::crypto::anoncreds::verifier::Verifier;
-use services::crypto::anoncreds::issuer::Issuer;
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use services::anoncreds::verifier::Verifier;
+use services::anoncreds::issuer::Issuer;
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
-use services::crypto::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
+use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
 
 
 pub struct Prover {}
@@ -814,8 +814,8 @@ impl Prover {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::anoncreds::verifier;
-    use services::crypto::anoncreds::issuer;
+    use services::anoncreds::verifier;
+    use services::anoncreds::issuer;
 
     #[test]
     fn gen_primary_claim_init_data_works() {
@@ -1277,9 +1277,9 @@ mod find_claims_tests {
 
 pub mod mocks {
     use super::*;
-    use services::crypto::anoncreds::issuer;
-    use services::crypto::anoncreds::verifier;
-    use services::crypto::anoncreds::types::Witness;
+    use services::anoncreds::issuer;
+    use services::anoncreds::verifier;
+    use services::anoncreds::types::Witness;
     use std::iter::FromIterator;
 
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {

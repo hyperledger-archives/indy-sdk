@@ -1,5 +1,5 @@
 use errors::crypto::CryptoError;
-use services::crypto::anoncreds::constants::{
+use services::anoncreds::constants::{
     LARGE_E_START,
     LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
@@ -7,7 +7,7 @@ use services::crypto::anoncreds::constants::{
     LARGE_VPRIME_PRIME,
     SIGNATURE_TYPE
 };
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     Accumulator,
     AccumulatorPublicKey,
     AccumulatorSecretKey,
@@ -30,14 +30,14 @@ use services::crypto::anoncreds::types::{
     SecretKey,
     Witness
 };
-use services::crypto::anoncreds::helpers::{
+use services::anoncreds::helpers::{
     random_qr,
     bitwise_or_big_int,
     get_hash_as_int,
     transform_u32_to_array_of_u8
 };
-use services::crypto::wrappers::bn::BigNumber;
-use services::crypto::wrappers::pair::{GroupOrderElement, PointG1, Pair};
+use utils::crypto::bn::BigNumber;
+use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 

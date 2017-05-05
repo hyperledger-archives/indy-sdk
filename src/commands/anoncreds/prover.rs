@@ -3,13 +3,13 @@ extern crate uuid;
 
 use self::uuid::Uuid;
 use errors::anoncreds::AnoncredsError;
-use services::crypto::CryptoService;
-use services::crypto::wrappers::bn::BigNumber;
+use services::anoncreds::AnoncredsService;
+use utils::crypto::bn::BigNumber;
 use services::pool::PoolService;
 use utils::json::{JsonDecodable, JsonEncodable};
 use services::wallet::WalletService;
 use std::rc::Rc;
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     ClaimDefinition,
     Schema,
     RevocationRegistry,
@@ -27,7 +27,7 @@ use services::crypto::anoncreds::types::{
     ClaimRequestJson
 };
 use std::collections::HashMap;
-use services::crypto::wrappers::pair::PointG1;
+use utils::crypto::pair::PointG1;
 use std::cell::RefCell;
 
 pub enum ProverCommand {
@@ -73,17 +73,17 @@ pub enum ProverCommand {
 }
 
 pub struct ProverCommandExecutor {
-    crypto_service: Rc<CryptoService>,
+    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>
 }
 
 impl ProverCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> ProverCommandExecutor {
         ProverCommandExecutor {
-            crypto_service: crypto_service,
+            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
         }
@@ -188,7 +188,7 @@ impl ProverCommandExecutor {
     }
 
     fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), AnoncredsError> {
-        let master_secret = self.crypto_service.anoncreds.prover.generate_master_secret()?;
+        let master_secret = self.anoncreds_service.prover.generate_master_secret()?;
         self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret.to_dec()?)?;
         Ok(())
     }
@@ -216,7 +216,7 @@ impl ProverCommandExecutor {
 
         let (claim_request,
             primary_claim_init_data,
-            revocation_claim_init_data) = self.crypto_service.anoncreds.prover.
+            revocation_claim_init_data) = self.anoncreds_service.prover.
             create_claim_request(claim_def.public_key,
                                  claim_def.public_key_revocation,
                                  master_secret, prover_did)?;
@@ -283,7 +283,7 @@ impl ProverCommandExecutor {
 
         let claim_json = RefCell::new(claim_json);
 
-        self.crypto_service.anoncreds.prover.process_claim(
+        self.anoncreds_service.prover.process_claim(
             &claim_json, primary_claim_init_data, revocation_claim_init_data,
             claim_def.public_key_revocation, revocation_registry)?;
 
@@ -367,7 +367,7 @@ impl ProverCommandExecutor {
         let claims_info: Vec<ClaimInfo> = ProverCommandExecutor::get_all_claims(claims)?;
 
         let (attributes, predicates) =
-            self.crypto_service.anoncreds.prover.find_claims(
+            self.anoncreds_service.prover.find_claims(
                 proof_req.requested_attrs, proof_req.requested_predicates, claims_info)?;
 
         let proof_claims = ProofClaimsJson::new(attributes, predicates);
@@ -415,7 +415,7 @@ impl ProverCommandExecutor {
         let tails = self.wallet_service.get(wallet_handle, &format!("tails"))?;
         let tails: HashMap<i32, PointG1> = serde_json::from_str(&tails)?;
 
-        let proof_claims = self.crypto_service.anoncreds.prover.create_proof(claims,
+        let proof_claims = self.anoncreds_service.prover.create_proof(claims,
                                                                              &proof_req,
                                                                              &schemas,
                                                                              &claim_defs,
