@@ -6,7 +6,7 @@ pub struct EnvironmentUtils {}
 impl EnvironmentUtils {
     pub fn sovrin_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
-        let mut path = env::home_dir().unwrap_or(PathBuf::from("/sovrin"));
+        let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/sovrin"));
         path.push(".sovrin");
         path
     }
@@ -32,6 +32,18 @@ impl EnvironmentUtils {
     pub fn pool_path(pool_name: &str) -> PathBuf {
         let mut path = EnvironmentUtils::pool_home_path();
         path.push(pool_name);
+        path
+    }
+
+    pub fn tmp_path() -> PathBuf {
+        let mut path = env::temp_dir();
+        path.push("sovrin");
+        path
+    }
+
+    pub fn tmp_file_path(file_name: &str) -> PathBuf {
+        let mut path = EnvironmentUtils::tmp_path();
+        path.push(file_name);
         path
     }
 }
@@ -83,5 +95,24 @@ mod tests {
         assert!(path.is_absolute());
         assert!(path.has_root());
         assert!(path.to_string_lossy().contains(".sovrin/pool/pool1"));
+    }
+
+    #[test]
+    fn tmp_path_works() {
+        let path = EnvironmentUtils::tmp_path();
+
+        assert!(path.is_absolute());
+        assert!(path.has_root());
+        assert!(path.to_string_lossy().contains("sovrin"));
+    }
+
+    #[test]
+    fn tmp_file_path_works() {
+        let path = EnvironmentUtils::tmp_file_path("test.txt");
+
+        assert!(path.is_absolute());
+        assert!(path.has_root());
+        assert!(path.to_string_lossy().contains("sovrin"));
+        assert!(path.to_string_lossy().contains("test.txt"));
     }
 }

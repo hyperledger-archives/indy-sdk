@@ -8,9 +8,9 @@ lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 }
 
-pub struct CallbacksHelpers {}
+pub struct CallbackUtils {}
 
-impl CallbacksHelpers {
+impl CallbackUtils {
     pub fn closure_to_create_pool_ledger_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                        Option<extern fn(command_handle: i32,
                                                                                                         err: ErrorCode)>) {

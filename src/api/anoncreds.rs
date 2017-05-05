@@ -440,6 +440,7 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 ///     {
 ///         "claim": {attr1:[value, value_as_int]}
 ///         "signature": <signature>,
+///         "schema_seq_no": string,
 ///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no", string
 ///     }

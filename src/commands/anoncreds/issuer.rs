@@ -107,7 +107,7 @@ impl IssuerCommandExecutor {
         let schema = Schema::from_json(schema_json)?;
 
         let (claim_definition, claim_definition_private) =
-            self.crypto_service.anoncreds.issuer.generate_keys(schema, signature_type, create_non_revoc)?;
+            self.crypto_service.anoncreds.issuer.generate_claim_definition(schema, signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_json(&claim_definition)?;
         let claim_definition_private_json = ClaimDefinitionPrivate::to_json(&claim_definition_private)?;
@@ -170,7 +170,7 @@ impl IssuerCommandExecutor {
                                claim_json: &str,
                                revoc_reg_seq_no: Option<i32>,
                                user_revoc_index: Option<i32>) -> Result<(String, String), AnoncredsError> {
-        let claim_req_json: ClaimRequestJson = serde_json::from_str(claim_req_json)?;
+        let claim_req_json: ClaimRequestJson = ClaimRequestJson::from_json(claim_req_json)?;
 
         let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_req_json.claim_def_seq_no))?;
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
@@ -196,7 +196,7 @@ impl IssuerCommandExecutor {
         let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
 
         let claims = self.crypto_service.anoncreds.issuer.create_claim(
-            claim_def,
+            &claim_def,
             claim_def_private,
             &revocation_registry,
             &revocation_registry_private,
@@ -210,7 +210,7 @@ impl IssuerCommandExecutor {
             self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revocation_registry_json)?;
         }
 
-        let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims);
+        let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no);
         let claim_json = ClaimJson::to_json(&claim_json)?;
 
         Ok((revocation_registry_json, claim_json))
