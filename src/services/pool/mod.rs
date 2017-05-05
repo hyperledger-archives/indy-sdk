@@ -20,7 +20,7 @@ use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::crypto::Ed25519ToCurve25519;
+use utils::crypto::ed25519::Ed25519ToCurve25519;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 

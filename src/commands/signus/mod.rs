@@ -1,10 +1,9 @@
 pub mod types;
-use utils::json::{JsonEncodable, JsonDecodable};
+use utils::json::{JsonDecodable};
 use errors::signus::SignusError;
 use commands::signus::types::{DIDInfo};
 use utils::crypto::ed25519::ED25519;
 
-use utils::crypto;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
