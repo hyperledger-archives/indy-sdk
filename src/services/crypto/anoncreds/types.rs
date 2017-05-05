@@ -127,6 +127,15 @@ impl ClaimOffer {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimOfferFilter{
+    pub issuer_did: Option<String>,
+    pub claim_def_seq_no: Option<i32>
+
+}
+
+impl<'a> JsonDecodable<'a> for ClaimOfferFilter {}
+
 impl JsonEncodable for ClaimOffer {}
 
 impl<'a> JsonDecodable<'a> for ClaimOffer {}
@@ -173,6 +182,16 @@ impl ClaimInfo {
         }
     }
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimInfoFilter{
+    pub issuer_did: Option<String>,
+    pub claim_def_seq_no: Option<i32>,
+    pub schema_seq_no: Option<i32>
+
+}
+
+impl<'a> JsonDecodable<'a> for ClaimInfoFilter {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimRequest {
@@ -308,16 +327,18 @@ pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: i32,
+    pub schema_seq_no: i32,
     pub signature: Claims
 }
 
 impl ClaimJson {
     pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: i32,
-               signature: Claims) -> ClaimJson {
+               signature: Claims, schema_seq_no: i32) -> ClaimJson {
         ClaimJson {
             claim: claim,
             claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
+            schema_seq_no: schema_seq_no,
             signature: signature
         }
     }
@@ -614,7 +635,7 @@ pub struct ProofClaims {
     pub claim_json: ClaimJson,
     pub schema: Schema,
     pub claim_definition: ClaimDefinition,
-    pub revocation_registry: RevocationRegistry,
+    pub revocation_registry: Option<RevocationRegistry>,
     pub revealed_attrs: Vec<String>,
     pub unrevealed_attrs: Vec<String>,
     pub predicates: Vec<Predicate>
@@ -622,7 +643,7 @@ pub struct ProofClaims {
 
 impl ProofClaims {
     pub fn new(claim_json: ClaimJson, schema: Schema, claim_definition: ClaimDefinition,
-               revocation_registry: RevocationRegistry, predicates: Vec<Predicate>,
+               revocation_registry: Option<RevocationRegistry>, predicates: Vec<Predicate>,
                revealed_attrs: Vec<String>, unrevealed_attrs: Vec<String>) -> ProofClaims {
         ProofClaims {
             claim_json: claim_json,
@@ -789,7 +810,7 @@ pub struct PrimaryEqualProof {
 
 impl PrimaryEqualProof {
     pub fn new(revealed_attrs: HashMap<String, String>, a_prime: BigNumber, e: BigNumber,
-               v: BigNumber,m: HashMap<String, BigNumber>, m1: BigNumber,
+               v: BigNumber, m: HashMap<String, BigNumber>, m1: BigNumber,
                m2: BigNumber) -> PrimaryEqualProof {
         PrimaryEqualProof {
             revealed_attrs: revealed_attrs,

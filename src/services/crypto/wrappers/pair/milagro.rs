@@ -172,9 +172,9 @@ impl GroupOrderElement {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        let mut vec: Vec<u8> = Vec::new();
+        let mut vec: [u8; 32] = [0; 32];
         BIG::toBytes(&mut vec, &self.bn);
-        Ok(vec)
+        Ok(vec.to_vec())
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {
