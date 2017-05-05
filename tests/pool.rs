@@ -39,10 +39,11 @@ fn create_pool_ledger_config_works() {
 
 #[test]
 fn open_pool_ledger_works() {
-    let res = PoolUtils::create_pool_ledger_config("pool1");
+    let name = "pool_open";
+    let res = PoolUtils::create_pool_ledger_config(name);
     assert!(res.is_ok());
 
-    let res = PoolUtils::open_pool_ledger("pool1");
+    let res = PoolUtils::open_pool_ledger(name);
     assert!(res.is_ok());
 
     TestUtils::cleanup_storage();
@@ -51,11 +52,14 @@ fn open_pool_ledger_works() {
 #[test]
 fn open_pool_ledger_works_for_twice() {
     TestUtils::cleanup_storage();
+    let pool_name = "pool_open_twice";
 
-    let res = PoolUtils::create_pool_ledger_config("pool1");
+    let res = PoolUtils::create_pool_ledger_config(pool_name);
     assert!(res.is_ok());
 
-    let res = PoolUtils::open_pool_ledger("pool1");
+    let res = PoolUtils::open_pool_ledger(pool_name);
+    assert!(res.is_ok());
+    let res = PoolUtils::open_pool_ledger(pool_name);
     assert_match!(Err(ErrorCode::PoolLedgerInvalidPoolHandle), res);
 
     TestUtils::cleanup_storage();
