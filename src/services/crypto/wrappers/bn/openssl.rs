@@ -62,10 +62,22 @@ impl BigNumber {
         Ok(bn)
     }
 
+    #[cfg(not(test))]
     pub fn generate_safe_prime(size: usize) -> Result<BigNumber, CryptoError> {
         let mut bn = BigNumber::new()?;
         BigNumRef::generate_prime(&mut bn.openssl_bn, (size + 1) as i32, true, None, None)?;
         Ok(bn)
+    }
+
+    #[cfg(test)]
+    pub fn generate_safe_prime(size: usize) -> Result<BigNumber, CryptoError> {
+        match size {
+            LARGE_PRIME => Ok(BigNumber::from_dec("298425477551432359319017298068281828134535746771300905126443720735756534287270383542467183175737460443806952398210045827718115111810885752229119677470711305345901926067944629292942471551423868488963517954094239606951758940767987427212463600313901180668176172283994206392965011112962119159458674722785709556623")?),
+            _ => {
+                debug!("Uncovered case: {}", size);
+                Ok(BigNumber::new()?)
+            }
+        }
     }
 
     pub fn generate_prime_in_range(start: &BigNumber, end: &BigNumber) -> Result<BigNumber, CryptoError> {

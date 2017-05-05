@@ -934,7 +934,7 @@ impl JsonEncodable for RevocationRegistry {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistry {}
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistryPrivate {
     pub acc_sk: AccumulatorSecretKey,
     pub tails: HashMap<i32, PointG1>
