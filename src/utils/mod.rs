@@ -15,5 +15,7 @@ pub mod result;
 
 pub mod sequence;
 
+pub mod crypto;
+
 #[macro_use]
 pub mod test;

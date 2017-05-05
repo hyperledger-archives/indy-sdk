@@ -1,9 +1,12 @@
 use errors::ledger::LedgerError;
+use errors::pool::PoolError;
 
 use services::crypto::CryptoService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 pub enum LedgerCommand {
@@ -16,6 +19,10 @@ pub enum LedgerCommand {
         i32, // pool handle
         String, // request json
         Box<Fn(Result<String, LedgerError>) + Send>),
+    SubmitAck(
+        i32, // cmd_id
+        Result<String, LedgerError>, // result json or error
+    ),
     BuildGetDdoRequest(
         String, // submitter did
         String, // target did
@@ -73,6 +80,7 @@ pub struct LedgerCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
+    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, LedgerError>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -83,6 +91,7 @@ impl LedgerCommandExecutor {
             crypto_service: crypto_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
+            send_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -91,47 +100,53 @@ impl LedgerCommandExecutor {
             LedgerCommand::SignAndSubmitRequest(wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
                 self.sign_and_submit_request(wallet_handle, &submitter_did, &request_json, cb);
-            },
+            }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SubmitRequest command received");
                 self.submit_request(handle, &request_json, cb);
-            },
+            }
+            LedgerCommand::SubmitAck(handle, result) => {
+                info!(target: "ledger_command_executor", "SubmitAck command received");
+                self.send_callbacks.borrow_mut().remove(&handle)
+                    .expect("Expect callback to process ack command")
+                    (result);
+            }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
                 self.build_get_ddo_request(&submitter_did, &target_did, cb);
-            },
+            }
             LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, xref, data, role, cb) => {
                 info!(target: "ledger_command_executor", "BuildNymRequest command received");
                 self.build_nym_request(&submitter_did, &target_did, &verkey, &xref, &data, &role, cb);
-            },
+            }
             LedgerCommand::BuildAttribRequest(submitter_did, target_did, hash, raw, enc, cb) => {
                 info!(target: "ledger_command_executor", "BuildAttribRequest command received");
                 self.build_attrib_request(&submitter_did, &target_did, &hash, &raw, &enc, cb);
-            },
+            }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
                 self.build_get_attrib_request(&submitter_did, &target_did, &data, cb);
-            },
+            }
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetNymRequest command received");
                 self.build_get_nym_request(&submitter_did, &target_did, cb);
-            },
+            }
             LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
                 self.build_schema_request(&submitter_did, &data, cb);
-            },
+            }
             LedgerCommand::BuildGetSchemaRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
                 self.build_get_schema_request(&submitter_did, &data, cb);
-            },
+            }
             LedgerCommand::BuildClaimDefRequest(submitter_did, xref, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
                 self.build_issuer_key_request(&submitter_did, &xref, &data, cb);
-            },
+            }
             LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
                 self.build_get_issuer_key_request(&submitter_did, &xref, cb);
-            },
+            }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
                 self.build_node_key_request(&submitter_did, &target_did, &data, cb);
@@ -151,7 +166,11 @@ impl LedgerCommandExecutor {
                       handle: i32,
                       request_json: &str,
                       cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
+        match x {
+            Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
+            Err(err) => { cb(Err(LedgerError::PoolError(err))); }
+        };
     }
 
     fn build_get_ddo_request(&self,
