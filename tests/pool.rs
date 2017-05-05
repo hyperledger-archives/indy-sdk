@@ -63,7 +63,7 @@ fn _create_pool_ledger(pool_name: &str) -> ErrorCode {
 }
 
 #[test]
-fn sovrin_create_pool_ledger_works() {
+fn create_pool_ledger_config_works() {
     let pool_name = "test_create_pool";
     #[allow(unused_must_use)]
     { fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)); }
@@ -74,7 +74,7 @@ fn sovrin_create_pool_ledger_works() {
 }
 
 #[test]
-fn sovrin_open_pool_ledger_works() {
+fn open_pool_ledger_works() {
     let pool_name = "test_open_pool";
     #[allow(unused_must_use)]
     { fs::remove_dir_all(EnvironmentUtils::pool_path(pool_name)); }
