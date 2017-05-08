@@ -1,7 +1,7 @@
 #ifndef __sovrin__mod_included__
 #define __sovrin__mod_included__
 
-typedef enum
+typedef enum sovrin_error_t
 {
     Success = 0,
     
@@ -117,7 +117,7 @@ typedef enum
     AnoncredsMasterSecretDuplicateNameError,
     
     ProofRejected
-} ErrorCode;
+}
 
 #endif
 
