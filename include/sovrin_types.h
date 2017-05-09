@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+typedef int32_t       sovrin_i32_t;     
 typedef int32_t       sovrin_handle_t;
 typedef unsigned int  sovrin_bool_t;
+
 #endif

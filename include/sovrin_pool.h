@@ -1,7 +1,7 @@
 #ifndef __sovrin__pool_included__
 #define __sovrin__pool_included__
 
-#include "mod.h"
+#include "sovrin_mod.h"
 
 extern "C"
 {
