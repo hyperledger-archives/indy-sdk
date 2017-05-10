@@ -1,26 +1,12 @@
-pub mod types;
 use utils::json::{JsonDecodable};
 use errors::signus::SignusError;
-use commands::signus::types::{DIDInfo};
+use services::signus::types::{DIDInfo};
 
 use services::anoncreds::AnoncredsService;
-use errors::crypto::CryptoError;
 use services::pool::PoolService;
 use services::wallet::WalletService;
-
+use services::signus::SignusService;
 use std::rc::Rc;
-
-pub trait Signus {
-    fn create_key_pair(&self) -> (Vec<u8>, Vec<u8>);
-    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8>;
-    fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError>;
-    fn gen_nonce(&self) -> Vec<u8>;
-    fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> (Vec<u8>, Vec<u8>);
-    fn sign(&self, private_key: &[u8], doc: &[u8]) -> Vec<u8>;
-    fn verify(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
-}
-
-struct SignusService {}
 
 pub enum SignusCommand {
     CreateAndStoreMyDid(
@@ -119,6 +105,8 @@ impl SignusCommandExecutor {
 
     fn _create_and_store_my_did(&self, walled_handle: i32, did_json: &str) -> Result<(String, String, String), SignusError> {
         let did_info = DIDInfo::from_json(&did_json)?;
+        let xtype = did_info.crypto_type.unwrap_or("ed25519".to_string());
+        let signus_service = SignusService::new();
         Ok(("".to_string(), "".to_string(), "".to_string()))
     }
 
