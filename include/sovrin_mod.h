@@ -117,7 +117,7 @@ typedef enum
     AnoncredsMasterSecretDuplicateNameError,
     
     ProofRejected
-} ErrorCode;
+} sovrin_error_t;
 
 #endif
 
