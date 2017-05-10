@@ -20,7 +20,7 @@ use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::crypto::ed25519::Ed25519ToCurve25519;
+use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 
@@ -395,7 +395,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&public_key),
+            verify_key: ED25519::pk_to_curve25519(&public_key),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -699,8 +699,8 @@ mod tests {
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
-            let skc = Ed25519ToCurve25519::crypto_sign_ed25519_sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let pkc = ED25519::pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
+            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
             let gt = GenTransaction {
