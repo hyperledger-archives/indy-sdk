@@ -11,8 +11,8 @@ def appPods
     pod 'libsovrin-core'
 end
 
-target 'libsovrin-test' do
-    project 'libsovrin-test'
+target 'libsovrin-demo' do
+    project 'libsovrin-demo'
 end
 
 target 'libsovrin' do
