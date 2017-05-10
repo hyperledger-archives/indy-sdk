@@ -2,12 +2,12 @@
 //  NSError+SovrinError.h
 //  libsovrin
 //
-//  Created by Kirill Neznamov on 10/05/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
 
 #import <Foundation/Foundation.h>
+#import "sovrin_core.h"
 
-@interface NSError_SovrinError : NSObject
+@interface NSError (SovrinError)
+
++ (NSError*) errorFromSovrinError:(sovrin_error_t) error;
 
 @end

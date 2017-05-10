@@ -3,8 +3,11 @@
 //  libsovrin
 //
 
-
 #import "SovrinAnoncreds.h"
+#import "SovrinCallbacks.h"
+#import "sovrin_core.h"
+#import "NSError+SovrinError.h"
+#import "SovrinTypes.h"
 
 @implementation SovrinAnoncreds
 
@@ -20,155 +23,324 @@
     return instance;
 }
 
-- (NSError*) issuerCreateAndStoreClaimDef:(WalletHandle) wallet_handle
-                                   schema:(NSString*) schemaJSON
+- (NSError*) issuerCreateAndStoreClaimDef:(SovrinHandle) walletHandle
+                               schemaJSON:(NSString*) schema
                             signatureType:(NSString*) signatureType
+                           createNonRevoc:(BOOL) createNonRevoc
+                               completion:(void (^)(NSError* error, NSString* claimDefJSON, NSString* claimDefUUID)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_issuer_create_and_store_claim_def(handle,
+                                                   walletHandle,
+                                                   [schema UTF8String],
+                                                   [signatureType UTF8String],
+                                                   (sovrin_bool_t) createNonRevoc,
+                                                   SovrinWrapperCommon4PCallback
+                                                  );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
+- (NSError*) issuerCreateAndStoreRevocReg:(SovrinHandle) walletHandle
+                            claimDefSeqNo:(NSNumber*) seqNo
+                              maxClaimNum:(NSNumber*) maxClaimNum
+                               completion:(void (^)(NSError* error, NSString* revocRegJSON, NSString* revocRegUUID)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_issuer_create_and_store_revoc_reg(handle,
+                                                   walletHandle,
+                                                   [seqNo integerValue],
+                                                   [maxClaimNum integerValue],
+                                                   SovrinWrapperCommon4PCallback
+                                                  );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_issuer_create_and_store_claim_def(sovrin_handle_t command_handle,
-                                                               sovrin_handle_t wallet_handle,
-                                                               const char *    schema_json,
-                                                               const char *    signature_type,
-                                                               sovrin_bool_t   create_non_revoc,
-                                                               
-                                                               void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                                    sovrin_error_t  err,
-                                                                                    const char*     clain_def_json,
-                                                                                    const char*     claim_def_uuid)
-                                                               );
+- (NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
+                  claimReqJSON:(NSString*) reqJSON
+                     claimJSON:(NSString*) claimJSON
+                 revocRegSeqNo:(NSNumber*) seqNo       // TODO: check how to deal with option<>
+                userRevocIndex:(NSNumber*) revocIndex  // TODO: check how to deal with option<>
+                    completion:(void (^)(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_issuer_create_claim(handle,
+                                     walletHandle,
+                                     [reqJSON UTF8String],
+                                     [claimJSON UTF8String],
+                                     [seqNo intValue],
+                                     [revocIndex intValue],
+                                     SovrinWrapperCommon4PCallback
+                                    );
 
-extern sovrin_error_t sovrin_issuer_create_and_store_revoc_reg(sovrin_handle_t command_handle,
-                                                               sovrin_handle_t wallet_handle,
-                                                               sovrin_i32_t    claim_def_seq_no,
-                                                               sovrin_i32_t    max_claim_num,
-                                                               
-                                                               void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                                    sovrin_error_t  err,
-                                                                                    const char*     revoc_reg_json,
-                                                                                    const char*     revoc_reg_uuid   )
-                                                               );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_issuer_create_claim(sovrin_handle_t command_handle,
-                                                 sovrin_handle_t wallet_handle,
-                                                 const char *    claim_req_json,
-                                                 const char *    claim_json,
-                                                 sovrin_i32_t    revoc_reg_seq_no, //option??
-                                                 sovrin_i32_t    user_revoc_index, //option??
-                                                 
-                                                 void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                      sovrin_error_t  err,
-                                                                      const char*     revoc_reg_update_json,
-                                                                      const char*     xclaim_json   )
-                                                 );
+- (NSError*) issuerRevokeClaim:(SovrinHandle) walletHandle
+                 claimDefSeqNo:(NSNumber*) claimSeqNo
+                 revocRegSeqNo:(NSNumber*) revocSeqNo
+                userRevocIndex:(NSNumber*) revocIndex
+                    completion:(void (^)(NSError* error, NSString* revocRegUpdateJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_issuer_revoke_claim(handle,
+                                     walletHandle,
+                                     [claimSeqNo integerValue],
+                                     [revocSeqNo integerValue],
+                                     [revocIndex integerValue],
+                                     SovrinWrapperCommon3PSCallback
+                                    );
+    
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
+- (NSError*) proverStoreClaimOffer:(SovrinHandle) walletHandle
+                    claimOfferJSON:(NSString*) json
+                        completion:(void (^)(NSError* error)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_store_claim_offer(handle,
+                                          walletHandle,
+                                          [json UTF8String],
+                                          SovrinWrapperCommon2PCallback
+                                         );
+    
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_issuer_revoke_claim(sovrin_handle_t command_handle,
-                                                 sovrin_handle_t wallet_handle,
-                                                 sovrin_i32_t    claim_def_seq_no,
-                                                 sovrin_i32_t    revoc_reg_seq_no,
-                                                 sovrin_i32_t    user_revoc_index,
-                                                 
-                                                 void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                      sovrin_error_t  err,
-                                                                      const char*     revoc_reg_update_json)
-                                                 );
+- (NSError*) proverGetClaimOffers:(SovrinHandle) walletHandle
+                       filterJSON:(NSString*) json
+                       completion:(void (^)(NSError* error, NSString* claimOffersJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_get_claim_offers(handle,
+                                         walletHandle,
+                                         [json UTF8String],
+                                         SovrinWrapperCommon3PSCallback
+                                        );
+    
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_prover_store_claim_offer(sovrin_handle_t command_handle,
-                                                      sovrin_handle_t wallet_handle,
-                                                      const char *    claim_offer_json,
-                                                      
-                                                      void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                           sovrin_error_t  err)
-                                                      );
+- (NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
+                     masterSecretName:(NSString*) name
+                           completion:(void (^)(NSError* error)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_create_master_secret(handle,
+                                             walletHandle,
+                                             [name UTF8String],
+                                             SovrinWrapperCommon2PCallback
+                                            );
 
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_prover_get_claim_offers(sovrin_handle_t command_handle,
-                                                     sovrin_handle_t wallet_handle,
-                                                     const char *filter_json,
-                                                     void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                          sovrin_error_t  err,
-                                                                          const char*    claim_offers_json)
-                                                     );
+- (NSError*) proverCreateAndStoreClaimReq:(SovrinHandle) walletHandle
+                                proverDid:(NSString*) prover
+                           claimOfferJSON:(NSString*) offerJson
+                         masterSecretName:(NSString*) name
+                             claimDefJSON:(NSString*) claimJson
+                               completion:(void (^)(NSError* error, NSString* claimReqJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_create_and_store_claim_req(handle,
+                                                   walletHandle,
+                                                   [prover UTF8String],
+                                                   [offerJson UTF8String],
+                                                   [name UTF8String],
+                                                   [claimJson UTF8String],
+                                                   SovrinWrapperCommon3PSCallback
+                                                  );
+    
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
+- (NSError*) proverStoreClaim:(SovrinHandle) walletHandle
+                   claimsJSON:(NSString*) claimsJson
+                   completion:(void (^)(NSError* error)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_store_claim(handle,
+                                    walletHandle,
+                                    [claimsJson UTF8String],
+                                    SovrinWrapperCommon2PCallback
+                                   );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_prover_create_master_secret(sovrin_handle_t command_handle,
-                                                         sovrin_handle_t wallet_handle,
-                                                         const char *    master_secret_name,
-                                                         
-                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                              sovrin_error_t  err)
-                                                         );
+- (NSError*) proverGetClaims:(SovrinHandle) walletHandle
+                  filterJSON:(NSString*) json
+                  completion:(void (^)(NSError* error, NSString* claimsJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_get_claims(handle,
+                                   walletHandle,
+                                   [json UTF8String],
+                                   SovrinWrapperCommon3PSCallback
+                                  );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-
-extern sovrin_error_t sovrin_prover_create_and_store_claim_req(sovrin_handle_t command_handle,
-                                                               sovrin_handle_t wallet_handle,
-                                                               const char *    prover_did,
-                                                               const char *    claim_offer_json,
-                                                               const char *    claim_def_json,
-                                                               const char *    master_secret_name,
-                                                               
-                                                               void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                                    sovrin_error_t  err,
-                                                                                    const char*    claim_req_json)
-                                                               );
-
-
-
-extern sovrin_error_t sovrin_prover_store_claim(sovrin_handle_t command_handle,
-                                                sovrin_handle_t wallet_handle,
-                                                const char *    claims_json,
-                                                
-                                                void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                     sovrin_error_t  err)
+- (NSError*) proverGetClaimsForProofReq:(SovrinHandle) walletHandle
+                           proofReqJSON:(NSString*) json
+                             completion:(void (^)(NSError* error, NSString* claimsJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_get_claims_for_proof_req(handle,
+                                                 walletHandle,
+                                                 [json UTF8String],
+                                                 SovrinWrapperCommon3PSCallback
                                                 );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
-extern sovrin_error_t sovrin_prover_get_claims(sovrin_handle_t command_handle,
-                                               sovrin_handle_t wallet_handle,
-                                               const char *    filter_json,
-                                               
-                                               void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                    sovrin_error_t  err,
-                                                                    const char*     claims_json)
-                                               );
+- (NSError*) proverCreateProof:(SovrinHandle) walletHandle
+                  proofReqJSON:(NSString*) reqJSON
+           requestedClaimsJSON:(NSString*) claimsJSON
+                   schemasJSON:(NSString*) schemasJSON
+              masterSecretName:(NSString*) name
+                  claimDefsJSON:(NSString*) claimDefsJSON
+                 revocRegsJSON:(NSString*) revocJSON
+                    completion:(void (^)(NSError* error, NSString* proofJSON)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    
+    ret = sovrin_prover_create_proof(handle,
+                                     walletHandle,
+                                     [reqJSON UTF8String],
+                                     [claimsJSON UTF8String],
+                                     [schemasJSON UTF8String],
+                                     [name UTF8String],
+                                     [claimDefsJSON UTF8String],
+                                     [revocJSON UTF8String],
+                                     SovrinWrapperCommon3PSCallback
+                                    );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
+}
 
+- (NSError*) verifierVerifyProof:(SovrinHandle) walletHandle
+                    proofReqJSON:(NSString*) reqJSON
+                       proofJSON:(NSString*) proofJSON
+                     schemasJSON:(NSString*) schemasJSON
+                   claimDefsJSON:(NSString*) claimDefsJSON
+                   revocRegsJSON:(NSString*) revocJSON
+                      completion:(void (^)(NSError* error, BOOL valid)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
 
-extern sovrin_error_t sovrin_prover_get_claims_for_proof_req(sovrin_handle_t command_handle,
-                                                             sovrin_handle_t wallet_handle,
-                                                             const char *    proof_request_json,
-                                                             
-                                                             void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                                  sovrin_error_t  err,
-                                                                                  const char*     claims_json)
-                                                             );
+    ret = sovrin_verifier_verify_proof(handle,
+                                       walletHandle,
+                                       [reqJSON UTF8String],
+                                       [proofJSON UTF8String],
+                                       [schemasJSON UTF8String],
+                                       [claimDefsJSON UTF8String],
+                                       [revocJSON UTF8String],
+                                       SovrinWrapperCommon3PBCallback
+                                      );
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] remove: handle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
 
-
-extern sovrin_error_t sovrin_prover_create_proof(sovrin_handle_t command_handle,
-                                                 sovrin_handle_t wallet_handle,
-                                                 const char *    proof_req_json,
-                                                 const char *    requested_claims_json,
-                                                 const char *    schemas_json,
-                                                 const char *    master_secret_name,
-                                                 const char *    claim_defs_json,
-                                                 const char *    revoc_regs_json,
-                                                 
-                                                 void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                      sovrin_error_t  err,
-                                                                      const char*     proof_json)
-                                                 );
-
-
-extern sovrin_error_t sovrin_verifier_verify_proof(sovrin_handle_t command_handle,
-                                                   sovrin_handle_t wallet_handle,
-                                                   const char *    proof_request_json,
-                                                   const char *    proof_json,
-                                                   const char *    schemas_json,
-                                                   const char *    claim_defs_jsons,
-                                                   const char *    revoc_regs_json,
-                                                   
-                                                   void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                        sovrin_error_t  err,
-                                                                        sovrin_bool_t   valid )
-                                                   );
-
+}
 
 @end
