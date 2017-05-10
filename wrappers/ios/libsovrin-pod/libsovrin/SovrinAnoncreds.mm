@@ -16,7 +16,8 @@
     static SovrinAnoncreds *instance = nil;
     static dispatch_once_t dispatch_once_block;
     
-    dispatch_once(&dispatch_once_block, ^{
+    dispatch_once(&dispatch_once_block, ^
+    {
         instance = [SovrinAnoncreds new];
     });
     
