@@ -6,8 +6,6 @@
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
-
 //! Project version number for libsovrin.
 FOUNDATION_EXPORT double libsovrinVersionNumber;
 

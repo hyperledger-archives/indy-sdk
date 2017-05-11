@@ -13,7 +13,11 @@
 		3E2A7F931EC36186006194EC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F911EC36186006194EC /* Main.storyboard */; };
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
-		3E2A7FA31EC36187006194EC /* libsovrin_demoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2A7FA21EC36187006194EC /* libsovrin_demoTests.m */; };
+		3E2A7FA31EC36187006194EC /* AnoncredsDemo.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2A7FA21EC36187006194EC /* AnoncredsDemo.m */; };
+		3EF020D81EC4593900CF985C /* TestUtlis.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtlis.m */; };
+		3EF020DB1EC4595500CF985C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020DA1EC4595500CF985C /* Environment.m */; };
+		3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
+		3EF020DE1EC45AA300CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
 		C417EEF3998DF20C9FE62376 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */; };
 /* End PBXBuildFile section */
 
@@ -40,8 +44,13 @@
 		3E2A7F971EC36187006194EC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		3E2A7F991EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3E2A7F9E1EC36187006194EC /* libsovrin-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libsovrin-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E2A7FA21EC36187006194EC /* libsovrin_demoTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = libsovrin_demoTests.m; sourceTree = "<group>"; };
+		3E2A7FA21EC36187006194EC /* AnoncredsDemo.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AnoncredsDemo.m; sourceTree = "<group>"; };
 		3E2A7FA41EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3EF020D61EC4593900CF985C /* TestUtlis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtlis.h; sourceTree = "<group>"; };
+		3EF020D71EC4593900CF985C /* TestUtlis.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtlis.m; sourceTree = "<group>"; };
+		3EF020D91EC4595500CF985C /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
+		3EF020DA1EC4595500CF985C /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
+		3EF020DC1EC45A9B00CF985C /* libsovrin.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = libsovrin.framework; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-dlmogskbrwrmnoceaqqsbyhvursy/Build/Products/Debug-iphoneos/libsovrin.framework"; sourceTree = "<group>"; };
 		920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -51,6 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */,
 				C417EEF3998DF20C9FE62376 /* libPods-libsovrin-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -59,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EF020DE1EC45AA300CF985C /* libsovrin.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,15 +99,11 @@
 		3E2A7F871EC36186006194EC /* libsovrin-demo */ = {
 			isa = PBXGroup;
 			children = (
+				3E2A7F881EC36186006194EC /* Supporting Files */,
+				3EF020D31EC4588500CF985C /* GUI */,
 				3E2A7F8B1EC36186006194EC /* AppDelegate.h */,
 				3E2A7F8C1EC36186006194EC /* AppDelegate.m */,
-				3E2A7F8E1EC36186006194EC /* ViewController.h */,
-				3E2A7F8F1EC36186006194EC /* ViewController.m */,
-				3E2A7F911EC36186006194EC /* Main.storyboard */,
-				3E2A7F941EC36186006194EC /* Assets.xcassets */,
-				3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */,
 				3E2A7F991EC36187006194EC /* Info.plist */,
-				3E2A7F881EC36186006194EC /* Supporting Files */,
 			);
 			path = "libsovrin-demo";
 			sourceTree = "<group>";
@@ -112,15 +119,40 @@
 		3E2A7FA11EC36187006194EC /* libsovrin-demoTests */ = {
 			isa = PBXGroup;
 			children = (
-				3E2A7FA21EC36187006194EC /* libsovrin_demoTests.m */,
+				3EF020D51EC458C900CF985C /* TestUtils */,
+				3E2A7FA21EC36187006194EC /* AnoncredsDemo.m */,
 				3E2A7FA41EC36187006194EC /* Info.plist */,
 			);
 			path = "libsovrin-demoTests";
 			sourceTree = "<group>";
 		};
+		3EF020D31EC4588500CF985C /* GUI */ = {
+			isa = PBXGroup;
+			children = (
+				3E2A7F8E1EC36186006194EC /* ViewController.h */,
+				3E2A7F8F1EC36186006194EC /* ViewController.m */,
+				3E2A7F911EC36186006194EC /* Main.storyboard */,
+				3E2A7F941EC36186006194EC /* Assets.xcassets */,
+				3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */,
+			);
+			name = GUI;
+			sourceTree = "<group>";
+		};
+		3EF020D51EC458C900CF985C /* TestUtils */ = {
+			isa = PBXGroup;
+			children = (
+				3EF020D61EC4593900CF985C /* TestUtlis.h */,
+				3EF020D71EC4593900CF985C /* TestUtlis.m */,
+				3EF020D91EC4595500CF985C /* Environment.h */,
+				3EF020DA1EC4595500CF985C /* Environment.m */,
+			);
+			name = TestUtils;
+			sourceTree = "<group>";
+		};
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				3EF020DC1EC45A9B00CF985C /* libsovrin.framework */,
 				920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */,
 			);
 			name = Frameworks;
@@ -300,7 +332,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3E2A7FA31EC36187006194EC /* libsovrin_demoTests.m in Sources */,
+				3E2A7FA31EC36187006194EC /* AnoncredsDemo.m in Sources */,
+				3EF020DB1EC4595500CF985C /* Environment.m in Sources */,
+				3EF020D81EC4593900CF985C /* TestUtlis.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -359,6 +393,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -408,6 +443,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -497,6 +533,7 @@
 				3E2A7FA91EC36187006194EC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "libsovrin-demoTests" */ = {
 			isa = XCConfigurationList;
@@ -505,6 +542,7 @@
 				3E2A7FAC1EC36187006194EC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

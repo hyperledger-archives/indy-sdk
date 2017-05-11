@@ -2,38 +2,35 @@
 //  libsovrin_demoTests.m
 //  libsovrin-demoTests
 //
-//  Created by Kirill Neznamov on 10/05/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
+
 
 #import <XCTest/XCTest.h>
+#import <libsovrin.h>
 
-@interface libsovrin_demoTests : XCTestCase
+@interface AnoncredsDemo : XCTestCase
 
 @end
 
-@implementation libsovrin_demoTests
+@implementation AnoncredsDemo
 
-- (void)setUp {
+- (void)setUp
+{
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
-- (void)tearDown {
+- (void)tearDown
+{
     // Put teardown code here. This method is called after the invocation of each test method in the class.
     [super tearDown];
 }
 
-- (void)testExample {
+- (void)testAnoncredsDemo
+{
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
+    
 }
 
-- (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-    }];
-}
 
 @end
