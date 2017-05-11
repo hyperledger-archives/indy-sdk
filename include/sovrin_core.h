@@ -4,5 +4,6 @@
 #include "sovrin_mod.h"
 #include "sovrin_pool.h"
 #include "sovrin_anoncreds.h"
+#include "sovrin_wallet.h"
 
 #endif
