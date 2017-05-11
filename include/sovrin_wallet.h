@@ -31,29 +31,29 @@ extern "C" {
     
 
     extern sovrin_error_t sovrin_register_wallet_type(const char* xtype,
-                                                      sovrin_error_t (*create)(const char* name,
+                                                      sovrin_error_t (*createFn)(const char* name,
+                                                                                 const char* config,
+                                                                                 const char* credentials),
+                                                      
+                                                      sovrin_error_t (*openFn)(const char* name,
                                                                                const char* config,
-                                                                               const char* credentials),
+                                                                               const char* credentials,
+                                                                               sovrin_handle_t* handle),
                                                       
-                                                      sovrin_error_t (*open)(const char* name,
-                                                                             const char* config,
-                                                                             const char* credentials,
-                                                                             sovrin_handle_t* handle),
+                                                      sovrin_error_t (*setFn)(sovrin_handle_t handle,
+                                                                              const char* key,
+                                                                              const char* sub_key,
+                                                                              const char* value),
                                                       
-                                                      sovrin_error_t (*set)(sovrin_handle_t handle,
-                                                                            const char* key,
-                                                                            const char* sub_key,
-                                                                            const char* value),
+                                                      sovrin_error_t (*getFn)(sovrin_handle_t handle,
+                                                                              const char* key,
+                                                                              const char* sub_key,
+                                                                              const char* value_ptr,
+                                                                              const char* value_life_time),
                                                       
-                                                      sovrin_error_t (*get)(sovrin_handle_t handle,
-                                                                            const char* key,
-                                                                            const char* sub_key,
-                                                                            const char* value_ptr,
-                                                                            const char* value_life_time),
-                                                      
-                                                      sovrin_error_t (*close)(sovrin_handle_t handle),
-                                                      sovrin_error_t (*delete)(const char* name),
-                                                      sovrin_error_t (*free)(sovrin_handle_t handle, const char* str)
+                                                      sovrin_error_t (*closeFn)(sovrin_handle_t handle),
+                                                      sovrin_error_t (*deleteFn)(const char* name),
+                                                      sovrin_error_t (*freeFn)(sovrin_handle_t handle, const char* str)
                                                       );
 
     /// Creates a new secure wallet with the given unique name.
