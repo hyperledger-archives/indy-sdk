@@ -27,9 +27,11 @@
 
 - (void)testAnoncredsDemo
 {
-    // This is an example of a functional test case.
-    // Use XCTAssert and related functions to verify your tests produce the correct results.
+    NSString *poolName = @"pool1";
+    NSString *walletName = "@issuer_wallet";
+    NSString *xType = @"default";
     
+    NSError *ret = [SovrinWa]
 }
 
 
