@@ -43,6 +43,8 @@
              withImplementation:(id<SovrinWalletImplementation>) implementation;
 */
 
++ (SovrinWallet*) sharedInstance;
+
 - (NSError*) createWallet:(NSString*) poolName
                      name:(NSString*) name
                     xType:(NSString*) type

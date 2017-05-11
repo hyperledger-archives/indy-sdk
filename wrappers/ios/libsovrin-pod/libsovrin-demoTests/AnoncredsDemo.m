@@ -3,9 +3,9 @@
 //  libsovrin-demoTests
 //
 
-
+#import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
-#import <libsovrin.h>
+#import <libsovrin/libsovrin.h>
 
 @interface AnoncredsDemo : XCTestCase
 
@@ -28,10 +28,20 @@
 - (void)testAnoncredsDemo
 {
     NSString *poolName = @"pool1";
-    NSString *walletName = "@issuer_wallet";
+    NSString *walletName = @"issuer_wallet";
     NSString *xType = @"default";
     
-    NSError *ret = [SovrinWa]
+    NSError *ret = [[SovrinWallet sharedInstance] createWallet: poolName
+                                                          name: walletName
+                                                         xType: xType
+                                                        config: nil
+                                                   credentials: nil
+                                                    completion: ^(NSError* error)
+                    {
+                        
+                    }];
+    
+    NSAssert( ret.code == Success, @"createWallet() failed!");
 }
 
 
