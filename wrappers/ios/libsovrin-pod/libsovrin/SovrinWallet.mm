@@ -53,8 +53,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*)   openWallet:(SovrinHandle) poolHandle
-                     name:(NSString*) name
+- (NSError*)   openWallet:(NSString*) name
             runtimeConfig:(NSString*) config
               credentials:(NSString*) credentials
                completion:(void (^)(NSError* error, SovrinHandle walletHandle )) handler
