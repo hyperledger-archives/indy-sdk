@@ -38,30 +38,34 @@
 
 @interface SovrinWallet : NSObject
 
+/*
 - (NSError*) registerWalletType:(NSString*) type
              withImplementation:(id<SovrinWalletImplementation>) implementation;
+*/
 
 - (NSError*) createWallet:(NSString*) poolName
                      name:(NSString*) name
-                   config:(NSString*) config
                     xType:(NSString*) type
-               completion:(NSError* (^)(NSError* error)) handler;
+                   config:(NSString*) config
+              credentials:(NSString*) credentials
+               completion:(void (^)(NSError* error)) handler;
 
 - (NSError*)   openWallet:(SovrinHandle) poolHandle
                      name:(NSString*) name
             runtimeConfig:(NSString*) config
               credentials:(NSString*) credentials
-               completion:(NSError* (^)(NSError* error, SovrinHandle walletHandle )) handler;
+               completion:(void (^)(NSError* error, SovrinHandle walletHandle )) handler;
 
 - (NSError*)   closeWallet:(SovrinHandle) walletHandle
-                completion:(NSError* (^)(NSError* error )) handler;
+                completion:(void (^)(NSError* error )) handler;
 
 - (NSError*)   deleteWallet:(NSString*) walletName
-                 completion:(NSError* (^)(NSError* error )) handler;
+                credentials:(NSString*) credentials
+                 completion:(void (^)(NSError* error )) handler;
 
 - (NSError*) walletSetSeqNo:(NSNumber*) seqNo
                   forHandle:(SovrinHandle) walletHandle
                      andKey:(NSString*) key
-                 completion:(NSError* (^)(NSError* error )) handler;
+                 completion:(void (^)(NSError* error )) handler;
 
 @end

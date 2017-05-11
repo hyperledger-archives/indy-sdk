@@ -13,7 +13,7 @@
 		3E99B9991EB3C54100B18027 /* SovrinPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E99B9941EB3C54100B18027 /* SovrinPool.mm */; };
 		3E99B99A1EB3C54100B18027 /* SovrinTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E99B9951EB3C54100B18027 /* SovrinTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */; };
-		3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.m */; };
+		3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */; };
 		3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */; };
 		3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */; };
 		3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */; };
@@ -34,7 +34,7 @@
 		3E99B9941EB3C54100B18027 /* SovrinPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinPool.mm; sourceTree = "<group>"; };
 		3E99B9951EB3C54100B18027 /* SovrinTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinTypes.h; sourceTree = "<group>"; };
 		3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinWallet.h; sourceTree = "<group>"; };
-		3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SovrinWallet.m; sourceTree = "<group>"; };
+		3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinWallet.mm; sourceTree = "<group>"; };
 		3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinCallbacks.h; sourceTree = "<group>"; };
 		3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinCallbacks.mm; sourceTree = "<group>"; };
 		3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+SovrinError.h"; sourceTree = "<group>"; };
@@ -106,7 +106,7 @@
 				3ECDB9191EC3184700F13F33 /* SovrinAnoncreds.h */,
 				3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */,
 				3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */,
-				3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.m */,
+				3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */,
 			);
 			name = src;
 			sourceTree = "<group>";
@@ -256,7 +256,7 @@
 				3ECDB9161EC309D900F13F33 /* NSError+SovrinError.m in Sources */,
 				3ECDB91C1EC3184700F13F33 /* SovrinAnoncreds.mm in Sources */,
 				3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */,
-				3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.m in Sources */,
+				3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

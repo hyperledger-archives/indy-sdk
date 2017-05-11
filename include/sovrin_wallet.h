@@ -81,7 +81,7 @@ extern "C" {
                                                const char*      xtype,
                                                const char*      config,
                                                const char*      credentials,
-                                               sovrin_error_t  (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                               void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
                                               );
     /// Opens the wallet with specific name.
     ///
@@ -109,7 +109,7 @@ extern "C" {
                                              const char*      name,
                                              const char*      runtime_config,
                                              const char*      credentials,
-                                             sovrin_error_t  (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err, sovrin_handle_t handle)
+                                             void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err, sovrin_handle_t handle)
                                             );
 
     /// Closes opened wallet and frees allocated resources.
@@ -126,7 +126,7 @@ extern "C" {
 
     extern sovrin_error_t sovrin_close_wallet(sovrin_handle_t  command_handle,
                                               sovrin_handle_t  handle,
-                                              sovrin_error_t  (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                              void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
                                              );
 
     /// Deletes created wallet.
@@ -146,7 +146,7 @@ extern "C" {
     extern sovrin_error_t sovrin_delete_wallet(sovrin_handle_t  command_handle,
                                                const char*      name,
                                                const char*      credentials,
-                                               sovrin_error_t  (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                               void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
                                               );
     
     /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
@@ -170,7 +170,7 @@ extern "C" {
                                                              sovrin_handle_t  wallet_handle,
                                                              const char*      wallet_key,
                                                              sovrin_i32_t     seq_no,
-                                                             sovrin_error_t  (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                                             void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
                                                              );
 
 #ifdef __cplusplus
@@ -178,3 +178,4 @@ extern "C" {
 #endif
 
 #endif
+
