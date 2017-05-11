@@ -47,7 +47,7 @@ sodiumoxide = {version = "0.0.14", optional = true}
 time = "0.1.36"
 zmq = "0.8.1"
 lazy_static = "0.2"
-ring = "^0.6.0"
+ring = "0.7"
 base64 = "0.5.0"
 byteorder = "1.0.0"
 [dependencies.uuid]

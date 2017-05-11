@@ -3,7 +3,6 @@ mod types;
 extern crate base64;
 extern crate byteorder;
 extern crate rust_base58;
-extern crate serde_json;
 extern crate zmq;
 
 use self::byteorder::{ByteOrder, LittleEndian};
@@ -20,8 +19,9 @@ use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::crypto::ed25519::Ed25519ToCurve25519;
+use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
+use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 
 pub struct PoolService {
@@ -133,7 +133,7 @@ impl PoolWorker {
                 let mut first_resp = process.pending_reps.pop().unwrap();
                 while !first_resp.txns.is_empty() {
                     let key = first_resp.min_tx().to_string();
-                    let new_gen_tx = serde_json::to_string(&first_resp.txns.remove(&key)).unwrap();
+                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json().unwrap();
                     trace!("append to tree {}", new_gen_tx);
                     process.merkle_tree.append(
                         new_gen_tx
@@ -169,9 +169,9 @@ impl PoolWorker {
                 ..Default::default()
             };
             let msg: Message = Message::LedgerStatus(ls);
-            Some(serde_json::to_string(&msg).unwrap())
+            Some(msg.to_json().unwrap())
         } else {
-            let msg: Message = serde_json::from_str(raw_msg.as_str()).unwrap();
+            let msg = Message::from_json(raw_msg).unwrap();
             match msg {
                 Message::LedgerStatus(ledger_status) => {
                     //TODO nothing?
@@ -255,7 +255,7 @@ impl PoolWorker {
 
             for &(ref msg, cmd_id) in &cmds_to_send {
                 info!("msg {:?}", msg);
-                let tmp: SimpleRequest = serde_json::from_str(&msg).unwrap();
+                let tmp = SimpleRequest::from_json(msg).unwrap();
                 if self.pending_commands.contains_key(&tmp.req_id) {
                     self.pending_commands.get_mut(&tmp.req_id).unwrap().cmd_ids.push(cmd_id);
                 } else {
@@ -349,7 +349,7 @@ impl Debug for RemoteNode {
 
 impl RemoteNode {
     fn new(txn: &str) -> RemoteNode {
-        let gen_tx: GenTransaction = serde_json::from_str(txn).expect("RemoteNode parsing");
+        let gen_tx = GenTransaction::from_json(txn).expect("RemoteNode parsing");
         RemoteNode::from(gen_tx)
     }
 
@@ -387,7 +387,7 @@ impl RemoteNode {
     }
 
     fn send_msg(&self, msg: &Message) {
-        self.send_str(serde_json::to_string(msg).unwrap().as_str());
+        self.send_str(msg.to_json().unwrap().as_str());
     }
 }
 
@@ -395,7 +395,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&public_key),
+            verify_key: ED25519::pk_to_curve25519(&public_key),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -413,8 +413,8 @@ impl PoolService {
 
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         let mut path = EnvironmentUtils::pool_path(name);
-        let pool_config: PoolConfig = match config {
-            Some(config) => serde_json::from_str(config)?,
+        let pool_config = match config {
+            Some(config) => PoolConfig::from_json(config)?,
             None => PoolConfig::default_for_name(name)
         };
 
@@ -432,7 +432,7 @@ impl PoolService {
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path())?;
-        f.write(serde_json::to_string(&pool_config)?.as_bytes())?;
+        f.write(pool_config.to_json()?.as_bytes())?;
         f.flush()?;
 
         // TODO probably create another one file pool.json with pool description,
@@ -623,7 +623,7 @@ mod tests {
     fn pool_worker_connect_to_known_nodes_works() {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        pw.merkle_tree.append(serde_json::to_string(&gt).unwrap());
+        pw.merkle_tree.append(gt.to_json().unwrap());
 
         pw.connect_to_known_nodes();
 
@@ -658,7 +658,7 @@ mod tests {
     fn pool_worker_start_catchup_works() {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        pw.merkle_tree.append(serde_json::to_string(&gt).unwrap());
+        pw.merkle_tree.append(gt.to_json().unwrap());
         let mut rn: RemoteNode = RemoteNode::from(gt);
         rn.connect(&zmq::Context::new());
         pw.nodes.push(rn);
@@ -674,7 +674,7 @@ mod tests {
             seqNoEnd: 2,
             catchupTill: 2,
         };
-        let act_resp: CatchupReq = serde_json::from_str(emulator_msgs[0].as_str()).unwrap();
+        let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
         assert_eq!(expected_resp, act_resp);
     }
 
@@ -699,8 +699,8 @@ mod tests {
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
-            let skc = Ed25519ToCurve25519::crypto_sign_ed25519_sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let pkc = ED25519::pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
+            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
             let gt = GenTransaction {

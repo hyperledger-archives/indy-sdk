@@ -2,6 +2,7 @@ use std::cmp;
 use std::collections::{BinaryHeap, HashMap};
 
 use services::ledger::merkletree::merkletree::MerkleTree;
+use utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
@@ -23,6 +24,9 @@ pub struct GenTransaction {
     #[serde(rename = "type")]
     pub txn_type: String,
 }
+
+impl JsonEncodable for GenTransaction {}
+impl<'a> JsonDecodable<'a> for GenTransaction {}
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -62,6 +66,8 @@ pub struct CatchupReq {
     pub seqNoEnd: usize,
     pub catchupTill: usize,
 }
+
+impl<'a> JsonDecodable<'a> for CatchupReq {}
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -107,6 +113,8 @@ pub struct SimpleRequest {
     pub req_id: u64,
 }
 
+impl<'a> JsonDecodable<'a> for SimpleRequest {}
+
 #[serde(tag = "op")]
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
@@ -126,10 +134,16 @@ pub enum Message {
     Reply(Reply),
 }
 
+impl JsonEncodable for Message {}
+impl<'a> JsonDecodable<'a> for Message {}
+
 #[derive(Serialize, Deserialize)]
 pub struct PoolConfig {
     pub genesis_txn: String
 }
+
+impl JsonEncodable for PoolConfig {}
+impl<'a> JsonDecodable<'a> for PoolConfig {}
 
 impl PoolConfig {
     pub fn default_for_name(name: &str) -> PoolConfig {
