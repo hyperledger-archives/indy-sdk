@@ -68,16 +68,16 @@ impl JsonEncodable for MyDid {}
 impl<'a> JsonDecodable<'a> for MyDid {}
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TheirDidInfo {
+pub struct TheirDid {
     pub did: String,
     pub crypto_type: Option<String>,
     pub pk: Option<String>,
     pub verkey: String
 }
 
-impl TheirDidInfo {
-    pub fn new(did: String, crypto_type: Option<String>, pk: Option<String>, verkey: String) -> TheirDidInfo {
-        TheirDidInfo {
+impl TheirDid {
+    pub fn new(did: String, crypto_type: Option<String>, pk: Option<String>, verkey: String) -> TheirDid {
+        TheirDid {
             did: did,
             crypto_type: crypto_type,
             pk: pk,
@@ -86,6 +86,6 @@ impl TheirDidInfo {
     }
 }
 
-impl JsonEncodable for TheirDidInfo {}
+impl JsonEncodable for TheirDid {}
 
-impl<'a> JsonDecodable<'a> for TheirDidInfo {}
+impl<'a> JsonDecodable<'a> for TheirDid {}

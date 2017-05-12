@@ -68,18 +68,21 @@ impl ED25519 {
         let mut pr_key: [u8; 64] = [0; 64];
         pr_key.clone_from_slice(private_key);
 
-        sign::sign(
+        sign::sign_detached(
             doc,
             &sign::SecretKey(pr_key)
-        )
+        )[..].to_vec()
     }
 
-    pub fn verify(public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        sign::verify(
+    pub fn verify(public_key: &[u8], doc: &[u8], sign: &[u8]) -> bool {
+        let mut signature: [u8; 64] = [0; 64];
+        signature.clone_from_slice(sign);
+
+        sign::verify_detached(
+            &sign::Signature(signature),
             doc,
             &sign::PublicKey(ED25519::_clone_into_array(public_key))
         )
-            .map_err(|_| CryptoError::InvalidStructure("Unable to decrypt data".to_string()))
     }
 
     pub fn sk_to_curve25519(sk: &Vec<u8>) -> Vec<u8> {
@@ -142,10 +145,9 @@ mod tests {
 
         let (public_key, secret_key) = ED25519::create_key_pair_for_signature(Some(&seed));
         let alice_signed_text = ED25519::sign(&secret_key, &text);
-        let verified_data = ED25519::verify(&public_key, &alice_signed_text);
+        let verified = ED25519::verify(&public_key, &text, &alice_signed_text);
 
-        assert!(verified_data.is_ok());
-        assert_eq!(text, verified_data.unwrap());
+        assert!(verified);
     }
 
     #[test]

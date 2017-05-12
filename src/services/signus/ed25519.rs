@@ -36,7 +36,7 @@ impl CryptoType for ED25519Signus {
         ED25519::sign(private_key, doc)
     }
 
-    fn verify(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        ED25519::verify(public_key, doc)
+    fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> bool {
+        ED25519::verify(public_key, doc, signature)
     }
 }
