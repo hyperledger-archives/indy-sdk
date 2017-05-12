@@ -1,4 +1,4 @@
-use super::Signus;
+use super::CryptoType;
 use utils::crypto::ed25519::ED25519;
 use errors::crypto::CryptoError;
 
@@ -11,7 +11,7 @@ impl ED25519Signus {
     }
 }
 
-impl Signus for ED25519Signus {
+impl CryptoType for ED25519Signus {
     fn create_key_pair(&self) -> (Vec<u8>, Vec<u8>) {
         ED25519::create_key_pair()
     }
