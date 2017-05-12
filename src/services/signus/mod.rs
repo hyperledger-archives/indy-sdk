@@ -86,9 +86,14 @@ impl SignusService {
             return Err(SignusError::CryptoError(CryptoError::UnknownType(xtype)));
         }
 
+        if their_did.verkey.is_none() {
+            return Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Verkey key not found"))));
+        }
+        let verkey = their_did.verkey.clone().unwrap();
+
         let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
 
-        let verkey = Base58::decode(&their_did.verkey)?;
+        let verkey = Base58::decode(&verkey)?;
         let signature = Base58::decode(signature)?;
 
         Ok(signus.verify(&verkey, &doc.as_bytes(), &signature))
@@ -262,7 +267,7 @@ mod tests {
             did: "sw2SA2jCbsiq2kfns".to_string(),
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: None,
-            verkey: my_did.ver_key
+            verkey: Some(my_did.ver_key)
         };
 
         let res = service.verify(&their_did, &msg, &signature);
@@ -294,12 +299,12 @@ mod tests {
             did: "sw2SA2jCbsiq2kfns".to_string(),
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: None,
-            verkey: "AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string()
+            verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
         let res = service.verify(&their_did, &msg, &signature);
         res.unwrap();
-//        assert!(res.is_ok());
-//        assert_eq!(false, res.unwrap());
+        //        assert!(res.is_ok());
+        //        assert_eq!(false, res.unwrap());
     }
 }

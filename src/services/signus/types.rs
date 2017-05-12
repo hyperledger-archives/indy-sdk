@@ -72,11 +72,11 @@ pub struct TheirDid {
     pub did: String,
     pub crypto_type: Option<String>,
     pub pk: Option<String>,
-    pub verkey: String
+    pub verkey: Option<String>
 }
 
 impl TheirDid {
-    pub fn new(did: String, crypto_type: Option<String>, pk: Option<String>, verkey: String) -> TheirDid {
+    pub fn new(did: String, crypto_type: Option<String>, pk: Option<String>, verkey: Option<String>) -> TheirDid {
         TheirDid {
             did: did,
             crypto_type: crypto_type,

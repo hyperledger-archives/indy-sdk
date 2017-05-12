@@ -119,8 +119,8 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 /// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
-///        "verkey": string,
-///        "pk": string (optional, if only verification key sis provided),
+///        "verkey": string (optional, if only pk is provided),
+///        "pk": string (optional, if only verification key is provided),
 ///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
 ///     }
@@ -261,14 +261,13 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// pool_handle: pool handle.
 /// my_did: encrypting DID
 /// did: encrypting DID
 /// msg: a message to be signed
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// an encrypted message
+/// an encrypted message and nonce
 ///
 /// #Errors
 /// Common*
