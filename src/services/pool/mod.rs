@@ -171,8 +171,7 @@ impl PoolWorker {
                     ledgerType: 0,
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
-                let resp = msg.to_json().unwrap();
-                self.nodes[src_ind].zsock.as_ref().unwrap().send(resp.as_bytes(), zmq::DONTWAIT).expect("send resp msg");
+                self.nodes[src_ind].send_msg(&resp_msg);
             }
             Message::LedgerStatus(ledger_status) => {
                 //TODO nothing?
@@ -208,59 +207,72 @@ impl PoolWorker {
         CommandExecutor::instance().send(Command::Pool(
             PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
 
-        loop {
+        'zmq_poll_loop: loop {
             trace!("zmq poll loop >>");
-            let mut msgs_to_handle: Vec<(String, usize)> = Vec::new();
-            let mut requests_to_send: Vec<(String, i32)> = Vec::new();
-            let mut terminate: bool = false;
-            {
-                let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
-                ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
-                for ref node in &self.nodes {
-                    let s: &zmq::Socket = node.zsock.as_ref().unwrap();
-                    ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
-                }
 
-                let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
-                trace!("zmq poll loop ... {:?}", r);
-                for i in 0..self.nodes.len() {
-                    if ss_to_poll[1 + i].is_readable() {
-                        let msg: Option<String> = self.nodes[i].recv_msg().expect("recv msg");
-                        if msg.is_some() {
-                            msgs_to_handle.push((msg.unwrap(), i));
-                        }
+            let actions = self.poll_zmq();
+
+            for action in &actions {
+                match action {
+                    &ZMQLoopAction::Terminate => {
+                        //TODO terminate all pending commands?
+                        break 'zmq_poll_loop;
+                    }
+                    &ZMQLoopAction::MessageToProcess(ref msg) => {
+                        self.process_msg(&msg.message, msg.node_idx);
+                    }
+                    &ZMQLoopAction::RequestToSend(ref req) => {
+                        self.try_send_request(&req.request, req.id);
                     }
                 }
-                if ss_to_poll[0].is_readable() {
-                    let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT);
-                    trace!("cmd {:?}", cmd);
-                    if cmd.is_ok() {
-                        let v = cmd.unwrap();
-                        let cmd_s = String::from_utf8(v[0].clone()).expect("non-string command");
-                        if "exit".eq(cmd_s.as_str()) {
-                            terminate = true;
-                        } else {
-                            requests_to_send.push((cmd_s, LittleEndian::read_i32(v[1].as_slice())));
-                        }
-                    }
-                }
-            }
-
-            if terminate {
-                break;
-            }
-
-            for &(ref msg, rn_ind) in &msgs_to_handle {
-                self.process_msg(msg, rn_ind);
-            }
-
-            for &(ref cmd, cmd_id) in &requests_to_send {
-                self.try_send_request(cmd, cmd_id);
             }
 
             trace!("zmq poll loop <<");
         }
         info!("zmq poll loop finished");
+    }
+
+    fn poll_zmq(&mut self) -> Vec<ZMQLoopAction> {
+        let mut actions: Vec<ZMQLoopAction> = Vec::new();
+
+        let mut poll_items = self.get_zmq_poll_items();
+        let r = zmq::poll(poll_items.as_mut_slice(), -1).expect("poll");
+        trace!("zmq poll {:?}", r);
+
+        for i in 0..self.nodes.len() {
+            if poll_items[1 + i].is_readable() {
+                if let Some(msg) = self.nodes[i].recv_msg().expect("recv msg") {
+                    actions.push(ZMQLoopAction::MessageToProcess(MessageToProcess {
+                        node_idx: i,
+                        message: msg,
+                    }));
+                }
+            }
+        }
+        if poll_items[0].is_readable() {
+            let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT).unwrap();
+            trace!("cmd {:?}", cmd);
+            let cmd_s = String::from_utf8(cmd[0].clone()).expect("non-string command");
+            if "exit".eq(cmd_s.as_str()) {
+                actions.push(ZMQLoopAction::Terminate);
+            } else {
+                actions.push(ZMQLoopAction::RequestToSend(RequestToSend {
+                    id: LittleEndian::read_i32(cmd[1].as_slice()),
+                    request: cmd_s,
+                }));
+            }
+        }
+        actions
+    }
+
+    fn get_zmq_poll_items(&self) -> Vec<zmq::PollItem> {
+        let mut poll_items: Vec<zmq::PollItem> = Vec::new();
+        poll_items.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
+        for ref node in &self.nodes {
+            let s: &zmq::Socket = node.zsock.as_ref().unwrap();
+            poll_items.push(s.as_poll_item(zmq::POLLIN));
+        }
+        poll_items
     }
 
     fn try_send_request(&mut self, cmd: &String, cmd_id: i32) {
@@ -657,6 +669,38 @@ mod tests {
             cmd_ids: vec!(cmd_id),
         };
         assert_eq!(pending_cmd, &exp_command_process);
+    }
+
+    #[test]
+    fn pool_worker_poll_zmq_works_for_terminate() {
+        let ctx = zmq::Context::new();
+        let mut pw = PoolWorker {
+            cmd_sock: ctx.socket(zmq::SocketType::PAIR).expect("socket"),
+            ..Default::default()
+        };
+        let pair_socket_addr = "inproc://test_pool_worker_poll_zmq_works_for_terminate";
+        let send_cmd_sock = ctx.socket(zmq::SocketType::PAIR).expect("socket");
+        pw.cmd_sock.bind(pair_socket_addr).expect("bind");
+        send_cmd_sock.connect(pair_socket_addr).expect("connect");
+
+        let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
+            pw.poll_zmq()
+        });
+        send_cmd_sock.send_str("exit", zmq::DONTWAIT).expect("send");
+        let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
+
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0], ZMQLoopAction::Terminate);
+    }
+
+    #[test]
+    fn pool_worker_get_zmq_poll_items_works() {
+        let pw: PoolWorker = Default::default();
+
+        let poll_items = pw.get_zmq_poll_items();
+
+        assert_eq!(poll_items.len(), pw.nodes.len() + 1 );
+        //TODO compare poll items
     }
 
     #[test]

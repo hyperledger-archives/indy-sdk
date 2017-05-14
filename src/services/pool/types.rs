@@ -173,3 +173,22 @@ pub struct CommandProcess {
     pub reply_cnt: usize,
     pub cmd_ids: Vec<i32>,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ZMQLoopAction {
+    RequestToSend(RequestToSend),
+    MessageToProcess(MessageToProcess),
+    Terminate,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct RequestToSend {
+    pub request: String,
+    pub id: i32,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct MessageToProcess {
+    pub message: String,
+    pub node_idx: usize,
+}
