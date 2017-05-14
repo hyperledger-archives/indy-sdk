@@ -106,6 +106,8 @@ pub struct SimpleRequest {
     pub req_id: u64,
 }
 
+impl JsonEncodable for SimpleRequest {}
+
 impl<'a> JsonDecodable<'a> for SimpleRequest {}
 
 #[serde(tag = "op")]
@@ -165,6 +167,7 @@ pub struct CatchUpProcess {
     pub pending_reps: BinaryHeap<CatchupRep>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub reply_cnt: usize,

@@ -211,7 +211,8 @@ impl PoolWorker {
         loop {
             trace!("zmq poll loop >>");
             let mut msgs_to_handle: Vec<(String, usize)> = Vec::new();
-            let mut cmds_to_send: Vec<(String, i32)> = Vec::new();
+            let mut requests_to_send: Vec<(String, i32)> = Vec::new();
+            let mut terminate: bool = false;
             {
                 let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
                 ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
@@ -237,40 +238,48 @@ impl PoolWorker {
                         let v = cmd.unwrap();
                         let cmd_s = String::from_utf8(v[0].clone()).expect("non-string command");
                         if "exit".eq(cmd_s.as_str()) {
-                            break;
+                            terminate = true;
                         } else {
-                            cmds_to_send.push((cmd_s, LittleEndian::read_i32(v[1].as_slice())));
+                            requests_to_send.push((cmd_s, LittleEndian::read_i32(v[1].as_slice())));
                         }
                     }
                 }
+            }
+
+            if terminate {
+                break;
             }
 
             for &(ref msg, rn_ind) in &msgs_to_handle {
                 self.process_msg(msg, rn_ind);
             }
 
-            for &(ref msg, cmd_id) in &cmds_to_send {
-                info!("msg {:?}", msg);
-                let tmp = SimpleRequest::from_json(msg).unwrap();
-                if self.pending_commands.contains_key(&tmp.req_id) {
-                    self.pending_commands.get_mut(&tmp.req_id).unwrap().cmd_ids.push(cmd_id);
-                } else {
-                    let pc = CommandProcess {
-                        cmd_ids: vec!(cmd_id),
-                        nack_cnt: 0,
-                        reply_cnt: 0,
-                    };
-                    self.pending_commands.insert(tmp.req_id, pc);
-                    for node in &self.nodes {
-                        let node: &RemoteNode = node;
-                        node.send_str(msg);
-                    }
-                }
+            for &(ref cmd, cmd_id) in &requests_to_send {
+                self.try_send_request(cmd, cmd_id);
             }
 
             trace!("zmq poll loop <<");
         }
         info!("zmq poll loop finished");
+    }
+
+    fn try_send_request(&mut self, cmd: &String, cmd_id: i32) {
+        info!("cmd {:?}", cmd);
+        let tmp = SimpleRequest::from_json(cmd).unwrap();
+        if self.pending_commands.contains_key(&tmp.req_id) {
+            self.pending_commands.get_mut(&tmp.req_id).unwrap().cmd_ids.push(cmd_id);
+        } else {
+            let pc = CommandProcess {
+                cmd_ids: vec!(cmd_id),
+                nack_cnt: 0,
+                reply_cnt: 0,
+            };
+            self.pending_commands.insert(tmp.req_id, pc);
+            for node in &self.nodes {
+                let node: &RemoteNode = node;
+                node.send_str(cmd);
+            }
+        }
     }
 }
 
@@ -626,6 +635,28 @@ mod tests {
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
+    }
+
+    #[test]
+    fn pool_worker_try_send_request_works_for_new_req_id() {
+        let mut pw: PoolWorker = Default::default();
+        let req_id = 2;
+        let cmd_id = 1;
+        let req = SimpleRequest {
+            req_id: req_id,
+        };
+        let cmd = req.to_json().unwrap();
+
+        pw.try_send_request(&cmd, cmd_id);
+
+        assert_eq!(pw.pending_commands.len(), 1);
+        let pending_cmd = pw.pending_commands.get(&req_id).unwrap();
+        let exp_command_process = CommandProcess {
+            nack_cnt: 0,
+            reply_cnt: 0,
+            cmd_ids: vec!(cmd_id),
+        };
+        assert_eq!(pending_cmd, &exp_command_process);
     }
 
     #[test]
