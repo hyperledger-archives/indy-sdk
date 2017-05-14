@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::cmp;
 use std::collections::{BinaryHeap, HashMap};
 
@@ -26,6 +28,7 @@ pub struct GenTransaction {
 }
 
 impl JsonEncodable for GenTransaction {}
+
 impl<'a> JsonDecodable<'a> for GenTransaction {}
 
 #[allow(non_snake_case)]
@@ -34,16 +37,6 @@ pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
     pub ledgerType: u8,
-}
-
-impl Default for LedgerStatus {
-    fn default() -> LedgerStatus {
-        LedgerStatus {
-            ledgerType: 0,
-            merkleRoot: "".to_string(),
-            txnSeqNo: 0,
-        }
-    }
 }
 
 #[allow(non_snake_case)]
@@ -132,9 +125,22 @@ pub enum Message {
     ReqNACK(Response),
     #[serde(rename = "REPLY")]
     Reply(Reply),
+    Ping,
+    Pong,
+}
+
+impl Message {
+    pub fn from_raw_str(str: &str) -> Result<Message, serde_json::Error> {
+        match str {
+            "po" => Ok(Message::Pong),
+            "pi" => Ok(Message::Ping),
+            _ => Message::from_json(str),
+        }
+    }
 }
 
 impl JsonEncodable for Message {}
+
 impl<'a> JsonDecodable<'a> for Message {}
 
 #[derive(Serialize, Deserialize)]
@@ -143,6 +149,7 @@ pub struct PoolConfig {
 }
 
 impl JsonEncodable for PoolConfig {}
+
 impl<'a> JsonDecodable<'a> for PoolConfig {}
 
 impl PoolConfig {

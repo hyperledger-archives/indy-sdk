@@ -123,7 +123,7 @@ impl PoolWorker {
         }
     }
 
-    fn process_catchup(&mut self, catchup: CatchupRep) {
+    fn process_catchup_rep(&mut self, catchup: CatchupRep) {
         trace!("append {:?}", catchup);
         let catchup_finished = {
             let mut process = self.pending_catchup.as_mut().unwrap();
@@ -160,49 +160,45 @@ impl PoolWorker {
     }
 
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) {
-        let resp: Option<String> = if raw_msg.eq("po") {
-            //sending ledger status
-            //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
-            let ls: LedgerStatus = LedgerStatus {
-                txnSeqNo: self.nodes.len(),
-                merkleRoot: base64::encode(self.merkle_tree.root_hash()),
-                ..Default::default()
-            };
-            let msg: Message = Message::LedgerStatus(ls);
-            Some(msg.to_json().unwrap())
-        } else {
-            let msg = Message::from_json(raw_msg).unwrap();
-            match msg {
-                Message::LedgerStatus(ledger_status) => {
-                    //TODO nothing?
+        let msg = Message::from_raw_str(raw_msg).unwrap();
+        match msg {
+            Message::Pong => {
+                //sending ledger status
+                //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
+                let ls: LedgerStatus = LedgerStatus {
+                    txnSeqNo: self.nodes.len(),
+                    merkleRoot: base64::encode(self.merkle_tree.root_hash()),
+                    ledgerType: 0,
+                };
+                let resp_msg: Message = Message::LedgerStatus(ls);
+                let resp = msg.to_json().unwrap();
+                self.nodes[src_ind].zsock.as_ref().unwrap().send(resp.as_bytes(), zmq::DONTWAIT).expect("send resp msg");
+            }
+            Message::LedgerStatus(ledger_status) => {
+                //TODO nothing?
+            }
+            Message::ConsistencyProof(cons_proof) => {
+                trace!("{:?}", cons_proof);
+                if cons_proof.seqNoStart == self.merkle_tree.count()
+                    && cons_proof.seqNoEnd > self.merkle_tree.count() {
+                    self.new_mt_size = cmp::max(cons_proof.seqNoEnd, self.new_mt_size);
+                    self.new_mt_vote += 1;
+                    debug!("merkle tree expected size now {}", self.new_mt_size);
                 }
-                Message::ConsistencyProof(cons_proof) => {
-                    trace!("{:?}", cons_proof);
-                    if cons_proof.seqNoStart == self.merkle_tree.count()
-                        && cons_proof.seqNoEnd > self.merkle_tree.count() {
-                        self.new_mt_size = cmp::max(cons_proof.seqNoEnd, self.new_mt_size);
-                        self.new_mt_vote += 1;
-                        debug!("merkle tree expected size now {}", self.new_mt_size);
-                    }
-                    if self.new_mt_vote == self.f {
-                        self.start_catchup();
-                    }
-                }
-                Message::CatchupRep(catchup) => {
-                    self.process_catchup(catchup);
-                }
-                Message::Reply(reply) => {
-                    self.process_reply(&reply, raw_msg);
-                }
-                _ => {
-                    info!("unhandled msg {:?}", msg);
+                if self.new_mt_vote == self.f {
+                    self.start_catchup();
                 }
             }
-            None
+            Message::CatchupRep(catchup) => {
+                self.process_catchup_rep(catchup);
+            }
+            Message::Reply(reply) => {
+                self.process_reply(&reply, raw_msg);
+            }
+            _ => {
+                info!("unhandled msg {:?}", msg);
+            }
         };
-        if resp.is_some() {
-            self.nodes[src_ind].zsock.as_ref().unwrap().send(resp.unwrap().as_bytes(), zmq::DONTWAIT).expect("send resp msg");
-        }
     }
 
 
