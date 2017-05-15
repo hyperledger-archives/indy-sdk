@@ -34,7 +34,7 @@ struct Pool {
     name: String,
     id: i32,
     send_sock: zmq::Socket,
-    worker: Option<thread::JoinHandle<()>>,
+    worker: Option<thread::JoinHandle<Result<(), CryptoError>>>,
 }
 
 struct PoolWorker {
@@ -315,7 +315,7 @@ impl Pool {
             id: pool_id,
             send_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
-                pool_worker.run();
+                Ok(pool_worker.run()?)
             })),
         })
     }
@@ -334,7 +334,7 @@ impl Drop for Pool {
         self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
         info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join().unwrap();
+        self.worker.take().unwrap().join().unwrap().unwrap();
         info!(target: target.as_str(), "Drop finished");
     }
 }
@@ -577,7 +577,7 @@ mod tests {
         recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
         send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
         let pool = Pool {
-            worker: Some(thread::spawn(|| {})),
+            worker: Some(thread::spawn(|| {Ok(())})),
             name: name.to_string(),
             id: 0,
             send_sock: send_cmd_sock,
