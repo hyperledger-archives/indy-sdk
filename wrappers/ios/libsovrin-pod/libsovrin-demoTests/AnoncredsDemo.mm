@@ -8,7 +8,7 @@
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
 
-static NSTimeInterval defaultTimeout = 100;
+static NSTimeInterval defaultTimeout = 1000;
 
 @interface AnoncredsDemo : XCTestCase
 
@@ -82,19 +82,20 @@ extern "C" {
                         \"name\":\"gvt\",\
                         \"version\":\"1.0\",\
                         \"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"],\
-                        \"seq_no\":\"%d\"\
+                        \"seq_no\":%d\
                         }", seqNo ];
     
     __block NSString *claimJSON = nil;
-    
+    __block NSString *claimDefUUID = nil;
     ret = [[SovrinAnoncreds sharedInstance] issuerCreateAndStoreClaimDef:  walletHandle
                                                               schemaJSON:  schema
                                                            signatureType:  nil
                                                           createNonRevoc:  false
-                                                              completion: ^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)
+                                                              completion: ^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID1)
     {
         XCTAssertEqual(error.code, Success, "issuerCreateAndStoreClaimDef got error in completion");
         claimJSON = [ NSString stringWithString: claimDefJSON];
+        claimDefUUID = [ NSString stringWithFormat: claimDefUUID1];
         [completionExpectation fulfill];
     }];
     
@@ -103,8 +104,6 @@ extern "C" {
 
     // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-
-    NSString *claimDefUUID = [[NSUUID UUID] UUIDString];
     
     ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: seqNo]
                                               forHandle:  walletHandle
@@ -140,7 +139,7 @@ extern "C" {
 
     NSString *proverDiD = @"some_prover_did";
     
-    NSString *claimOfferJSON =  [NSString stringWithFormat: @"{{\"issuer_did\":\"some_issuer_did\",\"claim_def_seq_no\":%d}}", seqNo];
+    NSString *claimOfferJSON =  [NSString stringWithFormat: @"{\"issuer_did\":\"some_issuer_did\",\"claim_def_seq_no\":%d}", seqNo];
     __block NSString *claimReqJSON = nil;
     
     ret = [[ SovrinAnoncreds sharedInstance] proverCreateAndStoreClaimReq: walletHandle
@@ -202,11 +201,11 @@ extern "C" {
     // 9. Prover gets Claims for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSString* proofReqJSON = [ NSString stringWithFormat: @"{{\
+    NSString* proofReqJSON = [ NSString stringWithFormat: @"{\
                                  \"nonce\":\"123432421212\",\
                                  \"requested_attrs\":{{\"attr1_uuid\":{{\"schema_seq_no\":%d,\"name\":\"name\"}}}},\
                                  \"requested_predicates\":{{\"predicate1_uuid\":{{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}}}\
-                                 }}", seqNo];
+                                 }", seqNo];
     
     ret = [[ SovrinAnoncreds sharedInstance] proverGetClaimsForProofReq:  walletHandle
                                                            proofReqJSON:  proofReqJSON
@@ -223,15 +222,15 @@ extern "C" {
     // 10. Prover create Proof for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{{\
+    NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                                                        \"self_attested_attributes\":{{}},\
                                                                        \"requested_attrs\":{{\"attr1_uuid\":[\"%d\",true]}},\
                                                                        \"requested_predicates\":{{\"predicate1_uuid\":\"%d\"}}\
-                                                                    }}", seqNo, seqNo ];
+                                                                    }", seqNo, seqNo ];
     
-    NSString *schemas = [NSString stringWithFormat: @"{{\"%d\":%@}}", seqNo, schema];
+    NSString *schemas = [NSString stringWithFormat: @"{\"%d\":%@}", seqNo, schema];
     
-    NSString *claimDefsJSON = [NSString stringWithFormat: @"{{\"%d\":%@}}", seqNo, claimJSON];
+    NSString *claimDefsJSON = [NSString stringWithFormat: @"{\"%d\":%@}", seqNo, claimJSON];
     
     NSString *revocRegsJsons = @"{}";
     

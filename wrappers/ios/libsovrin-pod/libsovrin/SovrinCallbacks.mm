@@ -29,7 +29,7 @@ void SovrinWrapperCommon3PHCallback(sovrin_handle_t xcommand_handle, sovrin_erro
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
-
+    
     void (^completion)(NSError*, SovrinHandle) = (__bridge void (^)(NSError*, SovrinHandle))block;
 
     if (completion)
@@ -48,13 +48,13 @@ void SovrinWrapperCommon3PSCallback(sovrin_handle_t xcommand_handle, sovrin_erro
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
 
     void (^completion)(NSError*, NSString *) = (__bridge void (^)(NSError*, NSString *arg1 ))block;
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
 
     if (completion)
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
             NSError *error = [ NSError errorFromSovrinError: err ];
-            NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
             completion(error, sarg1);
         });
     }
@@ -84,13 +84,14 @@ void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle, sovrin_error
 
     void (^completion)(NSError*, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, NSString* arg1, NSString *arg2))block;
 
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
+    NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
+
     if (completion)
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
             NSError *error = [ NSError errorFromSovrinError: err ];
-            NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
-            NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
             completion(error, sarg1, sarg2);
         });
     }

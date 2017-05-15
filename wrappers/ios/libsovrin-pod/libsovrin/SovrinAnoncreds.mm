@@ -87,8 +87,8 @@
                                      walletHandle,
                                      [reqJSON UTF8String],
                                      [claimJSON UTF8String],
-                                     [seqNo intValue],
-                                     [revocIndex intValue],
+                                     seqNo ? [seqNo intValue] : -1,
+                                     revocIndex ? [revocIndex intValue] : -1,
                                      SovrinWrapperCommon4PCallback
                                     );
 
@@ -202,13 +202,13 @@
     sovrin_error_t ret;
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
-    
+
     ret = sovrin_prover_create_and_store_claim_req(handle,
                                                    walletHandle,
                                                    [prover UTF8String],
                                                    [offerJson UTF8String],
-                                                   [name UTF8String],
                                                    [claimJson UTF8String],
+                                                   [name UTF8String],
                                                    SovrinWrapperCommon3PSCallback
                                                   );
     
