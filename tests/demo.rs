@@ -289,7 +289,7 @@ fn anoncreds_demo_works() {
     println!("proof_json {:?}", proof_json);
     assert_eq!(ErrorCode::Success, err);
 
-    // 9. Verifier verify proof
+    // 10. Verifier verify proof
     let err =
         sovrin_verifier_verify_proof(verifier_verify_proof_handle,
                                      wallet_handle,

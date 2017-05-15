@@ -4,6 +4,8 @@ pub mod callback;
 pub mod environment;
 
 pub mod pool;
+pub mod wallet;
+pub mod anoncreds;
 
 #[macro_use]
 #[path = "../../src/utils/test.rs"]

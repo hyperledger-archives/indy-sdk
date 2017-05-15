@@ -222,6 +222,11 @@ impl ProverCommandExecutor {
                                  claim_def.public_key_revocation,
                                  master_secret, prover_did)?;
 
+        self.wallet_service.set(
+            wallet_handle,
+            &format!("claim_definition::{}", &claim_offer.claim_def_seq_no),
+            &claim_def_json)?;
+
         let primary_claim_init_data_json = ClaimInitData::to_json(&primary_claim_init_data)?;
         self.wallet_service.set(
             wallet_handle,
@@ -275,11 +280,8 @@ impl ProverCommandExecutor {
             &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
         let primary_claim_init_data = ClaimInitData::from_json(&primary_claim_init_data_json)?;
 
-        let claim_def_uuid = self.wallet_service.get(
-            wallet_handle,
-            &format!("seq_no::{}", &claim_json.claim_def_seq_no))?;
         let claim_def_json = self.wallet_service.get(
-            wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+            wallet_handle, &format!("claim_definition::{}", &claim_json.claim_def_seq_no))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
 
         let claim_json = RefCell::new(claim_json);
@@ -422,13 +424,13 @@ impl ProverCommandExecutor {
         }
 
         let proof_claims = self.anoncreds_service.prover.create_proof(claims,
-                                                                             &proof_req,
-                                                                             &schemas,
-                                                                             &claim_defs,
-                                                                             &revoc_regs,
-                                                                             &requested_claims,
-                                                                             &ms,
-                                                                             &tails)?;
+                                                                      &proof_req,
+                                                                      &schemas,
+                                                                      &claim_defs,
+                                                                      &revoc_regs,
+                                                                      &requested_claims,
+                                                                      &ms,
+                                                                      &tails)?;
 
         let proof_claims_json = ProofJson::to_json(&proof_claims)?;
 
