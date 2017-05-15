@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::error;
 use std::fmt;
 
@@ -50,6 +52,12 @@ impl ToErrorCode for SignusError {
             SignusError::PoolError(ref err) => err.to_error_code(),
             SignusError::WalletError(ref err) => err.to_error_code(),
         }
+    }
+}
+
+impl From<serde_json::Error> for SignusError {
+    fn from(err: serde_json::Error) -> SignusError {
+        SignusError::CryptoError(CryptoError::InvalidStructure(err.to_string()))
     }
 }
 

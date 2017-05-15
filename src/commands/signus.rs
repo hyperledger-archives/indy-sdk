@@ -1,9 +1,11 @@
+use utils::json::{JsonDecodable};
 use errors::signus::SignusError;
+use services::signus::types::{DIDInfo};
 
-use services::crypto::CryptoService;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
-
+use services::signus::SignusService;
 use std::rc::Rc;
 
 pub enum SignusCommand {
@@ -44,18 +46,18 @@ pub enum SignusCommand {
 }
 
 pub struct SignusCommandExecutor {
-    crypto_service: Rc<CryptoService>,
+    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
 }
 
 impl SignusCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> SignusCommandExecutor {
         SignusCommandExecutor {
-            crypto_service: crypto_service,
+            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
         }
@@ -98,7 +100,14 @@ impl SignusCommandExecutor {
                                walled_handle: i32,
                                did_json: &str,
                                cb: Box<Fn(Result<(String, String, String), SignusError>) + Send>) {
-        cb(Ok(("".to_string(), "".to_string(), "".to_string())));
+        cb(self._create_and_store_my_did(walled_handle, did_json));
+    }
+
+    fn _create_and_store_my_did(&self, walled_handle: i32, did_json: &str) -> Result<(String, String, String), SignusError> {
+        let did_info = DIDInfo::from_json(&did_json)?;
+        let xtype = did_info.crypto_type.unwrap_or("ed25519".to_string());
+        let signus_service = SignusService::new();
+        Ok(("".to_string(), "".to_string(), "".to_string()))
     }
 
     fn replace_keys(&self,

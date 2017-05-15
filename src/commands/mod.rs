@@ -12,7 +12,7 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 
 use errors::common::CommonError;
 
-use services::crypto::CryptoService;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
@@ -54,14 +54,14 @@ impl CommandExecutor {
             worker: Some(thread::spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
-                let crypto_service = Rc::new(CryptoService::new());
+                let anoncreds_service = Rc::new(AnoncredsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
 
-                let anoncreds_command_executor = AnoncredsCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
+                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let signus_command_executor = SignusCommandExecutor::new(crypto_service.clone(), pool_service.clone(), wallet_service.clone());
+                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
 
                 loop {

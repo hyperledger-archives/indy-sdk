@@ -8,6 +8,7 @@ pub mod cstring;
 #[macro_use]
 pub mod ccallback;
 
+pub mod crypto;
 pub mod logger;
 
 #[macro_use]

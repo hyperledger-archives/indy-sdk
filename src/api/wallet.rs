@@ -233,10 +233,9 @@ pub extern fn sovrin_delete_wallet(command_handle: i32,
 pub extern fn sovrin_wallet_set_seq_no_for_value(command_handle: i32,
                                                  wallet_handle: i32,
                                                  wallet_key: *const c_char,
-                                                 seq_no: *const c_char,
+                                                 seq_no: i32,
                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(wallet_key, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(seq_no, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()

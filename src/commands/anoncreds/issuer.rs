@@ -4,10 +4,10 @@ extern crate uuid;
 use self::uuid::Uuid;
 
 use errors::anoncreds::AnoncredsError;
-use services::crypto::CryptoService;
+use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
-use services::crypto::anoncreds::types::{
+use services::anoncreds::types::{
     ClaimDefinition,
     ClaimDefinitionPrivate,
     ClaimJson,
@@ -49,17 +49,17 @@ pub enum IssuerCommand {
 }
 
 pub struct IssuerCommandExecutor {
-    pub crypto_service: Rc<CryptoService>,
+    pub anoncreds_service: Rc<AnoncredsService>,
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>
 }
 
 impl IssuerCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>,
+    pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
-            crypto_service: crypto_service,
+            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
         }
@@ -107,7 +107,7 @@ impl IssuerCommandExecutor {
         let schema = Schema::from_json(schema_json)?;
 
         let (claim_definition, claim_definition_private) =
-            self.crypto_service.anoncreds.issuer.generate_claim_definition(schema, signature_type, create_non_revoc)?;
+            self.anoncreds_service.issuer.generate_claim_definition(schema, signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_json(&claim_definition)?;
         let claim_definition_private_json = ClaimDefinitionPrivate::to_json(&claim_definition_private)?;
@@ -133,14 +133,14 @@ impl IssuerCommandExecutor {
                                              wallet_handle: i32,
                                              claim_def_seq_no: i32,
                                              max_claim_num: i32) -> Result<(String, String), AnoncredsError> {
-        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_def_seq_no))?;
+        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &claim_def_seq_no))?;
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
 
         let pk_r = claim_def.public_key_revocation.ok_or(AnoncredsError::NotIssuedError("Revocation Public Key for this claim definition".to_string()))?;
 
         let (revocation_registry, revocation_registry_private) =
-            self.crypto_service.anoncreds.issuer.issue_accumulator(&pk_r, max_claim_num, claim_def_seq_no)?;
+            self.anoncreds_service.issuer.issue_accumulator(&pk_r, max_claim_num, claim_def_seq_no)?;
 
         let uuid = Uuid::new_v4().to_string();
 
@@ -172,8 +172,10 @@ impl IssuerCommandExecutor {
                                user_revoc_index: Option<i32>) -> Result<(String, String), AnoncredsError> {
         let claim_req_json: ClaimRequestJson = ClaimRequestJson::from_json(claim_req_json)?;
 
-        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("claim_definition_uuid::{}", &claim_req_json.claim_def_seq_no))?;
+        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &claim_req_json.claim_def_seq_no))?;
+
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+
         let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_uuid))?;
 
         let claim_def = ClaimDefinition::from_json(&claim_def_json)?;
@@ -195,9 +197,9 @@ impl IssuerCommandExecutor {
 
         let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)?;
 
-        let claims = self.crypto_service.anoncreds.issuer.create_claim(
-            claim_def.clone()?,
-            claim_def_private,
+        let claims = self.anoncreds_service.issuer.create_claim(
+            &claim_def,
+            &claim_def_private,
             &revocation_registry,
             &revocation_registry_private,
             &claim_req_json.claim_request,
@@ -211,7 +213,9 @@ impl IssuerCommandExecutor {
         }
 
         let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no);
+
         let claim_json = ClaimJson::to_json(&claim_json)?;
+
 
         Ok((revocation_registry_json, claim_json))
     }
@@ -240,7 +244,7 @@ impl IssuerCommandExecutor {
 
         let revocation_registry = RefCell::new(revocation_registry);
 
-        self.crypto_service.anoncreds.issuer.revoke(
+        self.anoncreds_service.issuer.revoke(
             &revocation_registry,
             &revocation_registry_private.tails,
             user_revoc_index
