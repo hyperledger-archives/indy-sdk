@@ -7,15 +7,12 @@ extern crate serde;
 use self::int_traits::IntTraits;
 
 use self::openssl::bn::{BigNum, BigNumRef, BigNumContext};
-use self::openssl::error::ErrorStack;
 use self::openssl::hash::{hash2, MessageDigest, Hasher};
 use self::serde::ser::{Serialize, Serializer, Error as SError};
 use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
 use std::fmt;
 use std::cmp::Ord;
 use std::cmp::Ordering;
-use std::num::ParseIntError;
-use std::error::Error;
 use services::anoncreds::helpers::BytesView;
 
 #[cfg(test)]
@@ -405,19 +402,6 @@ impl<'a> Deserialize<'a> for BigNumber {
         }
 
         deserializer.deserialize_str(BigNumberVisitor)
-    }
-}
-
-
-impl From<ErrorStack> for CryptoError {
-    fn from(err: ErrorStack) -> CryptoError {
-        CryptoError::BackendError(err.description().to_string())
-    }
-}
-
-impl From<ParseIntError> for CryptoError {
-    fn from(err: ParseIntError) -> CryptoError {
-        CryptoError::BackendError(err.description().to_string())
     }
 }
 
