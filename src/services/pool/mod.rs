@@ -50,22 +50,9 @@ struct PoolWorker {
 }
 
 impl PoolWorker {
-    fn restore_merkle_tree(&mut self) {
-        let mut p = EnvironmentUtils::pool_path(self.name.as_str());
-        //TODO firstly try to deserialize merkle tree
-        p.push(&self.name);
-        p.set_extension("txn");
-        let f = fs::File::open(p).expect("open file");
-        let reader = io::BufReader::new(&f);
-        for line in reader.lines() {
-            let line: String = line.expect("read transaction line");
-            self.merkle_tree.append(line);
-        }
-    }
-
     fn connect_to_known_nodes(&mut self) {
         if self.merkle_tree.is_empty() {
-            self.restore_merkle_tree();
+            self.merkle_tree = PoolWorker::_restore_merkle_tree(self.name.as_str()).unwrap();
         }
         let ctx: zmq::Context = zmq::Context::new();
         for gen_txn in &self.merkle_tree {
@@ -292,6 +279,21 @@ impl PoolWorker {
                 node.send_str(cmd);
             }
         }
+    }
+
+    fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+        let mut mt = MerkleTree::from_vec(Vec::new());
+        //TODO firstly try to deserialize merkle tree
+        p.push(pool_name);
+        p.set_extension("txn");
+        let f = fs::File::open(p)?;
+        let reader = io::BufReader::new(&f);
+        for line in reader.lines() {
+            let line: String = line?;
+            mt.append(line);
+        }
+        Ok(mt)
     }
 }
 
@@ -626,14 +628,10 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let mut pw: PoolWorker = PoolWorker {
-            name: pool_name.to_string(),
-            ..Default::default()
-        };
-        pw.restore_merkle_tree();
+        let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
 
-        assert_eq!(pw.merkle_tree.count(), 4, "test restored MT size");
-        assert_eq!(pw.merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
+        assert_eq!(merkle_tree.count(), 4, "test restored MT size");
+        assert_eq!(merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
     }
 
     #[test]
