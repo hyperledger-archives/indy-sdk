@@ -51,6 +51,7 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
+use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
@@ -312,18 +313,48 @@ fn anoncreds_demo_works() {
 #[ignore] //required nodes pool available from CI
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
+    let my_wallet_name = "my_wallet";
+    let their_wallet_name = "their_wallet";
+    let wallet_type = "default";
     let pool_name = "test_submit_tx";
     let c_pool_name = CString::new(pool_name).unwrap();
 
     let (submit_sender, submit_receiver) = channel();
+    let (get_nym_sender, get_nym_receiver) = channel();
     let (create_sender, create_receiver) = channel();
     let (open_sender, open_receiver) = channel();
+    let (create_my_wallet_sender, create_my_wallet_receiver) = channel();
+    let (create_their_wallet_sender, create_their_wallet_receiver) = channel();
+    let (open_my_wallet_sender, open_my_wallet_receiver) = channel();
+    let (open_their_wallet_sender, open_their_wallet_receiver) = channel();
+    let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
+    let (create_and_store_their_did_sender, create_and_store_their_did_receiver) = channel();
+    let (store_their_did_sender, store_their_did_receiver) = channel();
+    let (sign_sender, sign_receiver) = channel();
     let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
     let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
     let send_cb = Box::new(move |err, resp| { submit_sender.send((err, resp)).unwrap(); });
+    let get_nym_cb = Box::new(move |err, resp| { get_nym_sender.send((err, resp)).unwrap(); });
+    let create_my_wallet_cb = Box::new(move |err| { create_my_wallet_sender.send(err).unwrap(); });
+    let create_their_wallet_cb = Box::new(move |err| { create_their_wallet_sender.send(err).unwrap(); });
+    let open_my_wallet_cb = Box::new(move |err, handle| { open_my_wallet_sender.send((err, handle)).unwrap(); });
+    let open_their_wallet_cb = Box::new(move |err, handle| { open_their_wallet_sender.send((err, handle)).unwrap(); });
+    let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap(); });
+    let create_and_store_their_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_their_did_sender.send((err, did, verkey, public_key)).unwrap(); });
+    let sign_cb = Box::new(move |err, signature| { sign_sender.send((err, signature)).unwrap(); });
+    let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
     let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
     let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
-    let (command_handle, send_callback) = CallbackUtils::closure_to_send_tx_cb(send_cb);
+    let (send_command_handle, send_callback) = CallbackUtils::closure_to_send_tx_cb(send_cb);
+    let (get_nym_command_handle, get_nym_callback) = CallbackUtils::closure_to_send_tx_cb(get_nym_cb);
+    let (create_my_wallet_command_handle, create_my_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_my_wallet_cb);
+    let (create_their_wallet_command_handle, create_their_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_their_wallet_cb);
+    let (open_my_wallet_command_handle, open_my_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_my_wallet_cb);
+    let (open_their_wallet_command_handle, open_their_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_their_wallet_cb);
+    let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
+    let (create_and_store_their_did_command_handle, create_and_store_their_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_their_did_cb);
+    let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
+    let (sign_command_handle, sign_callback) = CallbackUtils::closure_to_sign_cb(sign_cb);
 
     // 1. Create ledger config from genesis txn file
     PoolUtils::create_genesis_txn_file(pool_name);
@@ -344,37 +375,199 @@ fn ledger_demo_works() {
     assert_eq!(err, ErrorCode::Success);
     let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
+    thread::sleep(TimeoutUtils::short_timeout());
 
-    // 3. Send request
-    let request = "{\
-            \"reqId\":1491566332010860,\
-            \"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\
-            \"operation\":{\
-                \"type\":\"105\",\
-                \"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"\
-            },\
-            \"signature\":\"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV\"\
-        }\
-        ";
+    // 3. Create My Wallet
+    let err =
+        sovrin_create_wallet(create_my_wallet_command_handle,
+                             CString::new(pool_name).unwrap().as_ptr(),
+                             CString::new(my_wallet_name).unwrap().as_ptr(),
+                             CString::new(wallet_type).unwrap().as_ptr(),
+                             null(),
+                             null(),
+                             create_my_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = create_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 4. Open My Wallet. Gets My wallet handle
+    let err =
+        sovrin_open_wallet(open_my_wallet_command_handle,
+                           CString::new(my_wallet_name).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           open_my_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, my_wallet_handle) = open_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+
+    // 5. Create Their Wallet
+    let err =
+        sovrin_create_wallet(create_their_wallet_command_handle,
+                             CString::new(pool_name).unwrap().as_ptr(),
+                             CString::new(their_wallet_name).unwrap().as_ptr(),
+                             CString::new(wallet_type).unwrap().as_ptr(),
+                             null(),
+                             null(),
+                             create_their_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = create_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 6. Open Their Wallet. Gets Their wallet handle
+    let err =
+        sovrin_open_wallet(open_their_wallet_command_handle,
+                           CString::new(their_wallet_name).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           open_their_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 7. Create My DID
+    let my_did_json = "{}";
+    let err =
+        sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
+                                       my_wallet_handle,
+                                       CString::new(my_did_json).unwrap().as_ptr(),
+                                       create_and_store_my_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("did {:?}", my_did);
+    println!("verkey {:?}", my_verkey);
+    println!("pk {:?}", my_pk);
+    assert_eq!(ErrorCode::Success, err);
+
+    // 8. Create Their DID from Trustee1 seed
+    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
+    let err =
+        sovrin_create_and_store_my_did(create_and_store_their_did_command_handle,
+                                       their_wallet_handle,
+                                       CString::new(their_did_json).unwrap().as_ptr(),
+                                       create_and_store_their_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, their_did, their_verkey, their_pk) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("their_did {:?}", their_did);
+    println!("their_verkey {:?}", their_verkey);
+    println!("their_pk {:?}", their_pk);
+    assert_eq!(ErrorCode::Success, err);
+
+    // 9. Store Their DID
+    let their_identity_json = format!("{{\"did\":\"{}\",\
+                                        \"pk\":\"{}\",\
+                                        \"verkey\":\"{}\"\
+                                      }}",
+                                      their_did, their_pk, their_verkey);
+    let err =
+        sovrin_store_their_did(store_their_did_command_handle,
+                               my_wallet_handle,
+                               CString::new(their_identity_json).unwrap().as_ptr(),
+                               store_their_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 10. Prepare NYM transaction
+    let nym_req_id = PoolUtils::get_req_id();
+    let mut nym_txn_req = Request {
+        identifier: their_verkey.clone(),
+        operation: Operation {
+            dest: my_verkey.clone(),
+            type_: "1".to_string(),
+        },
+        req_id: nym_req_id,
+        signature: "".to_string(),
+    };
+
+    // 10. Their Sign message
+    let msg_for_sign = nym_txn_req.serialize_for_sign();
+    println!("message_to_sign {}", msg_for_sign);
+    let err =
+        sovrin_sign(sign_command_handle,
+                    their_wallet_handle,
+                    CString::new(their_did.clone()).unwrap().as_ptr(),
+                    CString::new(msg_for_sign.clone()).unwrap().as_ptr(),
+                    sign_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("signature {:?}", signature);
+    assert_eq!(ErrorCode::Success, err);
+    nym_txn_req.signature = signature;
+
+    // 11. Send NYM request
+    let request = serde_json::to_string(&nym_txn_req).unwrap();
     let req = CString::new(request).unwrap();
-    let err = sovrin_submit_request(command_handle,
+    let err = sovrin_submit_request(send_command_handle,
                                     pool_handle,
                                     req.as_ptr(),
                                     send_callback);
     assert_eq!(err, ErrorCode::Success);
-    let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
+    let nym_resp: Reply = serde_json::from_str(&resp).unwrap();
+    println!("nym_resp {:?}\n{:?}", resp, nym_resp);
 
-    let act_reply: Reply = serde_json::from_str(resp.as_str()).unwrap();
-    let exp_reply = Reply {
-        op: "REPLY".to_string(),
-        result: ReplyResult {
-            req_id: 1491566332010860,
-            txn_id: "5511e5493c1d37dfa67b73269a392a7aca5b71e9d10ac106adc7f9e552aee560".to_string(),
-        }
+    // 12. Prepare and send GET_NYM request
+    let get_nym_req_id = PoolUtils::get_req_id();
+    let get_nym_txn = Request {
+        req_id: get_nym_req_id,
+        signature: "".to_string(),
+        identifier: my_verkey.clone(),
+        operation: Operation {
+            type_: "105".to_string(),
+            dest: my_verkey.clone(),
+        },
     };
-    assert_eq!(act_reply, exp_reply);
+    let request = serde_json::to_string(&get_nym_txn).unwrap();
+    let req = CString::new(request).unwrap();
+    let err = sovrin_submit_request(get_nym_command_handle,
+                                    pool_handle,
+                                    req.as_ptr(),
+                                    get_nym_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, resp) = get_nym_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+    let get_nym_resp: Reply = serde_json::from_str(&resp).unwrap();
+    let get_nym_resp_data: ReplyResultData = serde_json::from_str(&get_nym_resp.result.data.as_ref().unwrap()).unwrap();
+    println!("get_nym_resp {:?}\n{:?}\n{:?}", resp, get_nym_resp, get_nym_resp_data);
+
+    assert_eq!(get_nym_resp_data.txn_id, nym_resp.result.txn_id);
+    assert_eq!(get_nym_resp_data.dest, nym_txn_req.operation.dest);
+
     TestUtils::cleanup_storage();
+
+    #[derive(Serialize, Eq, PartialEq, Debug)]
+    #[serde(rename_all = "camelCase")]
+    struct Request {
+        req_id: u64,
+        identifier: String,
+        operation: Operation,
+        signature: String,
+    }
+    impl Request {
+        fn serialize_for_sign(&self) -> String {
+            format!("identifier:{}|operation:dest:{}|type:{}|reqId:{}",
+                    self.identifier, self.operation.dest, self.operation.type_, self.req_id
+            )
+        }
+    }
+
+    #[derive(Serialize, Eq, PartialEq, Debug)]
+    struct Operation {
+        #[serde(rename = "type")]
+        type_: String,
+        dest: String,
+    }
 
     #[derive(Deserialize, Eq, PartialEq, Debug)]
     struct Reply {
@@ -387,6 +580,16 @@ fn ledger_demo_works() {
     struct ReplyResult {
         txn_id: String,
         req_id: u64,
+        data: Option<String>
+    }
+
+    #[derive(Deserialize, Eq, PartialEq, Debug)]
+    #[serde(rename_all = "camelCase")]
+    struct ReplyResultData {
+        dest: String,
+        identifier: String,
+        role: Option<String>,
+        txn_id: String,
     }
 }
 
