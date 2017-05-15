@@ -225,7 +225,7 @@ mod tests {
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(String::from(i));
+            mt.append(String::from(i)).unwrap();
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
@@ -239,7 +239,7 @@ mod tests {
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(String::from(i));
+            mt.append(String::from(i)).unwrap();
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
@@ -277,7 +277,7 @@ mod tests {
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(String::from(i));
+            mt.append(String::from(i)).unwrap();
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
