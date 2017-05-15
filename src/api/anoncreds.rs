@@ -157,8 +157,8 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
-                                         revoc_reg_seq_no: Option<i32>,
-                                         user_revoc_index: Option<i32>,
+                                         revoc_reg_seq_no: i32,
+                                         user_revoc_index: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               revoc_reg_update_json: *const c_char,  //TODO must be OPTIONAL
                                                               xclaim_json: *const c_char
