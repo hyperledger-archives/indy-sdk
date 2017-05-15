@@ -13,6 +13,19 @@
 
 @implementation SovrinWallet
 
++ (SovrinWallet*) sharedInstance
+{
+    static SovrinWallet *instance = nil;
+    static dispatch_once_t dispatch_once_block;
+    
+    dispatch_once(&dispatch_once_block, ^
+                  {
+                      instance = [SovrinWallet new];
+                  });
+    
+    return instance;
+}
+
 - (NSError*) createWallet:(NSString*) poolName
                      name:(NSString*) name
                     xType:(NSString*) type
@@ -40,8 +53,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*)   openWallet:(SovrinHandle) poolHandle
-                     name:(NSString*) name
+- (NSError*)   openWallet:(NSString*) name
             runtimeConfig:(NSString*) config
               credentials:(NSString*) credentials
                completion:(void (^)(NSError* error, SovrinHandle walletHandle )) handler
