@@ -12,6 +12,7 @@ use utils::crypto::base58::Base58;
 use errors::crypto::CryptoError;
 use errors::signus::SignusError;
 use std::collections::HashMap;
+use std::str;
 
 const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
@@ -115,11 +116,11 @@ impl SignusService {
 
         let secret_key = Base58::decode(&my_did.secret_key)?;
         let public_key = Base58::decode(&public_key)?;
-        let doc = Base58::decode(&doc)?;
 
-        let encrypted_doc = signus.encrypt(&secret_key, &public_key, &doc, &nonce);
+        let encrypted_doc = signus.encrypt(&secret_key, &public_key, &doc.as_bytes(), &nonce);
         let encrypted_doc = Base58::encode(&encrypted_doc);
         let nonce = Base58::encode(&nonce);
+
         Ok((encrypted_doc, nonce))
     }
 
@@ -137,12 +138,13 @@ impl SignusService {
 
         let secret_key = Base58::decode(&my_did.secret_key)?;
         let public_key = Base58::decode(&public_key)?;
-        let doc = Base58::decode(&doc)?;
         let nonce = Base58::decode(&nonce)?;
+        let doc = Base58::decode(&doc)?;
 
         let decrypted_doc = signus.decrypt(&secret_key, &public_key, &doc, &nonce)?;
-        let decrypted_doc = Base58::encode(&decrypted_doc);
-        Ok(decrypted_doc)
+
+        let decrypted_doc = str::from_utf8(&decrypted_doc)?;
+        Ok(decrypted_doc.to_string())
     }
 }
 
@@ -303,8 +305,87 @@ mod tests {
         };
 
         let res = service.verify(&their_did, &msg, &signature);
-        res.unwrap();
-        //        assert!(res.is_ok());
-        //        assert_eq!(false, res.unwrap());
+        assert!(res.is_ok());
+        assert_eq!(false, res.unwrap());
+    }
+
+    #[test]
+    fn encrypt_works() {
+        let service = SignusService::new();
+
+        let msg = "some message";
+
+        let did_info = MyDidInfo {
+            did: None,
+            seed: None,
+            crypto_type: None
+        };
+        let res = service.create_my_did(&did_info);
+        assert!(res.is_ok());
+        let my_did = res.unwrap();
+
+
+        let res = service.create_my_did(&did_info.clone());
+        assert!(res.is_ok());
+        let their_did = res.unwrap();
+
+        let their_did = TheirDid {
+            did: their_did.did,
+            crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
+            pk: Some(their_did.public_key),
+            verkey: Some(their_did.ver_key)
+        };
+
+        let encrypted_message = service.encrypt(&my_did, &their_did, msg);
+        assert!(encrypted_message.is_ok());
+    }
+
+    #[test]
+    fn encrypt_decrypt_works() {
+        let service = SignusService::new();
+
+        let msg = "some message";
+
+        let did_info = MyDidInfo {
+            did: None,
+            seed: None,
+            crypto_type: None
+        };
+        let res = service.create_my_did(&did_info);
+        assert!(res.is_ok());
+        let my_did = res.unwrap();
+
+        let my_did_for_encrypt = my_did.clone();
+
+        let their_did_for_decrypt = TheirDid {
+            did: my_did.did,
+            crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
+            pk: Some(my_did.public_key),
+            verkey: Some(my_did.ver_key)
+        };
+
+
+        let res = service.create_my_did(&did_info.clone());
+        assert!(res.is_ok());
+        let their_did = res.unwrap();
+
+        let my_did_for_decrypt = their_did.clone();
+
+        let their_did_for_encrypt = TheirDid {
+            did: their_did.did,
+            crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
+            pk: Some(their_did.public_key),
+            verkey: Some(their_did.ver_key)
+        };
+
+        let encrypted_message = service.encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg);
+        assert!(encrypted_message.is_ok());
+        let (encrypted_message, noce) = encrypted_message.unwrap();
+
+        let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce);
+        assert!(decrypted_message.is_ok());
+        let decrypted_message = decrypted_message.unwrap();
+
+        assert_eq!(msg.to_string(), decrypted_message);
     }
 }

@@ -287,17 +287,17 @@ impl SignusCommandExecutor {
                                     result: Result<String, LedgerError>) {
         match self.verify_callbacks.try_borrow_mut() {
             Ok(mut cbs) => {
-                match cbs.remove(&cb_id) {
-                    Some(cb) => {
-                        match result {
-                            Ok(their_did_json) =>
-                                cb(self._verify_signature_get_nym_ack(wallet_handle, &their_did_json, msg, signature)),
-                            Err(err) =>
-                                cb(Err(SignusError::LedgerError(err)))
-                        }
-                    }
-                    None =>
-                        error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                let cb = cbs.remove(&cb_id);
+
+                if cb.is_none() {
+                    error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                }
+                let cb = cb.unwrap();
+
+                match result {
+                    Ok(their_did_json) =>
+                        cb(self._verify_signature_get_nym_ack(wallet_handle, &their_did_json, msg, signature)),
+                    Err(err) => cb(Err(SignusError::LedgerError(err)))
                 }
             }
             Err(err) => error!("{:?}", err)
@@ -389,17 +389,17 @@ impl SignusCommandExecutor {
                            result: Result<String, LedgerError>) {
         match self.encrypt_callbacks.try_borrow_mut() {
             Ok(mut cbs) => {
-                match cbs.remove(&cb_id) {
-                    Some(cb) => {
-                        match result {
-                            Ok(their_did_json) =>
-                                cb(self._encrypt_get_nym_ack(wallet_handle, my_did, &their_did_json, msg)),
-                            Err(err) =>
-                                cb(Err(SignusError::LedgerError(err)))
-                        }
-                    }
-                    None =>
-                        error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                let cb = cbs.remove(&cb_id);
+
+                if cb.is_none() {
+                    error!("Can't process Signus::EncryptGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                }
+                let cb = cb.unwrap();
+
+                match result {
+                    Ok(their_did_json) =>
+                        cb(self._encrypt_get_nym_ack(wallet_handle, my_did, &their_did_json, msg)),
+                    Err(err) => cb(Err(SignusError::LedgerError(err)))
                 }
             }
             Err(err) => error!("{:?}", err)

@@ -2,6 +2,7 @@ extern crate serde_json;
 
 use std::error;
 use std::fmt;
+use std::str;
 
 use errors::crypto::CryptoError;
 use errors::ledger::LedgerError;
@@ -82,6 +83,12 @@ impl From<LedgerError> for SignusError {
 impl From<CryptoError> for SignusError {
     fn from(err: CryptoError) -> SignusError {
         SignusError::CryptoError(err)
+    }
+}
+
+impl From<str::Utf8Error> for SignusError {
+    fn from(err: str::Utf8Error) -> SignusError {
+        SignusError::CryptoError(CryptoError::InvalidStructure(err.to_string()))
     }
 }
 

@@ -1,6 +1,6 @@
 use utils::json::{JsonEncodable, JsonDecodable};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MyDidInfo {
     pub did: Option<String>,
     pub seed: Option<String>,
@@ -40,7 +40,7 @@ impl JsonEncodable for MyIdentityInfo {}
 
 impl<'a> JsonDecodable<'a> for MyIdentityInfo {}
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MyDid {
     pub did: String,
     pub crypto_type: String,
@@ -67,7 +67,7 @@ impl JsonEncodable for MyDid {}
 
 impl<'a> JsonDecodable<'a> for MyDid {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TheirDid {
     pub did: String,
     pub crypto_type: Option<String>,
