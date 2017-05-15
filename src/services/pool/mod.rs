@@ -12,11 +12,13 @@ use std::collections::{HashMap, BinaryHeap};
 use std::{cmp, fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
+use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
+use errors::crypto::CryptoError;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::ed25519::ED25519;
@@ -294,7 +296,7 @@ impl Pool {
             open_cmd_id: cmd_id,
             pool_id: pool_id,
             nodes: Vec::new(),
-            merkle_tree: MerkleTree::from_vec(Vec::new()),
+            merkle_tree: MerkleTree::from_vec(Vec::new())?,
             new_mt_size: 0,
             new_mt_vote: 0,
             f: 0,
@@ -329,6 +331,12 @@ impl Drop for Pool {
         // Option worker type and this kludge is workaround for rust
         self.worker.take().unwrap().join().unwrap();
         info!(target: target.as_str(), "Drop finished");
+    }
+}
+
+impl From<CryptoError> for PoolError {
+    fn from(err: CryptoError) -> PoolError {
+        PoolError::InvalidData(err.description().to_string())
     }
 }
 
@@ -577,7 +585,7 @@ mod tests {
     impl Default for PoolWorker {
         fn default() -> Self {
             PoolWorker {
-                merkle_tree: MerkleTree::from_vec(Vec::new()),
+                merkle_tree: MerkleTree::from_vec(Vec::new()).unwrap(),
                 pool_id: 0,
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                 f: 0,

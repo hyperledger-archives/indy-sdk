@@ -3,6 +3,24 @@ extern crate openssl;
 use errors::crypto::CryptoError;
 use self::openssl::hash::{hash2, MessageDigest, Hasher, DigestBytes};
 
+pub const HASH_OUTPUT_LEN: usize = 32;
+
+pub struct Digest {
+    data: DigestBytes
+}
+
+impl Digest {
+    fn new(data: DigestBytes) -> Digest {
+        Digest {
+            data: data
+        }
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.data.to_vec()
+    }
+}
+
 pub struct Hash {}
 
 impl Hash {
@@ -10,27 +28,24 @@ impl Hash {
         Ok(Hasher::new(MessageDigest::sha256())?)
     }
 
-    pub fn update_context(context: &mut Hasher) -> Result<(), CryptoError> {
-        unimplemented!()
+    pub fn hash_empty() -> Result<Digest, CryptoError> {
+        Ok(Digest::new(hash2(MessageDigest::sha256(), &[])?))
+
     }
 
-    pub fn hash_empty() -> Result<DigestBytes, CryptoError> {
-        Ok(hash2(MessageDigest::sha256(), &[])?)
-    }
-
-    pub fn hash_leaf<T>(leaf: &T) -> Result<DigestBytes, CryptoError> where T: Hashable {
+    pub fn hash_leaf<T>(leaf: &T) -> Result<Digest, CryptoError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x00])?;
         leaf.update_context(&mut ctx)?;
-        Ok(ctx.finish2()?)
+        Ok(Digest::new(ctx.finish2()?))
     }
 
-    pub fn hash_nodes<T>(&'static self, left: &T, right: &T) -> Result<DigestBytes, CryptoError> where T: Hashable {
+    pub fn hash_nodes<T>(left: &T, right: &T) -> Result<Digest, CryptoError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x01])?;
         left.update_context(&mut ctx)?;
         right.update_context(&mut ctx)?;
-        Ok(ctx.finish2()?)
+        Ok(Digest::new(ctx.finish2()?))
     }
 
 }

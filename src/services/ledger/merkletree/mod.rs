@@ -1,13 +1,13 @@
 extern crate serde_json;
 
-pub mod hashutils;
 pub mod tree;
 pub mod proof;
 pub mod merkletree;
 
-use self::hashutils::*;
 use self::tree::*;
 use self::merkletree::*;
+use errors::crypto::CryptoError;
+use utils::crypto::hash::Hash;
 
 impl MerkleTree {
     fn count_bits(v: usize) -> usize {
@@ -61,19 +61,19 @@ impl MerkleTree {
 
     pub fn consistency_proof(&self,
                              new_root_hash: &Vec<u8>, new_size: usize,
-                             proof: &Vec<Vec<u8>>) -> bool {
+                             proof: &Vec<Vec<u8>>) -> Result<bool, CryptoError> {
         if self.nodes_count == 0 {
             // empty old tree
-            return true;
+            return Ok(true);
         }
         if self.nodes_count == new_size && self.root_hash() == new_root_hash {
             // identical trees
-            return true;
+            return Ok(true);
         }
         if self.nodes_count > new_size {
             // old tree is bigger!
             assert!(false);
-            return false;
+            return Ok(false);
         }
 
         let mut old_node = self.nodes_count - 1;
@@ -99,11 +99,11 @@ impl MerkleTree {
         while old_node != 0 {
             if old_node % 2 != 0 {
                 let next_proof = proofs.next().unwrap();
-                old_hash = DIGEST.hash_nodes(next_proof, &old_hash).as_ref().into();
-                new_hash = DIGEST.hash_nodes(next_proof, &new_hash).as_ref().into();
+                old_hash = Hash::hash_nodes(next_proof, &old_hash)?.to_vec();
+                new_hash = Hash::hash_nodes(next_proof, &new_hash)?.to_vec();
             } else if old_node < new_node {
-                new_hash = DIGEST.hash_nodes(&new_hash,
-                                             proofs.next().unwrap()).as_ref().into();
+                new_hash = Hash::hash_nodes(&new_hash,
+                                             proofs.next().unwrap())?.to_vec();
             }
             old_node = old_node / 2;
             new_node = new_node / 2;
@@ -111,27 +111,27 @@ impl MerkleTree {
 
         while new_node != 0 {
             let n = proofs.next().unwrap();
-            new_hash = DIGEST.hash_nodes(&new_hash, n).as_ref().into();
+            new_hash = Hash::hash_nodes(&new_hash, n)?.to_vec();
             new_node = new_node / 2;
         }
 
         if new_hash != *new_root_hash {
             // new hash differs
-            return false;
+            return Ok(false);
         }
 
         if old_hash != *self.root_hash() {
             // old hash differs
-            return false;
+            return Ok(false);
         }
 
-        return true;
+        return Ok(true);
     }
 
-    pub fn append(&mut self, node: TreeLeafData) {
+    pub fn append(&mut self, node: TreeLeafData) -> Result<(), CryptoError> {
         if self.count == 0 {
             // empty tree
-            self.root = Tree::new_leaf(node);
+            self.root = Tree::new_leaf(node)?;
             self.count += 1;
         }
         else if Self::count_bits(self.count) != 1 {
@@ -140,15 +140,15 @@ impl MerkleTree {
                 Tree::Node { ref left, ref right, .. } => {
                     let mut iter = right.iter().map(|x| (*x).clone()).collect::<Vec<TreeLeafData>>();
                     iter.push(node);
-                    let new_right = MerkleTree::from_vec(iter);
-                    let combined_hash = DIGEST.hash_nodes(
+                    let new_right = MerkleTree::from_vec(iter)?;
+                    let combined_hash = Hash::hash_nodes(
                         left.hash(),
                         new_right.root_hash() as &Vec<u8>
-                    );
+                    )?;
                     self.root = Tree::Node {
                         left: (*left).clone(),
                         right: Box::new(new_right.root),
-                        hash: combined_hash.as_ref().into()
+                        hash: combined_hash.to_vec()
                     };
                     self.count += 1;
                     self.nodes_count += 1;
@@ -161,30 +161,30 @@ impl MerkleTree {
         else
         {
             // add tree layer
-            let new_right = MerkleTree::from_vec(vec![ node ]);
+            let new_right = MerkleTree::from_vec(vec![ node ])?;
             match self.root.clone() {
                 Tree::Node { ref left, ref right, ref hash } => {
-                    let combined_hash = DIGEST.hash_nodes(
+                    let combined_hash = Hash::hash_nodes(
                         hash,
                         new_right.root_hash()
-                    );
+                    )?;
                     self.root = Tree::Node {
                         left: Box::new(self.root.clone()),
                         right: Box::new(new_right.root),
-                        hash: combined_hash.as_ref().into()
+                        hash: combined_hash.to_vec()
                     };
                     self.count += 1;
                     self.nodes_count += 1;
                 }
                 Tree::Leaf { ref hash, ref value } => {
-                    let combined_hash = DIGEST.hash_nodes(
+                    let combined_hash = Hash::hash_nodes(
                         hash,
                         new_right.root_hash()
-                    );
+                    )?;
                     self.root = Tree::Node {
-                        left: Box::new(Tree::new_leaf((*value).clone())),
+                        left: Box::new(Tree::new_leaf((*value).clone())?),
                         right: Box::new(new_right.root),
-                        hash: combined_hash.as_ref().into()
+                        hash: combined_hash.to_vec()
                     };
                     self.count += 1;
                     self.nodes_count += 1;
@@ -195,6 +195,7 @@ impl MerkleTree {
             }
             self.height += 1;
         }
+        Ok(())
     }
 }
 
@@ -203,9 +204,10 @@ impl MerkleTree {
 mod tests {
     use super::*;
     use self::serde_json;
+    use utils::crypto::hash::HASH_OUTPUT_LEN;
 
     fn hash_hex(rh: &Vec<u8>) -> String {
-        let mut ret:String = String::with_capacity(DIGEST.output_len*2);
+        let mut ret:String = String::with_capacity(HASH_OUTPUT_LEN*2);
         for i in rh {
             ret.push_str(&format!("{:02x}", i));
         }
@@ -219,7 +221,7 @@ mod tests {
             "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"192.168.1.35\",\"client_port\":9706,\"node_ip\":\"192.168.1.35\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"192.168.1.35\",\"client_port\":9708,\"node_ip\":\"192.168.1.35\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}" ];
-        let mut mt = MerkleTree::from_vec(vec![]);
+        let mut mt = MerkleTree::from_vec(vec![]).unwrap();
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
@@ -233,7 +235,7 @@ mod tests {
     #[test]
     fn find_hash_works() {
         let values = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
-        let mut mt = MerkleTree::from_vec(vec![]);
+        let mut mt = MerkleTree::from_vec(vec![]).unwrap();
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
@@ -271,7 +273,7 @@ mod tests {
         let values = vec![
             "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}" ];
-        let mut mt = MerkleTree::from_vec(vec![]);
+        let mut mt = MerkleTree::from_vec(vec![]).unwrap();
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
@@ -300,19 +302,19 @@ mod tests {
                                            0x25, 0x81, 0xfe, 0xe7, 0xd8, 0x61, 0x99, 0xae,
                                            0xf8, 0xae, 0xac, 0x7b, 0x05, 0x80, 0xbe, 0x0a ],
                                      2,
-                                     &proofs));
+                                     &proofs).unwrap());
     }
 
     #[test]
     fn gen_proof_and_proof_validate_work() {
         let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
         let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
-        let tree      = MerkleTree::from_vec(values.clone());
+        let tree      = MerkleTree::from_vec(values.clone()).unwrap();
         let root_hash = tree.root_hash();
 
         for value in values {
-            let proof    = tree.gen_proof(value);
-            let is_valid = proof.map(|p| p.validate(&root_hash)).unwrap_or(false);
+            let proof    = tree.gen_proof(value).unwrap();
+            let is_valid = proof.map(|p| p.validate(&root_hash).unwrap()).unwrap_or(false);
 
             assert!(is_valid);
         }
@@ -322,7 +324,7 @@ mod tests {
     fn serialize_works() {
         let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
         let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
-        let mt = MerkleTree::from_vec(values.clone());
+        let mt = MerkleTree::from_vec(values.clone()).unwrap();
         let serialized = serde_json::to_string(&mt).unwrap();
         println!("serialize mt: h={}, c={}, rhash={}", mt.height, mt.count, serialized);
         let newmt: MerkleTree = serde_json::from_str(serialized.as_str()).unwrap();
