@@ -7,7 +7,12 @@ impl EnvironmentUtils {
     pub fn sovrin_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
         let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/sovrin"));
-        path.push(".sovrin");
+        if cfg!(target_os = "ios") {
+            path.push("Documents/.sovrin");
+        }
+        else {
+            path.push(".sovrin");
+        }
         path
     }
 
