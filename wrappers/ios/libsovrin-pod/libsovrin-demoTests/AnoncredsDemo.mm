@@ -8,8 +8,6 @@
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
 
-static NSTimeInterval defaultTimeout = 1000;
-
 @interface AnoncredsDemo : XCTestCase
 
 @end
@@ -53,7 +51,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"createWallet() failed!");
 
     // 2. Open Issuer Wallet. Gets Issuer wallet handle
@@ -71,7 +69,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"openWallet() failed!");
     
     // 3. Issuer create Claim Definition for Schema
@@ -99,7 +97,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"issuerCreateAndStoreClaimDef() failed!");
 
     // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
@@ -114,7 +112,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"walletSetSeqNo() failed!");
     
     // 5. Prover create Master Secret
@@ -131,7 +129,7 @@ extern "C" {
 
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"proverCreateMasterSecret() failed!");
     
     // 6. Prover create Claim Request
@@ -155,7 +153,7 @@ extern "C" {
         
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"proverCreateAndStoreClaimReq() failed!");
 
     // 7. Issuer create Claim for Claim Request
@@ -181,7 +179,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"issuerCreateClaim() failed!");
 
     // 8. Prover process and store Claim
@@ -195,7 +193,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"proverStoreClaim() failed!");
 
     // 9. Prover gets Claims for Proof Request
@@ -216,7 +214,7 @@ extern "C" {
         
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"proverGetClaimsForProofReq() failed!");
 
     // 10. Prover create Proof for Proof Request
@@ -250,7 +248,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"proverCreateProof() failed!");
 
     // 11. Verifier verify proof
@@ -270,7 +268,7 @@ extern "C" {
         
     }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"verifierVerifyProof() failed!");
     
     // 12. close wallet
@@ -283,7 +281,7 @@ extern "C" {
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:defaultTimeout];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSAssert( ret.code == Success, @"closeWallet() failed!");
     [TestUtils cleanupStorage];
 }

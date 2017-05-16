@@ -10,6 +10,10 @@
 
 @interface TestUtils : NSObject
 
++ (NSMutableString*) getUserDocumentDir;
++ (NSMutableString*) getUserTmpDir;
++ (NSTimeInterval) defaultTimeout;
+
 +(void) cleanupStorage;
 
 @end
