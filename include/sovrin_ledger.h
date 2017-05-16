@@ -164,15 +164,16 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern sovrin_error_t sovrin_build_attrib_request(sovrin_handle_t command_handle,
-                                                      const char *    submitter_did,
-                                                      const char *    target_did,
-                                                      const char *    data,
+    extern sovrin_error_t sovrin_build_get_attrib_request(sovrin_handle_t command_handle,
+                                                          const char *    submitter_did,
+                                                          const char *    target_did,
+                                                          const char *    data,
                                                       
-                                                      void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                           sovrin_error_t  err,
-                                                                           const char*     request_json)
-                                                      );
+                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
+                                                                               sovrin_error_t  err,
+                                                                               const char*     request_json)
+                                                         );
+
     /// Builds a GET_NYM request.
     ///
     /// #Params
