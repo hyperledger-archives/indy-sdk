@@ -119,8 +119,10 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 /// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
-///        "verkey": string, (optional; if only public key for decryption is provided),
-///        "pk": string (optional, if only verification key sis provided),
+///        "verkey": string (optional, if only pk is provided),
+///        "pk": string (optional, if only verification key is provided),
+///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
+///               currently only 'ed25519' value is supported for this field)
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -205,6 +207,7 @@ pub  extern fn sovrin_sign(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// pool_handle: pool handle.
 /// did: DID that signed the message
 /// msg: message
 /// signature: a signature to be verified
@@ -221,19 +224,21 @@ pub  extern fn sovrin_sign(command_handle: i32,
 #[no_mangle]
 pub  extern fn sovrin_verify_signature(command_handle: i32,
                                        wallet_handle: i32,
+                                       pool_handle: i32,
                                        did: *const c_char,
                                        msg: *const c_char,
                                        signature: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             valid: bool)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(signature, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(signature, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::VerifySignature(
             wallet_handle,
+            pool_handle,
             did,
             msg,
             signature,
@@ -256,12 +261,13 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// my_did: encrypting DID
 /// did: encrypting DID
 /// msg: a message to be signed
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// an encrypted message
+/// an encrypted message and nonce
 ///
 /// #Errors
 /// Common*
@@ -271,23 +277,30 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
 #[no_mangle]
 pub  extern fn sovrin_encrypt(command_handle: i32,
                               wallet_handle: i32,
+                              pool_handle: i32,
+                              my_did: *const c_char,
                               did: *const c_char,
                               msg: *const c_char,
                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                   encrypted_msg: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+                                                   encrypted_msg: *const c_char,
+                                                   nonce: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Encrypt(
             wallet_handle,
+            pool_handle,
+            my_did,
             did,
             msg,
             Box::new(move |result| {
-                let (err, encrypted_msg) = result_to_err_code_1!(result, String::new());
+                let (err, encrypted_msg, nonce) = result_to_err_code_2!(result, String::new(), String::new());
                 let encrypted_msg = CStringUtils::string_to_cstring(encrypted_msg);
-                cb(command_handle, err, encrypted_msg.as_ptr())
+                let nonce = CStringUtils::string_to_cstring(nonce);
+                cb(command_handle, err, encrypted_msg.as_ptr(), nonce.as_ptr())
             })
         )));
 
@@ -301,8 +314,10 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// my_did: DID
 /// did: DID that signed the message
 /// encrypted_msg: encrypted message
+/// nonce: nonce that encrypted message
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -315,19 +330,25 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
 #[no_mangle]
 pub  extern fn sovrin_decrypt(command_handle: i32,
                               wallet_handle: i32,
+                              my_did: *const c_char,
                               did: *const c_char,
                               encrypted_msg: *const c_char,
+                              nonce: *const c_char,
                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                    decrypted_msg: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(encrypted_msg, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(nonce, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Decrypt(
             wallet_handle,
             did,
+            my_did,
             encrypted_msg,
+            nonce,
             Box::new(move |result| {
                 let (err, decrypted_msg) = result_to_err_code_1!(result, String::new());
                 let decrypted_msg = CStringUtils::string_to_cstring(decrypted_msg);
