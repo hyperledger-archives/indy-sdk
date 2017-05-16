@@ -13,48 +13,21 @@ use sovrin::api::anoncreds::{
 };
 
 use utils::callback::CallbackUtils;
-use utils::environment::EnvironmentUtils;
 use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
 
-use std::fs;
 use std::ffi::CString;
-use std::io::Write;
 use std::ptr::null;
-use std::path::PathBuf;
 use std::sync::mpsc::channel;
+use std::collections::HashMap;
 
 pub struct AnoncredsUtils {}
 
 impl AnoncredsUtils {
-    pub fn create_issuer_prover_verifier_wallets(pool_name: &str, issuer_wallet_name: &str,
-                                                 prover_wallet_name: &str, verifier_wallet_name: &str,
-                                                 xtype: &str) -> Result<(String, String, String)> {
-        //1. Create Issuer wallet, get prover wallet handle
-        let res = WalletUtils::create_wallet(pool_name, issuer_wallet_name, xtype);
-        assert!(res.is_ok());
-
-        let res = WalletUtils::open_wallet(issuer_wallet_name);
-        assert!(res.is_ok());
-        let issuer_wallet_handle = res.unwrap();
-
-        //2. Create Prover wallet, get prover wallet handle
-        let res = WalletUtils::create_wallet(pool_name, prover_wallet_name, xtype);
-        assert!(res.is_ok());
-
-        let res = WalletUtils::open_wallet(prover_wallet_name);
-        assert!(res.is_ok());
-        let prover_wallet_handle = res.unwrap();
-
-        //3. Create Verifier wallet, get verifier wallet handle
-        let res = WalletUtils::create_wallet(pool_name, verifier_wallet_name, xtype);
-        assert!(res.is_ok());
-
-        let res = WalletUtils::open_wallet(verifier_wallet_name);
-        assert!(res.is_ok());
-        let verifier_wallet_handle = res.unwrap();
-
-        Ok((issuer_wallet_handle, prover_wallet_handle, verifier_wallet_handle))
+    pub fn create_claim_definition_and_set_link(wallet_handle: i32, schema: &str, claim_def_seq_no: i32) -> Result<String, ErrorCode> {
+        let (claim_def_json, claim_def_uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema)?;
+        WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &claim_def_uuid, claim_def_seq_no)?;
+        Ok(claim_def_json)
     }
 
     pub fn issuer_create_claim_definition(wallet_handle: i32, schema: &str) -> Result<(String, String), ErrorCode> {
@@ -344,7 +317,7 @@ impl AnoncredsUtils {
         Ok(proof_json)
     }
 
-    pub fn verifier_verify_proof(wallet_handle: i32, proof_request_json: &str, proof_json: &str,
+    pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str,
                                  schemas_json: &str, claim_defs_json: &str, revoc_regs_json: &str) -> Result<bool, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -361,7 +334,6 @@ impl AnoncredsUtils {
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
         let err = sovrin_verifier_verify_proof(command_handle,
-                                               wallet_handle,
                                                proof_request_json.as_ptr(),
                                                proof_json.as_ptr(),
                                                schemas_json.as_ptr(),
@@ -381,4 +353,64 @@ impl AnoncredsUtils {
 
         Ok(valid)
     }
+
+    pub fn get_gvt_schema_json(schema_seq_no: i32) -> String {
+        format!("{{\
+                    \"name\":\"gvt\",\
+                    \"version\":\"1.0\",\
+                    \"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"],\
+                    \"seq_no\":{}\
+                 }}", schema_seq_no)
+    }
+
+    pub fn get_xyz_schema_json(schema_seq_no: i32) -> String {
+        format!("{{\
+                    \"name\":\"xyz\",\
+                    \"version\":\"1.0\",\
+                    \"attribute_names\":[\"status\",\"period\"],\
+                    \"seq_no\":{}\
+                 }}", schema_seq_no)
+    }
+
+    pub fn get_claim_offer(issuer_did: &str, claim_def_seq_no: i32) -> String {
+        format!("{{ \"issuer_did\":\"{}\", \"claim_def_seq_no\":{} }}",
+                issuer_did, claim_def_seq_no)
+    }
+
+    pub fn get_gvt_claim_json() -> String {
+        "{\
+               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\
+               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\
+               \"height\":[\"175\",\"175\"],\
+               \"age\":[\"28\",\"28\"]\
+        }".to_string()
+    }
+
+    pub fn get_xyz_claim_json() -> String {
+        "{\
+               \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\
+               \"period\":[\"8\",\"8\"]\
+        }".to_string()
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ClaimOffer {
+    pub issuer_did: String,
+    pub claim_def_seq_no: i32
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProofClaimsJson {
+    pub attrs: HashMap<String, Vec<ClaimInfo>>,
+    pub predicates: HashMap<String, Vec<ClaimInfo>>
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ClaimInfo {
+    pub claim_uuid: String,
+    pub attrs: HashMap<String, String>,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: Option<i32>,
+    pub schema_seq_no: i32
 }

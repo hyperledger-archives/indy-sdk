@@ -18,7 +18,7 @@ use services::anoncreds::types::{
     AggregatedProof,
     ClaimInitData,
     ClaimDefinition,
-    Claims,
+    ClaimSignature,
     ClaimProof,
     ClaimRequest,
     InitProof,
@@ -487,7 +487,7 @@ impl Prover {
 
         let m2_tilde = m2_t.unwrap_or(BigNumber::rand(LARGE_MVECT)?);
 
-        let ra = BigNumber::rand(LARGE_VPRIME)?;
+        let r = BigNumber::rand(LARGE_VPRIME)?;
         let etilde = BigNumber::rand(LARGE_ETILDE)?;
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
@@ -500,20 +500,16 @@ impl Prover {
         let mtilde = get_mtilde(&unrevealed_attrs)?;
 
         let aprime = pk.s
-            .mod_exp(&ra, &pk.n, Some(&mut ctx))?
+            .mod_exp(&r, &pk.n, Some(&mut ctx))?
             .mul(&c1.a, Some(&mut ctx))?
             .modulus(&pk.n, Some(&mut ctx))?;
-
-        let tmp =  pk.s
-            .mod_exp(&ra, &pk.n, Some(&mut ctx))?;
-        let res = c1.a.mul(&tmp, Some(&mut ctx))?.modulus(&pk.n, Some(&mut ctx))?;
-
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
         let vprime = c1.v_prime.sub(
-            &c1.e.mul(&ra, Some(&mut ctx))?
+            &c1.e.mul(&r, Some(&mut ctx))?
         )?;
+
         let eprime = c1.e.sub(
             &BigNumber::from_dec("2")?.exp(&large_e_start, Some(&mut ctx))?
         )?;
@@ -1464,12 +1460,12 @@ pub mod mocks {
         PrimaryInitProof::new(get_primary_equal_init_proof(), vec![get_primary_ge_init_proof()])
     }
 
-    pub fn get_gvt_claims_object() -> Claims {
-        Claims::new(get_gvt_primary_claim(), None)
+    pub fn get_gvt_claims_object() -> ClaimSignature {
+        ClaimSignature::new(get_gvt_primary_claim(), None)
     }
 
-    pub fn get_xyz_claims_object() -> Claims {
-        Claims::new(get_xyz_primary_claim(), None)
+    pub fn get_xyz_claims_object() -> ClaimSignature {
+        ClaimSignature::new(get_xyz_primary_claim(), None)
     }
 
     pub fn get_public_key_revocation() -> RevocationPublicKey {

@@ -292,7 +292,6 @@ fn anoncreds_demo_works() {
     // 10. Verifier verify proof
     let err =
         sovrin_verifier_verify_proof(verifier_verify_proof_handle,
-                                     wallet_handle,
                                      CString::new(proof_req_json).unwrap().as_ptr(),
                                      CString::new(proof_json).unwrap().as_ptr(),
                                      CString::new(schemas_json).unwrap().as_ptr(),

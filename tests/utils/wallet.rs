@@ -6,28 +6,28 @@ use sovrin::api::wallet::{
 };
 
 use utils::callback::CallbackUtils;
-use utils::environment::EnvironmentUtils;
 use utils::timeout::TimeoutUtils;
 
-use std::fs;
 use std::ffi::CString;
-use std::io::Write;
 use std::ptr::null;
-use std::path::PathBuf;
 use std::sync::mpsc::channel;
 
 pub struct WalletUtils {}
 
 impl WalletUtils {
-    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: &str) -> Result<(), ErrorCode> {
+    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: &str) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
-
+        let (open_sender, open_receiver) = channel();
 
         let cb = Box::new(move |err| {
             sender.send(err).unwrap();
         });
+        let open_cb = Box::new(move |err, handle| {
+            open_sender.send((err, handle)).unwrap();
+        });
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_wallet_cb(cb);
+        let (open_command_handle, open_cb) = CallbackUtils::closure_to_open_wallet_cb(open_cb);
 
         let pool_name = CString::new(pool_name).unwrap();
         let wallet_name = CString::new(wallet_name).unwrap();
@@ -52,33 +52,18 @@ impl WalletUtils {
             return Err(err);
         }
 
-        Ok(())
-    }
-
-    pub fn open_wallet(wallet_name: &str) -> Result<i32, ErrorCode> {
-        let (sender, receiver) = channel();
-
-
-        let cb = Box::new(move |err, handle| {
-            sender.send((err, handle)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_open_wallet_cb(cb);
-
-        let wallet_name = CString::new(wallet_name).unwrap();
-
         let err =
-            sovrin_open_wallet(command_handle,
+            sovrin_open_wallet(open_command_handle,
                                wallet_name.as_ptr(),
                                null(),
                                null(),
-                               cb);
+                               open_cb);
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        let (err, wallet_handle) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, wallet_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);

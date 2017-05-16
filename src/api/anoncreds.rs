@@ -771,7 +771,6 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
-                                           wallet_handle: i32,
                                            proof_request_json: *const c_char,
                                            proof_json: *const c_char,
                                            schemas_json: *const c_char,
@@ -779,16 +778,15 @@ pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
                                            revoc_regs_json: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 valid: bool)>) -> ErrorCode {
-    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam7);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Verifier(VerifierCommand::VerifyProof(
-            wallet_handle,
             proof_request_json,
             proof_json,
             schemas_json,

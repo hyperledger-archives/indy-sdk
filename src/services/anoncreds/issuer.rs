@@ -15,7 +15,7 @@ use services::anoncreds::types::{
     ClaimDefinition,
     ClaimDefinitionPrivate,
     ClaimRequest,
-    Claims,
+    ClaimSignature,
     NonRevocationClaim,
     NonRevocProofCList,
     NonRevocProofTauList,
@@ -171,7 +171,7 @@ impl Issuer {
                         revocation_registry_private: &Option<RevocationRegistryPrivate>,
                         claim_request: &ClaimRequest,
                         attributes: &HashMap<String, Vec<String>>,
-                        user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
+                        user_revoc_index: Option<i32>) -> Result<ClaimSignature, CryptoError> {
         let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no, &claim_request.prover_did)?;
 
         let primary_claim =
@@ -200,7 +200,7 @@ impl Issuer {
             non_revocation_claim = Some(RefCell::new(claim));
         };
 
-        Ok(Claims {
+        Ok(ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
         })

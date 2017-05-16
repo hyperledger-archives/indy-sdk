@@ -17,7 +17,6 @@ use utils::json::JsonDecodable;
 
 pub enum VerifierCommand {
     VerifyProof(
-        i32, // wallet handle
         String, // proof request json
         String, // proof json
         String, // schemas json
@@ -45,29 +44,28 @@ impl VerifierCommandExecutor {
 
     pub fn execute(&self, command: VerifierCommand) {
         match command {
-            VerifierCommand::VerifyProof(wallet_handle, proof_request_json,
+            VerifierCommand::VerifyProof(proof_request_json,
                                          proof_json, schemas_json,
                                          claim_defs_jsons, revoc_regs_json, cb) => {
                 info!(target: "verifier_command_executor", "VerifyProof command received");
-                self.verify_proof(wallet_handle,
-                                  &proof_request_json, &proof_json, &schemas_json,
+                self.verify_proof(&proof_request_json, &proof_json, &schemas_json,
                                   &claim_defs_jsons, &revoc_regs_json, cb);
             }
         };
     }
 
-    fn verify_proof(&self, wallet_handle: i32,
+    fn verify_proof(&self,
                     proof_request_json: &str,
                     proof_json: &str,
                     schemas_json: &str,
                     claim_defs_jsons: &str,
                     revoc_regs_json: &str,
                     cb: Box<Fn(Result<bool, AnoncredsError>) + Send>) {
-        let result = self._verify_proof(wallet_handle, proof_request_json, proof_json, schemas_json, claim_defs_jsons, revoc_regs_json);
+        let result = self._verify_proof(proof_request_json, proof_json, schemas_json, claim_defs_jsons, revoc_regs_json);
         cb(result)
     }
 
-    fn _verify_proof(&self, wallet_handle: i32,
+    fn _verify_proof(&self,
                      proof_request_json: &str,
                      proof_json: &str,
                      schemas_json: &str,
