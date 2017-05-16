@@ -43,6 +43,8 @@
              withImplementation:(id<SovrinWalletImplementation>) implementation;
 */
 
++ (SovrinWallet*) sharedInstance;
+
 - (NSError*) createWallet:(NSString*) poolName
                      name:(NSString*) name
                     xType:(NSString*) type
@@ -50,8 +52,7 @@
               credentials:(NSString*) credentials
                completion:(void (^)(NSError* error)) handler;
 
-- (NSError*)   openWallet:(SovrinHandle) poolHandle
-                     name:(NSString*) name
+- (NSError*)   openWallet:(NSString*) name
             runtimeConfig:(NSString*) config
               credentials:(NSString*) credentials
                completion:(void (^)(NSError* error, SovrinHandle walletHandle )) handler;

@@ -224,8 +224,8 @@ fn anoncreds_demo_works() {
                                    wallet_handle,
                                    CString::new(claim_req_json).unwrap().as_ptr(),
                                    CString::new(claim_json).unwrap().as_ptr(),
-                                   None,
-                                   None,
+                                   -1,
+                                   -1,
                                    issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);

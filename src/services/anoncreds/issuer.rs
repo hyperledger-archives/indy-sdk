@@ -51,7 +51,7 @@ impl Issuer {
     }
 
     pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
-                         create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+                                     create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
         let (pkr, skr) = if create_non_revoc {
@@ -185,7 +185,7 @@ impl Issuer {
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
         if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation.clone(),
-                                                                                    revocation_registry, revocation_registry_private){
+                                                                                    revocation_registry, revocation_registry_private) {
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
                 &revoc_reg,
                 &pk_r,
@@ -434,11 +434,6 @@ mod tests {
     }
 
     #[test]
-    fn create_claim_works() {
-
-    }
-
-    #[test]
     fn generate_v_prime_prime_works() {
         let result = BigNumber::from_dec("6620937836014079781509458870800001917950459774302786434315639456568768602266735503527631640833663968617512880802104566048179854406925811731340920442625764155409951969854303612644121780700879432308016935250101960876405664503219252820761501606507817390189252221968804450207070282033815280889897882643560437257171838117793768660731379360330750300543760457608638753190279419951706206819943151918535286779337023708838891906829360439545064730288538139152367417882097349210427894031568623898916625312124319876670702064561291393993815290033742478045530118808274555627855247830659187691067893683525651333064738899779446324124393932782261375663033826174482213348732912255948009062641783238846143256448824091556005023241191311617076266099622843011796402959351074671886795391490945230966123230485475995208322766090290573654498779155").unwrap();
         assert_eq!(Issuer::_generate_v_prime_prime().unwrap(), result);
@@ -505,7 +500,7 @@ mod tests {
         let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
-    
+
     #[test]
     fn sign_works() {
         let public_key = mocks::get_pk();
