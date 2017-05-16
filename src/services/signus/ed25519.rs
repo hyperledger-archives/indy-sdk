@@ -1,4 +1,4 @@
-use super::Signus;
+use super::CryptoType;
 use utils::crypto::ed25519::ED25519;
 use errors::crypto::CryptoError;
 
@@ -11,11 +11,7 @@ impl ED25519Signus {
     }
 }
 
-impl Signus for ED25519Signus {
-    fn create_key_pair(&self) -> (Vec<u8>, Vec<u8>) {
-        ED25519::create_key_pair()
-    }
-
+impl CryptoType for ED25519Signus {
     fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
         ED25519::encrypt(private_key, public_key, doc, nonce)
     }
@@ -36,7 +32,10 @@ impl Signus for ED25519Signus {
         ED25519::sign(private_key, doc)
     }
 
-    fn verify(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        ED25519::verify(public_key, doc)
+    fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> bool {
+        ED25519::verify(public_key, doc, signature)
+    }
+    fn get_key_pair_for_encryption(&self, pk: &[u8], sk: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        ED25519::get_key_pair_for_encryption(pk, sk)
     }
 }

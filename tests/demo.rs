@@ -37,7 +37,14 @@ use sovrin::api::pool::{
 use sovrin::api::wallet::{
     sovrin_create_wallet,
     sovrin_open_wallet,
-    sovrin_wallet_set_seq_no_for_value};
+    sovrin_wallet_set_seq_no_for_value
+};
+use sovrin::api::signus::{
+    sovrin_create_and_store_my_did,
+    sovrin_sign,
+    sovrin_verify_signature,
+    sovrin_store_their_did
+};
 
 use utils::callback::CallbackUtils;
 
@@ -381,4 +388,195 @@ fn ledger_demo_works() {
         txn_id: String,
         req_id: u64,
     }
+}
+
+#[test]
+fn signus_demo_works() {
+    TestUtils::cleanup_storage();
+
+    let (create_my_wallet_sender, create_my_wallet_receiver) = channel();
+    let (create_their_wallet_sender, create_their_wallet_receiver) = channel();
+    let (open_my_wallet_sender, open_my_wallet_receiver) = channel();
+    let (open_their_wallet_sender, open_their_wallet_receiver) = channel();
+    let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
+    let (create_and_store_their_did_sender, create_and_store_their_did_receiver) = channel();
+    let (store_their_did_sender, store_their_did_receiver) = channel();
+    let (sign_sender, sign_receiver) = channel();
+    let (verify_sender, verify_receiver) = channel();
+
+    let create_my_wallet_cb = Box::new(move |err| {
+        create_my_wallet_sender.send(err).unwrap();
+    });
+    let create_their_wallet_cb = Box::new(move |err| {
+        create_their_wallet_sender.send(err).unwrap();
+    });
+    let open_my_wallet_cb = Box::new(move |err, handle| {
+        open_my_wallet_sender.send((err, handle)).unwrap();
+    });
+    let open_their_wallet_cb = Box::new(move |err, handle| {
+        open_their_wallet_sender.send((err, handle)).unwrap();
+    });
+    let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| {
+        create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap();
+    });
+    let create_and_store_their_did_cb = Box::new(move |err, did, verkey, public_key| {
+        create_and_store_their_did_sender.send((err, did, verkey, public_key)).unwrap();
+    });
+    let sign_cb = Box::new(move |err, signature| {
+        sign_sender.send((err, signature)).unwrap();
+    });
+    let store_their_did_cb = Box::new(move |err| {
+        store_their_did_sender.send((err)).unwrap();
+    });
+    let verify_cb = Box::new(move |err, valid| {
+        verify_sender.send((err, valid)).unwrap();
+    });
+
+    let (create_my_wallet_command_handle, create_my_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_my_wallet_cb);
+    let (create_their_wallet_command_handle, create_their_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_their_wallet_cb);
+    let (open_my_wallet_command_handle, open_my_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_my_wallet_cb);
+    let (open_their_wallet_command_handle, open_their_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_their_wallet_cb);
+    let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
+    let (create_and_store_their_did_command_handle, create_and_store_their_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_their_did_cb);
+    let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
+    let (sign_command_handle, sign_callback) = CallbackUtils::closure_to_sign_cb(sign_cb);
+    let (verify_command_handle, verify_callback) = CallbackUtils::closure_to_verify_signature_cb(verify_cb);
+
+    let pool_name = "pool1";
+    let my_wallet_name = "my_wallet";
+    let their_wallet_name = "their_wallet";
+    let xtype = "default";
+
+    //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
+    //1. Create My Wallet
+    let err =
+        sovrin_create_wallet(create_my_wallet_command_handle,
+                             CString::new(pool_name).unwrap().as_ptr(),
+                             CString::new(my_wallet_name).unwrap().as_ptr(),
+                             CString::new(xtype).unwrap().as_ptr(),
+                             null(),
+                             null(),
+                             create_my_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = create_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    //2. Open My Wallet. Gets My wallet handle
+    let err =
+        sovrin_open_wallet(open_my_wallet_command_handle,
+                           CString::new(my_wallet_name).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           open_my_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, my_wallet_handle) = open_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+
+    //3. Create Their Wallet
+    let err =
+        sovrin_create_wallet(create_their_wallet_command_handle,
+                             CString::new(pool_name).unwrap().as_ptr(),
+                             CString::new(their_wallet_name).unwrap().as_ptr(),
+                             CString::new(xtype).unwrap().as_ptr(),
+                             null(),
+                             null(),
+                             create_their_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = create_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    //4. Open Their Wallet. Gets Their wallet handle
+    let err =
+        sovrin_open_wallet(open_their_wallet_command_handle,
+                           CString::new(their_wallet_name).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           open_their_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 5. Create My DID
+    let my_did_json = "{}";
+    let err =
+        sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
+                                       my_wallet_handle,
+                                       CString::new(my_did_json).unwrap().as_ptr(),
+                                       create_and_store_my_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("did {:?}", my_did);
+    println!("verkey {:?}", my_verkey);
+    println!("pk {:?}", my_pk);
+    assert_eq!(ErrorCode::Success, err);
+
+    // 6. Create Their DID
+    let their_did_json = "{}";
+    let err =
+        sovrin_create_and_store_my_did(create_and_store_their_did_command_handle,
+                                       their_wallet_handle,
+                                       CString::new(their_did_json).unwrap().as_ptr(),
+                                       create_and_store_their_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, their_did, their_verkey, their_pk) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("their_did {:?}", their_did);
+    println!("their_verkey {:?}", their_verkey);
+    println!("their_pk {:?}", their_pk);
+    assert_eq!(ErrorCode::Success, err);
+
+    // 7. Store Their DID
+    let their_identity_json = format!("{{\"did\":\"{}\",\
+                                        \"pk\":\"{}\",\
+                                        \"verkey\":\"{}\"\
+                                      }}",
+                                      their_did, their_pk, their_verkey);
+    let err =
+        sovrin_store_their_did(store_their_did_command_handle,
+                               my_wallet_handle,
+                               CString::new(their_identity_json).unwrap().as_ptr(),
+                               store_their_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+
+    // 8. Their Sign message
+    let message = "test message";
+    let err =
+        sovrin_sign(sign_command_handle,
+                    their_wallet_handle,
+                    CString::new(their_did.clone()).unwrap().as_ptr(),
+                    CString::new(message.clone()).unwrap().as_ptr(),
+                    sign_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("signature {:?}", signature);
+    assert_eq!(ErrorCode::Success, err);
+
+    // 9. I Verify message
+    let pool_handle = 1;
+    let err =
+        sovrin_verify_signature(verify_command_handle,
+                                my_wallet_handle,
+                                1,
+                                CString::new(their_did).unwrap().as_ptr(),
+                                CString::new(message).unwrap().as_ptr(),
+                                CString::new(signature).unwrap().as_ptr(),
+                                verify_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert!(valid);
+    assert_eq!(ErrorCode::Success, err);
+
+    TestUtils::cleanup_storage();
 }
