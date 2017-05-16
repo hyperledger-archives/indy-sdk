@@ -369,6 +369,7 @@ impl RemoteNode {
     fn connect(&mut self, ctx: &zmq::Context) {
         let key_pair = zmq::CurveKeyPair::new().expect("create key pair");
         let s = ctx.socket(zmq::SocketType::DEALER).expect("socket for Node");
+        s.set_identity(key_pair.public_key.as_bytes()).expect("set identity");
         s.set_curve_secretkey(key_pair.secret_key.as_str()).expect("set secret key");
         s.set_curve_publickey(key_pair.public_key.as_str()).expect("set public key");
         s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
