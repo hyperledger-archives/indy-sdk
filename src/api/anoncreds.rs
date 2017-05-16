@@ -133,8 +133,8 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///      "attr1" : ["value1", "value1_as_int"],
 ///      "attr2" : ["value2", "value2_as_int"]
 ///     }
-/// revoc_reg_seq_no: (Optional) seq no of a revocation registry transaction in Ledger
-/// user_revoc_index: index of a new user in the revocation registry (optional; default one is used if not provided)
+/// revoc_reg_seq_no: (Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger
+/// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -157,8 +157,8 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
-                                         revoc_reg_seq_no: Option<i32>,
-                                         user_revoc_index: Option<i32>,
+                                         revoc_reg_seq_no: i32,
+                                         user_revoc_index: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               revoc_reg_update_json: *const c_char,  //TODO must be OPTIONAL
                                                               xclaim_json: *const c_char
@@ -166,6 +166,9 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    let revoc_reg_seq_no = if revoc_reg_seq_no != -1 {Some(revoc_reg_seq_no)} else { None };
+    let user_revoc_index = if user_revoc_index != -1 {Some(user_revoc_index)} else { None };
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
