@@ -6,19 +6,7 @@
 
 @implementation SovrinPool
 
-+ (SovrinPool *)sharedInstance
-{
-    static SovrinPool *instance = nil;
-    static dispatch_once_t dispatch_once_block;
-    
-    dispatch_once(&dispatch_once_block, ^{
-        instance = [SovrinPool new];
-    });
-    
-    return instance;
-}
-
-- (NSError*) createPoolWithName:(NSString*) name
++ (NSError*) createPoolWithName:(NSString*) name
                       andConfig:(NSString*) config
                      completion:(void (^)(NSError* error)) handler
 {
@@ -39,7 +27,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) openPoolWithName:(NSString*) name
++ (NSError*) openPoolWithName:(NSString*) name
                     andConfig:(NSString*) config
                    completion:(void (^)(NSError* error, SovrinHandle handle)) handler
 {
@@ -60,7 +48,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) refreshPoolWithHandle:(SovrinHandle) SovrinHandle
++ (NSError*) refreshPoolWithHandle:(SovrinHandle) SovrinHandle
                         completion:(void (^)(NSError* error)) handler
 {
     sovrin_error_t ret;
@@ -79,7 +67,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) closePoolWithHandle:(SovrinHandle) SovrinHandle
++ (NSError*) closePoolWithHandle:(SovrinHandle) SovrinHandle
                       completion:(void (^)(NSError* error)) handler
 {
     sovrin_error_t ret;
@@ -98,7 +86,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) deletePoolWithName:(NSString*) name
++ (NSError*) deletePoolWithName:(NSString*) name
                      completion:(void (^)(NSError* error)) handler
 {
     sovrin_error_t ret;
