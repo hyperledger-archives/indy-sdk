@@ -1,9 +1,14 @@
 use errors::ledger::LedgerError;
 use errors::pool::PoolError;
+use errors::wallet::WalletError;
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
+use services::signus::SignusService;
+use services::signus::types::MyDid;
 use services::wallet::WalletService;
+
+use utils::json::JsonDecodable;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -78,6 +83,7 @@ pub enum LedgerCommand {
 pub struct LedgerCommandExecutor {
     anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
+    signus_service: Rc<SignusService>,
     wallet_service: Rc<WalletService>,
 
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, LedgerError>)>>>,
@@ -86,10 +92,12 @@ pub struct LedgerCommandExecutor {
 impl LedgerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
+               signus_service: Rc<SignusService>,
                wallet_service: Rc<WalletService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
             anoncreds_service: anoncreds_service,
             pool_service: pool_service,
+            signus_service: signus_service,
             wallet_service: wallet_service,
             send_callbacks: RefCell::new(HashMap::new()),
         }
@@ -159,7 +167,22 @@ impl LedgerCommandExecutor {
                                submitter_did: &str,
                                request_json: &str,
                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        match self._sign_request(wallet_handle, submitter_did, request_json) {
+            Ok(signed_request) => self.submit_request(wallet_handle /* TODO */, signed_request.as_str(), cb),
+            Err(err) => cb(Err(err))
+        }
+    }
+
+    fn _sign_request(&self,
+                     wallet_handle: i32,
+                     submitter_did: &str,
+                     request_json: &str,
+    ) -> Result<String, LedgerError> {
+        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
+        let my_did = MyDid::from_json(&my_did_json).map_err(WalletError::from)?;
+
+        let signed_request = self.signus_service.sign(&my_did, request_json)?;
+        Ok(signed_request)
     }
 
     fn submit_request(&self,
