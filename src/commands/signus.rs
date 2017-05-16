@@ -264,7 +264,7 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    cb(Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid their did json")))))
+                    return cb(Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid their did json")))))
                 }
 
                 let their_did: TheirDid = their_did.unwrap();
@@ -355,19 +355,19 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    cb(Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid their did json")))))
+                    return cb(Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid their did json")))))
                 }
                 let their_did: TheirDid = their_did.unwrap();
 
                 let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did));
                 if my_did_json.is_err() {
-                    cb(Err(SignusError::WalletError(WalletError::NotFound(format!("My Did not found")))))
+                    return cb(Err(SignusError::WalletError(WalletError::NotFound(format!("My Did not found")))))
                 }
                 let my_did_json = my_did_json.unwrap();
 
                 let my_did = MyDid::from_json(&my_did_json);
                 if my_did.is_err() {
-                    cb(Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid my did json")))))
+                    return cb(Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid my did json")))))
                 }
                 let my_did: MyDid = my_did.unwrap();
 
