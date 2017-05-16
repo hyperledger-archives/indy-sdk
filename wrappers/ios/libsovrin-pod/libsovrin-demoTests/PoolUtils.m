@@ -65,9 +65,9 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *ret2 = nil;
 
-    ret = [[SovrinPool sharedInstance] createPoolWithName:poolName
-                                                andConfig:config
-                                               completion:^ (NSError *error)
+    ret = [SovrinPool createPoolWithName:poolName
+                               andConfig:config
+                              completion:^ (NSError *error)
     {
         ret2 = error;
         [completionExpectation fulfill];

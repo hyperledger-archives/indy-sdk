@@ -14,7 +14,6 @@
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
 		3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */; };
-		3ED5BE481EC48E6000881380 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */; };
 		3ED5BE4C1EC4967C00881380 /* libsovrin.framework in Resources */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
 		3ED5BE4F1EC4984900881380 /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3ED5BE511EC4986100881380 /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -25,6 +24,7 @@
 		3EF020DB1EC4595500CF985C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020DA1EC4595500CF985C /* Environment.m */; };
 		3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
 		3EF020DE1EC45AA300CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
+		4E342A88B72D9633DC35144B /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */; };
 		C417EEF3998DF20C9FE62376 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */; };
 /* End PBXBuildFile section */
 
@@ -95,6 +95,7 @@
 			files = (
 				3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */,
 				C417EEF3998DF20C9FE62376 /* libPods-libsovrin-demo.a in Frameworks */,
+				4E342A88B72D9633DC35144B /* libPods-libsovrin-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,7 +103,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3ED5BE481EC48E6000881380 /* libPods-libsovrin-demo.a in Frameworks */,
 				3EF020DE1EC45AA300CF985C /* libsovrin.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

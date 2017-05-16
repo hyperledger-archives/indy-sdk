@@ -21,6 +21,8 @@
 		3ECDB91B1EC3184700F13F33 /* SovrinAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB9191EC3184700F13F33 /* SovrinAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ECDB91C1EC3184700F13F33 /* SovrinAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */; };
 		3ED5BE4A1EC4926300881380 /* SovrinErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ED5BE491EC491BE00881380 /* SovrinErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3ED5BE5B1ECAE1A300881380 /* SovrinLedger.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ED5BE591ECAE1A300881380 /* SovrinLedger.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3ED5BE5C1ECAE1A400881380 /* SovrinLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */; };
 		F3B63B83711C6E97FA6A9A70 /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D72613F6793D249B57CD3849 /* libPods-libsovrin.a */; };
 /* End PBXBuildFile section */
 
@@ -43,6 +45,8 @@
 		3ECDB9191EC3184700F13F33 /* SovrinAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinAnoncreds.h; sourceTree = "<group>"; };
 		3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinAnoncreds.mm; sourceTree = "<group>"; };
 		3ED5BE491EC491BE00881380 /* SovrinErrors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SovrinErrors.h; sourceTree = "<group>"; };
+		3ED5BE591ECAE1A300881380 /* SovrinLedger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinLedger.h; sourceTree = "<group>"; };
+		3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinLedger.mm; sourceTree = "<group>"; };
 		4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.release.xcconfig"; sourceTree = "<group>"; };
 		D72613F6793D249B57CD3849 /* libPods-libsovrin.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -110,6 +114,8 @@
 				3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */,
 				3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */,
 				3ED5BE491EC491BE00881380 /* SovrinErrors.h */,
+				3ED5BE591ECAE1A300881380 /* SovrinLedger.h */,
+				3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */,
 			);
 			name = src;
 			sourceTree = "<group>";
@@ -146,6 +152,7 @@
 				3ED5BE4A1EC4926300881380 /* SovrinErrors.h in Headers */,
 				3E08C0201EB3336A000A73BA /* libsovrin.h in Headers */,
 				3ECDB91B1EC3184700F13F33 /* SovrinAnoncreds.h in Headers */,
+				3ED5BE5B1ECAE1A300881380 /* SovrinLedger.h in Headers */,
 				3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */,
 				3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */,
 				3E99B99A1EB3C54100B18027 /* SovrinTypes.h in Headers */,
@@ -259,6 +266,7 @@
 				3E99B9991EB3C54100B18027 /* SovrinPool.mm in Sources */,
 				3ECDB9161EC309D900F13F33 /* NSError+SovrinError.m in Sources */,
 				3ECDB91C1EC3184700F13F33 /* SovrinAnoncreds.mm in Sources */,
+				3ED5BE5C1ECAE1A400881380 /* SovrinLedger.mm in Sources */,
 				3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */,
 				3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */,
 			);
