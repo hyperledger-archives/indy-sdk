@@ -19,6 +19,8 @@
 		3ED5BE4F1EC4984900881380 /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3ED5BE511EC4986100881380 /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3ED5BE521EC98D6600881380 /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
+		3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */; };
+		3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE561EC9DA9700881380 /* PoolUtils.m */; };
 		3EF020D81EC4593900CF985C /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
 		3EF020DB1EC4595500CF985C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020DA1EC4595500CF985C /* Environment.m */; };
 		3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
@@ -74,6 +76,9 @@
 		3E2A7F9E1EC36187006194EC /* libsovrin-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libsovrin-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
 		3E2A7FA41EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
+		3ED5BE551EC9DA9700881380 /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
+		3ED5BE561EC9DA9700881380 /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
 		3EF020D61EC4593900CF985C /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
 		3EF020D71EC4593900CF985C /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
 		3EF020D91EC4595500CF985C /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
@@ -150,6 +155,7 @@
 			children = (
 				3EF020D51EC458C900CF985C /* TestUtils */,
 				3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */,
+				3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */,
 				3E2A7FA41EC36187006194EC /* Info.plist */,
 			);
 			path = "libsovrin-demoTests";
@@ -174,6 +180,8 @@
 				3EF020D71EC4593900CF985C /* TestUtils.m */,
 				3EF020D91EC4595500CF985C /* Environment.h */,
 				3EF020DA1EC4595500CF985C /* Environment.m */,
+				3ED5BE551EC9DA9700881380 /* PoolUtils.h */,
+				3ED5BE561EC9DA9700881380 /* PoolUtils.m */,
 			);
 			name = TestUtils;
 			sourceTree = "<group>";
@@ -367,7 +375,9 @@
 			files = (
 				3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */,
 				3EF020DB1EC4595500CF985C /* Environment.m in Sources */,
+				3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */,
 				3EF020D81EC4593900CF985C /* TestUtils.m in Sources */,
+				3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
