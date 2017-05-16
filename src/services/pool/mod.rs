@@ -77,7 +77,7 @@ impl PoolWorker {
             rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
             self.nodes.push(rn);
         }
-        self.f = self.merkle_tree.count(); //FIXME
+        self.f = PoolWorker::get_f(self.nodes.len()); //TODO set cnt to connect
         info!("merkle tree {:?}", self.merkle_tree);
         Ok(())
     }
@@ -85,10 +85,9 @@ impl PoolWorker {
     fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
         let req_id = reply.result.req_id;
         let mut remove = false;
-        {
-            let mut pend_cmd = self.pending_commands.get_mut(&req_id).unwrap();
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.reply_cnt += 1;
-            if pend_cmd.reply_cnt == self.f {
+            if pend_cmd.reply_cnt == self.f + 1 {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
@@ -189,7 +188,8 @@ impl PoolWorker {
                         self.new_mt_vote += 1;
                         debug!("merkle tree expected size now {}", self.new_mt_size);
                     }
-                    if self.new_mt_vote == self.f {
+                    if self.new_mt_vote == self.f + 1 {
+                        //TODO f(n-1)*2+1? n==4?
                         self.start_catchup();
                     }
                 }
@@ -282,6 +282,13 @@ impl PoolWorker {
         }
         info!("zmq poll loop finished");
         Ok(())
+    }
+
+    fn get_f(cnt: usize) -> usize {
+        if cnt < 4 {
+            return 0
+        }
+        (cnt - 1) / 3
     }
 }
 
@@ -578,7 +585,7 @@ mod tests {
         recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
         send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
         let pool = Pool {
-            worker: Some(thread::spawn(|| {Ok(())})),
+            worker: Some(thread::spawn(|| { Ok(()) })),
             name: name.to_string(),
             id: 0,
             send_sock: send_cmd_sock,
@@ -652,7 +659,7 @@ mod tests {
         pw.f = 1;
         let pc = super::types::CommandProcess {
             cmd_ids: Vec::new(),
-            reply_cnt: pw.f - 1,
+            reply_cnt: pw.f,
             nack_cnt: 0,
         };
         let req_id = 1;
@@ -690,6 +697,16 @@ mod tests {
         };
         let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
         assert_eq!(expected_resp, act_resp);
+    }
+
+    #[test]
+    fn pool_worker_get_f_works() {
+        assert_eq!(PoolWorker::get_f(0), 0);
+        assert_eq!(PoolWorker::get_f(3), 0);
+        assert_eq!(PoolWorker::get_f(4), 1);
+        assert_eq!(PoolWorker::get_f(5), 1);
+        assert_eq!(PoolWorker::get_f(6), 1);
+        assert_eq!(PoolWorker::get_f(7), 2);
     }
 
     #[test]
