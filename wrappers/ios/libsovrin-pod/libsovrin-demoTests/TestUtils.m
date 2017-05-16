@@ -17,11 +17,22 @@
     return path;
 }
 
++ (NSMutableString*) getUserTmpDir
+{
+    NSMutableString *path = [NSMutableString stringWithString:NSTemporaryDirectory()];
+    return path;
+}
+
 +(void) cleanupStorage
 {
     NSMutableString *path = [TestUtils getUserDocumentDir];
     [path appendString:@"/.sovrin"];
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+}
+
++(NSTimeInterval) defaultTimeout
+{
+    return  1000;
 }
 
 @end

@@ -1,9 +1,6 @@
 use std::cmp;
-
-extern crate ring;
-use self::ring::digest::{ Digest };
-
-use services::ledger::merkletree::hashutils::{ HashUtils, DIGEST };
+use utils::crypto::hash::{Digest, Hash};
+use errors::crypto::CryptoError;
 
 pub use services::ledger::merkletree::proof::{
     Proof,
@@ -36,23 +33,23 @@ impl Tree {
     /// Create an empty tree
     pub fn empty(hash: Digest) -> Self {
         Tree::Empty {
-            hash: hash.as_ref().into()
+            hash: hash.to_vec()
         }
     }
 
     /// Create a new tree
     pub fn new(hash: Digest, value: TreeLeafData) -> Self {
         Tree::Leaf {
-            hash: hash.as_ref().into(),
+            hash: hash.to_vec(),
             value: value
         }
     }
 
     /// Create a new leaf
-    pub fn new_leaf(value: TreeLeafData) -> Tree {
+    pub fn new_leaf(value: TreeLeafData) -> Result<Tree, CryptoError> {
 
-        let hash = DIGEST.hash_leaf(&value);
-        Tree::new(hash, value)
+        let hash = Hash::hash_leaf(&value)?;
+        Ok(Tree::new(hash, value))
     }
 
     /// Returns a hash from the tree.

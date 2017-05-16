@@ -17,13 +17,13 @@ use std::str;
 const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
-    fn create_key_pair(&self) -> (Vec<u8>, Vec<u8>);
     fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8>;
     fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError>;
     fn gen_nonce(&self) -> Vec<u8>;
     fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> (Vec<u8>, Vec<u8>);
     fn sign(&self, private_key: &[u8], doc: &[u8]) -> Vec<u8>;
     fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> bool;
+    fn get_key_pair_for_encryption(&self, pk: &[u8], sk: &[u8]) -> (Vec<u8>, Vec<u8>);
 }
 
 pub struct SignusService {
@@ -50,8 +50,10 @@ impl SignusService {
         let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
 
         let seed = did_info.seed.as_ref().map(String::as_bytes);
-        let (public_key, secret_key) = signus.create_key_pair();
         let (ver_key, sign_key) = signus.create_key_pair_for_signature(seed);
+        let (public_key, secret_key) = signus.get_key_pair_for_encryption(&ver_key, &sign_key);
+
+
         let did = did_info.did.as_ref().map(|did| Base58::decode(did)).unwrap_or(Ok(ver_key[0..16].to_vec()))?;
 
 

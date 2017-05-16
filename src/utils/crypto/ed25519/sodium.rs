@@ -23,9 +23,8 @@ extern {
 pub struct ED25519 {}
 
 impl ED25519 {
-    pub fn create_key_pair() -> (Vec<u8>, Vec<u8>) {
-        let (public_key, private_key) = box_::gen_keypair();
-        (public_key[..].to_vec(), private_key[..].to_vec())
+    pub fn get_key_pair_for_encryption(pk: &[u8], sk: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        (ED25519::pk_to_curve25519(pk), ED25519::sk_to_curve25519(sk))
     }
 
     pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
@@ -85,9 +84,9 @@ impl ED25519 {
         )
     }
 
-    pub fn sk_to_curve25519(sk: &Vec<u8>) -> Vec<u8> {
+    pub fn sk_to_curve25519(sk: &[u8]) -> Vec<u8> {
         let mut from: [u8; 64] = [0; 64];
-        from.clone_from_slice(sk.as_slice());
+        from.clone_from_slice(sk);
         let mut to: [u8; 32] = [0; 32];
         unsafe {
             crypto_sign_ed25519_sk_to_curve25519(&mut to, &from);
@@ -95,9 +94,10 @@ impl ED25519 {
         to.iter().cloned().collect()
     }
 
-    pub fn pk_to_curve25519(pk: &Vec<u8>) -> Vec<u8> {
+    pub fn pk_to_curve25519(pk: &[u8]) -> Vec<u8> {
+
         let mut from: [u8; 32] = [0; 32];
-        from.clone_from_slice(pk.as_slice());
+        from.clone_from_slice(pk);
         let mut to: [u8; 32] = [0; 32];
         unsafe {
             crypto_sign_ed25519_pk_to_curve25519(&mut to, &from);
@@ -123,9 +123,13 @@ mod tests {
     fn encrypt_decrypt_works() {
         let text = randombytes::randombytes(16);
         let nonce = ED25519::gen_nonce();
+        let seed = randombytes::randombytes(32);
 
-        let (alice_pk, alice_sk) = ED25519::create_key_pair();
-        let (bob_pk, bob_sk) = ED25519::create_key_pair();
+        let (alice_ver_key, alice_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed));
+        let (alice_pk, alice_sk) = ED25519::get_key_pair_for_encryption(&alice_ver_key, &alice_sign_key);
+
+        let (bob_ver_key, bob_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed));
+        let (bob_pk, bob_sk) = ED25519::get_key_pair_for_encryption(&bob_ver_key, &bob_sign_key);
 
         let bob_encrypted_text = ED25519::encrypt(&bob_sk, &alice_pk, &text, &nonce);
         let bob_decrypt_result = ED25519::decrypt(&alice_sk, &bob_pk, &bob_encrypted_text, &nonce);

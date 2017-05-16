@@ -12,10 +12,6 @@ impl ED25519Signus {
 }
 
 impl CryptoType for ED25519Signus {
-    fn create_key_pair(&self) -> (Vec<u8>, Vec<u8>) {
-        ED25519::create_key_pair()
-    }
-
     fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
         ED25519::encrypt(private_key, public_key, doc, nonce)
     }
@@ -38,5 +34,8 @@ impl CryptoType for ED25519Signus {
 
     fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> bool {
         ED25519::verify(public_key, doc, signature)
+    }
+    fn get_key_pair_for_encryption(&self, pk: &[u8], sk: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        ED25519::get_key_pair_for_encryption(pk, sk)
     }
 }

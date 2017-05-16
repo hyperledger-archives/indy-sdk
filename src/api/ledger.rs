@@ -440,6 +440,7 @@ pub extern fn sovrin_build_claim_def_txn(command_handle: i32,
 ///
 /// #Errors
 /// Common*
+#[no_mangle]
 pub extern fn sovrin_build_get_claim_def_txn(command_handle: i32,
                                       submitter_did: *const c_char,
                                       xref: *const c_char,
