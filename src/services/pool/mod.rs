@@ -33,7 +33,7 @@ pub struct PoolService {
 struct Pool {
     name: String,
     id: i32,
-    send_sock: zmq::Socket,
+    cmd_sock: zmq::Socket,
     worker: Option<thread::JoinHandle<Result<(), PoolError>>>,
 }
 
@@ -49,108 +49,41 @@ struct PoolWorker {
     pending_catchup: Option<CatchUpProcess>,
     name: String,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
+    handler: PoolWorkerHandler,
 }
 
-impl PoolWorker {
-    fn connect_to_known_nodes(&mut self) -> Result<(), PoolError> {
-        if self.merkle_tree.is_empty() {
-            self.merkle_tree = PoolWorker::_restore_merkle_tree(self.name.as_str())?;
-        }
-        let ctx: zmq::Context = zmq::Context::new();
-        for gen_txn in &self.merkle_tree {
-            let mut rn: RemoteNode = RemoteNode::new(gen_txn.as_str());
-            rn.connect(&ctx);
-            rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
-            self.nodes.push(rn);
-        }
-        self.f = PoolWorker::get_f(self.nodes.len()); //TODO set cnt to connect
-        info!("merkle tree {:?}", self.merkle_tree);
-        Ok(())
-    }
+enum PoolWorkerHandler {
+    CatchupHandler(CatchupHandler),
+    TransactionHandler(TransactionHandler),
+}
 
-    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
-        let req_id = reply.result.req_id;
-        let mut remove = false;
-        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
-            pend_cmd.reply_cnt += 1;
-            if pend_cmd.reply_cnt == self.f + 1 {
-                for &cmd_id in &pend_cmd.cmd_ids {
-                    CommandExecutor::instance().send(
-                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
-                }
-                remove = true;
-            }
-        }
-        if remove {
-            self.pending_commands.remove(&req_id);
-        }
-    }
+struct CatchupHandler {
+    f: usize,
+    merkle_tree: MerkleTree,
+    new_mt_size: usize,
+    new_mt_vote: usize,
+    nodes: Vec<RemoteNode>,
+    pending_catchup: Option<CatchUpProcess>,
+}
 
-    fn start_catchup(&mut self) {
-        assert!(self.pending_catchup.is_none());
-        self.pending_catchup = Some(CatchUpProcess {
-            merkle_tree: self.merkle_tree.clone(),
-            pending_reps: BinaryHeap::new(),
-        });
-        let node_cnt = self.nodes.len();
-        assert!(self.merkle_tree.count() == node_cnt);
+struct TransactionHandler {
+    f: usize,
+    nodes: Vec<RemoteNode>,
+    pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
+}
 
-        let cnt_to_catchup = self.new_mt_size - self.merkle_tree.count();
-        assert!(cnt_to_catchup > 0);
-        let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
-        let mut catchup_req = CatchupReq {
-            ledgerType: 0,
-            seqNoStart: node_cnt + 1,
-            seqNoEnd: node_cnt + 1 + portion - 1,
-            catchupTill: self.new_mt_size,
-        };
-        for node in &self.nodes {
-            node.send_msg(&Message::CatchupReq(catchup_req.clone()));
-            catchup_req.seqNoStart += portion;
-            catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
-                                            catchup_req.catchupTill);
-        }
-    }
-
-    fn process_catchup_rep(&mut self, catchup: CatchupRep) -> Result<(), PoolError> {
-        trace!("append {:?}", catchup);
-        let catchup_finished = {
-            let mut process = self.pending_catchup.as_mut().unwrap();
-            process.pending_reps.push(catchup);
-            while !process.pending_reps.is_empty()
-                && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
-                let mut first_resp = process.pending_reps.pop().unwrap();
-                while !first_resp.txns.is_empty() {
-                    let key = first_resp.min_tx().to_string();
-                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json().unwrap();
-                    trace!("append to tree {}", new_gen_tx);
-                    process.merkle_tree.append(
-                        new_gen_tx
-                    )?;
-                }
-            }
-            trace!("updated mt hash {}, tree {:?}", base64::encode(process.merkle_tree.root_hash()), process.merkle_tree);
-            if &process.merkle_tree.count() == &self.new_mt_size {
-                //TODO check also root hash?
-                true
-            } else {
-                false
-            }
-        };
-        if catchup_finished {
-            self.finish_catchup()?;
-        }
-        Ok(())
-    }
-
-    fn finish_catchup(&mut self) -> Result<(), PoolError> {
-        self.merkle_tree = self.pending_catchup.take().unwrap().merkle_tree;
-        self.nodes.clear();
-        Ok(self.connect_to_known_nodes()?)
-    }
-
-    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<(), PoolError> {
+impl PoolWorkerHandler {
+    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<PoolWorkerHandler>, PoolError> {
         let msg = Message::from_raw_str(raw_msg).unwrap();
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
+        }
+    }
+}
+
+impl CatchupHandler {
+    fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<PoolWorkerHandler>, PoolError> {
         match msg {
             Message::Pong => {
                 //sending ledger status
@@ -179,15 +112,128 @@ impl PoolWorker {
                 }
             }
             Message::CatchupRep(catchup) => {
-                self.process_catchup_rep(catchup)?;
+                if let Some(new_mt) = self.process_catchup_rep(catchup)? {
+                    return Ok(Some(PoolWorkerHandler::TransactionHandler(TransactionHandler {
+                        nodes: Vec::new(),
+                        f: 0,
+                        pending_commands: HashMap::new(),
+                    }))); //FIXME implement
+                }
             }
+            _ => {
+                warn!("unhandled msg {:?}", msg);
+            }
+        };
+        Ok(None)
+    }
+
+    fn start_catchup(&mut self) {
+        assert!(self.pending_catchup.is_none());
+        self.pending_catchup = Some(CatchUpProcess {
+            merkle_tree: self.merkle_tree.clone(),
+            pending_reps: BinaryHeap::new(),
+        });
+        let node_cnt = self.nodes.len();
+        assert!(self.merkle_tree.count() == node_cnt);
+
+        let cnt_to_catchup = self.new_mt_size - self.merkle_tree.count();
+        assert!(cnt_to_catchup > 0);
+        let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
+        let mut catchup_req = CatchupReq {
+            ledgerType: 0,
+            seqNoStart: node_cnt + 1,
+            seqNoEnd: node_cnt + 1 + portion - 1,
+            catchupTill: self.new_mt_size,
+        };
+        for node in &self.nodes {
+            node.send_msg(&Message::CatchupReq(catchup_req.clone()));
+            catchup_req.seqNoStart += portion;
+            catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
+                                            catchup_req.catchupTill);
+        }
+    }
+
+    fn process_catchup_rep(&mut self, catchup: CatchupRep) -> Result<Option<MerkleTree>, PoolError> {
+        trace!("append {:?}", catchup);
+        let catchup_finished = {
+            let mut process = self.pending_catchup.as_mut().unwrap();
+            process.pending_reps.push(catchup);
+            while !process.pending_reps.is_empty()
+                && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
+                let mut first_resp = process.pending_reps.pop().unwrap();
+                while !first_resp.txns.is_empty() {
+                    let key = first_resp.min_tx().to_string();
+                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json().unwrap();
+                    trace!("append to tree {}", new_gen_tx);
+                    process.merkle_tree.append(
+                        new_gen_tx
+                    )?;
+                }
+            }
+            trace!("updated mt hash {}, tree {:?}", base64::encode(process.merkle_tree.root_hash()), process.merkle_tree);
+            if &process.merkle_tree.count() == &self.new_mt_size {
+                //TODO check also root hash?
+                true
+            } else {
+                false
+            }
+        };
+        if catchup_finished {
+            return Ok(Some(self.finish_catchup()?));
+        }
+        Ok(None)
+    }
+
+    fn finish_catchup(&mut self) -> Result<MerkleTree, PoolError> {
+        Ok(self.pending_catchup.take().unwrap().merkle_tree)
+    }
+}
+
+impl TransactionHandler {
+    fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<PoolWorkerHandler>, PoolError> {
+        match msg {
             Message::Reply(reply) => {
                 self.process_reply(&reply, raw_msg);
             }
             _ => {
-                info!("unhandled msg {:?}", msg);
+                warn!("unhandled msg {:?}", msg);
             }
         };
+        Ok(None)
+    }
+    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
+        let req_id = reply.result.req_id;
+        let mut remove = false;
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
+            pend_cmd.reply_cnt += 1;
+            if pend_cmd.reply_cnt == self.f + 1 {
+                for &cmd_id in &pend_cmd.cmd_ids {
+                    CommandExecutor::instance().send(
+                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+                }
+                remove = true;
+            }
+        }
+        if remove {
+            self.pending_commands.remove(&req_id);
+        }
+    }
+}
+
+impl PoolWorker {
+    fn connect_to_known_nodes(&mut self) -> Result<(), PoolError> {
+        if self.merkle_tree.is_empty() {
+            self.merkle_tree = PoolWorker::_restore_merkle_tree(self.name.as_str())?;
+        }
+        let ctx: zmq::Context = zmq::Context::new();
+        for gen_txn in &self.merkle_tree {
+            let mut rn: RemoteNode = RemoteNode::new(gen_txn.as_str());
+            rn.connect(&ctx);
+            rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
+            self.nodes.push(rn);
+        }
+        self.f = PoolWorker::get_f(self.nodes.len()); //TODO set cnt to connect
+        info!("merkle tree {:?}", self.merkle_tree);
         Ok(())
     }
 
@@ -210,7 +256,10 @@ impl PoolWorker {
                         break 'zmq_poll_loop;
                     }
                     &ZMQLoopAction::MessageToProcess(ref msg) => {
-                        self.process_msg(&msg.message, msg.node_idx)?;
+                        let new_handler = self.handler.process_msg(&msg.message, msg.node_idx)?;
+                        if new_handler.is_some() {
+                            self.handler = new_handler.unwrap();
+                        }
                     }
                     &ZMQLoopAction::RequestToSend(ref req) => {
                         self.try_send_request(&req.request, req.id);
@@ -332,14 +381,22 @@ impl Pool {
             pending_catchup: None,
             name: name.to_string(),
             pending_commands: HashMap::new(),
+            handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                f: 0,
+                nodes: Vec::new(),
+                new_mt_size: 0,
+                new_mt_vote: 0,
+                merkle_tree: MerkleTree::from_vec(Vec::new())?,
+                pending_catchup: None,
+            }),
         };
 
         Ok(Pool {
             name: name.to_string(),
             id: pool_id,
-            send_sock: send_cmd_sock,
+            cmd_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
-                Ok(pool_worker.run()?)
+                pool_worker.run()
             })),
         })
     }
@@ -347,7 +404,7 @@ impl Pool {
     pub fn send_tx(&self, cmd_id: i32, json: &str) {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        self.send_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("send to cmd sock");
+        self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("send to cmd sock");
     }
 }
 
@@ -355,7 +412,7 @@ impl Drop for Pool {
     fn drop(&mut self) {
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
-        self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
+        self.cmd_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
         info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
         self.worker.take().unwrap().join().unwrap().unwrap();
@@ -605,7 +662,7 @@ mod tests {
             worker: Some(thread::spawn(|| { Ok(()) })),
             name: name.to_string(),
             id: 0,
-            send_sock: send_cmd_sock,
+            cmd_sock: send_cmd_sock,
         };
         let test_data = "str_instead_of_tx_json";
         pool.send_tx(0, test_data);
@@ -626,6 +683,14 @@ mod tests {
                 new_mt_vote: 0,
                 name: "".to_string(),
                 pending_commands: HashMap::new(),
+                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                    f: 0,
+                    merkle_tree: MerkleTree::from_vec(Vec::new()).unwrap(),
+                    nodes: Vec::new(),
+                    new_mt_size: 0,
+                    new_mt_vote: 0,
+                    pending_catchup: None,
+                }),
             }
         }
     }
