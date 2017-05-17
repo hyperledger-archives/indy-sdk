@@ -21,3 +21,5 @@ pub mod xsalsa20;
 #[cfg(feature = "hash_openssl")]
 #[path = "hash/openssl.rs"]
 pub mod hash;
+
+pub mod signature_serializer;
