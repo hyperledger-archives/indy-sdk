@@ -4,6 +4,7 @@ use std::cmp;
 use std::collections::{BinaryHeap, HashMap};
 
 use services::ledger::merkletree::merkletree::MerkleTree;
+use super::zmq;
 use utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -160,6 +161,14 @@ impl PoolConfig {
         txn += ".txn";
         PoolConfig { genesis_txn: txn }
     }
+}
+
+pub struct RemoteNode {
+    pub name: String,
+    pub public_key: Vec<u8>,
+    pub verify_key: Vec<u8>,
+    pub zaddr: String,
+    pub zsock: Option<zmq::Socket>,
 }
 
 pub struct CatchUpProcess {
