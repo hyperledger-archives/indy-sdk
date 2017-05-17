@@ -30,7 +30,7 @@ impl CatchupHandler {
                 let ls: LedgerStatus = LedgerStatus {
                     txnSeqNo: self.nodes.len(),
                     merkleRoot: base64::encode(self.merkle_tree.root_hash()),
-                    ledgerType: 0,
+                    ledgerId: 0,
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg);

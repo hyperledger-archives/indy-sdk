@@ -37,7 +37,7 @@ impl<'a> JsonDecodable<'a> for GenTransaction {}
 pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
-    pub ledgerType: u8,
+    pub ledgerId: u8,
 }
 
 #[allow(non_snake_case)]
