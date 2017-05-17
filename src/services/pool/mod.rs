@@ -474,7 +474,9 @@ impl PoolService {
 
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow()?.get(&handle).unwrap().send_tx(cmd_id, json);
+        self.pools.try_borrow()?
+            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .send_tx(cmd_id, json);
         Ok(cmd_id)
     }
 
