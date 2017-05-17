@@ -97,6 +97,27 @@ void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle, sovrin_error
     }
 }
 
+void SovrinWrapperCommon5PCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err, const char* arg1, const char *arg2, const char *arg3)
+{
+    void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
+    [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
+    
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (__bridge void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
+    
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
+    NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
+    NSString* sarg3 = [ NSString stringWithUTF8String: arg3];
+    
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+                           NSError *error = [ NSError errorFromSovrinError: err ];
+                           completion(error, sarg1, sarg2, sarg3);
+                       });
+    }
+}
+
 @interface SovrinCallbacks ()
 
 @property (strong, readwrite) NSMutableDictionary *callbacks;
