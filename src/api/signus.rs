@@ -188,9 +188,9 @@ pub  extern fn sovrin_sign(command_handle: i32,
             did,
             msg,
             Box::new(move |result| {
-                let (err, signature) = result_to_err_code_1!(result, String::new());
-                let signature = CStringUtils::string_to_cstring(signature);
-                cb(command_handle, err, signature.as_ptr())
+                let (err, signed_msg) = result_to_err_code_1!(result, String::new());
+                let signed_msg = CStringUtils::string_to_cstring(signed_msg);
+                cb(command_handle, err, signed_msg.as_ptr())
             })
         )));
 

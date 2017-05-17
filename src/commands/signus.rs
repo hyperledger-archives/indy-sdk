@@ -219,8 +219,8 @@ impl SignusCommandExecutor {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
         let my_did = MyDid::from_json(&my_did_json)?;
 
-        let signature = self.signus_service.sign(&my_did, msg)?;
-        Ok(signature)
+        let signed_msg = self.signus_service.sign(&my_did, msg)?;
+        Ok(signed_msg)
     }
 
     fn verify_signature(&self,

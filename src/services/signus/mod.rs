@@ -1,6 +1,9 @@
 mod ed25519;
 pub mod types;
 
+extern crate serde_json;
+use self::serde_json::Value;
+
 use self::ed25519::ED25519Signus;
 use self::types::{
     MyDidInfo,
@@ -8,6 +11,7 @@ use self::types::{
     TheirDid
 };
 use utils::crypto::base58::Base58;
+use utils::crypto::signature_serializer::serialize_signature;
 
 use errors::crypto::CryptoError;
 use errors::signus::SignusError;
@@ -76,10 +80,14 @@ impl SignusService {
         let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
 
         let sign_key = Base58::decode(&my_did.sign_key)?;
-        let signature = signus.sign(&sign_key, doc.as_bytes());
-        let signature = Base58::encode(&signature);
+        let mut msg: Value = serde_json::from_str(doc)?;
 
-        Ok(signature)
+        let signature = serialize_signature(msg.clone());
+        let signature = signus.sign(&sign_key, signature.as_bytes());
+        let signature = Base58::encode(&signature);
+        msg["signature"] = Value::String(signature);
+        let signed_msg: String = serde_json::to_string(&msg)?;
+        Ok(signed_msg)
     }
 
     pub fn verify(&self, their_did: &TheirDid, doc: &str, signature: &str) -> Result<bool, SignusError> {
