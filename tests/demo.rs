@@ -541,8 +541,7 @@ fn ledger_demo_works() {
     let get_nym_resp_data: ReplyResultData = serde_json::from_str(&get_nym_resp.result.data.as_ref().unwrap()).unwrap();
     println!("get_nym_resp {:?}\n{:?}\n{:?}", resp, get_nym_resp, get_nym_resp_data);
 
-    assert_eq!(get_nym_resp_data.txn_id, nym_resp.result.txn_id);
-    assert_eq!(get_nym_resp_data.dest, nym_txn_req.operation.dest);
+    assert_eq!(get_nym_resp_data.dest, my_verkey);
 
     TestUtils::cleanup_storage();
 
@@ -578,7 +577,7 @@ fn ledger_demo_works() {
     #[derive(Deserialize, Eq, PartialEq, Debug)]
     #[serde(rename_all = "camelCase")]
     struct ReplyResult {
-        txn_id: String,
+        identifier: String,
         req_id: u64,
         data: Option<String>
     }
@@ -589,7 +588,6 @@ fn ledger_demo_works() {
         dest: String,
         identifier: String,
         role: Option<String>,
-        txn_id: String,
     }
 }
 
