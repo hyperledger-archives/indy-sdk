@@ -12,11 +12,13 @@ use std::collections::{HashMap, BinaryHeap};
 use std::{cmp, fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
+use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
+use errors::crypto::CryptoError;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::ed25519::ED25519;
@@ -32,7 +34,7 @@ struct Pool {
     name: String,
     id: i32,
     send_sock: zmq::Socket,
-    worker: Option<thread::JoinHandle<()>>,
+    worker: Option<thread::JoinHandle<Result<(), PoolError>>>,
 }
 
 struct PoolWorker {
@@ -50,9 +52,9 @@ struct PoolWorker {
 }
 
 impl PoolWorker {
-    fn connect_to_known_nodes(&mut self) {
+    fn connect_to_known_nodes(&mut self) -> Result<(), PoolError> {
         if self.merkle_tree.is_empty() {
-            self.merkle_tree = PoolWorker::_restore_merkle_tree(self.name.as_str()).unwrap();
+            self.merkle_tree = PoolWorker::_restore_merkle_tree(self.name.as_str())?;
         }
         let ctx: zmq::Context = zmq::Context::new();
         for gen_txn in &self.merkle_tree {
@@ -61,17 +63,17 @@ impl PoolWorker {
             rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
             self.nodes.push(rn);
         }
-        self.f = self.merkle_tree.count(); //FIXME
+        self.f = PoolWorker::get_f(self.nodes.len()); //TODO set cnt to connect
         info!("merkle tree {:?}", self.merkle_tree);
+        Ok(())
     }
 
     fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
         let req_id = reply.result.req_id;
         let mut remove = false;
-        {
-            let mut pend_cmd = self.pending_commands.get_mut(&req_id).unwrap();
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.reply_cnt += 1;
-            if pend_cmd.reply_cnt == self.f {
+            if pend_cmd.reply_cnt == self.f + 1 {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
@@ -110,7 +112,7 @@ impl PoolWorker {
         }
     }
 
-    fn process_catchup_rep(&mut self, catchup: CatchupRep) {
+    fn process_catchup_rep(&mut self, catchup: CatchupRep) -> Result<(), PoolError> {
         trace!("append {:?}", catchup);
         let catchup_finished = {
             let mut process = self.pending_catchup.as_mut().unwrap();
@@ -124,7 +126,7 @@ impl PoolWorker {
                     trace!("append to tree {}", new_gen_tx);
                     process.merkle_tree.append(
                         new_gen_tx
-                    );
+                    )?;
                 }
             }
             trace!("updated mt hash {}, tree {:?}", base64::encode(process.merkle_tree.root_hash()), process.merkle_tree);
@@ -136,17 +138,18 @@ impl PoolWorker {
             }
         };
         if catchup_finished {
-            self.finish_catchup();
+            self.finish_catchup()?;
         }
+        Ok(())
     }
 
-    fn finish_catchup(&mut self) {
+    fn finish_catchup(&mut self) -> Result<(), PoolError> {
         self.merkle_tree = self.pending_catchup.take().unwrap().merkle_tree;
         self.nodes.clear();
-        self.connect_to_known_nodes();
+        Ok(self.connect_to_known_nodes()?)
     }
 
-    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) {
+    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<(), PoolError> {
         let msg = Message::from_raw_str(raw_msg).unwrap();
         match msg {
             Message::Pong => {
@@ -176,7 +179,7 @@ impl PoolWorker {
                 }
             }
             Message::CatchupRep(catchup) => {
-                self.process_catchup_rep(catchup);
+                self.process_catchup_rep(catchup)?;
             }
             Message::Reply(reply) => {
                 self.process_reply(&reply, raw_msg);
@@ -185,11 +188,12 @@ impl PoolWorker {
                 info!("unhandled msg {:?}", msg);
             }
         };
+        Ok(())
     }
 
 
-    pub fn run(&mut self) {
-        self.connect_to_known_nodes();
+    pub fn run(&mut self) -> Result<(), PoolError> {
+        self.connect_to_known_nodes()?;
 
         CommandExecutor::instance().send(Command::Pool(
             PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
@@ -206,7 +210,7 @@ impl PoolWorker {
                         break 'zmq_poll_loop;
                     }
                     &ZMQLoopAction::MessageToProcess(ref msg) => {
-                        self.process_msg(&msg.message, msg.node_idx);
+                        self.process_msg(&msg.message, msg.node_idx)?;
                     }
                     &ZMQLoopAction::RequestToSend(ref req) => {
                         self.try_send_request(&req.request, req.id);
@@ -217,6 +221,7 @@ impl PoolWorker {
             trace!("zmq poll loop <<");
         }
         info!("zmq poll loop finished");
+        Ok(())
     }
 
     fn poll_zmq(&mut self) -> Vec<ZMQLoopAction> {
@@ -283,7 +288,7 @@ impl PoolWorker {
 
     fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        let mut mt = MerkleTree::from_vec(Vec::new());
+        let mut mt = MerkleTree::from_vec(Vec::new())?;
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
@@ -291,9 +296,16 @@ impl PoolWorker {
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line?;
-            mt.append(line);
+            mt.append(line)?;
         }
         Ok(mt)
+    }
+
+    fn get_f(cnt: usize) -> usize {
+        if cnt < 4 {
+            return 0
+        }
+        (cnt - 1) / 3
     }
 }
 
@@ -313,7 +325,7 @@ impl Pool {
             open_cmd_id: cmd_id,
             pool_id: pool_id,
             nodes: Vec::new(),
-            merkle_tree: MerkleTree::from_vec(Vec::new()),
+            merkle_tree: MerkleTree::from_vec(Vec::new())?,
             new_mt_size: 0,
             new_mt_vote: 0,
             f: 0,
@@ -327,7 +339,7 @@ impl Pool {
             id: pool_id,
             send_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
-                pool_worker.run();
+                Ok(pool_worker.run()?)
             })),
         })
     }
@@ -346,8 +358,14 @@ impl Drop for Pool {
         self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
         info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join().unwrap();
+        self.worker.take().unwrap().join().unwrap().unwrap();
         info!(target: target.as_str(), "Drop finished");
+    }
+}
+
+impl From<CryptoError> for PoolError {
+    fn from(err: CryptoError) -> PoolError {
+        PoolError::InvalidData(err.description().to_string())
     }
 }
 
@@ -375,6 +393,7 @@ impl RemoteNode {
     fn connect(&mut self, ctx: &zmq::Context) {
         let key_pair = zmq::CurveKeyPair::new().expect("create key pair");
         let s = ctx.socket(zmq::SocketType::DEALER).expect("socket for Node");
+        s.set_identity(key_pair.public_key.as_bytes()).expect("set identity");
         s.set_curve_secretkey(key_pair.secret_key.as_str()).expect("set secret key");
         s.set_curve_publickey(key_pair.public_key.as_str()).expect("set public key");
         s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
@@ -583,7 +602,7 @@ mod tests {
         recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
         send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
         let pool = Pool {
-            worker: Some(thread::spawn(|| {})),
+            worker: Some(thread::spawn(|| { Ok(()) })),
             name: name.to_string(),
             id: 0,
             send_sock: send_cmd_sock,
@@ -596,7 +615,7 @@ mod tests {
     impl Default for PoolWorker {
         fn default() -> Self {
             PoolWorker {
-                merkle_tree: MerkleTree::from_vec(Vec::new()),
+                merkle_tree: MerkleTree::from_vec(Vec::new()).unwrap(),
                 pool_id: 0,
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                 f: 0,
@@ -638,9 +657,9 @@ mod tests {
     fn pool_worker_connect_to_known_nodes_works() {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        pw.merkle_tree.append(gt.to_json().unwrap());
+        pw.merkle_tree.append(gt.to_json().unwrap()).unwrap();
 
-        pw.connect_to_known_nodes();
+        pw.connect_to_known_nodes().unwrap();
 
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
@@ -707,7 +726,7 @@ mod tests {
         pw.f = 1;
         let pc = super::types::CommandProcess {
             cmd_ids: Vec::new(),
-            reply_cnt: pw.f - 1,
+            reply_cnt: pw.f,
             nack_cnt: 0,
         };
         let req_id = 1;
@@ -727,7 +746,7 @@ mod tests {
     fn pool_worker_start_catchup_works() {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        pw.merkle_tree.append(gt.to_json().unwrap());
+        pw.merkle_tree.append(gt.to_json().unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::from(gt);
         rn.connect(&zmq::Context::new());
         pw.nodes.push(rn);
@@ -745,6 +764,16 @@ mod tests {
         };
         let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
         assert_eq!(expected_resp, act_resp);
+    }
+
+    #[test]
+    fn pool_worker_get_f_works() {
+        assert_eq!(PoolWorker::get_f(0), 0);
+        assert_eq!(PoolWorker::get_f(3), 0);
+        assert_eq!(PoolWorker::get_f(4), 1);
+        assert_eq!(PoolWorker::get_f(5), 1);
+        assert_eq!(PoolWorker::get_f(6), 1);
+        assert_eq!(PoolWorker::get_f(7), 2);
     }
 
     #[test]

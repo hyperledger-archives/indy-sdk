@@ -11,20 +11,7 @@
 
 @implementation SovrinAnoncreds
 
-+ (SovrinAnoncreds *)sharedInstance
-{
-    static SovrinAnoncreds *instance = nil;
-    static dispatch_once_t dispatch_once_block;
-    
-    dispatch_once(&dispatch_once_block, ^
-    {
-        instance = [SovrinAnoncreds new];
-    });
-    
-    return instance;
-}
-
-- (NSError*) issuerCreateAndStoreClaimDef:(SovrinHandle) walletHandle
++ (NSError*) issuerCreateAndStoreClaimDef:(SovrinHandle) walletHandle
                                schemaJSON:(NSString*) schema
                             signatureType:(NSString*) signatureType
                            createNonRevoc:(BOOL) createNonRevoc
@@ -49,7 +36,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) issuerCreateAndStoreRevocReg:(SovrinHandle) walletHandle
++ (NSError*) issuerCreateAndStoreRevocReg:(SovrinHandle) walletHandle
                             claimDefSeqNo:(NSNumber*) seqNo
                               maxClaimNum:(NSNumber*) maxClaimNum
                                completion:(void (^)(NSError* error, NSString* revocRegJSON, NSString* revocRegUUID)) handler
@@ -72,7 +59,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
++ (NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
                   claimReqJSON:(NSString*) reqJSON
                      claimJSON:(NSString*) claimJSON
                  revocRegSeqNo:(NSNumber*) seqNo       // TODO: check how to deal with option<>
@@ -87,8 +74,8 @@
                                      walletHandle,
                                      [reqJSON UTF8String],
                                      [claimJSON UTF8String],
-                                     [seqNo intValue],
-                                     [revocIndex intValue],
+                                     seqNo ? [seqNo intValue] : -1,
+                                     revocIndex ? [revocIndex intValue] : -1,
                                      SovrinWrapperCommon4PCallback
                                     );
 
@@ -100,7 +87,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) issuerRevokeClaim:(SovrinHandle) walletHandle
++ (NSError*) issuerRevokeClaim:(SovrinHandle) walletHandle
                  claimDefSeqNo:(NSNumber*) claimSeqNo
                  revocRegSeqNo:(NSNumber*) revocSeqNo
                 userRevocIndex:(NSNumber*) revocIndex
@@ -126,7 +113,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverStoreClaimOffer:(SovrinHandle) walletHandle
++ (NSError*) proverStoreClaimOffer:(SovrinHandle) walletHandle
                     claimOfferJSON:(NSString*) json
                         completion:(void (^)(NSError* error)) handler
 {
@@ -148,7 +135,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverGetClaimOffers:(SovrinHandle) walletHandle
++ (NSError*) proverGetClaimOffers:(SovrinHandle) walletHandle
                        filterJSON:(NSString*) json
                        completion:(void (^)(NSError* error, NSString* claimOffersJSON)) handler
 {
@@ -170,7 +157,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
++ (NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
                      masterSecretName:(NSString*) name
                            completion:(void (^)(NSError* error)) handler
 {
@@ -192,7 +179,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverCreateAndStoreClaimReq:(SovrinHandle) walletHandle
++ (NSError*) proverCreateAndStoreClaimReq:(SovrinHandle) walletHandle
                                 proverDid:(NSString*) prover
                            claimOfferJSON:(NSString*) offerJson
                          masterSecretName:(NSString*) name
@@ -202,13 +189,13 @@
     sovrin_error_t ret;
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
-    
+
     ret = sovrin_prover_create_and_store_claim_req(handle,
                                                    walletHandle,
                                                    [prover UTF8String],
                                                    [offerJson UTF8String],
-                                                   [name UTF8String],
                                                    [claimJson UTF8String],
+                                                   [name UTF8String],
                                                    SovrinWrapperCommon3PSCallback
                                                   );
     
@@ -220,7 +207,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverStoreClaim:(SovrinHandle) walletHandle
++ (NSError*) proverStoreClaim:(SovrinHandle) walletHandle
                    claimsJSON:(NSString*) claimsJson
                    completion:(void (^)(NSError* error)) handler
 {
@@ -241,7 +228,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverGetClaims:(SovrinHandle) walletHandle
++ (NSError*) proverGetClaims:(SovrinHandle) walletHandle
                   filterJSON:(NSString*) json
                   completion:(void (^)(NSError* error, NSString* claimsJSON)) handler
 {
@@ -262,7 +249,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverGetClaimsForProofReq:(SovrinHandle) walletHandle
++ (NSError*) proverGetClaimsForProofReq:(SovrinHandle) walletHandle
                            proofReqJSON:(NSString*) json
                              completion:(void (^)(NSError* error, NSString* claimsJSON)) handler
 {
@@ -283,7 +270,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) proverCreateProof:(SovrinHandle) walletHandle
++ (NSError*) proverCreateProof:(SovrinHandle) walletHandle
                   proofReqJSON:(NSString*) reqJSON
            requestedClaimsJSON:(NSString*) claimsJSON
                    schemasJSON:(NSString*) schemasJSON
@@ -314,7 +301,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) verifierVerifyProof:(SovrinHandle) walletHandle
++ (NSError*) verifierVerifyProof:(SovrinHandle) walletHandle
                     proofReqJSON:(NSString*) reqJSON
                        proofJSON:(NSString*) proofJSON
                      schemasJSON:(NSString*) schemasJSON

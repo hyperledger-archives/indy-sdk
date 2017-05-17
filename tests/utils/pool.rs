@@ -1,3 +1,5 @@
+extern crate time;
+
 use sovrin::api::ErrorCode;
 use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledger};
 use sovrin::api::ledger::sovrin_submit_request;
@@ -128,5 +130,9 @@ impl PoolUtils {
     pub fn create_pool_config(pool_name: &str) -> String {
         let txn_file_path = EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str());
         format!("{{\"genesis_txn\": \"{}\"}}", txn_file_path.to_string_lossy())
+    }
+
+    pub fn get_req_id() -> u64 {
+        time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
     }
 }
