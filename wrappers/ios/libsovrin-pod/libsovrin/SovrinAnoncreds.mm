@@ -47,8 +47,8 @@
     
     ret = sovrin_issuer_create_and_store_revoc_reg(handle,
                                                    walletHandle,
-                                                   [seqNo integerValue],
-                                                   [maxClaimNum integerValue],
+                                                   [seqNo intValue],
+                                                   [maxClaimNum intValue],
                                                    SovrinWrapperCommon4PCallback
                                                   );
     if( ret != Success )
@@ -99,9 +99,9 @@
     
     ret = sovrin_issuer_revoke_claim(handle,
                                      walletHandle,
-                                     [claimSeqNo integerValue],
-                                     [revocSeqNo integerValue],
-                                     [revocIndex integerValue],
+                                     [claimSeqNo intValue],
+                                     [revocSeqNo intValue],
+                                     [revocIndex intValue],
                                      SovrinWrapperCommon3PSCallback
                                     );
     

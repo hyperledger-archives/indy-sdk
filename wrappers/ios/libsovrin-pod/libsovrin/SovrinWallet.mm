@@ -129,7 +129,7 @@
     ret = sovrin_wallet_set_seq_no_for_value( handle,
                                               walletHandle,
                                               [key UTF8String],
-                                              [seqNo integerValue],
+                                              [seqNo intValue],
                                               SovrinWrapperCommon2PCallback
                                             );
     

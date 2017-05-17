@@ -12,7 +12,6 @@
 
 + (NSError*) createAndStoreMyDid:(SovrinHandle) walletHandle
                          didJSON:(NSString*) didJson
-                     requestJSON:(NSString*) request
                       completion:(void (^)(NSError* error, NSString* did, NSString* verkey, NSString* pk)) handler
 {
     sovrin_error_t ret;
