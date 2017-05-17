@@ -196,11 +196,23 @@
     // 9. Prover gets Claims for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSString* proofReqJSON = [ NSString stringWithFormat: @"{\
-                                 \"nonce\":\"123432421212\",\
-                                 \"requested_attrs\":{{\"attr1_uuid\":{{\"schema_seq_no\":%d,\"name\":\"name\"}}}},\
-                                 \"requested_predicates\":{{\"predicate1_uuid\":{{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}}}\
-                                 }", seqNo];
+    NSString* proofReqJSON = [NSString stringWithFormat: @"\
+                               {\
+                               \"nonce\":\"123432421212\",\
+                               \"requested_attrs\":{\
+                               \"attr1_uuid\":{\
+                               \"schema_seq_no\":%d,\
+                               \"name\":\"name\"\
+                               }\
+                               },\
+                               \"requested_predicates\":{\
+                               \"predicate1_uuid\":{\
+                               \"attr_name\":\"age\",\
+                               \"p_type\":\"GE\",\
+                               \"value\":18\
+                               }\
+                               }\
+                               }", seqNo ];
     
     ret = [SovrinAnoncreds proverGetClaimsForProofReq:  walletHandle
                                          proofReqJSON:  proofReqJSON
@@ -218,9 +230,9 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
-                                                                       \"self_attested_attributes\":{{}},\
-                                                                       \"requested_attrs\":{{\"attr1_uuid\":[\"%d\",true]}},\
-                                                                       \"requested_predicates\":{{\"predicate1_uuid\":\"%d\"}}\
+                                                                       \"self_attested_attributes\":{},\
+                                                                       \"requested_attrs\":{\"attr1_uuid\":[\"%d\",true]},\
+                                                                       \"requested_predicates\":{\"predicate1_uuid\":\"%d\"}\
                                                                     }", seqNo, seqNo ];
     
     NSString *schemas = [NSString stringWithFormat: @"{\"%d\":%@}", seqNo, schema];

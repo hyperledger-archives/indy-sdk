@@ -1,7 +1,10 @@
+extern crate serde_json;
+
 use std::cmp;
 use std::collections::{BinaryHeap, HashMap};
 
 use services::ledger::merkletree::merkletree::MerkleTree;
+use super::zmq;
 use utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -26,6 +29,7 @@ pub struct GenTransaction {
 }
 
 impl JsonEncodable for GenTransaction {}
+
 impl<'a> JsonDecodable<'a> for GenTransaction {}
 
 #[allow(non_snake_case)]
@@ -33,17 +37,7 @@ impl<'a> JsonDecodable<'a> for GenTransaction {}
 pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
-    pub ledgerType: u8,
-}
-
-impl Default for LedgerStatus {
-    fn default() -> LedgerStatus {
-        LedgerStatus {
-            ledgerType: 0,
-            merkleRoot: "".to_string(),
-            txnSeqNo: 0,
-        }
-    }
+    pub ledgerId: u8,
 }
 
 #[allow(non_snake_case)]
@@ -113,6 +107,8 @@ pub struct SimpleRequest {
     pub req_id: u64,
 }
 
+impl JsonEncodable for SimpleRequest {}
+
 impl<'a> JsonDecodable<'a> for SimpleRequest {}
 
 #[serde(tag = "op")]
@@ -132,9 +128,22 @@ pub enum Message {
     ReqNACK(Response),
     #[serde(rename = "REPLY")]
     Reply(Reply),
+    Ping,
+    Pong,
+}
+
+impl Message {
+    pub fn from_raw_str(str: &str) -> Result<Message, serde_json::Error> {
+        match str {
+            "po" => Ok(Message::Pong),
+            "pi" => Ok(Message::Ping),
+            _ => Message::from_json(str),
+        }
+    }
 }
 
 impl JsonEncodable for Message {}
+
 impl<'a> JsonDecodable<'a> for Message {}
 
 #[derive(Serialize, Deserialize)]
@@ -143,6 +152,7 @@ pub struct PoolConfig {
 }
 
 impl JsonEncodable for PoolConfig {}
+
 impl<'a> JsonDecodable<'a> for PoolConfig {}
 
 impl PoolConfig {
@@ -153,13 +163,41 @@ impl PoolConfig {
     }
 }
 
+pub struct RemoteNode {
+    pub name: String,
+    pub public_key: Vec<u8>,
+    pub verify_key: Vec<u8>,
+    pub zaddr: String,
+    pub zsock: Option<zmq::Socket>,
+}
+
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
     pub pending_reps: BinaryHeap<CatchupRep>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub reply_cnt: usize,
     pub cmd_ids: Vec<i32>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ZMQLoopAction {
+    RequestToSend(RequestToSend),
+    MessageToProcess(MessageToProcess),
+    Terminate,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct RequestToSend {
+    pub request: String,
+    pub id: i32,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct MessageToProcess {
+    pub message: String,
+    pub node_idx: usize,
 }
