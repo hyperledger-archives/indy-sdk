@@ -90,7 +90,7 @@ impl SignusService {
         Ok(signed_msg)
     }
 
-    pub fn verify(&self, their_did: &TheirDid, doc: &str, signature: &str) -> Result<bool, SignusError> {
+    pub fn verify(&self, their_did: &TheirDid, signed_msg: &str) -> Result<bool, SignusError> {
         let xtype = their_did.crypto_type.clone().unwrap_or(DEFAULT_CRYPTO_TYPE.to_string());
 
         if !self.crypto_types.contains_key(&xtype.as_str()) {
@@ -105,9 +105,20 @@ impl SignusService {
         let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
 
         let verkey = Base58::decode(&verkey)?;
-        let signature = Base58::decode(signature)?;
+        let mut signed_msg: Value = serde_json::from_str(signed_msg)?;
 
-        Ok(signus.verify(&verkey, &doc.as_bytes(), &signature))
+        if let Some(signature) = signed_msg["signature"].as_str() {
+            let signature = Base58::decode(signature)?;
+            let mut message: Value = Value::Object(serde_json::map::Map::new());
+            for key in signed_msg.as_object().unwrap().keys() {
+                if key != "signature" {
+                    message[key] = signed_msg[key].clone();
+                }
+            }
+            Ok(signus.verify(&verkey, &serialize_signature(message).as_bytes(), &signature))
+        } else {
+            return Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Signature key not found"))));
+        }
     }
 
     pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &str) -> Result<(String, String), SignusError> {
@@ -282,7 +293,7 @@ mod tests {
             verkey: Some(my_did.ver_key)
         };
 
-        let res = service.verify(&their_did, &msg, &signature);
+        let res = service.verify(&their_did, &signature);
         assert!(res.is_ok());
         let valid = res.unwrap();
         assert!(valid);
@@ -314,7 +325,7 @@ mod tests {
             verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
-        let res = service.verify(&their_did, &msg, &signature);
+        let res = service.verify(&their_did, &signature);
         assert!(res.is_ok());
         assert_eq!(false, res.unwrap());
     }
