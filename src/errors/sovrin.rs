@@ -70,3 +70,27 @@ impl ToErrorCode for SovrinError {
         }
     }
 }
+
+impl From<CommonError> for SovrinError {
+    fn from(err: CommonError) -> SovrinError {
+        SovrinError::CommonError(err)
+    }
+}
+
+impl From<WalletError> for SovrinError {
+    fn from(err: WalletError) -> SovrinError {
+        SovrinError::WalletError(err)
+    }
+}
+
+impl From<LedgerError> for SovrinError {
+    fn from(err: LedgerError) -> SovrinError {
+        SovrinError::LedgerError(err)
+    }
+}
+
+impl From<SignusError> for SovrinError {
+    fn from(err: SignusError) -> SovrinError {
+        SovrinError::SignusError(err)
+    }
+}

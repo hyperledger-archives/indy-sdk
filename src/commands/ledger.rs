@@ -1,5 +1,6 @@
 use errors::ledger::LedgerError;
 use errors::pool::PoolError;
+use errors::sovrin::SovrinError;
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
@@ -18,10 +19,10 @@ pub enum LedgerCommand {
     SubmitRequest(
         i32, // pool handle
         String, // request json
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     SubmitAck(
         i32, // cmd_id
-        Result<String, LedgerError>, // result json or error
+        Result<String, SovrinError>, // result json or error
     ),
     BuildGetDdoRequest(
         String, // submitter did
@@ -80,7 +81,7 @@ pub struct LedgerCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
-    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, LedgerError>)>>>,
+    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, SovrinError>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -165,11 +166,11 @@ impl LedgerCommandExecutor {
     fn submit_request(&self,
                       handle: i32,
                       request_json: &str,
-                      cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                      cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
-            Err(err) => { cb(Err(LedgerError::PoolError(err))); }
+            Err(err) => { cb(Err(SovrinError::LedgerError(LedgerError::PoolError(err)))); }
         };
     }
 
