@@ -63,11 +63,13 @@ pub enum LedgerCommand {
     BuildClaimDefRequest(
         String, // submitter did
         String, // xref
+        String, // signature_type
         String, // data
         Box<Fn(Result<String, LedgerError>) + Send>),
     BuildGetClaimDefRequest(
         String, // submitter did
         String, // xref
+        String, // signature_type
         Box<Fn(Result<String, LedgerError>) + Send>),
     BuildNodeRequest(
         String, // submitter did
@@ -152,13 +154,13 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
                 self.build_get_schema_request(&submitter_did, &data, cb);
             }
-            LedgerCommand::BuildClaimDefRequest(submitter_did, xref, data, cb) => {
+            LedgerCommand::BuildClaimDefRequest(submitter_did, xref, signature_type, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
-                self.build_claim_def_request(&submitter_did, &xref, &data, cb);
+                self.build_claim_def_request(&submitter_did, &xref, &signature_type, &data, cb);
             }
-            LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, cb) => {
+            LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, signature_type, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
-                self.build_get_claim_def_request(&submitter_did, &xref, cb);
+                self.build_get_claim_def_request(&submitter_did, &xref, &signature_type, cb);
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
@@ -267,10 +269,12 @@ impl LedgerCommandExecutor {
     fn build_claim_def_request(&self,
                                submitter_did: &str,
                                xref: &str,
+                               signature_type: &str,
                                data: &str,
                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
         cb(self.ledger_service.build_claim_def_request(submitter_did,
                                                        xref,
+                                                       signature_type,
                                                        data
         ))
     }
@@ -278,9 +282,11 @@ impl LedgerCommandExecutor {
     fn build_get_claim_def_request(&self,
                                    submitter_did: &str,
                                    xref: &str,
+                                   signature_type: &str,
                                    cb: Box<Fn(Result<String, LedgerError>) + Send>) {
         cb(self.ledger_service.build_get_claim_def_request(submitter_did,
-                                                           xref
+                                                           xref,
+                                                           signature_type
         ))
     }
 

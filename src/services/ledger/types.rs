@@ -12,20 +12,16 @@ use services::ledger::constants::{
     GET_CLAIM_DEF
 };
 
-pub trait SerializeForSign {
-    fn serialize_for_sign(&self) -> String;
-}
-
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Request<T: SerializeForSign> {
+pub struct Request<T: JsonEncodable> {
     pub req_id: u64,
     pub identifier: String,
     pub operation: T,
     pub signature: String
 }
 
-impl<T: SerializeForSign> Request<T> {
+impl<T: JsonEncodable> Request<T> {
     pub fn new(req_id: u64, identifier: String, operation: T) -> Request<T> {
         Request {
             req_id: req_id,
@@ -34,15 +30,9 @@ impl<T: SerializeForSign> Request<T> {
             signature: "".to_string()
         }
     }
-
-    pub fn serialize_for_sign(&self) -> String {
-        format!("identifier:{}|operation:{}|reqId:{}",
-                self.identifier, self.operation.serialize_for_sign(), self.req_id
-        )
-    }
 }
 
-impl<T: JsonEncodable + SerializeForSign> JsonEncodable for Request<T> {}
+impl<T: JsonEncodable> JsonEncodable for Request<T> {}
 
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct Reply {
@@ -88,14 +78,6 @@ impl NymOperation {
     }
 }
 
-impl SerializeForSign for NymOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("dest:{}|type:{}",
-                self.dest, self._type
-        )
-    }
-}
-
 impl JsonEncodable for NymOperation {}
 
 
@@ -129,14 +111,6 @@ impl GetNymOperation {
             _type: GET_NYM.to_string(),
             dest: dest
         }
-    }
-}
-
-impl SerializeForSign for GetNymOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("dest:{}|type:{}",
-                self.dest, self._type
-        )
     }
 }
 
@@ -179,13 +153,6 @@ impl AttribOperation {
     }
 }
 
-impl SerializeForSign for AttribOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("dest:{}|raw:83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3|type:{}",
-                self.dest, self._type)
-    }
-}
-
 impl JsonEncodable for AttribOperation {}
 
 
@@ -207,14 +174,6 @@ impl GetAttribOperation {
     }
 }
 
-impl SerializeForSign for GetAttribOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("dest:{}|raw:{}|type:{}",
-                self.dest, self.raw, self._type
-        )
-    }
-}
-
 impl JsonEncodable for GetAttribOperation {}
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -230,14 +189,6 @@ impl SchemaOperation {
             data: data,
             _type: SCHEMA.to_string()
         }
-    }
-}
-
-impl SerializeForSign for SchemaOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("data:{}|type:{}",
-                self.data.serialize_for_sign(), self._type
-        )
     }
 }
 
@@ -260,14 +211,6 @@ impl SchemaOperationData {
     }
 }
 
-impl SerializeForSign for SchemaOperationData {
-    fn serialize_for_sign(&self) -> String {
-        format!("keys:{:?}|name:{}|version:{}",
-                self.keys, self.name, self.version
-        )
-    }
-}
-
 impl JsonEncodable for SchemaOperationData {}
 
 impl<'a> JsonDecodable<'a> for SchemaOperationData {}
@@ -287,14 +230,6 @@ impl GetSchemaOperation {
             dest: dest,
             data: data
         }
-    }
-}
-
-impl SerializeForSign for GetSchemaOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("data:{}|dest:{}|type:{}",
-                self.data.serialize_for_sign(), self.dest, self._type
-        )
     }
 }
 
@@ -327,14 +262,6 @@ impl GetSchemaOperationData {
     }
 }
 
-impl SerializeForSign for GetSchemaOperationData {
-    fn serialize_for_sign(&self) -> String {
-        format!("name:{}|version:{}",
-                self.name, self.version
-        )
-    }
-}
-
 impl JsonEncodable for GetSchemaOperationData {}
 
 impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
@@ -345,22 +272,18 @@ pub struct ClaimDefOperation {
     pub _ref: String,
     pub data: ClaimDefOperationData,
     #[serde(rename = "type")]
-    pub _type: String
+    pub _type: String,
+    pub signature_type: String
 }
 
 impl ClaimDefOperation {
-    pub fn new(_ref: String, data: ClaimDefOperationData) -> ClaimDefOperation {
+    pub fn new(_ref: String, signature_type: String, data: ClaimDefOperationData) -> ClaimDefOperation {
         ClaimDefOperation {
             _ref: _ref,
+            signature_type: signature_type,
             data: data,
             _type: CLAIM_DEF.to_string()
         }
-    }
-}
-
-impl SerializeForSign for ClaimDefOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("", )
     }
 }
 
@@ -383,12 +306,6 @@ impl ClaimDefOperationData {
     }
 }
 
-impl SerializeForSign for ClaimDefOperationData {
-    fn serialize_for_sign(&self) -> String {
-        format!("", )
-    }
-}
-
 impl JsonEncodable for ClaimDefOperationData {}
 
 impl<'a> JsonDecodable<'a> for ClaimDefOperationData {}
@@ -398,21 +315,17 @@ pub struct GetClaimDefOperation {
     #[serde(rename = "ref")]
     pub _ref: String,
     #[serde(rename = "type")]
-    pub _type: String
+    pub _type: String,
+    pub signature_type: String
 }
 
 impl GetClaimDefOperation {
-    pub fn new(_ref: String) -> GetClaimDefOperation {
+    pub fn new(_ref: String, signature_type: String) -> GetClaimDefOperation {
         GetClaimDefOperation {
             _ref: _ref,
+            signature_type: signature_type,
             _type: GET_CLAIM_DEF.to_string()
         }
-    }
-}
-
-impl SerializeForSign for GetClaimDefOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("", )
     }
 }
 
@@ -433,14 +346,6 @@ impl NodeOperation {
             dest: dest,
             data: data
         }
-    }
-}
-
-impl SerializeForSign for NodeOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("data:{}|dest:{}|type:{}",
-                self.data.serialize_for_sign(), self.dest, self._type
-        )
     }
 }
 
@@ -470,14 +375,6 @@ impl NodeOperationData {
     }
 }
 
-impl SerializeForSign for NodeOperationData {
-    fn serialize_for_sign(&self) -> String {
-        format!("alias:{}|client_ip:{}|client_port:{}|node_ip:{}|node_port:{}|services:VALIDATOR",
-                self.alias, self.client_ip, self.client_port, self.node_ip, self.node_port
-        )
-    }
-}
-
 impl JsonEncodable for NodeOperationData {}
 
 impl<'a> JsonDecodable<'a> for NodeOperationData {}
@@ -496,14 +393,6 @@ impl GetDdoOperation {
             //TODO
             dest: dest
         }
-    }
-}
-
-impl SerializeForSign for GetDdoOperation {
-    fn serialize_for_sign(&self) -> String {
-        format!("dest:{}|type:{}",
-                self.dest, self._type
-        )
     }
 }
 

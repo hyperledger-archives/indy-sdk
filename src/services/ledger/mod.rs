@@ -124,10 +124,10 @@ impl LedgerService {
         Ok(request_json)
     }
 
-    pub fn build_claim_def_request(&self, identifier: &str, _ref: &str, data: &str) -> Result<String, LedgerError> {
+    pub fn build_claim_def_request(&self, identifier: &str, _ref: &str, signature_type: &str, data: &str) -> Result<String, LedgerError> {
         let req_id = LedgerService::get_req_id();
         let data = ClaimDefOperationData::from_json(&data)?;
-        let operation = ClaimDefOperation::new(_ref.to_string(), data);
+        let operation = ClaimDefOperation::new(_ref.to_string(), signature_type.to_string(), data);
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -135,9 +135,10 @@ impl LedgerService {
         Ok(request_json)
     }
 
-    pub fn build_get_claim_def_request(&self, identifier: &str, _ref: &str) -> Result<String, LedgerError> {
+    pub fn build_get_claim_def_request(&self, identifier: &str, _ref: &str, signature_type: &str) -> Result<String, LedgerError> {
         let req_id = LedgerService::get_req_id();
-        let operation = GetClaimDefOperation::new(_ref.to_string());
+        let operation = GetClaimDefOperation::new(_ref.to_string(),
+                                                  signature_type.to_string());
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
