@@ -16,6 +16,7 @@ use std::rc::Rc;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
+        i32, // pool handle
         i32, // wallet handle
         String, // submitter did
         String, // request json
@@ -105,9 +106,9 @@ impl LedgerCommandExecutor {
 
     pub fn execute(&self, command: LedgerCommand) {
         match command {
-            LedgerCommand::SignAndSubmitRequest(wallet_handle, submitter_did, request_json, cb) => {
+            LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
-                self.sign_and_submit_request(wallet_handle, &submitter_did, &request_json, cb);
+                self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json, cb);
             }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SubmitRequest command received");
@@ -163,12 +164,13 @@ impl LedgerCommandExecutor {
     }
 
     fn sign_and_submit_request(&self,
+                               pool_handle: i32,
                                wallet_handle: i32,
                                submitter_did: &str,
                                request_json: &str,
                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
         match self._sign_request(wallet_handle, submitter_did, request_json) {
-            Ok(signed_request) => self.submit_request(wallet_handle /* TODO */, signed_request.as_str(), cb),
+            Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
             Err(err) => cb(Err(err))
         }
     }
