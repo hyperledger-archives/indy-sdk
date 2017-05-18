@@ -226,22 +226,19 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
                                        wallet_handle: i32,
                                        pool_handle: i32,
                                        did: *const c_char,
-                                       msg: *const c_char,
-                                       signature: *const c_char,
+                                       signed_msg: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             valid: bool)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(msg, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(signature, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(signed_msg, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::VerifySignature(
             wallet_handle,
             pool_handle,
             did,
-            msg,
-            signature,
+            signed_msg,
             Box::new(move |result| {
                 let (err, valid) = result_to_err_code_1!(result, false);
                 cb(command_handle, err, valid)

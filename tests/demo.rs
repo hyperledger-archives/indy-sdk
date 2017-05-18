@@ -758,7 +758,6 @@ fn signus_demo_works() {
                                 my_wallet_handle,
                                 1,
                                 CString::new(their_did).unwrap().as_ptr(),
-                                CString::new(message).unwrap().as_ptr(),
                                 CString::new(signed_msg).unwrap().as_ptr(),
                                 verify_callback);
 
