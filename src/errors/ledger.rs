@@ -4,6 +4,7 @@ use std::fmt;
 
 use errors::crypto::CryptoError;
 use errors::pool::PoolError;
+use errors::signus::SignusError;
 use errors::wallet::WalletError;
 
 use api::ErrorCode;
@@ -48,6 +49,29 @@ impl error::Error for LedgerError {
             LedgerError::CryptoError(ref err) => Some(err),
             LedgerError::PoolError(ref err) => Some(err),
             LedgerError::WalletError(ref err) => Some(err)
+        }
+    }
+}
+
+impl From<WalletError> for LedgerError {
+    fn from(err: WalletError) -> Self {
+        LedgerError::WalletError(err)
+    }
+}
+
+impl From<CryptoError> for LedgerError {
+    fn from(err: CryptoError) -> Self {
+        LedgerError::CryptoError(err)
+    }
+}
+
+impl From<SignusError> for LedgerError {
+    fn from(se: SignusError) -> Self {
+        match se {
+            SignusError::LedgerError(err) => err,
+            SignusError::PoolError(err) => LedgerError::PoolError(err),
+            SignusError::WalletError(err) => LedgerError::WalletError(err),
+            SignusError::CryptoError(err) => LedgerError::CryptoError(err),
         }
     }
 }

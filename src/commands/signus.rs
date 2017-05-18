@@ -18,6 +18,7 @@ use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 
+use super::utils::check_wallet_and_pool_handles_consistency;
 
 pub enum SignusCommand {
     CreateAndStoreMyDid(
@@ -227,13 +228,16 @@ impl SignusCommandExecutor {
                         did: &str,
                         signed_msg: &str,
                         cb: Box<Fn(Result<bool, SignusError>) + Send>) {
-        let load_verkey_from_ledger = move |cb| {
+        let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, SignusError>)>| {
             let signed_msg = signed_msg.to_string();
             let get_nym_request = "".to_string(); //TODO add build_nym_request function in ledger service
             let cb_id: i32 = SequenceUtils::get_next_id();
 
             match self.verify_callbacks.try_borrow_mut() {
                 Ok(mut verify_callbacks) => {
+                    check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb); //TODO pop at top level ?
+
                     verify_callbacks.insert(cb_id, cb);
 
                     CommandExecutor::instance()
@@ -343,6 +347,9 @@ impl SignusCommandExecutor {
                 Err(err) => cb(Err(SignusError::CryptoError(CryptoError::BackendError(format!("{:?}", err)))))
             }
         };
+
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
 
         match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", did)) {
             Ok(their_did_json) => {

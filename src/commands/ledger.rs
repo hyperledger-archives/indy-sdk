@@ -1,9 +1,16 @@
 use errors::ledger::LedgerError;
 use errors::pool::PoolError;
+use errors::wallet::WalletError;
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
+use services::signus::SignusService;
+use services::signus::types::MyDid;
 use services::wallet::WalletService;
+
+use utils::json::JsonDecodable;
+
+use super::utils::check_wallet_and_pool_handles_consistency;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -11,6 +18,7 @@ use std::rc::Rc;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
+        i32, // pool handle
         i32, // wallet handle
         String, // submitter did
         String, // request json
@@ -78,6 +86,7 @@ pub enum LedgerCommand {
 pub struct LedgerCommandExecutor {
     anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
+    signus_service: Rc<SignusService>,
     wallet_service: Rc<WalletService>,
 
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, LedgerError>)>>>,
@@ -86,10 +95,12 @@ pub struct LedgerCommandExecutor {
 impl LedgerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
+               signus_service: Rc<SignusService>,
                wallet_service: Rc<WalletService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
             anoncreds_service: anoncreds_service,
             pool_service: pool_service,
+            signus_service: signus_service,
             wallet_service: wallet_service,
             send_callbacks: RefCell::new(HashMap::new()),
         }
@@ -97,9 +108,9 @@ impl LedgerCommandExecutor {
 
     pub fn execute(&self, command: LedgerCommand) {
         match command {
-            LedgerCommand::SignAndSubmitRequest(wallet_handle, submitter_did, request_json, cb) => {
+            LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
-                self.sign_and_submit_request(wallet_handle, &submitter_did, &request_json, cb);
+                self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json, cb);
             }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SubmitRequest command received");
@@ -155,11 +166,39 @@ impl LedgerCommandExecutor {
     }
 
     fn sign_and_submit_request(&self,
+                               pool_handle: i32,
                                wallet_handle: i32,
                                submitter_did: &str,
                                request_json: &str,
                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        {
+            // FIXME REMOVE
+            // FIXME just remove with block after errors refactoring
+            use errors::signus::SignusError;
+            let cb = |se: Result<(), SignusError>| {
+                cb(Err(LedgerError::from(se.err().unwrap())))
+            };
+            //FIXME REMOVE code above and extract next line from the block
+            check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb
+                                                   );
+        }
+        match self._sign_request(wallet_handle, submitter_did, request_json) {
+            Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
+            Err(err) => cb(Err(err))
+        }
+    }
+
+    fn _sign_request(&self,
+                     wallet_handle: i32,
+                     submitter_did: &str,
+                     request_json: &str,
+    ) -> Result<String, LedgerError> {
+        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
+        let my_did = MyDid::from_json(&my_did_json).map_err(WalletError::from)?;
+
+        let signed_request = self.signus_service.sign(&my_did, request_json)?;
+        Ok(signed_request)
     }
 
     fn submit_request(&self,
