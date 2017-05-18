@@ -105,7 +105,7 @@ impl SignusService {
         let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
 
         let verkey = Base58::decode(&verkey)?;
-        let mut signed_msg: Value = serde_json::from_str(signed_msg)?;
+        let signed_msg: Value = serde_json::from_str(signed_msg)?;
 
         if let Some(signature) = signed_msg["signature"].as_str() {
             let signature = Base58::decode(signature)?;
@@ -257,13 +257,20 @@ mod tests {
             seed: None,
             crypto_type: None
         };
-        let msg = "some message";
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
 
-        let signature = service.sign(&my_did, msg);
+        let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
     }
 
@@ -276,13 +283,20 @@ mod tests {
             seed: None,
             crypto_type: None
         };
-        let msg = "some message";
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
 
-        let signature = service.sign(&my_did, msg);
+        let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
         let signature = signature.unwrap();
 
@@ -308,13 +322,20 @@ mod tests {
             seed: None,
             crypto_type: None
         };
-        let msg = "message";
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
 
-        let signature = service.sign(&my_did, msg);
+        let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
         let signature = signature.unwrap();
 
