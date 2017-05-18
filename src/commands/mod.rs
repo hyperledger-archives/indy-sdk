@@ -1,3 +1,6 @@
+#[macro_use]
+mod utils;
+
 pub mod anoncreds;
 pub mod ledger;
 pub mod pool;

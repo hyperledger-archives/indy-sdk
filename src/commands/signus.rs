@@ -18,6 +18,7 @@ use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 
+use super::utils::check_wallet_and_pool_handles_consistency;
 
 pub enum SignusCommand {
     CreateAndStoreMyDid(
@@ -255,6 +256,9 @@ impl SignusCommandExecutor {
             }
         };
 
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
+
         match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", did)) {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
@@ -343,6 +347,9 @@ impl SignusCommandExecutor {
                 Err(err) => cb(Err(SignusError::CryptoError(CryptoError::BackendError(format!("{:?}", err)))))
             }
         };
+
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
 
         match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", did)) {
             Ok(their_did_json) => {

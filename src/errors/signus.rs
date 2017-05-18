@@ -74,6 +74,12 @@ impl From<WalletError> for SignusError {
     }
 }
 
+impl From<PoolError> for SignusError {
+    fn from(err: PoolError) -> SignusError {
+        SignusError::PoolError(err)
+    }
+}
+
 impl From<LedgerError> for SignusError {
     fn from(err: LedgerError) -> SignusError {
         SignusError::LedgerError(err)
