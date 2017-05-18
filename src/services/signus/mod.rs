@@ -82,7 +82,7 @@ impl SignusService {
         let sign_key = Base58::decode(&my_did.sign_key)?;
         let mut msg: Value = serde_json::from_str(doc)?;
 
-        let signature = serialize_signature(msg.clone());
+        let signature = serialize_signature(msg.clone())?;
         let signature = signus.sign(&sign_key, signature.as_bytes());
         let signature = Base58::encode(&signature);
         msg["signature"] = Value::String(signature);
@@ -115,7 +115,7 @@ impl SignusService {
                     message[key] = signed_msg[key].clone();
                 }
             }
-            Ok(signus.verify(&verkey, &serialize_signature(message).as_bytes(), &signature))
+            Ok(signus.verify(&verkey, &serialize_signature(message)?.as_bytes(), &signature))
         } else {
             return Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Signature key not found"))));
         }
