@@ -162,10 +162,10 @@ pub extern fn sovrin_build_nym_request(command_handle: i32,
                                                      request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(xref, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(role, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(verkey, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(xref, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(data, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
@@ -207,15 +207,15 @@ pub extern fn sovrin_build_attrib_request(command_handle: i32,
                                    submitter_did: *const c_char,
                                    target_did: *const c_char,
                                    hash: *const c_char,
-                                   raw: *const c_char,
+                                   raw:*const c_char,
                                    enc: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                         request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(hash, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(raw, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(enc, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()

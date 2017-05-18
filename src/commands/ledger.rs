@@ -4,6 +4,7 @@ use errors::pool::PoolError;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
+use services::ledger::LedgerService;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -30,17 +31,17 @@ pub enum LedgerCommand {
     BuildNymRequest(
         String, // submitter did
         String, // target did
-        String, // verkey
-        String, // xref
-        String, // data
-        String, // role
+        Option<String>, // verkey
+        Option<String>, // xref
+        Option<String>, // data
+        Option<String>, // role
         Box<Fn(Result<String, LedgerError>) + Send>),
     BuildAttribRequest(
         String, // submitter did
         String, // target did
-        String, // hash
-        String, // raw
-        String, // enc
+        Option<String>, // hash
+        Option<String>, // raw
+        Option<String>, // enc
         Box<Fn(Result<String, LedgerError>) + Send>),
     BuildGetAttribRequest(
         String, // submitter did
@@ -79,6 +80,7 @@ pub struct LedgerCommandExecutor {
     anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
+    ledger_service: Rc<LedgerService>,
 
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, LedgerError>)>>>,
 }
@@ -86,11 +88,13 @@ pub struct LedgerCommandExecutor {
 impl LedgerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
-               wallet_service: Rc<WalletService>) -> LedgerCommandExecutor {
+               wallet_service: Rc<WalletService>,
+               ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
             anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
+            ledger_service: ledger_service,
             send_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -117,11 +121,20 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, xref, data, role, cb) => {
                 info!(target: "ledger_command_executor", "BuildNymRequest command received");
-                self.build_nym_request(&submitter_did, &target_did, &verkey, &xref, &data, &role, cb);
+                self.build_nym_request(&submitter_did, &target_did,
+                                       verkey.as_ref().map(String::as_str),
+                                       xref.as_ref().map(String::as_str),
+                                       data.as_ref().map(String::as_str),
+                                       role.as_ref().map(String::as_str),
+                                       cb);
             }
             LedgerCommand::BuildAttribRequest(submitter_did, target_did, hash, raw, enc, cb) => {
                 info!(target: "ledger_command_executor", "BuildAttribRequest command received");
-                self.build_attrib_request(&submitter_did, &target_did, &hash, &raw, &enc, cb);
+                self.build_attrib_request(&submitter_did, &target_did,
+                                          hash.as_ref().map(String::as_str),
+                                          raw.as_ref().map(String::as_str),
+                                          enc.as_ref().map(String::as_str),
+                                          cb);
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
@@ -141,11 +154,11 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildClaimDefRequest(submitter_did, xref, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
-                self.build_issuer_key_request(&submitter_did, &xref, &data, cb);
+                self.build_claim_def_request(&submitter_did, &xref, &data, cb);
             }
             LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
-                self.build_get_issuer_key_request(&submitter_did, &xref, cb);
+                self.build_get_claim_def_request(&submitter_did, &xref, cb);
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
@@ -177,28 +190,40 @@ impl LedgerCommandExecutor {
                              submitter_did: &str,
                              target_did: &str,
                              cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_get_ddo_request(submitter_did,
+                                                     target_did))
     }
 
     fn build_nym_request(&self,
                          submitter_did: &str,
                          target_did: &str,
-                         verkey: &str,
-                         xref: &str,
-                         data: &str,
-                         role: &str,
+                         verkey: Option<&str>,
+                         xref: Option<&str>,
+                         data: Option<&str>,
+                         role: Option<&str>,
                          cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_nym_request(submitter_did,
+                                                 target_did,
+                                                 verkey,
+                                                 xref,
+                                                 data,
+                                                 role
+        ))
     }
 
     fn build_attrib_request(&self,
                             submitter_did: &str,
                             target_did: &str,
-                            hash: &str,
-                            raw: &str,
-                            enc: &str,
+                            hash: Option<&str>,
+                            raw: Option<&str>,
+                            enc: Option<&str>,
                             cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_attrib_request(submitter_did,
+                                                    target_did,
+                                                    hash,
+                                                    raw,
+                                                    enc
+        ))
     }
 
     fn build_get_attrib_request(&self,
@@ -206,43 +231,57 @@ impl LedgerCommandExecutor {
                                 target_did: &str,
                                 data: &str,
                                 cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_get_attrib_request(submitter_did,
+                                                        target_did,
+                                                        data
+        ))
     }
 
     fn build_get_nym_request(&self,
                              submitter_did: &str,
                              target_did: &str,
                              cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_get_nym_request(submitter_did,
+                                                     target_did
+        ))
     }
 
     fn build_schema_request(&self,
                             submitter_did: &str,
                             data: &str,
                             cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_schema_request(submitter_did,
+                                                    data
+        ))
     }
 
     fn build_get_schema_request(&self,
                                 submitter_did: &str,
                                 data: &str,
                                 cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_get_schema_request(submitter_did,
+                                                        data
+        ))
     }
 
-    fn build_issuer_key_request(&self,
-                                submitter_did: &str,
-                                xref: &str,
-                                data: &str,
-                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+    fn build_claim_def_request(&self,
+                               submitter_did: &str,
+                               xref: &str,
+                               data: &str,
+                               cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(self.ledger_service.build_claim_def_request(submitter_did,
+                                                       xref,
+                                                       data
+        ))
     }
 
-    fn build_get_issuer_key_request(&self,
-                                    submitter_did: &str,
-                                    xref: &str,
-                                    cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+    fn build_get_claim_def_request(&self,
+                                   submitter_did: &str,
+                                   xref: &str,
+                                   cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+        cb(self.ledger_service.build_get_claim_def_request(submitter_did,
+                                                           xref
+        ))
     }
 
     fn build_node_key_request(&self,
@@ -250,6 +289,9 @@ impl LedgerCommandExecutor {
                               target_did: &str,
                               data: &str,
                               cb: Box<Fn(Result<String, LedgerError>) + Send>) {
-        cb(Ok("".to_string()));
+        cb(self.ledger_service.build_node_request(submitter_did,
+                                                  target_did,
+                                                  data
+        ))
     }
 }

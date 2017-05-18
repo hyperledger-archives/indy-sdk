@@ -1,0 +1,510 @@
+use services::anoncreds::types::{PublicKey, RevocationPublicKey};
+use utils::json::{JsonEncodable, JsonDecodable};
+use services::ledger::constants::{
+    NODE,
+    NYM,
+    ATTRIB,
+    SCHEMA,
+    GET_ATTR,
+    GET_NYM,
+    GET_SCHEMA,
+    CLAIM_DEF,
+    GET_CLAIM_DEF
+};
+
+pub trait SerializeForSign {
+    fn serialize_for_sign(&self) -> String;
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Request<T: SerializeForSign> {
+    pub req_id: u64,
+    pub identifier: String,
+    pub operation: T,
+    pub signature: String
+}
+
+impl<T: SerializeForSign> Request<T> {
+    pub fn new(req_id: u64, identifier: String, operation: T) -> Request<T> {
+        Request {
+            req_id: req_id,
+            identifier: identifier,
+            operation: operation,
+            signature: "".to_string()
+        }
+    }
+
+    pub fn serialize_for_sign(&self) -> String {
+        format!("identifier:{}|operation:{}|reqId:{}",
+                self.identifier, self.operation.serialize_for_sign(), self.req_id
+        )
+    }
+}
+
+impl<T: JsonEncodable + SerializeForSign> JsonEncodable for Request<T> {}
+
+#[derive(Deserialize, PartialEq, Debug)]
+pub struct Reply {
+    pub op: String,
+    pub result: ReplyResult,
+}
+
+#[derive(Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplyResult {
+    pub txn_id: String,
+    pub req_id: u64,
+    pub data: Option<String>
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct NymOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verkey: Option<String>,
+    #[serde(rename = "ref")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub _ref: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<NymOperationData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>
+}
+
+impl NymOperation {
+    pub fn new(dest: String, verkey: Option<String>, _ref: Option<String>,
+               data: Option<NymOperationData>, role: Option<String>) -> NymOperation {
+        NymOperation {
+            _type: NYM.to_string(),
+            dest: dest,
+            verkey: verkey,
+            _ref: _ref,
+            data: data,
+            role: role
+        }
+    }
+}
+
+impl SerializeForSign for NymOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("dest:{}|type:{}",
+                self.dest, self._type
+        )
+    }
+}
+
+impl JsonEncodable for NymOperation {}
+
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct NymOperationData {
+    pub alias: String
+}
+
+impl NymOperationData {
+    pub fn new(alias: String) -> NymOperationData {
+        NymOperationData {
+            alias: alias
+        }
+    }
+}
+
+impl JsonEncodable for NymOperationData {}
+
+impl<'a> JsonDecodable<'a> for NymOperationData {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetNymOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String
+}
+
+impl GetNymOperation {
+    pub fn new(dest: String) -> GetNymOperation {
+        GetNymOperation {
+            _type: GET_NYM.to_string(),
+            dest: dest
+        }
+    }
+}
+
+impl SerializeForSign for GetNymOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("dest:{}|type:{}",
+                self.dest, self._type
+        )
+    }
+}
+
+impl JsonEncodable for GetNymOperation {}
+
+#[derive(Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetNymResultData {
+    pub dest: String,
+    pub identifier: String,
+    pub role: Option<String>,
+    pub txn_id: String,
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct AttribOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw: Option<String>,
+    // TODO   raw must be {attr_name: {ha: value}}
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enc: Option<String>
+}
+
+impl AttribOperation {
+    pub fn new(dest: String, hash: Option<String>, raw: Option<String>,
+               enc: Option<String>) -> AttribOperation {
+        AttribOperation {
+            _type: ATTRIB.to_string(),
+            dest: dest,
+            hash: hash,
+            raw: raw,
+            // TODO Looks like currently implemented only raw in strange format raw: {"endpoint" : {"ha": "127.0.0.1:5555"}}
+            enc: enc,
+        }
+    }
+}
+
+impl SerializeForSign for AttribOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("dest:{}|raw:83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3|type:{}",
+                self.dest, self._type)
+    }
+}
+
+impl JsonEncodable for AttribOperation {}
+
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAttribOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String,
+    pub raw: String
+}
+
+impl GetAttribOperation {
+    pub fn new(dest: String, raw: String) -> GetAttribOperation {
+        GetAttribOperation {
+            _type: GET_ATTR.to_string(),
+            dest: dest,
+            raw: raw
+        }
+    }
+}
+
+impl SerializeForSign for GetAttribOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("dest:{}|raw:{}|type:{}",
+                self.dest, self.raw, self._type
+        )
+    }
+}
+
+impl JsonEncodable for GetAttribOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct SchemaOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: SchemaOperationData
+}
+
+impl SchemaOperation {
+    pub fn new(data: SchemaOperationData) -> SchemaOperation {
+        SchemaOperation {
+            data: data,
+            _type: SCHEMA.to_string()
+        }
+    }
+}
+
+impl SerializeForSign for SchemaOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("data:{}|type:{}",
+                self.data.serialize_for_sign(), self._type
+        )
+    }
+}
+
+impl JsonEncodable for SchemaOperation {}
+
+#[derive(Serialize, PartialEq, Debug, Deserialize)]
+pub struct SchemaOperationData {
+    name: String,
+    version: String,
+    keys: Vec<String>
+}
+
+impl SchemaOperationData {
+    pub fn new(name: String, version: String, keys: Vec<String>) -> SchemaOperationData {
+        SchemaOperationData {
+            name: name,
+            version: version,
+            keys: keys
+        }
+    }
+}
+
+impl SerializeForSign for SchemaOperationData {
+    fn serialize_for_sign(&self) -> String {
+        format!("keys:{:?}|name:{}|version:{}",
+                self.keys, self.name, self.version
+        )
+    }
+}
+
+impl JsonEncodable for SchemaOperationData {}
+
+impl<'a> JsonDecodable<'a> for SchemaOperationData {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetSchemaOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String,
+    pub data: GetSchemaOperationData
+}
+
+impl GetSchemaOperation {
+    pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
+        GetSchemaOperation {
+            _type: GET_SCHEMA.to_string(),
+            dest: dest,
+            data: data
+        }
+    }
+}
+
+impl SerializeForSign for GetSchemaOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("data:{}|dest:{}|type:{}",
+                self.data.serialize_for_sign(), self.dest, self._type
+        )
+    }
+}
+
+impl JsonEncodable for GetSchemaOperation {}
+
+#[derive(Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSchemaResultData {
+    pub attr_names: Vec<String>,
+    pub name: String,
+    pub origin: String,
+    pub seq_no: String,
+    #[serde(rename = "type")]
+    pub _type: Option<String>,
+    pub version: String
+}
+
+#[derive(Serialize, PartialEq, Debug, Deserialize)]
+pub struct GetSchemaOperationData {
+    pub name: String,
+    pub version: String
+}
+
+impl GetSchemaOperationData {
+    pub fn new(name: String, version: String) -> GetSchemaOperationData {
+        GetSchemaOperationData {
+            name: name,
+            version: version
+        }
+    }
+}
+
+impl SerializeForSign for GetSchemaOperationData {
+    fn serialize_for_sign(&self) -> String {
+        format!("name:{}|version:{}",
+                self.name, self.version
+        )
+    }
+}
+
+impl JsonEncodable for GetSchemaOperationData {}
+
+impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct ClaimDefOperation {
+    #[serde(rename = "ref")]
+    pub _ref: String,
+    pub data: ClaimDefOperationData,
+    #[serde(rename = "type")]
+    pub _type: String
+}
+
+impl ClaimDefOperation {
+    pub fn new(_ref: String, data: ClaimDefOperationData) -> ClaimDefOperation {
+        ClaimDefOperation {
+            _ref: _ref,
+            data: data,
+            _type: CLAIM_DEF.to_string()
+        }
+    }
+}
+
+impl SerializeForSign for ClaimDefOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("", )
+    }
+}
+
+impl JsonEncodable for ClaimDefOperation {}
+
+#[derive(Serialize, PartialEq, Debug, Deserialize)]
+pub struct ClaimDefOperationData {
+    pub primary: PublicKey,
+    pub revocation: RevocationPublicKey,
+    pub signature_type: String
+}
+
+impl ClaimDefOperationData {
+    pub fn new(primary: PublicKey, revocation: RevocationPublicKey, signature_type: String, ) -> ClaimDefOperationData {
+        ClaimDefOperationData {
+            primary: primary,
+            revocation: revocation,
+            signature_type: signature_type
+        }
+    }
+}
+
+impl SerializeForSign for ClaimDefOperationData {
+    fn serialize_for_sign(&self) -> String {
+        format!("", )
+    }
+}
+
+impl JsonEncodable for ClaimDefOperationData {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefOperationData {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetClaimDefOperation {
+    #[serde(rename = "ref")]
+    pub _ref: String,
+    #[serde(rename = "type")]
+    pub _type: String
+}
+
+impl GetClaimDefOperation {
+    pub fn new(_ref: String) -> GetClaimDefOperation {
+        GetClaimDefOperation {
+            _ref: _ref,
+            _type: GET_CLAIM_DEF.to_string()
+        }
+    }
+}
+
+impl SerializeForSign for GetClaimDefOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("", )
+    }
+}
+
+impl JsonEncodable for GetClaimDefOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct NodeOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String,
+    pub data: NodeOperationData
+}
+
+impl NodeOperation {
+    pub fn new(dest: String, data: NodeOperationData) -> NodeOperation {
+        NodeOperation {
+            _type: NODE.to_string(),
+            dest: dest,
+            data: data
+        }
+    }
+}
+
+impl SerializeForSign for NodeOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("data:{}|dest:{}|type:{}",
+                self.data.serialize_for_sign(), self.dest, self._type
+        )
+    }
+}
+
+impl JsonEncodable for NodeOperation {}
+
+#[derive(Serialize, PartialEq, Debug, Deserialize)]
+pub struct NodeOperationData {
+    #[serde(rename = "type")]
+    pub node_ip: String,
+    pub node_port: i32,
+    pub client_ip: String,
+    pub client_port: i32,
+    pub alias: String,
+    pub services: Vec<String>
+}
+
+impl NodeOperationData {
+    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<String>) -> NodeOperationData {
+        NodeOperationData {
+            node_ip: node_ip,
+            node_port: node_port,
+            client_ip: client_ip,
+            client_port: client_port,
+            alias: alias,
+            services: services
+        }
+    }
+}
+
+impl SerializeForSign for NodeOperationData {
+    fn serialize_for_sign(&self) -> String {
+        format!("alias:{}|client_ip:{}|client_port:{}|node_ip:{}|node_port:{}|services:VALIDATOR",
+                self.alias, self.client_ip, self.client_port, self.node_ip, self.node_port
+        )
+    }
+}
+
+impl JsonEncodable for NodeOperationData {}
+
+impl<'a> JsonDecodable<'a> for NodeOperationData {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetDdoOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub dest: String
+}
+
+impl GetDdoOperation {
+    pub fn new(dest: String) -> GetDdoOperation {
+        GetDdoOperation {
+            _type: "120".to_string(),
+            //TODO
+            dest: dest
+        }
+    }
+}
+
+impl SerializeForSign for GetDdoOperation {
+    fn serialize_for_sign(&self) -> String {
+        format!("dest:{}|type:{}",
+                self.dest, self._type
+        )
+    }
+}
+
+impl JsonEncodable for GetDdoOperation {}

@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::error;
 use std::io;
 use std::fmt;
@@ -61,6 +63,12 @@ impl ToErrorCode for LedgerError {
             LedgerError::PoolError(ref err) => err.to_error_code(),
             LedgerError::WalletError(ref err) => err.to_error_code(),
         }
+    }
+}
+
+impl From<serde_json::Error> for LedgerError {
+    fn from(err: serde_json::Error) -> LedgerError {
+        LedgerError::CryptoError(CryptoError::InvalidStructure(err.to_string()))
     }
 }
 
