@@ -478,18 +478,18 @@ fn ledger_demo_works() {
 
     // 10. Prepare NYM transaction
     let nym_req_id = PoolUtils::get_req_id();
-    let mut nym_txn_req = Request {
+    let nym_txn_req = Request {
         identifier: their_verkey.clone(),
         operation: Operation {
             dest: my_verkey.clone(),
             type_: "1".to_string(),
         },
         req_id: nym_req_id,
-        signature: "".to_string(),
+        signature: None,
     };
 
     // 10. Their Sign message
-    let msg_for_sign = nym_txn_req.serialize_for_sign();
+    let msg_for_sign = serde_json::to_string(&nym_txn_req).unwrap();
     println!("message_to_sign {}", msg_for_sign);
     let err =
         sovrin_sign(sign_command_handle,
@@ -499,14 +499,12 @@ fn ledger_demo_works() {
                     sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("signature {:?}", signature);
+    let (err, signed_msg) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("signed_msg {:?}", signed_msg);
     assert_eq!(ErrorCode::Success, err);
-    nym_txn_req.signature = signature;
 
     // 11. Send NYM request
-    let request = serde_json::to_string(&nym_txn_req).unwrap();
-    let req = CString::new(request).unwrap();
+    let req = CString::new(signed_msg).unwrap();
     let err = sovrin_submit_request(send_command_handle,
                                     pool_handle,
                                     req.as_ptr(),
@@ -521,7 +519,7 @@ fn ledger_demo_works() {
     let get_nym_req_id = PoolUtils::get_req_id();
     let get_nym_txn = Request {
         req_id: get_nym_req_id,
-        signature: "".to_string(),
+        signature: None,
         identifier: my_verkey.clone(),
         operation: Operation {
             type_: "105".to_string(),
@@ -551,14 +549,8 @@ fn ledger_demo_works() {
         req_id: u64,
         identifier: String,
         operation: Operation,
-        signature: String,
-    }
-    impl Request {
-        fn serialize_for_sign(&self) -> String {
-            format!("identifier:{}|operation:dest:{}|type:{}|reqId:{}",
-                    self.identifier, self.operation.dest, self.operation.type_, self.req_id
-            )
-        }
+        #[serde(skip_serializing_if = "Option::is_none")]
+        signature: Option<String>,
     }
 
     #[derive(Serialize, Eq, PartialEq, Debug)]
@@ -750,7 +742,14 @@ fn signus_demo_works() {
 
 
     // 8. Their Sign message
-    let message = "test message";
+    let message = r#"{
+        "reqId":1495034346617224651,
+        "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+        "operation":{
+            "type":"1",
+            "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+        }
+    }"#;
     let err =
         sovrin_sign(sign_command_handle,
                     their_wallet_handle,
@@ -759,8 +758,8 @@ fn signus_demo_works() {
                     sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("signature {:?}", signature);
+    let (err, signed_msg) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("signature {:?}", signed_msg);
     assert_eq!(ErrorCode::Success, err);
 
     // 9. I Verify message
@@ -770,8 +769,7 @@ fn signus_demo_works() {
                                 my_wallet_handle,
                                 1,
                                 CString::new(their_did).unwrap().as_ptr(),
-                                CString::new(message).unwrap().as_ptr(),
-                                CString::new(signature).unwrap().as_ptr(),
+                                CString::new(signed_msg).unwrap().as_ptr(),
                                 verify_callback);
 
     assert_eq!(ErrorCode::Success, err);
