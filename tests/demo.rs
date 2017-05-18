@@ -4,6 +4,7 @@
 
 extern crate sovrin;
 
+#[cfg(feature = "local_nodes_pool")]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -14,6 +15,7 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
+#[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
@@ -29,7 +31,9 @@ use sovrin::api::anoncreds::{
     sovrin_prover_create_proof,
     sovrin_verifier_verify_proof
 };
+#[cfg(feature = "local_nodes_pool")]
 use sovrin::api::ledger::sovrin_submit_request;
+#[cfg(feature = "local_nodes_pool")]
 use sovrin::api::pool::{
     sovrin_open_pool_ledger,
     sovrin_create_pool_ledger_config,
@@ -51,6 +55,7 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
+#[cfg(feature = "local_nodes_pool")]
 use std::thread;
 
 #[test]
@@ -310,7 +315,7 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
+#[cfg(feature="local_nodes_pool")]
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
     let my_wallet_name = "my_wallet";

@@ -1,7 +1,9 @@
 extern crate time;
 
 use sovrin::api::ErrorCode;
-use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_open_pool_ledger};
+use sovrin::api::pool::{sovrin_create_pool_ledger_config};
+#[cfg(feature = "local_nodes_pool")]
+use sovrin::api::pool::sovrin_open_pool_ledger;
 use sovrin::api::ledger::sovrin_submit_request;
 
 use utils::callback::CallbackUtils;
@@ -11,6 +13,7 @@ use utils::timeout::TimeoutUtils;
 use std::fs;
 use std::ffi::CString;
 use std::io::Write;
+#[cfg(feature = "local_nodes_pool")]
 use std::ptr::null;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;
@@ -50,6 +53,7 @@ impl PoolUtils {
         Ok(())
     }
 
+    #[cfg(feature="local_nodes_pool")]
     pub fn open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
 
