@@ -30,6 +30,7 @@ fn create_pool_ledger_config_works() {
 }
 
 #[test]
+#[ignore] //required nodes pool available from CI
 fn open_pool_ledger_works() {
     TestUtils::cleanup_storage();
     let name = "pool_open";
@@ -43,6 +44,7 @@ fn open_pool_ledger_works() {
 }
 
 #[test]
+#[ignore] //required nodes pool available from CI
 fn open_pool_ledger_works_for_twice() {
     TestUtils::cleanup_storage();
     let pool_name = "pool_open_twice";
