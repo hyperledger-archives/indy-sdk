@@ -182,9 +182,6 @@ impl PoolWorker {
     pub fn run(&mut self) -> Result<(), PoolError> {
         self.init_catchup()?; //TODO consider error as PoolOpen error
 
-        CommandExecutor::instance().send(Command::Pool(
-            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
-
         'zmq_poll_loop: loop {
             trace!("zmq poll loop >>");
 
@@ -204,6 +201,8 @@ impl PoolWorker {
                                 f: 0,
                             });
                             self.connect_to_known_nodes(Some(&new_mt))?;
+                            CommandExecutor::instance().send(Command::Pool(
+                                PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only once?
                         }
                     }
                     &ZMQLoopAction::RequestToSend(ref req) => {
