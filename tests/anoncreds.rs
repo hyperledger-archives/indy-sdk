@@ -71,8 +71,7 @@ fn anoncreds_works_for_single_issuer_single_prover() {
 
     let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
     assert!(claim_offers.len() == 1);
-    let claim_offer = claim_offers[0].clone();
-    let claim_offer_json = serde_json::to_string(&claim_offer).unwrap();
+    let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
 
     //7. Prover create Claim Request
     let prover_did = "some_prover_did";
@@ -111,8 +110,8 @@ fn anoncreds_works_for_single_issuer_single_prover() {
 
     let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
-
     let claim = claims_for_attr_1[0].clone();
+
     // 11. Prover create Proof
     let requested_claims_json = format!("{{\
                                           \"self_attested_attributes\":{{}},\
@@ -295,12 +294,8 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
 
     let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
 
-    assert_eq!(2, claims.attrs.len());
-    assert_eq!(2, claims.predicates.len());
-
     let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
     let claims_for_attr_2 = claims.attrs.get("attr2_uuid").unwrap();
-
     assert_eq!(1, claims_for_attr_1.len());
     assert_eq!(1, claims_for_attr_2.len());
 
@@ -309,7 +304,6 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
 
     let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
     let claims_for_predicate_2 = claims.predicates.get("predicate2_uuid").unwrap();
-
     assert_eq!(1, claims_for_predicate_1.len());
     assert_eq!(1, claims_for_predicate_2.len());
 
@@ -320,11 +314,12 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
     // 18. Prover create Proof
     let requested_claims_json = format!("{{\
                                           \"self_attested_attributes\":{{}},\
-                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
+                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true],\
+                                                                \"attr2_uuid\":[\"{}\",true]}},\
                                           \"requested_predicates\":{{\"predicate1_uuid\":\"{}\", \
                                                                      \"predicate2_uuid\":\"{}\"}}\
                                         }}",
-                                        claim_for_attr_1.claim_uuid,
+                                        claim_for_attr_1.claim_uuid, claim_for_attr_2.claim_uuid,
                                         claim_for_predicate_1.claim_uuid, claim_for_predicate_2.claim_uuid);
 
     let unique_claims = AnoncredsUtils::get_unique_claims(&claims);

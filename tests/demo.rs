@@ -314,6 +314,7 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
+#[ignore]
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
