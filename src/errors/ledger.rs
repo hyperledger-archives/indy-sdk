@@ -42,6 +42,29 @@ impl error::Error for LedgerError {
     }
 }
 
+impl From<WalletError> for LedgerError {
+    fn from(err: WalletError) -> Self {
+        LedgerError::WalletError(err)
+    }
+}
+
+impl From<CryptoError> for LedgerError {
+    fn from(err: CryptoError) -> Self {
+        LedgerError::CryptoError(err)
+    }
+}
+
+impl From<SignusError> for LedgerError {
+    fn from(se: SignusError) -> Self {
+        match se {
+            SignusError::LedgerError(err) => err,
+            SignusError::PoolError(err) => LedgerError::PoolError(err),
+            SignusError::WalletError(err) => LedgerError::WalletError(err),
+            SignusError::CryptoError(err) => LedgerError::CryptoError(err),
+        }
+    }
+}
+
 impl ToErrorCode for LedgerError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {

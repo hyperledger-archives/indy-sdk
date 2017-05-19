@@ -19,12 +19,13 @@ pub trait Wallet {
     fn get(&self, key: &str) -> Result<String, WalletError>;
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError>;
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError>;
+    fn get_pool_name(&self) -> String;
 }
 
 trait WalletType {
     fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
     fn delete(&self, name: &str, credentials: Option<&str>) -> Result<(), WalletError>;
-    fn open(&self, name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
+    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -77,7 +78,7 @@ impl WalletService {
                         get: extern fn(handle: i32,
                                        key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
                         list: extern fn(handle: i32,
-                                       key: &str, sub_key: &str) -> Result<(Vec<(String, String)>, i32), WalletError>,
+                                        key: &str, sub_key: &str) -> Result<(Vec<(String, String)>, i32), WalletError>,
                         get_not_expired: extern fn(handle: i32,
                                                    key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
                         close: extern fn(handle: i32) -> Result<(), WalletError>,
@@ -173,6 +174,7 @@ impl WalletService {
 
         let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
         let wallet = wallet_type.open(name,
+                                      descriptor.pool_name.as_str(),
                                       config.as_ref().map(String::as_str),
                                       runtime_config,
                                       credentials)?;
@@ -213,6 +215,13 @@ impl WalletService {
     pub fn get_not_expired(&self, handle: i32, key: &str) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&handle) {
             Some(wallet) => wallet.get_not_expired(key),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
+    }
+
+    pub fn get_pool_name(&self, handle: i32) -> Result<String, WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(wallet) => Ok(wallet.get_pool_name()),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
@@ -430,6 +439,36 @@ mod tests {
         let (key, value) = key_values.pop().unwrap();
         assert_eq!("key1::subkey1", key);
         assert_eq!("value1", value);
+
+        TestUtils::cleanup_sovrin_home();
+    }
+
+    #[test]
+    fn get_pool_name_works() {
+        TestUtils::cleanup_sovrin_home();
+
+        let wallet_service = WalletService::new();
+        let wallet_name = "wallet1";
+        let pool_name = "pool1";
+        wallet_service.create(pool_name, None, wallet_name, None, None).unwrap();
+        let wallet_handle = wallet_service.open(wallet_name, None, None).unwrap();
+
+        assert_eq!(wallet_service.get_pool_name(wallet_handle).unwrap(), pool_name);
+
+        TestUtils::cleanup_sovrin_home();
+    }
+
+    #[test]
+    fn get_pool_name_works_for_incorrect_wallet_handle() {
+        TestUtils::cleanup_sovrin_home();
+
+        let wallet_service = WalletService::new();
+        let wallet_name = "wallet1";
+        let pool_name = "pool1";
+        wallet_service.create(pool_name, None, wallet_name, None, None).unwrap();
+
+        let get_pool_name_res = wallet_service.get_pool_name(1);
+        assert_match!(Err(WalletError::InvalidHandle(_)), get_pool_name_res);
 
         TestUtils::cleanup_sovrin_home();
     }

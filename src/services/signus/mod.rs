@@ -72,9 +72,9 @@ impl SignusService {
         Ok(my_did)
     }
 
-    pub fn sign(&self, my_did: &MyDid, doc: &str) -> Result<String, SignusError> {
+    pub fn sign(&self, my_did: &MyDid, doc: &str) -> Result<String, CryptoError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
-            return Err(SignusError::CryptoError(CryptoError::UnknownType(my_did.crypto_type.clone())));
+            return Err(CryptoError::UnknownType(my_did.crypto_type.clone()));
         }
 
         let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
