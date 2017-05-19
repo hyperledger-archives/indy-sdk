@@ -26,7 +26,7 @@ use std::sync::mpsc::channel;
 pub struct LedgerUtils {}
 
 impl LedgerUtils {
-    pub fn sign_and_submit_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, request_result_json| {
@@ -39,7 +39,8 @@ impl LedgerUtils {
         let request_json = CString::new(request_json).unwrap();
 
         let err =
-            sovrin_sign_and_submit_request(command_handle,
+            sovrin_sign_and_submit_request(pool_handle,
+                                           command_handle,
                                            wallet_handle,
                                            submitter_did.as_ptr(),
                                            request_json.as_ptr(),

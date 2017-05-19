@@ -19,10 +19,6 @@ use sovrin::api::ErrorCode;
 
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
-use utils::signus::SignusUtils;
-use utils::wallet::WalletUtils;
-use utils::ledger::LedgerUtils;
-use utils::logger::LoggerUtils;
 
 
 #[test]
@@ -104,7 +100,7 @@ fn sovrin_submit_request_works() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
+#[cfg(feature = "local_nodes_pool")]
 fn sovrin_nym_requests_works() {
     TestUtils::cleanup_storage();
     LoggerUtils::init();
@@ -164,7 +160,7 @@ fn sovrin_nym_requests_works() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
+#[cfg(feature = "local_nodes_pool")]
 fn sovrin_attrib_requests_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -235,7 +231,7 @@ fn sovrin_attrib_requests_works() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
+#[cfg(feature = "local_nodes_pool")]
 fn sovrin_schema_requests_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -310,7 +306,8 @@ fn sovrin_schema_requests_works() {
 }
 
 #[test]
-#[ignore] //fail
+#[cfg(feature = "local_nodes_pool")]
+//fail
 fn sovrin_node_request_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -379,6 +376,7 @@ fn sovrin_node_request_works() {
 }
 
 //#[test]
+//#[cfg(feature = "local_nodes_pool")]
 //fn sovrin_claim_def_requests_works() {
 //    TestUtils::cleanup_storage();
 //    let pool_name = "test_submit_tx";
@@ -452,18 +450,18 @@ fn sovrin_node_request_works() {
 //    TestUtils::cleanup_storage();
 //}
 
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct Reply {
-    pub op: String,
-    pub result: ReplyResult,
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+struct Reply {
+    op: String,
+    result: ReplyResult,
 }
 
-#[derive(Deserialize, PartialEq, Debug)]
+#[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct ReplyResult {
-    pub txn_id: String,
-    pub req_id: u64,
-    pub data: Option<String>
+struct ReplyResult {
+    identifier: String,
+    req_id: u64,
+    data: Option<String>
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
