@@ -43,6 +43,8 @@ pub enum ErrorCode {
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
 
+    CommonInvalidStructure,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
