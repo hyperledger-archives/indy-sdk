@@ -1,4 +1,4 @@
-use errors::wallet::WalletError;
+use errors::sovrin::SovrinError;
 
 use services::wallet::WalletService;
 
@@ -10,20 +10,20 @@ pub enum WalletCommand {
            Option<String>, // wallet type
            Option<String>, // wallet config
            Option<String>, // wallet credentials
-           Box<Fn(Result<(), WalletError>) + Send>),
+           Box<Fn(Result<(), SovrinError>) + Send>),
     Open(String, // wallet name
          Option<String>, // wallet runtime config
          Option<String>, // wallet credentials
-         Box<Fn(Result<i32, WalletError>) + Send>),
+         Box<Fn(Result<i32, SovrinError>) + Send>),
     Close(i32, // handle
-          Box<Fn(Result<(), WalletError>) + Send>),
+          Box<Fn(Result<(), SovrinError>) + Send>),
     Delete(String, // name
            Option<String>, // wallet credentials
-           Box<Fn(Result<(), WalletError>) + Send>),
+           Box<Fn(Result<(), SovrinError>) + Send>),
     SetSeqNoForValue(i32, // wallet handle
                      String, // wallet key
                      i32, // sequence number
-                     Box<Fn(Result<(), WalletError>) + Send>)
+                     Box<Fn(Result<(), SovrinError>) + Send>)
 }
 
 pub struct WalletCommandExecutor {
@@ -70,36 +70,41 @@ impl WalletCommandExecutor {
               xtype: Option<&str>,
               config: Option<&str>,
               credentials: Option<&str>,
-              cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(self.wallet_service.create(pool_name, xtype, name, config, credentials));
+              cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        cb(self.wallet_service.create(pool_name, xtype, name, config, credentials)
+            .map_err(|err| SovrinError::WalletError(err)));
     }
 
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
             credentials: Option<&str>,
-            cb: Box<Fn(Result<i32, WalletError>) + Send>) {
-        cb(self.wallet_service.open(name, runtime_config, credentials));
+            cb: Box<Fn(Result<i32, SovrinError>) + Send>) {
+        cb(self.wallet_service.open(name, runtime_config, credentials)
+            .map_err(|err| SovrinError::WalletError(err)));
     }
 
     fn close(&self,
              handle: i32,
-             cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(self.wallet_service.close(handle));
+             cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        cb(self.wallet_service.close(handle)
+            .map_err(|err| SovrinError::WalletError(err)));
     }
 
     fn delete(&self,
               handle: &str,
               credentials: Option<&str>,
-              cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(self.wallet_service.delete(handle, credentials));
+              cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        cb(self.wallet_service.delete(handle, credentials)
+            .map_err(|err| SovrinError::WalletError(err)));
     }
 
     fn set_seq_no_for_value(&self,
                             handle: i32,
                             key: &str,
                             seq_no: i32,
-                            cb: Box<Fn(Result<(), WalletError>) + Send>) {
-        cb(self.wallet_service.set(handle, &format!("seq_no::{}", seq_no), key));
+                            cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        cb(self.wallet_service.set(handle, &format!("seq_no::{}", seq_no), key)
+            .map_err(|err| SovrinError::WalletError(err)));
     }
 }
