@@ -6,6 +6,8 @@ pub mod environment;
 pub mod pool;
 pub mod signus;
 pub mod wallet;
+pub mod ledger;
+pub mod anoncreds;
 
 #[macro_use]
 #[path = "../../src/utils/test.rs"]

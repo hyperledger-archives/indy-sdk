@@ -150,7 +150,7 @@ fn anoncreds_demo_works() {
     let schema = format!("{{\
                             \"name\":\"gvt\",\
                             \"version\":\"1.0\",\
-                            \"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"],\
+                            \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"],\
                             \"seq_no\":{}\
                          }}", schema_seq_no);
 

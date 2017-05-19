@@ -18,7 +18,7 @@ pub struct Request<T: JsonEncodable> {
     pub req_id: u64,
     pub identifier: String,
     pub operation: T,
-    pub signature: String
+    pub signature: Option<String>
 }
 
 impl<T: JsonEncodable> Request<T> {
@@ -27,7 +27,7 @@ impl<T: JsonEncodable> Request<T> {
             req_id: req_id,
             identifier: identifier,
             operation: operation,
-            signature: "".to_string()
+            signature: None
         }
     }
 }
@@ -316,7 +316,7 @@ pub struct GetClaimDefOperation {
     pub _ref: String,
     #[serde(rename = "type")]
     pub _type: String,
-    pub signature_type: String
+    pub signature_type: String//TODO In Python there is Origin field, {ORIGIN: id.schemaKey.issuerId}, but there is not in table. We can get it field form GET_SCHEMA response
 }
 
 impl GetClaimDefOperation {

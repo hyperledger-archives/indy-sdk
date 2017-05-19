@@ -66,7 +66,7 @@ impl Issuer {
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
-        if schema.attribute_names.len() == 0 {
+        if schema.attr_names.len() == 0 {
             return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
@@ -84,7 +84,7 @@ impl Issuer {
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
-        for attribute in &schema.attribute_names {
+        for attribute in &schema.attr_names {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
             r.insert(attribute.to_string(), s.mod_exp(&random, &n, None)?);
         }
@@ -479,7 +479,7 @@ mod tests {
         let create_non_revoc = false;
 
         let empty_attrs: HashSet<String> = HashSet::new();
-        schema.attribute_names = empty_attrs;
+        schema.attr_names = empty_attrs;
 
         let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
         assert!(result.is_err());
@@ -550,7 +550,7 @@ pub mod mocks {
         Schema {
             name: "gvt".to_string(),
             version: "1.0".to_string(),
-            attribute_names: attr_names,
+            attr_names: attr_names,
             seq_no: 1
         }
     }
@@ -563,7 +563,7 @@ pub mod mocks {
         Schema {
             name: "xyz".to_string(),
             version: "1.0".to_string(),
-            attribute_names: attr_names,
+            attr_names: attr_names,
             seq_no: 2
         }
     }

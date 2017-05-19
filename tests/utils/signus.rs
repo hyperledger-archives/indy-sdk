@@ -8,14 +8,9 @@ use sovrin::api::signus::{
 };
 
 use utils::callback::CallbackUtils;
-use utils::environment::EnvironmentUtils;
 use utils::timeout::TimeoutUtils;
 
-use std::fs;
 use std::ffi::CString;
-use std::io::Write;
-use std::ptr::null;
-use std::path::PathBuf;
 use std::sync::mpsc::channel;
 
 pub struct SignusUtils {}
