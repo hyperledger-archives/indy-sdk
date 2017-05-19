@@ -761,7 +761,7 @@ mod tests {
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         let expected_resp: CatchupReq = CatchupReq {
-            ledgerType: 0,
+            ledgerId: 0,
             seqNoStart: 2,
             seqNoEnd: 2,
             catchupTill: 2,
