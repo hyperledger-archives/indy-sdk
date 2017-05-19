@@ -1,3 +1,4 @@
+use errors::common::CommonError;
 use errors::pool::PoolError;
 use errors::sovrin::SovrinError;
 
@@ -169,13 +170,12 @@ impl LedgerCommandExecutor {
                                wallet_handle: i32,
                                submitter_did: &str,
                                request_json: &str,
-                               cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                               cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         {
             // FIXME REMOVE
             // FIXME just remove with block after errors refactoring
-            use errors::signus::SignusError;
-            let cb = |se: Result<(), SignusError>| {
-                cb(Err(LedgerError::from(se.err().unwrap())))
+            let cb = |se: Result<(), SovrinError>| {
+                cb(Err(se.err().unwrap()))
             };
             //FIXME REMOVE code above and extract next line from the block
             check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
@@ -192,9 +192,10 @@ impl LedgerCommandExecutor {
                      wallet_handle: i32,
                      submitter_did: &str,
                      request_json: &str,
-    ) -> Result<String, LedgerError> {
+    ) -> Result<String, SovrinError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
-        let my_did = MyDid::from_json(&my_did_json).map_err(WalletError::from)?;
+        let my_did = MyDid::from_json(&my_did_json)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
 
         let signed_request = self.signus_service.sign(&my_did, request_json)?;
         Ok(signed_request)

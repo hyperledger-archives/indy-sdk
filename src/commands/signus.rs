@@ -231,8 +231,8 @@ impl SignusCommandExecutor {
                         pool_handle: i32,
                         did: &str,
                         signed_msg: &str,
-                        cb: Box<Fn(Result<bool, SignusError>) + Send>) {
-        let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, SignusError>)>| {
+                        cb: Box<Fn(Result<bool, SovrinError>) + Send>) {
+        let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, SovrinError>)>| {
             let signed_msg = signed_msg.to_string();
             let get_nym_request = "".to_string(); //TODO add build_nym_request function in ledger service
             let cb_id: i32 = SequenceUtils::get_next_id();

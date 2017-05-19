@@ -71,9 +71,21 @@ impl ToErrorCode for SovrinError {
     }
 }
 
+impl From<AnoncredsError> for SovrinError {
+    fn from(err: AnoncredsError) -> SovrinError {
+        SovrinError::AnoncredsError(err)
+    }
+}
+
 impl From<CommonError> for SovrinError {
     fn from(err: CommonError) -> SovrinError {
         SovrinError::CommonError(err)
+    }
+}
+
+impl From<PoolError> for SovrinError {
+    fn from(err: PoolError) -> SovrinError {
+        SovrinError::PoolError(err)
     }
 }
 
