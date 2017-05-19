@@ -61,7 +61,7 @@ impl VerifierCommandExecutor {
                     schemas_json: &str,
                     claim_defs_jsons: &str,
                     revoc_regs_json: &str,
-                    cb: Box<Fn(Result<bool, AnoncredsError>) + Send>) {
+                    cb: Box<Fn(Result<bool, SovrinError>) + Send>) {
         let result = self._verify_proof(proof_request_json, proof_json, schemas_json, claim_defs_jsons, revoc_regs_json);
         cb(result)
     }

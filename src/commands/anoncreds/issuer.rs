@@ -194,7 +194,7 @@ impl IssuerCommandExecutor {
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_private_json: {}", err.to_string())))?;
 
         if claim_def.public_key_revocation.is_some() && (revoc_reg_seq_no.is_none() || claim_req_json.claim_request.ur.is_none()) {
-            return Err(AnoncredsError::NotIssuedError(format!("Revocation Sequence Number and Claim_request.ur are required for this claim")))
+            return Err(SovrinError::AnoncredsError(AnoncredsError::NotIssuedError(format!("Revocation Sequence Number and Claim_request.ur are required for this claim"))))
         }
 
         let (revocation_registry, revocation_registry_private,

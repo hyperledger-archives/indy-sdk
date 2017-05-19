@@ -4,7 +4,6 @@
 
 extern crate sovrin;
 
-#[cfg(feature = "local_nodes_pool")]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -58,12 +57,10 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
-<<<<<<< HEAD
 use utils::anoncreds::ProofClaimsJson;
-=======
+
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
->>>>>>> master
 
 #[test]
 fn anoncreds_demo_works() {
@@ -326,11 +323,7 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
-<<<<<<< HEAD
-#[ignore]
-=======
 #[cfg(feature="local_nodes_pool")]
->>>>>>> master
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
     let my_wallet_name = "my_wallet";

@@ -201,8 +201,8 @@ impl AnoncredsUtils {
                                              wallet_handle,
                                              claim_req_json.as_ptr(),
                                              claim_json.as_ptr(),
-                                             None,
-                                             None,
+                                             -1,
+                                             -1,
                                              cb);
 
         if err != ErrorCode::Success {

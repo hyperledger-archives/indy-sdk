@@ -4,6 +4,7 @@ extern crate uuid;
 use self::uuid::Uuid;
 use errors::common::CommonError;
 use errors::sovrin::SovrinError;
+use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
 use utils::crypto::bn::BigNumber;
 use services::pool::PoolService;
@@ -244,7 +245,7 @@ impl ProverCommandExecutor {
                                 &primary_claim_init_data_json)?;
 
         if let Some(data) = revocation_claim_init_data {
-            let revocation_claim_init_data_json = revocation_claim_init_data_json = RevocationClaimInitData::to_json(&data)
+            let revocation_claim_init_data_json = RevocationClaimInitData::to_json(&data)
                 .map_err(|err| CommonError::InvalidState(format!("Invalid data: {}", err.to_string())))?;
             self.wallet_service.set(wallet_handle,
                                     &format!("revocation_claim_init_data::{}", &claim_offer.claim_def_seq_no),
@@ -275,13 +276,13 @@ impl ProverCommandExecutor {
                                                                        &format!("seq_no::{}", &seq_no))?;
                 let revocation_registry_json = self.wallet_service.get(wallet_handle,
                                                                        &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-                let revocation_registry = revocation_registry = Some(RevocationRegistry::from_json(&revocation_registry_json)
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?);
+                let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?;
 
                 let revocation_claim_init_data_json = self.wallet_service.get(wallet_handle,
                                                                               &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
-                let revocation_claim_init_data = Some(RevocationClaimInitData::from_json(&revocation_claim_init_data_json)
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_claim_init_data_json: {}", err.to_string())))?);
+                let revocation_claim_init_data = RevocationClaimInitData::from_json(&revocation_claim_init_data_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_claim_init_data_json: {}", err.to_string())))?;
 
                 (Some(revocation_registry), Some(revocation_claim_init_data))
             }
