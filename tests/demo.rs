@@ -4,6 +4,7 @@
 
 extern crate sovrin;
 
+#[cfg(feature = "local_nodes_pool")]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -14,6 +15,7 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
+#[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
@@ -29,7 +31,12 @@ use sovrin::api::anoncreds::{
     sovrin_prover_create_proof,
     sovrin_verifier_verify_proof
 };
-use sovrin::api::ledger::sovrin_submit_request;
+#[cfg(feature = "local_nodes_pool")]
+use sovrin::api::ledger::{
+    sovrin_sign_and_submit_request,
+    sovrin_submit_request,
+};
+#[cfg(feature = "local_nodes_pool")]
 use sovrin::api::pool::{
     sovrin_open_pool_ledger,
     sovrin_create_pool_ledger_config,
@@ -51,6 +58,7 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
+#[cfg(feature = "local_nodes_pool")]
 use std::thread;
 
 #[test]
@@ -310,7 +318,7 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
+#[cfg(feature="local_nodes_pool")]
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
     let my_wallet_name = "my_wallet";
@@ -330,7 +338,6 @@ fn ledger_demo_works() {
     let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
     let (create_and_store_their_did_sender, create_and_store_their_did_receiver) = channel();
     let (store_their_did_sender, store_their_did_receiver) = channel();
-    let (sign_sender, sign_receiver) = channel();
     let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
     let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
     let send_cb = Box::new(move |err, resp| { submit_sender.send((err, resp)).unwrap(); });
@@ -341,7 +348,6 @@ fn ledger_demo_works() {
     let open_their_wallet_cb = Box::new(move |err, handle| { open_their_wallet_sender.send((err, handle)).unwrap(); });
     let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap(); });
     let create_and_store_their_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_their_did_sender.send((err, did, verkey, public_key)).unwrap(); });
-    let sign_cb = Box::new(move |err, signature| { sign_sender.send((err, signature)).unwrap(); });
     let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
     let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
     let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
@@ -354,7 +360,6 @@ fn ledger_demo_works() {
     let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
     let (create_and_store_their_did_command_handle, create_and_store_their_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_their_did_cb);
     let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
-    let (sign_command_handle, sign_callback) = CallbackUtils::closure_to_sign_cb(sign_cb);
 
     // 1. Create ledger config from genesis txn file
     PoolUtils::create_genesis_txn_file(pool_name);
@@ -488,27 +493,16 @@ fn ledger_demo_works() {
         signature: None,
     };
 
-    // 10. Their Sign message
-    let msg_for_sign = serde_json::to_string(&nym_txn_req).unwrap();
-    println!("message_to_sign {}", msg_for_sign);
-    let err =
-        sovrin_sign(sign_command_handle,
-                    their_wallet_handle,
-                    CString::new(their_did.clone()).unwrap().as_ptr(),
-                    CString::new(msg_for_sign.clone()).unwrap().as_ptr(),
-                    sign_callback);
-
-    assert_eq!(ErrorCode::Success, err);
-    let (err, signed_msg) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("signed_msg {:?}", signed_msg);
-    assert_eq!(ErrorCode::Success, err);
-
-    // 11. Send NYM request
-    let req = CString::new(signed_msg).unwrap();
-    let err = sovrin_submit_request(send_command_handle,
-                                    pool_handle,
-                                    req.as_ptr(),
-                                    send_callback);
+    // 11. Send NYM request with signing
+    let msg = serde_json::to_string(&nym_txn_req).unwrap();
+    let req = CString::new(msg).unwrap();
+    let did_for_sign = CString::new(their_did).unwrap();
+    let err = sovrin_sign_and_submit_request(send_command_handle,
+                                             pool_handle,
+                                             their_wallet_handle,
+                                             did_for_sign.as_ptr(),
+                                             req.as_ptr(),
+                                             send_callback);
     assert_eq!(err, ErrorCode::Success);
     let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
@@ -774,6 +768,7 @@ fn signus_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("{:?}", err);
     assert!(valid);
     assert_eq!(ErrorCode::Success, err);
 
