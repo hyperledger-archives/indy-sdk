@@ -40,7 +40,12 @@ impl LedgerService {
     pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>, _ref: Option<&str>,
                              data: Option<&str>, role: Option<&str>) -> Result<String, LedgerError> {
         let req_id = LedgerService::get_req_id();
-        let data = data.map(|d| NymOperationData::from_json(d).unwrap());
+
+        let data = match data {
+            Some(d) => Some(NymOperationData::from_json(d)?),
+            _ => None
+        };
+
         let operation = NymOperation::new(dest.to_string(),
                                           verkey.as_ref().map(|s| s.to_string()),
                                           _ref.as_ref().map(|s| s.to_string()),

@@ -21,6 +21,7 @@ use utils::test::TestUtils;
 use utils::signus::SignusUtils;
 use utils::wallet::WalletUtils;
 use utils::ledger::LedgerUtils;
+use utils::logger::LoggerUtils;
 
 
 #[test]
