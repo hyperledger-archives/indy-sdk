@@ -1008,7 +1008,7 @@ impl JsonEncodable for RevocationSecretKey {}
 
 impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RevocationClaimInitData {
     pub u: PointG1,
     pub v_prime: GroupOrderElement

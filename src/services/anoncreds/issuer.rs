@@ -51,7 +51,8 @@ impl Issuer {
     }
 
     pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
-                         create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+                                     create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+        info!("Issuer generate claim definition for Schema {:?} -> start", &schema);
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
         let (pkr, skr) = if create_non_revoc {
@@ -62,16 +63,22 @@ impl Issuer {
         let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, signature_type);
         let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
 
+        info!("Issuer generate claim definition for Schema {:?} -> done", &schema);
         Ok((claim_definition, claim_definition_private))
     }
 
     fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
+        info!("Issuer generate primary keys for Schema {:?} -> start", &schema);
+        let mut ctx = BigNumber::new_context()?;
+
         if schema.attribute_names.len() == 0 {
             return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
+        info!("Issuer generate_safe_prime");
         let p = BigNumber::generate_safe_prime(LARGE_PRIME)?;
         let q = BigNumber::generate_safe_prime(LARGE_PRIME)?;
+        info!("Issuer generate_safe_prime -> done");
 
         let mut p_prime = p.sub(&BigNumber::from_u32(1)?)?;
         p_prime.div_word(2)?;
@@ -79,20 +86,22 @@ impl Issuer {
         let mut q_prime = q.sub(&BigNumber::from_u32(1)?)?;
         q_prime.div_word(2)?;
 
-        let n = p.mul(&q, None)?;
+        let n = p.mul(&q, Some(&mut ctx))?;
         let s = random_qr(&n)?;
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
         for attribute in &schema.attribute_names {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
-            r.insert(attribute.to_string(), s.mod_exp(&random, &n, None)?);
+            r.insert(attribute.to_string(), s.mod_exp(&random, &n, Some(&mut ctx))?);
         }
 
-        let z = s.mod_exp(&xz, &n, None)?;
+        let z = s.mod_exp(&xz, &n, Some(&mut ctx))?;
 
-        let rms = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, None)?;
-        let rctxt = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, None)?;
+        let rms = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, Some(&mut ctx))?;
+        let rctxt = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, Some(&mut ctx))?;
+
+        info!("Issuer generate primary keys for Schema {:?} -> done", &schema);
         Ok((
             PublicKey::new(n, s, rms, r, rctxt, z),
             SecretKey::new(p_prime, q_prime)
@@ -100,6 +109,7 @@ impl Issuer {
     }
 
     fn _generate_revocation_keys() -> Result<(Option<RevocationPublicKey>, Option<RevocationSecretKey>), CryptoError> {
+        info!("Issuer generate revocation keys -> start");
         let h = PointG1::new()?;
         let h0 = PointG1::new()?;
         let h1 = PointG1::new()?;
@@ -111,6 +121,8 @@ impl Issuer {
         let sk = GroupOrderElement::new()?;
         let pk = g.mul(&sk)?;
         let y = h.mul(&x)?;
+
+        info!("Issuer generate revocation keys -> done");
         Ok((
             Some(RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x)),
             Some(RevocationSecretKey::new(x, sk))
@@ -135,6 +147,7 @@ impl Issuer {
 
     pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
                              -> Result<(RevocationRegistry, RevocationRegistryPrivate), CryptoError> {
+        info!("Issuer create accumulator for claim_def_seq_no {} -> start", claim_def_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let g_count = 2 * max_claim_num;
@@ -162,6 +175,7 @@ impl Issuer {
         let revocation_registry = RevocationRegistry::new(acc, acc_pk, claim_def_seq_no);
         let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g);
 
+        info!("Issuer create accumulator for claim_def_seq_no {} -> done", claim_def_seq_no);
         Ok((revocation_registry, revocation_registry_private))
     }
 
@@ -172,7 +186,9 @@ impl Issuer {
                         claim_request: &ClaimRequest,
                         attributes: &HashMap<String, Vec<String>>,
                         user_revoc_index: Option<i32>) -> Result<ClaimSignature, CryptoError> {
-        let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no, &claim_request.prover_did)?;
+        info!("Issuer create claim for schema {} -> start", claim_definition.schema_seq_no);
+        let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no,
+                                                                    &claim_request.prover_did)?;
 
         let primary_claim =
             Issuer::_issue_primary_claim(
@@ -180,26 +196,27 @@ impl Issuer {
                 &claim_definition_private.secret_key,
                 &claim_request.u,
                 &context_attribute,
-                attributes
-            )?;
+                attributes)?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
-        if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation.clone(),
-                                                                                    revocation_registry, revocation_registry_private){
+        if let (Some(ref pk_r), Some(ref sk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation.clone(),
+                                                                                                    claim_definition_private.secret_key_revocation.clone(),
+                                                                                                    revocation_registry, revocation_registry_private) {
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
                 &revoc_reg,
                 &pk_r,
-                &claim_definition_private.secret_key_revocation.clone()
-                    .ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
+                &sk_r,
                 &revoc_reg_priv.tails,
                 &revoc_reg_priv.acc_sk,
                 &context_attribute,
-                &claim_request.ur.ok_or(CryptoError::InvalidStructure("Field ur not found".to_string()))?,
+                &claim_request.ur
+                    .ok_or(CryptoError::InvalidStructure("Field ur not found".to_string()))?,
                 user_revoc_index
             )?;
             non_revocation_claim = Some(RefCell::new(claim));
         };
 
+        info!("Issuer create claim for schema {} -> done", claim_definition.schema_seq_no);
         Ok(ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
@@ -220,6 +237,8 @@ impl Issuer {
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
                             attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CryptoError> {
+        info!("Issuer issue primary claim for attributes {:?} -> start", &attributes.keys());
+
         let v_prime_prime = Issuer::_generate_v_prime_prime()?;
         let e_start = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_E_START)?, None)?;
         let e_end = BigNumber::from_u32(2)?
@@ -229,6 +248,8 @@ impl Issuer {
         let e = BigNumber::generate_prime_in_range(&e_start, &e_end)?;
 
         let a = Issuer::_sign(public_key, secret_key, context_attribute, &attributes, &v_prime_prime, u, &e)?;
+
+        info!("Issuer issue primary claim -> done");
 
         Ok(PrimaryClaim {
             m2: context_attribute.clone()?,
@@ -240,8 +261,10 @@ impl Issuer {
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
              attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
-        let mut rx = BigNumber::from_u32(1)?;
+        info!("Issuer sign attributes {:?} -> start", &attributes.keys());
+
         let mut context = BigNumber::new_context()?;
+        let mut rx = BigNumber::from_u32(1)?;
 
         for (key, value) in attributes {
             let pk_r = public_key.r.get(key)
@@ -255,12 +278,12 @@ impl Issuer {
             )?;
         }
 
-        let pk_rctxt_pow = public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context))?;
-        rx = rx.mul(&pk_rctxt_pow, Some(&mut context))?;
+        rx = public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context))?
+            .mul(&rx, Some(&mut context))?;
 
         if u != &BigNumber::from_u32(0)? {
-            let module = u.modulus(&public_key.n, Some(&mut context))?;
-            rx = rx.mul(&module, Some(&mut context))?;
+            rx = u.modulus(&public_key.n, Some(&mut context))?
+                .mul(&rx, Some(&mut context))?;
         }
 
         let n = secret_key.p.mul(&secret_key.q, Some(&mut context))?;
@@ -274,6 +297,7 @@ impl Issuer {
         e_inverse = e_inverse.inverse(&n, Some(&mut context))?;
         a = a.mod_exp(&e_inverse, &public_key.n, Some(&mut context))?;
 
+        info!("Issuer sign attributes -> done");
         Ok(a)
     }
 
@@ -282,6 +306,7 @@ impl Issuer {
                                    sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
                                    ur: &PointG1, seq_number: Option<i32>) ->
                                    Result<(NonRevocationClaim, i64), CryptoError> {
+        info!("Issuer issue non-revocation claim -> start");
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
@@ -334,6 +359,7 @@ impl Issuer {
         let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
 
+        info!("Issuer issue non-revocation claim -> done");
         Ok(
             (
                 NonRevocationClaim::new(sigma, c, vr_prime_prime, witness, g_i.clone(), i, m2),
@@ -363,7 +389,10 @@ impl Issuer {
         Ok(v_prime_prime)
     }
 
-    pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>, g: &HashMap<i32, PointG1>, i: i32) -> Result<i64, CryptoError> {
+    pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>,
+                  g: &HashMap<i32, PointG1>, i: i32) -> Result<i64, CryptoError> {
+        info!("Issuer revoke claim by index {} -> start", i);
+
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
         accumulator.v.remove(&i);
         let index: i32 = accumulator.max_claim_num + 1 - i;
@@ -371,6 +400,8 @@ impl Issuer {
             .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
         accumulator.acc = accumulator.acc.sub(element)?;
         let timestamp = time::now_utc().to_timespec().sec;
+
+        info!("Issuer revoke claim by index {} -> done", i);
         Ok(timestamp)
     }
 
@@ -434,9 +465,7 @@ mod tests {
     }
 
     #[test]
-    fn create_claim_works() {
-
-    }
+    fn create_claim_works() {}
 
     #[test]
     fn generate_v_prime_prime_works() {
@@ -445,7 +474,7 @@ mod tests {
     }
 
     #[test]
-    fn generate_claim_definition_without_revocation_part_works() {
+    fn generate_claim_definition_works_without_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
         let signature_type = None;
@@ -461,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn generate_claim_definition_with_revocation_part_works() {
+    fn generate_claim_definition_works_with_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
         let signature_type = None;
@@ -477,14 +506,13 @@ mod tests {
     }
 
     #[test]
-    fn generate_claim_definition_without_attributes_does_not_works() {
+    fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
+        schema.attribute_names = HashSet::new();
+
         let signature_type = None;
         let create_non_revoc = false;
-
-        let empty_attrs: HashSet<String> = HashSet::new();
-        schema.attribute_names = empty_attrs;
 
         let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
         assert!(result.is_err());
@@ -505,7 +533,7 @@ mod tests {
         let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
-    
+
     #[test]
     fn sign_works() {
         let public_key = mocks::get_pk();

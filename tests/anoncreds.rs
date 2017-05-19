@@ -18,10 +18,12 @@ use utils::wallet::WalletUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::anoncreds::{ClaimOffer, ProofClaimsJson};
 use utils::test::TestUtils;
+use utils::logger::LoggerUtils;
 
 #[test]
-fn anoncreds_single_issuer_single_prover() {
+fn anoncreds_works_for_single_issuer_single_prover() {
     TestUtils::cleanup_storage();
+    LoggerUtils::init();
 
     let pool_name = "pool1";
     let issuer_wallet_name = "issuer_wallet";
@@ -139,8 +141,9 @@ fn anoncreds_single_issuer_single_prover() {
 }
 
 #[test]
-fn anoncreds_multiply_issuer_single_prover() {
+fn anoncreds_works_for_multiply_issuer_single_prover() {
     TestUtils::cleanup_storage();
+    LoggerUtils::init();
 
     let issuer1_did = "some_issuer1_did";
     let issuer2_did = "some_issuer2_did";
@@ -346,7 +349,7 @@ fn anoncreds_multiply_issuer_single_prover() {
 }
 
 #[test]
-fn anoncreds_single_issuer_multiply_claims_single_prover() {
+fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
     TestUtils::cleanup_storage();
 
     let issuer_did = "some_issuer1_did";
