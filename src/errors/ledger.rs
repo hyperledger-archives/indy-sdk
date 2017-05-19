@@ -3,8 +3,6 @@ use std::io;
 use std::fmt;
 
 use errors::crypto::CryptoError;
-use errors::pool::PoolError;
-use errors::wallet::WalletError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -13,9 +11,7 @@ use errors::ToErrorCode;
 pub enum LedgerError {
     NoConsensus(String),
     Io(io::Error),
-    CryptoError(CryptoError),
-    PoolError(PoolError),
-    WalletError(WalletError),
+    CryptoError(CryptoError)
 }
 
 impl fmt::Display for LedgerError {
@@ -23,9 +19,7 @@ impl fmt::Display for LedgerError {
         match *self {
             LedgerError::NoConsensus(ref description) => write!(f, "No consensus: {}", description),
             LedgerError::Io(ref err) => err.fmt(f),
-            LedgerError::CryptoError(ref err) => err.fmt(f),
-            LedgerError::PoolError(ref err) => err.fmt(f),
-            LedgerError::WalletError(ref err) => err.fmt(f)
+            LedgerError::CryptoError(ref err) => err.fmt(f)
         }
     }
 }
@@ -35,9 +29,7 @@ impl error::Error for LedgerError {
         match *self {
             LedgerError::NoConsensus(ref description) => description,
             LedgerError::Io(ref err) => err.description(),
-            LedgerError::CryptoError(ref err) => err.description(),
-            LedgerError::PoolError(ref err) => err.description(),
-            LedgerError::WalletError(ref err) => err.description()
+            LedgerError::CryptoError(ref err) => err.description()
         }
     }
 
@@ -45,9 +37,7 @@ impl error::Error for LedgerError {
         match *self {
             LedgerError::NoConsensus(ref description) => None,
             LedgerError::Io(ref err) => Some(err),
-            LedgerError::CryptoError(ref err) => Some(err),
-            LedgerError::PoolError(ref err) => Some(err),
-            LedgerError::WalletError(ref err) => Some(err)
+            LedgerError::CryptoError(ref err) => Some(err)
         }
     }
 }
@@ -57,9 +47,7 @@ impl ToErrorCode for LedgerError {
         match *self {
             LedgerError::NoConsensus(ref description) => ErrorCode::LedgerNoConsensusError,
             LedgerError::Io(ref err) => ErrorCode::PoolLedgerIOError,
-            LedgerError::CryptoError(ref err) => err.to_error_code(),
-            LedgerError::PoolError(ref err) => err.to_error_code(),
-            LedgerError::WalletError(ref err) => err.to_error_code(),
+            LedgerError::CryptoError(ref err) => err.to_error_code()
         }
     }
 }

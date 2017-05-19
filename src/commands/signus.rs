@@ -3,7 +3,6 @@ use errors::signus::SignusError;
 use errors::common::CommonError;
 use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
-use errors::ledger::LedgerError;
 use errors::sovrin::SovrinError;
 use services::signus::types::{MyDidInfo, MyIdentityInfo, MyDid, TheirDid};
 

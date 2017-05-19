@@ -1,4 +1,3 @@
-use errors::ledger::LedgerError;
 use errors::pool::PoolError;
 use errors::sovrin::SovrinError;
 
@@ -15,7 +14,7 @@ pub enum LedgerCommand {
         i32, // wallet handle
         String, // submitter did
         String, // request json
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     SubmitRequest(
         i32, // pool handle
         String, // request json
@@ -27,7 +26,7 @@ pub enum LedgerCommand {
     BuildGetDdoRequest(
         String, // submitter did
         String, // target did
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildNymRequest(
         String, // submitter did
         String, // target did
@@ -35,45 +34,45 @@ pub enum LedgerCommand {
         String, // xref
         String, // data
         String, // role
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildAttribRequest(
         String, // submitter did
         String, // target did
         String, // hash
         String, // raw
         String, // enc
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildGetAttribRequest(
         String, // submitter did
         String, // target did
         String, // data
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildGetNymRequest(
         String, // submitter did
         String, // target did
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildSchemaRequest(
         String, // submitter did
         String, // data
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildGetSchemaRequest(
         String, // submitter did
         String, // data
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildClaimDefRequest(
         String, // submitter did
         String, // xref
         String, // data
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildGetClaimDefRequest(
         String, // submitter did
         String, // xref
-        Box<Fn(Result<String, LedgerError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     BuildNodeRequest(
         String, // submitter did
         String, // target_did
         String, // data
-        Box<Fn(Result<String, LedgerError>) + Send>)
+        Box<Fn(Result<String, SovrinError>) + Send>)
 }
 
 pub struct LedgerCommandExecutor {
@@ -159,7 +158,7 @@ impl LedgerCommandExecutor {
                                wallet_handle: i32,
                                submitter_did: &str,
                                request_json: &str,
-                               cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                               cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
@@ -170,14 +169,14 @@ impl LedgerCommandExecutor {
         let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
-            Err(err) => { cb(Err(SovrinError::LedgerError(LedgerError::PoolError(err)))); }
+            Err(err) => { cb(Err(SovrinError::PoolError(err))); }
         };
     }
 
     fn build_get_ddo_request(&self,
                              submitter_did: &str,
                              target_did: &str,
-                             cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
@@ -188,7 +187,7 @@ impl LedgerCommandExecutor {
                          xref: &str,
                          data: &str,
                          role: &str,
-                         cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                         cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
@@ -198,7 +197,7 @@ impl LedgerCommandExecutor {
                             hash: &str,
                             raw: &str,
                             enc: &str,
-                            cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
@@ -206,28 +205,28 @@ impl LedgerCommandExecutor {
                                 submitter_did: &str,
                                 target_did: &str,
                                 data: &str,
-                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
     fn build_get_nym_request(&self,
                              submitter_did: &str,
                              target_did: &str,
-                             cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
     fn build_schema_request(&self,
                             submitter_did: &str,
                             data: &str,
-                            cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
     fn build_get_schema_request(&self,
                                 submitter_did: &str,
                                 data: &str,
-                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
@@ -235,14 +234,14 @@ impl LedgerCommandExecutor {
                                 submitter_did: &str,
                                 xref: &str,
                                 data: &str,
-                                cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
     fn build_get_issuer_key_request(&self,
                                     submitter_did: &str,
                                     xref: &str,
-                                    cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                                    cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 
@@ -250,7 +249,7 @@ impl LedgerCommandExecutor {
                               submitter_did: &str,
                               target_did: &str,
                               data: &str,
-                              cb: Box<Fn(Result<String, LedgerError>) + Send>) {
+                              cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(Ok("".to_string()));
     }
 }
