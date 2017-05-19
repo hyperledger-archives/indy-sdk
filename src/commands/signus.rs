@@ -18,6 +18,7 @@ use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 
+use super::utils::check_wallet_and_pool_handles_consistency;
 
 pub enum SignusCommand {
     CreateAndStoreMyDid(
@@ -42,13 +43,11 @@ pub enum SignusCommand {
         i32, // wallet handle
         i32, // pool_handle,
         String, // did
-        String, // msg
-        String, // signature
+        String, // signed message
         Box<Fn(Result<bool, SignusError>) + Send>),
     VerifySignatureGetNymAck(
         i32, // wallet handle
-        String, // msg
-        String, // signature
+        String, // signed message
         i32, //callback id
         Result<String, LedgerError>) /* result json or error)*/,
     Encrypt(
@@ -117,13 +116,13 @@ impl SignusCommandExecutor {
                 info!(target: "signus_command_executor", "Sign command received");
                 self.sign(wallet_handle, &did, &msg, cb);
             }
-            SignusCommand::VerifySignature(wallet_handle, pool_handle, did, msg, signature, cb) => {
+            SignusCommand::VerifySignature(wallet_handle, pool_handle, did, signed_msg, cb) => {
                 info!(target: "signus_command_executor", "VerifySignature command received");
-                self.verify_signature(wallet_handle, pool_handle, &did, &msg, &signature, cb);
+                self.verify_signature(wallet_handle, pool_handle, &did, &signed_msg, cb);
             }
-            SignusCommand::VerifySignatureGetNymAck(wallet_handle, msg, signature, cb_id, result) => {
+            SignusCommand::VerifySignatureGetNymAck(wallet_handle, signed_msg, cb_id, result) => {
                 info!(target: "signus_command_executor", "VerifySignatureGetNymAck command received");
-                self.verify_signature_get_nym_ack(wallet_handle, &msg, &signature, cb_id, result);
+                self.verify_signature_get_nym_ack(wallet_handle, &signed_msg, cb_id, result);
             }
             SignusCommand::Encrypt(wallet_handle, pool_handle, my_did, did, msg, cb) => {
                 info!(target: "signus_command_executor", "Encrypt command received");
@@ -219,25 +218,26 @@ impl SignusCommandExecutor {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
         let my_did = MyDid::from_json(&my_did_json)?;
 
-        let signature = self.signus_service.sign(&my_did, msg)?;
-        Ok(signature)
+        let signed_msg = self.signus_service.sign(&my_did, msg)?;
+        Ok(signed_msg)
     }
 
     fn verify_signature(&self,
                         wallet_handle: i32,
                         pool_handle: i32,
                         did: &str,
-                        msg: &str,
-                        signature: &str,
+                        signed_msg: &str,
                         cb: Box<Fn(Result<bool, SignusError>) + Send>) {
-        let load_verkey_from_ledger = move |cb| {
-            let msg = msg.to_string();
-            let signature = signature.to_string();
+        let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, SignusError>)>| {
+            let signed_msg = signed_msg.to_string();
             let get_nym_request = "".to_string(); //TODO add build_nym_request function in ledger service
             let cb_id: i32 = SequenceUtils::get_next_id();
 
             match self.verify_callbacks.try_borrow_mut() {
                 Ok(mut verify_callbacks) => {
+                    check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb); //TODO pop at top level ?
+
                     verify_callbacks.insert(cb_id, cb);
 
                     CommandExecutor::instance()
@@ -248,8 +248,7 @@ impl SignusCommandExecutor {
                                 CommandExecutor::instance()
                                     .send(Command::Signus(SignusCommand::VerifySignatureGetNymAck(
                                         wallet_handle,
-                                        msg.clone(),
-                                        signature.clone(),
+                                        signed_msg.clone(),
                                         cb_id,
                                         result
                                     ))).unwrap();
@@ -270,7 +269,7 @@ impl SignusCommandExecutor {
                 let their_did: TheirDid = their_did.unwrap();
 
                 match their_did.verkey {
-                    Some(_) => cb(self.signus_service.verify(&their_did, msg, signature)),
+                    Some(_) => cb(self.signus_service.verify(&their_did, signed_msg)),
                     None => load_verkey_from_ledger(cb)
                 }
             }
@@ -281,8 +280,7 @@ impl SignusCommandExecutor {
 
     fn verify_signature_get_nym_ack(&self,
                                     wallet_handle: i32,
-                                    msg: &str,
-                                    signature: &str,
+                                    signed_msg: &str,
                                     cb_id: i32,
                                     result: Result<String, LedgerError>) {
         match self.verify_callbacks.try_borrow_mut() {
@@ -296,7 +294,7 @@ impl SignusCommandExecutor {
 
                 match result {
                     Ok(their_did_json) =>
-                        cb(self._verify_signature_get_nym_ack(wallet_handle, &their_did_json, msg, signature)),
+                        cb(self._verify_signature_get_nym_ack(wallet_handle, &their_did_json, signed_msg)),
                     Err(err) => cb(Err(SignusError::LedgerError(err)))
                 }
             }
@@ -307,11 +305,10 @@ impl SignusCommandExecutor {
     fn _verify_signature_get_nym_ack(&self,
                                      wallet_handle: i32,
                                      their_did_json: &str,
-                                     msg: &str,
-                                     signature: &str) -> Result<bool, SignusError> {
+                                     signed_msg: &str) -> Result<bool, SignusError> {
         let their_did = TheirDid::from_json(&their_did_json)?;
         self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
-        self.signus_service.verify(&their_did, &msg, &signature)
+        self.signus_service.verify(&their_did, &signed_msg)
     }
 
     fn encrypt(&self,
@@ -350,6 +347,9 @@ impl SignusCommandExecutor {
                 Err(err) => cb(Err(SignusError::CryptoError(CryptoError::BackendError(format!("{:?}", err)))))
             }
         };
+
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
 
         match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", did)) {
             Ok(their_did_json) => {

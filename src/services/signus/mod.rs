@@ -1,6 +1,9 @@
 mod ed25519;
 pub mod types;
 
+extern crate serde_json;
+use self::serde_json::Value;
+
 use self::ed25519::ED25519Signus;
 use self::types::{
     MyDidInfo,
@@ -8,6 +11,7 @@ use self::types::{
     TheirDid
 };
 use utils::crypto::base58::Base58;
+use utils::crypto::signature_serializer::serialize_signature;
 
 use errors::crypto::CryptoError;
 use errors::signus::SignusError;
@@ -68,21 +72,25 @@ impl SignusService {
         Ok(my_did)
     }
 
-    pub fn sign(&self, my_did: &MyDid, doc: &str) -> Result<String, SignusError> {
+    pub fn sign(&self, my_did: &MyDid, doc: &str) -> Result<String, CryptoError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
-            return Err(SignusError::CryptoError(CryptoError::UnknownType(my_did.crypto_type.clone())));
+            return Err(CryptoError::UnknownType(my_did.crypto_type.clone()));
         }
 
         let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
 
         let sign_key = Base58::decode(&my_did.sign_key)?;
-        let signature = signus.sign(&sign_key, doc.as_bytes());
-        let signature = Base58::encode(&signature);
+        let mut msg: Value = serde_json::from_str(doc)?;
 
-        Ok(signature)
+        let signature = serialize_signature(msg.clone())?;
+        let signature = signus.sign(&sign_key, signature.as_bytes());
+        let signature = Base58::encode(&signature);
+        msg["signature"] = Value::String(signature);
+        let signed_msg: String = serde_json::to_string(&msg)?;
+        Ok(signed_msg)
     }
 
-    pub fn verify(&self, their_did: &TheirDid, doc: &str, signature: &str) -> Result<bool, SignusError> {
+    pub fn verify(&self, their_did: &TheirDid, signed_msg: &str) -> Result<bool, SignusError> {
         let xtype = their_did.crypto_type.clone().unwrap_or(DEFAULT_CRYPTO_TYPE.to_string());
 
         if !self.crypto_types.contains_key(&xtype.as_str()) {
@@ -97,9 +105,20 @@ impl SignusService {
         let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
 
         let verkey = Base58::decode(&verkey)?;
-        let signature = Base58::decode(signature)?;
+        let signed_msg: Value = serde_json::from_str(signed_msg)?;
 
-        Ok(signus.verify(&verkey, &doc.as_bytes(), &signature))
+        if let Some(signature) = signed_msg["signature"].as_str() {
+            let signature = Base58::decode(signature)?;
+            let mut message: Value = Value::Object(serde_json::map::Map::new());
+            for key in signed_msg.as_object().unwrap().keys() {
+                if key != "signature" {
+                    message[key] = signed_msg[key].clone();
+                }
+            }
+            Ok(signus.verify(&verkey, &serialize_signature(message)?.as_bytes(), &signature))
+        } else {
+            return Err(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Signature key not found"))));
+        }
     }
 
     pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &str) -> Result<(String, String), SignusError> {
@@ -238,13 +257,20 @@ mod tests {
             seed: None,
             crypto_type: None
         };
-        let msg = "some message";
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
 
-        let signature = service.sign(&my_did, msg);
+        let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
     }
 
@@ -257,13 +283,20 @@ mod tests {
             seed: None,
             crypto_type: None
         };
-        let msg = "some message";
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
 
-        let signature = service.sign(&my_did, msg);
+        let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
         let signature = signature.unwrap();
 
@@ -274,7 +307,7 @@ mod tests {
             verkey: Some(my_did.ver_key)
         };
 
-        let res = service.verify(&their_did, &msg, &signature);
+        let res = service.verify(&their_did, &signature);
         assert!(res.is_ok());
         let valid = res.unwrap();
         assert!(valid);
@@ -289,13 +322,20 @@ mod tests {
             seed: None,
             crypto_type: None
         };
-        let msg = "message";
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
 
-        let signature = service.sign(&my_did, msg);
+        let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
         let signature = signature.unwrap();
 
@@ -306,7 +346,7 @@ mod tests {
             verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
-        let res = service.verify(&their_did, &msg, &signature);
+        let res = service.verify(&their_did, &signature);
         assert!(res.is_ok());
         assert_eq!(false, res.unwrap());
     }
