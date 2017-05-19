@@ -46,7 +46,7 @@ pub struct ConsistencyProof {
     //TODO almost all fields Option<> or find better approach
     pub seqNoEnd: usize,
     pub seqNoStart: usize,
-    pub ledgerType: usize,
+    pub ledgerId: usize,
     pub hashes: Vec<String>,
     pub oldMerkleRoot: String,
     pub newMerkleRoot: String,
@@ -55,7 +55,7 @@ pub struct ConsistencyProof {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct CatchupReq {
-    pub ledgerType: usize,
+    pub ledgerId: usize,
     pub seqNoStart: usize,
     pub seqNoEnd: usize,
     pub catchupTill: usize,
@@ -66,7 +66,7 @@ impl<'a> JsonDecodable<'a> for CatchupReq {}
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct CatchupRep {
-    pub ledgerType: usize,
+    pub ledgerId: usize,
     pub consProof: Vec<String>,
     pub txns: HashMap<String, GenTransaction>,
 }
