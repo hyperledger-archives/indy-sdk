@@ -53,6 +53,7 @@ impl Issuer {
     pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
                                      create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> start", &schema);
+
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
         let (pkr, skr) = if create_non_revoc {
@@ -464,9 +465,6 @@ mod tests {
         assert_eq!(claim_definition, mocks::get_claim_definition());
         assert_eq!(claim_definition_private, mocks::get_claim_definition_private());
     }
-
-    #[test]
-    fn create_claim_works() {}
 
     #[test]
     fn generate_v_prime_prime_works() {

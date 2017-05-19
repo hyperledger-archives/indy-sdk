@@ -16,6 +16,7 @@ use self::libc::c_char;
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
+/// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// request_json: Request data json.
@@ -31,6 +32,7 @@ use self::libc::c_char;
 /// Crypto*
 #[no_mangle]
 pub extern fn sovrin_sign_and_submit_request(command_handle: i32,
+                                      pool_handle: i32,
                                       wallet_handle: i32,
                                       submitter_did: *const c_char,
                                       request_json: *const c_char,
@@ -42,6 +44,7 @@ pub extern fn sovrin_sign_and_submit_request(command_handle: i32,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
+            pool_handle,
             wallet_handle,
             submitter_did,
             request_json,
@@ -440,6 +443,7 @@ pub extern fn sovrin_build_claim_def_txn(command_handle: i32,
 ///
 /// #Errors
 /// Common*
+#[no_mangle]
 pub extern fn sovrin_build_get_claim_def_txn(command_handle: i32,
                                       submitter_did: *const c_char,
                                       xref: *const c_char,

@@ -1,8 +1,17 @@
+#[cfg(any(feature = "bn_openssl", feature = "hash_openssl"))]
+extern crate openssl;
+
+extern crate serde_json;
+
 use std::error;
 use std::fmt;
-
+use std::error::Error;
 use api::ErrorCode;
 use errors::ToErrorCode;
+use std::num::ParseIntError;
+
+#[cfg(any(feature = "bn_openssl", feature = "hash_openssl"))]
+use self::openssl::error::ErrorStack;
 
 #[derive(Debug)]
 pub enum CryptoError {
@@ -56,6 +65,25 @@ impl ToErrorCode for CryptoError {
             CryptoError::InvalidUserRevocIndex(ref err) => ErrorCode::CryptoInvalidUserRevocIndex,
             CryptoError::BackendError(ref err) => ErrorCode::CryptoBackendError,
         }
+    }
+}
+
+#[cfg(any(feature = "bn_openssl", feature = "hash_openssl"))]
+impl From<ErrorStack> for CryptoError {
+    fn from(err: ErrorStack) -> CryptoError {
+        CryptoError::BackendError(err.description().to_string())
+    }
+}
+
+impl From<ParseIntError> for CryptoError {
+    fn from(err: ParseIntError) -> CryptoError {
+        CryptoError::BackendError(err.description().to_string())
+    }
+}
+
+impl From<serde_json::Error> for CryptoError {
+    fn from(err: serde_json::Error) -> CryptoError {
+        CryptoError::BackendError(err.description().to_string())
     }
 }
 

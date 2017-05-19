@@ -8,6 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
-@interface TestUtlis : NSObject
+@interface TestUtils : NSObject
+
++ (NSMutableString*) getUserDocumentDir;
++ (NSMutableString*) getUserTmpDir;
++ (NSTimeInterval) defaultTimeout;
+
++(void) cleanupStorage;
 
 @end

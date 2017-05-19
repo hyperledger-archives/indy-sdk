@@ -41,15 +41,18 @@ struct DefaultWalletRecord {
 
 struct DefaultWallet {
     name: String,
+    pool_name: String,
     config: DefaultWalletRuntimeConfig
 }
 
 impl DefaultWallet {
     fn new(name: &str,
+           pool_name: &str,
            config: DefaultWalletRuntimeConfig,
            credentials: DefaultWalletCredentials) -> DefaultWallet {
         DefaultWallet {
             name: name.to_string(),
+            pool_name: pool_name.to_string(),
             config: config
         }
     }
@@ -118,6 +121,10 @@ impl Wallet for DefaultWallet {
 
         return Ok(record.value)
     }
+
+    fn get_pool_name(&self) -> String {
+        self.pool_name.clone()
+    }
 }
 
 pub struct DefaultWalletType {}
@@ -145,7 +152,7 @@ impl WalletType for DefaultWalletType {
         Ok(fs::remove_file(_db_path(name))?)
     }
 
-    fn open(&self, name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
+    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
         let runtime_config = match runtime_config {
             Some(config) => DefaultWalletRuntimeConfig::from_json(config)?,
             None => DefaultWalletRuntimeConfig::default()
@@ -155,6 +162,7 @@ impl WalletType for DefaultWalletType {
         Ok(Box::new(
             DefaultWallet::new(
                 name,
+                pool_name,
                 runtime_config,
                 DefaultWalletCredentials {})))
     }
@@ -242,7 +250,7 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        wallet_type.open("wallet1", None, None, None).unwrap();
+        wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
         TestUtils::cleanup_sovrin_home();
     }
@@ -253,7 +261,7 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", None, None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
         wallet.set("key1", "value1").unwrap();
         let value = wallet.get("key1").unwrap();
@@ -270,11 +278,11 @@ mod tests {
         wallet_type.create("wallet1", None, None).unwrap();
 
         {
-            let wallet = wallet_type.open("wallet1", None, None, None).unwrap();
+            let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
             wallet.set("key1", "value1").unwrap();
         }
 
-        let wallet = wallet_type.open("wallet1", None, None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
         let value = wallet.get("key1").unwrap();
         assert_eq!("value1", value);
 
@@ -288,7 +296,7 @@ mod tests {
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
 
-        let wallet = wallet_type.open("wallet1", None, None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
         let value = wallet.get("key1");
         assert_match!(Err(WalletError::NotFound(_)), value);
 
@@ -301,7 +309,7 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", None, None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
         wallet.set("key1", "value1").unwrap();
         let value = wallet.get("key1").unwrap();
@@ -320,7 +328,7 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", None, Some("{\"freshness_time\": 1}"), None).unwrap();
+        let wallet = wallet_type.open("wallet1", "pool1", None, Some("{\"freshness_time\": 1}"), None).unwrap();
         wallet.set("key1", "value1").unwrap();
 
         // Wait until value expires
@@ -338,7 +346,7 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", None, None, None).unwrap();
+        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
         wallet.set("key1::subkey1", "value1").unwrap();
         wallet.set("key1::subkey2", "value2").unwrap();
@@ -353,6 +361,21 @@ mod tests {
         let (key, value) = key_values.pop().unwrap();
         assert_eq!("key1::subkey1", key);
         assert_eq!("value1", value);
+
+        TestUtils::cleanup_sovrin_home();
+    }
+
+    #[test]
+    fn default_wallet_get_pool_name_works() {
+        TestUtils::cleanup_sovrin_home();
+
+        let pool_name = "pool1";
+        let wallet_name = "wallet1";
+        let default_wallet_type = DefaultWalletType::new();
+        default_wallet_type.create(wallet_name, None, None).unwrap();
+        let wallet = default_wallet_type.open(wallet_name, pool_name, None, None, None).unwrap();
+
+        assert_eq!(wallet.get_pool_name(), pool_name);
 
         TestUtils::cleanup_sovrin_home();
     }

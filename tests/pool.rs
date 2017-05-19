@@ -14,6 +14,7 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
+#[cfg(feature = "local_nodes_pool")]
 use sovrin::api::ErrorCode;
 
 use utils::pool::PoolUtils;
@@ -30,6 +31,7 @@ fn create_pool_ledger_config_works() {
 }
 
 #[test]
+#[cfg(feature = "local_nodes_pool")]
 fn open_pool_ledger_works() {
     TestUtils::cleanup_storage();
     let name = "pool_open";
@@ -43,6 +45,7 @@ fn open_pool_ledger_works() {
 }
 
 #[test]
+#[cfg(feature = "local_nodes_pool")]
 fn open_pool_ledger_works_for_twice() {
     TestUtils::cleanup_storage();
     let pool_name = "pool_open_twice";
@@ -59,7 +62,7 @@ fn open_pool_ledger_works_for_twice() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
+#[cfg(feature = "local_nodes_pool")]
 fn sovrin_submit_request_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -86,7 +89,8 @@ fn sovrin_submit_request_works() {
         op: "REPLY".to_string(),
         result: ReplyResult {
             req_id: 1491566332010860,
-            txn_id: "5511e5493c1d37dfa67b73269a392a7aca5b71e9d10ac106adc7f9e552aee560".to_string(),
+            data: Some("{\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\"role\":\"2\",\"verkey\":null}".to_string()),
+            identifier: "Th7MpTaRZVRYnPiabds81Y".to_string(),
         }
     };
     let act_reply: Reply = serde_json::from_str(resp.unwrap().as_str()).unwrap();
@@ -103,6 +107,7 @@ struct Reply {
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 struct ReplyResult {
-    txn_id: String,
+    identifier: String,
     req_id: u64,
+    data: Option<String>
 }

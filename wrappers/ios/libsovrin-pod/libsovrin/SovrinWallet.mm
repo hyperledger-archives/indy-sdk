@@ -2,9 +2,7 @@
 //  SovrinWallet.m
 //  libsovrin
 //
-//  Created by Kirill Neznamov on 11/05/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
+
 
 #import "SovrinWallet.h"
 #import "SovrinCallbacks.h"
@@ -12,6 +10,19 @@
 #import "NSError+SovrinError.h"
 
 @implementation SovrinWallet
+
++ (SovrinWallet*) sharedInstance
+{
+    static SovrinWallet *instance = nil;
+    static dispatch_once_t dispatch_once_block;
+    
+    dispatch_once(&dispatch_once_block, ^
+                  {
+                      instance = [SovrinWallet new];
+                  });
+    
+    return instance;
+}
 
 - (NSError*) createWallet:(NSString*) poolName
                      name:(NSString*) name
@@ -40,8 +51,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*)   openWallet:(SovrinHandle) poolHandle
-                     name:(NSString*) name
+- (NSError*)   openWallet:(NSString*) name
             runtimeConfig:(NSString*) config
               credentials:(NSString*) credentials
                completion:(void (^)(NSError* error, SovrinHandle walletHandle )) handler
@@ -119,7 +129,7 @@
     ret = sovrin_wallet_set_seq_no_for_value( handle,
                                               walletHandle,
                                               [key UTF8String],
-                                              [seqNo integerValue],
+                                              [seqNo intValue],
                                               SovrinWrapperCommon2PCallback
                                             );
     

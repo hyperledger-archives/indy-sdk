@@ -4,7 +4,7 @@ use std::error;
 use std::fmt;
 
 use errors::crypto::CryptoError;
-use errors::wallet::WalletError;
+use errors::sovrin::SovrinError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -14,8 +14,7 @@ pub enum AnoncredsError {
     NotIssuedError(String),
     MasterSecretDuplicateNameError(String),
     ProofRejected(String),
-    CryptoError(CryptoError),
-    WalletError(WalletError)
+    CryptoError(CryptoError)
 }
 
 impl fmt::Display for AnoncredsError {
@@ -24,8 +23,7 @@ impl fmt::Display for AnoncredsError {
             AnoncredsError::NotIssuedError(ref description) => write!(f, "Not issued: {}", description),
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => write!(f, "Dupplicated master secret: {}", description),
             AnoncredsError::ProofRejected(ref description) => write!(f, "Proof rejected: {}", description),
-            AnoncredsError::CryptoError(ref err) => err.fmt(f),
-            AnoncredsError::WalletError(ref err) => err.fmt(f)
+            AnoncredsError::CryptoError(ref err) => err.fmt(f)
         }
     }
 }
@@ -36,8 +34,7 @@ impl error::Error for AnoncredsError {
             AnoncredsError::NotIssuedError(ref description) => description,
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => description,
             AnoncredsError::ProofRejected(ref description) => description,
-            AnoncredsError::CryptoError(ref err) => err.description(),
-            AnoncredsError::WalletError(ref err) => err.description()
+            AnoncredsError::CryptoError(ref err) => err.description()
         }
     }
 
@@ -46,8 +43,7 @@ impl error::Error for AnoncredsError {
             AnoncredsError::NotIssuedError(ref description) => None,
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => None,
             AnoncredsError::ProofRejected(ref description) => None,
-            AnoncredsError::CryptoError(ref err) => Some(err),
-            AnoncredsError::WalletError(ref err) => Some(err)
+            AnoncredsError::CryptoError(ref err) => Some(err)
         }
     }
 }
@@ -58,21 +54,14 @@ impl ToErrorCode for AnoncredsError {
             AnoncredsError::NotIssuedError(ref description) => ErrorCode::AnoncredsNotIssuedError,
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
             AnoncredsError::ProofRejected(ref description) => ErrorCode::ProofRejected,
-            AnoncredsError::CryptoError(ref err) => err.to_error_code(),
-            AnoncredsError::WalletError(ref err) => err.to_error_code()
+            AnoncredsError::CryptoError(ref err) => err.to_error_code()
         }
     }
 }
 
-impl From<CryptoError> for AnoncredsError {
-    fn from(err: CryptoError) -> AnoncredsError {
-        AnoncredsError::CryptoError(err)
-    }
-}
-
-impl From<WalletError> for AnoncredsError {
-    fn from(err: WalletError) -> AnoncredsError {
-        AnoncredsError::WalletError(err)
+impl From<CryptoError> for SovrinError {
+    fn from(err: CryptoError) -> SovrinError {
+        SovrinError::AnoncredsError(AnoncredsError::CryptoError(err))
     }
 }
 
