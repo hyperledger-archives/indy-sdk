@@ -51,6 +51,7 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
+use utils::anoncreds::ProofClaimsJson;
 
 #[test]
 fn anoncreds_demo_works() {
@@ -261,15 +262,20 @@ fn anoncreds_demo_works() {
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     println!("claims_json {:?}", claims_json);
     assert_eq!(ErrorCode::Success, err);
+    let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+    let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+    assert_eq!(1, claims_for_attr_1.len());
+
+    let claim = claims_for_attr_1[0].clone();
 
     let requested_claims_json = format!("{{\
                                           \"self_attested_attributes\":{{}},\
                                           \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
                                           \"requested_predicates\":{{\"predicate1_uuid\":\"{}\"}}\
-                                        }}", claim_def_seq_no, claim_def_seq_no);
+                                        }}", claim.claim_uuid, claim.claim_uuid);
 
-    let schemas_json = format!("{{\"{}\":{}}}", claim_def_seq_no, schema);
-    let claim_defs_json = format!("{{\"{}\":{}}}", claim_def_seq_no, claim_def_json);
+    let schemas_json = format!("{{\"{}\":{}}}", claim.claim_uuid, schema);
+    let claim_defs_json = format!("{{\"{}\":{}}}", claim.claim_uuid, claim_def_json);
     let revoc_regs_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request
@@ -308,7 +314,6 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
-#[ignore] //required nodes pool available from CI
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";

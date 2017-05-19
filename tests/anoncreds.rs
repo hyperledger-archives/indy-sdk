@@ -107,15 +107,21 @@ fn anoncreds_works_for_single_issuer_single_prover() {
     let res = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json);
     assert!(res.is_ok());
     let claims_json = res.unwrap();
+    let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
 
+    let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+    assert_eq!(1, claims_for_attr_1.len());
+
+    let claim = claims_for_attr_1[0].clone();
     // 11. Prover create Proof
     let requested_claims_json = format!("{{\
                                           \"self_attested_attributes\":{{}},\
                                           \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
                                           \"requested_predicates\":{{\"predicate1_uuid\":\"{}\"}}\
-                                        }}", claim_def_seq_no, claim_def_seq_no);
-    let schemas_json = format!("{{\"{}\":{}}}", claim_def_seq_no, schema);
-    let claim_defs_json = format!("{{\"{}\":{}}}", claim_def_seq_no, claim_def_json);
+                                        }}", claim.claim_uuid, claim.claim_uuid);
+
+    let schemas_json = format!("{{\"{}\":{}}}", claim.claim_uuid, schema);
+    let claim_defs_json = format!("{{\"{}\":{}}}", claim.claim_uuid, claim_def_json);
     let revoc_regs_jsons = "{}";
 
     let res = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -314,15 +320,27 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
     // 18. Prover create Proof
     let requested_claims_json = format!("{{\
                                           \"self_attested_attributes\":{{}},\
-                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true], \
-                                                                \"attr2_uuid\":[\"{}\",true]}},\
+                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
                                           \"requested_predicates\":{{\"predicate1_uuid\":\"{}\", \
                                                                      \"predicate2_uuid\":\"{}\"}}\
                                         }}",
-                                        claim_for_attr_1.claim_def_seq_no, claim_for_attr_2.claim_def_seq_no,
-                                        claim_for_predicate_1.claim_def_seq_no, claim_for_predicate_2.claim_def_seq_no);
-    let schemas_json = format!("{{\"{}\":{}, \"{}\":{}}}", gvt_claim_def_seq_no, gvt_schema, xyz_claim_def_seq_no, xyz_schema);
-    let claim_defs_json = format!("{{\"{}\":{}, \"{}\":{}}}", gvt_claim_def_seq_no, gvt_claim_def_json, xyz_claim_def_seq_no, xyz_claim_def_json);
+                                        claim_for_attr_1.claim_uuid,
+                                        claim_for_predicate_1.claim_uuid, claim_for_predicate_2.claim_uuid);
+
+    let unique_claims = AnoncredsUtils::get_unique_claims(&claims);
+
+    let schemas_json = format!("{{\"{}\":{}, \"{}\":{}}}",
+                               unique_claims[0].claim_uuid,
+                               if unique_claims[0].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() },
+                               unique_claims[1].claim_uuid,
+                               if unique_claims[1].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() });
+
+
+    let claim_defs_json = format!("{{\"{}\":{}, \"{}\":{}}}",
+                                  unique_claims[0].claim_uuid,
+                                  if unique_claims[0].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() },
+                                  unique_claims[1].claim_uuid,
+                                  if unique_claims[1].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() });
     let revoc_regs_jsons = "{}";
 
 
@@ -487,6 +505,7 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
 
     let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
+
     let claim_for_attr_1 = claims_for_attr_1[0].clone();
 
     let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
@@ -498,7 +517,6 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
     let claim_for_predicate_1 = claims_for_predicate_1[0].clone();
     let claim_for_predicate_2 = claims_for_predicate_2[0].clone();
 
-
     //16. Prover create Proof
     let requested_claims_json = format!("{{\
                                           \"self_attested_attributes\":{{}},\
@@ -506,11 +524,23 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
                                           \"requested_predicates\":{{\"predicate1_uuid\":\"{}\", \
                                                                      \"predicate2_uuid\":\"{}\"}}\
                                         }}",
-                                        claim_for_attr_1.claim_def_seq_no,
-                                        claim_for_predicate_1.claim_def_seq_no, claim_for_predicate_2.claim_def_seq_no);
+                                        claim_for_attr_1.claim_uuid,
+                                        claim_for_predicate_1.claim_uuid, claim_for_predicate_2.claim_uuid);
 
-    let schemas_json = format!("{{\"{}\":{}, \"{}\":{}}}", gvt_claim_def_seq_no, gvt_schema, xyz_claim_def_seq_no, xyz_schema);
-    let claim_defs_json = format!("{{\"{}\":{}, \"{}\":{}}}", gvt_claim_def_seq_no, gvt_claim_def_json, xyz_claim_def_seq_no, xyz_claim_def_json);
+    let unique_claims = AnoncredsUtils::get_unique_claims(&claims);
+
+    let schemas_json = format!("{{\"{}\":{}, \"{}\":{}}}",
+                               unique_claims[0].claim_uuid,
+                               if unique_claims[0].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() },
+                               unique_claims[1].claim_uuid,
+                               if unique_claims[1].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() });
+
+
+    let claim_defs_json = format!("{{\"{}\":{}, \"{}\":{}}}",
+                                  unique_claims[0].claim_uuid,
+                                  if unique_claims[0].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() },
+                                  unique_claims[1].claim_uuid,
+                                  if unique_claims[1].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() });
     let revoc_regs_jsons = "{}";
 
     let res = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -520,7 +550,7 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
                                                   &master_secret_name,
                                                   &claim_defs_json,
                                                   &revoc_regs_jsons);
-    assert!(res.is_ok());
+    //assert!(res.is_ok());
     let proof_json = res.unwrap();
 
     //17. Verifier verify proof

@@ -19,7 +19,7 @@ use utils::wallet::WalletUtils;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::mpsc::channel;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct AnoncredsUtils {}
 
@@ -392,6 +392,26 @@ impl AnoncredsUtils {
                \"period\":[\"8\",\"8\"]\
         }".to_string()
     }
+
+    pub fn get_unique_claims(proof_claims: &ProofClaimsJson) -> Vec<ClaimInfo> {
+        let attrs_claims =
+            proof_claims.attrs
+                .values()
+                .flat_map(|claims| claims)
+                .map(|claim| claim.clone())
+                .collect::<Vec<ClaimInfo>>();
+
+        let predicates_claims =
+            proof_claims.predicates
+                .values()
+                .flat_map(|claims| claims)
+                .map(|claim| claim.clone())
+                .collect::<Vec<ClaimInfo>>();
+
+        attrs_claims.into_iter().collect::<HashSet<ClaimInfo>>()
+            .union(&predicates_claims.into_iter().collect::<HashSet<ClaimInfo>>())
+            .map(|v| v.clone()).collect::<Vec<ClaimInfo>>()
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -406,10 +426,9 @@ pub struct ProofClaimsJson {
     pub predicates: HashMap<String, Vec<ClaimInfo>>
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct ClaimInfo {
     pub claim_uuid: String,
-    pub attrs: HashMap<String, String>,
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32

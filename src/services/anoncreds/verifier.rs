@@ -38,7 +38,7 @@ impl Verifier {
                   claim_defs: &HashMap<String, ClaimDefinition>,
                   revoc_regs: &HashMap<String, RevocationRegistry>,
                   schemas: &HashMap<String, Schema>) -> Result<bool, CryptoError> {
-        info!("Verifier verify proof -> start");
+        info!(target: "anoncreds_service", "Verifier verify proof -> start");
 
         let mut tau_list: Vec<Vec<u8>> = Vec::new();
 
@@ -78,14 +78,14 @@ impl Verifier {
 
         let c_hver = get_hash_as_int(&mut values)?;
 
-        info!("Verifier verify proof -> done");
+        info!(target: "anoncreds_service", "Verifier verify proof -> done");
 
         Ok(c_hver == proof.aggregated_proof.c_hash)
     }
 
     fn _verify_primary_proof(pk: &PublicKey, c_hash: &BigNumber,
                              primary_proof: &PrimaryProof, schema: &Schema) -> Result<Vec<BigNumber>, CryptoError> {
-        info!("Verifier verify primary proof -> start");
+        info!(target: "anoncreds_service", "Verifier verify primary proof -> start");
 
         let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof, c_hash, schema)?;
 
@@ -93,7 +93,7 @@ impl Verifier {
             t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
         }
 
-        info!("Verifier verify primary proof -> done");
+        info!(target: "anoncreds_service", "Verifier verify primary proof -> done");
         Ok(t_hat)
     }
 

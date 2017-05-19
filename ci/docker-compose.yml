@@ -1,0 +1,7 @@
+version: '2'
+services:
+  sovrin-pool:
+    build:
+      context: .
+      dockerfile: sovrin-pool.dockerfile
+    command: supervisord
