@@ -1,3 +1,4 @@
+use errors::sovrin::SovrinError;
 use errors::pool::PoolError;
 
 use services::pool::PoolService;
@@ -10,27 +11,27 @@ use std::collections::HashMap;
 pub enum PoolCommand {
     Create(String, // name
            Option<String>, // config
-           Box<Fn(Result<(), PoolError>) + Send>),
+           Box<Fn(Result<(), SovrinError>) + Send>),
     Delete(String, // name
-           Box<Fn(Result<(), PoolError>) + Send>),
+           Box<Fn(Result<(), SovrinError>) + Send>),
     Open(String, // name
          Option<String>, // config
-         Box<Fn(Result<i32, PoolError>) + Send>),
+         Box<Fn(Result<i32, SovrinError>) + Send>),
     OpenAck(i32, // cmd id
-            Result<i32 /* pool handle */, PoolError>),
+            Result<i32 /* pool handle */, SovrinError>),
     Close(i32, // pool handle
-          Box<Fn(Result<(), PoolError>) + Send>),
+          Box<Fn(Result<(), SovrinError>) + Send>),
     CloseAck(i32,
-             Result<(), PoolError>),
+             Result<(), SovrinError>),
     Refresh(i32, // pool handle
-            Box<Fn(Result<(), PoolError>) + Send>),
+            Box<Fn(Result<(), SovrinError>) + Send>),
     RefreshAck(i32,
-               Result<(), PoolError>),
+               Result<(), SovrinError>),
 }
 
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
-    open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, PoolError>)>>>,
+    open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
 }
 
 impl PoolCommandExecutor {
@@ -87,21 +88,22 @@ impl PoolCommandExecutor {
         };
     }
 
-    fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), PoolError>) + Send>) {
-        cb(self.pool_service.create(name, config))
+    fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+        cb(self.pool_service.create(name, config).map_err(|err| SovrinError::PoolError(err)))
     }
 
-    fn delete(&self, name: &str, cb: Box<Fn(Result<(), PoolError>) + Send>) {
+    fn delete(&self, name: &str, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         // TODO: FIXME: Implement me!!!
         cb(Ok(()));
     }
 
-    fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, PoolError>) + Send>) {
+    fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, SovrinError>) + Send>) {
         let result = self.pool_service.open(name, config)
+            .map_err(|err| SovrinError::PoolError(err))
             .and_then(|handle| {
                 match self.open_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, handle)),
-                    Err(err) => Err(PoolError::from(err)),
+                    Err(err) => Err(SovrinError::PoolError(PoolError::from(err))),
                 }
             });
         match result {
@@ -110,12 +112,12 @@ impl PoolCommandExecutor {
         };
     }
 
-    fn close(&self, handle: i32, cb: Box<Fn(Result<(), PoolError>) + Send>) {
+    fn close(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         // TODO: FIXME: Implement me!!!
         cb(Ok(()));
     }
 
-    fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), PoolError>) + Send>) {
+    fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         // TODO: FIXME: Implement me!!!
         cb(Ok(()));
     }

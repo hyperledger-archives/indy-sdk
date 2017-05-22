@@ -1,5 +1,3 @@
-extern crate base64;
-
 use std::cmp;
 use std::collections::{BinaryHeap};
 
@@ -8,6 +6,7 @@ use super::{
     MerkleTree,
     RemoteNode,
 };
+use super::rust_base58::ToBase58;
 use super::types::*;
 use utils::json::JsonEncodable;
 
@@ -29,13 +28,14 @@ impl CatchupHandler {
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
                 let ls: LedgerStatus = LedgerStatus {
                     txnSeqNo: self.nodes.len(),
-                    merkleRoot: base64::encode(self.merkle_tree.root_hash()),
+                    merkleRoot: self.merkle_tree.root_hash().as_slice().to_base58(),
                     ledgerId: 0,
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg);
             }
             Message::LedgerStatus(ledger_status) => {
+                assert_eq!(ledger_status.merkleRoot, self.merkle_tree.root_hash().as_slice().to_base58());
                 self.ledger_status_same += 1;
                 if self.ledger_status_same == self.f + 1 {
                     return Ok(Some(self.merkle_tree.clone()));
@@ -79,7 +79,7 @@ impl CatchupHandler {
         assert!(cnt_to_catchup > 0);
         let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
-            ledgerType: 0,
+            ledgerId: 0,
             seqNoStart: node_cnt + 1,
             seqNoEnd: node_cnt + 1 + portion - 1,
             catchupTill: self.new_mt_size,
@@ -109,7 +109,7 @@ impl CatchupHandler {
                     )?;
                 }
             }
-            trace!("updated mt hash {}, tree {:?}", base64::encode(process.merkle_tree.root_hash()), process.merkle_tree);
+            trace!("updated mt hash {}, tree {:?}", process.merkle_tree.root_hash().as_slice().to_base58(), process.merkle_tree);
             if &process.merkle_tree.count() == &self.new_mt_size {
                 //TODO check also root hash?
                 true
