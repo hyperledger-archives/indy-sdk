@@ -56,16 +56,21 @@ def testUbuntu() {
         echo 'Ubuntu Test: Checkout csm'
         checkout scm
 
+        echo 'Ubuntu Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        echo 'Ubuntu Test: Run nodes pool'
+        poolEnv.run('--ip="10.0.0.2" --net=pool_network sovrin_pool')
+
         echo 'Ubuntu Test: Build docker image'
         def testEnv = dockerHelpers.build(name)
 
-        testEnv.inside {
+        testEnv.inside('--ip="10.0.0.3" --net=pool_network sovrin_pool') {
             echo 'Ubuntu Test: Test'
 
             sh 'cargo update'
 
             try {
-                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                sh 'RUST_TEST_THREADS=1 cargo test-xunit --features=local_nodes_pool'
             }
             finally {
                 junit 'test-results.xml'
