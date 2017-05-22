@@ -57,8 +57,11 @@ def testUbuntu() {
         checkout scm
 
         echo 'Ubuntu Test: Create network for nodes pool and test image'
-        sh 'docker network rm pool-network'
-        sh 'docker network create --subnet=10.0.0.0/8 pool_network'
+        try {
+            sh 'docker network rm pool-network'
+        } finally {
+            sh 'docker network create --subnet=10.0.0.0/8 pool_network'
+        }
 
         echo 'Ubuntu Test: Build docker image for nodes pool'
         def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
