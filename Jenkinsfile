@@ -56,24 +56,25 @@ def testUbuntu() {
         echo 'Ubuntu Test: Checkout csm'
         checkout scm
 
-        echo 'Ubuntu Test: Create network for nodes pool and test image'
+        def network_name = "pool_network"
+        echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
         try {
-            sh 'docker network rm pool-network'
+            sh "docker network rm ${network_name}"
         } catch (ignore) {
-            echo "Ubuntu Test: pool network doesn't exists"
+            echo "Ubuntu Test: ${network_name} doesn't exists"
         } finally {
-            sh 'docker network create --subnet=10.0.0.0/8 pool_network'
+            sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
         }
 
         echo 'Ubuntu Test: Build docker image for nodes pool'
         def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
         echo 'Ubuntu Test: Run nodes pool'
-        poolEnv.run('--ip="10.0.0.2" --network=pool_network')
+        poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
         echo 'Ubuntu Test: Build docker image'
         def testEnv = dockerHelpers.build(name)
 
-        testEnv.inside('--ip="10.0.0.3" --network=pool_network sovrin_pool') {
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
             echo 'Ubuntu Test: Test'
 
             sh 'cargo update'
