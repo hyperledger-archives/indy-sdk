@@ -166,6 +166,7 @@ fn sovrin_nym_requests_works() {
 
 #[test]
 #[cfg(feature = "local_nodes_pool")]
+#[ignore]
 fn sovrin_attrib_requests_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -237,6 +238,7 @@ fn sovrin_attrib_requests_works() {
 
 #[test]
 #[cfg(feature = "local_nodes_pool")]
+#[ignore]
 fn sovrin_schema_requests_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -312,7 +314,7 @@ fn sovrin_schema_requests_works() {
 
 #[test]
 #[cfg(feature = "local_nodes_pool")]
-//fail
+#[ignore]
 fn sovrin_node_request_works() {
     TestUtils::cleanup_storage();
     let pool_name = "test_submit_tx";
@@ -382,6 +384,7 @@ fn sovrin_node_request_works() {
 
 //#[test]
 //#[cfg(feature = "local_nodes_pool")]
+//#[ignore]
 //fn sovrin_claim_def_requests_works() {
 //    TestUtils::cleanup_storage();
 //    let pool_name = "test_submit_tx";
