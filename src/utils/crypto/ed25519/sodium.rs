@@ -23,9 +23,8 @@ extern {
 pub struct ED25519 {}
 
 impl ED25519 {
-    pub fn create_key_pair() -> (Vec<u8>, Vec<u8>) {
-        let (public_key, private_key) = box_::gen_keypair();
-        (public_key[..].to_vec(), private_key[..].to_vec())
+    pub fn get_key_pair_for_encryption(pk: &[u8], sk: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        (ED25519::pk_to_curve25519(pk), ED25519::sk_to_curve25519(sk))
     }
 
     pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
@@ -68,23 +67,26 @@ impl ED25519 {
         let mut pr_key: [u8; 64] = [0; 64];
         pr_key.clone_from_slice(private_key);
 
-        sign::sign(
+        sign::sign_detached(
             doc,
             &sign::SecretKey(pr_key)
-        )
+        )[..].to_vec()
     }
 
-    pub fn verify(public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        sign::verify(
+    pub fn verify(public_key: &[u8], doc: &[u8], sign: &[u8]) -> bool {
+        let mut signature: [u8; 64] = [0; 64];
+        signature.clone_from_slice(sign);
+
+        sign::verify_detached(
+            &sign::Signature(signature),
             doc,
             &sign::PublicKey(ED25519::_clone_into_array(public_key))
         )
-            .map_err(|_| CryptoError::InvalidStructure("Unable to decrypt data".to_string()))
     }
 
-    pub fn sk_to_curve25519(sk: &Vec<u8>) -> Vec<u8> {
+    pub fn sk_to_curve25519(sk: &[u8]) -> Vec<u8> {
         let mut from: [u8; 64] = [0; 64];
-        from.clone_from_slice(sk.as_slice());
+        from.clone_from_slice(sk);
         let mut to: [u8; 32] = [0; 32];
         unsafe {
             crypto_sign_ed25519_sk_to_curve25519(&mut to, &from);
@@ -92,9 +94,10 @@ impl ED25519 {
         to.iter().cloned().collect()
     }
 
-    pub fn pk_to_curve25519(pk: &Vec<u8>) -> Vec<u8> {
+    pub fn pk_to_curve25519(pk: &[u8]) -> Vec<u8> {
+
         let mut from: [u8; 32] = [0; 32];
-        from.clone_from_slice(pk.as_slice());
+        from.clone_from_slice(pk);
         let mut to: [u8; 32] = [0; 32];
         unsafe {
             crypto_sign_ed25519_pk_to_curve25519(&mut to, &from);
@@ -120,9 +123,13 @@ mod tests {
     fn encrypt_decrypt_works() {
         let text = randombytes::randombytes(16);
         let nonce = ED25519::gen_nonce();
+        let seed = randombytes::randombytes(32);
 
-        let (alice_pk, alice_sk) = ED25519::create_key_pair();
-        let (bob_pk, bob_sk) = ED25519::create_key_pair();
+        let (alice_ver_key, alice_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed));
+        let (alice_pk, alice_sk) = ED25519::get_key_pair_for_encryption(&alice_ver_key, &alice_sign_key);
+
+        let (bob_ver_key, bob_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed));
+        let (bob_pk, bob_sk) = ED25519::get_key_pair_for_encryption(&bob_ver_key, &bob_sign_key);
 
         let bob_encrypted_text = ED25519::encrypt(&bob_sk, &alice_pk, &text, &nonce);
         let bob_decrypt_result = ED25519::decrypt(&alice_sk, &bob_pk, &bob_encrypted_text, &nonce);
@@ -142,10 +149,9 @@ mod tests {
 
         let (public_key, secret_key) = ED25519::create_key_pair_for_signature(Some(&seed));
         let alice_signed_text = ED25519::sign(&secret_key, &text);
-        let verified_data = ED25519::verify(&public_key, &alice_signed_text);
+        let verified = ED25519::verify(&public_key, &text, &alice_signed_text);
 
-        assert!(verified_data.is_ok());
-        assert_eq!(text, verified_data.unwrap());
+        assert!(verified);
     }
 
     #[test]

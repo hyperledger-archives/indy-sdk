@@ -1,3 +1,6 @@
+#[macro_use]
+mod utils;
+
 pub mod anoncreds;
 pub mod ledger;
 pub mod pool;
@@ -15,6 +18,7 @@ use errors::common::CommonError;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
+use services::signus::SignusService;
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
@@ -57,11 +61,12 @@ impl CommandExecutor {
                 let anoncreds_service = Rc::new(AnoncredsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
+                let signus_service = Rc::new(SignusService::new());
 
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
+                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone(), signus_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
 
                 loop {
