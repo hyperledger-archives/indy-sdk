@@ -19,9 +19,13 @@ use sovrin::api::ErrorCode;
 
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
+#[cfg(feature = "local_nodes_pool")]
 use utils::logger::LoggerUtils;
+#[cfg(feature = "local_nodes_pool")]
 use utils::wallet::WalletUtils;
+#[cfg(feature = "local_nodes_pool")]
 use utils::ledger::LedgerUtils;
+#[cfg(feature = "local_nodes_pool")]
 use utils::signus::SignusUtils;
 
 

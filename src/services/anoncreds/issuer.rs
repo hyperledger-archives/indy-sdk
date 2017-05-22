@@ -72,7 +72,7 @@ impl Issuer {
         info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> start", &schema);
         let mut ctx = BigNumber::new_context()?;
 
-        if schema.attribute_names.len() == 0 {
+        if schema.attr_names.len() == 0 {
             return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
@@ -508,7 +508,7 @@ mod tests {
     fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
-        schema.attribute_names = HashSet::new();
+        schema.attr_names = HashSet::new();
 
         let signature_type = None;
         let create_non_revoc = false;
