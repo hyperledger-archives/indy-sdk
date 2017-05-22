@@ -38,6 +38,8 @@ impl Verifier {
                   claim_defs: &HashMap<String, ClaimDefinition>,
                   revoc_regs: &HashMap<String, RevocationRegistry>,
                   schemas: &HashMap<String, Schema>) -> Result<bool, CryptoError> {
+        info!(target: "anoncreds_service", "Verifier verify proof -> start");
+
         let mut tau_list: Vec<Vec<u8>> = Vec::new();
 
         for (proof_uuid, proof_item) in &proof.proofs {
@@ -76,16 +78,22 @@ impl Verifier {
 
         let c_hver = get_hash_as_int(&mut values)?;
 
+        info!(target: "anoncreds_service", "Verifier verify proof -> done");
+
         Ok(c_hver == proof.aggregated_proof.c_hash)
     }
 
     fn _verify_primary_proof(pk: &PublicKey, c_hash: &BigNumber,
                              primary_proof: &PrimaryProof, schema: &Schema) -> Result<Vec<BigNumber>, CryptoError> {
+        info!(target: "anoncreds_service", "Verifier verify primary proof -> start");
+
         let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof, c_hash, schema)?;
 
         for ge_proof in primary_proof.ge_proofs.iter() {
             t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
         }
+
+        info!(target: "anoncreds_service", "Verifier verify primary proof -> done");
         Ok(t_hat)
     }
 
@@ -280,6 +288,7 @@ impl Verifier {
         let t_hat_expected_values = Issuer::_create_tau_list_expected_values(pkr, accum, accum_pk, &proof.c_list)?;
         let t_hat_calc_values = Issuer::_create_tau_list_values(&pkr, &accum, &proof.x_list, &proof.c_list)?;
 
+
         Ok(NonRevocProofTauList::new(
             t_hat_expected_values.t1.mul(&ch_num_z)?.add(&t_hat_calc_values.t1)?,
             t_hat_expected_values.t2.mul(&ch_num_z)?.add(&t_hat_calc_values.t2)?,
@@ -300,7 +309,7 @@ mod tests {
     use services::anoncreds::issuer;
 
     #[test]
-    fn verify_equlity_test() {
+    fn verify_equlity_works() {
         let proof = mocks::get_eq_proof();
         let pk = issuer::mocks::get_pk();
         let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
@@ -349,7 +358,7 @@ mod tests {
     }
 
     #[test]
-    fn calc_teg_works() {
+    fn calc_tge_works() {
         let verifier = Verifier::new();
         let proof = mocks::get_ge_proof();
         let pk = issuer::mocks::get_pk();

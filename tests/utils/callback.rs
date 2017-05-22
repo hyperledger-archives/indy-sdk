@@ -407,6 +407,48 @@ impl CallbackUtils {
         (command_handle, Some(closure_to_verify_signature_callback))
     }
 
+    pub fn closure_to_claim_offer_json_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                     Option<extern fn(command_handle: i32,
+                                                                                                      err: ErrorCode)>) {
+        lazy_static! {
+            static ref PROVER_STORE_CLAIM_OFFER_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn closure_to_claim_offer_json_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = PROVER_STORE_CLAIM_OFFER_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = PROVER_STORE_CLAIM_OFFER_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_claim_offer_json_callback))
+    }
+
+    pub fn closure_to_prover_get_claim_offers_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
+                                                 -> (i32,
+                                                     Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                                      claim_offers_json: *const c_char)>) {
+        lazy_static! {
+            static ref GET_CLAIM_OFFERS_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn prover_get_claim_offers_callback(command_handle: i32, err: ErrorCode, claim_offers_json: *const c_char) {
+            let mut callbacks = GET_CLAIM_OFFERS_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let claim_offers_json = unsafe { CStr::from_ptr(claim_offers_json).to_str().unwrap().to_string() };
+            cb(err, claim_offers_json);
+        }
+
+        let mut callbacks = GET_CLAIM_OFFERS_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(prover_get_claim_offers_callback))
+    }
+
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                     Option<extern fn(command_handle: i32,
                                                                                                                      err: ErrorCode,
