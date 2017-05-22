@@ -58,7 +58,9 @@ def testUbuntu() {
 
         echo 'Ubuntu Test: Create network for nodes pool and test image'
         try {
-            sh 'docker network rm pool-network'
+            sh 'Ubuntu Test: docker network rm pool-network'
+        } catch (ignore) {
+            echo "Ubuntu Test: pool network doesn't exists"
         } finally {
             sh 'docker network create --subnet=10.0.0.0/8 pool_network'
         }
