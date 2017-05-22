@@ -19,6 +19,10 @@ use sovrin::api::ErrorCode;
 
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
+use utils::logger::LoggerUtils;
+use utils::wallet::WalletUtils;
+use utils::ledger::LedgerUtils;
+use utils::signus::SignusUtils;
 
 
 #[test]
@@ -49,6 +53,7 @@ fn open_pool_ledger_works() {
 #[cfg(feature = "local_nodes_pool")]
 fn open_pool_ledger_works_for_twice() {
     TestUtils::cleanup_storage();
+    LoggerUtils::init();
     let pool_name = "pool_open_twice";
 
     let res = PoolUtils::create_pool_ledger_config(pool_name);
@@ -209,7 +214,7 @@ fn sovrin_attrib_requests_works() {
     assert!(res.is_ok());
     let attrib_request = res.unwrap();
 
-    let res = SignusUtils::sign(my_wallet_handle, &their_did, &attrib_request);
+    let res = SignusUtils::sign(their_wallet_handle, &their_did, &attrib_request);
     assert!(res.is_ok());
     let attrib_request = res.unwrap();
 
@@ -267,7 +272,7 @@ fn sovrin_schema_requests_works() {
     assert!(res.is_ok());
     let nym_request = res.unwrap();
 
-    let res = SignusUtils::sign(my_wallet_handle, &their_did, &nym_request);
+    let res = SignusUtils::sign(their_wallet_handle, &their_did, &nym_request);
     assert!(res.is_ok());
     let nym_request = res.unwrap();
 
@@ -283,7 +288,7 @@ fn sovrin_schema_requests_works() {
     assert!(res.is_ok());
     let schema_request = res.unwrap();
 
-    let res = SignusUtils::sign(my_wallet_handle, &their_did, &schema_request);
+    let res = SignusUtils::sign(their_wallet_handle, &their_did, &schema_request);
     assert!(res.is_ok());
     let schema_request = res.unwrap();
 

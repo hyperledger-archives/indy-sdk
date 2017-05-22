@@ -18,6 +18,7 @@ pub struct Request<T: JsonEncodable> {
     pub req_id: u64,
     pub identifier: String,
     pub operation: T,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>
 }
 
