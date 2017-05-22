@@ -68,7 +68,7 @@ def testUbuntu() {
         echo 'Ubuntu Test: Build docker image for nodes pool'
         def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
         echo 'Ubuntu Test: Run nodes pool'
-        poolEnv.run('--ip="10.0.0.2" --network=pool_network sovrin_pool-test')
+        poolEnv.run('--ip="10.0.0.2" --network=pool_network')
 
         echo 'Ubuntu Test: Build docker image'
         def testEnv = dockerHelpers.build(name)
