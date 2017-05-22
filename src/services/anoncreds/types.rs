@@ -284,24 +284,24 @@ impl JsonEncodable for ClaimDefinitionPrivate {}
 impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Claims {
+pub struct ClaimSignature {
     pub primary_claim: PrimaryClaim,
     pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
 }
 
-impl Claims {
+impl ClaimSignature {
     pub fn new(primary_claim: PrimaryClaim,
-               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> Claims {
-        Claims {
+               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> ClaimSignature {
+        ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
         }
     }
 }
 
-impl JsonEncodable for Claims {}
+impl JsonEncodable for ClaimSignature {}
 
-impl<'a> JsonDecodable<'a> for Claims {}
+impl<'a> JsonDecodable<'a> for ClaimSignature {}
 
 #[derive(Deserialize, Serialize)]
 pub struct ClaimInitData {
@@ -328,12 +328,12 @@ pub struct ClaimJson {
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    pub signature: Claims
+    pub signature: ClaimSignature
 }
 
 impl ClaimJson {
     pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
-               signature: Claims, schema_seq_no: i32) -> ClaimJson {
+               signature: ClaimSignature, schema_seq_no: i32) -> ClaimJson {
         ClaimJson {
             claim: claim,
             claim_def_seq_no: claim_def_seq_no,
@@ -1008,7 +1008,7 @@ impl JsonEncodable for RevocationSecretKey {}
 
 impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RevocationClaimInitData {
     pub u: PointG1,
     pub v_prime: GroupOrderElement
