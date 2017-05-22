@@ -16,3 +16,21 @@
 - set static flag for libsodium build
   - set SODIUM_STATIC=y
 - change dir to sovrin-client and run cargo (you may want to add --release --target x86_64-pc-windows-msvc keys to cargo)
+
+## openssl-sys workaround
+
+When your windows build fails complaining on gdi32.lib you should edit
+
+```
+  ~/.cargo/registry/src/github.com-*/openssl-sys-*/build.rs
+```
+
+and add
+
+```
+  println!("cargo:rustc-link-lib=dylib=gdi32");
+```
+
+to the end of main() function.
+
+Then try to rebuild whole project.
