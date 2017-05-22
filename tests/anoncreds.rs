@@ -19,6 +19,7 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::anoncreds::{ClaimOffer, ProofClaimsJson};
 use utils::test::TestUtils;
 use utils::logger::LoggerUtils;
+use std::collections::HashMap;
 
 #[test]
 fn anoncreds_works_for_single_issuer_single_prover() {
@@ -175,6 +176,9 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
     assert!(res.is_ok());
     let prover_wallet_handle = res.unwrap();
 
+    let mut schemas: HashMap<i32, String> = HashMap::new();
+    let mut claim_defs: HashMap<i32, String> = HashMap::new();
+
     //4. Issuer1 create claim definition by gvt schema
     let gvt_schema_seq_no = 1;
     let gvt_claim_def_seq_no = 1;
@@ -184,6 +188,10 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
     assert!(res.is_ok());
     let gvt_claim_def_json = res.unwrap();
 
+    schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
+    claim_defs.insert(gvt_claim_def_seq_no, gvt_claim_def_json.clone());
+
+
     //5. Issuer1 create claim definition by xyz schema
     let xyz_schema_seq_no = 2;
     let xyz_claim_def_seq_no = 2;
@@ -192,6 +200,9 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
     let res = AnoncredsUtils::create_claim_definition_and_set_link(issuer_xyz_wallet_handle, &xyz_schema, xyz_claim_def_seq_no);
     assert!(res.is_ok());
     let xyz_claim_def_json = res.unwrap();
+
+    schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
+    claim_defs.insert(xyz_claim_def_seq_no, xyz_claim_def_json.clone());
 
     //6. Prover create Master Secret for Issuer1
     let master_secret_name_1 = "prover_master_secret_issuer_1";
@@ -326,16 +337,16 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
 
     let schemas_json = format!("{{\"{}\":{}, \"{}\":{}}}",
                                unique_claims[0].claim_uuid,
-                               if unique_claims[0].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() },
+                               schemas.get(&unique_claims[0].schema_seq_no).unwrap(),
                                unique_claims[1].claim_uuid,
-                               if unique_claims[1].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() });
+                               schemas.get(&unique_claims[1].schema_seq_no).unwrap());
 
 
     let claim_defs_json = format!("{{\"{}\":{}, \"{}\":{}}}",
                                   unique_claims[0].claim_uuid,
-                                  if unique_claims[0].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() },
+                                  claim_defs.get(&unique_claims[0].claim_def_seq_no).unwrap(),
                                   unique_claims[1].claim_uuid,
-                                  if unique_claims[1].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() });
+                                  claim_defs.get(&unique_claims[1].claim_def_seq_no).unwrap());
     let revoc_regs_jsons = "{}";
 
 
@@ -383,6 +394,9 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
     assert!(res.is_ok());
     let prover_wallet_handle = res.unwrap();
 
+    let mut schemas: HashMap<i32, String> = HashMap::new();
+    let mut claim_defs: HashMap<i32, String> = HashMap::new();
+
     //3. Issuer create claim definition by gvt schema
     let gvt_schema_seq_no = 1;
     let gvt_claim_def_seq_no = 1;
@@ -392,6 +406,9 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
     assert!(res.is_ok());
     let gvt_claim_def_json = res.unwrap();
 
+    schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
+    claim_defs.insert(gvt_claim_def_seq_no, gvt_claim_def_json.clone());
+
     //4. Issuer create claim definition by xyz schema
     let xyz_schema_seq_no = 2;
     let xyz_claim_def_seq_no = 2;
@@ -400,6 +417,9 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
     let res = AnoncredsUtils::create_claim_definition_and_set_link(issuer_wallet_handle, &xyz_schema, xyz_claim_def_seq_no);
     assert!(res.is_ok());
     let xyz_claim_def_json = res.unwrap();
+
+    schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
+    claim_defs.insert(xyz_claim_def_seq_no, xyz_claim_def_json.clone());
 
     //5. Prover create Master Secret for Issuer1
     let master_secret_name = "prover_master_secret_issuer";
@@ -526,16 +546,16 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
 
     let schemas_json = format!("{{\"{}\":{}, \"{}\":{}}}",
                                unique_claims[0].claim_uuid,
-                               if unique_claims[0].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() },
+                               schemas.get(&unique_claims[0].schema_seq_no).unwrap(),
                                unique_claims[1].claim_uuid,
-                               if unique_claims[1].schema_seq_no == gvt_schema_seq_no { gvt_schema.clone() } else { xyz_schema.clone() });
+                               schemas.get(&unique_claims[1].schema_seq_no).unwrap());
 
 
     let claim_defs_json = format!("{{\"{}\":{}, \"{}\":{}}}",
                                   unique_claims[0].claim_uuid,
-                                  if unique_claims[0].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() },
+                                  claim_defs.get(&unique_claims[0].claim_def_seq_no).unwrap(),
                                   unique_claims[1].claim_uuid,
-                                  if unique_claims[1].claim_def_seq_no == gvt_claim_def_seq_no { gvt_claim_def_json.clone() } else { xyz_claim_def_json.clone() });
+                                  claim_defs.get(&unique_claims[1].claim_def_seq_no).unwrap());
     let revoc_regs_jsons = "{}";
 
     let res = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
