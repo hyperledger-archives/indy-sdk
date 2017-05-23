@@ -14,8 +14,9 @@ extern crate lazy_static;
 mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::ErrorCode;
-
+use utils::test::TestUtils;
+#[cfg(feature = "local_nodes_pool")]
+use utils::pool::PoolUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::logger::LoggerUtils;
 #[cfg(feature = "local_nodes_pool")]
