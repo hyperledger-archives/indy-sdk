@@ -28,7 +28,7 @@ use services::anoncreds::types::{
     ClaimRequestJson
 };
 use std::collections::HashMap;
-use utils::crypto::pair::PointG1;
+use utils::crypto::pair::{PointG1, PointG2};
 use std::cell::RefCell;
 
 pub enum ProverCommand {
@@ -446,7 +446,7 @@ impl ProverCommandExecutor {
 
         let ms: BigNumber = BigNumber::from_dec(&ms)?;
 
-        let mut tails: HashMap<i32, PointG1> = HashMap::new();
+        let mut tails: HashMap<i32, PointG2> = HashMap::new();
         if revoc_regs.len() > 0 {
             let tails_json = self.wallet_service.get(wallet_handle, &format!("tails"))?;
             tails = serde_json::from_str(&tails_json)
