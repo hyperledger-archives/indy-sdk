@@ -267,7 +267,7 @@ impl IssuerCommandExecutor {
 
         self.anoncreds_service.issuer.revoke(
             &revocation_registry,
-            &revocation_registry_private.tails,
+            &revocation_registry_private.tails_dash,
             user_revoc_index
         )?;
 

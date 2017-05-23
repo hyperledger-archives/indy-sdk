@@ -792,17 +792,17 @@ impl Prover {
 
         let w = claim.witness.omega
             .add(
-                &pkr.htilde.mul(&params.r_prime)?
+                &pkr.h_cap.mul(&params.r_prime)?
             )?;
 
         let s = claim.witness.sigma_i
             .add(
-                &pkr.htilde.mul(&params.r_prime_prime)?
+                &pkr.h_cap.mul(&params.r_prime_prime)?
             )?;
 
         let u = claim.witness.u_i
             .add(
-                &pkr.htilde.mul(&params.r_prime_prime_prime)?
+                &pkr.h_cap.mul(&params.r_prime_prime_prime)?
             )?;
 
         Ok(NonRevocProofCList::new(e, d, a, g, w, s, u))

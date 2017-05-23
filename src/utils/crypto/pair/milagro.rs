@@ -1,8 +1,18 @@
 extern crate milagro_crypto;
 extern crate serde;
 
-use self::milagro_crypto::big::wrappers::{CURVE_Gx, CURVE_Gy, CURVE_Order, BIG};
+use self::milagro_crypto::big::wrappers::{
+    CURVE_Gx,
+    CURVE_Gy,
+    CURVE_Order,
+    CURVE_Pxa,
+    CURVE_Pya,
+    CURVE_Pxb,
+    CURVE_Pyb,
+    BIG
+};
 use self::milagro_crypto::ecp::wrappers::ECP;
+use self::milagro_crypto::ecp2::wrappers::ECP2;
 use self::milagro_crypto::fp12::wrappers::FP12;
 
 use errors::crypto::CryptoError;
@@ -30,7 +40,10 @@ pub struct PointG1 {
     point: ECP
 }
 
-pub struct PointG2 {}
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct PointG2 {
+    point: ECP2
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct GroupOrderElement {
@@ -91,6 +104,40 @@ impl PointG1 {
         Ok(PointG1 {
             point: r
         })
+    }
+
+    pub fn to_string(&self) -> Result<String, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
+        unimplemented!();
+    }
+}
+
+impl PointG2 {
+    pub fn new() -> Result<PointG2, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn new_inf() -> Result<PointG2, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn add(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn sub(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG2, CryptoError> {
+        unimplemented!();
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
@@ -187,7 +234,7 @@ impl GroupOrderElement {
 }
 
 impl Pair {
-    pub fn pair(p: &PointG1, q: &PointG1) -> Result<Pair, CryptoError> {
+    pub fn pair(p: &PointG1, q: &PointG2) -> Result<Pair, CryptoError> {
         unimplemented!();
     }
 
@@ -277,6 +324,18 @@ impl Serialize for PointG1 {
 }
 
 impl<'a> Deserialize<'a> for PointG1 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        unimplemented!();
+    }
+}
+
+impl Serialize for PointG2 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        unimplemented!();
+    }
+}
+
+impl<'a> Deserialize<'a> for PointG2 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
         unimplemented!();
     }
