@@ -96,7 +96,10 @@ def testUbuntu() {
                 echo 'Ubuntu Test: stop pool'
                 poolEnv.stop()
             }
-            RUN_POOL= sh "docker ps | grep sovrin_pool | cut -d' ' -f 1"
+            RUN_POOL= sh (
+                    script: "docker ps | grep sovrin_pool | cut -d' ' -f 1",
+                    returnStdout: true
+            ).trim()
             sh "docker stop ${RUN_POOL}"
         } catch (err) {
             echo "Ubuntu Tests: error while stop pool ${err}"
