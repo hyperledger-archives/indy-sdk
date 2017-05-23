@@ -94,7 +94,7 @@ def testUbuntu() {
         try {
             if (poolEnv) {
                 echo 'Ubuntu Test: stop pool'
-                poolEnv.stop
+                poolEnv.stop()
             }
         } catch (err) {
             echo "Ubuntu Tests: error while stop pool ${err}"
