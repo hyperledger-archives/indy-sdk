@@ -18,7 +18,7 @@ use services::anoncreds::types::{
     AggregatedProof,
     ClaimInitData,
     ClaimDefinition,
-    Claims,
+    ClaimSignature,
     ClaimProof,
     ClaimRequest,
     InitProof,
@@ -77,33 +77,36 @@ impl Prover {
     }
 
     pub fn create_claim_request(&self, pk: PublicKey, pkr: Option<RevocationPublicKey>, ms: BigNumber,
-                                prover_did: &str)
-                                -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
+                                prover_did: &str) -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
+        info!(target: "anoncreds_service", "Prover create claim request -> start");
         let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
 
-        let (ur, revocation_primary_claim_init_data) =
-            if let Some(pk_r) = pkr {
-                let revocation_claim_init_data = Prover::_generate_revocation_claim_init_data(&pk_r)?;
-                (Some(revocation_claim_init_data.u.clone()), Some(revocation_claim_init_data))
-            } else { (None, None) };
+        let revocation_claim_init_data = match pkr {
+            Some(pk_r) => Some(Prover::_generate_revocation_claim_init_data(&pk_r)?),
+            _ => None
+        };
 
+        info!(target: "anoncreds_service", "Prover create claim request -> done");
         Ok((
-            ClaimRequest::new(prover_did.to_string(), primary_claim_init_data.u.clone()?, ur),
+            ClaimRequest::new(prover_did.to_string(),
+                              primary_claim_init_data.u.clone()?,
+                              revocation_claim_init_data.clone().map(|ref d| d.u)),
             primary_claim_init_data,
-            revocation_primary_claim_init_data
+            revocation_claim_init_data
         ))
     }
 
     fn _gen_primary_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CryptoError> {
+        let mut ctx = BigNumber::new_context()?;
         let v_prime = BigNumber::rand(LARGE_VPRIME)?;
 
         let u = public_key.s
-            .mod_exp(&v_prime, &public_key.n, None)?
+            .mod_exp(&v_prime, &public_key.n, Some(&mut ctx))?
             .mul(
-                &public_key.rms.mod_exp(&ms, &public_key.n, None)?,
+                &public_key.rms.mod_exp(&ms, &public_key.n, Some(&mut ctx))?,
                 None
             )?
-            .modulus(&public_key.n, None)?;
+            .modulus(&public_key.n, Some(&mut ctx))?;
 
         Ok(ClaimInitData::new(u, v_prime))
     }
@@ -118,7 +121,7 @@ impl Prover {
                          revocation_claim_init_data: Option<RevocationClaimInitData>,
                          pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
                          -> Result<(), CryptoError> {
-
+        info!(target: "anoncreds_service", "Prover process received claim -> start");
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
 
         if let Some(ref non_revocation_claim) = claim_json.borrow().signature.non_revocation_claim {
@@ -133,6 +136,8 @@ impl Prover {
                                                    .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk,
                                                &BigNumber::from_bytes(&non_revocation_claim.borrow().m2.to_bytes()?)?)?;
         }
+        info!(target: "anoncreds_service", "Prover process received claim -> done");
+
         Ok(())
     }
 
@@ -187,17 +192,17 @@ impl Prover {
     pub fn find_claims(&self, requested_attrs: HashMap<String, AttributeInfo>, requested_predicates: HashMap<String, Predicate>,
                        claims: Vec<ClaimInfo>)
                        -> Result<(HashMap<String, Vec<ClaimInfo>>, HashMap<String, Vec<ClaimInfo>>), CryptoError> {
+        info!(target: "anoncreds_service", "Prover find claims for proof request -> start");
+
         let mut found_attributes: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
         let mut found_predicates: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
 
         for (uuid, attribute_info) in requested_attrs {
-            let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
+            let claims_for_attribute: Vec<ClaimInfo> =
+                claims.iter().cloned()
+                    .filter(|claim| claim.attrs.contains_key(&attribute_info.name) && claim.schema_seq_no == attribute_info.schema_seq_no)
+                    .collect();
 
-            for claim in claims.iter() {
-                if claim.attrs.contains_key(&attribute_info.name) && claim.schema_seq_no == attribute_info.schema_seq_no {
-                    claims_for_attribute.push(claim.clone());
-                }
-            }
             found_attributes.insert(uuid, claims_for_attribute);
         }
 
@@ -214,6 +219,7 @@ impl Prover {
             found_predicates.insert(uuid, claims_for_predicate);
         }
 
+        info!(target: "anoncreds_service", "Prover find claims for proof request -> done");
         Ok((found_attributes, found_predicates))
     }
 
@@ -290,12 +296,17 @@ impl Prover {
                 .ok_or(CryptoError::InvalidStructure(format!("Attribute not found")))?;
 
             if revealed.clone() {
-                let value = attributes.get(claim_uuid)
+                let attribute = attributes.get(claim_uuid)
                     .ok_or(CryptoError::InvalidStructure(format!("Attributes for claim {} not found", claim_uuid)))?
-                    .get(&attribute.name).unwrap().get(1)
+                    .get(&attribute.name).unwrap();
+
+                let value = attribute.get(0)
                     .ok_or(CryptoError::InvalidStructure(format!("Encoded value not found")))?;
 
-                revealed_attrs.insert(attr_uuid.clone(), (claim_uuid.clone(), attribute.name.clone(), value.clone()));
+                let encoded_value = attribute.get(1)
+                    .ok_or(CryptoError::InvalidStructure(format!("Encoded value not found")))?;
+
+                revealed_attrs.insert(attr_uuid.clone(), (claim_uuid.clone(), value.clone(), encoded_value.clone()));
             } else {
                 unrevealed_attrs.insert(attr_uuid.clone(), claim_uuid.clone());
             }
@@ -314,6 +325,8 @@ impl Prover {
                         ms: &BigNumber,
                         tails: &HashMap<i32, PointG2>)
                         -> Result<ProofJson, CryptoError> {
+        info!(target: "anoncreds_service", "Prover create proof -> start");
+
         let proof_claims = Prover::_prepare_proof_claims(proof_req,
                                                          schemas,
                                                          claim_defs,
@@ -406,18 +419,23 @@ impl Prover {
 
         let (revealed_attrs, unrevealed_attrs) = Prover::_split_attributes(&proof_req, requested_claims, &attributes)?;
 
-        let requested_proof = RequestedProofJson::new(
-            revealed_attrs, unrevealed_attrs, requested_claims.self_attested_attributes.clone(),
-            requested_claims.requested_predicates.clone()
+        let requested_proof = RequestedProofJson::new(revealed_attrs,
+                                                      unrevealed_attrs,
+                                                      requested_claims.self_attested_attributes.clone(),
+                                                      requested_claims.requested_predicates.clone()
         );
 
+        info!(target: "anoncreds_service", "Prover create proof -> done");
         Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
     }
 
     fn _init_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, attributes: &HashMap<String, Vec<String>>,
                    revealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
                    m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CryptoError> {
+        info!(target: "anoncreds_service", "Prover init primary proof -> start");
         let eq_proof = Prover::_init_eq_proof(&pk, schema, c1, revealed_attrs, m1_t, m2_t)?;
+
+
         let mut ge_proofs: Vec<PrimaryPredicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
@@ -425,12 +443,14 @@ impl Prover {
             ge_proofs.push(ge_proof);
         }
 
+        info!(target: "anoncreds_service", "Prover init primary proof -> done");
         Ok(PrimaryInitProof::new(eq_proof, ge_proofs))
     }
 
     fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
                                   pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG2>)
                                   -> Result<NonRevocInitProof, CryptoError> {
+        info!(target: "anoncreds_service", "Prover init non-revocation proof -> start");
         Prover::_update_non_revocation_claim(claim, accum, tails)?;
 
         let c_list_params = Prover::_gen_c_list_params(&claim)?;
@@ -439,6 +459,7 @@ impl Prover {
         let tau_list_params = Prover::_gen_tau_list_params()?;
         let proof_tau_list = Issuer::_create_tau_list_values(&pkr, &accum, &tau_list_params, &proof_c_list)?;
 
+        info!(target: "anoncreds_service", "Prover init non-revocation proof -> done");
         Ok(NonRevocInitProof::new(c_list_params, tau_list_params, proof_c_list, proof_tau_list))
     }
 
@@ -482,12 +503,11 @@ impl Prover {
 
     fn _init_eq_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, revealed_attrs: &Vec<String>,
                       m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CryptoError> {
-
         let mut ctx = BigNumber::new_context()?;
 
         let m2_tilde = m2_t.unwrap_or(BigNumber::rand(LARGE_MVECT)?);
 
-        let ra = BigNumber::rand(LARGE_VPRIME)?;
+        let r = BigNumber::rand(LARGE_VPRIME)?;
         let etilde = BigNumber::rand(LARGE_ETILDE)?;
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
@@ -500,20 +520,16 @@ impl Prover {
         let mtilde = get_mtilde(&unrevealed_attrs)?;
 
         let aprime = pk.s
-            .mod_exp(&ra, &pk.n, Some(&mut ctx))?
+            .mod_exp(&r, &pk.n, Some(&mut ctx))?
             .mul(&c1.a, Some(&mut ctx))?
             .modulus(&pk.n, Some(&mut ctx))?;
-
-        let tmp =  pk.s
-            .mod_exp(&ra, &pk.n, Some(&mut ctx))?;
-        let res = c1.a.mul(&tmp, Some(&mut ctx))?.modulus(&pk.n, Some(&mut ctx))?;
-
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
         let vprime = c1.v_prime.sub(
-            &c1.e.mul(&ra, Some(&mut ctx))?
+            &c1.e.mul(&r, Some(&mut ctx))?
         )?;
+
         let eprime = c1.e.sub(
             &BigNumber::from_dec("2")?.exp(&large_e_start, Some(&mut ctx))?
         )?;
@@ -610,6 +626,7 @@ impl Prover {
     fn _finalize_eq_proof(ms: &BigNumber, init_proof: &PrimaryEqualInitProof, c_h: &BigNumber,
                           encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
                           -> Result<PrimaryEqualProof, CryptoError> {
+        info!(target: "anoncreds_service", "Prover finalize primary proof -> start");
         let mut ctx = BigNumber::new_context()?;
 
         let keys_hash_set: HashSet<String> = HashSet::from_iter(encoded_attributes.keys().cloned());
@@ -667,6 +684,8 @@ impl Prover {
                     .clone()
             );
         }
+
+        info!(target: "anoncreds_service", "Prover finalize primary proof -> done");
 
         Ok(PrimaryEqualProof::new(
             revealed_attrs_with_values, init_proof.a_prime.clone()?, e, v, m, m1, m2
@@ -735,6 +754,8 @@ impl Prover {
     fn _finalize_proof(ms: &BigNumber, init_proof: &PrimaryInitProof, c_h: &BigNumber,
                        encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
                        -> Result<PrimaryProof, CryptoError> {
+        info!(target: "anoncreds_service", "Prover finalize proof -> start");
+
         let eq_proof = Prover::_finalize_eq_proof(ms, &init_proof.eq_proof, c_h, encoded_attributes, revealed_attrs)?;
         let mut ge_proofs: Vec<PrimaryPredicateGEProof> = Vec::new();
 
@@ -742,6 +763,8 @@ impl Prover {
             let ge_proof = Prover::_finalize_ge_proof(c_h, init_ge_proof, &eq_proof)?;
             ge_proofs.push(ge_proof);
         }
+
+        info!(target: "anoncreds_service", "Prover finalize proof -> done");
 
         Ok(PrimaryProof::new(eq_proof, ge_proofs))
     }
@@ -819,6 +842,8 @@ impl Prover {
     }
 
     fn _finalize_non_revocation_proof(init_proof: &NonRevocInitProof, c_h: &BigNumber) -> Result<NonRevocProof, CryptoError> {
+        info!(target: "anoncreds_service", "Prover finalize non-revocation proof -> start");
+
         let ch_num_z = bignum_to_group_element(&c_h)?;
         let mut x_list: Vec<GroupOrderElement> = Vec::new();
 
@@ -827,6 +852,8 @@ impl Prover {
                 &ch_num_z.add_mod(&y)?
             )?);
         }
+
+        info!(target: "anoncreds_service", "Prover finalize non-revocation proof -> done");
 
         Ok(NonRevocProof::new(NonRevocProofXList::from_list(x_list), init_proof.c_list.clone()))
     }
@@ -932,7 +959,6 @@ mod tests {
         let c_h = BigNumber::from_dec("107686359310664445046126368677755391247164319345083587464043204013905993527834").unwrap();
         let encoded_attributes = issuer::mocks::get_gvt_attributes();
         let revealed_attributes = mocks::get_revealed_attrs();
-        let unrevealed_attributes = mocks::get_unrevealed_attrs();
 
         let res = Prover::_finalize_proof(&ms, &proof, &c_h, &encoded_attributes, &revealed_attributes);
 
@@ -963,7 +989,6 @@ mod tests {
         let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
         let c_h = BigNumber::from_dec("65052515950080385170056404271846666093263620691254624189854445495335700076548").unwrap();
         let init_proof = mocks::get_primary_equal_init_proof();
-        let unrevealed_attrs = mocks::get_unrevealed_attrs();
         let revealed_attrs = mocks::get_revealed_attrs();
         let attrs = issuer::mocks::get_gvt_attributes();
 
@@ -1024,7 +1049,7 @@ mod find_claims_tests {
     use super::*;
 
     #[test]
-    fn find_claims_empty() {
+    fn find_claims_empty_works() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1044,7 +1069,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_revealed_attrs_only_with_same_schema() {
+    fn find_claims_works_for_revealed_attrs_only_with_same_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
 
@@ -1071,7 +1096,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_revealed_attrs_only_with_other_schema() {
+    fn find_claims_works_for_revealed_attrs_only_with_other_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(2, "name".to_string()));
 
@@ -1094,7 +1119,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_predicate_satisfy() {
+    fn find_claims_works_for_predicate_satisfy() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
         requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
@@ -1120,7 +1145,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_predicate_does_not_satisfy() {
+    fn find_claims_works_for_does_not_satisfy_predicate() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
         requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 38));
@@ -1142,7 +1167,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_multiply_revealed_attrs() {
+    fn find_claims_works_for_multiply_revealed_attrs() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
         requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
@@ -1177,7 +1202,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_for_multiply_satisfy_predicates() {
+    fn find_claims_works_for_multiply_satisfy_predicates() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
         requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
@@ -1211,7 +1236,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_for_multiply_attrs_and_satisfy_predicates() {
+    fn find_claims_works_for_multiply_attrs_and_satisfy_predicates() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
         requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
@@ -1247,7 +1272,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_several_matches_for_attribute() {
+    fn find_claims_works_for_several_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
 
@@ -1274,7 +1299,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_no_matches_for_attribute() {
+    fn find_claims_works_for_no_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "test".to_string()));
 
@@ -1464,12 +1489,12 @@ pub mod mocks {
         PrimaryInitProof::new(get_primary_equal_init_proof(), vec![get_primary_ge_init_proof()])
     }
 
-    pub fn get_gvt_claims_object() -> Claims {
-        Claims::new(get_gvt_primary_claim(), None)
+    pub fn get_gvt_claims_object() -> ClaimSignature {
+        ClaimSignature::new(get_gvt_primary_claim(), None)
     }
 
-    pub fn get_xyz_claims_object() -> Claims {
-        Claims::new(get_xyz_primary_claim(), None)
+    pub fn get_xyz_claims_object() -> ClaimSignature {
+        ClaimSignature::new(get_xyz_primary_claim(), None)
     }
 
     pub fn get_public_key_revocation() -> RevocationPublicKey {

@@ -4,6 +4,7 @@ extern crate uuid;
 use self::uuid::Uuid;
 use errors::common::CommonError;
 use errors::sovrin::SovrinError;
+use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
 use utils::crypto::bn::BigNumber;
 use services::pool::PoolService;
@@ -193,12 +194,14 @@ impl ProverCommandExecutor {
     }
 
     fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), SovrinError> {
+        if self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)).is_ok() {
+            return Err(SovrinError::AnoncredsError(AnoncredsError::MasterSecretDuplicateNameError(format!("Master Secret already exists {}", master_secret_name))))
+        };
+
         let master_secret = self.anoncreds_service.prover.generate_master_secret()?;
-        self.wallet_service.set(
-            wallet_handle,
-            &format!("master_secret::{}", master_secret_name),
-            &master_secret.to_dec()?
-        )?;
+        self.wallet_service.set(wallet_handle,
+                                &format!("master_secret::{}", master_secret_name),
+                                &master_secret.to_dec()?)?;
         Ok(())
     }
 
@@ -226,27 +229,27 @@ impl ProverCommandExecutor {
         let claim_offer = ClaimOffer::from_json(&claim_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
 
-        let (claim_request,
-            primary_claim_init_data,
-            revocation_claim_init_data) = self.anoncreds_service.prover.
-            create_claim_request(claim_def.public_key,
-                                 claim_def.public_key_revocation,
-                                 master_secret, prover_did)?;
+        let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
+            self.anoncreds_service.prover.create_claim_request(claim_def.public_key,
+                                                               claim_def.public_key_revocation,
+                                                               master_secret, prover_did)?;
+
+        self.wallet_service.set(wallet_handle,
+                                &format!("claim_definition::{}", &claim_offer.claim_def_seq_no),
+                                &claim_def_json)?;
 
         let primary_claim_init_data_json = ClaimInitData::to_json(&primary_claim_init_data)
             .map_err(|err| CommonError::InvalidState(format!("Invalid primary_claim_init_data: {}", err.to_string())))?;
-        self.wallet_service.set(
-            wallet_handle,
-            &format!("primary_claim_init_data::{}", &claim_offer.claim_def_seq_no),
-            &primary_claim_init_data_json)?;
+        self.wallet_service.set(wallet_handle,
+                                &format!("primary_claim_init_data::{}", &claim_offer.claim_def_seq_no),
+                                &primary_claim_init_data_json)?;
 
         if let Some(data) = revocation_claim_init_data {
             let revocation_claim_init_data_json = RevocationClaimInitData::to_json(&data)
                 .map_err(|err| CommonError::InvalidState(format!("Invalid data: {}", err.to_string())))?;
-            self.wallet_service.set(
-                wallet_handle,
-                &format!("revocation_claim_init_data::{}", &claim_offer.claim_def_seq_no),
-                &revocation_claim_init_data_json)?;
+            self.wallet_service.set(wallet_handle,
+                                    &format!("revocation_claim_init_data::{}", &claim_offer.claim_def_seq_no),
+                                    &revocation_claim_init_data_json)?;
         }
 
         let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.claim_def_seq_no);
@@ -267,52 +270,51 @@ impl ProverCommandExecutor {
         let claim_json = ClaimJson::from_json(&claims_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_json: {}", err.to_string())))?;
 
-        let mut revocation_registry = None;
-        let mut revocation_claim_init_data = None;
+        let (revocation_registry, revocation_claim_init_data) = match claim_json.revoc_reg_seq_no {
+            Some(seq_no) => {
+                let revocation_registry_uuid = self.wallet_service.get(wallet_handle,
+                                                                       &format!("seq_no::{}", &seq_no))?;
+                let revocation_registry_json = self.wallet_service.get(wallet_handle,
+                                                                       &format!("revocation_registry::{}", &revocation_registry_uuid))?;
+                let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?;
 
-        if let Some(x) = claim_json.revoc_reg_seq_no {
-            let revocation_registry_uuid = self.wallet_service.get(
-                wallet_handle,
-                &format!("seq_no::{}", &x))?;
-            let revocation_registry_json = self.wallet_service.get(
-                wallet_handle,
-                &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-            revocation_registry = Some(RevocationRegistry::from_json(&revocation_registry_json)
-                .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?);
+                let revocation_claim_init_data_json = self.wallet_service.get(wallet_handle,
+                                                                              &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
+                let revocation_claim_init_data = RevocationClaimInitData::from_json(&revocation_claim_init_data_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_claim_init_data_json: {}", err.to_string())))?;
 
-            let revocation_claim_init_data_json = self.wallet_service.get(
-                wallet_handle,
-                &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
-            revocation_claim_init_data = Some(RevocationClaimInitData::from_json(&revocation_claim_init_data_json)
-                .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_claim_init_data_json: {}", err.to_string())))?);
-        }
+                (Some(revocation_registry), Some(revocation_claim_init_data))
+            }
+            _ => (None, None)
+        };
 
-        let primary_claim_init_data_json = self.wallet_service.get(
-            wallet_handle,
-            &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
+
+        let primary_claim_init_data_json = self.wallet_service.get(wallet_handle,
+                                                                   &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
         let primary_claim_init_data = ClaimInitData::from_json(&primary_claim_init_data_json)
             .map_err(|err| CommonError::InvalidState(format!("Invalid primary_claim_init_data_json: {}", err.to_string())))?;
 
-        let claim_def_uuid = self.wallet_service.get(
-            wallet_handle,
-            &format!("seq_no::{}", &claim_json.claim_def_seq_no))?;
-        let claim_def_json = self.wallet_service.get(
-            wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle,
+                                                     &format!("claim_definition::{}", &claim_json.claim_def_seq_no))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_json: {}", err.to_string())))?;
 
         let claim_json = RefCell::new(claim_json);
 
-        self.anoncreds_service.prover.process_claim(
-            &claim_json, primary_claim_init_data, revocation_claim_init_data,
-            claim_def.public_key_revocation, revocation_registry)?;
+        self.anoncreds_service.prover.process_claim(&claim_json,
+                                                    primary_claim_init_data,
+                                                    revocation_claim_init_data,
+                                                    claim_def.public_key_revocation,
+                                                    revocation_registry)?;
 
         let claim = ClaimJson::to_json(&claim_json.borrow())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
 
         let uuid = Uuid::new_v4().to_string();
-
-        self.wallet_service.set(wallet_handle, &format!("claim::{}", &claim_json.borrow().claim_def_seq_no), &claim)?; //TODO uuid ??? or claim_def_seq_no
+        self.wallet_service.set(wallet_handle,
+                                &format!("claim::{}", &uuid),
+                                &claim)?; //TODO uuid ??? or claim_def_seq_no
 
         Ok(())
     }
@@ -437,7 +439,7 @@ impl ProverCommandExecutor {
         let mut claims: HashMap<String, ClaimJson> = HashMap::new();
 
         for claim_uuid in claim_defs.keys() {
-            let claim_json = self.wallet_service.get(wallet_handle, &format!("claim::{}", &claim_uuid))?;
+            let claim_json = self.wallet_service.get(wallet_handle, &claim_uuid)?;
             let claim = ClaimJson::from_json(&claim_json)
                 .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
             claims.insert(claim_uuid.clone(), claim);
@@ -454,13 +456,13 @@ impl ProverCommandExecutor {
         }
 
         let proof_claims = self.anoncreds_service.prover.create_proof(claims,
-                                                                             &proof_req,
-                                                                             &schemas,
-                                                                             &claim_defs,
-                                                                             &revoc_regs,
-                                                                             &requested_claims,
-                                                                             &ms,
-                                                                             &tails)?;
+                                                                      &proof_req,
+                                                                      &schemas,
+                                                                      &claim_defs,
+                                                                      &revoc_regs,
+                                                                      &requested_claims,
+                                                                      &ms,
+                                                                      &tails)?;
 
         let proof_claims_json = ProofJson::to_json(&proof_claims)
             .map_err(|err| CommonError::InvalidState(format!("Invalid proof_claims: {}", err.to_string())))?;
