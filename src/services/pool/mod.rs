@@ -789,7 +789,7 @@ mod tests {
         use std::thread;
         use super::*;
 
-        pub static POLL_TIMEOUT: u64 = 1000; /* in ms */
+        pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
