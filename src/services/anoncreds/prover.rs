@@ -166,20 +166,20 @@ impl Prover {
         }
 
         let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.borrow().g_i)?, &claim.borrow().witness.sigma_i)?;
-        let pair_gg = Pair::pair(&pkr.g, &pkr.g)?;
+        let pair_gg = Pair::pair(&pkr.g, &pkr.g_dash)?;
         if pair_gg_calc != pair_gg {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
 
         let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
 
-        let pair_h1 = Pair::pair(&claim.borrow().sigma, &pkr.y.add(&pkr.h.mul(&claim.borrow().c)?)?)?;
+        let pair_h1 = Pair::pair(&claim.borrow().sigma, &pkr.y.add(&pkr.h_cap.mul(&claim.borrow().c)?)?)?;
         let pair_h2 = Pair::pair(
             &pkr.h0
                 .add(&pkr.h1.mul(&m2)?)?
                 .add(&pkr.h2.mul(&claim.borrow().vr_prime_prime)?)?
                 .add(&claim.borrow().g_i)?,
-            &pkr.h
+            &pkr.h_cap
         )?;
 
         if pair_h1 != pair_h2 {
@@ -353,7 +353,7 @@ impl Prover {
                                                                    .ok_or(CryptoError::InvalidStructure("Field public_key_revocation not found".to_string()))?,
                                                                tails)?;
 
-                c_list.append_vec(&proof.as_c_list()?)?;
+                c_list.extend_from_slice(&proof.as_c_list()?);
                 tau_list.extend_from_slice(&proof.as_tau_list()?);
                 m2_tilde = Some(group_element_to_bignum(&proof.tau_list_params.m2)?);
                 non_revoc_init_proof = Some(proof);
