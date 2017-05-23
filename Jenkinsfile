@@ -52,11 +52,12 @@ try {
 }
 
 def testUbuntu() {
+    def poolEnv
+    def network_name = "pool_network"
     try {
         echo 'Ubuntu Test: Checkout csm'
         checkout scm
 
-        def network_name = "pool_network"
         echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
         try {
             sh "docker network rm ${network_name}"
@@ -67,7 +68,7 @@ def testUbuntu() {
         }
 
         echo 'Ubuntu Test: Build docker image for nodes pool'
-        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
         echo 'Ubuntu Test: Run nodes pool'
         poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
@@ -89,6 +90,19 @@ def testUbuntu() {
     }
     finally {
         echo 'Ubuntu Test: Cleanup'
+        try {
+            if (poolEnv) {
+                echo 'Ubuntu Test: stop pool'
+                poolEnv.stop
+            }
+        } catch (ignore) {
+        }
+        try {
+            echo "Ubuntu Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (ignore) {
+            echo "Ubuntu Test: ${network_name} doesn't exists"
+        }
         step([$class: 'WsCleanup'])
     }
 }
