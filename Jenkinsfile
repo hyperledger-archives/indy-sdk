@@ -59,13 +59,7 @@ def testUbuntu() {
         checkout scm
 
         echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
-        try {
-            sh "docker network rm ${network_name}"
-        } catch (err) {
-            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
-        } finally {
-            sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
-        }
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
         echo 'Ubuntu Test: Build docker image for nodes pool'
         def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
@@ -81,7 +75,7 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'RUST_LOG=trace RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test-xunit'
+                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test-xunit'
             }
             finally {
                 junit 'test-results.xml'
@@ -90,7 +84,10 @@ def testUbuntu() {
     }
     finally {
         echo 'Ubuntu Test: Cleanup'
-        sh "docker network inspect ${network_name}"
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (ignore) {
+        }
         try {
             if (poolInst) {
                 echo 'Ubuntu Test: stop pool'
