@@ -52,7 +52,7 @@ try {
 }
 
 def testUbuntu() {
-    def poolEnv
+    def poolInst
     def network_name = "pool_network"
     try {
         echo 'Ubuntu Test: Checkout csm'
@@ -68,9 +68,9 @@ def testUbuntu() {
         }
 
         echo 'Ubuntu Test: Build docker image for nodes pool'
-        poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
         echo 'Ubuntu Test: Run nodes pool'
-        poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
         echo 'Ubuntu Test: Build docker image'
         def testEnv = dockerHelpers.build(name)
@@ -92,9 +92,9 @@ def testUbuntu() {
         echo 'Ubuntu Test: Cleanup'
         sh "docker network inspect ${network_name}"
         try {
-            if (poolEnv) {
+            if (poolInst) {
                 echo 'Ubuntu Test: stop pool'
-                poolEnv.stop()
+                poolInst.stop()
             }
         } catch (err) {
             echo "Ubuntu Tests: error while stop pool ${err}"
