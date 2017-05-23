@@ -12,7 +12,7 @@ try {
 
     // 1. TEST
     stage('Test') {
-        parallel 'ubuntu-test':{
+        parallel 'ubuntu-test': {
             node('ubuntu') {
                 stage('Ubuntu Test') {
                     testUbuntu()
@@ -33,7 +33,7 @@ try {
         }
     }
 
-} catch(e) {
+} catch (e) {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: publishBranch])
@@ -75,7 +75,7 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
             }
             finally {
                 junit 'test-results.xml'
