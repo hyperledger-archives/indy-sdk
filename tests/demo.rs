@@ -491,7 +491,7 @@ fn ledger_demo_works() {
     let nym_txn_req = Request {
         identifier: their_verkey.clone(),
         operation: Operation {
-            dest: my_verkey.clone(),
+            dest: my_did.clone(),
             type_: "1".to_string(),
         },
         req_id: nym_req_id,
@@ -522,7 +522,7 @@ fn ledger_demo_works() {
         identifier: my_verkey.clone(),
         operation: Operation {
             type_: "105".to_string(),
-            dest: my_verkey.clone(),
+            dest: my_did.clone(),
         },
     };
     let request = serde_json::to_string(&get_nym_txn).unwrap();
@@ -538,7 +538,7 @@ fn ledger_demo_works() {
     let get_nym_resp_data: ReplyResultData = serde_json::from_str(&get_nym_resp.result.data.as_ref().unwrap()).unwrap();
     println!("get_nym_resp {:?}\n{:?}\n{:?}", resp, get_nym_resp, get_nym_resp_data);
 
-    assert_eq!(get_nym_resp_data.dest, my_verkey);
+    assert_eq!(get_nym_resp_data.dest, my_did);
 
     TestUtils::cleanup_storage();
 

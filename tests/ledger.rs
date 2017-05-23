@@ -74,7 +74,7 @@ fn sovrin_nym_requests_works() {
     assert!(res.is_ok());
     let nym_response = res.unwrap();
 
-    let res = LedgerUtils::build_get_nym_request(&their_verkey.clone(), &my_verkey.clone());
+    let res = LedgerUtils::build_get_nym_request(&my_verkey.clone(), &my_did.clone());
     assert!(res.is_ok());
     let get_nym_request = res.unwrap();
 
@@ -120,7 +120,7 @@ fn sovrin_attrib_requests_works() {
     assert!(res.is_ok());
     let (their_did, their_verkey, their_pk) = res.unwrap();
 
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_verkey.clone(), None, None, None, None);
+    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_did.clone(), None, None, None, None);
     assert!(res.is_ok());
     let nym_request = res.unwrap();
 
@@ -133,7 +133,7 @@ fn sovrin_attrib_requests_works() {
     assert!(res.is_ok());
     let nym_response = res.unwrap();
 
-    let res = LedgerUtils::build_attrib_request(&their_verkey.clone(), &my_verkey.clone(), None, Some("{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}"), None);
+    let res = LedgerUtils::build_attrib_request(&their_verkey.clone(), &my_did.clone(), None, Some("{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}"), None);
     assert!(res.is_ok());
     let attrib_request = res.unwrap();
 
@@ -146,7 +146,7 @@ fn sovrin_attrib_requests_works() {
     assert!(res.is_ok());
     let attrib_response = res.unwrap();
 
-    let res = LedgerUtils::build_get_attrib_request(&their_verkey.clone(), &my_verkey.clone(), "endpoint");
+    let res = LedgerUtils::build_get_attrib_request(&their_verkey.clone(), &my_did.clone(), "endpoint");
     assert!(res.is_ok());
     let get_attrib_request = res.unwrap();
 
@@ -192,7 +192,7 @@ fn sovrin_schema_requests_works() {
     assert!(res.is_ok());
     let (their_did, their_verkey, their_pk) = res.unwrap();
 
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_verkey.clone(), None, None, None, None);
+    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_did.clone(), None, None, None, None);
     assert!(res.is_ok());
     let nym_request = res.unwrap();
 
@@ -268,7 +268,7 @@ fn sovrin_node_request_works() {
     assert!(res.is_ok());
     let (their_did, their_verkey, their_pk) = res.unwrap();
 
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_verkey.clone(), None, None, None, None);
+    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_did.clone(), None, None, None, None);
     assert!(res.is_ok());
     let nym_request = res.unwrap();
 
@@ -288,7 +288,7 @@ fn sovrin_node_request_works() {
                       \"client_port\":9709, \
                       \"alias\":Node5, \
                       \"services\": [\"VALIDATOR\"]}";
-    let res = LedgerUtils::build_node_request(&their_verkey.clone(), &my_verkey.clone(), node_data);
+    let res = LedgerUtils::build_node_request(&their_verkey.clone(), &my_did.clone(), node_data);
     assert!(res.is_ok());
     let node_request = res.unwrap();
 
