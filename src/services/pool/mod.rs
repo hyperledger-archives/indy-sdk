@@ -748,8 +748,6 @@ mod tests {
 
     #[test]
     fn catchup_handler_start_catchup_works() {
-        use utils::logger::LoggerUtils;
-        LoggerUtils::init();
         let mut ch: CatchupHandler = Default::default();
         let (gt, handle) = nodes_emulator::start();
         ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
