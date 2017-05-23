@@ -748,6 +748,8 @@ mod tests {
 
     #[test]
     fn catchup_handler_start_catchup_works() {
+        use utils::logger::LoggerUtils;
+        LoggerUtils::init();
         let mut ch: CatchupHandler = Default::default();
         let (gt, handle) = nodes_emulator::start();
         ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
@@ -816,10 +818,14 @@ mod tests {
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {
                 let mut received_msgs: Vec<String> = Vec::new();
-                if s.poll(zmq::POLLIN, 100).expect("poll") == 1 {
+                let poll_res = s.poll(zmq::POLLIN, 100).expect("poll");
+                if poll_res == 1 {
                     let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
+                    trace!("Node emulator poll recv {:?}", v);
                     s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
                     received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
+                } else {
+                    warn!("Node emulator poll return {}", poll_res)
                 }
                 received_msgs
             });

@@ -81,7 +81,7 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                sh 'RUST_LOG=trace RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test-xunit'
             }
             finally {
                 junit 'test-results.xml'
