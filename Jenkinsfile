@@ -96,7 +96,7 @@ def testUbuntu() {
                 echo 'Ubuntu Test: stop pool'
                 poolEnv.stop()
             }
-            sh 'docker stop 321e1c5c2e8847058edb10a966b7ae25505a5cd73d54482039d7fda43a494d48'
+            sh 'docker stop 6dc9266ec656f676a960e18b503efd62b0f674a037b89a19ef16c22255c7156d'
         } catch (err) {
             echo "Ubuntu Tests: error while stop pool ${err}"
         }
