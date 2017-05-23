@@ -24,8 +24,9 @@ extern crate rand;
 
 use self::rand::os::{OsRng};
 use self::rand::Rng;
-use self::serde::ser::{Serialize, Serializer};
-use self::serde::de::{Deserialize, Deserializer};
+use self::serde::ser::{Serialize, Serializer, Error as SError};
+use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
+use std::fmt;
 
 fn random_mod_order() -> Result<BIG, CryptoError> {
     let mut seed = vec![0; 32];
@@ -38,21 +39,6 @@ fn random_mod_order() -> Result<BIG, CryptoError> {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct PointG1 {
     point: ECP
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub struct PointG2 {
-    point: ECP2
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct GroupOrderElement {
-    bn: BIG
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Pair {
-    pair: FP12
 }
 
 impl PointG1 {
@@ -110,6 +96,10 @@ impl PointG1 {
         unimplemented!();
     }
 
+    pub fn from_string(str: &str) -> Result<PointG1, CryptoError> {
+        unimplemented!();
+    }
+
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         unimplemented!();
     }
@@ -117,6 +107,45 @@ impl PointG1 {
     pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
         unimplemented!();
     }
+}
+
+impl BytesView for PointG1 {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl Serialize for PointG1 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        serializer.serialize_newtype_struct("PointG1", &self.to_string().map_err(SError::custom)?)
+    }
+}
+
+impl<'a> Deserialize<'a> for PointG1 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        struct PointG1Visitor;
+
+        impl<'a> Visitor<'a> for PointG1Visitor {
+            type Value = PointG1;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("expected PointG1")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<PointG1, E>
+                where E: DError
+            {
+                Ok(PointG1::from_string(value).map_err(DError::custom)?)
+            }
+        }
+
+        deserializer.deserialize_str(PointG1Visitor)
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct PointG2 {
+    point: ECP2
 }
 
 impl PointG2 {
@@ -129,18 +158,34 @@ impl PointG2 {
     }
 
     pub fn add(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
-        unimplemented!();
+        let mut r = self.point;
+        ECP2::add(&mut r, &q.point);
+        Ok(PointG2 {
+            point: r
+        })
     }
 
     pub fn sub(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
-        unimplemented!();
+        let mut r = self.point;
+        ECP2::sub(&mut r, &q.point);
+        Ok(PointG2 {
+            point: r
+        })
     }
 
     pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG2, CryptoError> {
-        unimplemented!();
+        let mut r = self.point;
+        ECP2::mul(&mut r, &e.bn);
+        Ok(PointG2 {
+            point: r
+        })
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
+        unimplemented!();
+    }
+
+    pub fn from_string(str: &str) -> Result<PointG2, CryptoError> {
         unimplemented!();
     }
 
@@ -151,6 +196,39 @@ impl PointG2 {
     pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
         unimplemented!();
     }
+}
+
+impl Serialize for PointG2 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        serializer.serialize_newtype_struct("PointG2", &self.to_string().map_err(SError::custom)?)
+    }
+}
+
+impl<'a> Deserialize<'a> for PointG2 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        struct PointG2Visitor;
+
+        impl<'a> Visitor<'a> for PointG2Visitor {
+            type Value = PointG2;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("expected PointG2")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<PointG2, E>
+                where E: DError
+            {
+                Ok(PointG2::from_string(value).map_err(DError::custom)?)
+            }
+        }
+
+        deserializer.deserialize_str(PointG2Visitor)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct GroupOrderElement {
+    bn: BIG
 }
 
 impl GroupOrderElement {
@@ -218,6 +296,10 @@ impl GroupOrderElement {
         unimplemented!();
     }
 
+    pub fn from_string(str: &str) -> Result<GroupOrderElement, CryptoError> {
+        unimplemented!();
+    }
+
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         let mut vec: [u8; 32] = [0; 32];
         BIG::toBytes(&mut vec, &self.bn);
@@ -231,6 +313,45 @@ impl GroupOrderElement {
             }
         )
     }
+}
+
+impl BytesView for GroupOrderElement {
+    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl Serialize for GroupOrderElement {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        serializer.serialize_newtype_struct("GroupOrderElement", &self.to_string().map_err(SError::custom)?)
+    }
+}
+
+impl<'a> Deserialize<'a> for GroupOrderElement {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
+        struct GroupOrderElementVisitor;
+
+        impl<'a> Visitor<'a> for GroupOrderElementVisitor {
+            type Value = GroupOrderElement;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("expected GroupOrderElement")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<GroupOrderElement, E>
+                where E: DError
+            {
+                Ok(GroupOrderElement::from_string(value).map_err(DError::custom)?)
+            }
+        }
+
+        deserializer.deserialize_str(GroupOrderElementVisitor)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Pair {
+    pair: FP12
 }
 
 impl Pair {
@@ -266,6 +387,10 @@ impl Pair {
         unimplemented!();
     }
 
+    pub fn from_string(str: &str) -> Result<Pair, CryptoError> {
+        unimplemented!();
+    }
+
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         unimplemented!();
     }
@@ -281,62 +406,97 @@ impl BytesView for Pair {
     }
 }
 
-impl BytesView for PointG1 {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        Ok(self.to_bytes()?)
-    }
-}
-
-impl BytesView for GroupOrderElement {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        Ok(self.to_bytes()?)
-    }
-}
-
-impl Serialize for GroupOrderElement {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        unimplemented!();
-    }
-}
-
-impl<'a> Deserialize<'a> for GroupOrderElement {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
-        unimplemented!();
-    }
-}
-
 impl Serialize for Pair {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        unimplemented!();
+        serializer.serialize_newtype_struct("Pair", &self.to_string().map_err(SError::custom)?)
     }
 }
 
 impl<'a> Deserialize<'a> for Pair {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
-        unimplemented!();
+        struct PairVisitor;
+
+        impl<'a> Visitor<'a> for PairVisitor {
+            type Value = Pair;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("expected Pair")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Pair, E>
+                where E: DError
+            {
+                Ok(Pair::from_string(value).map_err(DError::custom)?)
+            }
+        }
+
+        deserializer.deserialize_str(PairVisitor)
     }
 }
 
-impl Serialize for PointG1 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        unimplemented!();
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utils::logger::LoggerUtils;
 
-impl<'a> Deserialize<'a> for PointG1 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
-        unimplemented!();
-    }
-}
+    extern crate serde_json;
 
-impl Serialize for PointG2 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        unimplemented!();
+    #[derive(Serialize, Deserialize)]
+    struct TestGroupOrderElementStructure {
+        field: GroupOrderElement
     }
-}
 
-impl<'a> Deserialize<'a> for PointG2 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
-        unimplemented!();
+    #[derive(Serialize, Deserialize)]
+    struct TestPointG1Structure {
+        field: PointG1
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct TestPointG2Structure {
+        field: PointG2
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct TestPairStructure {
+        field: Pair
+    }
+
+    #[test]
+    fn serialize_works_for_group_order_element() {
+
+    }
+
+    #[test]
+    fn deserialize_works_for_group_order_element() {
+
+    }
+
+    #[test]
+    fn serialize_works_for_point_g1() {
+
+    }
+
+    #[test]
+    fn deserialize_works_for_point_g1() {
+
+    }
+
+    #[test]
+    fn serialize_works_for_point_g2() {
+
+    }
+
+    #[test]
+    fn deserialize_works_for_point_g2() {
+
+    }
+    #[test]
+    fn serialize_works_for_pair() {
+
+    }
+
+    #[test]
+    fn deserialize_works_for_pair() {
+
     }
 }
