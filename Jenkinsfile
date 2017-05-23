@@ -100,7 +100,10 @@ def testUbuntu() {
                     script: "docker ps | grep sovrin_pool | cut -d' ' -f 1",
                     returnStdout: true
             ).trim()
-            sh "docker stop ${RUN_POOL}"
+            try {
+                sh "docker stop ${RUN_POOL}"
+            } catch (ignore) {
+            }
         } catch (err) {
             echo "Ubuntu Tests: error while stop pool ${err}"
         }
