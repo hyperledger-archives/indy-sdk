@@ -61,8 +61,8 @@ def testUbuntu() {
         echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
         try {
             sh "docker network rm ${network_name}"
-        } catch (ignore) {
-            echo "Ubuntu Test: ${network_name} doesn't exists"
+        } catch (err) {
+            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
         } finally {
             sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
         }
@@ -90,18 +90,21 @@ def testUbuntu() {
     }
     finally {
         echo 'Ubuntu Test: Cleanup'
+        sh "docker network inspect ${network_name}"
         try {
             if (poolEnv) {
                 echo 'Ubuntu Test: stop pool'
                 poolEnv.stop
             }
-        } catch (ignore) {
+        } catch (err) {
+            echo "Ubuntu Tests: error while stop pool ${err}"
         }
+        sh "docker network inspect ${network_name}"
         try {
             echo "Ubuntu Test: remove pool network ${network_name}"
             sh "docker network rm ${network_name}"
-        } catch (ignore) {
-            echo "Ubuntu Test: ${network_name} doesn't exists"
+        } catch (err) {
+            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
         }
         step([$class: 'WsCleanup'])
     }
