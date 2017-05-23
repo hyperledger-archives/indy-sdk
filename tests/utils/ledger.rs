@@ -133,33 +133,19 @@ impl LedgerUtils {
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
 
-        let mut verkey_string = CString::new("").unwrap();
-        let mut xref_string = CString::new("").unwrap();
-        let mut data_string = CString::new("").unwrap();
-        let mut role_string = CString::new("").unwrap();
-
-        if let Some(verkey) = verkey {
-            verkey_string = CString::new(verkey).unwrap()
-        }
-        if let Some(xref) = xref {
-            xref_string = CString::new(xref).unwrap()
-        }
-        if let Some(data) = data {
-            data_string = CString::new(data).unwrap()
-        }
-        if let Some(role) = role {
-            role_string = CString::new(role).unwrap()
-        }
-
+        let verkey = verkey.map(|s| CString::new(s).unwrap());
+        let xref = xref.map(|s| CString::new(s).unwrap());
+        let data = data.map(|s| CString::new(s).unwrap());
+        let role = role.map(|s| CString::new(s).unwrap());
 
         let err =
             sovrin_build_nym_request(command_handle,
                                      submitter_did.as_ptr(),
                                      target_did.as_ptr(),
-                                     if verkey.is_some() { verkey_string.as_ptr() } else { null() },
-                                     if xref.is_some() { xref_string.as_ptr() } else { null() },
-                                     if data.is_some() { data_string.as_ptr() } else { null() },
-                                     if role.is_some() { role_string.as_ptr() } else { null() },
+                                     if verkey.is_some() { verkey.unwrap().as_ptr() } else { null() },
+                                     if xref.is_some() { xref.unwrap().as_ptr() } else { null() },
+                                     if data.is_some() { data.unwrap().as_ptr() } else { null() },
+                                     if role.is_some() { role.unwrap().as_ptr() } else { null() },
                                      cb);
 
         if err != ErrorCode::Success {
@@ -187,27 +173,18 @@ impl LedgerUtils {
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
 
-        let mut hash_string = CString::new("").unwrap();
-        let mut raw_string = CString::new("").unwrap();
-        let mut enc_string = CString::new("").unwrap();
+        let hash = hash.map(|s| CString::new(s).unwrap());
+        let raw = raw.map(|s| CString::new(s).unwrap());
+        let enc = enc.map(|s| CString::new(s).unwrap());
 
-        if let Some(hash) = hash {
-            hash_string = CString::new(hash).unwrap()
-        }
-        if let Some(raw) = raw {
-            raw_string = CString::new(raw).unwrap()
-        }
-        if let Some(enc) = hash {
-            enc_string = CString::new(enc).unwrap()
-        }
 
         let err =
             sovrin_build_attrib_request(command_handle,
                                         submitter_did.as_ptr(),
                                         target_did.as_ptr(),
-                                        if hash.is_some() { hash_string.as_ptr() } else { null() },
-                                        if raw.is_some() { raw_string.as_ptr() } else { null() },
-                                        if enc.is_some() { enc_string.as_ptr() } else { null() },
+                                        if hash.is_some() { hash.unwrap().as_ptr() } else { null() },
+                                        if raw.is_some() { raw.unwrap().as_ptr() } else { null() },
+                                        if enc.is_some() { enc.unwrap().as_ptr() } else { null() },
                                         cb);
 
         if err != ErrorCode::Success {

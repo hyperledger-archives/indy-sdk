@@ -220,15 +220,13 @@ impl<'a> JsonDecodable<'a> for SchemaOperationData {}
 pub struct GetSchemaOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
     pub data: GetSchemaOperationData
 }
 
 impl GetSchemaOperation {
-    pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
+    pub fn new(data: GetSchemaOperationData) -> GetSchemaOperation {
         GetSchemaOperation {
             _type: GET_SCHEMA.to_string(),
-            dest: dest,
             data: data
         }
     }
@@ -313,19 +311,19 @@ impl<'a> JsonDecodable<'a> for ClaimDefOperationData {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetClaimDefOperation {
-    #[serde(rename = "ref")]
-    pub _ref: String,
     #[serde(rename = "type")]
     pub _type: String,
+    #[serde(rename = "ref")]
+    pub _ref: String,
     pub signature_type: String//TODO In Python there is Origin field, {ORIGIN: id.schemaKey.issuerId}, but there is not in table. We can get it field form GET_SCHEMA response
 }
 
 impl GetClaimDefOperation {
     pub fn new(_ref: String, signature_type: String) -> GetClaimDefOperation {
         GetClaimDefOperation {
+            _type: GET_CLAIM_DEF.to_string(),
             _ref: _ref,
-            signature_type: signature_type,
-            _type: GET_CLAIM_DEF.to_string()
+            signature_type: signature_type
         }
     }
 }
@@ -354,7 +352,6 @@ impl JsonEncodable for NodeOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct NodeOperationData {
-    #[serde(rename = "type")]
     pub node_ip: String,
     pub node_port: i32,
     pub client_ip: String,

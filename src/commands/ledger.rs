@@ -232,7 +232,7 @@ impl LedgerCommandExecutor {
                              target_did: &str,
                              cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_get_ddo_request(submitter_did, target_did)
-            .map_err(|err| SovrinError::LedgerError(err)))
+            .map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_nym_request(&self,
@@ -249,7 +249,7 @@ impl LedgerCommandExecutor {
                                                  xref,
                                                  data,
                                                  role
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_attrib_request(&self,
@@ -264,7 +264,7 @@ impl LedgerCommandExecutor {
                                                     hash,
                                                     raw,
                                                     enc
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_get_attrib_request(&self,
@@ -275,7 +275,7 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.build_get_attrib_request(submitter_did,
                                                         target_did,
                                                         data
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_get_nym_request(&self,
@@ -284,7 +284,7 @@ impl LedgerCommandExecutor {
                              cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_get_nym_request(submitter_did,
                                                      target_did
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_schema_request(&self,
@@ -293,7 +293,7 @@ impl LedgerCommandExecutor {
                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_schema_request(submitter_did,
                                                     data
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_get_schema_request(&self,
@@ -302,7 +302,7 @@ impl LedgerCommandExecutor {
                                 cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_get_schema_request(submitter_did,
                                                         data
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_claim_def_request(&self,
@@ -315,7 +315,7 @@ impl LedgerCommandExecutor {
                                                        xref,
                                                        signature_type,
                                                        data
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_get_claim_def_request(&self,
@@ -326,7 +326,7 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.build_get_claim_def_request(submitter_did,
                                                            xref,
                                                            signature_type
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_node_key_request(&self,
@@ -337,6 +337,6 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.build_node_request(submitter_did,
                                                   target_did,
                                                   data
-        ).map_err(|err| SovrinError::LedgerError(err)))
+        ).map_err(|err| SovrinError::CommonError(err)))
     }
 }
