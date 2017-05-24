@@ -12,7 +12,7 @@ try {
 
     // 1. TEST
     stage('Test') {
-        parallel 'ubuntu-test':{
+        parallel 'ubuntu-test': {
             node('ubuntu') {
                 stage('Ubuntu Test') {
                     testUbuntu()
@@ -33,7 +33,7 @@ try {
         }
     }
 
-} catch(e) {
+} catch (e) {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: publishBranch])
@@ -52,28 +52,61 @@ try {
 }
 
 def testUbuntu() {
+    def poolInst
+    def network_name = "pool_network"
     try {
         echo 'Ubuntu Test: Checkout csm'
         checkout scm
 
+        echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+
+        echo 'Ubuntu Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        echo 'Ubuntu Test: Run nodes pool'
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+
         echo 'Ubuntu Test: Build docker image'
         def testEnv = dockerHelpers.build(name)
 
-        testEnv.inside {
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
             echo 'Ubuntu Test: Test'
 
             sh 'cargo update'
 
             try {
+                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                /* TODO FIXME restore after xunit will be fixed
                 sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                 */
             }
             finally {
+                /* TODO FIXME restore after xunit will be fixed
                 junit 'test-results.xml'
+                */
             }
         }
     }
     finally {
         echo 'Ubuntu Test: Cleanup'
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (ignore) {
+        }
+        try {
+            if (poolInst) {
+                echo 'Ubuntu Test: stop pool'
+                poolInst.stop()
+            }
+        } catch (err) {
+            echo "Ubuntu Tests: error while stop pool ${err}"
+        }
+        try {
+            echo "Ubuntu Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (err) {
+            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
+        }
         step([$class: 'WsCleanup'])
     }
 }

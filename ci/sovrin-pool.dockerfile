@@ -81,10 +81,10 @@ RUN init_sovrin_keys --name Node2 --seed 111111111111111111111111111Node2 --forc
 RUN init_sovrin_keys --name Node3 --seed 111111111111111111111111111Node3 --force
 RUN init_sovrin_keys --name Node4 --seed 111111111111111111111111111Node4 --force
 
-RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 1
-RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 2
-RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 3
-RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 4
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 1 --ips="10.0.0.2,10.0.0.2,10.0.0.2,10.0.0.2"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 2 --ips="10.0.0.2,10.0.0.2,10.0.0.2,10.0.0.2"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 3 --ips="10.0.0.2,10.0.0.2,10.0.0.2,10.0.0.2"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 4 --ips="10.0.0.2,10.0.0.2,10.0.0.2,10.0.0.2"
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708 9709
 
