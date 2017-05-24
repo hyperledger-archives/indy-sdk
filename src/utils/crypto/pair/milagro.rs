@@ -196,7 +196,7 @@ impl PointG2 {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        unimplemented!();
+        Ok(ECP2::to_hex(&self.point))
     }
 
     pub fn from_string(str: &str) -> Result<PointG2, CryptoError> {
@@ -522,7 +522,8 @@ mod tests {
 
     #[test]
     fn serialize_works_for_point_g2() {
-
+        let point = PointG2::new().unwrap();
+        println!("pstr: {}", point.to_string().unwrap());
     }
 
     #[test]
