@@ -75,9 +75,15 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'RUST_TEST_THREADS=1 cargo test'
+                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                /* TODO FIXME restore after xunit will be fixed
+                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                 */
             }
             finally {
+                /* TODO FIXME restore after xunit will be fixed
+                junit 'test-results.xml'
+                */
             }
         }
     }
