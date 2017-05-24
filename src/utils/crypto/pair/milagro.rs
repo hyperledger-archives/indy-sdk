@@ -598,4 +598,10 @@ mod tests {
 
         assert_eq!(pair, deserialized);
     }
+
+    #[test] //TODO: remove it
+    fn stack_smashing_detected() {
+        let point = PointG2::new().unwrap();
+        println!("pstr: {}", point.to_string().unwrap());
+    }
 }
