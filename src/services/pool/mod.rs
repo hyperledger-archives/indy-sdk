@@ -155,7 +155,8 @@ impl PoolWorker {
         };
         let ctx: zmq::Context = zmq::Context::new();
         for gen_txn in &merkle_tree {
-            let mut rn: RemoteNode = RemoteNode::new(gen_txn.as_str());
+            let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)?;
+            let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
             rn.connect(&ctx);
             rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
             self.handler.nodes_mut().push(rn);
@@ -357,9 +358,16 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new(txn: &str) -> RemoteNode {
-        let gen_tx = GenTransaction::from_json(txn).expect("RemoteNode parsing");
-        RemoteNode::from(gen_tx)
+    fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
+        let public_key = txn.dest.as_str().from_base58()
+            .map_err(|e| { PoolError::InvalidData("Invalid field dest in genesis transaction".to_string()) })?;
+        Ok(RemoteNode {
+            verify_key: ED25519::pk_to_curve25519(&public_key),
+            public_key: public_key,
+            zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
+            zsock: None,
+            name: txn.data.alias.clone(),
+        })
     }
 
     fn connect(&mut self, ctx: &zmq::Context) {
@@ -398,19 +406,6 @@ impl RemoteNode {
 
     fn send_msg(&self, msg: &Message) {
         self.send_str(msg.to_json().unwrap().as_str());
-    }
-}
-
-impl From<GenTransaction> for RemoteNode {
-    fn from(tx: GenTransaction) -> RemoteNode {
-        let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
-        RemoteNode {
-            verify_key: ED25519::pk_to_curve25519(&public_key),
-            public_key: public_key,
-            zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
-            zsock: None,
-            name: tx.data.alias,
-        }
     }
 }
 
@@ -751,7 +746,7 @@ mod tests {
         let mut ch: CatchupHandler = Default::default();
         let (gt, handle) = nodes_emulator::start();
         ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
-        let mut rn: RemoteNode = RemoteNode::from(gt);
+        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new());
         ch.nodes.push(rn);
         ch.new_mt_size = 2;
@@ -773,7 +768,7 @@ mod tests {
     #[test]
     fn remote_node_connect_works_and_can_ping_pong() {
         let (gt, handle) = nodes_emulator::start();
-        let mut rn: RemoteNode = RemoteNode::from(gt);
+        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         let ctx = zmq::Context::new();
         rn.connect(&ctx);
         rn.zsock.as_ref().expect("sock").send_str("pi", zmq::DONTWAIT).expect("send");
