@@ -325,10 +325,10 @@ impl Pool {
         })
     }
 
-    pub fn send_tx(&self, cmd_id: i32, json: &str) {
+    pub fn send_tx(&self, cmd_id: i32, json: &str) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("send to cmd sock");
+        Ok(self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT)?)
     }
 }
 
@@ -474,7 +474,7 @@ impl PoolService {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.pools.try_borrow()?
             .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
-            .send_tx(cmd_id, json);
+            .send_tx(cmd_id, json)?;
         Ok(cmd_id)
     }
 
@@ -581,7 +581,7 @@ mod tests {
             cmd_sock: send_cmd_sock,
         };
         let test_data = "str_instead_of_tx_json";
-        pool.send_tx(0, test_data);
+        pool.send_tx(0, test_data).unwrap();
         assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
     }
 
