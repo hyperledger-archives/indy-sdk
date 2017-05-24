@@ -32,7 +32,7 @@ impl CatchupHandler {
                     ledgerId: 0,
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
-                self.nodes[src_ind].send_msg(&resp_msg);
+                self.nodes[src_ind].send_msg(&resp_msg)?;
             }
             Message::LedgerStatus(ledger_status) => {
                 assert_eq!(ledger_status.merkleRoot, self.merkle_tree.root_hash().as_slice().to_base58());
@@ -85,7 +85,7 @@ impl CatchupHandler {
             catchupTill: self.new_mt_size,
         };
         for node in &self.nodes {
-            node.send_msg(&Message::CatchupReq(catchup_req.clone()));
+            node.send_msg(&Message::CatchupReq(catchup_req.clone())).unwrap();
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
                                             catchup_req.catchupTill);

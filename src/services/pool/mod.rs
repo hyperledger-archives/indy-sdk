@@ -133,7 +133,7 @@ impl TransactionHandler {
             self.pending_commands.insert(tmp.req_id, pc);
             for node in &self.nodes {
                 let node: &RemoteNode = node;
-                node.send_str(cmd);
+                node.send_str(cmd).unwrap();
             }
         }
     }
@@ -158,7 +158,7 @@ impl PoolWorker {
             let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)?;
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
             rn.connect(&ctx)?;
-            rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
+            rn.send_str("pi")?;
             self.handler.nodes_mut().push(rn);
         }
         self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
@@ -392,24 +392,24 @@ impl RemoteNode {
                 PoolError::Io(io::Error::from(io::ErrorKind::InvalidData))
             }
         }
-        let msg: String = self.zsock.as_ref().unwrap().recv_string(zmq::DONTWAIT)??;
+        let msg: String = self.zsock.as_ref()
+            .ok_or(PoolError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
+            .recv_string(zmq::DONTWAIT)??;
         info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
 
-        match msg.as_ref() {
-            "pi" => Ok(None), //TODO send pong
-            _ => Ok(Some(msg))
-        }
+        Ok(Some(msg))
     }
 
-    fn send_str(&self, str: &str) {
+    fn send_str(&self, str: &str) -> Result<(), PoolError> {
         info!("Sending {:?}", str);
-        self.zsock.as_ref().unwrap()
-            .send_str(str, zmq::DONTWAIT)
-            .unwrap();
+        self.zsock.as_ref()
+            .ok_or(PoolError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
+            .send_str(str, zmq::DONTWAIT)?;
+        Ok(())
     }
 
-    fn send_msg(&self, msg: &Message) {
-        self.send_str(msg.to_json().unwrap().as_str());
+    fn send_msg(&self, msg: &Message) -> Result<(), PoolError> {
+        self.send_str(msg.to_json()?.as_str())
     }
 }
 
@@ -775,7 +775,7 @@ mod tests {
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         let ctx = zmq::Context::new();
         rn.connect(&ctx).unwrap();
-        rn.zsock.as_ref().expect("sock").send_str("pi", zmq::DONTWAIT).expect("send");
+        rn.send_str("pi").expect("send");
         rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
         assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
         handle.join().expect("join");
