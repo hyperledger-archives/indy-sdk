@@ -93,11 +93,13 @@ impl PointG1 {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        unimplemented!();
+        Ok(ECP::to_hex(&self.point))
     }
 
     pub fn from_string(str: &str) -> Result<PointG1, CryptoError> {
-        unimplemented!();
+        Ok(PointG1 {
+            point: ECP::from_hex(str.to_string())
+        })
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -443,22 +445,22 @@ mod tests {
 
     extern crate serde_json;
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct TestGroupOrderElementStructure {
         field: GroupOrderElement
     }
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct TestPointG1Structure {
         field: PointG1
     }
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct TestPointG2Structure {
         field: PointG2
     }
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct TestPairStructure {
         field: Pair
     }
@@ -475,20 +477,35 @@ mod tests {
 
     #[test]
     fn deserialize_works_for_group_order_element() {
+        let structure = TestGroupOrderElementStructure {
+            field: GroupOrderElement::from_string("C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA").unwrap()
+        };
         let str = r#"{"field":"C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA"}"#;
-        let group_order_element: TestGroupOrderElementStructure = serde_json::from_str(&str).unwrap();
-        
-        assert_eq!("C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA", group_order_element.field.to_string().unwrap());
+        let result: TestGroupOrderElementStructure = serde_json::from_str(&str).unwrap();
+
+        assert_eq!(structure, result);
     }
 
     #[test]
     fn serialize_works_for_point_g1() {
+        let structure = TestPointG1Structure {
+            field: PointG1::from_string("1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0").unwrap()
+        };
 
+        let serialized = serde_json::to_string(&structure).unwrap();
+        assert_eq!(r#"{"field":"1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0"}"#, serialized);
     }
 
     #[test]
     fn deserialize_works_for_point_g1() {
+        let structure = TestPointG1Structure {
+            field: PointG1::from_string("1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0").unwrap()
+        };
 
+        let str = r#"{"field":"1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0"}"#;
+        let result: TestPointG1Structure = serde_json::from_str(&str).unwrap();
+
+        assert_eq!(structure, result);
     }
 
     #[test]
