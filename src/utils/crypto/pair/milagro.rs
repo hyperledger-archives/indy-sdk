@@ -15,6 +15,7 @@ use self::milagro_crypto::ecp::wrappers::ECP;
 use self::milagro_crypto::ecp2::wrappers::ECP2;
 use self::milagro_crypto::fp12::wrappers::FP12;
 use self::milagro_crypto::fp2::wrappers::FP2;
+use self::milagro_crypto::pair::PAIR;
 
 use errors::crypto::CryptoError;
 use services::anoncreds::helpers::BytesView;
@@ -168,7 +169,12 @@ impl PointG2 {
     }
 
     pub fn new_inf() -> Result<PointG2, CryptoError> {
-        unimplemented!();
+        let mut point = ECP2::default();
+        ECP2::inf(&mut point);
+
+        Ok(PointG2 {
+            point: point
+        })
     }
 
     pub fn add(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
@@ -374,7 +380,14 @@ pub struct Pair {
 
 impl Pair {
     pub fn pair(p: &PointG1, q: &PointG2) -> Result<Pair, CryptoError> {
-        unimplemented!();
+        let mut pair = FP12::default();
+        let mut p_new = *p;
+        let mut q_new = *q;
+
+        PAIR::ate(&mut pair, &mut q_new.point, &mut p_new.point);
+        Ok(Pair {
+            pair: pair
+        })
     }
 
     pub fn mul(&self, b: &Pair) -> Result<Pair, CryptoError> {
@@ -402,11 +415,13 @@ impl Pair {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        unimplemented!();
+        Ok(FP12::to_hex(&self.pair))
     }
 
     pub fn from_string(str: &str) -> Result<Pair, CryptoError> {
-        unimplemented!();
+        Ok(Pair {
+            pair: FP12::from_hex(str.to_string())
+        })
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -548,11 +563,35 @@ mod tests {
     }
     #[test]
     fn serialize_works_for_pair() {
+        let point_g1 = PointG1 {
+            point: PointG1::from_string("1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0").unwrap().point
+        };
+        let point_g2 = PointG2 {
+            point: PointG2::from_string("0 53104BD1A92BE9 4CBF937B44DAA 1D191B0496A14B 276529199F4D1B 4A996C2 3B2712E2EC37FF CF7C4390E8071C EF8C973AD5EDAA 547DD84375861 169CBAC9 5224321CF032B7 B9D2063515A045 9833D500F6EEBE DB9D00AED36ED2 7916166 22D7513761F614 4CD0E53D855FC3 950F3C38908717 A0261AC49D33A0 1B221531 A96F211585EDB F2942F28DB526F 2FF74229029FCD F4EABE779E75E4 3C3FED4 0 0 0 0 0").unwrap().point
+        };
+        let pair = TestPairStructure {
+            field: Pair::pair(&point_g1, &point_g2).unwrap()
+        };
+        let str = r#"{"field":"70CC65D2371808 FD4F75244E5B72 40359FC95F7204 FA308613F34F1D 551BB55FA 7CB294CCE69B4A AE3C7228995A41 F27CD79430990 DE04BB58428296 5303A03BD 7FFA8A31C72E82 A8E1AA2E51D4B2 87B33F735B7ADF 19EADA0B95227E 392C800DC 74571A20806B80 ABDB72819D0A70 D4B1EDF5A54E6F FAF8EA4B2EFC2D 3CE6F2507 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002"}"#;
+        let serialized = serde_json::to_string(&pair).unwrap();
 
+        assert_eq!(str, serialized);
     }
 
     #[test]
     fn deserialize_works_for_pair() {
+        let point_g1 = PointG1 {
+            point: PointG1::from_string("1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0").unwrap().point
+        };
+        let point_g2 = PointG2 {
+            point: PointG2::from_string("0 53104BD1A92BE9 4CBF937B44DAA 1D191B0496A14B 276529199F4D1B 4A996C2 3B2712E2EC37FF CF7C4390E8071C EF8C973AD5EDAA 547DD84375861 169CBAC9 5224321CF032B7 B9D2063515A045 9833D500F6EEBE DB9D00AED36ED2 7916166 22D7513761F614 4CD0E53D855FC3 950F3C38908717 A0261AC49D33A0 1B221531 A96F211585EDB F2942F28DB526F 2FF74229029FCD F4EABE779E75E4 3C3FED4 0 0 0 0 0").unwrap().point
+        };
+        let pair = TestPairStructure {
+            field: Pair::pair(&point_g1, &point_g2).unwrap()
+        };
+        let str = r#"{"field":"70CC65D2371808 FD4F75244E5B72 40359FC95F7204 FA308613F34F1D 551BB55FA 7CB294CCE69B4A AE3C7228995A41 F27CD79430990 DE04BB58428296 5303A03BD 7FFA8A31C72E82 A8E1AA2E51D4B2 87B33F735B7ADF 19EADA0B95227E 392C800DC 74571A20806B80 ABDB72819D0A70 D4B1EDF5A54E6F FAF8EA4B2EFC2D 3CE6F2507 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 1EF2EE10541C8A 7C8B52D128C803 9D4A4954550B73 922CD02BD9DA10 AF8000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002 5543B5BF0C1826 69623262363316 E78DA0826F5875 2CEAD78790F397 948000002"}"#;
+        let deserialized: TestPairStructure = serde_json::from_str(&str).unwrap();
 
+        assert_eq!(pair, deserialized);
     }
 }
