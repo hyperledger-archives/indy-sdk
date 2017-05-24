@@ -48,7 +48,6 @@ use services::anoncreds::types::{
     ProofJson
 };
 use services::anoncreds::helpers::{
-    AppendByteArray,
     get_mtilde,
     four_squares,
     get_hash_as_int,

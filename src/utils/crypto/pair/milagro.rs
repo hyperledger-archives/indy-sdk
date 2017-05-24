@@ -105,7 +105,9 @@ impl PointG1 {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        unimplemented!();
+        let str = self.to_string()?;
+
+        Ok(str.into_bytes())
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
@@ -212,7 +214,9 @@ impl PointG2 {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        unimplemented!();
+        let str = self.to_string()?;
+
+        Ok(str.into_bytes())
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {

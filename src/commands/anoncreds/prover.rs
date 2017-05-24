@@ -29,7 +29,7 @@ use services::anoncreds::types::{
     ClaimRequestJson
 };
 use std::collections::HashMap;
-use utils::crypto::pair::{PointG1, PointG2};
+use utils::crypto::pair::PointG2;
 use std::cell::RefCell;
 
 pub enum ProverCommand {
