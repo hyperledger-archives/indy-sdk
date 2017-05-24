@@ -171,17 +171,8 @@ impl LedgerCommandExecutor {
                                submitter_did: &str,
                                request_json: &str,
                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
-        {
-            // FIXME REMOVE
-            // FIXME just remove with block after errors refactoring
-            let cb = |se: Result<(), SovrinError>| {
-                cb(Err(se.err().unwrap()))
-            };
-            //FIXME REMOVE code above and extract next line from the block
-            check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb
-                                                   );
-        }
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
         match self._sign_request(wallet_handle, submitter_did, request_json) {
             Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
             Err(err) => cb(Err(err))
