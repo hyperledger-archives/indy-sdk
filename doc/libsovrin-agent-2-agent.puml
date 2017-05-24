@@ -1,0 +1,83 @@
+@startuml
+skinparam ParticipantPadding 20
+skinparam BoxPadding 20
+
+title Libsovrin Agent to Agent communucation API
+scale 0.9
+
+box "Sender Agent" #LightBlue
+actor "Sender Agent" as SA
+participant "Sender Libsovrin" as SL
+participant "Sender Wallet" as SW
+participant "Sender Socket" as SS
+endbox
+
+box "Receiver Agent" #LightBlue
+actor "Receiver Agent" as RA
+participant "Receiver Libsovrin" as RL
+participant "Receiver Wallet" as RW
+participant "Receiver Socket" as RS
+endbox
+
+participant "Ledger" as L
+
+=== Start listening ==
+
+RA -> RL: <b>1. sovrin_create_and_store_my_did
+RL -> RW: Store receiver keys
+
+RA -> RL: <b>2. sovrin_agent_listen
+RL -> RS: Start listening
+RL -> RA: Listener handle (cb)
+
+=== Establish connection ==
+
+SA -> SL: <b>3. sovrin_create_and_store_my_did
+SL -> SW: Store sender keys
+
+SA -> SL: <b>4. sovrin_agent_connect
+SL -> SW: Get sender keys
+SW -> SL: Sender keys
+SL -> L: GET_NYM/GET_DDO
+L -> SL: Receiver keys and endpoint
+SL -> SW: Store receiver keys and endpoint
+
+SL -> SS: Receiver did, keys and endpoint. Sender did, keys
+SS -> RS: init PairwiseCurveCP
+RS -> RL: Sender keys and did (from connection)
+RL -> L: GET_NYM/GET_DDO
+L -> RL: Sender keys and did (from Ledger)
+RL -> RS: Connection verified
+RS -> SS: Conenction established
+SS -> SL: Connection established
+SL -> SA: Connection handle (cb)
+
+RS -> RL: Connection established
+RL -> RA: Connection handle (cb)
+
+=== Exchange messages ==
+
+SA -> SL: <b>4. sovrin_agent_send
+SL -> SS: Message
+SS -> RS: Message
+RS -> RL: Message
+RL -> RA: Message (cb)
+
+RA -> RL: <b>5. sovrin_agent_send
+RL -> RS: Message
+RS -> SS: Message
+SS -> SL: Message
+SL -> SA: Message (cb)
+
+=== Clean up ==
+
+SA -> SL:  <b>5. sovrin_agent_close_connection
+SL -> SS: Close socket
+
+RA -> RL: <b>5. sovrin_agent_close_listener
+RL -> RS: Close socket
+
+
+
+
+@enduml
