@@ -157,7 +157,7 @@ impl PoolWorker {
         for gen_txn in &merkle_tree {
             let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)?;
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
-            rn.connect(&ctx);
+            rn.connect(&ctx)?;
             rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
             self.handler.nodes_mut().push(rn);
         }
@@ -370,16 +370,20 @@ impl RemoteNode {
         })
     }
 
-    fn connect(&mut self, ctx: &zmq::Context) {
-        let key_pair = zmq::CurveKeyPair::new().expect("create key pair");
-        let s = ctx.socket(zmq::SocketType::DEALER).expect("socket for Node");
-        s.set_identity(key_pair.public_key.as_bytes()).expect("set identity");
-        s.set_curve_secretkey(key_pair.secret_key.as_str()).expect("set secret key");
-        s.set_curve_publickey(key_pair.public_key.as_str()).expect("set public key");
-        s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
-        s.set_linger(0).expect("set linger"); //TODO set correct timeout
-        s.connect(self.zaddr.as_str()).expect("connect to Node");
+    fn connect(&mut self, ctx: &zmq::Context) -> Result<(), PoolError> {
+        let key_pair = zmq::CurveKeyPair::new()?;
+        let s = ctx.socket(zmq::SocketType::DEALER)?;
+        s.set_identity(key_pair.public_key.as_bytes())?;
+        s.set_curve_secretkey(key_pair.secret_key.as_str())?;
+        s.set_curve_publickey(key_pair.public_key.as_str())?;
+        s.set_curve_serverkey(
+            zmq::z85_encode(self.verify_key.as_slice())
+                .map_err(|err| { PoolError::InvalidData("Can't encode server key as z85".to_string()) })?
+                .as_str())?;
+        s.set_linger(0)?; //TODO set correct timeout
+        s.connect(self.zaddr.as_str())?;
         self.zsock = Some(s);
+        Ok(())
     }
 
     fn recv_msg(&self) -> Result<Option<String>, PoolError> {
@@ -747,7 +751,7 @@ mod tests {
         let (gt, handle) = nodes_emulator::start();
         ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-        rn.connect(&zmq::Context::new());
+        rn.connect(&zmq::Context::new()).unwrap();
         ch.nodes.push(rn);
         ch.new_mt_size = 2;
 
@@ -770,7 +774,7 @@ mod tests {
         let (gt, handle) = nodes_emulator::start();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         let ctx = zmq::Context::new();
-        rn.connect(&ctx);
+        rn.connect(&ctx).unwrap();
         rn.zsock.as_ref().expect("sock").send_str("pi", zmq::DONTWAIT).expect("send");
         rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
         assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
