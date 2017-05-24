@@ -14,6 +14,7 @@ use self::milagro_crypto::big::wrappers::{
 use self::milagro_crypto::ecp::wrappers::ECP;
 use self::milagro_crypto::ecp2::wrappers::ECP2;
 use self::milagro_crypto::fp12::wrappers::FP12;
+use self::milagro_crypto::fp2::wrappers::FP2;
 
 use errors::crypto::CryptoError;
 use services::anoncreds::helpers::BytesView;
@@ -44,11 +45,11 @@ pub struct PointG1 {
 impl PointG1 {
     pub fn new() -> Result<PointG1, CryptoError> {
         // generate random point from the group G1
-        let gen_g1: ECP = ECP::new_bigs(&unsafe { CURVE_Gx }.clone(), &unsafe { CURVE_Gy }.clone());
-        let mut point = gen_g1;
-        ECP::mul(&mut point, &random_mod_order()?);
+        let mut gen_g1: ECP = ECP::new_bigs(&unsafe { CURVE_Gx }.clone(), &unsafe { CURVE_Gy }.clone());
+
+        ECP::mul(&mut gen_g1, &random_mod_order()?);
         Ok(PointG1 {
-            point: point
+            point: gen_g1
         })
     }
 
@@ -152,7 +153,18 @@ pub struct PointG2 {
 
 impl PointG2 {
     pub fn new() -> Result<PointG2, CryptoError> {
-        unimplemented!();
+        let mut point_x = FP2::default();
+        let mut point_y = FP2::default();
+        let mut point_z = FP2::default();
+        FP2::from_BIGs(&mut point_x, &unsafe { CURVE_Pxa }.clone(), &unsafe { CURVE_Pxb }.clone());
+        FP2::from_BIGs(&mut point_y, &unsafe { CURVE_Pya }.clone(), &unsafe { CURVE_Pyb }.clone());
+        FP2::from_BIGs(&mut point_z, &BIG::from_hex("1".to_string()), &BIG::from_hex("0".to_string()));
+        let mut gen_g2: ECP2 = ECP2::new_fp2s(point_x, point_y, point_z);
+
+        ECP2::mul(&mut gen_g2, &random_mod_order()?);
+        Ok(PointG2 {
+            point: gen_g2
+        })
     }
 
     pub fn new_inf() -> Result<PointG2, CryptoError> {
