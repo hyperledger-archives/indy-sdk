@@ -777,7 +777,7 @@ mod tests {
         let ctx = zmq::Context::new();
         rn.connect(&ctx);
         rn.zsock.as_ref().expect("sock").send_str("pi", zmq::DONTWAIT).expect("send");
-        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, 100).expect("poll");
+        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
         assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
         handle.join().expect("join");
     }
@@ -788,6 +788,8 @@ mod tests {
         use services::pool::rust_base58::ToBase58;
         use std::thread;
         use super::*;
+
+        pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
@@ -816,10 +818,14 @@ mod tests {
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {
                 let mut received_msgs: Vec<String> = Vec::new();
-                if s.poll(zmq::POLLIN, 100).expect("poll") == 1 {
+                let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
+                if poll_res == 1 {
                     let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
+                    trace!("Node emulator poll recv {:?}", v);
                     s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
                     received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
+                } else {
+                    warn!("Node emulator poll return {}", poll_res)
                 }
                 received_msgs
             });
