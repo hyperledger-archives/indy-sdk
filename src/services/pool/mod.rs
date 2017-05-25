@@ -793,7 +793,7 @@ mod tests {
         ch.nodes.push(rn);
         ch.new_mt_size = 2;
 
-        ch.start_catchup();
+        ch.start_catchup().unwrap();
 
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
