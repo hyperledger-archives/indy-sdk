@@ -90,7 +90,4 @@ SL -> SS: Close socket
 RA -> RL: <b>5. sovrin_agent_close_listener
 RL -> RS: Close socket
 
-
-
-
 @enduml
