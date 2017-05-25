@@ -1,5 +1,6 @@
 extern crate libc;
 
+pub mod agent;
 pub mod anoncreds;
 pub mod signus;
 pub mod ledger;
