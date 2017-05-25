@@ -1,6 +1,8 @@
 use std::cmp;
 use std::collections::{BinaryHeap};
 
+use commands::{Command, CommandExecutor};
+use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use super::{
     MerkleTree,
@@ -17,7 +19,25 @@ pub struct CatchupHandler {
     pub new_mt_size: usize,
     pub new_mt_vote: usize,
     pub nodes: Vec<RemoteNode>,
+    pub open_cmd_id: i32,
     pub pending_catchup: Option<CatchUpProcess>,
+    pub pool_id: i32,
+}
+
+impl Default for CatchupHandler {
+    fn default() -> Self {
+        CatchupHandler {
+            f: 0,
+            ledger_status_same: 0,
+            merkle_tree: MerkleTree::from_vec(Vec::new()).unwrap(),
+            nodes: Vec::new(),
+            new_mt_size: 0,
+            new_mt_vote: 0,
+            pending_catchup: None,
+            open_cmd_id: 0,
+            pool_id: 0,
+        }
+    }
 }
 
 impl CatchupHandler {
@@ -146,5 +166,11 @@ impl CatchupHandler {
         Ok(self.pending_catchup.take().
             ok_or(PoolError::InvalidState("Try to finish non-existing CatchUp".to_string()))?
             .merkle_tree)
+    }
+
+    pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        CommandExecutor::instance().send(Command::Pool(
+            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id))))
+            .map_err(|err| { PoolError::InvalidState("Can't send ACK cmd".to_string()) })
     }
 }

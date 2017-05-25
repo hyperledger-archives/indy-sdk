@@ -18,7 +18,6 @@ use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
-use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use errors::crypto::CryptoError;
 use self::catchup::CatchupHandler;
@@ -81,12 +80,12 @@ impl PoolWorkerHandler {
         }
     }
 
-    //    fn flush_requests(&mut self, common_status: bool) -> Result<(), PoolError> {
-    //        match self {
-    //            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.flush_requests(msg, common_status),
-    //            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.flush_requests(msg, common_status),
-    //        }
-    //    }
+    fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.flush_requests(status),
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.flush_requests(status),
+        }
+    }
 
     fn nodes(&self) -> &Vec<RemoteNode> {
         match self {
@@ -164,6 +163,39 @@ impl TransactionHandler {
         }
         Ok(())
     }
+
+    fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        match status {
+            Ok(()) => {
+                return Err(PoolError::InvalidState(
+                    "Can't flash all transaction requests with common success status".to_string()));
+            }
+            Err(err) => {
+                for (_, pending_cmd) in &self.pending_commands {
+                    let pending_cmd: &CommandProcess = pending_cmd;
+                    for cmd_id in &pending_cmd.cmd_ids {
+                        CommandExecutor::instance()
+                            .send(Command::Ledger(LedgerCommand::SubmitAck(
+                                cmd_id.clone(), Err(PoolError::Terminate))))
+                            .map_err(|err| {
+                                PoolError::InvalidState("Can't send ACK cmd".to_string())
+                            })?;
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Default for TransactionHandler {
+    fn default() -> Self {
+        TransactionHandler {
+            pending_commands: HashMap::new(),
+            f: 0,
+            nodes: Vec::new(),
+        }
+    }
 }
 
 impl PoolWorker {
@@ -194,13 +226,10 @@ impl PoolWorker {
 
     fn init_catchup(&mut self) -> Result<(), PoolError> {
         let catchup_handler = CatchupHandler {
-            f: 0,
-            ledger_status_same: 0,
-            nodes: Vec::new(),
-            new_mt_size: 0,
-            new_mt_vote: 0,
             merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
-            pending_catchup: None,
+            open_cmd_id: self.open_cmd_id,
+            pool_id: self.pool_id,
+            ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
         self.connect_to_known_nodes(None)?;
@@ -208,56 +237,53 @@ impl PoolWorker {
     }
 
     pub fn run(&mut self) -> Result<(), PoolError> {
-        self._run().or_else(|err| {
-            //            if self.open_cmd_id != -1 {
-            //                CommandExecutor::instance().send(Command::Pool(
-            //                    PoolCommand::OpenAck(self.open_cmd_id, Err(SovrinError::PoolError(err))))).expect("send ack cmd");
-            //            }
-            Err(err)
+        self._run().or_else(|err: PoolError| {
+            self.handler.flush_requests(Err(PoolError::Terminate))?;
+            match err {
+                PoolError::Terminate => Ok(()),
+                _ => Err(err),
+            }
         })
     }
 
     fn _run(&mut self) -> Result<(), PoolError> {
         self.init_catchup()?; //TODO consider error as PoolOpen error
 
-        'zmq_poll_loop: loop {
+        loop {
             trace!("zmq poll loop >>");
 
             let actions = self.poll_zmq()?;
 
-            for action in &actions {
-                match action {
-                    &ZMQLoopAction::Terminate => {
-                        //TODO terminate all pending commands?
-                        break 'zmq_poll_loop;
-                    }
-                    &ZMQLoopAction::MessageToProcess(ref msg) => {
-                        if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
-                            self.handler = PoolWorkerHandler::TransactionHandler(TransactionHandler {
-                                nodes: Vec::new(),
-                                pending_commands: HashMap::new(),
-                                f: 0,
-                            });
-                            self.connect_to_known_nodes(Some(&new_mt))?;
-                            CommandExecutor::instance().send(Command::Pool(
-                                PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id))))
-                                .map_err(|err| { PoolError::InvalidState("Can't send ACK cmd".to_string()) })?;
-                            self.open_cmd_id = -1; //TODO send only once?
-                        }
-                    }
-                    &ZMQLoopAction::RequestToSend(ref req) => {
-                        self.handler.send_request(req.request.as_str(), req.id).or_else(|err| {
-                            CommandExecutor::instance()
-                                .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
-                                .map_err(|err| { PoolError::InvalidState("Can't send ACK cmd".to_string()) })
-                        })?;
-                    }
-                }
-            }
+            self.process_actions(actions)?;
 
             trace!("zmq poll loop <<");
         }
-        info!("zmq poll loop finished");
+    }
+
+    fn process_actions(&mut self, actions: Vec<ZMQLoopAction>) -> Result<(), PoolError> {
+        for action in &actions {
+            match action {
+                &ZMQLoopAction::Terminate => {
+                    return Err(PoolError::Terminate);
+                }
+                &ZMQLoopAction::MessageToProcess(ref msg) => {
+                    if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
+                        self.handler.flush_requests(Ok(()))?;
+                        self.handler = PoolWorkerHandler::TransactionHandler(Default::default());
+                        self.connect_to_known_nodes(Some(&new_mt))?;
+                    }
+                }
+                &ZMQLoopAction::RequestToSend(ref req) => {
+                    self.handler.send_request(req.request.as_str(), req.id).or_else(|err| {
+                        CommandExecutor::instance()
+                            .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
+                            .map_err(|err| {
+                                PoolError::InvalidState("Can't send ACK cmd".to_string())
+                            })
+                    })?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -348,13 +374,9 @@ impl Pool {
             pool_id: pool_id,
             name: name.to_string(),
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
-                f: 0,
-                ledger_status_same: 0,
-                nodes: Vec::new(),
-                new_mt_size: 0,
-                new_mt_vote: 0,
-                merkle_tree: MerkleTree::from_vec(Vec::new())?,
-                pending_catchup: None,
+                open_cmd_id: cmd_id,
+                pool_id: pool_id,
+                ..Default::default()
             }),
         };
 
@@ -642,30 +664,6 @@ mod tests {
                 open_cmd_id: 0,
                 name: "".to_string(),
                 handler: PoolWorkerHandler::CatchupHandler(Default::default()),
-            }
-        }
-    }
-
-    impl Default for CatchupHandler {
-        fn default() -> Self {
-            CatchupHandler {
-                f: 0,
-                ledger_status_same: 0,
-                merkle_tree: MerkleTree::from_vec(Vec::new()).unwrap(),
-                nodes: Vec::new(),
-                new_mt_size: 0,
-                new_mt_vote: 0,
-                pending_catchup: None,
-            }
-        }
-    }
-
-    impl Default for TransactionHandler {
-        fn default() -> Self {
-            TransactionHandler {
-                pending_commands: HashMap::new(),
-                f: 0,
-                nodes: Vec::new(),
             }
         }
     }
