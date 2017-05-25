@@ -29,7 +29,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, SovrinError>) + Send>),
     SubmitAck(
         i32, // cmd_id
-        Result<String, SovrinError>, // result json or error
+        Result<String, PoolError>, // result json or error
     ),
     BuildGetDdoRequest(
         String, // submitter did
@@ -120,7 +120,7 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "SubmitAck command received");
                 self.send_callbacks.borrow_mut().remove(&handle)
                     .expect("Expect callback to process ack command")
-                    (result);
+                    (result.map_err(SovrinError::from));
             }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");

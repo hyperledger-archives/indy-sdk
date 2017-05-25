@@ -3,10 +3,12 @@ mod catchup;
 
 extern crate byteorder;
 extern crate rust_base58;
+extern crate serde_json;
 extern crate zmq;
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
+use self::serde_json::Value;
 use std::cell::RefCell;
 use std::collections::{HashMap};
 use std::{fmt, fs, io, thread};
@@ -47,6 +49,7 @@ struct PoolWorker {
 }
 
 enum PoolWorkerHandler {
+    //TODO trait ?
     CatchupHandler(CatchupHandler),
     TransactionHandler(TransactionHandler),
 }
@@ -59,12 +62,30 @@ struct TransactionHandler {
 
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
-        let msg = Message::from_raw_str(raw_msg).unwrap();
+        let msg = Message::from_raw_str(raw_msg)?;
         match self {
             &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
             &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
         }
     }
+
+    fn send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => {
+                Err(PoolError::InvalidState("Try send request while CatchUp.".to_string()))
+            }
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => {
+                ch.try_send_request(cmd, cmd_id)
+            }
+        }
+    }
+
+    //    fn flush_requests(&mut self, common_status: bool) -> Result<(), PoolError> {
+    //        match self {
+    //            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.flush_requests(msg, common_status),
+    //            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.flush_requests(msg, common_status),
+    //        }
+    //    }
 
     fn nodes(&self) -> &Vec<RemoteNode> {
         match self {
@@ -119,40 +140,41 @@ impl TransactionHandler {
         }
     }
 
-    fn try_send_request(&mut self, cmd: &String, cmd_id: i32) {
+    fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
         info!("cmd {:?}", cmd);
-        let tmp = SimpleRequest::from_json(cmd).unwrap();
-        if self.pending_commands.contains_key(&tmp.req_id) {
-            self.pending_commands.get_mut(&tmp.req_id).unwrap().cmd_ids.push(cmd_id);
+        let request: Value = serde_json::from_str(cmd)?;
+        let request_id: u64 = request["reqId"]
+            .as_u64()
+            .ok_or(PoolError::InvalidData("Invalid request: missed requestId field".to_string()))?;
+        if self.pending_commands.contains_key(&request_id) {
+            self.pending_commands.get_mut(&request_id).unwrap().cmd_ids.push(cmd_id);
         } else {
             let pc = CommandProcess {
                 cmd_ids: vec!(cmd_id),
                 nack_cnt: 0,
                 reply_cnt: 0,
             };
-            self.pending_commands.insert(tmp.req_id, pc);
+            self.pending_commands.insert(request_id, pc);
             for node in &self.nodes {
                 let node: &RemoteNode = node;
-                node.send_str(cmd).unwrap();
+                node.send_str(cmd)?;
             }
         }
+        Ok(())
     }
 }
 
 impl PoolWorker {
     fn connect_to_known_nodes(&mut self, merkle_tree: Option<&MerkleTree>) -> Result<(), PoolError> {
-        let merkle_tree: MerkleTree = match merkle_tree {
-            Some(mt) => {
-                let mt: MerkleTree = mt.clone();
-                mt
-            }
-            None => {
+        let merkle_tree: MerkleTree = merkle_tree.map(|x| { x.clone() })
+            .or_else(|| {
                 match self.handler {
-                    PoolWorkerHandler::CatchupHandler(ref ch) => ch.merkle_tree.clone(),
-                    PoolWorkerHandler::TransactionHandler(_) => return Err(PoolError::InvalidState("Expect catchup state".to_string())),
+                    //TODO default self.handler.get_default_mt() -> Result<MerkleTree, PoolError>
+                    PoolWorkerHandler::CatchupHandler(ref ch) => Some(ch.merkle_tree.clone()),
+                    PoolWorkerHandler::TransactionHandler(_) => None
                 }
-            }
-        };
+            })
+            .ok_or(PoolError::InvalidState("Expect catchup state".to_string()))?;
         let ctx: zmq::Context = zmq::Context::new();
         for gen_txn in &merkle_tree {
             let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)?;
@@ -181,6 +203,16 @@ impl PoolWorker {
     }
 
     pub fn run(&mut self) -> Result<(), PoolError> {
+        self._run().or_else(|err| {
+            //            if self.open_cmd_id != -1 {
+            //                CommandExecutor::instance().send(Command::Pool(
+            //                    PoolCommand::OpenAck(self.open_cmd_id, Err(SovrinError::PoolError(err))))).expect("send ack cmd");
+            //            }
+            Err(err)
+        })
+    }
+
+    fn _run(&mut self) -> Result<(), PoolError> {
         self.init_catchup()?; //TODO consider error as PoolOpen error
 
         'zmq_poll_loop: loop {
@@ -203,14 +235,17 @@ impl PoolWorker {
                             });
                             self.connect_to_known_nodes(Some(&new_mt))?;
                             CommandExecutor::instance().send(Command::Pool(
-                                PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only once?
+                                PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id))))
+                                .map_err(|err| { PoolError::InvalidState("Can't send ACK cmd".to_string()) })?;
+                            self.open_cmd_id = -1; //TODO send only once?
                         }
                     }
                     &ZMQLoopAction::RequestToSend(ref req) => {
-                        match self.handler {
-                            PoolWorkerHandler::CatchupHandler(_) => panic!("incorrect state"), //FIXME
-                            PoolWorkerHandler::TransactionHandler(ref mut handler) => handler.try_send_request(&req.request, req.id),
-                        }
+                        self.handler.send_request(req.request.as_str(), req.id).or_else(|err| {
+                            CommandExecutor::instance()
+                                .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
+                                .map_err(|err| { PoolError::InvalidState("Can't send ACK cmd".to_string()) })
+                        })?;
                     }
                 }
             }
@@ -734,12 +769,9 @@ mod tests {
 
         let req_id = 2;
         let cmd_id = 1;
-        let req = SimpleRequest {
-            req_id: req_id,
-        };
-        let cmd = req.to_json().unwrap();
+        let cmd = format!("{{\"reqId\": {}}}", req_id);
 
-        th.try_send_request(&cmd, cmd_id);
+        th.try_send_request(&cmd, cmd_id).unwrap();
 
         assert_eq!(th.pending_commands.len(), 1);
         let pending_cmd = th.pending_commands.get(&req_id).unwrap();

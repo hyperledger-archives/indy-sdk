@@ -18,15 +18,15 @@ pub enum PoolCommand {
          Option<String>, // config
          Box<Fn(Result<i32, SovrinError>) + Send>),
     OpenAck(i32, // cmd id
-            Result<i32 /* pool handle */, SovrinError>),
+            Result<i32 /* pool handle */, PoolError>),
     Close(i32, // pool handle
           Box<Fn(Result<(), SovrinError>) + Send>),
     CloseAck(i32,
-             Result<(), SovrinError>),
+             Result<(), PoolError>),
     Refresh(i32, // pool handle
             Box<Fn(Result<(), SovrinError>) + Send>),
     RefreshAck(i32,
-               Result<(), SovrinError>),
+               Result<(), PoolError>),
 }
 
 pub struct PoolCommandExecutor {
@@ -58,6 +58,7 @@ impl PoolCommandExecutor {
             }
             PoolCommand::OpenAck(handle, result) => {
                 info!("OpenAck handle {:?}, result {:?}", handle, result);
+                let result = result.map_err(SovrinError::from);
                 match self.open_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
