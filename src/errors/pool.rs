@@ -1,11 +1,10 @@
 extern crate zmq;
 extern crate serde_json;
 
-use std::error;
-use std::io;
-use std::fmt;
-use std::error::Error;
 use std::cell::{BorrowError, BorrowMutError};
+use std::{error, fmt, io};
+use std::error::Error;
+use std::string::FromUtf8Error;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -72,6 +71,12 @@ impl From<zmq::Error> for PoolError {
 impl From<serde_json::Error> for PoolError {
     fn from(err: serde_json::Error) -> PoolError {
         PoolError::InvalidConfiguration(err.description().to_string())
+    }
+}
+
+impl From<FromUtf8Error> for PoolError {
+    fn from(err: FromUtf8Error) -> Self {
+        PoolError::InvalidData(err.description().to_string())
     }
 }
 

@@ -35,7 +35,7 @@ struct Pool {
     name: String,
     id: i32,
     cmd_sock: zmq::Socket,
-    worker: Option<thread::JoinHandle<Result<(), PoolError>>>,
+    worker: Option<thread::JoinHandle<()>>,
 }
 
 struct PoolWorker {
@@ -186,7 +186,7 @@ impl PoolWorker {
         'zmq_poll_loop: loop {
             trace!("zmq poll loop >>");
 
-            let actions = self.poll_zmq();
+            let actions = self.poll_zmq()?;
 
             for action in &actions {
                 match action {
@@ -221,16 +221,16 @@ impl PoolWorker {
         Ok(())
     }
 
-    fn poll_zmq(&mut self) -> Vec<ZMQLoopAction> {
+    fn poll_zmq(&mut self) -> Result<Vec<ZMQLoopAction>, PoolError> {
         let mut actions: Vec<ZMQLoopAction> = Vec::new();
 
-        let mut poll_items = self.get_zmq_poll_items();
-        let r = zmq::poll(poll_items.as_mut_slice(), -1).expect("poll");
+        let mut poll_items = self.get_zmq_poll_items()?;
+        let r = zmq::poll(poll_items.as_mut_slice(), -1)?;
         trace!("zmq poll {:?}", r);
 
         for i in 0..self.handler.nodes().len() {
             if poll_items[1 + i].is_readable() {
-                if let Some(msg) = self.handler.nodes()[i].recv_msg().expect("recv msg") {
+                if let Some(msg) = self.handler.nodes()[i].recv_msg()? {
                     actions.push(ZMQLoopAction::MessageToProcess(MessageToProcess {
                         node_idx: i,
                         message: msg,
@@ -239,9 +239,9 @@ impl PoolWorker {
             }
         }
         if poll_items[0].is_readable() {
-            let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT).unwrap();
+            let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT)?;
             trace!("cmd {:?}", cmd);
-            let cmd_s = String::from_utf8(cmd[0].clone()).expect("non-string command");
+            let cmd_s = String::from_utf8(cmd[0].clone())?;
             if "exit".eq(cmd_s.as_str()) {
                 actions.push(ZMQLoopAction::Terminate);
             } else {
@@ -251,17 +251,19 @@ impl PoolWorker {
                 }));
             }
         }
-        actions
+        Ok(actions)
     }
 
-    fn get_zmq_poll_items(&self) -> Vec<zmq::PollItem> {
+    fn get_zmq_poll_items(&self) -> Result<Vec<zmq::PollItem>, PoolError> {
         let mut poll_items: Vec<zmq::PollItem> = Vec::new();
         poll_items.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
         for ref node in self.handler.nodes() {
-            let s: &zmq::Socket = node.zsock.as_ref().unwrap();
+            let s: &zmq::Socket = node.zsock.as_ref()
+                .ok_or(PoolError::InvalidState(
+                    "Try to poll from ZMQ socket for unconnected RemoteNode".to_string()))?;
             poll_items.push(s.as_poll_item(zmq::POLLIN));
         }
-        poll_items
+        Ok(poll_items)
     }
 
 
@@ -320,7 +322,9 @@ impl Pool {
             id: pool_id,
             cmd_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
-                pool_worker.run()
+                pool_worker.run().unwrap_or_else(|err| {
+                    error!("Pool worker thread finished with error {:?}", err);
+                })
             })),
         })
     }
@@ -339,7 +343,9 @@ impl Drop for Pool {
         self.cmd_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
         info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join().unwrap().unwrap();
+        if let Some(worker) = self.worker.take() {
+            worker.join().unwrap();
+        }
         info!(target: target.as_str(), "Drop finished");
     }
 }
@@ -575,7 +581,7 @@ mod tests {
         recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
         send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
         let pool = Pool {
-            worker: Some(thread::spawn(|| { Ok(()) })),
+            worker: None,
             name: name.to_string(),
             id: 0,
             cmd_sock: send_cmd_sock,
@@ -671,7 +677,7 @@ mod tests {
         send_cmd_sock.connect(pair_socket_addr).expect("connect");
 
         let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
-            pw.poll_zmq()
+            pw.poll_zmq().unwrap()
         });
         send_cmd_sock.send_str("exit", zmq::DONTWAIT).expect("send");
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
@@ -684,7 +690,7 @@ mod tests {
     fn pool_worker_get_zmq_poll_items_works() {
         let pw: PoolWorker = Default::default();
 
-        let poll_items = pw.get_zmq_poll_items();
+        let poll_items = pw.get_zmq_poll_items().unwrap();
 
         assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1 );
         //TODO compare poll items
