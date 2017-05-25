@@ -358,7 +358,7 @@ impl AnoncredsUtils {
         format!("{{\
                     \"name\":\"gvt\",\
                     \"version\":\"1.0\",\
-                    \"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"],\
+                    \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"],\
                     \"seq_no\":{}\
                  }}", schema_seq_no)
     }
@@ -367,7 +367,7 @@ impl AnoncredsUtils {
         format!("{{\
                     \"name\":\"xyz\",\
                     \"version\":\"1.0\",\
-                    \"attribute_names\":[\"status\",\"period\"],\
+                    \"attr_names\":[\"status\",\"period\"],\
                     \"seq_no\":{}\
                  }}", schema_seq_no)
     }

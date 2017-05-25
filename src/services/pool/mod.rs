@@ -382,6 +382,7 @@ impl RemoteNode {
         }
         let msg: String = self.zsock.as_ref().unwrap().recv_string(zmq::DONTWAIT)??;
         info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
+        println!("RemoteNode_recv_msg {} {}", self.name, msg);
 
         match msg.as_ref() {
             "pi" => Ok(None), //TODO send pong
