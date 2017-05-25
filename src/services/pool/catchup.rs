@@ -120,7 +120,8 @@ impl CatchupHandler {
                 let mut first_resp = process.pending_reps.pop().unwrap();
                 while !first_resp.txns.is_empty() {
                     let key = first_resp.min_tx().to_string();
-                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json()?;
+                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json()
+                        .map_err(PoolError::from_displayable_as_invalid_data)?;
                     trace!("append to tree {}", new_gen_tx);
                     process.merkle_tree.append(
                         new_gen_tx

@@ -62,7 +62,8 @@ struct TransactionHandler {
 
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
-        let msg = Message::from_raw_str(raw_msg)?;
+        let msg = Message::from_raw_str(raw_msg)
+            .map_err(PoolError::from_displayable_as_invalid_data)?;
         match self {
             &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
             &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
@@ -142,7 +143,8 @@ impl TransactionHandler {
 
     fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
         info!("cmd {:?}", cmd);
-        let request: Value = serde_json::from_str(cmd)?;
+        let request: Value = serde_json::from_str(cmd)
+            .map_err(PoolError::from_displayable_as_invalid_data)?;
         let request_id: u64 = request["reqId"]
             .as_u64()
             .ok_or(PoolError::InvalidData("Invalid request: missed requestId field".to_string()))?;
@@ -177,7 +179,10 @@ impl PoolWorker {
             .ok_or(PoolError::InvalidState("Expect catchup state".to_string()))?;
         let ctx: zmq::Context = zmq::Context::new();
         for gen_txn in &merkle_tree {
-            let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)?;
+            let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)
+                .map_err(|e| {
+                    PoolError::InvalidState(format!("MerkleTree contains invalid data {}", e))
+                })?;
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
             rn.connect(&ctx)?;
             rn.send_str("pi")?;
@@ -276,7 +281,8 @@ impl PoolWorker {
         if poll_items[0].is_readable() {
             let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT)?;
             trace!("cmd {:?}", cmd);
-            let cmd_s = String::from_utf8(cmd[0].clone())?;
+            let cmd_s = String::from_utf8(cmd[0].clone())
+                .map_err(PoolError::from_displayable_as_invalid_data)?;
             if "exit".eq(cmd_s.as_str()) {
                 actions.push(ZMQLoopAction::Terminate);
             } else {
@@ -450,7 +456,7 @@ impl RemoteNode {
     }
 
     fn send_msg(&self, msg: &Message) -> Result<(), PoolError> {
-        self.send_str(msg.to_json()?.as_str())
+        self.send_str(msg.to_json().map_err(PoolError::from_displayable_as_invalid_data)?.as_str())
     }
 }
 
@@ -464,7 +470,8 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config = match config {
-            Some(config) => PoolConfig::from_json(config)?,
+            Some(config) => PoolConfig::from_json(config)
+                .map_err(PoolError::from_displayable_as_invalid_config)?,
             None => PoolConfig::default_for_name(name)
         };
 
@@ -482,7 +489,8 @@ impl PoolService {
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path())?;
-        f.write(pool_config.to_json()?.as_bytes())?;
+        f.write(pool_config.to_json()
+            .map_err(PoolError::from_displayable_as_invalid_config)?.as_bytes())?;
         f.flush()?;
 
         // TODO probably create another one file pool.json with pool description,

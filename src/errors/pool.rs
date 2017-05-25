@@ -4,7 +4,6 @@ extern crate serde_json;
 use std::cell::{BorrowError, BorrowMutError};
 use std::{error, fmt, io};
 use std::error::Error;
-use std::string::FromUtf8Error;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -56,6 +55,16 @@ impl error::Error for PoolError {
     }
 }
 
+impl PoolError {
+    pub fn from_displayable_as_invalid_config<D>(err: D) -> PoolError where D: fmt::Display {
+        PoolError::InvalidConfiguration(format!("{}", err))
+    }
+
+    pub fn from_displayable_as_invalid_data<D>(err: D) -> PoolError where D: fmt::Display {
+        PoolError::InvalidData(format!("{}", err))
+    }
+}
+
 impl From<io::Error> for PoolError {
     fn from(err: io::Error) -> PoolError {
         PoolError::Io(err)
@@ -65,18 +74,6 @@ impl From<io::Error> for PoolError {
 impl From<zmq::Error> for PoolError {
     fn from(err: zmq::Error) -> PoolError {
         PoolError::Io(io::Error::from(err))
-    }
-}
-
-impl From<serde_json::Error> for PoolError {
-    fn from(err: serde_json::Error) -> PoolError {
-        PoolError::InvalidConfiguration(err.description().to_string())
-    }
-}
-
-impl From<FromUtf8Error> for PoolError {
-    fn from(err: FromUtf8Error) -> Self {
-        PoolError::InvalidData(err.description().to_string())
     }
 }
 
