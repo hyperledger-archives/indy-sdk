@@ -74,11 +74,11 @@
         err = error;
         if(claimDefJSON && outClaimDefJson)
         {
-            *outClaimDefJson = [ NSString stringWithString:claimDefJSON];
+            *outClaimDefJson = claimDefJSON;
         }
         if(claimDefUUID && outClaimDefUUID)
         {
-            *outClaimDefUUID = [ NSString stringWithString:claimDefUUID];
+            *outClaimDefUUID = claimDefUUID;
         }
         [completionExpectation fulfill];
     }];
@@ -182,7 +182,7 @@
         err = error;
         if(outJson)
         {
-            *outJson = [ NSString stringWithString: claimOffersJSON];
+            *outJson = claimOffersJSON;
         }
         [completionExpectation fulfill];
     }];
@@ -218,7 +218,7 @@
         err = error;
         if(outJson)
         {
-            *outJson = [ NSString stringWithString: claimReqJSON];
+            *outJson = claimReqJSON;
         }
         [completionExpectation fulfill];
     }];
@@ -252,11 +252,11 @@
         err = error;
         if(outRevocRegUpdateJson)
         {
-            *outRevocRegUpdateJson = [NSString stringWithString:revocRegUpdateJSON];
+            *outRevocRegUpdateJson = revocRegUpdateJSON;
         }
         if(claimJson)
         {
-            *outClaimJson = [NSString stringWithString:claimJson];
+            *outClaimJson = claimJSON;
         }
         [completionExpectation fulfill];
     }];
@@ -309,7 +309,7 @@
         err = error;
         if(outClaimsJson)
         {
-            *outClaimsJson = [NSString stringWithString:claimsJSON];
+            *outClaimsJson = claimsJSON;
         }
         [completionExpectation fulfill];
     }];
@@ -349,7 +349,7 @@
         err = error;
         if (outProofJson)
         {
-            *outProofJson = [NSString stringWithString:proofJSON];
+            *outProofJson = proofJSON;
         }
         [completionExpectation fulfill];
     }];
@@ -362,18 +362,34 @@
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
 }
+
 -(NSError*) verifierVerifyProof:(NSString*) proofRequestJson
                       proofJson:(NSString*) proofJson
                     schemasJson:(NSString*) schemasJson
                   claimDefsJson:(NSString*) claimDefsJson
                   revocRegsJson:(NSString*) revocRegsJson
+                       outValid:(BOOL*) isValid
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [SovrinAnoncreds verifierVerifyProof:<#(SovrinHandle)#> proofReqJSON:<#(NSString *)#> proofJSON:<#(NSString *)#> schemasJSON:<#(NSString *)#> claimDefsJSON:<#(NSString *)#> revocRegsJSON:<#(NSString *)#> completion:<#^(NSError *error, BOOL valid)handler#>]
+    NSError* ret = [SovrinAnoncreds verifierVerifyProof:proofRequestJson
+                                              proofJSON:proofJson
+                                            schemasJSON:schemasJson
+                                          claimDefsJSON:claimDefsJson
+                                          revocRegsJSON:revocRegsJson
+                                             completion:^(NSError *error, BOOL valid)
+    {
+        err = error;
+        if(isValid)
+        {
+            *isValid = valid;
+        }
+        [completionExpectation fulfill];
+    }];
+
     if( ret.code != Success)
     {
         return ret;
@@ -384,40 +400,4 @@
     
 }
 
-pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str,
-                             schemas_json: &str, claim_defs_json: &str, revoc_regs_json: &str) -> Result<bool, ErrorCode> {
-    let (sender, receiver) = channel();
-    
-    let cb = Box::new(move |err, valid| {
-        sender.send((err, valid)).unwrap();
-    });
-    
-    let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
-    
-    let proof_request_json = CString::new(proof_request_json).unwrap();
-    let proof_json = CString::new(proof_json).unwrap();
-    let schemas_json = CString::new(schemas_json).unwrap();
-    let claim_defs_json = CString::new(claim_defs_json).unwrap();
-    let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
-    
-    let err = sovrin_verifier_verify_proof(command_handle,
-                                           proof_request_json.as_ptr(),
-                                           proof_json.as_ptr(),
-                                           schemas_json.as_ptr(),
-                                           claim_defs_json.as_ptr(),
-                                           revoc_regs_json.as_ptr(),
-                                           cb);
-    
-    if err != ErrorCode::Success {
-        return Err(err);
-    }
-    
-    let (err, valid) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    
-    if err != ErrorCode::Success {
-        return Err(err);
-    }
-    
-    Ok(valid)
-}
 @end

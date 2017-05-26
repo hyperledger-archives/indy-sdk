@@ -31,6 +31,7 @@
 
 -(void) anoncredsWorksForSingleIssuerSingleProverTest
 {
+    NSLog(@"anoncredsWorksForSingleIssuerSingleProverTest() started...");
     [TestUtils cleanupStorage];
     
     NSString* poolName = @"pool1";
@@ -124,8 +125,8 @@
     
     // 9. Prover store received Claim
     
-    res = [[AnoncredsUtils sharedInstance] proverStoreClaim: issuerWalletHandle
-                                                 claimsJson: claimJson];
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaim: proverWalletHandle
+                                                 claimsJson: xclaimJson];
 
     NSAssert(res.code == Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
@@ -149,7 +150,7 @@
     
     res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReq:proverWalletHandle
                                                      proofRequestJson:proofReqJson
-                                                        outClaimsJson:&claimJson];
+                                                        outClaimsJson:&claimsJson];
 
     NSAssert(res.code == Success, @"AnoncredsUtils::proverGetClaimsForProofReq() failed");
 
@@ -159,56 +160,57 @@
                                                              error: &res];
     NSAssert( claims, @"serialization failed");
     
-    NSDictionary *claims_for_attr_1 = [claims objectForKey:@"attr1_uuid"];
+    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
 
     NSAssert( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
     
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
+    
     //TODO: add assert here
     
-    [TestUtils cleanupStorage];
-}
-
-#[test]
-fn anoncreds_works_for_single_issuer_single_prover() {
-
-
-    
     // 11. Prover create Proof
-    let requested_claims_json = format!("{{\
-                                        \"self_attested_attributes\":{{}},\
-                                        \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
-                                        \"requested_predicates\":{{\"predicate1_uuid\":\"{}\"}}\
-                                        }}", claim.claim_uuid, claim.claim_uuid);
+    NSString* requestedClaimsJson = [ NSString stringWithFormat:@"{"\
+                                                                 "  \"self_attested_attributes\":{},"\
+                                                                 "  \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},"\
+                                                                 "  \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}"\
+                                                                 "}", claimUUID,claimUUID];
+
+    NSString* schemasJson = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];
     
-    let schemas_json = format!("{{\"{}\":{}}}", claim.claim_uuid, schema);
-    let claim_defs_json = format!("{{\"{}\":{}}}", claim.claim_uuid, claim_def_json);
-    let revoc_regs_jsons = "{}";
+    NSString* claimDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimUUID, claimDefJSON];
+    NSString* revocRegsJsons = @"{}";
     
-    let res = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
-                                                  &proof_req_json,
-                                                  &requested_claims_json,
-                                                  &schemas_json,
-                                                  &master_secret_name,
-                                                  &claim_defs_json,
-                                                  &revoc_regs_jsons);
-    assert!(res.is_ok());
-    let proof_json = res.unwrap();
+    NSString* proofJson = nil;
     
-    // 12. Verifier verify proof
-    let res = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
-                                                    &proof_json,
-                                                    &schemas_json,
-                                                    &claim_defs_json,
-                                                    &revoc_regs_jsons);
-    assert!(res.is_ok());
-    assert!(res.unwrap());
+    res = [[AnoncredsUtils sharedInstance] proverCreateProof: proverWalletHandle
+                                                proofReqJson: proofReqJson
+                                         requestedClaimsJson: requestedClaimsJson
+                                                 schemasJson: schemasJson
+                                            masterSecretName: masterSecretName
+                                               claimDefsJson: claimDefsJson
+                                               revocRegsJson: revocRegsJsons
+                                                outProofJson:&proofJson];
     
-    TestUtils::cleanup_storage();
+    NSAssert(res.code == Success, @"AnoncredsUtils::proverCreateProof() failed");
+    
+    BOOL isValid = NO;
+    
+    res = [[AnoncredsUtils sharedInstance ] verifierVerifyProof:proofReqJson
+                                                      proofJson:proofJson
+                                                    schemasJson:schemasJson
+                                                  claimDefsJson:claimDefsJson
+                                                  revocRegsJson:revocRegsJsons
+                                                       outValid:&isValid ];
+    
+    NSAssert(res.code == Success, @"AnoncredsUtils::verifierVerifyProof() failed");
+    NSAssert( isValid == YES, @"isValid == NO");
+    NSLog(@"anoncredsWorksForSingleIssuerSingleProverTest() ended...");
+    [TestUtils cleanupStorage];
 }
 
 - (void)testAnoncreds
 {
-
+    [self anoncredsWorksForSingleIssuerSingleProverTest];
 }
 
 @end

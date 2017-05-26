@@ -52,4 +52,21 @@
 -(NSError*) proverGetClaimsForProofReq:(SovrinHandle) walletHandle
                       proofRequestJson:(NSString*) str
                          outClaimsJson:(NSString**) outClaimsJson;
+
+-(NSError*) proverCreateProof:(SovrinHandle) walletHandle
+                 proofReqJson:(NSString*) proofReqJson
+          requestedClaimsJson:(NSString*) requestedClaimsJson
+                  schemasJson:(NSString*) schemasJson
+             masterSecretName:(NSString*) masterSecreteName
+                claimDefsJson:(NSString*) claimDefsJson
+                revocRegsJson:(NSString*) revocRegsJson
+                 outProofJson:(NSString**) outProofJson;
+
+-(NSError*) verifierVerifyProof:(NSString*) proofRequestJson
+                      proofJson:(NSString*) proofJson
+                    schemasJson:(NSString*) schemasJson
+                  claimDefsJson:(NSString*) claimDefsJson
+                  revocRegsJson:(NSString*) revocRegsJson
+                       outValid:(BOOL*) isValid;
+
 @end

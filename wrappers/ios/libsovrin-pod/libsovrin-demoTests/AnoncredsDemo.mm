@@ -241,8 +241,7 @@
     // 10. Verifier verify proof
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinAnoncreds verifierVerifyProof:  walletHandle
-                                  proofReqJSON:  proofReqJSON
+    ret = [SovrinAnoncreds verifierVerifyProof:  proofReqJSON
                                      proofJSON:  proofJSON
                                    schemasJSON:  schemas
                                  claimDefsJSON:  claimDefsJSON
