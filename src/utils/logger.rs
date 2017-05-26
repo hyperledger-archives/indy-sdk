@@ -15,7 +15,7 @@ impl log::Log for SimpleLogger {
     }
     fn log(&self, record: &LogRecord) {
         if self.enabled(record.metadata()) {
-            println!("{}:{} - {}", record.level(), record.target(), record.args());
+            println!("{:>5}|{:<25}|{:>30}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args());
         }
     }
 }
@@ -40,7 +40,7 @@ macro_rules! try_log {
     ($expr:expr) => (match $expr {
         Ok(val) => val,
         Err(err) => {
-            error!("Error from try_log macro - {}", err);
+            error!("try_log! | {}", err);
             return Err(From::from(err))
         }
     })
