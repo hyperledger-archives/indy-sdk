@@ -67,7 +67,7 @@ impl SignusService {
                                 Base58::encode(&secret_key),
                                 Base58::encode(&ver_key),
                                 Base58::encode(&sign_key));
-        println!("did {:?}", my_did.did);
+        info!("did {:?}", my_did.did);
 
         Ok(my_did)
     }
