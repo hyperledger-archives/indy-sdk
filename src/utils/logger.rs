@@ -1,8 +1,24 @@
 extern crate env_logger;
+extern crate log;
 
 use std::sync::{Once, ONCE_INIT};
 
 pub struct LoggerUtils {}
+
+struct SimpleLogger;
+
+use self::log::{LogMetadata, LogRecord, LogLevelFilter};
+
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &LogMetadata) -> bool {
+        true
+    }
+    fn log(&self, record: &LogRecord) {
+        if self.enabled(record.metadata()) {
+            println!("{}:{} - {}", record.level(), record.target(), record.args());
+        }
+    }
+}
 
 impl LoggerUtils {
     pub fn init() {
@@ -11,7 +27,21 @@ impl LoggerUtils {
         }
 
         LOGGER_INIT.call_once(|| {
-            env_logger::init().unwrap();
+            log::set_logger(|max_log_level| {
+                max_log_level.set(LogLevelFilter::Info);
+                Box::new(SimpleLogger)
+            }).unwrap();
         });
     }
+}
+
+#[macro_export]
+macro_rules! try_log {
+    ($expr:expr) => (match $expr {
+        Ok(val) => val,
+        Err(err) => {
+            error!("Error from try_log macro - {}", err);
+            return Err(From::from(err))
+        }
+    })
 }
