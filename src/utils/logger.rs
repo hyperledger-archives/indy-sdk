@@ -15,7 +15,7 @@ impl log::Log for SimpleLogger {
     }
     fn log(&self, record: &LogRecord) {
         if self.enabled(record.metadata()) {
-            println!("{:>5}|{:<25}|{:>30}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args());
+            println!("{:>5}|{:<27}|{:>30}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args());
         }
     }
 }
