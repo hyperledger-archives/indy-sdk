@@ -18,18 +18,14 @@
 		3E2FFA441ED5C37100536EAD /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2FFA431ED5C37100536EAD /* WalletUtils.m */; };
 		3E2FFA471ED5CC5E00536EAD /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2FFA461ED5CC5E00536EAD /* AnoncredsUtils.m */; };
 		3E9CDB9A1ECC841700B1980D /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E9CDB991ECC841700B1980D /* SignusDemo.mm */; };
-		3ED5BE4C1EC4967C00881380 /* libsovrin.framework in Resources */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
-		3ED5BE4F1EC4984900881380 /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		3ED5BE511EC4986100881380 /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3EC6BCF51EDC0A4500A290DE /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EC6BCF41EDC0A4500A290DE /* libsovrin.framework */; };
+		3EC6BCF61EDC0A5600A290DE /* libsovrin.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 3EC6BCF41EDC0A4500A290DE /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3ED5BE521EC98D6600881380 /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
 		3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */; };
 		3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE561EC9DA9700881380 /* PoolUtils.m */; };
 		3EF020D81EC4593900CF985C /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
 		3EF020DB1EC4595500CF985C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020DA1EC4595500CF985C /* Environment.m */; };
-		3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
-		3EF020DE1EC45AA300CF985C /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF020DC1EC45A9B00CF985C /* libsovrin.framework */; };
 		4E342A88B72D9633DC35144B /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */; };
-		C417EEF3998DF20C9FE62376 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,7 +45,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				3ED5BE4F1EC4984900881380 /* libsovrin.framework in CopyFiles */,
+				3EC6BCF61EDC0A5600A290DE /* libsovrin.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,7 +55,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 6;
 			files = (
-				3ED5BE511EC4986100881380 /* libsovrin.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,6 +81,7 @@
 		3E2FFA451ED5CC5E00536EAD /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
 		3E2FFA461ED5CC5E00536EAD /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
 		3E9CDB991ECC841700B1980D /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
+		3EC6BCF41EDC0A4500A290DE /* libsovrin.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = libsovrin.framework; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-fpqoyzkovibgszalhhmmnlcetkfp/Build/Products/Debug-iphoneos/libsovrin.framework"; sourceTree = "<group>"; };
 		3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
 		3ED5BE551EC9DA9700881380 /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
 		3ED5BE561EC9DA9700881380 /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
@@ -93,7 +89,6 @@
 		3EF020D71EC4593900CF985C /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
 		3EF020D91EC4595500CF985C /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
 		3EF020DA1EC4595500CF985C /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
-		3EF020DC1EC45A9B00CF985C /* libsovrin.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = libsovrin.framework; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-dlmogskbrwrmnoceaqqsbyhvursy/Build/Products/Debug-iphoneos/libsovrin.framework"; sourceTree = "<group>"; };
 		920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -103,8 +98,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3EF020DD1EC45A9B00CF985C /* libsovrin.framework in Frameworks */,
-				C417EEF3998DF20C9FE62376 /* libPods-libsovrin-demo.a in Frameworks */,
+				3EC6BCF51EDC0A4500A290DE /* libsovrin.framework in Frameworks */,
 				4E342A88B72D9633DC35144B /* libPods-libsovrin-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -113,7 +107,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3EF020DE1EC45AA300CF985C /* libsovrin.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -205,7 +198,7 @@
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				3EF020DC1EC45A9B00CF985C /* libsovrin.framework */,
+				3EC6BCF41EDC0A4500A290DE /* libsovrin.framework */,
 				920EA9D52354D5FE353162A1 /* libPods-libsovrin-demo.a */,
 			);
 			name = Frameworks;
@@ -319,7 +312,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3ED5BE4C1EC4967C00881380 /* libsovrin.framework in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
