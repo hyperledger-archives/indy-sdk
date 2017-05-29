@@ -34,6 +34,8 @@ typedef NS_ENUM(NSInteger, SovrinErrorCode)
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
     
+    CommonInvalidStructure,
+    
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
