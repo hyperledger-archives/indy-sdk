@@ -49,7 +49,7 @@
                                                xtype:  xtype
                                               handle: &myWalletHandle];
     
-    NSAssert( ret.code == Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWallet() failed!");
 
     //2. Create and open Their Wallet
 
@@ -58,7 +58,7 @@
                                                xtype:  xtype
                                               handle: &theirWalletHandle];
     
-    NSAssert( ret.code == Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWallet() failed!");
 
     // 3. Create My DID
     
@@ -77,7 +77,7 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 4. Create Their DID
@@ -104,7 +104,7 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
     // 5. Store Their DID
@@ -122,7 +122,7 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 6. Their Sign message
@@ -143,7 +143,7 @@
         [completionExpectation fulfill];
     }];
 
-    NSAssert( ret.code == Success, @"sign() failed!");
+    XCTAssertEqual(ret.code, Success, @"sign() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 7. I Verify message
@@ -163,9 +163,8 @@
         [completionExpectation fulfill];
     }];
 
-    NSAssert( ret.code == Success, @"verifySignature() failed!");
+    XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
 }
 
 @end

@@ -49,7 +49,7 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"openPoolWithName() failed!");
+    XCTAssertEqual(ret.code, Success, @"openPoolWithName() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     
@@ -76,7 +76,7 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"submitRequest() failed!");
+    XCTAssertEqual(ret.code, Success, @"submitRequest() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSError *error;
     
@@ -84,7 +84,7 @@
                                                                                        length:[result length]]
                                                                                       options:kNilOptions
                                                                                         error:&error];
-    NSAssert( dictionary1, @"dictionary1 must not be nil!");
+    XCTAssertTrue( dictionary1, @"dictionary1 must not be nil!");
     
     NSString *str = @"{"\
                     @"  \"op\": \"REPLY\","\
@@ -98,10 +98,10 @@
                                                                 options:  kNilOptions
                                                                   error: &error];
     
-    NSAssert( [self validate:@"op" d1: dictionary1 d2: dictionary2] == YES, @"unexpected result");
+    XCTAssertTrue([self validate:@"op" d1: dictionary1 d2: dictionary2], @"unexpected result");
     NSDictionary *r1 = [ dictionary1 objectForKey: @"result"];
     NSDictionary *r2 = [ dictionary2 objectForKey: @"result"];
-    NSAssert( [self validate:@"reqId" d1: r1 d2: r2] == YES, @"unexpected result");
+    XCTAssertTrue( [self validate:@"reqId" d1: r1 d2: r2], @"unexpected result");
     NSLog(@"test ended");
 }
 

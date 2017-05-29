@@ -31,7 +31,7 @@
                                        "\"name\":\"gvt\"," \
                                        "\"version\":\"1.0\"," \
                                        "\"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"]," \
-                                       "\"seq_no\":%d" \
+                                       "\"seq_no\":%ld" \
                                        "}", [seqNo integerValue]
     ];
 }
@@ -40,7 +40,7 @@
 {
     return [NSString stringWithFormat:@"{"\
             "\"issuer_did\":\"%@\"," \
-            "\"claim_def_seq_no\":%d" \
+            "\"claim_def_seq_no\":%ld" \
             "}", issuerDid, [claimDefSeqNo integerValue]
             ];
 }
@@ -54,6 +54,17 @@
                                        "\"age\":[\"28\",\"28\"]"\
                                        "}"];
 }
+
+-(NSString*) getXyzSchemaJson:(NSNumber*) schemaSeqNo
+{
+    return [NSString stringWithFormat:@"{"\
+            "\"name\":\"xyz\","\
+            "\"version\":\"1.0\","\
+            "\"attribute_names\":[\"status\",\"period\"],"\
+            "\"seq_no\":%ld"\
+            "}",[schemaSeqNo integerValue]];
+}
+
 
 -(NSError*) issuerCreateClaimDefinition:(SovrinHandle) walletHandle
                                  schema:(NSString*) schema
