@@ -191,11 +191,14 @@
                               }\
                               }\
                               }", (unsigned long)seqNo ];
+  
+    __block NSString *claimsJson = nil;
     
     ret = [SovrinAnoncreds proverGetClaimsForProofReq:  walletHandle
                                          proofReqJSON:  proofReqJSON
-                                           completion: ^(NSError* error, NSString* claimsJSON)
+                                           completion: ^(NSError* error, NSString* claimsJSON1)
     {
+        claimsJson = claimsJSON1;
         XCTAssertEqual(error.code, Success, "proverGetClaimsForProofReq() got error in completion");
         [completionExpectation fulfill];
         
@@ -203,19 +206,33 @@
 
     NSAssert( ret.code == Success, @"proverGetClaimsForProofReq() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    NSDictionary *claims = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:[claimsJson UTF8String]
+                                                                                  length:[claimsJson length]]
+                                                           options:kNilOptions
+                                                             error: &ret];
+    NSAssert( claims, @"serialization failed");
+    
+    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
+    
+    NSAssert( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
+    
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
 
+    
+    
     // 9. Prover create Proof for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                                                        \"self_attested_attributes\":{},\
-                                                                       \"requested_attrs\":{\"attr1_uuid\":[\"%lu\",true]},\
-                                                                       \"requested_predicates\":{\"predicate1_uuid\":\"%lu\"}\
-                                                                   }", (unsigned long)seqNo, (unsigned long)seqNo ];
+                                                                       \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},\
+                                                                       \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}\
+                                                                   }", claimUUID, claimUUID ];
     
-    NSString *schemas = [NSString stringWithFormat: @"{\"%lu\":%@}", (unsigned long)seqNo, schema];
+    NSString *schemas_json = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];
     
-    NSString *claimDefsJSON = [NSString stringWithFormat: @"{\"%lu\":%@}", (unsigned long)seqNo, claimJSON];
+    NSString *claimDefsJSON = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, claimJSON];
     
     NSString *revocRegsJsons = @"{}";
     
@@ -224,7 +241,7 @@
     ret =  [SovrinAnoncreds proverCreateProof:  walletHandle
                                  proofReqJSON:  proofReqJSON
                           requestedClaimsJSON:  requestedClaimsJSON
-                                  schemasJSON:  schemas
+                                  schemasJSON:  schemas_json
                              masterSecretName:  masterSecretName
                                 claimDefsJSON:  claimDefsJSON
                                 revocRegsJSON:  revocRegsJsons
@@ -243,7 +260,7 @@
 
     ret = [SovrinAnoncreds verifierVerifyProof:  proofReqJSON
                                      proofJSON:  proofJSON
-                                   schemasJSON:  schemas
+                                   schemasJSON:  schemas_json
                                  claimDefsJSON:  claimDefsJSON
                                  revocRegsJSON:  revocRegsJsons
                                     completion: ^(NSError *error, BOOL valid)
