@@ -71,6 +71,7 @@ fn anoncreds_demo_works() {
     let (open_wallet_sender, open_wallet_receiver) = channel();
     let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
     let (wallet_set_seq_no_for_value_sender, wallet_set_seq_no_for_value_receiver) = channel();
+    let (wallet_set_seq_no_for_value_sender2, wallet_set_seq_no_for_value_receiver2) = channel();
     let (issuer_create_and_store_revoc_reg_sender, issuer_create_and_store_revoc_reg_receiver) = channel();
     let (prover_create_master_secret_sender, prover_create_master_secret_receiver) = channel();
     let (prover_create_claim_req_sender, prover_create_claim_req_receiver) = channel();
@@ -91,6 +92,9 @@ fn anoncreds_demo_works() {
     });
     let wallet_set_seq_no_for_value_cb = Box::new(move |err| {
         wallet_set_seq_no_for_value_sender.send(err).unwrap();
+    });
+    let wallet_set_seq_no_for_value_cb2 = Box::new(move |err| {
+        wallet_set_seq_no_for_value_sender2.send(err).unwrap();
     });
     let issuer_create_and_store_revoc_reg_cb = Box::new(move |err, revoc_reg_json, revoc_reg_uuid| {
         issuer_create_and_store_revoc_reg_sender.send((err, revoc_reg_json, revoc_reg_uuid)).unwrap();
@@ -121,6 +125,7 @@ fn anoncreds_demo_works() {
     let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
     let (wallet_set_seq_no_for_value_command_handle, wallet_set_seq_no_for_value_callback) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb);
+    let (wallet_set_seq_no_for_value_command_handle2, wallet_set_seq_no_for_value_callback2) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb2);
     let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
     let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
     let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
@@ -198,19 +203,32 @@ fn anoncreds_demo_works() {
 
     let master_secret_name = "master_secret";
 
-//    // Issuer creates a revocation registry
-//    let max_claim_num: i32 = 1000;
-//
-//    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
-//                                                       wallet_handle,
-//                                                       claim_def_seq_no,
-//                                                       max_claim_num,
-//                                                       issuer_create_and_store_revoc_reg_callback);
-//
-//    assert_eq!(ErrorCode::Success, err);
-//    let (err, revoc_reg_json, revoc_reg_uuid) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-//    println!("revocation_reg_json: {:?}", revoc_reg_json);
-//    assert_eq!(ErrorCode::Success, err);
+    // Issuer creates a revocation registry
+    let max_claim_num: i32 = 1000;
+
+    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
+                                                       wallet_handle,
+                                                       claim_def_seq_no,
+                                                       max_claim_num,
+                                                       issuer_create_and_store_revoc_reg_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, revoc_reg_json, revoc_reg_uuid) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("revocation_reg_json: {:?}", revoc_reg_json);
+    assert_eq!(ErrorCode::Success, err);
+
+    // Create relationship between revoc_reg_seq_no and revoc_reg_uuid in wallet
+    let revoc_reg_seq_no = 2;
+
+    let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle2,
+                                                 wallet_handle,
+                                                 CString::new(revoc_reg_uuid).unwrap().as_ptr(),
+                                                 revoc_reg_seq_no,
+                                                 wallet_set_seq_no_for_value_callback2);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = wallet_set_seq_no_for_value_receiver2.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
 
     // 5. Prover create Master Secret
     let err =
@@ -254,13 +272,13 @@ fn anoncreds_demo_works() {
                                    wallet_handle,
                                    CString::new(claim_req_json).unwrap().as_ptr(),
                                    CString::new(claim_json).unwrap().as_ptr(),
-                                   -1,
+                                   revoc_reg_seq_no,
                                    -1,
                                    issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, revoc_reg_update_json, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("xclaim_json {:?}", xclaim_json);
+    println!("revoc_reg_update_json: {:?}\nxclaim_json {:?}", revoc_reg_update_json, xclaim_json);
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover process and store Claim

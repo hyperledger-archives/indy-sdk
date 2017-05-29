@@ -24,22 +24,24 @@ name = "sovrin"
 path = "src/main.rs"
 
 [features]
-default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_milagro", "hash_openssl", "local_nodes_pool"]
+default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool"]
 bn_openssl = ["openssl", "int_traits"]
 ed25519_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 xsalsa20_sodium = ["sodiumoxide"]
 pair_milagro = ["milagro-crypto"]
+pair_amcl = ["amcl"]
 hash_openssl = ["openssl"]
 local_nodes_pool = []
 
 [dependencies]
+amcl = { git = "https://github.com/MRJCrunch/amcl.git", path="version22/rust", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 libc = "0.2.21"
 log = "0.3.7"
 openssl = { version = "0.9.11", optional = true }
-milagro-crypto = { version = "0.1.11", optional = true }
+milagro-crypto = { version = "0.1.13", optional = true }
 rand = "0.3"
 rusqlite = "0.10.1"
 rust-base58 = {version = "0.0.4", optional = true}

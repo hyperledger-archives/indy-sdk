@@ -1,5 +1,4 @@
 extern crate rand;
-extern crate milagro_crypto;
 extern crate openssl;
 
 use errors::crypto::CryptoError;

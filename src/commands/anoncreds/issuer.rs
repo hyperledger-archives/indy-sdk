@@ -200,7 +200,7 @@ impl IssuerCommandExecutor {
         let (revocation_registry, revocation_registry_private,
             mut revocation_registry_json, revocation_registry_uuid) = match revoc_reg_seq_no {
             Some(seq_no) => {
-                let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &seq_no))?;
+                let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &seq_no))?;
                 let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
                 let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
 
