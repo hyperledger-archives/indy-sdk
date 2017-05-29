@@ -138,7 +138,6 @@ extern "C" {
     
     
     extern sovrin_error_t sovrin_verifier_verify_proof(sovrin_handle_t command_handle,
-                                                       sovrin_handle_t wallet_handle,
                                                        const char *    proof_request_json,
                                                        const char *    proof_json,
                                                        const char *    schemas_json,
