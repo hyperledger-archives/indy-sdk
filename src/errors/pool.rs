@@ -1,11 +1,9 @@
 extern crate zmq;
 extern crate serde_json;
 
-use std::error;
-use std::io;
-use std::fmt;
-use std::error::Error;
 use std::cell::{BorrowError, BorrowMutError};
+use std::{error, fmt, io};
+use std::error::Error;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -17,7 +15,8 @@ pub enum PoolError {
     InvalidData(String),
     InvalidConfiguration(String),
     InvalidHandle(String),
-    Io(io::Error)
+    Io(io::Error),
+    Terminate,
 }
 
 impl fmt::Display for PoolError {
@@ -28,7 +27,8 @@ impl fmt::Display for PoolError {
             PoolError::InvalidHandle(ref description) => write!(f, "Invalid Handle: {}", description),
             PoolError::InvalidConfiguration(ref description) => write!(f, "Invalid configuration: {}", description),
             PoolError::InvalidData(ref description) => write!(f, "Invalid data: {}", description),
-            PoolError::Io(ref err) => err.fmt(f)
+            PoolError::Io(ref err) => err.fmt(f),
+            PoolError::Terminate => write!(f, "Pool work terminated"),
         }
     }
 }
@@ -41,19 +41,31 @@ impl error::Error for PoolError {
             PoolError::InvalidHandle(ref description) |
             PoolError::InvalidData(ref description) |
             PoolError::InvalidConfiguration(ref description) => description,
-            PoolError::Io(ref err) => err.description()
+            PoolError::Io(ref err) => err.description(),
+            PoolError::Terminate => "Pool work terminated",
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            PoolError::NotCreated(ref description) |
-            PoolError::InvalidState(ref description) |
-            PoolError::InvalidHandle(ref description) |
-            PoolError::InvalidData(ref description) |
-            PoolError::InvalidConfiguration(ref description) => None,
+            PoolError::NotCreated(_) |
+            PoolError::InvalidState(_) |
+            PoolError::InvalidHandle(_) |
+            PoolError::InvalidData(_) |
+            PoolError::InvalidConfiguration(_) |
+            PoolError::Terminate => None,
             PoolError::Io(ref err) => Some(err)
         }
+    }
+}
+
+impl PoolError {
+    pub fn from_displayable_as_invalid_config<D>(err: D) -> PoolError where D: fmt::Display {
+        PoolError::InvalidConfiguration(format!("{}", err))
+    }
+
+    pub fn from_displayable_as_invalid_data<D>(err: D) -> PoolError where D: fmt::Display {
+        PoolError::InvalidData(format!("{}", err))
     }
 }
 
@@ -66,12 +78,6 @@ impl From<io::Error> for PoolError {
 impl From<zmq::Error> for PoolError {
     fn from(err: zmq::Error) -> PoolError {
         PoolError::Io(io::Error::from(err))
-    }
-}
-
-impl From<serde_json::Error> for PoolError {
-    fn from(err: serde_json::Error) -> PoolError {
-        PoolError::InvalidConfiguration(err.description().to_string())
     }
 }
 
@@ -95,7 +101,8 @@ impl ToErrorCode for PoolError {
             PoolError::InvalidConfiguration(ref description) => ErrorCode::PoolLedgerInvalidConfiguration,
             PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
             PoolError::InvalidData(ref description) => ErrorCode::PoolLedgerInvalidDataFormat,
-            PoolError::Io(ref err) => ErrorCode::PoolLedgerIOError
+            PoolError::Io(ref err) => ErrorCode::PoolLedgerIOError,
+            PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
         }
     }
 }
