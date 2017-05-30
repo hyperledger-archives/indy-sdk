@@ -65,6 +65,13 @@
             "}",[schemaSeqNo integerValue]];
 }
 
+-(NSString*) getXyzClaimJson
+{
+    return [NSString stringWithFormat:@"{"\
+                                       "  \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],"\
+                                       "  \"period\":[\"8\",\"8\"]"\
+                                       "}"];
+}
 
 -(NSError*) issuerCreateClaimDefinition:(SovrinHandle) walletHandle
                                  schema:(NSString*) schema

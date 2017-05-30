@@ -18,6 +18,7 @@
 
 -(NSString*) getGvtClaimJson;
 -(NSString*) getXyzSchemaJson:(NSNumber*) schemaSeqNo;
+-(NSString*) getXyzClaimJson;
 
 -(NSError*) createClaimDefinitionAndSetLink:(SovrinHandle) walletHandle
                                      schema:(NSString*) schema

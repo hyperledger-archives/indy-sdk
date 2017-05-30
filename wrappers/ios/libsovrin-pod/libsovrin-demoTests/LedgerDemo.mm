@@ -8,6 +8,7 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import <libsovrin/libsovrin.h>
+#import "NSDictionary+JSON.h"
 
 @interface LedgerDemo : XCTestCase
 
@@ -80,10 +81,7 @@
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSError *error;
     
-    NSDictionary *dictionary1 = [NSJSONSerialization JSONObjectWithData: [NSData dataWithBytes:[result UTF8String]
-                                                                                       length:[result length]]
-                                                                                      options:kNilOptions
-                                                                                        error:&error];
+    NSDictionary *dictionary1 = [NSDictionary fromString: result];
     XCTAssertTrue( dictionary1, @"dictionary1 must not be nil!");
     
     NSString *str = @"{"\
@@ -93,10 +91,7 @@
                     @"    }"\
                     @"}";
 
-    NSDictionary *dictionary2 = [NSJSONSerialization JSONObjectWithData:  [NSData dataWithBytes:[str UTF8String]
-                                                                                         length:[str length]]
-                                                                options:  kNilOptions
-                                                                  error: &error];
+    NSDictionary *dictionary2 = [NSDictionary fromString: str];
     
     XCTAssertTrue([self validate:@"op" d1: dictionary1 d2: dictionary2], @"unexpected result");
     NSDictionary *r1 = [ dictionary1 objectForKey: @"result"];

@@ -8,6 +8,7 @@
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
 #import "WalletUtils.h"
+#import "NSDictionary+JSON.h"
 
 @interface AnoncredsDemo : XCTestCase
 
@@ -207,11 +208,9 @@
     XCTAssertEqual( ret.code, Success, @"proverGetClaimsForProofReq() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    NSDictionary *claims = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:[claimsJson UTF8String]
-                                                                                  length:[claimsJson length]]
-                                                           options:kNilOptions
-                                                             error: &ret];
+    NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
+    
     NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
     XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
     NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
