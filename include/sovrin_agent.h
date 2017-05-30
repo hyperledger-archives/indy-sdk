@@ -1,11 +1,9 @@
-extern crate libc;
+#ifndef __sovrin_agent__included__
+#define __sovrin_agent__included__
 
-use api::ErrorCode;
-use errors::ToErrorCode;
-use commands::{Command, CommandExecutor};
-use utils::cstring::CStringUtils;
-
-use self::libc::c_char;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /// Establishes agent to agent connection.
 ///
@@ -36,19 +34,20 @@ use self::libc::c_char;
 /// - xconnection_handle: Connection handle. Indetnifies connection.
 /// - err: Error code.
 /// - message: Received message.
-#[no_mangle]
-pub extern fn sovrin_agent_connect(command_handle: i32,
-                                   wallet_handle: i32,
-                                   sender_did: *const c_char,
-                                   receiver_did: *const c_char,
-                                   connection_cb: Option<extern fn(xcommand_handle: i32,
-                                                                   err: ErrorCode,
-                                                                   connection_handle: i32)>,
-                                   message_cb: Option<extern fn(xconnection_handle: i32,
-                                                                err: ErrorCode,
-                                                                message: *const c_char)>) -> ErrorCode {
-    unimplemented!()
-}
+
+extern sovrin_error_t sovrin_agent_connect(sovrin_handle_t command_handle,
+                                           sovrin_handle_t wallet_handle,
+                                           const char *    sender_did,
+                                           const char *    receiver_did,
+
+                                           void  (*connection_cb)(sovrin_handle_t xcommand_handle,
+                                                                  sovrin_error_t  err,
+                                                                  sovrin_handle_t connection_handle),
+                                                                                                             );
+                                           void     (*message_cb)(sovrin_handle_t xconnection_handle,
+                                                                  sovrin_error_t  err,
+                                                                  const char *    message)
+                                           );
 
 /// Starts listening of agent connections.
 ///
@@ -86,22 +85,24 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// - xconnection_handle: Connection handle. Indetnifies connection.
 /// - err: Error code.
 /// - message: Received message.
-#[no_mangle]
-pub extern fn sovrin_agent_listen(command_handle: i32,
-                                  wallet_handle: i32,
-                                  listener_cb: Option<extern fn(xcommand_handle: i32,
-                                                                err: ErrorCode,
-                                                                listener_handle: i32)>,
-                                  connection_cb: Option<extern fn(xlistener_handle: i32,
-                                                                  err: ErrorCode,
-                                                                  connection_handle: i32,
-                                                                  sender_did: *const c_char,
-                                                                  receiver_did: *const c_char)>,
-                                  message_cb: Option<extern fn(xconnection_handle: i32,
-                                                               err: ErrorCode,
-                                                               message: *const c_char)>) -> ErrorCode {
-    unimplemented!()
-}
+
+extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
+                                          sovrin_handle_t wallet_handle,
+
+                                          void     (*listener_cb)(sovrin_handle_t xcommand_handle,
+                                                                  sovrin_error_t  err,
+                                                                  sovrin_handle_t listener_handle),
+
+                                          void     (*connection_cb)(sovrin_handle_t xlistener_handle,
+                                                                  sovrin_error_t  err,
+                                                                  sovrin_handle_t connection_handle,
+                                                                  const char *    sender_did,
+                                                                  const char *    receiver_did),
+
+                                          void      (*message_cb)(sovrin_handle_t xconnection_handle,
+                                                                  sovrin_error_t  err,
+                                                                  const char *    message)
+                                          );
 
 /// Sends message to connected agent.
 ///
@@ -121,14 +122,14 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 /// - err: Error code
 ///
 /// #Errors
-#[no_mangle]
-pub extern fn sovrin_agent_send(command_handle: i32,
-                                connection_handle: i32,
-                                message: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: i32,
-                                                     err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
-}
+
+extern sovrin_error_t sovrin_agent_send(sovrin_handle_t command_handle,
+                                        sovrin_handle_t connection_handle,
+                                        const char *    message,
+
+                                        void     (*cb)(sovrin_handle_t xcommand_handle,
+                                                       sovrin_error_t  err)
+                                       );
 
 /// Closes agent connection.
 ///
@@ -146,13 +147,14 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 /// - err: Error code
 ///
 /// #Errors
-#[no_mangle]
-pub extern fn sovrin_agent_close_connection(command_handle: i32,
-                                            connection_handle: i32,
-                                            cb: Option<extern fn(xcommand_handle: i32,
-                                                                 err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
-}
+
+extern sovrin_error_t sovrin_agent_close_connection(sovrin_handle_t command_handle,
+                                                    sovrin_handle_t connection_handle,
+
+                                                    void     (*cb)(sovrin_handle_t xcommand_handle,
+                                                                   sovrin_error_t  err)
+                                                    );
+
 
 /// Closes listener and stops listening for agent connections.
 ///
@@ -170,10 +172,16 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 /// - err: Error code
 ///
 /// #Errors
-#[no_mangle]
-pub extern fn sovrin_agent_close_listener(command_handle: i32,
-                                          listener_handle: i32,
-                                          cb: Option<extern fn(xcommand_handle: i32,
-                                                               err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+
+extern sovrin_error_t sovrin_agent_close_listener(sovrin_handle_t command_handle,
+                                                  sovrin_handle_t listener_handle,
+
+                                                  void     (*cb)(sovrin_handle_t xcommand_handle,
+                                                                 sovrin_error_t  err)
+                                                  );
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif

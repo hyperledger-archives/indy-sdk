@@ -8,7 +8,8 @@
 #import "NSError+SovrinError.h"
 #import "SovrinTypes.h"
 
-void SovrinWrapperCommon2PCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+void SovrinWrapperCommon2PCallback(sovrin_handle_t xcommand_handle,
+                                   sovrin_error_t err)
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
@@ -25,7 +26,9 @@ void SovrinWrapperCommon2PCallback(sovrin_handle_t xcommand_handle, sovrin_error
     }
 }
 
-void SovrinWrapperCommon3PHCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err, sovrin_handle_t pool_handle)
+void SovrinWrapperCommon3PHCallback(sovrin_handle_t xcommand_handle,
+                                    sovrin_error_t err,
+                                    sovrin_handle_t pool_handle)
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
@@ -42,7 +45,9 @@ void SovrinWrapperCommon3PHCallback(sovrin_handle_t xcommand_handle, sovrin_erro
     }
 }
 
-void SovrinWrapperCommon3PSCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err, const char* arg1)
+void SovrinWrapperCommon3PSCallback(sovrin_handle_t xcommand_handle,
+                                    sovrin_error_t err,
+                                    const char* arg1)
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
@@ -60,7 +65,9 @@ void SovrinWrapperCommon3PSCallback(sovrin_handle_t xcommand_handle, sovrin_erro
     }
 }
 
-void SovrinWrapperCommon3PBCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err, sovrin_bool_t arg1)
+void SovrinWrapperCommon3PBCallback(sovrin_handle_t xcommand_handle,
+                                    sovrin_error_t err,
+                                    sovrin_bool_t arg1)
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
@@ -77,7 +84,10 @@ void SovrinWrapperCommon3PBCallback(sovrin_handle_t xcommand_handle, sovrin_erro
     }
 }
 
-void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err, const char* arg1, const char *arg2)
+void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle,
+                                   sovrin_error_t err,
+                                   const char* arg1,
+                                   const char *arg2)
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
@@ -97,7 +107,11 @@ void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle, sovrin_error
     }
 }
 
-void SovrinWrapperCommon5PCallback(sovrin_handle_t xcommand_handle, sovrin_error_t err, const char* arg1, const char *arg2, const char *arg3)
+void SovrinWrapperCommon5PCallback(sovrin_handle_t xcommand_handle,
+                                   sovrin_error_t err,
+                                   const char* arg1,
+                                   const char *arg2,
+                                   const char *arg3)
 {
     void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
     [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
@@ -114,6 +128,30 @@ void SovrinWrapperCommon5PCallback(sovrin_handle_t xcommand_handle, sovrin_error
                        {
                            NSError *error = [ NSError errorFromSovrinError: err ];
                            completion(error, sarg1, sarg2, sarg3);
+                       });
+    }
+}
+
+void SovrinWrapperCommon5PSCallback(sovrin_handle_t xcommand_handle,
+                                    sovrin_error_t err,
+                                    sovrin_handle_t connection_handle,
+                                    const char* arg1,
+                                    const char *arg2)
+{
+    void * block = [[SovrinCallbacks sharedInstance] get: xcommand_handle];
+    [[SovrinCallbacks sharedInstance] remove: xcommand_handle];
+    
+    void (^completion)(NSError*, SovrinHandle, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, SovrinHandle, NSString* arg1, NSString *arg2))block;
+    
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
+    NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
+    
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+                           NSError *error = [ NSError errorFromSovrinError: err ];
+                           completion(error, (SovrinHandle) connection_handle, sarg1, sarg2);
                        });
     }
 }
