@@ -100,12 +100,13 @@ impl PointG1 {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        let mut point = self.point;
-        Ok(point.tostring())
+        Ok(self.point.to_hex())
     }
 
     pub fn from_string(str: &str) -> Result<PointG1, CryptoError> {
-        unimplemented!()
+        Ok(PointG1 {
+            point: ECP::from_hex(str.to_string())
+        })
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -550,9 +551,9 @@ mod tests {
     #[test]
     fn serialize_works_for_point_g1() {
         let structure = TestPointG1Structure {
-            field: PointG1::from_string("1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0").unwrap()
+            field: PointG1::from_string("false 2EECD9DE38C76F D006CA023A62FC F896DFE9BDD67E 4EDC83F2F88686 39D6CFB6AE4C5F AD41D5E8FFF5BB 46A9EE94E8EC 91210CA1BEE64A D0528EBCE5A3F 644EA24C7C9248 8433949C4FDFFB 32F422BC05E873 E8E64BD56D37 2466FE12D325 8094CE251D2839 5A656663FA5F96 157FD83C6B2426 2FEC3584898982 617BEAC39065DB A9FEFC2AE937BB 6393541E1FFC").unwrap()
         };
-        let str = r#"{"field":"1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0"}"#;
+        let str = r#"{"field":"false 2EECD9DE38C76F D006CA023A62FC F896DFE9BDD67E 4EDC83F2F88686 39D6CFB6AE4C5F AD41D5E8FFF5BB 46A9EE94E8EC 91210CA1BEE64A D0528EBCE5A3F 644EA24C7C9248 8433949C4FDFFB 32F422BC05E873 E8E64BD56D37 2466FE12D325 8094CE251D2839 5A656663FA5F96 157FD83C6B2426 2FEC3584898982 617BEAC39065DB A9FEFC2AE937BB 6393541E1FFC"}"#;
 
         let serialized = serde_json::to_string(&structure).unwrap();
         assert_eq!(str, serialized);
@@ -561,10 +562,10 @@ mod tests {
     #[test]
     fn deserialize_works_for_point_g1() {
         let structure = TestPointG1Structure {
-            field: PointG1::from_string("1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0").unwrap()
+            field: PointG1::from_string("true 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0").unwrap()
         };
 
-        let str = r#"{"field":"1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0"}"#;
+        let str = r#"{"field":"true 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0"}"#;
         let deserialized: TestPointG1Structure = serde_json::from_str(&str).unwrap();
 
         assert_eq!(structure, deserialized);
