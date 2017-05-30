@@ -381,34 +381,80 @@
     claimOffer = [nd2 isEqual: xyzClaimDefSeqNo] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq = nil;
     
-    res = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:proverWalletHandle
-                                                              proverDid:proverDid
-                                                         claimOfferJson:claimOffer
-                                                           claimDefJson:xyzClaimDefJson
-                                                       masterSecretName:masterSecretName1
+    res = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq: proverWalletHandle
+                                                              proverDid: proverDid
+                                                         claimOfferJson: claimOffer
+                                                           claimDefJson: xyzClaimDefJson
+                                                       masterSecretName: masterSecretName1
                                                         outClaimReqJson:&xyzClaimReq];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
 
     //15. Issuer create XYZ Claim
-
+    
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
-#if 0
-    
-    //15. Issuer create XYZ Claim
-    let xyz_claim_json = AnoncredsUtils::get_xyz_claim_json();
-    let res = AnoncredsUtils::issuer_create_claim(issuer_xyz_wallet_handle,
-                                                  &xyz_claim_req,
-                                                  &xyz_claim_json);
-    assert!(res.is_ok());
-    let (revoc_reg_update_json, xyz_claim_json) = res.unwrap();
-    
+
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim: issuerXyzWalletHandle
+                                                claimReqJson: xyzClaimReq
+                                                   claimJson: xyzClaimJson
+                                       outRevocRegUpdateJSON:&revocRegUpdateJson
+                                                outClaimJson:&xyzClaimJson];
+
+    XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
+
     // 16. Prover store received XYZ Claim
-    let res = AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json);
-    assert!(res.is_ok());
     
+
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
+                                                 claimsJson:xyzClaimJson];
     
+    XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
+
     // 17. Prover gets Claims for Proof Request
+
+    NSString *proofReqJson =[ NSString stringWithFormat:@"{"\
+                             " \"nonce\":\"123432421212\","\
+                             " \"requested_attrs\":"\
+                             "             {\"attr1_uuid\":"\
+                             "                        {"\
+                             "                          \"schema_seq_no\":%ld,\"name\":\"name\""\
+                             "                        },"\
+                             "              \"attr2_uuid\":"\
+                             "                        {"\
+                             "                          \"schema_seq_no\":%ld,\"name\":\"status\""\
+                             "                        }"\
+                             "             },"\
+                             " \"requested_predicates\":"\
+                             "             {"\
+                             "              \"predicate1_uuid\":"\
+                             "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"\
+                             "              \"predicate2_uuid\":"\
+                             "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
+                             "             }"\
+                             "}", [gvtSchemaSeqNo integerValue], [xyzSchemaSeqNo integerValue] ];
+    
+    NSString *claimsJson = nil;
+    
+    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReq: proverWalletHandle
+                                                     proofRequestJson: proofReqJson
+                                                        outClaimsJson:&claimsJson];
+    
+    XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReq() failed");
+    
+    NSDictionary *claims = [ NSDictionary fromString: claimsJson];
+    XCTAssertTrue(claims,  @"serialization failed");
+    
+    NSDictionary *claimsForPredicates1 = [[ [claims objectForKey: @"predicates" ] objectForKey: @"predicate1_uuid"] objectAtIndex: 0 ];
+    NSDictionary *claimsForPredicates2 = [[ [claims objectForKey: @"predicates" ] objectForKey: @"predicate2_uuid"] objectAtIndex: 0 ];
+    
+    XCTAssertTrue( claimsForPredicates1, @"no object for key \"attr1_uuid\"");
+    XCTAssertTrue( claimsForPredicates2, @"no object for key \"attr2_uuid\"");
+    
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
+
+    
+#if 0
+
     let proof_req_json = format!("{{\
                                  \"nonce\":\"123432421212\",\
                                  \"requested_attrs\":{{\"attr1_uuid\":{{\"schema_seq_no\":{},\"name\":\"name\"}},\
