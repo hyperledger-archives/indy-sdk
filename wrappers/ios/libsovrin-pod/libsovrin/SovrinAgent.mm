@@ -14,25 +14,25 @@
 @implementation SovrinAgent
 
 + (NSError*) agentConnect: (SovrinHandle) walletHandle
-                 senderId: (NSString *) senderId
-               receiverId: (NSString *) receiverId
+                 senderId: (NSString *) senderDid
+               receiverId: (NSString *) receiverDid
                completion: (void (^)(NSError* error,
                                      SovrinHandle connectionHandle)) handler
 {
     sovrin_error_t ret;
-    
+ /* FIXME!!!
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
     
     ret = sovrin_agent_connect(handle,
                                walletHandle,
-                               [senderId UTF8String],
-                               [receiverId UTF8String],SovrinWrapperCommon3PHCallback);
+                               [senderDid UTF8String],
+                               [receiverDid UTF8String],SovrinWrapperCommon3PHCallback);
     
     if( ret != Success )
     {
         [[SovrinCallbacks sharedInstance] remove: handle];
     }
-    
+    */
     return [NSError errorFromSovrinError: ret];
 }
 

@@ -43,7 +43,7 @@ extern sovrin_error_t sovrin_agent_connect(sovrin_handle_t command_handle,
                                            void  (*connection_cb)(sovrin_handle_t xcommand_handle,
                                                                   sovrin_error_t  err,
                                                                   sovrin_handle_t connection_handle),
-                                                                                                             );
+                                           
                                            void     (*message_cb)(sovrin_handle_t xconnection_handle,
                                                                   sovrin_error_t  err,
                                                                   const char *    message)
