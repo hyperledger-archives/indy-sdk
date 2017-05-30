@@ -36,42 +36,38 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentListen: (SovrinHandle) walletHandle
-      listenerCompletion: (void (^)(NSError* error,
-                                    SovrinHandle listenerHandle)) listenerHandler
-
-    connectionCompletion: (void (^)(SovrinHandle xlistenerHandle,
-                                    NSError* error,
-                                    SovrinHandle connectionHandle)) connectionHandler
-
-       messageCompletion: (void (^)(SovrinHandle xconnectionHandle,
-                                    NSError* error,
-                                    NSString* message)) messageHandler
-{
-    sovrin_error_t ret;
-    
-    sovrin_handle_t listener_handle = [[SovrinCallbacks sharedInstance] add: (void*) listenerHandler];
-    
-    sovrin_handle_t connection_handle = [[SovrinCallbacks sharedInstance] add: (void*) connectionHandler];
-    
-    sovrin_handle_t message_handle = [[SovrinCallbacks sharedInstance] add: (void*) messageHandler];
-    
-    // Is it a right command handle? Check it.
-    ret = sovrin_agent_listen(listener_handle,
-                              walletHandle,
-                              SovrinWrapperCommon3PHCallback,
-                              SovrinWrapperCommon5PSCallback,
-                              SovrinWrapperCommon3PSCallback);
-    if( ret != Success )
-    {
-        [[SovrinCallbacks sharedInstance] remove: listener_handle];
-        [[SovrinCallbacks sharedInstance] remove: connection_handle];
-        [[SovrinCallbacks sharedInstance] remove: message_handle];
-    }
-    
-    return [NSError errorFromSovrinError: ret];
-
-}
+//+ (NSError*) agentListen: (SovrinHandle) walletHandle
+//      listenerCompletion: (void (^)(NSError* error,
+//                                    SovrinHandle listenerHandle)) listenerHandler
+//
+//    connectionCompletion: (void (^)(SovrinHandle xlistenerHandle,
+//                                    NSError* error,
+//                                    SovrinHandle connectionHandle)) connectionHandler
+//
+//       messageCompletion: (void (^)(SovrinHandle xconnectionHandle,
+//                                    NSError* error,
+//                                    NSString* message)) messageHandler
+//{
+//    sovrin_error_t ret;
+//    
+//    sovrin_handle_t listener_handle = [[SovrinCallbacks sharedInstance] add: (void*) listenerHandler];
+//    
+//    // Is it a right command handle? Check it.
+//    ret = sovrin_agent_listen(listener_handle,
+//                              walletHandle,
+//                              SovrinWrapperCommon3PHCallback,
+//                              SovrinWrapperCommon5PSCallback,
+//                              SovrinWrapperCommon3PSCallback);
+//    if( ret != Success )
+//    {
+//        [[SovrinCallbacks sharedInstance] remove: listener_handle];
+//        [[SovrinCallbacks sharedInstance] remove: connection_handle];
+//        [[SovrinCallbacks sharedInstance] remove: message_handle];
+//    }
+//    
+//    return [NSError errorFromSovrinError: ret];
+//
+//}
 
 + (NSError*) agentSend: (SovrinHandle) connectionHandle
               messsage: (NSString*) message

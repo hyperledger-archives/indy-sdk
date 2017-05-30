@@ -14,18 +14,18 @@
                receiverId: (NSString *) receiverId
                completion: (void (^)(NSError* error,
                                      SovrinHandle connectionHandle)) handler;
-
-+ (NSError*) agentListen: (SovrinHandle) walletHandle
-      listenerCompletion: (void (^)(NSError* error,
-                                    SovrinHandle listenerHandle)) listenerHandler
-
-    connectionCompletion: (void (^)(SovrinHandle xlistenerHandle,
-                                    NSError* error,
-                                    SovrinHandle connectionHandle)) connectionHandler
-
-       messageCompletion: (void (^)(SovrinHandle xconnectionHandle,
-                                     NSError* error,
-                                     NSString* message)) messageHandler;
+//
+//+ (NSError*) agentListen: (SovrinHandle) walletHandle
+//      listenerCompletion: (void (^)(NSError* error,
+//                                    SovrinHandle listenerHandle)) listenerHandler
+//
+//    connectionCompletion: (void (^)(SovrinHandle xlistenerHandle,
+//                                    NSError* error,
+//                                    SovrinHandle connectionHandle)) connectionHandler
+//
+//       messageCompletion: (void (^)(SovrinHandle xconnectionHandle,
+//                                     NSError* error,
+//                                     NSString* message)) messageHandler;
 
 + (NSError*) agentSend: (SovrinHandle) connectionHandle
               messsage: (NSString*) message
