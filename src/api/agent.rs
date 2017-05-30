@@ -172,8 +172,8 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 /// #Errors
 #[no_mangle]
 pub extern fn sovrin_agent_close_listener(command_handle: i32,
-                                            listener_handle: i32,
-                                            cb: Option<extern fn(xcommand_handle: i32,
-                                                                 err: ErrorCode)>) -> ErrorCode {
+                                          listener_handle: i32,
+                                          cb: Option<extern fn(xcommand_handle: i32,
+                                                               err: ErrorCode)>) -> ErrorCode {
     unimplemented!()
 }

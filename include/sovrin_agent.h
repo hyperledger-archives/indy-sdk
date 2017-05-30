@@ -1,5 +1,5 @@
-#ifndef __sorvin_agent__included__
-#define __sorvin_agent__included__
+#ifndef __sovrin_agent__included__
+#define __sovrin_agent__included__
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,8 +35,8 @@ extern "C" {
 /// - err: Error code.
 /// - message: Received message.
 
-extern sorvin_error_t sovrin_agent_connect(sorvin_handle_t command_handle,
-                                           sorvin_handle_t wallet_handle,
+extern sovrin_error_t sovrin_agent_connect(sovrin_handle_t command_handle,
+                                           sovrin_handle_t wallet_handle,
                                            const char *    sender_did,
                                            const char *    receiver_did,
 
@@ -86,8 +86,8 @@ extern sorvin_error_t sovrin_agent_connect(sorvin_handle_t command_handle,
 /// - err: Error code.
 /// - message: Received message.
 
-extern sorvin_error_t sovrin_agent_listen(sorvin_handle_t command_handle,
-                                          sorvin_handle_t wallet_handle,
+extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
+                                          sovrin_handle_t wallet_handle,
 
                                           void     (*listener_cb)(sovrin_handle_t xcommand_handle,
                                                                   sovrin_error_t  err,
@@ -99,7 +99,7 @@ extern sorvin_error_t sovrin_agent_listen(sorvin_handle_t command_handle,
                                                                   const char *    sender_did,
                                                                   const char *    receiver_did),
 
-                                          void     (*listener_cb)(sovrin_handle_t xconnection_handle,
+                                          void      (*message_cb)(sovrin_handle_t xconnection_handle,
                                                                   sovrin_error_t  err,
                                                                   const char *    message)
                                           );
@@ -123,8 +123,8 @@ extern sorvin_error_t sovrin_agent_listen(sorvin_handle_t command_handle,
 ///
 /// #Errors
 
-extern sorvin_error_t sovrin_agent_send(sorvin_handle_t command_handle,
-                                        sorvin_handle_t connection_handle,
+extern sovrin_error_t sovrin_agent_send(sovrin_handle_t command_handle,
+                                        sovrin_handle_t connection_handle,
                                         const char *    message,
 
                                         void     (*cb)(sovrin_handle_t xcommand_handle,
@@ -148,8 +148,8 @@ extern sorvin_error_t sovrin_agent_send(sorvin_handle_t command_handle,
 ///
 /// #Errors
 
-extern sorvin_error_t sovrin_agent_close_connection(sorvin_handle_t command_handle,
-                                                    sorvin_handle_t connection_handle,
+extern sovrin_error_t sovrin_agent_close_connection(sovrin_handle_t command_handle,
+                                                    sovrin_handle_t connection_handle,
 
                                                     void     (*cb)(sovrin_handle_t xcommand_handle,
                                                                    sovrin_error_t  err)
@@ -173,12 +173,12 @@ extern sorvin_error_t sovrin_agent_close_connection(sorvin_handle_t command_hand
 ///
 /// #Errors
 
-extern sorvin_error_t sovrin_agent_close_connection(sorvin_handle_t command_handle,
-                                                    sorvin_handle_t listener_handle,
+extern sovrin_error_t sovrin_agent_close_listener(sovrin_handle_t command_handle,
+                                                  sovrin_handle_t listener_handle,
 
-                                                    void     (*cb)(sovrin_handle_t xcommand_handle,
-                                                                   sovrin_error_t  err)
-                                                    );
+                                                  void     (*cb)(sovrin_handle_t xcommand_handle,
+                                                                 sovrin_error_t  err)
+                                                  );
 
 #ifdef __cplusplus
 }
