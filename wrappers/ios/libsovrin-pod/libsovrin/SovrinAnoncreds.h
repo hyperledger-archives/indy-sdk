@@ -73,12 +73,12 @@
                  revocRegsJSON:(NSString*) revocJson
                     completion:(void (^)(NSError* error, NSString* proofJSON)) handler;
 
-+ (NSError*) verifierVerifyProof:(SovrinHandle) walletHandle
-                    proofReqJSON:(NSString*) reqJSON
+
++ (NSError*) verifierVerifyProof:(NSString*) proofReqJSON
                        proofJSON:(NSString*) proofJSON
                      schemasJSON:(NSString*) schemasJSON
-                   claimDefsJSON:(NSString*) claimDefsJson
-                   revocRegsJSON:(NSString*) revocJson
+                   claimDefsJSON:(NSString*) claimDefsJSON
+                   revocRegsJSON:(NSString*) revocJSON
                       completion:(void (^)(NSError* error, BOOL valid)) handler;
 
 @end

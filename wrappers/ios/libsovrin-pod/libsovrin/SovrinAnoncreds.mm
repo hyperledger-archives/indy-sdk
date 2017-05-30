@@ -301,8 +301,7 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) verifierVerifyProof:(SovrinHandle) walletHandle
-                    proofReqJSON:(NSString*) reqJSON
++ (NSError*) verifierVerifyProof:(NSString*) proofReqJSON
                        proofJSON:(NSString*) proofJSON
                      schemasJSON:(NSString*) schemasJSON
                    claimDefsJSON:(NSString*) claimDefsJSON
@@ -314,8 +313,7 @@
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
 
     ret = sovrin_verifier_verify_proof(handle,
-                                       walletHandle,
-                                       [reqJSON UTF8String],
+                                       [proofReqJSON UTF8String],
                                        [proofJSON UTF8String],
                                        [schemasJSON UTF8String],
                                        [claimDefsJSON UTF8String],
