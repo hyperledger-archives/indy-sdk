@@ -1,11 +1,18 @@
 use std::rc::Rc;
 
+use errors::sovrin::SovrinError;
 use services::agent::AgentService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
 pub enum AgentCommand {
-    Connect,
+    Connect(
+        i32, // wallet handle
+        String, // sender did
+        String, // receiver did
+        Box<Fn(Result<i32, SovrinError>) + Send>, // connect cb
+        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+    ),
     CloseConnection,
     Listen,
     CloseListener,
