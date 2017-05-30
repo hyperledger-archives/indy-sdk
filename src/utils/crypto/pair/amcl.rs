@@ -346,12 +346,13 @@ impl GroupOrderElement {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        let mut bn = self.bn;
-        Ok(bn.tostring())
+        Ok(self.bn.to_hex())
     }
 
     pub fn from_string(str: &str) -> Result<GroupOrderElement, CryptoError> {
-        unimplemented!()
+        Ok(GroupOrderElement {
+            bn: BIG::from_hex(str.to_string())
+        })
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -527,9 +528,9 @@ mod tests {
     #[test]
     fn serialize_works_for_group_order_element() {
         let structure = TestGroupOrderElementStructure {
-            field: GroupOrderElement::from_string("C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA").unwrap()
+            field: GroupOrderElement::from_string("C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA 0 0").unwrap()
         };
-        let str = r#"{"field":"C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA"}"#;
+        let str = r#"{"field":"C4D05C20EC7BAC 2FBB155341552D 6AA4C1EA344257 E84BFFBF1408B3 194D3FBA 0 0"}"#;
 
         let serialized = serde_json::to_string(&structure).unwrap();
         assert_eq!(str, serialized);
