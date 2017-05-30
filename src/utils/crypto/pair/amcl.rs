@@ -29,8 +29,6 @@ use self::serde::ser::{Serialize, Serializer, Error as SError};
 use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
 use std::fmt;
 
-pub const GROUP_ORDER: BIG = BIG::new_ints(&CURVE_ORDER);
-
 fn random_mod_order() -> Result<BIG, CryptoError> {
     let mut seed = vec![0; 32];
     let mut os_rng = OsRng::new().unwrap();
@@ -38,7 +36,7 @@ fn random_mod_order() -> Result<BIG, CryptoError> {
     let mut rng = RAND::new();
     rng.clean();
     rng.seed(32, &seed);
-    Ok(BIG::randomnum(&GROUP_ORDER, &mut rng))
+    Ok(BIG::randomnum(&BIG::new_ints(&CURVE_ORDER), &mut rng))
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -102,13 +100,12 @@ impl PointG1 {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        Ok(ECP::to_hex(&self.point))
+        let mut point = self.point;
+        Ok(point.tostring())
     }
 
     pub fn from_string(str: &str) -> Result<PointG1, CryptoError> {
-        Ok(PointG1 {
-            point: ECP::from_hex(str.to_string())
-        })
+        unimplemented!()
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -222,13 +219,12 @@ impl PointG2 {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        Ok(ECP2::to_hex(&self.point))
+        let mut point = self.point;
+        Ok(point.tostring())
     }
 
     pub fn from_string(str: &str) -> Result<PointG2, CryptoError> {
-        Ok(PointG2 {
-            point: ECP2::from_hex(str.to_string())
-        })
+        unimplemented!()
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -292,14 +288,14 @@ impl GroupOrderElement {
         let mut base = self.bn;
         let mut pow = e.bn;
         Ok(GroupOrderElement {
-            bn: base.powmod(&mut pow, &GROUP_ORDER)
+            bn: base.powmod(&mut pow, &BIG::new_ints(&CURVE_ORDER))
         })
     }
 
     pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
         let mut sum = self.bn;
         sum.add(&r.bn);
-        sum.rmod(&GROUP_ORDER);
+        sum.rmod(&BIG::new_ints(&CURVE_ORDER));
         Ok(GroupOrderElement {
             bn: sum
         })
@@ -314,7 +310,7 @@ impl GroupOrderElement {
 
         if diff < zero {
             return Ok(GroupOrderElement {
-                bn: BIG::modneg(&mut diff, &GROUP_ORDER)
+                bn: BIG::modneg(&mut diff, &BIG::new_ints(&CURVE_ORDER))
             })
         }
 
@@ -328,13 +324,13 @@ impl GroupOrderElement {
         let mut base = self.bn;
         let mut r = r.bn;
         Ok(GroupOrderElement {
-            bn: BIG::modmul(&mut base, &mut r, &GROUP_ORDER)
+            bn: BIG::modmul(&mut base, &mut r, &BIG::new_ints(&CURVE_ORDER))
         })
     }
 
     pub fn inverse(&self) -> Result<GroupOrderElement, CryptoError> {
         let mut bn = self.bn;
-        bn.invmodp(&GROUP_ORDER);
+        bn.invmodp(&BIG::new_ints(&CURVE_ORDER));
 
         Ok(GroupOrderElement {
             bn: bn
@@ -343,20 +339,19 @@ impl GroupOrderElement {
 
     pub fn mod_neg(&self) -> Result<GroupOrderElement, CryptoError> {
         let mut r = self.bn;
-        r = BIG::modneg(&mut r, &GROUP_ORDER);
+        r = BIG::modneg(&mut r, &BIG::new_ints(&CURVE_ORDER));
         Ok(GroupOrderElement {
             bn: r
         })
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        Ok(BIG::to_hex(&self.bn))
+        let mut bn = self.bn;
+        Ok(bn.tostring())
     }
 
     pub fn from_string(str: &str) -> Result<GroupOrderElement, CryptoError> {
-        Ok(GroupOrderElement {
-            bn: BIG::from_hex(str.to_string())
-        })
+        unimplemented!()
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
@@ -451,13 +446,12 @@ impl Pair {
     }
 
     pub fn to_string(&self) -> Result<String, CryptoError> {
-        Ok(FP12::to_hex(&self.pair))
+        let mut point = self.pair;
+        Ok(point.tostring())
     }
 
     pub fn from_string(str: &str) -> Result<Pair, CryptoError> {
-        Ok(Pair {
-            pair: FP12::from_hex(str.to_string())
-        })
+        unimplemented!()
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
