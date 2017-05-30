@@ -7,5 +7,6 @@
 #include "sovrin_wallet.h"
 #include "sovrin_ledger.h"
 #include "sovrin_signus.h"
+#include "sorvin_agent.h"
 
 #endif
