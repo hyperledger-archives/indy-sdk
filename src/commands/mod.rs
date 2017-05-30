@@ -1,12 +1,14 @@
 #[macro_use]
 mod utils;
 
+pub mod agent;
 pub mod anoncreds;
 pub mod ledger;
 pub mod pool;
 pub mod signus;
 pub mod wallet;
 
+use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
@@ -15,6 +17,7 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 
 use errors::common::CommonError;
 
+use services::agent::AgentService;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -28,6 +31,7 @@ use std::sync::{Mutex, MutexGuard};
 
 pub enum Command {
     Exit,
+    Agent(AgentCommand),
     Anoncreds(AnoncredsCommand),
     Ledger(LedgerCommand),
     Pool(PoolCommand),
@@ -58,11 +62,13 @@ impl CommandExecutor {
             worker: Some(thread::spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
+                let agent_service = Rc::new(AgentService::new());
                 let anoncreds_service = Rc::new(AnoncredsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
                 let signus_service = Rc::new(SignusService::new());
 
+                let agent_command_executor = AgentCommandExecutor::new(agent_service.clone(), pool_service.clone(), wallet_service.clone());
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
@@ -71,6 +77,10 @@ impl CommandExecutor {
 
                 loop {
                     match receiver.recv() {
+                        Ok(Command::Agent(cmd)) => {
+                            info!(target: "command_executor", "AgentCommand command received");
+                            agent_command_executor.execute(cmd);
+                        }
                         Ok(Command::Anoncreds(cmd)) => {
                             info!(target: "command_executor", "AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
