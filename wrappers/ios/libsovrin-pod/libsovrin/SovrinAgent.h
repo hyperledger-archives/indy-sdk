@@ -9,39 +9,31 @@
 
 @interface SovrinAgent: NSObject
 
-+ (NSError*) agentConnect: (SovrinHandle) commandHandle
-             walletHandle: (SovrinHandle) walletHandle
++ (NSError*) agentConnect: (SovrinHandle) walletHandle
                  senderId: (NSString *) senderId
                receiverId: (NSString *) receiverId
-               completion: (void (^)(SovrinHandle xcommandHandle,
-                                     NSError* error,
+               completion: (void (^)(NSError* error,
                                      SovrinHandle connectionHandle)) handler;
 
-+ (NSError*) agentListen: (SovrinHandle) commandHandle
-            walletHandle: (SovrinHandle) walletHandle
-      listenerCompletion: (void (^)(SovrinHandle xcommandHandle,
-                                    NSError* error,
-                                    SovrinHandle listenerHandler)) listenerHandler
-       connectionCompletion: (void (^)(SovrinHandle xlistenerHandle,
++ (NSError*) agentListen: (SovrinHandle) walletHandle
+      listenerCompletion: (void (^)(NSError* error,
+                                    SovrinHandle listenerHandle)) listenerHandler
+
+    connectionCompletion: (void (^)(SovrinHandle xlistenerHandle,
                                     NSError* error,
                                     SovrinHandle connectionHandle)) connectionHandler
-         messageCompletion: (void (^)(SovrinHandle xconnectionHandle,
-                                    NSError* error,
-                                    NSString* message)) messageHandler;
 
-+ (NSError*) agentSend: (SovrinHandle) commandHandle
-      connectionHandle: (SovrinHandle) connectionHandle
+       messageCompletion: (void (^)(SovrinHandle xconnectionHandle,
+                                     NSError* error,
+                                     NSString* message)) messageHandler;
+
++ (NSError*) agentSend: (SovrinHandle) connectionHandle
               messsage: (NSString*) message
-            completion: (void (^)(SovrinHandle xcommandHandle,
-                                  NSError* error)) handler;
+            completion: (void (^)(NSError* error)) handler;
 
-+ (NSError*) agentCloseConnection: (SovrinHandle) commandHandle
-                 connectionHandle: (SovrinHandle) connectionHandle
-                       completion: (void (^)(SovrinHandle xcommandHandle,
-                                             NSError* error)) handler;
++ (NSError*) agentCloseConnection: (SovrinHandle) connectionHandle
+                       completion: (void (^)(NSError* error)) handler;
 
-+ (NSError*) agentCloseListener: (SovrinHandle) commandHandle
-                 listenerHandle: (SovrinHandle) listenerHandle
-                     completion: (void (^)(SovrinHandle xcommandHandle,
-                                           NSError* error)) handler;
++ (NSError*) agentCloseListener: (SovrinHandle) listenerHandle
+                     completion: (void (^)(NSError* error)) handler;
 @end
