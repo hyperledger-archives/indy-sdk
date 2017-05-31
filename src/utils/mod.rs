@@ -18,3 +18,5 @@ pub mod sequence;
 
 #[macro_use]
 pub mod test;
+
+pub mod timeout;
