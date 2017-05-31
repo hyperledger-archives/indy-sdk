@@ -2,6 +2,7 @@ mod ed25519;
 pub mod types;
 
 extern crate serde_json;
+
 use self::serde_json::Value;
 
 use self::ed25519::ED25519Signus;
@@ -304,6 +305,7 @@ mod tests {
             did: "sw2SA2jCbsiq2kfns".to_string(),
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: None,
+            endpoint: None,
             verkey: Some(my_did.ver_key)
         };
 
@@ -343,6 +345,7 @@ mod tests {
             did: "sw2SA2jCbsiq2kfns".to_string(),
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: None,
+            endpoint: None,
             verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
@@ -375,6 +378,7 @@ mod tests {
             did: their_did.did,
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: Some(their_did.public_key),
+            endpoint: None,
             verkey: Some(their_did.ver_key)
         };
 
@@ -403,6 +407,7 @@ mod tests {
             did: my_did.did,
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: Some(my_did.public_key),
+            endpoint: None,
             verkey: Some(my_did.ver_key)
         };
 
@@ -417,6 +422,7 @@ mod tests {
             did: their_did.did,
             crypto_type: Some(DEFAULT_CRYPTO_TYPE.to_string()),
             pk: Some(their_did.public_key),
+            endpoint: None,
             verkey: Some(their_did.ver_key)
         };
 
