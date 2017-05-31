@@ -16,4 +16,5 @@ pub mod test;
 pub mod logger;
 
 pub mod timeout;
+pub mod agent;
 pub mod signus;
