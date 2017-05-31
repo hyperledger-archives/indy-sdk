@@ -135,15 +135,16 @@
 
 -(NSArray*) getUniqueClaimsFrom: (NSDictionary*)proofClaims
 {
-    NSMutableArray* uniqueClaims;
+    NSMutableArray* uniqueClaims =  [[NSMutableArray alloc] init];
     
-    for (NSArray* claims in proofClaims.allValues )
+    for (NSDictionary* claims in proofClaims.allValues )
     {
-        for (NSDictionary* claim in claims)
+    
+        for (NSArray* claim in claims.allValues)
         {
-            if ( ![uniqueClaims containsObject: claim] )
+            if ( ![uniqueClaims containsObject: claim[0]] )
             {
-                [uniqueClaims appendObject: claim];
+                [uniqueClaims addObject:claim[0]];
             }
         }
     }

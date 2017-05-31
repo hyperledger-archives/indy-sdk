@@ -464,7 +464,7 @@
     NSString *claim_predicate_2_UUID = claimForPredicate2[@"claim_uuid"];
     
     XCTAssertTrue( claim_attr_1_UUID, @"claim_attr_1_UUID = nil");
-    XCTAssertTrue( claim_attr_2_UUID, @"claim_attr_2_UUID =nil");
+    XCTAssertTrue( claim_attr_2_UUID, @"claim_attr_2_UUID = nil");
     XCTAssertTrue( claim_predicate_1_UUID, @"claim_predicate_1_UUID = nil");
     XCTAssertTrue( claim_predicate_2_UUID, @"claim_predicate_2_UUID = nil");
 
@@ -473,7 +473,7 @@
                                     "  \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true], "\
                                     "                       \"attr2_uuid\":[\"%@\",true]},"\
                                     "  \"requested_predicates\":{\"predicate1_uuid\":\"%@\","\
-                                    "                            \"predicate1_uuid\":\"%@\"}"\
+                                    "                            \"predicate2_uuid\":\"%@\"}"\
                                     "}", claim_attr_1_UUID, claim_attr_2_UUID,
                                          claim_predicate_1_UUID, claim_predicate_2_UUID];
     
@@ -499,16 +499,17 @@
     NSInteger unique_claim_2_schema_index = [uniqueClaim2[@"schema_seq_no"] integerValue];
     XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_1_schema_index = nil");
     XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_2_schema_index = nil");
+    
 
     // get schemas
-    NSString *schemaForUniqueClaim1 = [schemas objectForKey: @(unique_claim_1_schema_index)];
-    NSString *schemaForUniqueClaim2 = [schemas objectForKey: @(unique_claim_2_schema_index)];
+    NSString *schemaForUniqueClaim1 = schemas[[NSString stringWithFormat:@"%ld", (long)unique_claim_1_schema_index]];
+    NSString *schemaForUniqueClaim2 = schemas[[NSString stringWithFormat:@"%ld", (long)unique_claim_2_schema_index]];
     XCTAssertTrue(schemaForUniqueClaim1, @"schemaForUniqueClaim1 = nil");
     XCTAssertTrue(schemaForUniqueClaim2, @"schemaForUniqueClaim2 = nil");
     
     NSString *schemasJson = [ NSString stringWithFormat:@"{"\
-                                     " \"%@\":{%@}, "\
-                                     " \"%@\":{%@}}",
+                                     " \"%@\": %@, "\
+                                     " \"%@\": %@}",
                              unique_claim_1_UUID, schemaForUniqueClaim1,
                              unique_claim_2_UUID, schemaForUniqueClaim2];
     
@@ -521,13 +522,13 @@
     XCTAssertTrue(unique_claim_1_UUID, @"claimDefIndexForUniqueClaim2 = nil");
     
     // get claim defines
-    NSString *claimDefForUniqueClaim1 = schemas[@(claimDefIndexForUniqueClaim1)];
-    NSString *claimDefForUniqueClaim2 = schemas[@(claimDefIndexForUniqueClaim2)];
+    NSString *claimDefForUniqueClaim1 = claimDefs[[NSString stringWithFormat:@"%ld", (long)claimDefIndexForUniqueClaim1]];
+    NSString *claimDefForUniqueClaim2 = claimDefs[[NSString stringWithFormat:@"%ld", (long)claimDefIndexForUniqueClaim2]];
     XCTAssertTrue(claimDefForUniqueClaim1, @"claimDefForUniqueClaim1 = nil");
     XCTAssertTrue(claimDefForUniqueClaim2, @"claimDefForUniqueClaim2 = nil");
 
     NSString *claimDefsJson = [ NSString stringWithFormat:@"{"\
-                             " \"%@\":{%@}, \"%@\":{%@}}",
+                             " \"%@\": %@, \"%@\": %@}",
                              unique_claim_1_UUID, claimDefForUniqueClaim1,
                              unique_claim_2_UUID, claimDefForUniqueClaim2];
     
@@ -563,7 +564,7 @@
 
 - (void)testAnoncreds
 {
-   // [self anoncredsWorksForSingleIssuerSingleProverTest];
+    [self anoncredsWorksForSingleIssuerSingleProverTest];
     [self anoncredsWorksForMultiplyIssuerSingleProver];
 }
 
