@@ -9,11 +9,14 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 #[path = "utils/mod.rs"]
 mod utils;
 
+use utils::logger::LoggerUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
@@ -64,6 +67,7 @@ use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
+    LoggerUtils::init();
     TestUtils::cleanup_storage();
 
     let (create_wallet_sender, create_wallet_receiver) = channel();
@@ -174,7 +178,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_def_json, claim_def_uuid) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("claim_def_json {:?}", claim_def_json);
+    info!("claim_def_json {:?}", claim_def_json);
     assert_eq!(ErrorCode::Success, err);
 
     let claim_def_seq_no = 1;
@@ -218,7 +222,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_req_json) = prover_create_claim_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("claim_req_json {:?}", claim_req_json);
+    info!("claim_req_json {:?}", claim_req_json);
     assert_eq!(ErrorCode::Success, err);
 
     let claim_json = "{\
@@ -240,7 +244,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, revoc_reg_update_json, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("xclaim_json {:?}", xclaim_json);
+    info!("xclaim_json {:?}", xclaim_json);
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover process and store Claim
@@ -269,7 +273,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("claims_json {:?}", claims_json);
+    info!("claims_json {:?}", claims_json);
     assert_eq!(ErrorCode::Success, err);
     let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
     let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
@@ -301,7 +305,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, proof_json) = prover_create_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("proof_json {:?}", proof_json);
+    info!("proof_json {:?}", proof_json);
     assert_eq!(ErrorCode::Success, err);
 
     // 10. Verifier verify proof
@@ -325,6 +329,7 @@ fn anoncreds_demo_works() {
 #[test]
 #[cfg(feature="local_nodes_pool")]
 fn ledger_demo_works() {
+    LoggerUtils::init();
     TestUtils::cleanup_storage();
     let my_wallet_name = "my_wallet";
     let their_wallet_name = "their_wallet";
@@ -450,9 +455,9 @@ fn ledger_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("did {:?}", my_did);
-    println!("verkey {:?}", my_verkey);
-    println!("pk {:?}", my_pk);
+    info!("did {:?}", my_did);
+    info!("verkey {:?}", my_verkey);
+    info!("pk {:?}", my_pk);
     assert_eq!(ErrorCode::Success, err);
 
     // 8. Create Their DID from Trustee1 seed
@@ -465,9 +470,9 @@ fn ledger_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, their_did, their_verkey, their_pk) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("their_did {:?}", their_did);
-    println!("their_verkey {:?}", their_verkey);
-    println!("their_pk {:?}", their_pk);
+    info!("their_did {:?}", their_did);
+    info!("their_verkey {:?}", their_verkey);
+    info!("their_pk {:?}", their_pk);
     assert_eq!(ErrorCode::Success, err);
 
     // 9. Store Their DID
@@ -512,7 +517,8 @@ fn ledger_demo_works() {
     let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
     let nym_resp: Reply = serde_json::from_str(&resp).unwrap();
-    println!("nym_resp {:?}\n{:?}", resp, nym_resp);
+    info!("nym_resp_raw : {:?}", resp);
+    info!("nym_resp     : {:?}", nym_resp);
 
     // 12. Prepare and send GET_NYM request
     let get_nym_req_id = PoolUtils::get_req_id();
@@ -536,7 +542,7 @@ fn ledger_demo_works() {
     assert_eq!(err, ErrorCode::Success);
     let get_nym_resp: Reply = serde_json::from_str(&resp).unwrap();
     let get_nym_resp_data: ReplyResultData = serde_json::from_str(&get_nym_resp.result.data.as_ref().unwrap()).unwrap();
-    println!("get_nym_resp {:?}\n{:?}\n{:?}", resp, get_nym_resp, get_nym_resp_data);
+    info!("get_nym_resp {:?}\n{:?}\n{:?}", resp, get_nym_resp, get_nym_resp_data);
 
     assert_eq!(get_nym_resp_data.dest, my_verkey);
 
@@ -584,6 +590,7 @@ fn ledger_demo_works() {
 
 #[test]
 fn signus_demo_works() {
+    LoggerUtils::init();
     TestUtils::cleanup_storage();
 
     let (create_my_wallet_sender, create_my_wallet_receiver) = channel();
@@ -703,9 +710,9 @@ fn signus_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("did {:?}", my_did);
-    println!("verkey {:?}", my_verkey);
-    println!("pk {:?}", my_pk);
+    info!("did {:?}", my_did);
+    info!("verkey {:?}", my_verkey);
+    info!("pk {:?}", my_pk);
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Create Their DID
@@ -718,9 +725,9 @@ fn signus_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, their_did, their_verkey, their_pk) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("their_did {:?}", their_did);
-    println!("their_verkey {:?}", their_verkey);
-    println!("their_pk {:?}", their_pk);
+    info!("their_did {:?}", their_did);
+    info!("their_verkey {:?}", their_verkey);
+    info!("their_pk {:?}", their_pk);
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Store Their DID
@@ -758,7 +765,7 @@ fn signus_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, signed_msg) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("signature {:?}", signed_msg);
+    info!("signature {:?}", signed_msg);
     assert_eq!(ErrorCode::Success, err);
 
     // 9. I Verify message
@@ -773,7 +780,7 @@ fn signus_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("{:?}", err);
+    info!("{:?}", err);
     assert!(valid);
     assert_eq!(ErrorCode::Success, err);
 

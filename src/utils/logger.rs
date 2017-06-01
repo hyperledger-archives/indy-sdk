@@ -1,5 +1,9 @@
 extern crate env_logger;
+extern crate log;
 
+use self::env_logger::LogBuilder;
+use self::log::{LogRecord, LogLevelFilter};
+use std::env;
 use std::sync::{Once, ONCE_INIT};
 
 pub struct LoggerUtils {}
@@ -11,7 +15,17 @@ impl LoggerUtils {
         }
 
         LOGGER_INIT.call_once(|| {
-            env_logger::init().unwrap();
+            let format = |record: &LogRecord| {
+                format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
+            };
+            let mut builder = LogBuilder::new();
+            builder.format(format).filter(None, LogLevelFilter::Info);
+
+            if env::var("RUST_LOG").is_ok() {
+                builder.parse(&env::var("RUST_LOG").unwrap());
+            }
+
+            builder.init().unwrap();
         });
     }
 }
