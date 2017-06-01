@@ -25,6 +25,21 @@
                                       seqNo:(NSNumber*) claimDefSeqNo
                                     outJson:(NSString**) outJson;
 
+
+/**
+
+ @param proofClaims Dictionary with format:
+        {
+             "requested_attr1_uuid": [claim1, claim2],
+             "requested_attr2_uuid": [],
+             "requested_attr3_uuid": [claim3],
+             "requested_predicate_1_uuid": [claim1, claim3],
+        }
+ @return Array of unique claims
+ */
+-(NSArray*) getUniqueClaimsFrom: (NSDictionary*)proofClaims;
+
+
 -(NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
                     masterSecretName:(NSString*) name;
 

@@ -133,6 +133,26 @@
     return ret;
 }
 
+-(NSArray*) getUniqueClaimsFrom: (NSDictionary*)proofClaims
+{
+    NSMutableArray* uniqueClaims =  [[NSMutableArray alloc] init];
+    
+    for (NSDictionary* claims in proofClaims.allValues )
+    {
+    
+        for (NSArray* claim in claims.allValues)
+        {
+            if ( ![uniqueClaims containsObject: claim[0]] )
+            {
+                [uniqueClaims addObject:claim[0]];
+            }
+        }
+    }
+    
+    NSArray* res = [NSArray arrayWithArray:uniqueClaims];
+    return res;
+    
+}
 -(NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
                     masterSecretName:(NSString*) name
 {
