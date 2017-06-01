@@ -55,6 +55,7 @@ impl AgentCommandExecutor {
         self._connect(wallet_handle, &sender_did, &receiver_did)
             .and_then(|info: Option<ConnectInfo>| {
                 let info = info.unwrap();
+                debug!("{:?}", info);
                 agent_serv.connect(sender_did.as_str(),
                                    info.secret_key.as_str(), info.public_key.as_str(),
                                    info.endpoint.as_str(), info.server_key.as_str())
@@ -80,6 +81,7 @@ impl AgentCommandExecutor {
     }
 }
 
+#[derive(Debug)]
 struct ConnectInfo {
     //TODO push to public service structure and use in service calls?
     secret_key: String,
