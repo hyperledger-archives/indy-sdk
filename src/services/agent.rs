@@ -1,6 +1,8 @@
+extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq;
 
+use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::thread;
 
@@ -12,9 +14,9 @@ use utils::sequence::SequenceUtils;
 struct RemoteAgent {
     socket: zmq::Socket,
     addr: String,
-    public_key: String,
-    secret_key: String,
-    server_key: String,
+    public_key: Vec<u8>,
+    secret_key: Vec<u8>,
+    server_key: Vec<u8>,
 }
 
 struct AgentWorker {
@@ -106,12 +108,15 @@ impl AgentWorker {
 }
 
 impl RemoteAgent {
-    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str) -> Result<RemoteAgent, zmq::Error> {
+    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str) -> Result<RemoteAgent, PoolError> {
         Ok(RemoteAgent {
             socket: zmq::Context::new().socket(zmq::SocketType::DEALER)?,
-            public_key: pub_key.to_string(),
-            secret_key: sec_key.to_string(),
-            server_key: ver_key.to_string(),
+            public_key: pub_key.from_base58()
+                .map_err(PoolError::from_displayable_as_invalid_config)?,
+            secret_key: sec_key.from_base58()
+                .map_err(PoolError::from_displayable_as_invalid_config)?,
+            server_key: ver_key.from_base58()
+                .map_err(PoolError::from_displayable_as_invalid_config)?,
             addr: addr.to_string(),
         })
     }
@@ -122,10 +127,14 @@ impl RemoteAgent {
                 PoolError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err))
             }
         }
-        self.socket.set_identity(self.public_key.as_bytes()).map_err(map_err_trace!())?;
-        self.socket.set_curve_secretkey(self.secret_key.as_str()).map_err(map_err_trace!())?;
-        self.socket.set_curve_publickey(self.public_key.as_str()).map_err(map_err_trace!())?;
-        self.socket.set_curve_serverkey(self.server_key.as_str()).map_err(map_err_trace!())?;
+        self.socket.set_identity(zmq::z85_encode(self.public_key.as_slice())?.as_bytes())
+            .map_err(map_err_trace!())?;
+        self.socket.set_curve_secretkey(zmq::z85_encode(self.secret_key.as_slice())?.as_str())
+            .map_err(map_err_trace!())?;
+        self.socket.set_curve_publickey(zmq::z85_encode(self.public_key.as_slice())?.as_str())
+            .map_err(map_err_trace!())?;
+        self.socket.set_curve_serverkey(zmq::z85_encode(self.server_key.as_slice())?.as_str())
+            .map_err(map_err_trace!())?;
         self.socket.set_linger(0).map_err(map_err_trace!())?; //TODO set correct timeout
         self.socket.connect(self.addr.as_str()).map_err(map_err_trace!())?;
         self.socket.send_str("DID", zmq::DONTWAIT).map_err(map_err_trace!())?;
@@ -170,6 +179,7 @@ mod tests {
     use super::*;
 
     use std::sync::mpsc::channel;
+    use super::rust_base58::ToBase58;
 
     use utils::timeout::TimeoutUtils;
 
@@ -230,10 +240,10 @@ mod tests {
         };
         let cmd = ConnectCmd {
             endpoint: addr,
-            public_key: send_key_pair.public_key.to_string(),
-            secret_key: send_key_pair.secret_key.to_string(),
+            public_key: zmq::z85_decode(send_key_pair.public_key.as_str()).unwrap().to_base58(),
+            secret_key: zmq::z85_decode(send_key_pair.secret_key.as_str()).unwrap().to_base58(),
             did: "".to_string(),
-            server_key: recv_key_pair.public_key.to_string(),
+            server_key: zmq::z85_decode(recv_key_pair.public_key.as_str()).unwrap().to_base58(),
         };
 
         agent_worker.connect(&cmd).unwrap();
@@ -254,9 +264,9 @@ mod tests {
         let agent = RemoteAgent {
             socket: send_soc,
             addr: addr,
-            server_key: recv_key_pair.public_key,
-            secret_key: send_key_pair.secret_key,
-            public_key: send_key_pair.public_key,
+            server_key: zmq::z85_decode(send_key_pair.public_key.as_str()).unwrap(),
+            secret_key: zmq::z85_decode(recv_key_pair.secret_key.as_str()).unwrap(),
+            public_key: zmq::z85_decode(recv_key_pair.public_key.as_str()).unwrap(),
         };
         agent.connect().unwrap();
         assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "DID");
