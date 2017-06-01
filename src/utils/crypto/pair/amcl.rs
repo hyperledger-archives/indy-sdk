@@ -9,13 +9,14 @@ use self::amcl::rom::{
     CURVE_PXA,
     CURVE_PYA,
     CURVE_PXB,
-    CURVE_PYB
+    CURVE_PYB,
+    MODBYTES
 };
 use self::amcl::ecp::ECP;
 use self::amcl::ecp2::ECP2;
 use self::amcl::fp12::FP12;
 use self::amcl::fp2::FP2;
-use self::amcl::pair::ate;
+use self::amcl::pair::{ate, g1mul, g2mul, gtpow, fexp};
 use self::amcl::rand::RAND;
 
 use errors::crypto::CryptoError;
@@ -30,12 +31,12 @@ use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
 use std::fmt;
 
 fn random_mod_order() -> Result<BIG, CryptoError> {
-    let mut seed = vec![0; 32];
+    let mut seed = vec![0; MODBYTES*2];
     let mut os_rng = OsRng::new().unwrap();
     os_rng.fill_bytes(&mut seed.as_mut_slice());
     let mut rng = RAND::new();
     rng.clean();
-    rng.seed(32, &seed);
+    rng.seed(MODBYTES*2, &seed);
     Ok(BIG::randomnum(&BIG::new_ints(&CURVE_ORDER), &mut rng))
 }
 
@@ -50,7 +51,8 @@ impl PointG1 {
         let point_x = BIG::new_ints(&CURVE_GX);
         let point_y = BIG::new_ints(&CURVE_GY);
         let mut gen_g1 = ECP::new_bigs(&point_x, &point_y);
-        let point = gen_g1.mul(&mut random_mod_order()?);
+
+        let point = g1mul(&mut gen_g1, &mut random_mod_order()?);
 
         Ok(PointG1 {
             point: point
@@ -69,7 +71,7 @@ impl PointG1 {
         let mut r = self.point;
         let mut bn = e.bn;
         Ok(PointG1 {
-            point: r.mul(&mut bn)
+            point: g1mul(&mut r, &mut bn)
         })
     }
 
@@ -175,7 +177,8 @@ impl PointG2 {
         let point_y = FP2::new_bigs(&point_ya, &point_yb);
 
         let mut gen_g2 = ECP2::new_fp2s(&point_x, &point_y);
-        let point = gen_g2.mul(&random_mod_order()?);
+
+        let point = g2mul(&mut gen_g2, &mut random_mod_order()?);
 
         Ok(PointG2 {
             point: point
@@ -215,7 +218,7 @@ impl PointG2 {
         let mut r = self.point;
         let mut bn = e.bn;
         Ok(PointG2 {
-            point: r.mul(&mut bn)
+            point: g2mul(&mut r, &mut bn)
         })
     }
 
@@ -359,12 +362,28 @@ impl GroupOrderElement {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
         let mut bn = self.bn;
-        let mut vec: [u8; 32] = [0; 32];
+        let mut vec: [u8; MODBYTES*2] = [0; MODBYTES*2];
         bn.tobytes(&mut vec);
         Ok(vec.to_vec())
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {
+        let mut vec = b.to_vec();
+        let len = vec.len();
+        println!("len: {}", len);
+        if len < MODBYTES*2 {
+            let diff = MODBYTES*2 - len;
+            println!("diff: {}", diff);
+            let mut result = vec![0; diff];
+            println!("result vec: {:?}", result);
+            result.append(&mut vec);
+            println!("result vec: {:?}", result);
+            return Ok(
+                GroupOrderElement {
+                    bn: BIG::frombytes(&result)
+                }
+            )
+        }
         Ok(
             GroupOrderElement {
                 bn: BIG::frombytes(b)
@@ -418,7 +437,7 @@ impl Pair {
         let mut q_new = *q;
 
         Ok(Pair {
-            pair: ate(&mut q_new.point, &mut p_new.point)
+            pair: fexp(&ate(&mut q_new.point, &mut p_new.point))
         })
     }
 
@@ -434,9 +453,9 @@ impl Pair {
     pub fn pow(&self, b: &GroupOrderElement) -> Result<Pair, CryptoError> {
         let mut base = self.pair;
         let mut b = b.bn;
-        base.pow(&mut b);
+
         Ok(Pair {
-            pair: base
+            pair: gtpow(&mut base, &mut b)
         })
     }
 
@@ -629,9 +648,14 @@ mod tests {
         assert_eq!(pair, deserialized);
     }
 
-    #[test] //TODO: remove it
-    fn stack_smashing_detected() {
-        let point = PointG2::new().unwrap();
-        println!("pstr: {}", point.to_string().unwrap());
+    #[test]
+    pub fn pairing_definition_bilinearity() {
+        let a = GroupOrderElement::new().unwrap();
+        let b = GroupOrderElement::new().unwrap();
+        let p = PointG1::new().unwrap();
+        let q = PointG2::new().unwrap();
+        let left = Pair::pair(&p.mul(&a).unwrap(), &q.mul(&b).unwrap()).unwrap();
+        let right = Pair::pair(&p, &q).unwrap().pow(&a.mul_mod(&b).unwrap()).unwrap();
+        assert_eq!(left, right);
     }
 }
