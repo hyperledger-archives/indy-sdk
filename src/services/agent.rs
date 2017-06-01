@@ -5,11 +5,21 @@ use std::cell::RefCell;
 use std::thread;
 
 use errors::common::CommonError;
+use errors::pool::PoolError;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 
+struct RemoteAgent {
+    socket: zmq::Socket,
+    addr: String,
+    public_key: String,
+    secret_key: String,
+    server_key: String,
+}
+
 struct AgentWorker {
     cmd_socket: zmq::Socket,
+    agent_connections: Vec<RemoteAgent>,
 }
 
 struct Agent {
@@ -20,7 +30,7 @@ struct Agent {
 impl Drop for Agent {
     fn drop(&mut self) {
         trace!("agent drop >>");
-        self.cmd_socket.send_str("exit", zmq::DONTWAIT).unwrap(); //TODO
+        self.cmd_socket.send_str(AgentWorkerCommand::Exit.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap(); //TODO
         self.worker.take().unwrap().join().unwrap();
         trace!("agent drop <<");
     }
@@ -33,9 +43,10 @@ pub struct AgentService {
 impl Agent {
     pub fn new() -> Agent {
         let ctx = zmq::Context::new();
-        let (send_soc, recv_soc) = _create_zmq_pair("agent").unwrap();
+        let (send_soc, recv_soc) = _create_zmq_socket_pair("agent", true).unwrap();
         let mut worker = AgentWorker {
             cmd_socket: recv_soc,
+            agent_connections: Vec::new(),
         };
         Agent {
             cmd_socket: send_soc,
@@ -68,10 +79,47 @@ impl AgentService {
 
 impl AgentWorker {
     pub fn run(&mut self) {
-        trace!("agent worker run before poll");
-        self.cmd_socket.poll(zmq::POLLIN, -1).unwrap();
-        let s = self.cmd_socket.recv_string(zmq::DONTWAIT);
-        trace!("agent worker run after poll {:?}", s);
+        loop {
+            trace!("agent worker poll loop >>");
+            self.cmd_socket.poll(zmq::POLLIN, -1).unwrap();
+            let s = self.cmd_socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
+            let cmd = AgentWorkerCommand::from_json(s.as_str()).unwrap();
+            match cmd {
+                AgentWorkerCommand::Connect(cmd) => unimplemented!(),
+                AgentWorkerCommand::Exit => break,
+            }
+            info!("received cmd {}", s);
+            trace!("agent worker poll loop <<");
+        }
+        trace!("agent poll finished");
+    }
+}
+
+impl RemoteAgent {
+    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str) -> Result<RemoteAgent, zmq::Error> {
+        Ok(RemoteAgent {
+            socket: zmq::Context::new().socket(zmq::SocketType::DEALER)?,
+            public_key: pub_key.to_string(),
+            secret_key: sec_key.to_string(),
+            server_key: ver_key.to_string(),
+            addr: addr.to_string(),
+        })
+    }
+
+    fn connect(&self) -> Result<(), PoolError> {
+        impl From<zmq::EncodeError> for PoolError {
+            fn from(err: zmq::EncodeError) -> PoolError {
+                PoolError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err))
+            }
+        }
+        self.socket.set_identity(self.public_key.as_bytes())?;
+        self.socket.set_curve_secretkey(self.secret_key.as_str())?;
+        self.socket.set_curve_publickey(self.public_key.as_str())?;
+        self.socket.set_curve_serverkey(self.server_key.as_str())?;
+        self.socket.set_linger(0)?; //TODO set correct timeout
+        self.socket.connect(self.addr.as_str())?;
+        self.socket.send_str("DID", zmq::DONTWAIT)?;
+        Ok(())
     }
 }
 
@@ -79,6 +127,7 @@ impl AgentWorker {
 #[derive(Serialize, Deserialize, Debug)]
 enum AgentWorkerCommand {
     Connect(ConnectCmd),
+    Exit,
 }
 
 impl JsonEncodable for AgentWorkerCommand {}
@@ -93,12 +142,15 @@ struct ConnectCmd {
     my_pk: String,
 }
 
-fn _create_zmq_pair(addr: &str) -> Result<(zmq::Socket, zmq::Socket), zmq::Error> {
+fn _create_zmq_socket_pair(address: &str, connect_and_bind: bool) -> Result<(zmq::Socket, zmq::Socket), zmq::Error> {
     let ctx = zmq::Context::new();
     let recv_soc = ctx.socket(zmq::SocketType::PAIR)?;
     let send_soc = ctx.socket(zmq::SocketType::PAIR)?;
-    recv_soc.bind(&format!("inproc://{}", addr))?;
-    send_soc.connect(&format!("inproc://{}", addr))?;
+    if connect_and_bind {
+        let address = format!("inproc://{}", address);
+        recv_soc.bind(&address)?;
+        send_soc.connect(&address)?;
+    }
     Ok((send_soc, recv_soc))
 }
 
@@ -106,21 +158,26 @@ fn _create_zmq_pair(addr: &str) -> Result<(zmq::Socket, zmq::Socket), zmq::Error
 mod tests {
     use super::*;
 
+    use std::sync::mpsc::channel;
+
+    use utils::timeout::TimeoutUtils;
+
     #[test]
     fn agent_can_be_dropped() {
-        let ctx = zmq::Context::new();
-        {
-            let agent = Agent::new();
-        }
-        assert!(true, "No fail in agent_worker_can_be_dropped");
+        let (sender, receiver) = channel();
+        thread::spawn(move || {
+            {
+                let agent = Agent::new();
+            }
+            sender.send(true).unwrap();
+        });
+        receiver.recv_timeout(TimeoutUtils::short_timeout()).expect("drop not finished");
     }
 
     #[test]
     fn agent_service_connect_works() {
-        use std::sync::mpsc::channel;
-        use utils::timeout::TimeoutUtils;
         let (sender, receiver) = channel();
-        let (send_soc, recv_soc) = _create_zmq_pair("test_connect").unwrap();
+        let (send_soc, recv_soc) = _create_zmq_socket_pair("test_connect", true).unwrap();
         let agent = Agent {
             cmd_socket: send_soc,
             worker: Some(thread::spawn(move || {
@@ -133,5 +190,32 @@ mod tests {
         agent_service.connect("sd", "sk", "pk", "ep").unwrap();
         let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         assert_eq!(str, r#"{"cmd":"Connect","endpoint":"ep","my_did":"sd","my_sk":"sk","my_pk":"pk"}"#);
+    }
+
+    #[test]
+    fn remote_agent_connect_works() {
+        let dest = "test_agent_connect";
+        let addr: String = format!("inproc://{}", dest);
+        let (send_soc, recv_soc) = _create_zmq_socket_pair(dest, false).unwrap();
+        recv_soc.bind(addr.as_str()).unwrap(); //TODO enable CurveCP
+        let send_key_pair = zmq::CurveKeyPair::new().unwrap();
+        let recv_key_pair = zmq::CurveKeyPair::new().unwrap();
+        let agent = RemoteAgent {
+            socket: send_soc,
+            addr: addr,
+            server_key: recv_key_pair.public_key,
+            secret_key: send_key_pair.secret_key,
+            public_key: send_key_pair.public_key,
+        };
+        agent.connect().unwrap();
+        assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "DID");
+    }
+
+    #[test]
+    fn agent_service_static_create_zmq_socket_pair_works() {
+        let msg = "msg";
+        let sockets = _create_zmq_socket_pair("test_pair", true).unwrap();
+        sockets.0.send_str(msg, zmq::DONTWAIT).unwrap();
+        assert_eq!(sockets.1.recv_string(zmq::DONTWAIT).unwrap().unwrap(), msg);
     }
 }
