@@ -370,14 +370,10 @@ impl GroupOrderElement {
     pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {
         let mut vec = b.to_vec();
         let len = vec.len();
-        println!("len: {}", len);
         if len < MODBYTES*2 {
             let diff = MODBYTES*2 - len;
-            println!("diff: {}", diff);
             let mut result = vec![0; diff];
-            println!("result vec: {:?}", result);
             result.append(&mut vec);
-            println!("result vec: {:?}", result);
             return Ok(
                 GroupOrderElement {
                     bn: BIG::frombytes(&result)
