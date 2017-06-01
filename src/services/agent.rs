@@ -67,10 +67,11 @@ impl AgentService {
         }
         let conn_handle = SequenceUtils::get_next_id();
         let connect_cmd: AgentWorkerCommand = AgentWorkerCommand::Connect(ConnectCmd {
-            my_did: sender_did.to_string(),
-            my_sk: my_sk.to_string(),
-            my_pk: my_pk.to_string(),
+            did: sender_did.to_string(),
+            secret_key: my_sk.to_string(),
+            public_key: my_pk.to_string(),
             endpoint: endpoint.to_string(),
+            server_key: "FIXME".to_string(), //FIXME
         });
         agent.as_ref().unwrap().cmd_socket.send_str(connect_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
         Ok(())
@@ -78,20 +79,29 @@ impl AgentService {
 }
 
 impl AgentWorker {
-    pub fn run(&mut self) {
+    fn run(&mut self) {
         loop {
             trace!("agent worker poll loop >>");
             self.cmd_socket.poll(zmq::POLLIN, -1).unwrap();
             let s = self.cmd_socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
             let cmd = AgentWorkerCommand::from_json(s.as_str()).unwrap();
             match cmd {
-                AgentWorkerCommand::Connect(cmd) => unimplemented!(),
+                AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
                 AgentWorkerCommand::Exit => break,
             }
             info!("received cmd {}", s);
             trace!("agent worker poll loop <<");
         }
         trace!("agent poll finished");
+    }
+
+    fn connect(&mut self, cmd: &ConnectCmd) -> Result<(), PoolError> {
+        let ra = RemoteAgent::new(cmd.public_key.as_str(), cmd.secret_key.as_str(),
+                                  cmd.server_key.as_str(), cmd.endpoint.as_str())
+            .map_err(map_err_trace!("RemoteAgent::new failed"))?;
+        ra.connect().map_err(map_err_trace!("RemoteAgent::connect failed"))?;
+        self.agent_connections.push(ra);
+        Ok(())
     }
 }
 
@@ -112,13 +122,13 @@ impl RemoteAgent {
                 PoolError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err))
             }
         }
-        self.socket.set_identity(self.public_key.as_bytes())?;
-        self.socket.set_curve_secretkey(self.secret_key.as_str())?;
-        self.socket.set_curve_publickey(self.public_key.as_str())?;
-        self.socket.set_curve_serverkey(self.server_key.as_str())?;
-        self.socket.set_linger(0)?; //TODO set correct timeout
-        self.socket.connect(self.addr.as_str())?;
-        self.socket.send_str("DID", zmq::DONTWAIT)?;
+        self.socket.set_identity(self.public_key.as_bytes()).map_err(map_err_trace!())?;
+        self.socket.set_curve_secretkey(self.secret_key.as_str()).map_err(map_err_trace!())?;
+        self.socket.set_curve_publickey(self.public_key.as_str()).map_err(map_err_trace!())?;
+        self.socket.set_curve_serverkey(self.server_key.as_str()).map_err(map_err_trace!())?;
+        self.socket.set_linger(0).map_err(map_err_trace!())?; //TODO set correct timeout
+        self.socket.connect(self.addr.as_str()).map_err(map_err_trace!())?;
+        self.socket.send_str("DID", zmq::DONTWAIT).map_err(map_err_trace!())?;
         Ok(())
     }
 }
@@ -137,9 +147,10 @@ impl<'a> JsonDecodable<'a> for AgentWorkerCommand {}
 #[derive(Serialize, Deserialize, Debug)]
 struct ConnectCmd {
     endpoint: String,
-    my_did: String,
-    my_sk: String,
-    my_pk: String,
+    did: String,
+    secret_key: String,
+    public_key: String,
+    server_key: String,
 }
 
 fn _create_zmq_socket_pair(address: &str, connect_and_bind: bool) -> Result<(zmq::Socket, zmq::Socket), zmq::Error> {
@@ -188,8 +199,48 @@ mod tests {
             agent: RefCell::new(Some(agent)),
         };
         agent_service.connect("sd", "sk", "pk", "ep").unwrap();
+        let expected_cmd = ConnectCmd {
+            server_key: "FIXME".to_string(),
+            public_key: "pk".to_string(),
+            secret_key: "sk".to_string(),
+            endpoint: "ep".to_string(),
+            did: "sd".to_string(),
+        };
         let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-        assert_eq!(str, r#"{"cmd":"Connect","endpoint":"ep","my_did":"sd","my_sk":"sk","my_pk":"pk"}"#);
+        assert_eq!(str, AgentWorkerCommand::Connect(expected_cmd).to_json().unwrap());
+    }
+
+    #[test]
+    fn agent_worker_connect_works() {
+        ::utils::logger::LoggerUtils::init();
+        let send_key_pair = zmq::CurveKeyPair::new().unwrap();
+        let recv_key_pair = zmq::CurveKeyPair::new().unwrap();
+        let ctx = zmq::Context::new();
+        let recv_soc = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+        recv_soc.set_curve_publickey(recv_key_pair.public_key.as_str()).unwrap();
+        recv_soc.set_curve_secretkey(recv_key_pair.secret_key.as_str()).unwrap();
+        recv_soc.set_curve_server(true).unwrap();
+        recv_soc.bind("tcp://127.0.0.1:*").unwrap();
+        let addr = recv_soc.get_last_endpoint().unwrap().unwrap();
+        info!("addr {}", addr);
+
+        let mut agent_worker = AgentWorker {
+            agent_connections: Vec::new(),
+            cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+        };
+        let cmd = ConnectCmd {
+            endpoint: addr,
+            public_key: send_key_pair.public_key.to_string(),
+            secret_key: send_key_pair.secret_key.to_string(),
+            did: "".to_string(),
+            server_key: recv_key_pair.public_key.to_string(),
+        };
+
+        agent_worker.connect(&cmd).unwrap();
+
+        assert_eq!(agent_worker.agent_connections.len(), 1);
+        recv_soc.recv_string(0).unwrap().unwrap(); //ignore identity
+        assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "DID");
     }
 
     #[test]
