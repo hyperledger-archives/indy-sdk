@@ -13,14 +13,14 @@ use utils::timeout::TimeoutUtils;
 pub struct SignusUtils {}
 
 impl SignusUtils {
-    pub fn create_and_store_my_did(wallet_handle: i32) -> Result<(String, String, String), ErrorCode> {
+    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<String>) -> Result<(String, String, String), ErrorCode> {
         let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
         let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| {
             create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap();
         });
         let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
 
-        let my_did_json = "{}";
+        let my_did_json = seed.map_or("{}".to_string(), |seed| format!("{{\"seed\":\"{}\" }}", seed));
         let err =
             sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
                                            wallet_handle,
