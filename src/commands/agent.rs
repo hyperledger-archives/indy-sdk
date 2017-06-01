@@ -53,22 +53,37 @@ impl AgentCommandExecutor {
     ) {
         let agent_serv: &AgentService = self.agent_service.as_ref();
         self._connect(wallet_handle, &sender_did, &receiver_did)
-            .and_then(|info: Option<(String, String, String)>| {
-                let (my_sk, my_pk, endpoint) = info.unwrap();
-                agent_serv.connect(sender_did.as_str(), my_sk.as_str(), my_pk.as_str(), endpoint.as_str())
+            .and_then(|info: Option<ConnectInfo>| {
+                let info = info.unwrap();
+                agent_serv.connect(sender_did.as_str(),
+                                   info.secret_key.as_str(), info.public_key.as_str(),
+                                   info.endpoint.as_str(), info.server_key.as_str())
                     .map_err(From::from)
             })
             .unwrap_or_else(|err| connect_cb(Err(err)))
     }
 
     fn _connect(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
-                -> Result<Option<(String, String, String)>, SovrinError> {
+                -> Result<Option<ConnectInfo>, SovrinError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", sender_did))?;
         let my_did: MyDid = MyDid::from_json(&my_did_json).map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
 
         let their_did_json = self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", receiver_did))?; //FIXME implement: get from ledger
         let their_did: TheirDid = TheirDid::from_json(&their_did_json).map_err(|_| CommonError::InvalidState((format!("Invalid their did json"))))?;
         assert!(their_did.endpoint.is_some()); //FIXME implement: get from ledger
-        Ok(Some((my_did.secret_key, my_did.public_key, their_did.endpoint.unwrap())))
+        Ok(Some(ConnectInfo {
+            secret_key: my_did.secret_key,
+            public_key: my_did.public_key,
+            endpoint: their_did.endpoint.unwrap(),
+            server_key: their_did.pk.unwrap()
+        }))
     }
+}
+
+struct ConnectInfo {
+    //TODO push to public service structure and use in service calls?
+    secret_key: String,
+    public_key: String,
+    server_key: String,
+    endpoint: String,
 }

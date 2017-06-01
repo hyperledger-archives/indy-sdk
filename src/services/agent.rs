@@ -60,7 +60,7 @@ impl AgentService {
         AgentService { agent: RefCell::new((None)) }
     }
 
-    pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str) -> Result<(), CommonError> {
+    pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<(), CommonError> {
         let mut agent = self.agent.borrow_mut();
         if agent.is_none() {
             *agent = Some(Agent::new());
@@ -71,7 +71,7 @@ impl AgentService {
             secret_key: my_sk.to_string(),
             public_key: my_pk.to_string(),
             endpoint: endpoint.to_string(),
-            server_key: "FIXME".to_string(), //FIXME
+            server_key: server_key.to_string(),
         });
         agent.as_ref().unwrap().cmd_socket.send_str(connect_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
         Ok(())
@@ -198,9 +198,9 @@ mod tests {
         let agent_service = AgentService {
             agent: RefCell::new(Some(agent)),
         };
-        agent_service.connect("sd", "sk", "pk", "ep").unwrap();
+        agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
         let expected_cmd = ConnectCmd {
-            server_key: "FIXME".to_string(),
+            server_key: "serv".to_string(),
             public_key: "pk".to_string(),
             secret_key: "sk".to_string(),
             endpoint: "ep".to_string(),
