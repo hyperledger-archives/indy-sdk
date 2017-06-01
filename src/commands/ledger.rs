@@ -66,18 +66,20 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, SovrinError>) + Send>),
     BuildGetSchemaRequest(
         String, // submitter did
+        String, // dest
         String, // data
         Box<Fn(Result<String, SovrinError>) + Send>),
     BuildClaimDefRequest(
         String, // submitter did
-        String, // xref
+        i32, // xref
         String, // signature_type
         String, // data
         Box<Fn(Result<String, SovrinError>) + Send>),
     BuildGetClaimDefRequest(
         String, // submitter did
-        String, // xref
+        i32, // xref
         String, // signature_type
+        String, // origin
         Box<Fn(Result<String, SovrinError>) + Send>),
     BuildNodeRequest(
         String, // submitter did
@@ -161,17 +163,17 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
                 self.build_schema_request(&submitter_did, &data, cb);
             }
-            LedgerCommand::BuildGetSchemaRequest(submitter_did, data, cb) => {
+            LedgerCommand::BuildGetSchemaRequest(submitter_did, dest, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
-                self.build_get_schema_request(&submitter_did, &data, cb);
+                self.build_get_schema_request(&submitter_did, &dest, &data, cb);
             }
             LedgerCommand::BuildClaimDefRequest(submitter_did, xref, signature_type, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
-                self.build_claim_def_request(&submitter_did, &xref, &signature_type, &data, cb);
+                self.build_claim_def_request(&submitter_did, xref, &signature_type, &data, cb);
             }
-            LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, signature_type, cb) => {
+            LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, signature_type, origin, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
-                self.build_get_claim_def_request(&submitter_did, &xref, &signature_type, cb);
+                self.build_get_claim_def_request(&submitter_did, xref, &signature_type, &origin, cb);
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
@@ -298,16 +300,18 @@ impl LedgerCommandExecutor {
 
     fn build_get_schema_request(&self,
                                 submitter_did: &str,
+                                dest: &str,
                                 data: &str,
                                 cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_get_schema_request(submitter_did,
+                                                        dest,
                                                         data
         ).map_err(|err| SovrinError::CommonError(err)))
     }
 
     fn build_claim_def_request(&self,
                                submitter_did: &str,
-                               xref: &str,
+                               xref: i32,
                                signature_type: &str,
                                data: &str,
                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
@@ -320,12 +324,14 @@ impl LedgerCommandExecutor {
 
     fn build_get_claim_def_request(&self,
                                    submitter_did: &str,
-                                   xref: &str,
+                                   xref: i32,
                                    signature_type: &str,
+                                   origin: &str,
                                    cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_get_claim_def_request(submitter_did,
                                                            xref,
-                                                           signature_type
+                                                           signature_type,
+                                                           origin
         ).map_err(|err| SovrinError::CommonError(err)))
     }
 

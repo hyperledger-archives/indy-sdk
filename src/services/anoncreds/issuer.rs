@@ -72,7 +72,7 @@ impl Issuer {
         info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> start", &schema);
         let mut ctx = BigNumber::new_context()?;
 
-        if schema.attr_names.len() == 0 {
+        if schema.keys.len() == 0 {
             return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
@@ -92,7 +92,7 @@ impl Issuer {
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
-        for attribute in &schema.attr_names {
+        for attribute in &schema.keys {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
             r.insert(attribute.to_string(), s.mod_exp(&random, &n, Some(&mut ctx))?);
         }
@@ -508,7 +508,7 @@ mod tests {
     fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
-        schema.attr_names = HashSet::new();
+        schema.keys = HashSet::new();
 
         let signature_type = None;
         let create_non_revoc = false;
@@ -573,29 +573,29 @@ pub mod mocks {
     }
 
     pub fn get_gvt_schema() -> Schema {
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert("name".to_string());
-        attr_names.insert("age".to_string());
-        attr_names.insert("height".to_string());
-        attr_names.insert("sex".to_string());
+        let mut keys: HashSet<String> = HashSet::new();
+        keys.insert("name".to_string());
+        keys.insert("age".to_string());
+        keys.insert("height".to_string());
+        keys.insert("sex".to_string());
 
         Schema {
             name: "gvt".to_string(),
             version: "1.0".to_string(),
-            attr_names: attr_names,
+            keys: keys,
             seq_no: 1
         }
     }
 
     pub fn get_xyz_schema() -> Schema {
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert("status".to_string());
-        attr_names.insert("period".to_string());
+        let mut keys: HashSet<String> = HashSet::new();
+        keys.insert("status".to_string());
+        keys.insert("period".to_string());
 
         Schema {
             name: "xyz".to_string(),
             version: "1.0".to_string(),
-            attr_names: attr_names,
+            keys: keys,
             seq_no: 2
         }
     }

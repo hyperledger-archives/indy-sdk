@@ -174,7 +174,7 @@ impl SignusCommandExecutor {
         let identity_info: MyIdentityInfo = MyIdentityInfo::from_json(identity_json)
             .map_err(|_| CommonError::InvalidStructure(format!("Invalid identity json")))?;
 
-        let did_info = MyDidInfo::new(Some(did.to_string()), identity_info.seed, identity_info.crypto_type);
+        let did_info = MyDidInfo::new(Some(did.to_string()), identity_info.seed, identity_info.crypto_type, None);
 
         let my_did = self.signus_service.create_my_did(&did_info)?;
         let my_did_json = my_did.to_json()

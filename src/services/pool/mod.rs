@@ -18,6 +18,7 @@ use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
+use errors::sovrin::SovrinError;
 use errors::crypto::CryptoError;
 use self::catchup::CatchupHandler;
 use self::types::*;
@@ -94,6 +95,9 @@ impl TransactionHandler {
             Message::Reply(reply) => {
                 self.process_reply(&reply, raw_msg);
             }
+            Message::Reject(response) => {
+                self.process_reject(&response, raw_msg);
+            }
             _ => {
                 warn!("unhandled msg {:?}", msg);
             }
@@ -110,6 +114,25 @@ impl TransactionHandler {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+                }
+                remove = true;
+            }
+        }
+        if remove {
+            self.pending_commands.remove(&req_id);
+        }
+    }
+
+    //TODO correct handling of Reject
+    fn process_reject(&mut self, response: &Response, raw_msg: &String) {
+        let req_id = response.req_id;
+        let mut remove = false;
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
+            pend_cmd.nack_cnt += 1;
+            if pend_cmd.nack_cnt == self.f + 1 {
+                for &cmd_id in &pend_cmd.cmd_ids {
+                    CommandExecutor::instance().send(
+                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Err(SovrinError::PoolError(PoolError::InvalidData(raw_msg.clone())))))).unwrap();
                 }
                 remove = true;
             }

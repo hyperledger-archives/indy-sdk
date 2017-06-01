@@ -115,9 +115,9 @@ impl LedgerService {
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         let req_id = LedgerService::get_req_id();
-        let data = SchemaOperationData::from_json(&data)
+        SchemaOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
-        let operation = SchemaOperation::new(data);
+        let operation = SchemaOperation::new(data.to_string());
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -126,11 +126,11 @@ impl LedgerService {
         Ok(request_json)
     }
 
-    pub fn build_get_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
+    pub fn build_get_schema_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
         let req_id = LedgerService::get_req_id();
         let data = GetSchemaOperationData::from_json(data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
-        let operation = GetSchemaOperation::new(data);
+        let operation = GetSchemaOperation::new(dest.to_string(), data);
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -139,11 +139,12 @@ impl LedgerService {
         Ok(request_json)
     }
 
-    pub fn build_claim_def_request(&self, identifier: &str, _ref: &str, signature_type: &str, data: &str) -> Result<String, CommonError> {
+    pub fn build_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, data: &str) -> Result<String, CommonError> {
         let req_id = LedgerService::get_req_id();
-        let data = ClaimDefOperationData::from_json(&data)
+        println!("data {:?}", data);
+        ClaimDefOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
-        let operation = ClaimDefOperation::new(_ref.to_string(), signature_type.to_string(), data);
+        let operation = ClaimDefOperation::new(_ref, signature_type.to_string(), data.to_string());
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -152,10 +153,11 @@ impl LedgerService {
         Ok(request_json)
     }
 
-    pub fn build_get_claim_def_request(&self, identifier: &str, _ref: &str, signature_type: &str) -> Result<String, CommonError> {
+    pub fn build_get_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, origin: &str) -> Result<String, CommonError> {
         let req_id = LedgerService::get_req_id();
-        let operation = GetClaimDefOperation::new(_ref.to_string(),
-                                                  signature_type.to_string());
+        let operation = GetClaimDefOperation::new(_ref,
+                                                  signature_type.to_string(),
+                                                  origin.to_string());
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -323,9 +325,9 @@ mod tests {
     fn build_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "some_identifier";
-        let data = r#"{"name":"name", "version":"1.0", "keys": ["name", "male"]}"#;
+        let data = r#"{"name":"name", "version":"1.0", "keys":["name","male"]}"#;
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"101","data":{"name":"name","version":"1.0","keys":["name","male"]}}"#;
+        let expected_result = "\"operation\":{\"type\":\"101\",\"data\":\"{\\\"name\\\":\\\"name\\\", \\\"version\\\":\\\"1.0\\\", \\\"keys\\\":[\\\"name\\\",\\\"male\\\"]";
 
         let schema_request = ledger_service.build_schema_request(identifier, data);
         assert!(schema_request.is_ok());
@@ -337,9 +339,9 @@ mod tests {
     fn build_get_schema_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
         let identifier = "some_identifier";
-        let data = r#"{"name":"name", "keys": ["name", "male"]}"#;
+        let data = r#"{"name":"name","keys":["name","male"]}"#;
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, data);
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
         assert!(get_schema_request.is_err());
     }
 
@@ -347,11 +349,11 @@ mod tests {
     fn build_get_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "some_identifier";
-        let data = r#"{"name":"name", "version":"1.0"}"#;
+        let data = r#"{"name":"name","version":"1.0"}"#;
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"107","data":{"name":"name","version":"1.0"}}"#;
+        let expected_result = r#""identifier":"some_identifier","operation":{"type":"107","dest":"some_identifier","data":{"name":"name","version":"1.0"}}"#;
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, data);
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
         assert!(get_schema_request.is_ok());
         let get_schema_request = get_schema_request.unwrap();
         assert!(get_schema_request.contains(expected_result));
@@ -361,12 +363,13 @@ mod tests {
     fn build_get_claim_def_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "some_identifier";
-        let _ref = "some_ref";
+        let _ref = 1;
         let signature_type = "signature_type";
+        let origin = "some_origin";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"108","ref":"some_ref","signature_type":"signature_type"}"#;
+        let expected_result = r#""identifier":"some_identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"some_origin"}"#;
 
-        let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, _ref, signature_type);
+        let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, _ref, signature_type, origin);
         assert!(get_claim_def_request.is_ok());
         let get_claim_def_request = get_claim_def_request.unwrap();
         assert!(get_claim_def_request.contains(expected_result));

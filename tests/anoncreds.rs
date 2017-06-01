@@ -32,12 +32,12 @@ fn anoncreds_works_for_single_issuer_single_prover() {
     let xtype = "default";
 
     //1. Create Issuer wallet, get wallet handle
-    let res = WalletUtils::create_wallet(pool_name, issuer_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, issuer_wallet_name, xtype);
     assert!(res.is_ok());
     let issuer_wallet_handle = res.unwrap();
 
     //2. Create Prover wallet, get wallet handle
-    let res = WalletUtils::create_wallet(pool_name, prover_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype);
     assert!(res.is_ok());
     let prover_wallet_handle = res.unwrap();
 
@@ -162,17 +162,17 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
     let xtype = "default";
 
     //1. Issuer1 create wallet, get wallet handles
-    let res = WalletUtils::create_wallet(pool_name, issuer1_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, issuer1_wallet_name, xtype);
     assert!(res.is_ok());
     let issuer_gvt_wallet_handle = res.unwrap();
 
     //2. Issuer2 create wallet, get wallet handles
-    let res = WalletUtils::create_wallet(pool_name, issuer2_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, issuer2_wallet_name, xtype);
     assert!(res.is_ok());
     let issuer_xyz_wallet_handle = res.unwrap();
 
     //3. Prover create wallet, get wallet handles
-    let res = WalletUtils::create_wallet(pool_name, prover_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype);
     assert!(res.is_ok());
     let prover_wallet_handle = res.unwrap();
 
@@ -385,12 +385,12 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
     let xtype = "default";
 
     //1. Issuer create wallet, get wallet handles
-    let res = WalletUtils::create_wallet(pool_name, issuer_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, issuer_wallet_name, xtype);
     assert!(res.is_ok());
     let issuer_wallet_handle = res.unwrap();
 
     //2. Prover create wallet, get wallet handles
-    let res = WalletUtils::create_wallet(pool_name, prover_wallet_name, xtype);
+    let res = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype);
     assert!(res.is_ok());
     let prover_wallet_handle = res.unwrap();
 

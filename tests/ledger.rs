@@ -18,391 +18,409 @@ use utils::test::TestUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 #[cfg(feature = "local_nodes_pool")]
-use utils::logger::LoggerUtils;
-#[cfg(feature = "local_nodes_pool")]
 use utils::wallet::WalletUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::ledger::LedgerUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::signus::SignusUtils;
-
-
-#[test]
 #[cfg(feature = "local_nodes_pool")]
-fn sovrin_nym_requests_works() {
-    TestUtils::cleanup_storage();
-    LoggerUtils::init();
+use utils::anoncreds::AnoncredsUtils;
 
-    let pool_name = "test_submit_tx";
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
-    let wallet_type = "default";
+use std::collections::{HashMap, HashSet};
 
-    let res = PoolUtils::create_pool_ledger_config(pool_name);
+
+// TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
+// See: https://github.com/hyperledger/indy-sdk/issues/25
+#[cfg(feature = "local_nodes_pool")]
+fn get_trustee_keys(wallet_handle: i32) -> (String, String, String) {
+    // workaround start >>>
+    let res = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\"}");
     assert!(res.is_ok());
-    let res = PoolUtils::open_pool_ledger(pool_name);
-    assert!(res.is_ok());
-    let pool_handle = res.unwrap();
+    let (trustee_did, trustee_verkey, trustee_pk) = res.unwrap();
 
-    let res = WalletUtils::create_wallet(pool_name, my_wallet_name, wallet_type);
+    let res = SignusUtils::create_my_did(wallet_handle, &format!("{{\"did\":\"{}\", \"seed\":\"000000000000000000000000Trustee1\"}}", trustee_verkey));
     assert!(res.is_ok());
-    let my_wallet_handle = res.unwrap();
-
-    let res = WalletUtils::create_wallet(pool_name, their_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let their_wallet_handle = res.unwrap();
-
-    let my_did_json = "{}";
-    let res = SignusUtils::create_my_did(my_wallet_handle, my_did_json);
-    assert!(res.is_ok());
-    let (my_did, my_verkey, my_pk) = res.unwrap();
-
-    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-    let res = SignusUtils::create_my_did(their_wallet_handle, their_did_json);
-    assert!(res.is_ok());
-    let (their_did, their_verkey, their_pk) = res.unwrap();
-
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_verkey.clone(), None, None, None, None);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
-
-    let res = SignusUtils::sign(their_wallet_handle, &their_did, &nym_request);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
-
-    println!("{}", nym_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &nym_request);
-    assert!(res.is_ok());
-    let nym_response = res.unwrap();
-
-    let res = LedgerUtils::build_get_nym_request(&my_verkey.clone(), &my_did.clone());
-    assert!(res.is_ok());
-    let get_nym_request = res.unwrap();
-
-    println!("{}", get_nym_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &get_nym_request);
-    assert!(res.is_ok());
-    let nym_response = res.unwrap();
-
-    TestUtils::cleanup_storage();
+    res.unwrap()
+    // workaround end <<<
 }
 
-#[test]
-#[cfg(feature = "local_nodes_pool")]
-#[ignore]
-fn sovrin_attrib_requests_works() {
-    TestUtils::cleanup_storage();
-    let pool_name = "test_submit_tx";
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
-    let wallet_type = "default";
+mod high_cases {
+    use super::*;
 
-    let res = PoolUtils::create_pool_ledger_config(pool_name);
-    assert!(res.is_ok());
-    let res = PoolUtils::open_pool_ledger(pool_name);
-    assert!(res.is_ok());
-    let pool_handle = res.unwrap();
+    mod nym_requests {
+        use super::*;
 
-    let res = WalletUtils::create_wallet(pool_name, my_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let my_wallet_handle = res.unwrap();
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore]
+        fn sovrin_nym_requests_works() {
+            TestUtils::cleanup_storage();
 
-    let res = WalletUtils::create_wallet(pool_name, their_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let their_wallet_handle = res.unwrap();
+            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
+            assert!(res.is_ok());
+            let pool_handle = res.unwrap();
 
-    let my_did_json = "{}";
-    let res = SignusUtils::create_my_did(my_wallet_handle, my_did_json);
-    assert!(res.is_ok());
-    let (my_did, my_verkey, my_pk) = res.unwrap();
+            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            assert!(res.is_ok());
+            let wallet_handle = res.unwrap();
 
-    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-    let res = SignusUtils::create_my_did(their_wallet_handle, their_did_json);
-    assert!(res.is_ok());
-    let (their_did, their_verkey, their_pk) = res.unwrap();
+            let (trustee_did, trustee_verkey, trustee_pk) = get_trustee_keys(wallet_handle);
 
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_did.clone(), None, None, None, None);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
+            let res = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}");
+            assert!(res.is_ok());
+            let (my_did, my_verkey, my_pk) = res.unwrap();
 
-    let res = SignusUtils::sign(their_wallet_handle, &their_did, &nym_request);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
+            let res = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None, None);
+            assert!(res.is_ok());
+            let nym_request = res.unwrap();
 
-    println!("nym_request {}", nym_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &nym_request);
-    assert!(res.is_ok());
-    let nym_response = res.unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert!(res.is_ok());
+            let nym_response = res.unwrap();
+            println!("nym_response {:?}", nym_response);
 
-    let res = LedgerUtils::build_attrib_request(&their_verkey.clone(), &my_did.clone(), None, Some("{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}"), None);
-    assert!(res.is_ok());
-    let attrib_request = res.unwrap();
+            let res = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone());
+            assert!(res.is_ok());
+            let get_nym_request = res.unwrap();
 
-    let res = SignusUtils::sign(their_wallet_handle, &their_did, &attrib_request);
-    assert!(res.is_ok());
-    let attrib_request = res.unwrap();
+            let res = PoolUtils::send_request(pool_handle, &get_nym_request);
+            assert!(res.is_ok());
+            let get_nym_response = res.unwrap();
+            println!("get_nym_response {:?}", get_nym_response);
 
-    println!("attrib_request {}", attrib_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &attrib_request);
-    assert!(res.is_ok());
-    let attrib_response = res.unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
 
-    let res = LedgerUtils::build_get_attrib_request(&their_verkey.clone(), &my_did.clone(), "endpoint");
-    assert!(res.is_ok());
-    let get_attrib_request = res.unwrap();
+    mod attrib_requests {
+        use super::*;
 
-    println!("get_attrib_request {}", get_attrib_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &get_attrib_request);
-    assert!(res.is_ok());
-    let get_attrib_response = res.unwrap();
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore]
+        fn sovrin_attrib_requests_works() {
+            TestUtils::cleanup_storage();
 
-    TestUtils::cleanup_storage();
-}
+            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
+            assert!(res.is_ok());
+            let pool_handle = res.unwrap();
 
-#[test]
-#[cfg(feature = "local_nodes_pool")]
-#[ignore]
-fn sovrin_schema_requests_works() {
-    TestUtils::cleanup_storage();
-    let pool_name = "test_submit_tx";
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
-    let wallet_type = "default";
+            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            assert!(res.is_ok());
+            let wallet_handle = res.unwrap();
 
-    let res = PoolUtils::create_pool_ledger_config(pool_name);
-    assert!(res.is_ok());
-    let res = PoolUtils::open_pool_ledger(pool_name);
-    assert!(res.is_ok());
-    let pool_handle = res.unwrap();
+            let (trustee_did, trustee_verkey, trustee_pk) = get_trustee_keys(wallet_handle);
 
-    let res = WalletUtils::create_wallet(pool_name, my_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let my_wallet_handle = res.unwrap();
+            let res = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}");
+            assert!(res.is_ok());
+            let (my_did, my_verkey, my_pk) = res.unwrap();
 
-    let res = WalletUtils::create_wallet(pool_name, their_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let their_wallet_handle = res.unwrap();
+            let res = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None, None);
+            assert!(res.is_ok());
+            let nym_request = res.unwrap();
 
-    let my_did_json = "{}";
-    let res = SignusUtils::create_my_did(my_wallet_handle, my_did_json);
-    assert!(res.is_ok());
-    let (my_did, my_verkey, my_pk) = res.unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert!(res.is_ok());
+            let nym_response = res.unwrap();
 
-    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-    let res = SignusUtils::create_my_did(their_wallet_handle, their_did_json);
-    assert!(res.is_ok());
-    let (their_did, their_verkey, their_pk) = res.unwrap();
+            let res = LedgerUtils::build_attrib_request(&my_did.clone(), &my_did.clone(), None, Some("{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}"), None);
+            assert!(res.is_ok());
+            let attrib_request = res.unwrap();
 
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_did.clone(), None, None, None, None);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &attrib_request);
+            assert!(res.is_ok());
+            let attrib_response = res.unwrap();
+            println!("attrib_response {}", attrib_response);
 
-    let res = SignusUtils::sign(their_wallet_handle, &their_did, &nym_request);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
+            let res = LedgerUtils::build_get_attrib_request(&my_did.clone(), &my_did.clone(), "endpoint");
+            assert!(res.is_ok());
+            let get_attrib_request = res.unwrap();
 
-    println!("nym_request {}", nym_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &nym_request);
-    assert!(res.is_ok());
-    let nym_response = res.unwrap();
+            println!("get_attrib_request {}", get_attrib_request);
+            let res = PoolUtils::send_request(pool_handle, &get_attrib_request);
+            assert!(res.is_ok());
+            let get_attrib_response = res.unwrap();
+            println!("get_attrib_response {}", get_attrib_response);
 
-    let schema_data = "{\"name\":\"gvt\",\
-                        \"version\":\"1.0\",\
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod schema_requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore]
+        fn sovrin_schema_requests_works() {
+            TestUtils::cleanup_storage();
+            // TODO: FIXME: Understand why we use verkey insted of did as submitter id in NYM transaction
+
+            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
+            assert!(res.is_ok());
+            let pool_handle = res.unwrap();
+
+            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            assert!(res.is_ok());
+            let wallet_handle = res.unwrap();
+
+            let (trustee_did, trustee_verkey, trustee_pk) = get_trustee_keys(wallet_handle);
+
+            let res = SignusUtils::create_my_did(wallet_handle, "{}");
+            assert!(res.is_ok());
+            let (my_did, my_verkey, my_pk) = res.unwrap();
+
+            let res = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None, None);
+            assert!(res.is_ok());
+            let nym_request = res.unwrap();
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert!(res.is_ok());
+            let nym_response = res.unwrap();
+            println!("nym_response {}", nym_response.clone());
+
+            let schema_data = "{\"name\":\"gvt2\",\
+                        \"version\":\"2.0\",\
                         \"keys\": [\"name\", \"male\"]}";
-    let res = LedgerUtils::build_schema_request(&my_verkey.clone(), schema_data);
-    assert!(res.is_ok());
-    let schema_request = res.unwrap();
+            let res = LedgerUtils::build_schema_request(&my_did.clone(), schema_data);
+            assert!(res.is_ok());
+            let schema_request = res.unwrap();
 
-    let res = SignusUtils::sign(their_wallet_handle, &their_did, &schema_request);
-    assert!(res.is_ok());
-    let schema_request = res.unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
+            assert!(res.is_ok());
+            let schema_response = res.unwrap();
+            println!("schema_response {}", schema_response.clone());
 
-    println!("schema_request {}", schema_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &schema_request);
-    assert!(res.is_ok());
-    let schema_response = res.unwrap();
+            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let res = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data);
+            assert!(res.is_ok());
+            let get_schema_request = res.unwrap();
 
-    let get_schema_data = "{\"name\":\"gvt\",\"version\":\"1.0\"}";
-    let res = LedgerUtils::build_get_schema_request(&my_verkey.clone(), get_schema_data);
-    assert!(res.is_ok());
-    let get_schema_request = res.unwrap();
+            let res = PoolUtils::send_request(pool_handle, &get_schema_request);
+            assert!(res.is_ok());
+            let get_schema_response = res.unwrap();
+            println!("get_schema_response {}", get_schema_response.clone());
 
-    println!("get_schema_request {}", get_schema_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &get_schema_request);
-    assert!(res.is_ok());
-    let get_schema_response = res.unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
 
-    TestUtils::cleanup_storage();
-}
+    mod node_request {
+        use super::*;
 
-#[test]
-#[cfg(feature = "local_nodes_pool")]
-#[ignore]
-fn sovrin_node_request_works() {
-    TestUtils::cleanup_storage();
-    let pool_name = "test_submit_tx";
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
-    let wallet_type = "default";
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore]
+        fn sovrin_node_request_works() {
+            TestUtils::cleanup_storage();
+            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
+            assert!(res.is_ok());
+            let pool_handle = res.unwrap();
 
-    let res = PoolUtils::create_pool_ledger_config(pool_name);
-    assert!(res.is_ok());
-    let res = PoolUtils::open_pool_ledger(pool_name);
-    assert!(res.is_ok());
-    let pool_handle = res.unwrap();
+            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            assert!(res.is_ok());
+            let wallet_handle = res.unwrap();
 
-    let res = WalletUtils::create_wallet(pool_name, my_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let my_wallet_handle = res.unwrap();
+            let res = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\"}");
+            assert!(res.is_ok());
+            let (trustee_did, trustee_verkey, trustee_pk) = res.unwrap();
 
-    let res = WalletUtils::create_wallet(pool_name, their_wallet_name, wallet_type);
-    assert!(res.is_ok());
-    let their_wallet_handle = res.unwrap();
+            let res = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Steward1\"}");
+            assert!(res.is_ok());
+            let (my_did, my_verkey, my_pk) = res.unwrap();
 
-    let my_did_json = "{\"seed\":\"000000000000000000000000Steward1\"}";
-    let res = SignusUtils::create_my_did(my_wallet_handle, my_did_json);
-    assert!(res.is_ok());
-    let (my_did, my_verkey, my_pk) = res.unwrap();
+            // TODO: FIXME: Understand why we use verkey insted of did as submitter id in NYM transaction
+            let res = LedgerUtils::build_nym_request(&trustee_verkey.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None, None);
+            assert!(res.is_ok());
+            let nym_request = res.unwrap();
 
-    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-    let res = SignusUtils::create_my_did(their_wallet_handle, their_did_json);
-    assert!(res.is_ok());
-    let (their_did, their_verkey, their_pk) = res.unwrap();
+            println!("nym_request {}", nym_request.clone());
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert!(res.is_ok());
+            let nym_response = res.unwrap();
 
-    let res = LedgerUtils::build_nym_request(&their_verkey.clone(), &my_did.clone(), None, None, None, None);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
-
-    let res = SignusUtils::sign(my_wallet_handle, &their_did, &nym_request);
-    assert!(res.is_ok());
-    let nym_request = res.unwrap();
-
-    println!("nym_request {}", nym_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &nym_request);
-    assert!(res.is_ok());
-    let nym_response = res.unwrap();
-
-
-    let node_data = "{\"node_ip\":\"192.168.53.148\",\
+            let node_data = "{\"node_ip\":\"192.168.53.148\",\
                       \"node_port\":9710, \
                       \"client_ip\":\"192.168.53.148\",\
                       \"client_port\":9709, \
-                      \"alias\":Node5, \
+                      \"alias\":\"Node5\", \
                       \"services\": [\"VALIDATOR\"]}";
-    let res = LedgerUtils::build_node_request(&their_verkey.clone(), &my_did.clone(), node_data);
-    assert!(res.is_ok());
-    let node_request = res.unwrap();
+            let res = LedgerUtils::build_node_request(&my_verkey.clone(), &my_did.clone(), node_data);
+            let node_request = res.unwrap();
 
-    let res = SignusUtils::sign(my_wallet_handle, &their_did, &node_request);
-    assert!(res.is_ok());
-    let node_request = res.unwrap();
 
-    println!("node_request {}", node_request.clone());
-    let res = PoolUtils::send_request(pool_handle, &node_request);
-    assert!(res.is_ok());
-    let node_response = res.unwrap();
+            println!("node_request {}", node_request.clone());
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request);
+            //TODO correct handling of Reject
+            assert!(res.is_err());
 
-    TestUtils::cleanup_storage();
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod claim_def_requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore]
+        fn sovrin_claim_def_requests_works() {
+            TestUtils::cleanup_storage();
+            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
+            assert!(res.is_ok());
+            let pool_handle = res.unwrap();
+
+            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            assert!(res.is_ok());
+            let wallet_handle = res.unwrap();
+
+            let (trustee_did, trustee_verkey, trustee_pk) = get_trustee_keys(wallet_handle);
+
+            let res = SignusUtils::create_my_did(wallet_handle, "{}");
+            assert!(res.is_ok());
+            let (my_did, my_verkey, my_pk) = res.unwrap();
+
+            let res = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None, None);
+            assert!(res.is_ok());
+            let nym_request = res.unwrap();
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert!(res.is_ok());
+            let nym_response = res.unwrap();
+            println!("nym_response {}", nym_response.clone());
+
+            let schema_data = "{\"name\":\"gvt2\",\
+                        \"version\":\"2.0\",\
+                        \"keys\": [\"name\", \"male\"]}";
+            let res = LedgerUtils::build_schema_request(&my_did.clone(), schema_data);
+            assert!(res.is_ok());
+            let schema_request = res.unwrap();
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
+            assert!(res.is_ok());
+            let schema_response = res.unwrap();
+            println!("schema_response {}", schema_response.clone());
+
+            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let res = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data);
+            assert!(res.is_ok());
+            let get_schema_request = res.unwrap();
+
+            let res = PoolUtils::send_request(pool_handle, &get_schema_request);
+            assert!(res.is_ok());
+            let get_schema_response = res.unwrap();
+            println!("get_schema_response {}", get_schema_response);
+            let get_schema_response: Reply = serde_json::from_str(&get_schema_response).unwrap();
+            //    let schema_result_data: GetSchemaResultData = serde_json::from_str(&get_schema_response.result.data.unwrap()).unwrap();
+
+            let schema = Schema {
+                name: get_schema_response.result.data.name,
+                keys: get_schema_response.result.data.keys,
+                version: get_schema_response.result.data.version,
+                seq_no: get_schema_response.result.seq_no
+            };
+
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &serde_json::to_string(&schema).unwrap());
+            assert!(res.is_ok());
+            let (claim_def_json, claim_def_uuid) = res.unwrap();
+            println!("claim_def_json {:}", claim_def_json);
+
+            let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
+            let claim_def_data = ClaimDefinitionData {
+                primary: claim_def.public_key,
+                revocation: claim_def.public_key_revocation
+            };
+            let claim_def_data_json = serde_json::to_string(&claim_def_data).unwrap();
+
+            let res = LedgerUtils::build_claim_def_txn(&my_did.clone(), schema.seq_no, &claim_def.signature_type, &claim_def_data_json);
+            assert!(res.is_ok());
+            let claim_def_request = res.unwrap();
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &claim_def_request);
+            assert!(res.is_ok());
+            let claim_def_response = res.unwrap();
+            println!("claim_def_response {}", claim_def_response);
+
+            let res = LedgerUtils::build_get_claim_def_txn(&my_did.clone(), schema.seq_no, &claim_def.signature_type, &get_schema_response.result.data.origin);
+            assert!(res.is_ok());
+            let get_claim_def_request = res.unwrap();
+
+            let res = PoolUtils::send_request(pool_handle, &get_claim_def_request);
+            assert!(res.is_ok());
+            let get_claim_def_response = res.unwrap();
+            println!("get_claim_def_response {}", get_claim_def_response);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
-//#[test]
-//#[cfg(feature = "local_nodes_pool")]
-//#[ignore]
-//fn sovrin_claim_def_requests_works() {
-//    TestUtils::cleanup_storage();
-//    let pool_name = "test_submit_tx";
-//    let my_wallet_name = "my_wallet";
-//    let their_wallet_name = "their_wallet";
-//    let wallet_type = "default";
-//
-//    let res = PoolUtils::create_pool_ledger_config(pool_name);
-//    assert!(res.is_ok());
-//    let res = PoolUtils::open_pool_ledger(pool_name);
-//    assert!(res.is_ok());
-//    let pool_handle = res.unwrap();
-//
-//    let res = WalletUtils::create_wallet(pool_name, my_wallet_name, wallet_type);
-//    assert!(res.is_ok());
-//    let my_wallet_handle = res.unwrap();
-//
-//    let res = WalletUtils::create_wallet(pool_name, their_wallet_name, wallet_type);
-//    assert!(res.is_ok());
-//    let their_wallet_handle = res.unwrap();
-//
-//    let my_did_json = "{}";
-//    let res = SignusUtils::create_my_did(my_wallet_handle, my_did_json);
-//    assert!(res.is_ok());
-//    let (my_did, my_verkey, my_pk) = res.unwrap();
-//
-//    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-//    let res = SignusUtils::create_my_did(their_wallet_handle, their_did_json);
-//    assert!(res.is_ok());
-//    let (their_did, their_verkey, their_pk) = res.unwrap();
-//
-//    let schema_data = "{\"name\":\"gvt\",\
-//                        \"version\":\"1.0\",\
-//                        \"keys\": [\"name\", \"male\"]}";
-//    let res = LedgerUtils::build_schema_request(&my_verkey.clone(), schema_data);
-//    assert!(res.is_ok());
-//    let schema_request = res.unwrap();
-//
-//    let res = SignusUtils::sign(my_wallet_handle, &their_did, &schema_request);
-//    assert!(res.is_ok());
-//    let schema_request = res.unwrap();
-//
-//    println!("schema_request {}", schema_request.clone());
-//    let res = PoolUtils::send_request(pool_handle, &schema_request);
-//    assert!(res.is_ok());
-//    let schema_response = res.unwrap();
-//    let schema_response: Reply = serde_json::from_str(&schema_response).unwrap();
-//    let schema = schema_response.result.data;
-//
-//    let schema: Schema = serde_json::from_str(&schema).unwrap();
-//
-//    let res = AnoncredsUtils::issuer_create_claim_definition(my_wallet_handle, &schema);
-//    assert!(res.is_ok());
-//    let (claim_def_json, claim_def_uuid) = res.unwrap();
-//
-//    //TODO Claim_def_json cast and change json
-//    let signature_type = "CL".to_string();
-//    let res = LedgerUtils::build_claim_def_txn(&my_verkey.clone(), schema.seq_no, signature_type, claim_def_json);
-//    assert!(res.is_ok());
-//    let claim_def_request = res.unwrap();
-//
-//    let res = SignusUtils::sign(my_wallet_handle, &their_did, &claim_def_request);
-//    assert!(res.is_ok());
-//    let claim_def_request = res.unwrap();
-//
-//    println!("claim_def_request {}", claim_def_request.clone());
-//    let res = PoolUtils::send_request(pool_handle, &claim_def_request);
-//    assert!(res.is_ok());
-//    let claim_def_response = res.unwrap();
-//
-//    TestUtils::cleanup_storage();
-//}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Response {
+    op: String,
+    reason: String,
+    req_id: u64,
+    identifier: String
+}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 struct Reply {
     op: String,
-    result: ReplyResult,
+    result: GetSchemaReplyResult,
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-struct ReplyResult {
+struct GetSchemaReplyResult {
     identifier: String,
     req_id: u64,
-    data: Option<String>
+    seq_no: i32,
+    #[serde(rename = "type")]
+    _type: String,
+    data: GetSchemaResultData,
+    dest: Option<String>
 }
 
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct GetSchemaResultData {
-    pub attr_names: Vec<String>,
+    pub keys: HashSet<String>,
     pub name: String,
     pub origin: String,
-    pub seq_no: String,
-    #[serde(rename = "type")]
-    pub _type: Option<String>,
     pub version: String
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Schema {
+    pub name: String,
+    pub version: String,
+    pub keys: HashSet<String>,
+    pub seq_no: i32
+}
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinition {
+    pub public_key: PublicKey,
+    pub public_key_revocation: Option<String>,
+    pub schema_seq_no: i32,
+    pub signature_type: String
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct PublicKey {
+    pub n: String,
+    pub s: String,
+    pub rms: String,
+    pub r: HashMap<String, String>,
+    pub rctxt: String,
+    pub z: String
+}
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinitionData {
+    pub primary: PublicKey,
+    pub revocation: Option<String>
+}
+
+

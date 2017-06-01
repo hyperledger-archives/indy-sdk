@@ -181,11 +181,11 @@ impl JsonEncodable for GetAttribOperation {}
 pub struct SchemaOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: SchemaOperationData
+    pub data: String
 }
 
 impl SchemaOperation {
-    pub fn new(data: SchemaOperationData) -> SchemaOperation {
+    pub fn new(data: String) -> SchemaOperation {
         SchemaOperation {
             data: data,
             _type: SCHEMA.to_string()
@@ -220,13 +220,15 @@ impl<'a> JsonDecodable<'a> for SchemaOperationData {}
 pub struct GetSchemaOperation {
     #[serde(rename = "type")]
     pub _type: String,
+    pub dest: String,
     pub data: GetSchemaOperationData
 }
 
 impl GetSchemaOperation {
-    pub fn new(data: GetSchemaOperationData) -> GetSchemaOperation {
+    pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
         GetSchemaOperation {
             _type: GET_SCHEMA.to_string(),
+            dest: dest,
             data: data
         }
     }
@@ -268,15 +270,15 @@ impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
 #[derive(Serialize, PartialEq, Debug)]
 pub struct ClaimDefOperation {
     #[serde(rename = "ref")]
-    pub _ref: String,
-    pub data: ClaimDefOperationData,
+    pub _ref: i32,
+    pub data: String,
     #[serde(rename = "type")]
     pub _type: String,
     pub signature_type: String
 }
 
 impl ClaimDefOperation {
-    pub fn new(_ref: String, signature_type: String, data: ClaimDefOperationData) -> ClaimDefOperation {
+    pub fn new(_ref: i32, signature_type: String, data: String) -> ClaimDefOperation {
         ClaimDefOperation {
             _ref: _ref,
             signature_type: signature_type,
@@ -291,19 +293,18 @@ impl JsonEncodable for ClaimDefOperation {}
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
     pub primary: PublicKey,
-    pub revocation: RevocationPublicKey,
-    pub signature_type: String
+    pub revocation: Option<RevocationPublicKey>
 }
 
 impl ClaimDefOperationData {
-    pub fn new(primary: PublicKey, revocation: RevocationPublicKey, signature_type: String, ) -> ClaimDefOperationData {
+    pub fn new(primary: PublicKey, revocation: Option<RevocationPublicKey>) -> ClaimDefOperationData {
         ClaimDefOperationData {
             primary: primary,
-            revocation: revocation,
-            signature_type: signature_type
+            revocation: revocation
         }
     }
 }
+
 
 impl JsonEncodable for ClaimDefOperationData {}
 
@@ -314,16 +315,18 @@ pub struct GetClaimDefOperation {
     #[serde(rename = "type")]
     pub _type: String,
     #[serde(rename = "ref")]
-    pub _ref: String,
-    pub signature_type: String//TODO In Python there is Origin field, {ORIGIN: id.schemaKey.issuerId}, but there is not in table. We can get it field form GET_SCHEMA response
+    pub _ref: i32,
+    pub signature_type: String,
+    pub origin: String
 }
 
 impl GetClaimDefOperation {
-    pub fn new(_ref: String, signature_type: String) -> GetClaimDefOperation {
+    pub fn new(_ref: i32, signature_type: String, origin: String) -> GetClaimDefOperation {
         GetClaimDefOperation {
             _type: GET_CLAIM_DEF.to_string(),
             _ref: _ref,
-            signature_type: signature_type
+            signature_type: signature_type,
+            origin: origin
         }
     }
 }
@@ -351,17 +354,23 @@ impl NodeOperation {
 impl JsonEncodable for NodeOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
+pub enum Services {
+    VALIDATOR,
+    OBSERVER
+}
+
+#[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct NodeOperationData {
     pub node_ip: String,
     pub node_port: i32,
     pub client_ip: String,
     pub client_port: i32,
     pub alias: String,
-    pub services: Vec<String>
+    pub services: Vec<Services>
 }
 
 impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<String>) -> NodeOperationData {
+    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>) -> NodeOperationData {
         NodeOperationData {
             node_ip: node_ip,
             node_port: node_port,

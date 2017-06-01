@@ -15,7 +15,7 @@ use std::sync::mpsc::channel;
 pub struct WalletUtils {}
 
 impl WalletUtils {
-    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: &str) -> Result<i32, ErrorCode> {
+    pub fn create_and_open_wallet(pool_name: &str, wallet_name: &str, xtype: &str) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
         let (open_sender, open_receiver) = channel();
 
