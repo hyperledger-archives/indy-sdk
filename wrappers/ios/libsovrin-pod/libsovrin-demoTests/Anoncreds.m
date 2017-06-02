@@ -417,11 +417,11 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%ld,\"name\":\"name\""\
+                             "                          \"schema_seq_no\":%d,\"name\":\"name\""\
                              "                        },"\
                              "              \"attr2_uuid\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%ld,\"name\":\"status\""\
+                             "                          \"schema_seq_no\":%d,\"name\":\"status\""\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
@@ -431,7 +431,7 @@
                              "              \"predicate2_uuid\":"\
                              "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
                              "             }"\
-                             "}", [gvtSchemaSeqNo integerValue], [xyzSchemaSeqNo integerValue] ];
+                             "}", [gvtSchemaSeqNo intValue], [xyzSchemaSeqNo intValue] ];
     
     NSString *claimsJson = nil;
     

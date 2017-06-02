@@ -127,7 +127,13 @@
     
     // 6. Their Sign message
     
-    NSString* message = @"test message";
+    NSString* message = @"{"\
+                         "  \"reqId\":1495034346617224651,"
+                         "  \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\","
+                         "  \"operation\":{"
+                         "        \"type\":\"1\","
+                         "        \"dest\":\"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB\"}"
+                         "}";
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSString *theirSignature = nil;

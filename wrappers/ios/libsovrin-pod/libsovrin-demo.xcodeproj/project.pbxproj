@@ -150,13 +150,21 @@
 			children = (
 				3EC6BCFA1EDD9E8700A290DE /* Utils */,
 				3EF020D51EC458C900CF985C /* TestUtils */,
+				3E7005311EE02CC7005069FD /* Demo Tests */,
+				3E2A7FA41EC36187006194EC /* Info.plist */,
+			);
+			path = "libsovrin-demoTests";
+			sourceTree = "<group>";
+		};
+		3E7005311EE02CC7005069FD /* Demo Tests */ = {
+			isa = PBXGroup;
+			children = (
 				3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */,
 				3E9CDB991ECC841700B1980D /* SignusDemo.mm */,
 				3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */,
 				3E2FFA3E1ED5C06E00536EAD /* Anoncreds.m */,
-				3E2A7FA41EC36187006194EC /* Info.plist */,
 			);
-			path = "libsovrin-demoTests";
+			name = "Demo Tests";
 			sourceTree = "<group>";
 		};
 		3EC6BCFA1EDD9E8700A290DE /* Utils */ = {
