@@ -40,12 +40,12 @@
     
     // 1. Create and open the wallet
     
-    NSError *ret = [[WalletUtils sharedInstance] createWallet:  poolName
+    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWallet:  poolName
                                                    walletName:  walletName
                                                         xtype:  xType
                                                        handle: &walletHandle];
 
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWallet() failed!");
 
     // 2. Issuer create Claim Definition for Schema
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -54,7 +54,7 @@
     NSString *schema = [ NSString stringWithFormat:@"{\
                         \"name\":\"gvt\",\
                         \"version\":\"1.0\",\
-                        \"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"],\
+                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"],\
                         \"seq_no\":%lu\
                         }", (unsigned long)seqNo ];
     

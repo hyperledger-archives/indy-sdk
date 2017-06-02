@@ -45,12 +45,12 @@
     
     //1. Create Issuer wallet, get wallet handle
     
-    res = [[WalletUtils sharedInstance] createWallet:poolName walletName:issuerWalletName xtype:xtype handle:&issuerWalletHandle];
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName walletName:issuerWalletName xtype:xtype handle:&issuerWalletHandle];
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    res = [[WalletUtils sharedInstance] createWallet:poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Issuer create claim definition
     NSString* issuerDid = @"some_issuer_did";
@@ -224,20 +224,20 @@
     //1. Issuer1 create wallet, get wallet handles
   
     SovrinHandle issuerGvtWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createWallet: poolName walletName:issuer1WalletName xtype:xtype handle:&issuerGvtWalletHandle];
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:issuer1WalletName xtype:xtype handle:&issuerGvtWalletHandle];
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Issuer2 create wallet, get wallet handles
    
     SovrinHandle issuerXyzWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createWallet: poolName walletName:issuer2WalletName xtype:xtype handle:&issuerXyzWalletHandle];
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:issuer2WalletName xtype:xtype handle:&issuerXyzWalletHandle];
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Prover create wallet, get wallet handles
   
     SovrinHandle proverWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createWallet: poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     NSMutableDictionary* schemas = [ NSMutableDictionary new];
     NSMutableDictionary* claimDefs = [ NSMutableDictionary new];
@@ -578,22 +578,22 @@
     //1. Issuer create wallet, get wallet handles
     
     SovrinHandle issuerWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createWallet: poolName
+    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName
                                           walletName: issuerWalletName
                                                xtype: xtype
                                               handle: &issuerWalletHandle];
     
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //2. Prover create wallet, get wallet handles
     
     SovrinHandle proverWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createWallet: poolName
+    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName
                                           walletName: proverWalletName
                                                xtype: xtype
                                               handle: &proverWalletHandle];
     
-    XCTAssertEqual(res.code, Success, @"WalletUtils::createWallet() failed");
+    XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     NSMutableDictionary* schemas = [ NSMutableDictionary new]; //[Int: String]
     NSMutableDictionary* claimDefs = [ NSMutableDictionary new];

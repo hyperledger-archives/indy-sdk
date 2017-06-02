@@ -83,4 +83,65 @@
     return ret2;
 }
 
+- (NSError*)createAndOpenPoolLedgerConfig: (SovrinHandle*) handle
+                                 poolName: (NSString *)poolName
+{
+    NSError *ret = nil;
+    
+    // 1. Generate Genesis file
+    [self createGenesisTXNFile:poolName];
+    
+    // 2. Create pool config
+    NSString *poolConfig = [self createPoolConfig:poolName];
+    
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *closureError = nil;
+    
+    // 3. Create pool ledger config
+    ret = [SovrinPool createPoolWithName:poolName
+                               andConfig:poolConfig
+                              completion:^ (NSError *error)
+           {
+               closureError = error;
+               [completionExpectation fulfill];
+           }];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
+    
+    if (closureError.code != Success)
+    {
+        return closureError;
+    }
+    
+    // 4. Open Pool ledger config
+    
+    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block SovrinHandle poolHandle = 0;
+    
+    ret = [SovrinPool openPoolWithName:poolName
+                             andConfig:poolConfig
+                            completion:^ (NSError* error, SovrinHandle handle)
+           {
+               closureError = error;
+               poolHandle = handle;
+               [completionExpectation fulfill];
+           }];
+   
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
+    
+    *handle = poolHandle;
+    return closureError;
+}
+
 @end
