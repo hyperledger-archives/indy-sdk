@@ -128,6 +128,8 @@ pub enum Message {
     ReqNACK(Response),
     #[serde(rename = "REPLY")]
     Reply(Reply),
+    #[serde(rename = "REJECT")]
+    Reject(Response),
     Ping,
     Pong,
 }

@@ -1,4 +1,4 @@
-// TODO: FIXME: It must be removed after code layout stabilization!
+//// TODO: FIXME: It must be removed after code layout stabilization!
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
@@ -19,6 +19,9 @@ use sovrin::api::ErrorCode;
 
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
+#[cfg(feature = "local_nodes_pool")]
+use utils::logger::LoggerUtils;
+
 
 #[test]
 fn create_pool_ledger_config_works() {
@@ -48,6 +51,7 @@ fn open_pool_ledger_works() {
 #[cfg(feature = "local_nodes_pool")]
 fn open_pool_ledger_works_for_twice() {
     TestUtils::cleanup_storage();
+    LoggerUtils::init();
     let pool_name = "pool_open_twice";
 
     let res = PoolUtils::create_pool_ledger_config(pool_name);

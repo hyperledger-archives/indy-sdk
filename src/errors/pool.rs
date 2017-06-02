@@ -14,6 +14,7 @@ use errors::ToErrorCode;
 pub enum PoolError {
     NotCreated(String),
     InvalidHandle(String),
+    Rejected(String),
     Terminate,
     CommonError(CommonError)
 }
@@ -23,6 +24,7 @@ impl fmt::Display for PoolError {
         match *self {
             PoolError::NotCreated(ref description) => write!(f, "Not created: {}", description),
             PoolError::InvalidHandle(ref description) => write!(f, "Invalid Handle: {}", description),
+            PoolError::Rejected(ref description) => write!(f, "Rejected by pool: {}", description),
             PoolError::Terminate => write!(f, "Pool work terminated"),
             PoolError::CommonError(ref err) => err.fmt(f)
         }
@@ -33,6 +35,7 @@ impl error::Error for PoolError {
     fn description(&self) -> &str {
         match *self {
             PoolError::NotCreated(ref description) |
+            PoolError::Rejected(ref description) |
             PoolError::InvalidHandle(ref description) => description,
             PoolError::Terminate => "Pool work terminated",
             PoolError::CommonError(ref err) => err.description()
@@ -42,6 +45,7 @@ impl error::Error for PoolError {
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             PoolError::NotCreated(ref description) |
+            PoolError::Rejected(ref description) |
             PoolError::InvalidHandle(ref description) => None,
             PoolError::Terminate => None,
             PoolError::CommonError(ref err) => Some(err)
@@ -85,6 +89,7 @@ impl ToErrorCode for PoolError {
         match *self {
             PoolError::NotCreated(ref description) => ErrorCode::PoolLedgerNotCreatedError,
             PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
+            PoolError::Rejected(ref description) => ErrorCode::LedgerInvalidTransaction,
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
             PoolError::CommonError(ref err) => err.to_error_code()
         }

@@ -184,7 +184,8 @@ impl SignusCommandExecutor {
         let my_did_info = MyDidInfo::new(
             Some(did.to_string()),
             keys_info.seed,
-            keys_info.crypto_type);
+            keys_info.crypto_type,
+            None);
 
         let my_did = self.signus_service.create_my_did(&my_did_info)?;
 
@@ -365,8 +366,8 @@ impl SignusCommandExecutor {
                         ))).unwrap();
                 }
                 Err(err) => cb(Err(
-                        SovrinError::CommonError(
-                            CommonError::InvalidState(format!("{:?}", err)))))
+                    SovrinError::CommonError(
+                        CommonError::InvalidState(format!("{:?}", err)))))
             }
         };
 

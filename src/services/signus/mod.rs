@@ -227,15 +227,9 @@ mod tests {
     #[test]
     fn create_my_did_with_empty_input_works() {
         let service = SignusService::new();
-
-        let did_info = MyDidInfo {
-            did: None,
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(None, None, None, None);
 
         let res = service.create_my_did(&did_info);
-
         assert!(res.is_ok());
     }
 
@@ -244,11 +238,7 @@ mod tests {
         let service = SignusService::new();
 
         let did = Some("Dbf2fjCbsiq2kfns".to_string());
-        let did_info = MyDidInfo {
-            did: did.clone(),
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(did.clone(), None, None, None);
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
@@ -262,11 +252,8 @@ mod tests {
 
         let did = Some("Dbf2fjCbsiq2kfns".to_string());
         let crypto_type = Some("type".to_string());
-        let did_info = MyDidInfo {
-            did: did.clone(),
-            seed: None,
-            crypto_type: crypto_type
-        };
+
+        let did_info = MyDidInfo::new(did.clone(), None, crypto_type, None);
 
         let res = service.create_my_did(&did_info);
         assert!(res.is_err());
@@ -278,16 +265,9 @@ mod tests {
 
         let did = Some("Dbf2fjCbsiq2kfns".to_string());
         let seed = Some("DJASbewkdUY3265HJFDSbds278sdDSnA".to_string());
-        let did_info_with_seed = MyDidInfo {
-            did: did.clone(),
-            seed: seed,
-            crypto_type: None
-        };
-        let did_info_without_seed = MyDidInfo {
-            did: did.clone(),
-            seed: None,
-            crypto_type: None
-        };
+
+        let did_info_with_seed = MyDidInfo::new(did.clone(), seed, None, None);
+        let did_info_without_seed = MyDidInfo::new(did.clone(), None, None, None);
 
         let res_with_seed = service.create_my_did(&did_info_with_seed);
         let res_without_seed = service.create_my_did(&did_info_without_seed);
@@ -302,11 +282,8 @@ mod tests {
     fn sign_works() {
         let service = SignusService::new();
 
-        let did_info = MyDidInfo {
-            did: None,
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(None, None, None, None);
+
         let message = r#"{
             "reqId":1495034346617224651,
             "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
@@ -328,11 +305,8 @@ mod tests {
     fn sign_verify_works() {
         let service = SignusService::new();
 
-        let did_info = MyDidInfo {
-            did: None,
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(None, None, None, None);
+
         let message = r#"{
             "reqId":1495034346617224651,
             "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
@@ -367,11 +341,8 @@ mod tests {
     fn try_verify_with_invalid_verkey() {
         let service = SignusService::new();
 
-        let did_info = MyDidInfo {
-            did: None,
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(None, None, None, None);
+
         let message = r#"{
             "reqId":1495034346617224651,
             "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
@@ -407,11 +378,8 @@ mod tests {
 
         let msg = "some message";
 
-        let did_info = MyDidInfo {
-            did: None,
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(None, None, None, None);
+
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();
@@ -438,11 +406,8 @@ mod tests {
 
         let msg = "some message";
 
-        let did_info = MyDidInfo {
-            did: None,
-            seed: None,
-            crypto_type: None
-        };
+        let did_info = MyDidInfo::new(None, None, None, None);
+
         let res = service.create_my_did(&did_info);
         assert!(res.is_ok());
         let my_did = res.unwrap();

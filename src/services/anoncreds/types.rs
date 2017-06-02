@@ -1075,16 +1075,16 @@ impl RequestedProofJson {
 pub struct Schema {
     pub name: String,
     pub version: String,
-    pub attribute_names: HashSet<String>,
+    pub keys: HashSet<String>,
     pub seq_no: i32
 }
 
 impl Schema {
-    pub fn new(name: String, version: String, attributes_names: HashSet<String>, seq_no: i32) -> Schema {
+    pub fn new(name: String, version: String, keys: HashSet<String>, seq_no: i32) -> Schema {
         Schema {
             name: name,
             version: version,
-            attribute_names: attributes_names,
+            keys: keys,
             seq_no: seq_no
         }
     }

@@ -118,6 +118,9 @@ impl TransactionHandler {
             Message::Reply(reply) => {
                 self.process_reply(&reply, raw_msg);
             }
+            Message::Reject(response) => {
+                self.process_reject(&response, raw_msg);
+            }
             _ => {
                 warn!("unhandled msg {:?}", msg);
             }
@@ -134,6 +137,28 @@ impl TransactionHandler {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+                }
+                remove = true;
+            }
+        }
+        if remove {
+            self.pending_commands.remove(&req_id);
+        }
+    }
+
+    //TODO correct handling of Reject
+    fn process_reject(&mut self, response: &Response, raw_msg: &String) {
+        let req_id = response.req_id;
+        let mut remove = false;
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
+            pend_cmd.nack_cnt += 1;
+            if pend_cmd.nack_cnt == self.f + 1 {
+                for &cmd_id in &pend_cmd.cmd_ids {
+                    CommandExecutor::instance().send(
+                        Command::Ledger(
+                            LedgerCommand::SubmitAck(cmd_id,
+                                                     Err(PoolError::Rejected(raw_msg.clone()))))
+                    ).unwrap();
                 }
                 remove = true;
             }
@@ -217,13 +242,14 @@ impl PoolWorker {
             .ok_or(CommonError::InvalidState("Expect catchup state".to_string()))?;
 
         let ctx: zmq::Context = zmq::Context::new();
+        let key_pair = zmq::CurveKeyPair::new()?;
         for gen_txn in &merkle_tree {
             let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)
                 .map_err(|e|
                     CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
 
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
-            rn.connect(&ctx)?;
+            rn.connect(&ctx, &key_pair)?;
             rn.send_str("pi")?;
             self.handler.nodes_mut().push(rn);
         }
@@ -441,8 +467,7 @@ impl RemoteNode {
         })
     }
 
-    fn connect(&mut self, ctx: &zmq::Context) -> Result<(), PoolError> {
-        let key_pair = zmq::CurveKeyPair::new()?;
+    fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
         s.set_identity(key_pair.public_key.as_bytes())?;
         s.set_curve_secretkey(key_pair.secret_key.as_str())?;
@@ -468,7 +493,7 @@ impl RemoteNode {
         let msg: String = self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
             .recv_string(zmq::DONTWAIT)??;
-        info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
+        info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
         Ok(Some(msg))
     }
@@ -649,7 +674,7 @@ mod tests {
     #[test]
     fn pool_service_new_works() {
         let pool_service = PoolService::new();
-        assert! (true, "No crashes on PoolService::new");
+        assert!(true, "No crashes on PoolService::new");
     }
 
     #[test]
@@ -659,7 +684,7 @@ mod tests {
         }
 
         drop_test();
-        assert! (true, "No crashes on PoolService::drop");
+        assert!(true, "No crashes on PoolService::drop");
     }
 
     #[test]
@@ -679,7 +704,7 @@ mod tests {
         };
         let test_data = "str_instead_of_tx_json";
         pool.send_tx(0, test_data).unwrap();
-        assert_eq! (recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+        assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
     }
 
     impl Default for PoolWorker {
@@ -713,8 +738,8 @@ mod tests {
 
         let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
 
-        assert_eq! (merkle_tree.count(), 4, "test restored MT size");
-        assert_eq! (merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
+        assert_eq!(merkle_tree.count(), 4, "test restored MT size");
+        assert_eq!(merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
     }
 
     #[test]
@@ -728,7 +753,7 @@ mod tests {
 
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
-        assert_eq! ("pi", emulator_msgs[0]);
+        assert_eq!("pi", emulator_msgs[0]);
     }
 
     #[test]
@@ -749,7 +774,7 @@ mod tests {
         send_cmd_sock.send_str("exit", zmq::DONTWAIT).expect("send");
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
 
-        assert_eq! (actions.len(), 1);
+        assert_eq!(actions.len(), 1);
         assert_eq!(actions[0], ZMQLoopAction::Terminate);
     }
 
@@ -759,18 +784,18 @@ mod tests {
 
         let poll_items = pw.get_zmq_poll_items().unwrap();
 
-        assert_eq! (poll_items.len(), pw.handler.nodes().len() + 1 );
+        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1 );
         //TODO compare poll items
     }
 
     #[test]
     fn pool_worker_get_f_works() {
-        assert_eq! (PoolWorker::get_f(0), 0);
-        assert_eq! (PoolWorker::get_f(3), 0);
-        assert_eq! (PoolWorker::get_f(4), 1);
-        assert_eq! (PoolWorker::get_f(5), 1);
-        assert_eq! (PoolWorker::get_f(6), 1);
-        assert_eq! (PoolWorker::get_f(7), 2);
+        assert_eq!(PoolWorker::get_f(0), 0);
+        assert_eq!(PoolWorker::get_f(3), 0);
+        assert_eq!(PoolWorker::get_f(4), 1);
+        assert_eq!(PoolWorker::get_f(5), 1);
+        assert_eq!(PoolWorker::get_f(6), 1);
+        assert_eq!(PoolWorker::get_f(7), 2);
     }
 
     #[test]
@@ -792,7 +817,7 @@ mod tests {
 
         th.process_reply(&reply, &"".to_string());
 
-        assert_eq! (th.pending_commands.len(), 0);
+        assert_eq!(th.pending_commands.len(), 0);
     }
 
     #[test]
@@ -805,14 +830,14 @@ mod tests {
 
         th.try_send_request(&cmd, cmd_id).unwrap();
 
-        assert_eq! (th.pending_commands.len(), 1);
+        assert_eq!(th.pending_commands.len(), 1);
         let pending_cmd = th.pending_commands.get(&req_id).unwrap();
         let exp_command_process = CommandProcess {
             nack_cnt: 0,
             reply_cnt: 0,
             cmd_ids: vec!(cmd_id),
         };
-        assert_eq! (pending_cmd, &exp_command_process);
+        assert_eq!(pending_cmd, &exp_command_process);
     }
 
     #[test]
@@ -821,14 +846,14 @@ mod tests {
         let (gt, handle) = nodes_emulator::start();
         ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-        rn.connect(&zmq::Context::new()).unwrap();
+        rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);
         ch.new_mt_size = 2;
 
         ch.start_catchup().unwrap();
 
         let emulator_msgs: Vec<String> = handle.join().unwrap();
-        assert_eq! (1, emulator_msgs.len());
+        assert_eq!(1, emulator_msgs.len());
         let expected_resp: CatchupReq = CatchupReq {
             ledgerId: 0,
             seqNoStart: 2,
@@ -836,7 +861,7 @@ mod tests {
             catchupTill: 2,
         };
         let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
-        assert_eq! (expected_resp, act_resp);
+        assert_eq!(expected_resp, act_resp);
     }
 
     #[test]
@@ -844,10 +869,10 @@ mod tests {
         let (gt, handle) = nodes_emulator::start();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         let ctx = zmq::Context::new();
-        rn.connect(&ctx).unwrap();
+        rn.connect(&ctx, &zmq::CurveKeyPair::new().unwrap()).unwrap();
         rn.send_str("pi").expect("send");
         rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
-        assert_eq! ("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
+        assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
         handle.join().expect("join");
     }
 
@@ -890,11 +915,11 @@ mod tests {
                 let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
                 if poll_res == 1 {
                     let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
-                    trace! ("Node emulator poll recv {:?}", v);
+                    trace!("Node emulator poll recv {:?}", v);
                     s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
                     received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
                 } else {
-                    warn! ("Node emulator poll return {}", poll_res)
+                    warn!("Node emulator poll return {}", poll_res)
                 }
                 received_msgs
             });

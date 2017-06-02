@@ -4,15 +4,18 @@ use utils::json::{JsonEncodable, JsonDecodable};
 pub struct MyDidInfo {
     pub did: Option<String>,
     pub seed: Option<String>,
-    pub crypto_type: Option<String>
+    pub crypto_type: Option<String>,
+    pub cid: Option<bool>
 }
 
 impl MyDidInfo {
-    pub fn new(did: Option<String>, seed: Option<String>, crypto_type: Option<String>) -> MyDidInfo {
+    pub fn new(did: Option<String>, seed: Option<String>,
+               crypto_type: Option<String>, cid: Option<bool>) -> MyDidInfo {
         MyDidInfo {
             did: did,
             seed: seed,
-            crypto_type: crypto_type
+            crypto_type: crypto_type,
+            cid: cid
         }
     }
 }
