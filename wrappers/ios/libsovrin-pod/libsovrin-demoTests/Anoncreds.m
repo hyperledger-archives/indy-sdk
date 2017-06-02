@@ -417,11 +417,11 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%ld,\"name\":\"name\""\
+                             "                          \"schema_seq_no\":%d,\"name\":\"name\""\
                              "                        },"\
                              "              \"attr2_uuid\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%ld,\"name\":\"status\""\
+                             "                          \"schema_seq_no\":%d,\"name\":\"status\""\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
@@ -431,7 +431,7 @@
                              "              \"predicate2_uuid\":"\
                              "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
                              "             }"\
-                             "}", [gvtSchemaSeqNo integerValue], [xyzSchemaSeqNo integerValue] ];
+                             "}", [gvtSchemaSeqNo intValue], [xyzSchemaSeqNo intValue] ];
     
     NSString *claimsJson = nil;
     
@@ -450,10 +450,10 @@
     XCTAssertTrue( claimsForPredicates1, @"no object for key \"attr1_uuid\"");
     XCTAssertTrue( claimsForPredicates2, @"no object for key \"attr2_uuid\"");
     
-    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
 
     
 #if 0
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
 
     let proof_req_json = format!("{{\
                                  \"nonce\":\"123432421212\",\
