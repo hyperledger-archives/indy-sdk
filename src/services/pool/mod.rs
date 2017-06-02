@@ -493,8 +493,7 @@ impl RemoteNode {
         let msg: String = self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
             .recv_string(zmq::DONTWAIT)??;
-        info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
-        println!("RemoteNode_recv_msg {} {}", self.name, msg);
+        info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
         Ok(Some(msg))
     }

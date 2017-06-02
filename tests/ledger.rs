@@ -13,6 +13,7 @@ extern crate lazy_static;
 #[path = "utils/mod.rs"]
 mod utils;
 
+use sovrin::api::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
 use utils::test::TestUtils;
 #[cfg(feature = "local_nodes_pool")]
@@ -52,15 +53,13 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore]
         fn sovrin_nym_requests_works() {
             TestUtils::cleanup_storage();
+            let pool_name = "pool1";
 
-            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
-            assert!(res.is_ok());
-            let pool_handle = res.unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
-            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            let res = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default");
             assert!(res.is_ok());
             let wallet_handle = res.unwrap();
 
@@ -97,15 +96,13 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore]
         fn sovrin_attrib_requests_works() {
             TestUtils::cleanup_storage();
+            let pool_name = "pool2";
 
-            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
-            assert!(res.is_ok());
-            let pool_handle = res.unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
-            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            let res = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default");
             assert!(res.is_ok());
             let wallet_handle = res.unwrap();
 
@@ -151,16 +148,14 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore]
         fn sovrin_schema_requests_works() {
             TestUtils::cleanup_storage();
             // TODO: FIXME: Understand why we use verkey insted of did as submitter id in NYM transaction
+            let pool_name = "pool3";
 
-            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
-            assert!(res.is_ok());
-            let pool_handle = res.unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
-            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            let res = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default");
             assert!(res.is_ok());
             let wallet_handle = res.unwrap();
 
@@ -210,14 +205,12 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore]
         fn sovrin_node_request_works() {
             TestUtils::cleanup_storage();
-            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
-            assert!(res.is_ok());
-            let pool_handle = res.unwrap();
+            let pool_name = "pool4";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
-            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            let res = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default");
             assert!(res.is_ok());
             let wallet_handle = res.unwrap();
 
@@ -250,9 +243,9 @@ mod high_cases {
 
 
             println!("node_request {}", node_request.clone());
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request);
+            let res: Result<String, ErrorCode> = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request);
             //TODO correct handling of Reject
-            assert!(res.is_err());
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
 
             TestUtils::cleanup_storage();
         }
@@ -263,14 +256,12 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore]
         fn sovrin_claim_def_requests_works() {
             TestUtils::cleanup_storage();
-            let res = PoolUtils::create_and_open_pool_ledger_config("pool1");
-            assert!(res.is_ok());
-            let pool_handle = res.unwrap();
+            let pool_name = "pool5";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
-            let res = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default");
+            let res = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default");
             assert!(res.is_ok());
             let wallet_handle = res.unwrap();
 
