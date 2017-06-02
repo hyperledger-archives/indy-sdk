@@ -44,21 +44,21 @@
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create and open my wallet
 
-    ret = [[WalletUtils sharedInstance] createWallet:  poolName
-                                          walletName:  myWalletName
-                                               xtype:  xtype
-                                              handle: &myWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWallet:  poolName
+                                                 walletName:  myWalletName
+                                                      xtype:  xtype
+                                                     handle: &myWalletHandle];
     
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWallet() failed!");
 
     //2. Create and open Their Wallet
 
-    ret = [[WalletUtils sharedInstance] createWallet:  poolName
-                                          walletName:  theirWalletName
-                                               xtype:  xtype
-                                              handle: &theirWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWallet:  poolName
+                                                 walletName:  theirWalletName
+                                                      xtype:  xtype
+                                                     handle: &theirWalletHandle];
     
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed!");
 
     // 3. Create My DID
     
