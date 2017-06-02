@@ -20,4 +20,3 @@ pub mod logger;
 #[path = "../../src/utils/timeout.rs"]
 pub mod timeout;
 pub mod agent;
-pub mod signus;

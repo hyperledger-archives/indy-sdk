@@ -73,8 +73,8 @@ impl AgentCommandExecutor {
         let their_did: TheirDid = TheirDid::from_json(&their_did_json).map_err(|_| CommonError::InvalidState((format!("Invalid their did json"))))?;
         assert!(their_did.endpoint.is_some()); //FIXME implement: get from ledger
         Ok(Some(ConnectInfo {
-            secret_key: my_did.secret_key,
-            public_key: my_did.public_key,
+            secret_key: my_did.sk,
+            public_key: my_did.pk,
             endpoint: their_did.endpoint.unwrap(),
             server_key: their_did.pk.unwrap()
         }))

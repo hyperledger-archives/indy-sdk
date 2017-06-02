@@ -144,11 +144,11 @@ impl RemoteAgent {
         Ok(RemoteAgent {
             socket: zmq::Context::new().socket(zmq::SocketType::DEALER)?,
             public_key: pub_key.from_base58()
-                .map_err(PoolError::from_displayable_as_invalid_config)?,
+                .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid pub_key {}", err))))?,
             secret_key: sec_key.from_base58()
-                .map_err(PoolError::from_displayable_as_invalid_config)?,
+                .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid sec_key {}", err))))?,
             server_key: ver_key.from_base58()
-                .map_err(PoolError::from_displayable_as_invalid_config)?,
+                .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid server_key {}", err))))?,
             addr: addr.to_string(),
         })
     }
@@ -156,7 +156,7 @@ impl RemoteAgent {
     fn connect(&self) -> Result<(), PoolError> {
         impl From<zmq::EncodeError> for PoolError {
             fn from(err: zmq::EncodeError) -> PoolError {
-                PoolError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err))
+                PoolError::CommonError(CommonError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err)))
             }
         }
         self.socket.set_identity(zmq::z85_encode(self.public_key.as_slice())?.as_bytes())
