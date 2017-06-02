@@ -61,6 +61,7 @@ impl AgentCommandExecutor {
                                    info.endpoint.as_str(), info.server_key.as_str())
                     .map_err(From::from)
             })
+            .and_then(|conn_handle| { unimplemented!() })
             .unwrap_or_else(|err| connect_cb(Err(err)))
     }
 

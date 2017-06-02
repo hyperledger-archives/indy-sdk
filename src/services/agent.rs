@@ -1,3 +1,4 @@
+#![warn(unused_variables)]
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq;
@@ -17,6 +18,7 @@ struct RemoteAgent {
     public_key: Vec<u8>,
     secret_key: Vec<u8>,
     server_key: Vec<u8>,
+    conn_handle: i32,
 }
 
 struct AgentWorker {
@@ -44,7 +46,6 @@ pub struct AgentService {
 
 impl Agent {
     pub fn new() -> Agent {
-        let ctx = zmq::Context::new();
         let (send_soc, recv_soc) = _create_zmq_socket_pair("agent", true).unwrap();
         let mut worker = AgentWorker {
             cmd_socket: recv_soc,
@@ -62,7 +63,7 @@ impl AgentService {
         AgentService { agent: RefCell::new((None)) }
     }
 
-    pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<(), CommonError> {
+    pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<i32, CommonError> {
         let mut agent = self.agent.borrow_mut();
         if agent.is_none() {
             *agent = Some(Agent::new());
@@ -74,9 +75,10 @@ impl AgentService {
             public_key: my_pk.to_string(),
             endpoint: endpoint.to_string(),
             server_key: server_key.to_string(),
+            conn_handle: conn_handle,
         });
         agent.as_ref().unwrap().cmd_socket.send_str(connect_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
-        Ok(())
+        Ok(conn_handle)
     }
 }
 
@@ -100,7 +102,8 @@ impl AgentWorker {
 
     fn connect(&mut self, cmd: &ConnectCmd) -> Result<(), PoolError> {
         let ra = RemoteAgent::new(cmd.public_key.as_str(), cmd.secret_key.as_str(),
-                                  cmd.server_key.as_str(), cmd.endpoint.as_str())
+                                  cmd.server_key.as_str(), cmd.endpoint.as_str(),
+                                  cmd.conn_handle)
             .map_err(map_err_trace!("RemoteAgent::new failed"))?;
         ra.connect().map_err(map_err_trace!("RemoteAgent::connect failed"))?;
         self.agent_connections.push(ra);
@@ -140,7 +143,7 @@ impl AgentWorker {
 }
 
 impl RemoteAgent {
-    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str) -> Result<RemoteAgent, PoolError> {
+    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str, conn_handle: i32) -> Result<RemoteAgent, PoolError> {
         Ok(RemoteAgent {
             socket: zmq::Context::new().socket(zmq::SocketType::DEALER)?,
             public_key: pub_key.from_base58()
@@ -150,6 +153,7 @@ impl RemoteAgent {
             server_key: ver_key.from_base58()
                 .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid server_key {}", err))))?,
             addr: addr.to_string(),
+            conn_handle: conn_handle,
         })
     }
 
@@ -198,6 +202,7 @@ struct ConnectCmd {
     secret_key: String,
     public_key: String,
     server_key: String,
+    conn_handle: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -231,6 +236,7 @@ mod tests {
     fn agent_can_be_dropped() {
         let (sender, receiver) = channel();
         thread::spawn(move || {
+            #[allow(unused_variables)]
             {
                 let agent = Agent::new();
             }
@@ -252,13 +258,14 @@ mod tests {
         let agent_service = AgentService {
             agent: RefCell::new(Some(agent)),
         };
-        agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
+        let conn_handle = agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
         let expected_cmd = ConnectCmd {
             server_key: "serv".to_string(),
             public_key: "pk".to_string(),
             secret_key: "sk".to_string(),
             endpoint: "ep".to_string(),
             did: "sd".to_string(),
+            conn_handle: conn_handle,
         };
         let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         assert_eq!(str, AgentWorkerCommand::Connect(expected_cmd).to_json().unwrap());
@@ -288,6 +295,7 @@ mod tests {
             secret_key: zmq::z85_decode(send_key_pair.secret_key.as_str()).unwrap().to_base58(),
             did: "".to_string(),
             server_key: zmq::z85_decode(recv_key_pair.public_key.as_str()).unwrap().to_base58(),
+            conn_handle: 0,
         };
 
         agent_worker.connect(&cmd).unwrap();
@@ -322,6 +330,7 @@ mod tests {
                 public_key: Vec::new(),
                 secret_key: Vec::new(),
                 server_key: Vec::new(),
+                conn_handle: 0,
             }),
             cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
         };
@@ -354,6 +363,7 @@ mod tests {
             server_key: zmq::z85_decode(send_key_pair.public_key.as_str()).unwrap(),
             secret_key: zmq::z85_decode(recv_key_pair.secret_key.as_str()).unwrap(),
             public_key: zmq::z85_decode(recv_key_pair.public_key.as_str()).unwrap(),
+            conn_handle: 0,
         };
         agent.connect().unwrap();
         assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "DID");
