@@ -76,6 +76,9 @@ pub enum ErrorCode {
     // Caller passed invalid pool ledger handle
     PoolLedgerInvalidPoolHandle,
 
+    // Pool ledger terminated
+    PoolLedgerTerminated,
+
     // No concensus during ledger operation
     LedgerNoConsensusError,
 

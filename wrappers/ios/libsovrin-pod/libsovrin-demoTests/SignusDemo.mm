@@ -7,6 +7,7 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import <libsovrin/libsovrin.h>
+#import "WalletUtils.h"
 
 @interface SignusDemo : XCTestCase
 
@@ -35,84 +36,31 @@
     NSString *theirWalletName = @"their_wallet";
     NSString *xtype = @"default";
     NSError *ret = nil;
-
-    __block SovrinHandle myWalletHandle;
-    __block SovrinHandle theirWalletHandle;
+    XCTestExpectation* completionExpectation = nil;
     
+    SovrinHandle myWalletHandle = 0;
+    SovrinHandle theirWalletHandle = 0;
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
-    //1. Create My Wallet
-    
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    //1. Create and open my wallet
 
-    ret = [[SovrinWallet sharedInstance] createWallet:  poolName
-                                                 name:  myWalletName
-                                                xType:  xtype
-                                               config:  nil
-                                          credentials:  nil
-                                           completion: ^(NSError* error)
-    {
-        XCTAssertEqual(error.code, Success, "createWallet got error in completion");
-        [completionExpectation fulfill];        
-    }];
+    ret = [[WalletUtils sharedInstance] createWallet:  poolName
+                                          walletName:  myWalletName
+                                               xtype:  xtype
+                                              handle: &myWalletHandle];
+    
+    NSAssert( ret.code == Success, @"WalletUtils::createWallet() failed!");
 
-    NSAssert( ret.code == Success, @"createWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    //2. Create and open Their Wallet
 
-     //2. Create Their Wallet
+    ret = [[WalletUtils sharedInstance] createWallet:  poolName
+                                          walletName:  theirWalletName
+                                               xtype:  xtype
+                                              handle: &theirWalletHandle];
+    
+    NSAssert( ret.code == Success, @"WalletUtils::createWallet() failed!");
 
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[SovrinWallet sharedInstance] createWallet:  poolName
-                                                 name:  theirWalletName
-                                                xType:  xtype
-                                               config:  nil
-                                          credentials:  nil
-                                           completion: ^(NSError* error)
-    {
-        XCTAssertEqual(error.code, Success, "createWallet got error in completion");
-        [completionExpectation fulfill];
-    }];
-    
-    NSAssert( ret.code == Success, @"createWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
-    //3. Open My Wallet. Gets My wallet handle
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[SovrinWallet sharedInstance] openWallet: myWalletName
-                                      runtimeConfig: nil
-                                        credentials: nil
-                                         completion: ^(NSError* error, SovrinHandle walletHandle)
-
-    {
-        XCTAssertEqual(error.code, Success, "openWallet got error in completion");
-        myWalletHandle = walletHandle;
-        [completionExpectation fulfill];
-    }];
-    
-    NSAssert( ret.code == Success, @"openWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-
-    //4. Open Their Wallet. Gets Their wallet handle
-    
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[SovrinWallet sharedInstance] openWallet: theirWalletName
-                                      runtimeConfig: nil
-                                        credentials: nil
-                                         completion: ^(NSError* error, SovrinHandle walletHandle)
-           
-    {
-        XCTAssertEqual(error.code, Success, "openWallet got error in completion");
-        theirWalletHandle = walletHandle;
-        [completionExpectation fulfill];
-    }];
-    
-    NSAssert( ret.code == Success, @"openWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
-    // 5. Create My DID
+    // 3. Create My DID
     
     NSString *myDidJson = @"{}";
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -132,7 +80,7 @@
     NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 6. Create Their DID
+    // 4. Create Their DID
 
     NSString *theirDidJson = @"{}";
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -159,7 +107,7 @@
     NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
-    // 7. Store Their DID
+    // 5. Store Their DID
     
     NSString* theirIdentityJson = [NSString stringWithFormat: @"{\"did\":\"%@\",\
                                                                  \"pk\":\"%@\",\
@@ -177,7 +125,7 @@
     NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 8. Their Sign message
+    // 6. Their Sign message
     
     NSString* message = @"test message";
     
@@ -198,7 +146,7 @@
     NSAssert( ret.code == Success, @"sign() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 9. I Verify message
+    // 7. I Verify message
     SovrinHandle poolHandle = 1;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
