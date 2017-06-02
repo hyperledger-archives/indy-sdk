@@ -19,8 +19,6 @@ use std::error::Error;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
-use errors::sovrin::SovrinError;
-use errors::crypto::CryptoError;
 use errors::common::CommonError;
 use self::catchup::CatchupHandler;
 use self::types::*;
@@ -157,7 +155,10 @@ impl TransactionHandler {
             if pend_cmd.nack_cnt == self.f + 1 {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
-                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Err(SovrinError::PoolError(PoolError::InvalidData(raw_msg.clone())))))).unwrap();
+                        Command::Ledger(
+                            LedgerCommand::SubmitAck(cmd_id,
+                                                     Err(PoolError::Rejected(raw_msg.clone()))))
+                    ).unwrap();
                 }
                 remove = true;
             }

@@ -54,12 +54,6 @@ impl ToErrorCode for LedgerError {
     }
 }
 
-impl From<serde_json::Error> for LedgerError {
-    fn from(err: serde_json::Error) -> LedgerError {
-        LedgerError::CryptoError(CryptoError::InvalidStructure(err.to_string()))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     // use super::*;
