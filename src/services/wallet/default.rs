@@ -3,6 +3,7 @@ extern crate time;
 
 use super::{Wallet, WalletType};
 
+use errors::common::CommonError;
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
 use utils::json::JsonDecodable;
@@ -188,8 +189,8 @@ fn _open_connection(name: &str) -> Result<Connection, WalletError> {
 impl From<rusqlite::Error> for WalletError {
     fn from(err: rusqlite::Error) -> WalletError {
         match err {
-            rusqlite::Error::QueryReturnedNoRows => WalletError::NotFound(err.description().to_string()),
-            _ => WalletError::BackendError(err.description().to_string())
+            rusqlite::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
+            _ => WalletError::CommonError(CommonError::InvalidState(format!("Unexpected SQLite error: {}", err.description())))
         }
     }
 }

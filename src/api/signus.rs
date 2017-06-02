@@ -19,11 +19,14 @@ use self::libc::c_char;
 /// command_handle: command handle to map callback to user context.
 /// did_json: Identity information as json. Example:
 /// {
-///     "did": string, (optional; if not provided then the first 16 bit of the verkey will be used
-///             as a new DID; if provided, then keys will be replaced - key rotation use case)
+///     "did": string, (optional;
+///             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
+///             if not provided and cid is true then the full verkey will be used as a new DID;
+///             if provided, then keys will be replaced - key rotation use case)
 ///     "seed": string, (optional; if not provide then a random one will be created)
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
+///     "cid": bool, (optional; if not set then false is used;)
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
