@@ -252,6 +252,7 @@ pub extern fn sovrin_build_attrib_request(command_handle: i32,
 ///
 /// #Errors
 /// Common*
+#[no_mangle]
 pub extern fn sovrin_build_get_attrib_request(command_handle: i32,
                                        submitter_did: *const c_char,
                                        target_did: *const c_char,
