@@ -431,9 +431,11 @@ impl Pair {
     pub fn pair(p: &PointG1, q: &PointG2) -> Result<Pair, CryptoError> {
         let mut p_new = *p;
         let mut q_new = *q;
+        let mut result = fexp(&ate(&mut q_new.point, &mut p_new.point));
+        result.reduce();
 
         Ok(Pair {
-            pair: fexp(&ate(&mut q_new.point, &mut p_new.point))
+            pair: result
         })
     }
 
@@ -441,6 +443,7 @@ impl Pair {
         let mut base = self.pair;
         let mut b = b.pair;
         base.mul(&mut b);
+        base.reduce();
         Ok(Pair {
             pair: base
         })
@@ -457,7 +460,7 @@ impl Pair {
 
     pub fn inverse(&self) -> Result<Pair, CryptoError> {
         let mut r = self.pair;
-        r.inverse();
+        r.conj();
         Ok(Pair {
             pair: r
         })
@@ -669,5 +672,18 @@ mod tests {
         let q = PointG2::new().unwrap();
         let result = p.add(&q).unwrap();
         assert_eq!(q, result);
+    }
+
+    #[test]
+    fn inverse_for_pairing() {
+        let p1 = PointG1::new().unwrap();
+        let q1 = PointG2::new().unwrap();
+        let p2 = PointG1::new().unwrap();
+        let q2 = PointG2::new().unwrap();
+        let pair1 = Pair::pair(&p1, &q1).unwrap();
+        let pair2 = Pair::pair(&p2, &q2).unwrap();
+        let pair_result = pair1.mul(&pair2).unwrap();
+        let pair3 = pair_result.mul(&pair1.inverse().unwrap()).unwrap();
+        assert_eq!(pair2, pair3);
     }
 }
