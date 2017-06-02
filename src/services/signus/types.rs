@@ -53,12 +53,12 @@ pub struct MyDid {
 impl MyDid {
     pub fn new(did: String, crypto_type: String, pk: String, sk: String, verkey: String, signkey: String) -> MyDid {
         MyDid {
-            did,
-            crypto_type,
-            pk,
-            sk,
-            verkey,
-            signkey
+            did: did,
+            crypto_type: crypto_type,
+            pk: pk,
+            sk: sk,
+            verkey: verkey,
+            signkey: signkey
         }
     }
 }
@@ -77,9 +77,9 @@ pub struct TheirDidInfo {
 impl TheirDidInfo {
     pub fn new(did: String, crypto_type: Option<String>, verkey: Option<String>) -> TheirDidInfo {
         TheirDidInfo {
-            did,
-            crypto_type,
-            verkey
+            did: did,
+            crypto_type: crypto_type,
+            verkey: verkey
         }
     }
 }
@@ -99,10 +99,10 @@ pub struct TheirDid {
 impl TheirDid {
     pub fn new(did: String, crypto_type: String, verkey: Option<String>, pk: Option<String>) -> TheirDid {
         TheirDid {
-            did,
-            crypto_type,
-            verkey,
-            pk
+            did: did,
+            crypto_type: crypto_type,
+            verkey: verkey,
+            pk: pk
         }
     }
 }
