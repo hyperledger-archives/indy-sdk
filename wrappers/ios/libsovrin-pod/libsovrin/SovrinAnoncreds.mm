@@ -19,7 +19,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_issuer_create_and_store_claim_def(handle,
                                                    walletHandle,
@@ -30,7 +30,7 @@
                                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -43,7 +43,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_issuer_create_and_store_revoc_reg(handle,
                                                    walletHandle,
@@ -53,7 +53,7 @@
                                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -68,7 +68,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_issuer_create_claim(handle,
                                      walletHandle,
@@ -81,7 +81,7 @@
 
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -95,7 +95,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_issuer_revoke_claim(handle,
                                      walletHandle,
@@ -107,7 +107,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -119,7 +119,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_store_claim_offer(handle,
                                           walletHandle,
@@ -129,7 +129,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -141,7 +141,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_get_claim_offers(handle,
                                          walletHandle,
@@ -151,7 +151,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -163,7 +163,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_create_master_secret(handle,
                                              walletHandle,
@@ -173,7 +173,7 @@
 
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -188,7 +188,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
     ret = sovrin_prover_create_and_store_claim_req(handle,
                                                    walletHandle,
@@ -201,7 +201,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -213,7 +213,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_store_claim(handle,
                                     walletHandle,
@@ -222,7 +222,7 @@
                                    );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -234,7 +234,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_get_claims(handle,
                                    walletHandle,
@@ -243,7 +243,7 @@
                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -255,7 +255,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_get_claims_for_proof_req(handle,
                                                  walletHandle,
@@ -264,7 +264,7 @@
                                                 );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -281,7 +281,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_prover_create_proof(handle,
                                      walletHandle,
@@ -295,7 +295,7 @@
                                     );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -310,7 +310,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
     ret = sovrin_verifier_verify_proof(handle,
                                        [proofReqJSON UTF8String],
@@ -322,7 +322,7 @@
                                       );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];

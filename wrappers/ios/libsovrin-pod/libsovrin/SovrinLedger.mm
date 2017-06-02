@@ -19,7 +19,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     
     ret = sovrin_sign_and_submit_request( handle,
@@ -30,7 +30,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -43,7 +43,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
     ret = sovrin_submit_request( handle,
                                  poolHandle,
@@ -52,7 +52,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -64,7 +64,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_get_ddo_request( handle,
                                         [submitterDid UTF8String],
@@ -73,7 +73,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
 
     return [NSError errorFromSovrinError: ret];
@@ -89,7 +89,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_nym_request( handle,
                                     [submitterDid UTF8String],
@@ -102,7 +102,7 @@
 
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -117,7 +117,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_attrib_request( handle,
                                        [submitterDid UTF8String],
@@ -129,7 +129,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -141,7 +141,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_get_nym_request( handle,
                                        [submitterDid UTF8String],
@@ -150,7 +150,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -162,7 +162,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_schema_request( handle,
                                        [submitterDid UTF8String],
@@ -170,7 +170,7 @@
                                        SovrinWrapperCommon3PSCallback );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -182,7 +182,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_get_schema_request( handle,
                                            [submitterDid UTF8String],
@@ -190,7 +190,7 @@
                                            SovrinWrapperCommon3PSCallback );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -203,7 +203,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_claim_def_txn( handle,
                                       [submitterDid UTF8String],
@@ -212,7 +212,7 @@
                                       SovrinWrapperCommon3PSCallback );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -225,7 +225,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_get_claim_def_txn( handle,
                                           [submitterDid UTF8String],
@@ -233,7 +233,7 @@
                                           SovrinWrapperCommon3PSCallback );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -246,7 +246,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_build_node_request( handle,
                                      [submitterDid UTF8String],
@@ -255,7 +255,7 @@
                                      SovrinWrapperCommon3PSCallback );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
