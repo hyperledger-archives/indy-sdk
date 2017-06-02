@@ -645,7 +645,7 @@ mod tests {
     }
 
     #[test]
-    pub fn pairing_definition_bilinearity() {
+    fn pairing_definition_bilinearity() {
         let a = GroupOrderElement::new().unwrap();
         let b = GroupOrderElement::new().unwrap();
         let p = PointG1::new().unwrap();
@@ -653,5 +653,21 @@ mod tests {
         let left = Pair::pair(&p.mul(&a).unwrap(), &q.mul(&b).unwrap()).unwrap();
         let right = Pair::pair(&p, &q).unwrap().pow(&a.mul_mod(&b).unwrap()).unwrap();
         assert_eq!(left, right);
+    }
+
+    #[test]
+    fn point_g1_infinity_test() {
+        let p = PointG1::new_inf().unwrap();
+        let q = PointG1::new().unwrap();
+        let result = p.add(&q).unwrap();
+        assert_eq!(q, result);
+    }
+
+    #[test]
+    fn point_g2_infinity_test() {
+        let p = PointG2::new_inf().unwrap();
+        let q = PointG2::new().unwrap();
+        let result = p.add(&q).unwrap();
+        assert_eq!(q, result);
     }
 }
