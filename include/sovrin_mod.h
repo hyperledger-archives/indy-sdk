@@ -83,7 +83,10 @@ typedef enum
     
     // IO error during access pool ledger files
     PoolLedgerIOError,
-    
+
+    // Pool ledger terminated
+    PoolLedgerTerminated,
+
     // No concensus during ledger operation
     LedgerNoConsensusError,
     
