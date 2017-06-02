@@ -2,9 +2,7 @@
 //  LedgerDemo.m
 //  libsovrin-demo
 //
-//  Created by Kirill Neznamov on 15/05/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
+
 
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
@@ -91,8 +89,7 @@
     NSString *str = @"{"\
                     @"  \"op\": \"REPLY\","\
                     @"  \"result\": {"\
-                    @"        \"req_id\": 1491566332010860,"\
-                    @"        \"txn_id\": \"5511e5493c1d37dfa67b73269a392a7aca5b71e9d10ac106adc7f9e552aee560\""\
+                    @"        \"reqId\": 1491566332010860"\
                     @"    }"\
                     @"}";
 
@@ -101,8 +98,18 @@
                                                                 options:  kNilOptions
                                                                   error: &error];
     
-    NSAssert( [dictionary1 isEqualToDictionary: dictionary2 ] == YES, @"got unexpected result");
+    NSAssert( [self validate:@"op" d1: dictionary1 d2: dictionary2] == YES, @"unexpected result");
+    NSDictionary *r1 = [ dictionary1 objectForKey: @"result"];
+    NSDictionary *r2 = [ dictionary2 objectForKey: @"result"];
+    NSAssert( [self validate:@"reqId" d1: r1 d2: r2] == YES, @"unexpected result");
+    NSLog(@"test ended");
+}
 
+-(BOOL) validate:(NSString*) key d1: (NSDictionary*) d1 d2: (NSDictionary*) d2
+{
+    id obj1 = [ d1 objectForKey: key];
+    id obj2 = [ d2 objectForKey: key];
+    return [ obj1 isEqual: obj2];
 }
 
 @end

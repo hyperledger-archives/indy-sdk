@@ -4,10 +4,10 @@ extern crate hex;
 use self::hex::ToHex;
 use self::serde_json::Value;
 
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use utils::crypto::hash::Hash;
 
-pub fn serialize_signature(v: Value) -> Result<String, CryptoError> {
+pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
     match v {
         Value::Bool(value) => Ok(value.to_string()),
         Value::Number(value) => Ok(value.to_string()),
@@ -30,7 +30,7 @@ pub fn serialize_signature(v: Value) -> Result<String, CryptoError> {
                 let mut value = map[key].clone();
                 if key == "raw" {
                     let mut ctx = Hash::new_context()?;
-                    ctx.update(&value.as_str().ok_or(CryptoError::BackendError("Cannot update hash context".to_string()))?.as_bytes())?;
+                    ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
                     value = Value::String(ctx.finish2()?.as_ref().to_hex());
                 }
                 result = result + key + ":" + &serialize_signature(value)?;

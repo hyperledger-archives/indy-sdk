@@ -3,8 +3,7 @@ extern crate serde_json;
 use std::error;
 use std::fmt;
 
-use errors::crypto::CryptoError;
-use errors::sovrin::SovrinError;
+use errors::common::CommonError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -14,7 +13,10 @@ pub enum AnoncredsError {
     NotIssuedError(String),
     MasterSecretDuplicateNameError(String),
     ProofRejected(String),
-    CryptoError(CryptoError)
+    RevocationRegistryFull(String),
+    InvalidUserRevocIndex(String),
+    AccumulatorIsFull(String),
+    CommonError(CommonError)
 }
 
 impl fmt::Display for AnoncredsError {
@@ -23,7 +25,10 @@ impl fmt::Display for AnoncredsError {
             AnoncredsError::NotIssuedError(ref description) => write!(f, "Not issued: {}", description),
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => write!(f, "Dupplicated master secret: {}", description),
             AnoncredsError::ProofRejected(ref description) => write!(f, "Proof rejected: {}", description),
-            AnoncredsError::CryptoError(ref err) => err.fmt(f)
+            AnoncredsError::RevocationRegistryFull(ref description) => write!(f, "Revocation registry is full: {}", description),
+            AnoncredsError::InvalidUserRevocIndex(ref description) => write!(f, "Invalid revocation index: {}", description),
+            AnoncredsError::AccumulatorIsFull(ref description) => write!(f, "Accumulator is full: {}", description),
+            AnoncredsError::CommonError(ref err) => err.fmt(f)
         }
     }
 }
@@ -31,19 +36,25 @@ impl fmt::Display for AnoncredsError {
 impl error::Error for AnoncredsError {
     fn description(&self) -> &str {
         match *self {
-            AnoncredsError::NotIssuedError(ref description) => description,
-            AnoncredsError::MasterSecretDuplicateNameError(ref description) => description,
-            AnoncredsError::ProofRejected(ref description) => description,
-            AnoncredsError::CryptoError(ref err) => err.description()
+            AnoncredsError::NotIssuedError(ref description) |
+            AnoncredsError::MasterSecretDuplicateNameError(ref description) |
+            AnoncredsError::ProofRejected(ref description) |
+            AnoncredsError::RevocationRegistryFull(ref description) |
+            AnoncredsError::InvalidUserRevocIndex(ref description) => description,
+            AnoncredsError::AccumulatorIsFull(ref description) => description,
+            AnoncredsError::CommonError(ref err) => err.description()
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            AnoncredsError::NotIssuedError(ref description) => None,
-            AnoncredsError::MasterSecretDuplicateNameError(ref description) => None,
-            AnoncredsError::ProofRejected(ref description) => None,
-            AnoncredsError::CryptoError(ref err) => Some(err)
+            AnoncredsError::NotIssuedError(ref description) |
+            AnoncredsError::MasterSecretDuplicateNameError(ref description) |
+            AnoncredsError::ProofRejected(ref description) |
+            AnoncredsError::RevocationRegistryFull(ref description) |
+            AnoncredsError::InvalidUserRevocIndex(ref description) => None,
+            AnoncredsError::AccumulatorIsFull(ref description) => None,
+            AnoncredsError::CommonError(ref err) => Some(err)
         }
     }
 }
@@ -53,21 +64,18 @@ impl ToErrorCode for AnoncredsError {
         match *self {
             AnoncredsError::NotIssuedError(ref description) => ErrorCode::AnoncredsNotIssuedError,
             AnoncredsError::MasterSecretDuplicateNameError(ref description) => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
-            AnoncredsError::ProofRejected(ref description) => ErrorCode::ProofRejected,
-            AnoncredsError::CryptoError(ref err) => err.to_error_code()
+            AnoncredsError::ProofRejected(ref description) => ErrorCode::AnoncredsProofRejected,
+            AnoncredsError::RevocationRegistryFull(ref description) => ErrorCode::AnoncredsRevocationRegistryFullError,
+            AnoncredsError::InvalidUserRevocIndex(ref description) => ErrorCode::AnoncredsInvalidUserRevocIndex,
+            AnoncredsError::AccumulatorIsFull(ref description) => ErrorCode::AnoncredsAccumulatorIsFull,
+            AnoncredsError::CommonError(ref err) => err.to_error_code()
         }
     }
 }
 
-impl From<CryptoError> for SovrinError {
-    fn from(err: CryptoError) -> SovrinError {
-        SovrinError::AnoncredsError(AnoncredsError::CryptoError(err))
-    }
-}
-
-impl From<serde_json::Error> for AnoncredsError {
-    fn from(err: serde_json::Error) -> AnoncredsError {
-        AnoncredsError::CryptoError(CryptoError::InvalidStructure(err.to_string()))
+impl From<CommonError> for AnoncredsError {
+    fn from(err: CommonError) -> AnoncredsError {
+        AnoncredsError::CommonError(err)
     }
 }
 

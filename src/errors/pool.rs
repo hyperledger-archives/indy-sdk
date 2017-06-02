@@ -1,11 +1,11 @@
 extern crate zmq;
 extern crate serde_json;
 
-use std::error;
-use std::io;
-use std::fmt;
-use std::error::Error;
 use std::cell::{BorrowError, BorrowMutError};
+use std::{error, fmt, io};
+use std::error::Error;
+
+use errors::common::CommonError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -13,22 +13,18 @@ use errors::ToErrorCode;
 #[derive(Debug)]
 pub enum PoolError {
     NotCreated(String),
-    InvalidState(String),
-    InvalidData(String),
-    InvalidConfiguration(String),
     InvalidHandle(String),
-    Io(io::Error)
+    Terminate,
+    CommonError(CommonError)
 }
 
 impl fmt::Display for PoolError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             PoolError::NotCreated(ref description) => write!(f, "Not created: {}", description),
-            PoolError::InvalidState(ref description) => write!(f, "Internal error: {}", description),
             PoolError::InvalidHandle(ref description) => write!(f, "Invalid Handle: {}", description),
-            PoolError::InvalidConfiguration(ref description) => write!(f, "Invalid configuration: {}", description),
-            PoolError::InvalidData(ref description) => write!(f, "Invalid data: {}", description),
-            PoolError::Io(ref err) => err.fmt(f)
+            PoolError::Terminate => write!(f, "Pool work terminated"),
+            PoolError::CommonError(ref err) => err.fmt(f)
         }
     }
 }
@@ -37,53 +33,50 @@ impl error::Error for PoolError {
     fn description(&self) -> &str {
         match *self {
             PoolError::NotCreated(ref description) |
-            PoolError::InvalidState(ref description) |
-            PoolError::InvalidHandle(ref description) |
-            PoolError::InvalidData(ref description) |
-            PoolError::InvalidConfiguration(ref description) => description,
-            PoolError::Io(ref err) => err.description()
+            PoolError::InvalidHandle(ref description) => description,
+            PoolError::Terminate => "Pool work terminated",
+            PoolError::CommonError(ref err) => err.description()
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             PoolError::NotCreated(ref description) |
-            PoolError::InvalidState(ref description) |
-            PoolError::InvalidHandle(ref description) |
-            PoolError::InvalidData(ref description) |
-            PoolError::InvalidConfiguration(ref description) => None,
-            PoolError::Io(ref err) => Some(err)
+            PoolError::InvalidHandle(ref description) => None,
+            PoolError::Terminate => None,
+            PoolError::CommonError(ref err) => Some(err)
         }
     }
 }
 
+impl From<CommonError> for PoolError {
+    fn from(err: CommonError) -> PoolError {
+        PoolError::CommonError(err)
+    }
+}
+
+
 impl From<io::Error> for PoolError {
     fn from(err: io::Error) -> PoolError {
-        PoolError::Io(err)
+        PoolError::CommonError(CommonError::IOError(err))
     }
 }
 
 impl From<zmq::Error> for PoolError {
     fn from(err: zmq::Error) -> PoolError {
-        PoolError::Io(io::Error::from(err))
-    }
-}
-
-impl From<serde_json::Error> for PoolError {
-    fn from(err: serde_json::Error) -> PoolError {
-        PoolError::InvalidConfiguration(err.description().to_string())
+        PoolError::CommonError(CommonError::IOError(io::Error::from(err)))
     }
 }
 
 impl From<BorrowError> for PoolError {
     fn from(err: BorrowError) -> Self {
-        PoolError::InvalidState(err.description().to_string())
+        PoolError::CommonError(CommonError::InvalidState(err.description().to_string()))
     }
 }
 
 impl From<BorrowMutError> for PoolError {
     fn from(err: BorrowMutError) -> Self {
-        PoolError::InvalidState(err.description().to_string())
+        PoolError::CommonError(CommonError::InvalidState(err.description().to_string()))
     }
 }
 
@@ -91,11 +84,9 @@ impl ToErrorCode for PoolError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
             PoolError::NotCreated(ref description) => ErrorCode::PoolLedgerNotCreatedError,
-            PoolError::InvalidState(ref description) => ErrorCode::CommonInvalidState,
-            PoolError::InvalidConfiguration(ref description) => ErrorCode::PoolLedgerInvalidConfiguration,
             PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
-            PoolError::InvalidData(ref description) => ErrorCode::PoolLedgerInvalidDataFormat,
-            PoolError::Io(ref err) => ErrorCode::PoolLedgerIOError
+            PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
+            PoolError::CommonError(ref err) => err.to_error_code()
         }
     }
 }
