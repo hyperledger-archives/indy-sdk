@@ -26,7 +26,7 @@ use self::libc::c_char;
 ///     "seed": string, (optional; if not provide then a random one will be created)
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
-///     "cid": string, (optional; if not set then false is used;)
+///     "cid": bool, (optional; if not set then false is used;)
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
