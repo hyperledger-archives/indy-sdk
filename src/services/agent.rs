@@ -7,6 +7,8 @@ use self::rust_base58::FromBase58;
 use std::cell::RefCell;
 use std::thread;
 
+use commands::{Command, CommandExecutor};
+use commands::agent::AgentCommand;
 use errors::common::CommonError;
 use errors::pool::PoolError;
 use utils::json::{JsonDecodable, JsonEncodable};
@@ -179,7 +181,18 @@ impl RemoteAgent {
     }
 
     fn handle_response(&self, msg: String) {
-        unimplemented!();
+        if msg.eq("DID_ACK") {
+            let send_res: Result<(), CommonError> =
+                CommandExecutor::instance().send(
+                    Command::Agent(
+                        AgentCommand::ConnectAck(self.conn_handle, Ok(self.conn_handle))));
+            if let Err(err) = send_res {
+                error!("RemoteAgent::handle_response got connection ack, but can't send to client {}", err);
+            };
+        } else {
+            //check state, transfer message to client
+            unimplemented!();
+        }
     }
 }
 
