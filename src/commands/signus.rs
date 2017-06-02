@@ -1,15 +1,16 @@
 use utils::json::{JsonDecodable, JsonEncodable};
 use errors::signus::SignusError;
 use errors::common::CommonError;
-use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 use errors::sovrin::SovrinError;
-use services::signus::types::{MyDidInfo, MyIdentityInfo, MyDid, TheirDid};
+use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid};
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
+
+use std::error::Error;
 use std::rc::Rc;
 use std::str;
 use std::cell::RefCell;
@@ -142,68 +143,83 @@ impl SignusCommandExecutor {
 
     fn create_and_store_my_did(&self,
                                wallet_handle: i32,
-                               did_json: &str,
+                               my_did_info_json: &str,
                                cb: Box<Fn(Result<(String, String, String), SovrinError>) + Send>) {
-        cb(self._create_and_store_my_did(wallet_handle, did_json));
+        cb(self._create_and_store_my_did(wallet_handle, my_did_info_json));
     }
 
-    fn _create_and_store_my_did(&self, wallet_handle: i32, did_json: &str) -> Result<(String, String, String), SovrinError> {
-        let did_info = MyDidInfo::from_json(&did_json)
-            .map_err(|_| CommonError::InvalidStructure(format!("Invalid did json")))?;
+    fn _create_and_store_my_did(&self, wallet_handle: i32, my_did_info_json: &str) -> Result<(String, String, String), SovrinError> {
+        let my_did_info = MyDidInfo::from_json(&my_did_info_json)
+            .map_err(|err|
+                CommonError::InvalidStructure(
+                    format!("Invalid MyDidInfo json: {}", err.description())))?;
 
-        let my_did = self.signus_service.create_my_did(&did_info)?;
-        let my_did_json = my_did.to_json().map_err(|_| CommonError::InvalidState(format!("Invalid my did")))?;
+        let my_did = self.signus_service.create_my_did(&my_did_info)?;
+
+        let my_did_json = my_did.to_json()
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't serialize MyDid: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("my_did::{}", my_did.did), &my_did_json)?;
-
-        Ok((my_did.did, my_did.ver_key, my_did.public_key))
+        Ok((my_did.did, my_did.verkey, my_did.pk))
     }
 
     fn replace_keys(&self,
                     wallet_handle: i32,
-                    identity_json: &str,
+                    keys_info_json: &str,
                     did: &str,
                     cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
-        cb(self._replace_keys(wallet_handle, identity_json, did));
+        cb(self._replace_keys(wallet_handle, keys_info_json, did));
     }
 
     fn _replace_keys(&self,
                      wallet_handle: i32,
-                     identity_json: &str,
+                     keys_info_json: &str,
                      did: &str) -> Result<(String, String), SovrinError> {
-        let identity_info: MyIdentityInfo = MyIdentityInfo::from_json(identity_json)
-            .map_err(|_| CommonError::InvalidStructure(format!("Invalid identity json")))?;
+        let keys_info: MyKyesInfo = MyKyesInfo::from_json(keys_info_json)
+            .map_err(|err|
+                CommonError::InvalidStructure(format!("Invalid MyKyesInfo json: {}", err.description())))?;
 
-        let did_info = MyDidInfo::new(Some(did.to_string()), identity_info.seed, identity_info.crypto_type);
+        let my_did_info = MyDidInfo::new(
+            Some(did.to_string()),
+            keys_info.seed,
+            keys_info.crypto_type);
 
-        let my_did = self.signus_service.create_my_did(&did_info)?;
+        let my_did = self.signus_service.create_my_did(&my_did_info)?;
+
         let my_did_json = my_did.to_json()
-            .map_err(|_| CommonError::InvalidState(format!("Invalid my did")))?;
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't serialize MyDid: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("my_did::{}", my_did.did), &my_did_json)?;
 
-        Ok((my_did.ver_key, my_did.public_key))
+        Ok((my_did.verkey, my_did.pk))
     }
 
     fn store_their_did(&self,
                        wallet_handle: i32,
-                       identity_json: &str,
+                       their_did_info_json: &str,
                        cb: Box<Fn(Result<(), SovrinError>) + Send>) {
-        cb(self._store_their_did(wallet_handle, identity_json));
+        cb(self._store_their_did(wallet_handle, their_did_info_json));
     }
 
     fn _store_their_did(&self,
                         wallet_handle: i32,
-                        identity_json: &str) -> Result<(), SovrinError> {
-        let their_did = TheirDid::from_json(identity_json).map_err(|err| CommonError::InvalidStructure(format!("Invalid identity json")))?;
+                        their_did_info_json: &str) -> Result<(), SovrinError> {
+        let their_did_info = TheirDidInfo::from_json(their_did_info_json)
+            .map_err(|err|
+                CommonError::InvalidStructure(format!("Invalid TheirDidInfo json: {}", err.description())))?;
 
-        if their_did.pk.is_none() && their_did.verkey.is_none() {
-            return Err(SovrinError::CommonError(
-                CommonError::InvalidStructure(format!("Either public_key or verkey must be provided"))
-            ))
-        }
+        let their_did = self.signus_service.create_their_did(&their_did_info)?;
 
-        self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &identity_json)?;
+        let their_did_json = their_did.to_json()
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't serialize TheirDid: {}", err.description())))?;
+
+        self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
         Ok(())
     }
 
@@ -259,7 +275,7 @@ impl SignusCommandExecutor {
                             })
                         ))).unwrap();
                 }
-                Err(err) => cb(Err(SovrinError::SignusError(SignusError::CryptoError(CryptoError::BackendError(format!("{:?}", err))))))
+                Err(err) => cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("{:?}", err)))))
             }
         };
 
@@ -267,7 +283,7 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    return cb(Err(SovrinError::SignusError(SignusError::CryptoError(CryptoError::InvalidStructure(format!("Invalid their did json"))))))
+                    return cb(Err(SovrinError::SignusError(SignusError::CommonError(CommonError::InvalidStructure(format!("Invalid their did json"))))))
                 }
 
                 let their_did: TheirDid = their_did.unwrap();
@@ -278,7 +294,7 @@ impl SignusCommandExecutor {
                 }
             }
             Err(WalletError::NotFound(_)) => load_verkey_from_ledger(cb),
-            _ => cb(Err(SovrinError::WalletError(WalletError::BackendError(format!("Wallet error")))))
+            Err(err) => cb(Err(SovrinError::WalletError(err)))
         }
     }
 
@@ -348,7 +364,9 @@ impl SignusCommandExecutor {
                             })
                         ))).unwrap();
                 }
-                Err(err) => cb(Err(SovrinError::SignusError(SignusError::CryptoError(CryptoError::BackendError(format!("{:?}", err))))))
+                Err(err) => cb(Err(
+                        SovrinError::CommonError(
+                            CommonError::InvalidState(format!("{:?}", err)))))
             }
         };
 
@@ -381,7 +399,7 @@ impl SignusCommandExecutor {
                 }
             }
             Err(WalletError::NotFound(_)) => load_public_key_from_ledger(cb),
-            _ => cb(Err(SovrinError::WalletError(WalletError::BackendError(format!("Wallet error")))))
+            Err(err) => cb(Err(SovrinError::WalletError(err)))
         }
     }
 

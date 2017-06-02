@@ -1,9 +1,9 @@
 extern crate libc;
 
 use api::ErrorCode;
-use errors::ToErrorCode;
-use commands::{Command, CommandExecutor};
-use utils::cstring::CStringUtils;
+//use errors::ToErrorCode;
+//use commands::{Command, CommandExecutor};
+//use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 

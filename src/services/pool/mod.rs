@@ -18,7 +18,7 @@ use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use self::catchup::CatchupHandler;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
@@ -149,7 +149,9 @@ impl PoolWorker {
             None => {
                 match self.handler {
                     PoolWorkerHandler::CatchupHandler(ref ch) => ch.merkle_tree.clone(),
-                    PoolWorkerHandler::TransactionHandler(_) => return Err(PoolError::InvalidState("Expect catchup state".to_string())),
+                    PoolWorkerHandler::TransactionHandler(_) => return Err(
+                        PoolError::CommonError(
+                            CommonError::InvalidState("Expect catchup state".to_string())))
                 }
             }
         };
@@ -343,12 +345,6 @@ impl Drop for Pool {
     }
 }
 
-impl From<CryptoError> for PoolError {
-    fn from(err: CryptoError) -> PoolError {
-        PoolError::InvalidData(err.description().to_string())
-    }
-}
-
 impl Debug for RemoteNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RemoteNode: {{ public_key: {:?}, verify_key {:?}, zaddr {:?}, zsock is_some {} }}",
@@ -377,7 +373,9 @@ impl RemoteNode {
     fn recv_msg(&self) -> Result<Option<String>, PoolError> {
         impl From<Vec<u8>> for PoolError {
             fn from(_: Vec<u8>) -> Self {
-                PoolError::Io(io::Error::from(io::ErrorKind::InvalidData))
+                PoolError::CommonError(
+                    CommonError::IOError(
+                        io::Error::from(io::ErrorKind::InvalidData)))
             }
         }
         let msg: String = self.zsock.as_ref().unwrap().recv_string(zmq::DONTWAIT)??;
@@ -405,7 +403,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: ED25519::pk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -424,7 +422,9 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config = match config {
-            Some(config) => PoolConfig::from_json(config)?,
+            Some(config) => PoolConfig::from_json(config)
+                .map_err(|err|
+                    CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
             None => PoolConfig::default_for_name(name)
         };
 
@@ -442,7 +442,11 @@ impl PoolService {
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path())?;
-        f.write(pool_config.to_json()?.as_bytes())?;
+        f.write(pool_config
+            .to_json()
+            .map_err(|err|
+                CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description())))?
+            .as_bytes())?;
         f.flush()?;
 
         // TODO probably create another one file pool.json with pool description,
@@ -792,8 +796,8 @@ mod tests {
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
-            let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = ED25519::pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
+            let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
+            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8]));
             let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
@@ -809,7 +813,7 @@ mod tests {
                 },
                 txn_id: "".to_string(),
                 txn_type: "0".to_string(),
-                dest: (&pk.0 as &[u8]).to_base58(),
+                dest: (&vk.0 as &[u8]).to_base58(),
             };
             let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
             s.set_curve_publickey(zmq::z85_encode(pkc.as_slice()).unwrap().as_str()).expect("set public key");

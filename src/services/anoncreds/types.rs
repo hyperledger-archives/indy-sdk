@@ -1,6 +1,6 @@
 use utils::crypto::bn::BigNumber;
 use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use services::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
@@ -250,7 +250,7 @@ impl ClaimDefinition {
         }
     }
 
-    pub fn clone(&self) -> Result<ClaimDefinition, CryptoError> {
+    pub fn clone(&self) -> Result<ClaimDefinition, CommonError> {
         Ok(ClaimDefinition {
             public_key: self.public_key.clone()?,
             public_key_revocation: self.public_key_revocation.clone(),
@@ -431,7 +431,7 @@ impl NonRevocProofXList {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<GroupOrderElement>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<GroupOrderElement>, CommonError> {
         Ok(vec![self.rho, self.o, self.c, self.o_prime, self.m, self.m_prime, self.t, self.t_prime,
                 self.m2, self.s, self.r, self.r_prime, self.r_prime_prime, self.r_prime_prime_prime])
     }
@@ -472,7 +472,7 @@ impl NonRevocProofTauList {
         }
     }
 
-    pub fn as_slice(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_slice(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.t1.to_bytes()?, self.t2.to_bytes()?, self.t3.to_bytes()?, self.t4.to_bytes()?,
                 self.t5.to_bytes()?, self.t6.to_bytes()?, self.t7.to_bytes()?, self.t8.to_bytes()?])
     }
@@ -503,7 +503,7 @@ impl NonRevocProofCList {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<PointG1>, CommonError> {
         Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
     }
 }
@@ -530,12 +530,12 @@ impl NonRevocInitProof {
         }
     }
 
-    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CommonError> {
         let vec = self.c_list.as_list()?;
         Ok(vec)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let vec = self.tau_list.as_slice()?;
         Ok(vec)
     }
@@ -579,7 +579,7 @@ impl PublicKey {
         }
     }
 
-    pub fn clone(&self) -> Result<PublicKey, CryptoError> {
+    pub fn clone(&self) -> Result<PublicKey, CommonError> {
         Ok(PublicKey {
             s: self.s.clone()?,
             n: self.n.clone()?,
@@ -686,7 +686,7 @@ impl PrimaryInitProof {
         }
     }
 
-    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let mut c_list: Vec<Vec<u8>> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
             c_list.append_vec(ge_proof.as_list()?)?;
@@ -694,7 +694,7 @@ impl PrimaryInitProof {
         Ok(c_list)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let mut tau_list: Vec<Vec<u8>> = self.eq_proof.as_tau_list()?;
         for ge_proof in self.ge_proofs.iter() {
             tau_list.append_vec(ge_proof.as_tau_list()?)?;
@@ -749,11 +749,11 @@ impl PrimaryEqualInitProof {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.a_prime.to_bytes()?])
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.t.to_bytes()?])
     }
 }
@@ -788,11 +788,11 @@ impl PrimaryPredicateGEInitProof {
         }
     }
 
-    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CommonError> {
         Ok(&self.c_list)
     }
 
-    pub fn as_tau_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<&Vec<BigNumber>, CommonError> {
         Ok(&self.tau_list)
     }
 }
