@@ -242,13 +242,14 @@ impl PoolWorker {
             .ok_or(CommonError::InvalidState("Expect catchup state".to_string()))?;
 
         let ctx: zmq::Context = zmq::Context::new();
+        let key_pair = zmq::CurveKeyPair::new()?;
         for gen_txn in &merkle_tree {
             let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)
                 .map_err(|e|
                     CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
 
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
-            rn.connect(&ctx)?;
+            rn.connect(&ctx, &key_pair)?;
             rn.send_str("pi")?;
             self.handler.nodes_mut().push(rn);
         }
@@ -466,8 +467,7 @@ impl RemoteNode {
         })
     }
 
-    fn connect(&mut self, ctx: &zmq::Context) -> Result<(), PoolError> {
-        let key_pair = zmq::CurveKeyPair::new()?;
+    fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
         s.set_identity(key_pair.public_key.as_bytes())?;
         s.set_curve_secretkey(key_pair.secret_key.as_str())?;
@@ -847,7 +847,7 @@ mod tests {
         let (gt, handle) = nodes_emulator::start();
         ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-        rn.connect(&zmq::Context::new()).unwrap();
+        rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);
         ch.new_mt_size = 2;
 
@@ -870,7 +870,7 @@ mod tests {
         let (gt, handle) = nodes_emulator::start();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         let ctx = zmq::Context::new();
-        rn.connect(&ctx).unwrap();
+        rn.connect(&ctx, &zmq::CurveKeyPair::new().unwrap()).unwrap();
         rn.send_str("pi").expect("send");
         rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
         assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
