@@ -1,8 +1,10 @@
 use std::cmp;
 use std::collections::{BinaryHeap};
+use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
+use errors::common::CommonError;
 use errors::pool::PoolError;
 use super::{
     MerkleTree,
@@ -56,8 +58,9 @@ impl CatchupHandler {
             }
             Message::LedgerStatus(ledger_status) => {
                 if self.merkle_tree.root_hash().as_slice().to_base58().ne(ledger_status.merkleRoot.as_str()) {
-                    return Err(PoolError::InvalidState(
-                        "Ledger merkle tree doesn't acceptable for current tree.".to_string()));
+                    return Err(PoolError::CommonError(
+                        CommonError::InvalidState(
+                            "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
                 }
                 self.ledger_status_same += 1;
                 if self.ledger_status_same == self.f + 1 {
@@ -91,21 +94,20 @@ impl CatchupHandler {
     pub fn start_catchup(&mut self) -> Result<(), PoolError> {
         trace!("start_catchup");
         if self.pending_catchup.is_some() {
-            return Err(PoolError::InvalidState(
-                "CatchUp already started for the pool".to_string()
-            ));
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState(
+                    "CatchUp already started for the pool".to_string())));
         }
         let node_cnt = self.nodes.len();
         if self.merkle_tree.count() != node_cnt {
-            return Err(PoolError::InvalidState(
-                "Merkle tree doesn't equal nodes count".to_string()
-            ));
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState(
+                    "Merkle tree doesn't equal nodes count".to_string())));
         }
         let cnt_to_catchup = self.new_mt_size - self.merkle_tree.count();
         if cnt_to_catchup <= 0 {
-            return Err(PoolError::InvalidState(
-                "Nothing to CatchUp, but started".to_string()
-            ));
+            return Err(PoolError::CommonError(CommonError::InvalidState(
+                "Nothing to CatchUp, but started".to_string())));
         }
 
         self.pending_catchup = Some(CatchUpProcess {
@@ -133,15 +135,20 @@ impl CatchupHandler {
         trace!("append {:?}", catchup);
         let catchup_finished = {
             let mut process = self.pending_catchup.as_mut()
-                .ok_or(PoolError::InvalidState("Process non-existing CatchUp".to_string()))?;
+                .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
             process.pending_reps.push(catchup);
             while !process.pending_reps.is_empty()
                 && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
                 let mut first_resp = process.pending_reps.pop().unwrap();
                 while !first_resp.txns.is_empty() {
                     let key = first_resp.min_tx().to_string();
-                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json()
-                        .map_err(PoolError::from_displayable_as_invalid_data)?;
+                    let new_gen_tx = first_resp.txns
+                        .remove(&key)
+                        .unwrap()
+                        .to_json()
+                        .map_err(|err|
+                            CommonError::InvalidState(
+                                format!("Can't serialize gen-tx json: {}", err.description())))?;
                     trace!("append to tree {}", new_gen_tx);
                     process.merkle_tree.append(
                         new_gen_tx
@@ -164,13 +171,16 @@ impl CatchupHandler {
 
     pub fn finish_catchup(&mut self) -> Result<MerkleTree, PoolError> {
         Ok(self.pending_catchup.take().
-            ok_or(PoolError::InvalidState("Try to finish non-existing CatchUp".to_string()))?
+            ok_or(CommonError::InvalidState("Try to finish non-existing CatchUp".to_string()))?
             .merkle_tree)
     }
 
     pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
-        CommandExecutor::instance().send(Command::Pool(
-            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id))))
-            .map_err(|err| { PoolError::InvalidState("Can't send ACK cmd".to_string()) })
+        CommandExecutor::instance().send(
+            Command::Pool(
+                PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id))))
+            .map_err(|err|
+                PoolError::CommonError(
+                    CommonError::InvalidState("Can't send ACK cmd".to_string())))
     }
 }

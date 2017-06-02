@@ -1,6 +1,6 @@
 extern crate rust_base58;
 
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 
 use self::rust_base58::{ToBase58, FromBase58};
 
@@ -11,9 +11,9 @@ impl Base58 {
         doc.to_base58()
     }
 
-    pub fn decode(doc: &str) -> Result<Vec<u8>, CryptoError> {
+    pub fn decode(doc: &str) -> Result<Vec<u8>, CommonError> {
         doc.from_base58()
-            .map_err(|err| CryptoError::InvalidStructure(format!("{}", err)))
+            .map_err(|err| CommonError::InvalidStructure(format!("{}", err)))
     }
 }
 

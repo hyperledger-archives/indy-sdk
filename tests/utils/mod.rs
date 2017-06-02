@@ -4,7 +4,9 @@ pub mod callback;
 pub mod environment;
 
 pub mod pool;
+pub mod signus;
 pub mod wallet;
+pub mod ledger;
 pub mod anoncreds;
 
 #[macro_use]

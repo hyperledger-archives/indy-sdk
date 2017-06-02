@@ -489,4 +489,70 @@ impl CallbackUtils {
 
         Some(agent_message_callback)
     }
+
+    pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                    Option<extern fn(command_handle: i32,
+                                                                                                                     err: ErrorCode,
+                                                                                                                     request_result_json: *const c_char)>) {
+        lazy_static! {
+            static ref SIGN_AND_SUBMIT_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_sign_and_submit_request_callback(command_handle: i32, err: ErrorCode, request_result_json: *const c_char) {
+            let mut callbacks = SIGN_AND_SUBMIT_REQUEST_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let request_result_json = unsafe { CStr::from_ptr(request_result_json).to_str().unwrap().to_string() };
+            cb(err, request_result_json)
+        }
+
+        let mut callbacks = SIGN_AND_SUBMIT_REQUEST_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_sign_and_submit_request_callback))
+    }
+
+    pub fn closure_to_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                           Option<extern fn(command_handle: i32,
+                                                                                                            err: ErrorCode,
+                                                                                                            request_result_json: *const c_char)>) {
+        lazy_static! {
+            static ref SUBMIT_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_submit_request_callback(command_handle: i32, err: ErrorCode, request_result_json: *const c_char) {
+            let mut callbacks = SUBMIT_REQUEST_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let request_result_json = unsafe { CStr::from_ptr(request_result_json).to_str().unwrap().to_string() };
+            cb(err, request_result_json)
+        }
+
+        let mut callbacks = SUBMIT_REQUEST_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_submit_request_callback))
+    }
+
+    pub fn closure_to_build_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                          Option<extern fn(command_handle: i32,
+                                                                                                           err: ErrorCode,
+                                                                                                           request_json: *const c_char)>) {
+        lazy_static! {
+            static ref BUILD_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_build_request_callback(command_handle: i32, err: ErrorCode, request_json: *const c_char) {
+            let mut callbacks = BUILD_REQUEST_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let request_json = unsafe { CStr::from_ptr(request_json).to_str().unwrap().to_string() };
+            cb(err, request_json)
+        }
+
+        let mut callbacks = BUILD_REQUEST_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_build_request_callback))
+    }
 }

@@ -1,4 +1,6 @@
-use errors::crypto::CryptoError;
+use errors::anoncreds::AnoncredsError;
+use errors::common::CommonError;
+
 use services::anoncreds::constants::{
     LARGE_E_START,
     LARGE_E_END_RANGE,
@@ -51,7 +53,7 @@ impl Issuer {
     }
 
     pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
-                                     create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
+                                     create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> start", &schema);
 
         let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
@@ -68,12 +70,12 @@ impl Issuer {
         Ok((claim_definition, claim_definition_private))
     }
 
-    fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
+    fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CommonError> {
         info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> start", &schema);
         let mut ctx = BigNumber::new_context()?;
 
-        if schema.attribute_names.len() == 0 {
-            return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
+        if schema.keys.len() == 0 {
+            return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
         info!(target: "anoncreds_service", "Issuer generate_safe_prime");
@@ -92,7 +94,7 @@ impl Issuer {
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
-        for attribute in &schema.attribute_names {
+        for attribute in &schema.keys {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
             r.insert(attribute.to_string(), s.mod_exp(&random, &n, Some(&mut ctx))?);
         }
@@ -109,7 +111,7 @@ impl Issuer {
         ))
     }
 
-    fn _generate_revocation_keys() -> Result<(Option<RevocationPublicKey>, Option<RevocationSecretKey>), CryptoError> {
+    fn _generate_revocation_keys() -> Result<(Option<RevocationPublicKey>, Option<RevocationSecretKey>), CommonError> {
         info!(target: "anoncreds_service", "Issuer generate revocation keys -> start");
         let h = PointG1::new()?;
         let h0 = PointG1::new()?;
@@ -131,12 +133,12 @@ impl Issuer {
     }
 
     #[cfg(test)]
-    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
+    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CommonError> {
         Ok(BigNumber::from_dec("21756443327382027172985704617047967597993694788495380290694324827806324727974811069286883097008098972826137846700650885182803802394920367284736320514617598740869006348763668941791139304299497512001555851506177534398138662287596439312757685115968057647052806345903116050638193978301573172649243964671896070438965753820826200974052042958554415386005813811429117062833340444950490735389201033755889815382997617514953672362380638953231325483081104074039069074312082459855104868061153181218462493120741835250281211598658590317583724763093211076383033803581749876979865965366178002285968278439178209181121479879436785731938")?)
     }
 
     #[cfg(not(test))]
-    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
+    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CommonError> {
         let mut result = p
             .mul(&q, None)?
             .sub_word(3)?
@@ -147,7 +149,7 @@ impl Issuer {
     }
 
     pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
-                             -> Result<(RevocationRegistry, RevocationRegistryPrivate), CryptoError> {
+                             -> Result<(RevocationRegistry, RevocationRegistryPrivate), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> start", claim_def_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
@@ -186,7 +188,7 @@ impl Issuer {
                         revocation_registry_private: &Option<RevocationRegistryPrivate>,
                         claim_request: &ClaimRequest,
                         attributes: &HashMap<String, Vec<String>>,
-                        user_revoc_index: Option<i32>) -> Result<ClaimSignature, CryptoError> {
+                        user_revoc_index: Option<i32>) -> Result<ClaimSignature, AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer create claim for schema {} -> start", claim_definition.schema_seq_no);
         let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no,
                                                                     &claim_request.prover_did)?;
@@ -225,7 +227,7 @@ impl Issuer {
         })
     }
 
-    fn _generate_context_attribute(accumulator_id: i32, prover_did: &str) -> Result<BigNumber, CryptoError> {
+    fn _generate_context_attribute(accumulator_id: i32, prover_did: &str) -> Result<BigNumber, CommonError> {
         let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id.to_string(), ByteOrder::Little)?;
         let prover_did_encoded = Issuer::_encode_attribute(prover_did, ByteOrder::Little)?;
         let mut s = vec![
@@ -238,7 +240,7 @@ impl Issuer {
     }
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
-                            attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CryptoError> {
+                            attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CommonError> {
         info!(target: "anoncreds_service", "Issuer issue primary claim for attributes {:?} -> start", &attributes.keys());
 
         let v_prime_prime = Issuer::_generate_v_prime_prime()?;
@@ -262,7 +264,7 @@ impl Issuer {
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
+             attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CommonError> {
         info!(target: "anoncreds_service", "Issuer sign attributes {:?} -> start", &attributes.keys());
 
         let mut context = BigNumber::new_context()?;
@@ -270,9 +272,9 @@ impl Issuer {
 
         for (key, value) in attributes {
             let pk_r = public_key.r.get(key)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
             let cur_val = value.get(1)
-                .ok_or(CryptoError::InvalidStructure(format!("Encoded value by key '{}' not found in attributes", key)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Encoded value by key '{}' not found in attributes", key)))?;
 
             rx = rx.mul(
                 &pk_r.mod_exp(&BigNumber::from_dec(cur_val)?, &public_key.n, Some(&mut context))?,
@@ -307,12 +309,12 @@ impl Issuer {
                                    sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
                                    sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
                                    ur: &PointG1, seq_number: Option<i32>) ->
-                                   Result<(NonRevocationClaim, i64), CryptoError> {
+                                   Result<(NonRevocationClaim, i64), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer issue non-revocation claim -> start");
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
-            return Err(CryptoError::BackendError("Accumulator is full. New one must be issued.".to_string()))
+            return Err(AnoncredsError::AccumulatorIsFull(format!("{}",revocation_registry.borrow().claim_def_seq_no)))
         }
 
         let i = match seq_number {
@@ -327,7 +329,7 @@ impl Issuer {
         let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
 
         let g_i = g.get(&i)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
 
         let sigma =
             pk_r.h0.add(&pk_r.h1.mul(&m2)?)?
@@ -341,7 +343,7 @@ impl Issuer {
         for j in &accumulator.v {
             let index = accumulator.max_claim_num + 1 - j + i;
             omega = omega.add(g.get(&index)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         }
 
         let sigma_i = pk_r.g
@@ -355,7 +357,7 @@ impl Issuer {
 
         let index = accumulator.max_claim_num + 1 - i;
         accumulator.acc = accumulator.acc.add(g.get(&index)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         accumulator.v.insert(i);
 
         let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
@@ -370,7 +372,7 @@ impl Issuer {
         )
     }
 
-    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
+    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CommonError> {
         let mut result = BigNumber::hash(attribute.as_bytes())?;
 
         let index = result.iter().position(|&value| value == 0);
@@ -383,7 +385,7 @@ impl Issuer {
         Ok(BigNumber::from_bytes(&result)?)
     }
 
-    fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
+    fn _generate_v_prime_prime() -> Result<BigNumber, CommonError> {
         let a = BigNumber::rand(LARGE_VPRIME_PRIME)?;
         let b = BigNumber::from_u32(2)?
             .exp(&BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)?, None)?;
@@ -392,14 +394,14 @@ impl Issuer {
     }
 
     pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>,
-                  g: &HashMap<i32, PointG1>, i: i32) -> Result<i64, CryptoError> {
+                  g: &HashMap<i32, PointG1>, i: i32) -> Result<i64, AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer revoke claim by index {} -> start", i);
 
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
         accumulator.v.remove(&i);
         let index: i32 = accumulator.max_claim_num + 1 - i;
         let element = g.get(&index)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
         accumulator.acc = accumulator.acc.sub(element)?;
         let timestamp = time::now_utc().to_timespec().sec;
 
@@ -408,7 +410,7 @@ impl Issuer {
     }
 
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                                   params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                   params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CommonError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
         let t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
@@ -436,7 +438,7 @@ impl Issuer {
     }
 
     pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CommonError> {
         let t1 = proof_c.e;
         let t2 = PointG1::new_inf()?;
         let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
@@ -508,7 +510,7 @@ mod tests {
     fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
-        schema.attribute_names = HashSet::new();
+        schema.keys = HashSet::new();
 
         let signature_type = None;
         let create_non_revoc = false;
@@ -573,29 +575,29 @@ pub mod mocks {
     }
 
     pub fn get_gvt_schema() -> Schema {
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert("name".to_string());
-        attr_names.insert("age".to_string());
-        attr_names.insert("height".to_string());
-        attr_names.insert("sex".to_string());
+        let mut keys: HashSet<String> = HashSet::new();
+        keys.insert("name".to_string());
+        keys.insert("age".to_string());
+        keys.insert("height".to_string());
+        keys.insert("sex".to_string());
 
         Schema {
             name: "gvt".to_string(),
             version: "1.0".to_string(),
-            attribute_names: attr_names,
+            keys: keys,
             seq_no: 1
         }
     }
 
     pub fn get_xyz_schema() -> Schema {
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert("status".to_string());
-        attr_names.insert("period".to_string());
+        let mut keys: HashSet<String> = HashSet::new();
+        keys.insert("status".to_string());
+        keys.insert("period".to_string());
 
         Schema {
             name: "xyz".to_string(),
             version: "1.0".to_string(),
-            attribute_names: attr_names,
+            keys: keys,
             seq_no: 2
         }
     }
