@@ -6,7 +6,7 @@ pub mod merkletree;
 
 use self::tree::*;
 use self::merkletree::*;
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use utils::crypto::hash::Hash;
 
 impl MerkleTree {
@@ -61,7 +61,7 @@ impl MerkleTree {
 
     pub fn consistency_proof(&self,
                              new_root_hash: &Vec<u8>, new_size: usize,
-                             proof: &Vec<Vec<u8>>) -> Result<bool, CryptoError> {
+                             proof: &Vec<Vec<u8>>) -> Result<bool, CommonError> {
         if self.nodes_count == 0 {
             // empty old tree
             return Ok(true);
@@ -128,7 +128,7 @@ impl MerkleTree {
         return Ok(true);
     }
 
-    pub fn append(&mut self, node: TreeLeafData) -> Result<(), CryptoError> {
+    pub fn append(&mut self, node: TreeLeafData) -> Result<(), CommonError> {
         if self.count == 0 {
             // empty tree
             self.root = Tree::new_leaf(node)?;

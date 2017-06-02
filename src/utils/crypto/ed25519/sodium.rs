@@ -1,7 +1,8 @@
 extern crate sodiumoxide;
 extern crate libc;
 
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
+
 use self::libc::c_int;
 use self::sodiumoxide::crypto::box_;
 use self::sodiumoxide::crypto::sign;
@@ -23,9 +24,6 @@ extern {
 pub struct ED25519 {}
 
 impl ED25519 {
-    pub fn get_key_pair_for_encryption(pk: &[u8], sk: &[u8]) -> (Vec<u8>, Vec<u8>) {
-        (ED25519::pk_to_curve25519(pk), ED25519::sk_to_curve25519(sk))
-    }
 
     pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
         box_::seal(
@@ -36,14 +34,14 @@ impl ED25519 {
         )
     }
 
-    pub fn decrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
+    pub fn decrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         box_::open(
             doc,
             &box_::Nonce(ED25519::_clone_into_array(nonce)),
             &box_::PublicKey(ED25519::_clone_into_array(public_key)),
             &box_::SecretKey(ED25519::_clone_into_array(private_key))
         )
-            .map_err(|_| CryptoError::InvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|_| CommonError::InvalidStructure("Unable to decrypt data".to_string()))
     }
 
     pub fn gen_nonce() -> Vec<u8> {
@@ -94,7 +92,7 @@ impl ED25519 {
         to.iter().cloned().collect()
     }
 
-    pub fn pk_to_curve25519(pk: &[u8]) -> Vec<u8> {
+    pub fn vk_to_curve25519(pk: &[u8]) -> Vec<u8> {
 
         let mut from: [u8; 32] = [0; 32];
         from.clone_from_slice(pk);
@@ -105,6 +103,8 @@ impl ED25519 {
         to.iter().cloned().collect()
     }
 
+    // TODO: FIXME: I don't like how we convert slices to array.
+    // TODO: FIXME: Size checking and keys validation.
     fn _clone_into_array<A, T>(slice: &[T]) -> A
         where A: Sized + Default + AsMut<[T]>, T: Clone
     {
@@ -126,10 +126,12 @@ mod tests {
         let seed = randombytes::randombytes(32);
 
         let (alice_ver_key, alice_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed));
-        let (alice_pk, alice_sk) = ED25519::get_key_pair_for_encryption(&alice_ver_key, &alice_sign_key);
+        let alice_pk = ED25519::vk_to_curve25519(&alice_ver_key);
+        let alice_sk = ED25519::sk_to_curve25519(&alice_sign_key);
 
         let (bob_ver_key, bob_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed));
-        let (bob_pk, bob_sk) = ED25519::get_key_pair_for_encryption(&bob_ver_key, &bob_sign_key);
+        let bob_pk = ED25519::vk_to_curve25519(&bob_ver_key);
+        let bob_sk = ED25519::sk_to_curve25519(&bob_sign_key);
 
         let bob_encrypted_text = ED25519::encrypt(&bob_sk, &alice_pk, &text, &nonce);
         let bob_decrypt_result = ED25519::decrypt(&alice_sk, &bob_pk, &bob_encrypted_text, &nonce);
@@ -157,7 +159,7 @@ mod tests {
     #[test]
     fn pk_to_curve25519_works() {
         let pk = vec!(236, 191, 114, 144, 108, 87, 211, 244, 148, 23, 20, 175, 122, 6, 159, 254, 85, 99, 145, 152, 178, 133, 230, 236, 192, 69, 35, 136, 141, 194, 243, 134);
-        let pkc_test = ED25519::pk_to_curve25519(&pk);
+        let pkc_test = ED25519::vk_to_curve25519(&pk);
         let pkc_exp = vec!(8, 45, 124, 147, 248, 201, 112, 171, 11, 51, 29, 248, 34, 127, 197, 241, 60, 158, 84, 47, 4, 176, 238, 166, 110, 39, 207, 58, 127, 110, 76, 42);
         assert_eq!(pkc_exp, pkc_test);
     }

@@ -5,7 +5,7 @@ use self::milagro_crypto::big::wrappers::{CURVE_Gx, CURVE_Gy, CURVE_Order, BIG};
 use self::milagro_crypto::ecp::wrappers::ECP;
 use self::milagro_crypto::fp12::wrappers::FP12;
 
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use services::anoncreds::helpers::BytesView;
 
 use self::milagro_crypto::randapi::Random;
@@ -17,7 +17,7 @@ use self::rand::Rng;
 use self::serde::ser::{Serialize, Serializer};
 use self::serde::de::{Deserialize, Deserializer};
 
-fn random_mod_order() -> Result<BIG, CryptoError> {
+fn random_mod_order() -> Result<BIG, CommonError> {
     let mut seed = vec![0; 32];
     let mut os_rng = OsRng::new().unwrap();
     os_rng.fill_bytes(&mut seed.as_mut_slice());
@@ -43,7 +43,7 @@ pub struct Pair {
 }
 
 impl PointG1 {
-    pub fn new() -> Result<PointG1, CryptoError> {
+    pub fn new() -> Result<PointG1, CommonError> {
         // generate random point from the group G1
         let gen_g1: ECP = ECP::new_bigs(&unsafe { CURVE_Gx }.clone(), &unsafe { CURVE_Gy }.clone());
         let mut point = gen_g1;
@@ -53,7 +53,7 @@ impl PointG1 {
         })
     }
 
-    pub fn new_inf() -> Result<PointG1, CryptoError> {
+    pub fn new_inf() -> Result<PointG1, CommonError> {
         let mut r = ECP::default();
         ECP::inf(&mut r);
         Ok(PointG1 {
@@ -61,7 +61,7 @@ impl PointG1 {
         })
     }
 
-    pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG1, CryptoError> {
+    pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         ECP::mul(&mut r, &e.bn);
         Ok(PointG1 {
@@ -69,7 +69,7 @@ impl PointG1 {
         })
     }
 
-    pub fn add(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
+    pub fn add(&self, q: &PointG1) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         ECP::add(&mut r, &q.point);
         Ok(PointG1 {
@@ -77,7 +77,7 @@ impl PointG1 {
         })
     }
 
-    pub fn sub(&self, q: &PointG1) -> Result<PointG1, CryptoError> {
+    pub fn sub(&self, q: &PointG1) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         ECP::sub(&mut r, &q.point);
         Ok(PointG1 {
@@ -85,7 +85,7 @@ impl PointG1 {
         })
     }
 
-    pub fn neg(&self) -> Result<PointG1, CryptoError> {
+    pub fn neg(&self) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         ECP::neg(&mut r);
         Ok(PointG1 {
@@ -93,28 +93,28 @@ impl PointG1 {
         })
     }
 
-    pub fn to_string(&self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CommonError> {
         unimplemented!();
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         unimplemented!();
     }
 
-    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
+    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CommonError> {
         unimplemented!();
     }
 }
 
 impl GroupOrderElement {
-    pub fn new() -> Result<GroupOrderElement, CryptoError> {
+    pub fn new() -> Result<GroupOrderElement, CommonError> {
         // returns random element in 0, ..., GroupOrder-1
         Ok(GroupOrderElement {
             bn: random_mod_order()?
         })
     }
 
-    pub fn pow_mod(&self, e: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn pow_mod(&self, e: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         let mut base = self.bn;
         let mut pow = e.bn;
         Ok(GroupOrderElement {
@@ -122,7 +122,7 @@ impl GroupOrderElement {
         })
     }
 
-    pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         let mut sum = BIG::add(&self.bn, &r.bn);
         BIG::rmod(&mut sum, &unsafe { CURVE_Order }.clone());
         Ok(GroupOrderElement {
@@ -130,7 +130,7 @@ impl GroupOrderElement {
         })
     }
 
-    pub fn sub_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn sub_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         //need to use modneg if sub is negative
         let mut sub = BIG::sub(&self.bn, &r.bn);
         if sub < BIG::default() {
@@ -146,19 +146,19 @@ impl GroupOrderElement {
         }
     }
 
-    pub fn mul_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CryptoError> {
+    pub fn mul_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         Ok(GroupOrderElement {
             bn: BIG::modmul(&self.bn, &r.bn, &unsafe { CURVE_Order }.clone())
         })
     }
 
-    pub fn inverse(&self) -> Result<GroupOrderElement, CryptoError> {
+    pub fn inverse(&self) -> Result<GroupOrderElement, CommonError> {
         Ok(GroupOrderElement {
             bn: BIG::invmodp(&self.bn, &unsafe { CURVE_Order }.clone())
         })
     }
 
-    pub fn mod_neg(&self) -> Result<GroupOrderElement, CryptoError> {
+    pub fn mod_neg(&self) -> Result<GroupOrderElement, CommonError> {
         let mut r: BIG = BIG::default();
         let mut bn = self.bn;
         BIG::modneg(&mut r, &mut bn, &unsafe { CURVE_Order }.clone());
@@ -167,17 +167,17 @@ impl GroupOrderElement {
         })
     }
 
-    pub fn to_string(&self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CommonError> {
         unimplemented!();
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let mut vec: [u8; 32] = [0; 32];
         BIG::toBytes(&mut vec, &self.bn);
         Ok(vec.to_vec())
     }
 
-    pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CryptoError> {
+    pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CommonError> {
         Ok(
             GroupOrderElement {
                 bn: BIG::fromBytes(b)
@@ -187,11 +187,11 @@ impl GroupOrderElement {
 }
 
 impl Pair {
-    pub fn pair(p: &PointG1, q: &PointG1) -> Result<Pair, CryptoError> {
+    pub fn pair(p: &PointG1, q: &PointG1) -> Result<Pair, CommonError> {
         unimplemented!();
     }
 
-    pub fn mul(&self, b: &Pair) -> Result<Pair, CryptoError> {
+    pub fn mul(&self, b: &Pair) -> Result<Pair, CommonError> {
         let mut pair = self.pair;
         FP12::mul(&mut pair, &b.pair);
         Ok(Pair {
@@ -199,7 +199,7 @@ impl Pair {
         })
     }
 
-    pub fn pow(&self, b: &GroupOrderElement) -> Result<Pair, CryptoError> {
+    pub fn pow(&self, b: &GroupOrderElement) -> Result<Pair, CommonError> {
         let mut r = FP12::default();
         FP12::pow(&mut r, &self.pair, &b.bn);
         Ok(Pair {
@@ -207,7 +207,7 @@ impl Pair {
         })
     }
 
-    pub fn inverse(&self) -> Result<Pair, CryptoError> {
+    pub fn inverse(&self) -> Result<Pair, CommonError> {
         let mut r = FP12::default();
         FP12::inv(&mut r, &self.pair);
         Ok(Pair {
@@ -215,33 +215,33 @@ impl Pair {
         })
     }
 
-    pub fn to_string(&self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CommonError> {
         unimplemented!();
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         unimplemented!();
     }
 
-    pub fn from_bytes(b: &[u8]) -> Result<Pair, CryptoError> {
+    pub fn from_bytes(b: &[u8]) -> Result<Pair, CommonError> {
         unimplemented!();
     }
 }
 
 impl BytesView for Pair {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         Ok(self.to_bytes()?)
     }
 }
 
 impl BytesView for PointG1 {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         Ok(self.to_bytes()?)
     }
 }
 
 impl BytesView for GroupOrderElement {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         Ok(self.to_bytes()?)
     }
 }
