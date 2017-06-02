@@ -10,9 +10,9 @@ pub struct MyDidInfo {
 impl MyDidInfo {
     pub fn new(did: Option<String>, seed: Option<String>, crypto_type: Option<String>) -> MyDidInfo {
         MyDidInfo {
-            did,
-            seed,
-            crypto_type
+            did: did,
+            seed: seed,
+            crypto_type: crypto_type
         }
     }
 }
