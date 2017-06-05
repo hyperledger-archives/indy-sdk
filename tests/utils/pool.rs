@@ -84,6 +84,62 @@ impl PoolUtils {
         Ok(pool_handle)
     }
 
+    pub fn create_and_open_pool_ledger_config(pool_name: &str) -> Result<i32, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err| {
+            sender.send(err).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
+
+        PoolUtils::create_genesis_txn_file(pool_name);
+        let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
+        let pool_name = CString::new(pool_name).unwrap();
+
+        let err = sovrin_create_pool_ledger_config(command_handle,
+                                                   pool_name.as_ptr(),
+                                                   pool_config.as_ptr(),
+                                                   cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (open_sender, open_receiver) = channel();
+
+        let open_cb = Box::new(move |err, pool_handle| {
+            open_sender.send((err, pool_handle)).unwrap();
+        });
+
+        let (open_command_handle, open_cb) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
+
+        let pool_name = CString::new(pool_name).unwrap();
+
+        let err = sovrin_open_pool_ledger(open_command_handle,
+                                          pool_name.as_ptr(),
+                                          null(),
+                                          open_cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(pool_handle)
+    }
+
     pub fn send_request(pool_handle: i32, request: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
         let cb_send = Box::new(move |err, resp| {
@@ -101,7 +157,7 @@ impl PoolUtils {
             return Err(err);
         }
 
-        let (err, resp) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, resp) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);

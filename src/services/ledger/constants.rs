@@ -1,0 +1,9 @@
+pub const NODE: &'static str = "0";
+pub const NYM: &'static str = "1";
+pub const ATTRIB: &'static str = "100";
+pub const SCHEMA: &'static str = "101";
+pub const CLAIM_DEF: &'static str = "102";
+pub const GET_ATTR: &'static str = "104";
+pub const GET_NYM: &'static str = "105";
+pub const GET_SCHEMA: &'static str = "107";
+pub const GET_CLAIM_DEF: &'static str = "108";

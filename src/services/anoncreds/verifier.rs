@@ -17,7 +17,7 @@ use services::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
 use services::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
 use utils::crypto::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use utils::crypto::pair::{Pair, PointG1, PointG2};
 use services::anoncreds::issuer::Issuer;
 
@@ -28,7 +28,7 @@ impl Verifier {
         Verifier {}
     }
 
-    pub fn generate_nonce(&self) -> Result<BigNumber, CryptoError> {
+    pub fn generate_nonce(&self) -> Result<BigNumber, CommonError> {
         BigNumber::rand(LARGE_NONCE)
     }
 
@@ -37,16 +37,16 @@ impl Verifier {
                   nonce: &BigNumber,
                   claim_defs: &HashMap<String, ClaimDefinition>,
                   revoc_regs: &HashMap<String, RevocationRegistry>,
-                  schemas: &HashMap<String, Schema>) -> Result<bool, CryptoError> {
+                  schemas: &HashMap<String, Schema>) -> Result<bool, CommonError> {
         info!(target: "anoncreds_service", "Verifier verify proof -> start");
 
         let mut tau_list: Vec<Vec<u8>> = Vec::new();
 
         for (proof_uuid, proof_item) in &proof.proofs {
             let claim_definition = &claim_defs.get(proof_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Claim definition is not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Claim definition is not found")))?;
             let schema = schemas.get(proof_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Schema is not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Schema is not found")))?;
 
             if let (Some(ref non_revocation_proof), Some(ref pkr), Some(ref revoc_reg)) = (proof_item.proof.non_revoc_proof.clone(),
                                                                                            claim_definition.public_key_revocation.clone(),
@@ -84,7 +84,7 @@ impl Verifier {
     }
 
     fn _verify_primary_proof(pk: &PublicKey, c_hash: &BigNumber,
-                             primary_proof: &PrimaryProof, schema: &Schema) -> Result<Vec<BigNumber>, CryptoError> {
+                             primary_proof: &PrimaryProof, schema: &Schema) -> Result<Vec<BigNumber>, CommonError> {
         info!(target: "anoncreds_service", "Verifier verify primary proof -> start");
 
         let mut t_hat: Vec<BigNumber> = Verifier::_verify_equality(pk, &primary_proof.eq_proof, c_hash, schema)?;
@@ -97,11 +97,11 @@ impl Verifier {
         Ok(t_hat)
     }
 
-    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber, schema: &Schema) -> Result<Vec<BigNumber>, CryptoError> {
+    fn _verify_equality(pk: &PublicKey, proof: &PrimaryEqualProof, c_h: &BigNumber, schema: &Schema) -> Result<Vec<BigNumber>, CommonError> {
         use std::iter::FromIterator;
 
         let unrevealed_attrs: Vec<String> =
-            schema.attribute_names
+            schema.keys
                 .difference(&HashSet::from_iter(proof.revealed_attrs.keys().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();
@@ -114,7 +114,7 @@ impl Verifier {
 
         for (attr, value) in &proof.revealed_attrs {
             let cur_r = pk.r.get(attr)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr)))?;
 
             rar = cur_r
                 .mod_exp(&BigNumber::from_dec(&value)?, &pk.n, Some(&mut ctx))?
@@ -145,14 +145,14 @@ impl Verifier {
         Ok(vec![t])
     }
 
-    fn _verify_ge_predicate(pk: &PublicKey, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CryptoError> {
+    fn _verify_ge_predicate(pk: &PublicKey, proof: &PrimaryPredicateGEProof, c_h: &BigNumber) -> Result<Vec<BigNumber>, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let mut tau_list = Verifier::calc_tge(&pk, &proof.u, &proof.r, &proof.mj,
                                               &proof.alpha, &proof.t)?;
 
         for i in 0..ITERATION {
             let cur_t = proof.t.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in proof.t", i)))?;
 
             tau_list[i] = cur_t
                 .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
@@ -162,7 +162,7 @@ impl Verifier {
         }
 
         let delta = proof.t.get("DELTA")
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in proof.t", "DELTA")))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in proof.t", "DELTA")))?;
 
         tau_list[ITERATION] = pk.z
             .mod_exp(
@@ -185,15 +185,15 @@ impl Verifier {
 
     pub fn calc_tge(pk: &PublicKey, u: &HashMap<String, BigNumber>, r: &HashMap<String, BigNumber>,
                     mj: &BigNumber, alpha: &BigNumber, t: &HashMap<String, BigNumber>)
-                    -> Result<Vec<BigNumber>, CryptoError> {
+                    -> Result<Vec<BigNumber>, CommonError> {
         let mut tau_list: Vec<BigNumber> = Vec::new();
         let mut ctx = BigNumber::new_context()?;
 
         for i in 0..ITERATION {
             let cur_u = u.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in u", i)))?;
             let cur_r = r.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in r", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in r", i)))?;
 
             let t_tau = pk.z
                 .mod_exp(&cur_u, &pk.n, Some(&mut ctx))?
@@ -207,7 +207,7 @@ impl Verifier {
         }
 
         let delta = r.get("DELTA")
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in r", "DELTA")))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in r", "DELTA")))?;
 
 
         let t_tau = pk.z
@@ -224,9 +224,9 @@ impl Verifier {
 
         for i in 0..ITERATION {
             let cur_t = t.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in t", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in t", i)))?;
             let cur_u = u.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in u", i)))?;
 
             q = cur_t
                 .mod_exp(&cur_u, &pk.n, Some(&mut ctx))?
@@ -245,15 +245,15 @@ impl Verifier {
 
     pub fn calc_teq(pk: &PublicKey, a_prime: &BigNumber, e: &BigNumber, v: &BigNumber,
                     mtilde: &HashMap<String, BigNumber>, m1tilde: &BigNumber, m2tilde: &BigNumber,
-                    unrevealed_attrs: &Vec<String>) -> Result<BigNumber, CryptoError> {
+                    unrevealed_attrs: &Vec<String>) -> Result<BigNumber, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let mut result: BigNumber = BigNumber::from_dec("1")?;
 
         for k in unrevealed_attrs.iter() {
             let cur_r = pk.r.get(k)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", k)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in pk.r", k)))?;
             let cur_m = mtilde.get(k)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in mtilde", k)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in mtilde", k)))?;
 
             result = cur_r
                 .mod_exp(&cur_m, &pk.n, Some(&mut ctx))?
@@ -282,7 +282,7 @@ impl Verifier {
 
     pub fn _verify_non_revocation_proof(pkr: &RevocationPublicKey, accum: &Accumulator, accum_pk: &AccumulatorPublicKey,
                                         c_hash: &BigNumber, proof: &NonRevocProof)
-                                        -> Result<NonRevocProofTauList, CryptoError> {
+                                        -> Result<NonRevocProofTauList, CommonError> {
         let ch_num_z = bignum_to_group_element(&c_hash)?;
 
         let t_hat_expected_values = Issuer::_create_tau_list_expected_values(pkr, accum, accum_pk, &proof.c_list)?;
@@ -315,7 +315,7 @@ mod tests {
         let c_h = BigNumber::from_dec("90321426117300366618517575493200873441415194969656589575988281157859869553034").unwrap();
         let schema = issuer::mocks::get_gvt_schema();
 
-        let res: Result<Vec<BigNumber>, CryptoError> = Verifier::_verify_equality(
+        let res: Result<Vec<BigNumber>, CommonError> = Verifier::_verify_equality(
             &pk,
             &proof,
             &c_h,
