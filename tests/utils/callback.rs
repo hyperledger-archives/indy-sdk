@@ -490,6 +490,56 @@ impl CallbackUtils {
         Some(agent_message_callback)
     }
 
+    pub fn closure_to_agent_listen_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
+                                      -> (i32,
+                                          Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                           pool_handle: i32)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_listen_callback(command_handle: i32, err: ErrorCode, pool_handle: i32) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err, pool_handle)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(agent_listen_callback))
+    }
+
+    pub fn closure_to_agent_connected_cb(closure: Box<FnMut(i32, ErrorCode, i32, String, String) + Send>)
+                                         -> Option<extern fn(listener_handle: i32,
+                                                             err: ErrorCode,
+                                                             conn_handle: i32,
+                                                             sender_did: *const c_char,
+                                                             receiver_did: *const c_char)> {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, i32, String, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_connected_callback(listener_handle: i32,
+                                               err: ErrorCode,
+                                               conn_handle: i32,
+                                               sender_did: *const c_char,
+                                               receiver_did: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let sender_did = unsafe { CStr::from_ptr(sender_did).to_str().unwrap().to_string() };
+            let receiver_did = unsafe { CStr::from_ptr(receiver_did).to_str().unwrap().to_string() };
+            for cb in callbacks.iter_mut() {
+                cb(listener_handle, err, conn_handle, sender_did.clone(), receiver_did.clone())
+            }
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.push(closure);
+
+        Some(agent_connected_callback)
+    }
+
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                     Option<extern fn(command_handle: i32,
                                                                                                                      err: ErrorCode,

@@ -62,3 +62,20 @@ fn sovrin_agent_connect_works_for_all_data_in_wallet_present() {
 
     TestUtils::cleanup_storage();
 }
+
+#[test]
+fn sovrin_agent_listen_works_for_all_data_in_wallet_present() {
+    LoggerUtils::init();
+    TestUtils::cleanup_storage();
+
+    let wallet_handle = WalletUtils::create_and_open_wallet("pool2", "wallet2", "default").expect("create wallet");
+
+    let seed: Option<String> = Some("sovrin_agent_listen_works_for_al".to_string());
+    let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
+    let endpoint = "tcp://127.0.0.1:9700";
+    SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+
+    AgentUtils::listen(wallet_handle).unwrap();
+
+    TestUtils::cleanup_storage();
+}
