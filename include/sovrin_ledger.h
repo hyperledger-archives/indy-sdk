@@ -31,6 +31,7 @@ extern "C" {
     /// Crypto*
     
     extern sovrin_error_t sovrin_sign_and_submit_request(sovrin_handle_t command_handle,
+                                                         sovrin_handle_t pool_handle,
                                                          sovrin_handle_t wallet_handle,
                                                          const char *    submitter_did,
                                                          const char *    request_json,
@@ -236,6 +237,7 @@ extern "C" {
     
     extern sovrin_error_t sovrin_build_get_schema_request(sovrin_handle_t command_handle,
                                                           const char *    submitter_did,
+                                                          const char *    dest,
                                                           const char *    data,
                                                       
                                                           void           (*cb)(sovrin_handle_t xcommand_handle,
@@ -281,15 +283,17 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    
-    extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
-                                                         const char *    submitter_did,
-                                                         const char *    xref,
-                                                     
-                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                              sovrin_error_t  err,
-                                                                              const char*     request_json)
-                                                        );
+
+     extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
+                                                          const char *    submitter_did,
+                                                          const char *    xref,
+                                                          const char *    signature_type,
+                                                          const char *    origin,
+                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
+                                                                               sovrin_error_t  err,
+                                                                               const char*     request_json)
+                                                          );
+
 
     /// Builds a NODE request.
     ///

@@ -35,4 +35,14 @@
     return  1000;
 }
 
++(NSTimeInterval) shortTimeout
+{
+    return  1000;
+}
+
++(NSTimeInterval) longTimeout
+{
+    return  1000;
+}
+
 @end

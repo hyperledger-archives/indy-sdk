@@ -13,6 +13,9 @@
 + (NSMutableString*) getUserDocumentDir;
 + (NSMutableString*) getUserTmpDir;
 + (NSTimeInterval) defaultTimeout;
++(NSTimeInterval) shortTimeout;
++(NSTimeInterval) longTimeout;
+
 
 +(void) cleanupStorage;
 

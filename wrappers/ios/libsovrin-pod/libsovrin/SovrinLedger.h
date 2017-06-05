@@ -10,6 +10,7 @@
 @interface SovrinLedger : NSObject
 
 + (NSError*) signAndSubmitRequest:(SovrinHandle) walletHandle
+                       poolHandle:(SovrinHandle) poolHandle
                      submitterDID:(NSString*) submitterDid
                       requestJSON:(NSString*) request
                        completion:(void (^)(NSError* error, NSString* requestResultJSON)) handler;
@@ -37,6 +38,11 @@
                             enc:(NSString*) enc
                      completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
 
++ (NSError*) buildGetAttribRequest:(NSString*) submitterDid
+                         targetDID:(NSString*) targetDid
+                              data:(NSString*) data
+                        completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
+
 + (NSError*) buildGetNymRequest:(NSString*) submitterDid
                       targetDID:(NSString*) targetDid
                      completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
@@ -46,6 +52,7 @@
                      completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
 
 + (NSError*) buildGetSchemaRequest:(NSString*) submitterDid
+                              dest:(NSString*) dest
                               data:(NSString*) data
                         completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
 
@@ -57,6 +64,8 @@
 
 + (NSError*) buildGetClaimDefTxn:(NSString*) submitterDid
                             xref:(NSString*) xref
+                   signatureType:(NSString *) signatureType
+                          origin:(NSString *) origin
                       completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
 
 + (NSError*) buildNodeRequest:(NSString*) submitterDid

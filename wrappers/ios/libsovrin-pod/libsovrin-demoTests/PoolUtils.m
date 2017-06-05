@@ -25,6 +25,11 @@
     return instance;
 }
 
++ (NSString *) nodeIp
+{
+    return @"192.168.52.38";
+}
+
 - (void)createGenesisTXNFile:(NSString *)poolName
 {
     NSString *genesisTXNs =
@@ -82,6 +87,36 @@
 
     return ret2;
 }
+
+- (NSError *)openPoolLedger:(NSString*)poolName
+                     config:(NSString*)config
+                poolHandler:(SovrinHandle*)handle
+{
+    NSError *ret = nil;
+      XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block SovrinHandle poolHandle = 0;
+    
+    ret = [SovrinPool openPoolWithName:poolName
+                             andConfig:config
+                            completion:^(NSError *error, SovrinHandle handle)
+           {
+               err = error;
+               poolHandle = handle;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    *handle = poolHandle;
+    return err;
+}
+
 
 - (NSError*)createAndOpenPoolLedgerConfig: (SovrinHandle*) handle
                                  poolName: (NSString *)poolName
@@ -142,6 +177,37 @@
     
     *handle = poolHandle;
     return closureError;
+}
+
+- (NSError *)sendRequest:(SovrinHandle)poolHandle
+                 request:(NSString *)request
+                response:(NSString **)response
+{
+    
+    NSError *ret = nil;
+    
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString* outResponse = nil;
+    
+    
+    ret = [SovrinLedger submitRequest:poolHandle
+                          requestJSON:request
+                           completion:^(NSError* error, NSString* result)
+    {
+        err = error;
+        outResponse = result;
+    }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    *response = outResponse;
+    return err;
 }
 
 @end
