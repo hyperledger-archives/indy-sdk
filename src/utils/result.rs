@@ -33,3 +33,12 @@ macro_rules! result_to_err_code_3 {
         };
     }
 }
+
+macro_rules! result_to_err_code_4 {
+    ($result:ident, $default_value1:expr, $default_value2:expr, $default_value3:expr, $default_value4:expr) => {
+        match $result {
+            Ok((res1, res2, res3, res4)) => (ErrorCode::Success, res1, res2, res3, res4),
+            Err(err) => (err.to_error_code(), $default_value1, $default_value2, $default_value3, $default_value4)
+        };
+    }
+}

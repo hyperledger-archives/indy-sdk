@@ -24,7 +24,12 @@ pub enum AgentCommand {
         Result<i32, SovrinError> // conn handle or error
     ),
     CloseConnection,
-    Listen,
+    Listen(
+        i32, // wallet handle
+        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
+        Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
+        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+    ),
     CloseListener,
     Send,
 }
