@@ -474,7 +474,6 @@ impl<'a> Deserialize<'a> for Pair {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::logger::LoggerUtils;
 
     extern crate serde_json;
 

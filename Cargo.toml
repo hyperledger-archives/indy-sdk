@@ -35,7 +35,7 @@ hash_openssl = ["openssl"]
 local_nodes_pool = []
 
 [dependencies]
-amcl = { git = "https://github.com/MRJCrunch/amcl.git", path="version22/rust", optional = true }
+amcl = { version = "0.1.0", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 hex = "0.2.0"
