@@ -204,14 +204,13 @@ fn anoncreds_demo_works() {
     let master_secret_name = "master_secret";
 
     // Issuer creates a revocation registry
-    let max_claim_num: i32 = 1000;
+    let max_claim_num: i32 = 5;
 
     let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
                                                        wallet_handle,
                                                        claim_def_seq_no,
                                                        max_claim_num,
                                                        issuer_create_and_store_revoc_reg_callback);
-
     assert_eq!(ErrorCode::Success, err);
     let (err, revoc_reg_json, revoc_reg_uuid) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     println!("revocation_reg_json: {:?}", revoc_reg_json);
@@ -323,7 +322,7 @@ fn anoncreds_demo_works() {
 
     let schemas_json = format!("{{\"{}\":{}}}", claim.claim_uuid, schema);
     let claim_defs_json = format!("{{\"{}\":{}}}", claim.claim_uuid, claim_def_json);
-    let revoc_regs_jsons = "{}";
+    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
 
     // 9. Prover create Proof for Proof Request
     let err =

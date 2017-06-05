@@ -132,8 +132,7 @@ impl Prover {
                                                &revoc_reg.clone()
                                                    .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
                                                &revoc_reg
-                                                   .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk,
-                                               &BigNumber::from_bytes(&non_revocation_claim.borrow().m2.to_bytes()?)?)?;
+                                                   .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
         }
         info!(target: "anoncreds_service", "Prover process received claim -> done");
 
@@ -148,23 +147,23 @@ impl Prover {
     }
 
     pub fn _init_non_revocation_claim(claim: &RefCell<NonRevocationClaim>, v_prime: &GroupOrderElement,
-                                      pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey, m2: &BigNumber)
+                                      pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey)
                                       -> Result<(), CryptoError> {
         let mut claim_mut = claim.borrow_mut();
+        let m2 = BigNumber::from_bytes(&claim_mut.m2.to_bytes()?)?;
         claim_mut.vr_prime_prime = v_prime.add_mod(&claim_mut.vr_prime_prime)?;
-        Prover::_test_witness_credential(claim, pkr, acc, acc_pk, m2)?;
+        Prover::_test_witness_credential(&claim_mut, pkr, acc, acc_pk, &m2)?;
         Ok(())
     }
 
-    pub fn _test_witness_credential(claim: &RefCell<NonRevocationClaim>, pkr: &RevocationPublicKey, acc: &Accumulator,
+    pub fn _test_witness_credential(claim: &NonRevocationClaim, pkr: &RevocationPublicKey, acc: &Accumulator,
                                     acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CryptoError> {
-        let z_calc = Pair::pair(&claim.borrow().g_i, &acc.acc)?
-            .mul(&Pair::pair(&pkr.g, &claim.borrow().witness.omega)?.inverse()?)?;
+        let z_calc = Pair::pair(&claim.witness.g_i, &acc.acc)?
+            .mul(&Pair::pair(&pkr.g, &claim.witness.omega)?.inverse()?)?;
         if z_calc != acc_pk.z {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
-
-        let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.borrow().g_i)?, &claim.borrow().witness.sigma_i)?;
+        let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.g_i)?, &claim.witness.sigma_i)?;
         let pair_gg = Pair::pair(&pkr.g, &pkr.g_dash)?;
         if pair_gg_calc != pair_gg {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
@@ -172,15 +171,14 @@ impl Prover {
 
         let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
 
-        let pair_h1 = Pair::pair(&claim.borrow().sigma, &pkr.y.add(&pkr.h_cap.mul(&claim.borrow().c)?)?)?;
+        let pair_h1 = Pair::pair(&claim.sigma, &pkr.y.add(&pkr.h_cap.mul(&claim.c)?)?)?;
         let pair_h2 = Pair::pair(
             &pkr.h0
                 .add(&pkr.h1.mul(&m2)?)?
-                .add(&pkr.h2.mul(&claim.borrow().vr_prime_prime)?)?
-                .add(&claim.borrow().g_i)?,
+                .add(&pkr.h2.mul(&claim.vr_prime_prime)?)?
+                .add(&claim.g_i)?,
             &pkr.h_cap
         )?;
-
         if pair_h1 != pair_h2 {
             return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }

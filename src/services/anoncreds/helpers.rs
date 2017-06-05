@@ -35,7 +35,7 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
 }
 
 pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
-    let mut result: Vec<u8> = vec![0; 28];
+    let mut result: Vec<u8> = vec![0; 60];
     for i in (0..4).rev() {
         let shift = i * 8;
         let b = (x >> shift) as u8;

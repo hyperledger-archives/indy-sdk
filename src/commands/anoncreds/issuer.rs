@@ -160,7 +160,11 @@ impl IssuerCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &uuid), &revocation_registry_json)?;
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &uuid), &revocation_registry_private_json)?;
-
+        // TODO: change it
+        let tails_dash = serde_json::to_string(&revocation_registry_private.tails_dash)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry private: {}", err.to_string())))?;
+        self.wallet_service.set(wallet_handle, &format!("tails"), &tails_dash)?;
+        println!("end of the function");
         Ok((revocation_registry_json, uuid))
     }
 
@@ -226,11 +230,10 @@ impl IssuerCommandExecutor {
             &attributes,
             user_revoc_index
         )?;
-
         if let Some(x) = revocation_registry {
             revocation_registry_json = RevocationRegistry::to_json(&x.borrow())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
-            self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revocation_registry_json)?;
+            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid), &revocation_registry_json)?;
         }
 
         let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no);

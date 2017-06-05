@@ -450,6 +450,7 @@ impl ProverCommandExecutor {
 
         let mut tails: HashMap<i32, PointG2> = HashMap::new();
         if revoc_regs.len() > 0 {
+            // TODO: need to change
             let tails_json = self.wallet_service.get(wallet_handle, &format!("tails"))?;
             tails = serde_json::from_str(&tails_json)
                 .map_err(|err| CommonError::InvalidState(format!("Invalid tails_json: {}", err.to_string())))?;
