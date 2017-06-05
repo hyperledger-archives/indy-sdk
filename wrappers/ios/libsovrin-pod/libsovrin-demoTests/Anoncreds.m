@@ -115,12 +115,12 @@
     NSString *xclaimJson = nil;
     
     NSString *claimJson = [[ AnoncredsUtils sharedInstance] getGvtClaimJson];
-
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim: issuerWalletHandle
-                                                claimReqJson: claimReq
-                                                   claimJson: claimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson
-                                                outClaimJson:&xclaimJson ];
+    
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerWalletHandle
+                                                   claimJson:claimJson
+                                                claimReqJson:claimReq
+                                                outClaimJson:&xclaimJson
+                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     
@@ -360,12 +360,12 @@
     //12. Issuer create GVT Claim
     NSString* revocRegUpdateJson = nil;
     NSString* gvtClaimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
-
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim: issuerGvtWalletHandle
-                                                claimReqJson: gvtClaimReq
-                                                   claimJson: gvtClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson
-                                                outClaimJson:&gvtClaimJson];
+                              
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerGvtWalletHandle
+                                                   claimJson:gvtClaimJson
+                                                claimReqJson:gvtClaimReq
+                                                outClaimJson:&gvtClaimJson
+                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     
@@ -393,12 +393,12 @@
     //15. Issuer create XYZ Claim
     
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
-
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim: issuerXyzWalletHandle
-                                                claimReqJson: xyzClaimReq
-                                                   claimJson: xyzClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson
-                                                outClaimJson:&xyzClaimJson];
+                              
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerXyzWalletHandle
+                                                   claimJson:xyzClaimJson
+                                                claimReqJson:xyzClaimReq
+                                                outClaimJson:&xyzClaimJson
+                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
 
@@ -715,11 +715,11 @@
     NSString* revocRegUpdateJson = nil;
     NSString* gvtClaimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
     
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim: issuerWalletHandle
-                                                claimReqJson: gvtClaimReq
-                                                   claimJson: gvtClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson
-                                                outClaimJson:&gvtClaimJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerWalletHandle
+                                                   claimJson:gvtClaimJson
+                                                claimReqJson:gvtClaimReq
+                                                outClaimJson:&gvtClaimJson
+                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     
@@ -748,11 +748,11 @@
     
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
     
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim: issuerWalletHandle
-                                                claimReqJson: xyzClaimReq
-                                                   claimJson: xyzClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson
-                                                outClaimJson:&xyzClaimJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerWalletHandle
+                                                   claimJson:xyzClaimJson
+                                                claimReqJson:xyzClaimReq
+                                                outClaimJson:&xyzClaimJson
+                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     

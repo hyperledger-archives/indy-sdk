@@ -75,10 +75,10 @@
 
 // MARK: issuer claim
 -(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
-                   claimJson:(NSString *) claimJson
                  claimReqJson:(NSString *) claimReqJson
-                    xClaimJson:(NSString**) xClaimJson
-                revocRegUpdateJSON:(NSString **) revocRegUpdateJSON
+                    claimJson:(NSString *) claimJson
+                   outClaimJson:(NSString**) xClaimJson
+           outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON
 {
     __block NSError *err = nil;
     __block NSString *outClaimJson;
@@ -154,20 +154,23 @@
                                       seqNo:(NSNumber*) claimDefSeqNo
                                     outJson:(NSString**) outJson
 {
-    NSString* uuid = nil;
+    NSString *json = nil;
+    NSString *uuid;
+    NSError *ret;
     
-    NSError *ret = [ self issuerCreateClaimDefinition:walletHandle
-                                               schema:schema
-                                      outClaimDefJson:outJson
-                                      outClaimDefUUID:&uuid ];
+    ret = [self issuerCreateClaimDefinifion:walletHandle
+                                 schemaJson:schema
+                               claimDefJson:&json
+                               claimDefUUID:&uuid];
     if( ret.code != Success )
     {
         return ret;
     }
     
     ret = [[WalletUtils sharedInstance] walletSetSeqNoForValue:walletHandle
-                                                  claimDefUUID:uuid
-                                                 claimDefSeqNo:claimDefSeqNo];
+                                            claimDefUUID:uuid
+                                           claimDefSeqNo:claimDefSeqNo];
+    *outJson = json;
     return ret;
 }
 
