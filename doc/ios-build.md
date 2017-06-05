@@ -13,7 +13,12 @@
    > brew install zeromq
    > brew install cmake
 
-5. Edit script build-libsovrin-core-ios.sh: set the following variables to fit your environment:
+5. Setup environment variables:
+
+   > export PKG_CONFIG_ALLOW_CROSS=1
+   > export CARGO_INCREMENTAL=1
+
+6. Edit script build-libsovrin-core-ios.sh: set the following variables to fit your environment:
    > export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
    > export EVERNYM_REPO_KEY=~/Documents/EvernymRepo
    > export LIBSOVRIN_POD_VERSION=0.0.1
@@ -22,22 +27,22 @@
    EVERNYM_REPO_KEY - path to file with private key to be authorized on deb server
    LIBSOVRIN_POD_VERSION - version of livsovrin-core pod to be built
     
-6. Run the script. Validate the output that all goes well.
+7. Run the script. Validate the output that all goes well.
 
-7. cd Podspec
+8. cd Podspec
 
-8. Create directory with name defined in LIBSOVRIN_POD_VERSION
+9. Create directory with name defined in LIBSOVRIN_POD_VERSION
     mkdir LIBSOVRIN_POD_VERSION
 
-9. copy libsovrin-core.podspec.json to that new directory from some previous version
+10. copy libsovrin-core.podspec.json to that new directory from some previous version
 
-10. edit this json -> change version field to LIBSOVRIN_POD_VERSION
+11. edit this json -> change version field to LIBSOVRIN_POD_VERSION
 
-11. add new directory and file inside to git repository.
+12. add new directory and file inside to git repository.
 
-12. commit to master branch
+13. commit to master branch
 
-13. for all projects which using libsovrin-core do not forget to make
+14. for all projects which using libsovrin-core do not forget to make
      > pod repo update
      > pod install
 
