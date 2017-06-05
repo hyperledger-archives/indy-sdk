@@ -98,25 +98,25 @@ impl PointG1 {
         Ok(ECP::to_hex(&self.point))
     }
 
-    pub fn from_string(str: &str) -> Result<PointG1, CryptoError> {
+    pub fn from_string(str: &str) -> Result<PointG1, CommonError> {
         Ok(PointG1 {
             point: ECP::from_hex(str.to_string())
         })
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let str = self.to_string()?;
 
         Ok(str.into_bytes())
     }
 
-    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
+    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CommonError> {
         unimplemented!();
     }
 }
 
 impl BytesView for PointG1 {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         Ok(self.to_bytes()?)
     }
 }
@@ -155,7 +155,7 @@ pub struct PointG2 {
 }
 
 impl PointG2 {
-    pub fn new() -> Result<PointG2, CryptoError> {
+    pub fn new() -> Result<PointG2, CommonError> {
         let mut point_x = FP2::default();
         let mut point_y = FP2::default();
         let mut point_z = FP2::default();
@@ -170,7 +170,7 @@ impl PointG2 {
         })
     }
 
-    pub fn new_inf() -> Result<PointG2, CryptoError> {
+    pub fn new_inf() -> Result<PointG2, CommonError> {
         let mut point = ECP2::default();
         ECP2::inf(&mut point);
 
@@ -179,7 +179,7 @@ impl PointG2 {
         })
     }
 
-    pub fn add(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
+    pub fn add(&self, q: &PointG2) -> Result<PointG2, CommonError> {
         let mut r = self.point;
         ECP2::add(&mut r, &q.point);
         Ok(PointG2 {
@@ -187,7 +187,7 @@ impl PointG2 {
         })
     }
 
-    pub fn sub(&self, q: &PointG2) -> Result<PointG2, CryptoError> {
+    pub fn sub(&self, q: &PointG2) -> Result<PointG2, CommonError> {
         let mut r = self.point;
         ECP2::sub(&mut r, &q.point);
         Ok(PointG2 {
@@ -195,7 +195,7 @@ impl PointG2 {
         })
     }
 
-    pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG2, CryptoError> {
+    pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG2, CommonError> {
         let mut r = self.point;
         ECP2::mul(&mut r, &e.bn);
         Ok(PointG2 {
@@ -203,23 +203,23 @@ impl PointG2 {
         })
     }
 
-    pub fn to_string(&self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CommonError> {
         Ok(ECP2::to_hex(&self.point))
     }
 
-    pub fn from_string(str: &str) -> Result<PointG2, CryptoError> {
+    pub fn from_string(str: &str) -> Result<PointG2, CommonError> {
         Ok(PointG2 {
             point: ECP2::from_hex(str.to_string())
         })
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let str = self.to_string()?;
 
         Ok(str.into_bytes())
     }
 
-    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CryptoError> {
+    pub fn from_bytes(b: &[u8]) -> Result<PointG1, CommonError> {
         unimplemented!();
     }
 }
@@ -318,17 +318,17 @@ impl GroupOrderElement {
         })
     }
 
-    pub fn to_string(&self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CommonError> {
         Ok(BIG::to_hex(&self.bn))
     }
 
-    pub fn from_string(str: &str) -> Result<GroupOrderElement, CryptoError> {
+    pub fn from_string(str: &str) -> Result<GroupOrderElement, CommonError> {
         Ok(GroupOrderElement {
             bn: BIG::from_hex(str.to_string())
         })
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let mut vec: [u8; 32] = [0; 32];
         BIG::toBytes(&mut vec, &self.bn);
         Ok(vec.to_vec())
@@ -340,12 +340,6 @@ impl GroupOrderElement {
                 bn: BIG::fromBytes(b)
             }
         )
-    }
-}
-
-impl BytesView for GroupOrderElement {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
-        Ok(self.to_bytes()?)
     }
 }
 
@@ -383,7 +377,7 @@ pub struct Pair {
 }
 
 impl Pair {
-    pub fn pair(p: &PointG1, q: &PointG2) -> Result<Pair, CryptoError> {
+    pub fn pair(p: &PointG1, q: &PointG2) -> Result<Pair, CommonError> {
         let mut pair = FP12::default();
         let mut p_new = *p;
         let mut q_new = *q;
@@ -418,17 +412,17 @@ impl Pair {
         })
     }
 
-    pub fn to_string(&self) -> Result<String, CryptoError> {
+    pub fn to_string(&self) -> Result<String, CommonError> {
         Ok(FP12::to_hex(&self.pair))
     }
 
-    pub fn from_string(str: &str) -> Result<Pair, CryptoError> {
+    pub fn from_string(str: &str) -> Result<Pair, CommonError> {
         Ok(Pair {
             pair: FP12::from_hex(str.to_string())
         })
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, CryptoError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         unimplemented!();
     }
 
@@ -443,9 +437,6 @@ impl BytesView for Pair {
     }
 }
 
-impl BytesView for PointG1 {
-    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
-        Ok(self.to_bytes()?)
 impl Serialize for Pair {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         serializer.serialize_newtype_struct("Pair", &self.to_string().map_err(SError::custom)?)
@@ -455,6 +446,9 @@ impl Serialize for Pair {
 impl BytesView for GroupOrderElement {
     fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         Ok(self.to_bytes()?)
+    }
+}
+
 impl<'a> Deserialize<'a> for Pair {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'a> {
         struct PairVisitor;

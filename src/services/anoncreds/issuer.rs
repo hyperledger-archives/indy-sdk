@@ -404,7 +404,7 @@ impl Issuer {
     }
 
     pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>,
-                  g_dash: &HashMap<i32, PointG2>, i: i32) -> Result<i64, CryptoError> {
+                  g_dash: &HashMap<i32, PointG2>, i: i32) -> Result<i64, AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer revoke claim by index {} -> start", i);
 
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;

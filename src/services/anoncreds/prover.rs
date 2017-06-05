@@ -132,7 +132,7 @@ impl Prover {
                                                &revoc_reg.clone()
                                                    .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
                                                &revoc_reg
-                                                   .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
+                                                   .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
         }
         info!(target: "anoncreds_service", "Prover process received claim -> done");
 
@@ -148,7 +148,7 @@ impl Prover {
 
     pub fn _init_non_revocation_claim(claim: &RefCell<NonRevocationClaim>, v_prime: &GroupOrderElement,
                                       pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey)
-                                      -> Result<(), CryptoError> {
+                                      -> Result<(), CommonError> {
         let mut claim_mut = claim.borrow_mut();
         let m2 = BigNumber::from_bytes(&claim_mut.m2.to_bytes()?)?;
         claim_mut.vr_prime_prime = v_prime.add_mod(&claim_mut.vr_prime_prime)?;
@@ -157,7 +157,7 @@ impl Prover {
     }
 
     pub fn _test_witness_credential(claim: &NonRevocationClaim, pkr: &RevocationPublicKey, acc: &Accumulator,
-                                    acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CryptoError> {
+                                    acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CommonError> {
         let z_calc = Pair::pair(&claim.witness.g_i, &acc.acc)?
             .mul(&Pair::pair(&pkr.g, &claim.witness.omega)?.inverse()?)?;
         if z_calc != acc_pk.z {
@@ -327,7 +327,7 @@ impl Prover {
                         requested_claims: &RequestedClaimsJson,
                         ms: &BigNumber,
                         tails: &HashMap<i32, PointG2>)
-                        -> Result<ProofJson, CryptoError> {
+                        -> Result<ProofJson, CommonError> {
         info!(target: "anoncreds_service", "Prover create proof -> start");
 
         let proof_claims = Prover::_prepare_proof_claims(proof_req,
@@ -452,7 +452,7 @@ impl Prover {
 
     fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
                                   pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG2>)
-                                  -> Result<NonRevocInitProof, CryptoError> {
+                                  -> Result<NonRevocInitProof, CommonError> {
         info!(target: "anoncreds_service", "Prover init non-revocation proof -> start");
         Prover::_update_non_revocation_claim(claim, accum, tails)?;
 
@@ -468,7 +468,7 @@ impl Prover {
 
     fn _update_non_revocation_claim(claim: &RefCell<NonRevocationClaim>,
                                     accum: &Accumulator, tails: &HashMap<i32, PointG2>)
-                                    -> Result<(), CryptoError> {
+                                    -> Result<(), CommonError> {
         if !accum.v.contains(&claim.borrow().i) {
             return Err(CommonError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()))
         }

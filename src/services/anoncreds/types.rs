@@ -503,7 +503,7 @@ impl NonRevocProofCList {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.e.to_bytes()?, self.d.to_bytes()?, self.a.to_bytes()?, self.g.to_bytes()?,
                 self.w.to_bytes()?, self.s.to_bytes()?, self.u.to_bytes()?])
     }
@@ -531,7 +531,7 @@ impl NonRevocInitProof {
         }
     }
 
-    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let vec = self.c_list.as_list()?;
         Ok(vec)
     }
