@@ -23,7 +23,7 @@
 
 - (NSError *)openPoolLedger:(NSString*)poolName
                      config:(NSString*)config
-                poolHandler:(SovrinHandle**)handle;
+                poolHandler:(SovrinHandle*)handle;
 
 - (NSError *)sendRequest:(SovrinHandle)poolHandle
                  request:(NSString *)request

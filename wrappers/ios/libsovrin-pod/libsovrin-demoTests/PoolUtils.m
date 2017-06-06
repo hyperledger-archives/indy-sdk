@@ -89,14 +89,14 @@
 }
 
 - (NSError *)openPoolLedger:(NSString*)poolName
-                poolHandler:(SovrinHandle**)handle
+                     config:(NSString*)config
+                poolHandler:(SovrinHandle*)handle
 {
     NSError *ret = nil;
       XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block SovrinHandle poolHandle = 0;
     
-    ret = [SovrinPool open]
     ret = [SovrinPool openPoolWithName:poolName
                              andConfig:config
                             completion:^(NSError *error, SovrinHandle handle)
@@ -106,12 +106,12 @@
                [completionExpectation fulfill];
            }];
     
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success )
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *handle = poolHandle;
     return err;
@@ -141,12 +141,12 @@
                [completionExpectation fulfill];
            }];
     
+    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
+    
     if (ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
     
     if (closureError.code != Success)
     {
@@ -167,13 +167,12 @@
                [completionExpectation fulfill];
            }];
    
+    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
     
     if (ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
     
     *handle = poolHandle;
     return closureError;
@@ -197,14 +196,15 @@
     {
         err = error;
         outResponse = result;
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success )
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *response = outResponse;
     return err;

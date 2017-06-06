@@ -163,7 +163,7 @@
     SovrinHandle poolHandle = 1;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
+
     ret = [SovrinSignus verifySignature:  myWalletHandle
                                    pool:  poolHandle
                                     did:  theirDid
@@ -176,7 +176,7 @@
         [completionExpectation fulfill];
     }];
 
-    // TODO: There is some error inside closure at rust level, can't debug
+    // TODO: There is some error inside closure at rust level
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
     

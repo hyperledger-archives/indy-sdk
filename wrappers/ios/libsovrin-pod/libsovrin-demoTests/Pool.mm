@@ -42,8 +42,8 @@
     NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfig:name];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfig() failed!");
     
-    //SovrinHandle poolHandle = 0;
-   // openPoolLedger
+    SovrinHandle poolHandle = 0;
+    ret = [[PoolUtils sharedInstance] openPoolLedger:name config:nil poolHandler:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::openPoolLedger() failed!");
     
     [TestUtils cleanupStorage];
@@ -57,7 +57,17 @@
     NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfig:poolName];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfig() failed!");
     
-    // open_pool_ledger ... twice
+    SovrinHandle poolHandle = 0;
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
+                                              config:nil
+                                         poolHandler:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::openPoolLedger() failed!");
+    
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
+                                              config:nil
+                                         poolHandler:&poolHandle];
+    // TODO: PoolLedgerInvalidConfiguration is returned.
+    XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"PoolUtils::openPoolLedger() failed!");
     
     [TestUtils cleanupStorage];
 }
@@ -67,11 +77,17 @@
     [TestUtils cleanupStorage];
     NSString *poolName = @"test_submit_tx";
     
+    // 1. Create pool ledger config
     NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfig:poolName];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfig() failed!");
     
+    // 2. Open pool ledger
     SovrinHandle poolHandle = 0;
-    // open pool
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
+                                              config:nil
+                                         poolHandler:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::openPoolLedger() failed!");
+
     
     NSString *request = [NSString stringWithFormat:@"{"\
                          "\"reqId\":\"1491566332010860\"," \
@@ -83,6 +99,7 @@
                          "}"];
     
     NSString *responseJson;
+    // TODO: 110 error, response is empty
     ret = [[PoolUtils sharedInstance] sendRequest:poolHandle
                                           request:request
                                          response:&responseJson];

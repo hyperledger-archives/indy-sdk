@@ -28,6 +28,7 @@
 }
 
 + (NSError*) openPoolWithName:(NSString*) name
+                    andConfig:(NSString*) config
                    completion:(void (^)(NSError* error, SovrinHandle handle)) handler
 {
     sovrin_error_t ret;
@@ -36,6 +37,7 @@
     
     ret = sovrin_open_pool_ledger(handle,
                                   [name UTF8String],
+                                  [config UTF8String],
                                   SovrinWrapperCommon3PHCallback
                                  );
     if( ret != Success )

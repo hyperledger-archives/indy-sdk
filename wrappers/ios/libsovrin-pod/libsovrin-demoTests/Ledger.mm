@@ -137,6 +137,8 @@
                  "\"seed\":\"000000000000000000000000My1\"" \
                  "}"];
     
+    // TODO: thread '<unnamed>' panicked at 'destination and source slices have different lengths', src/libcore/slice.rs:519
+
     ret = [[SignusUtils sharedInstance] createMyDid:walletHandle
                                           myDidJson:myDidJson
                                               myDid:&myDid
@@ -238,8 +240,11 @@
     NSString* myPk = nil;
     
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000My1\"," \
+                           "\"seed\":\"000000000000000000000000My1\"" \
                            "}"];
+    
+    // TODO: thread '<unnamed>' panicked at 'destination and source slices have different lengths', src/libcore/slice.rs:519
+    // note: Run with `RUST_BACKTRACE=1` for a backtrace.
     res = [[SignusUtils sharedInstance] createMyDid:walletHandle
                                           myDidJson:myDidJson
                                               myDid:&myDid
