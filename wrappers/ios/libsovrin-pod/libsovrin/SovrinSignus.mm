@@ -102,7 +102,6 @@
 + (NSError*) verifySignature:(SovrinHandle) walletHandle
                         pool:(SovrinHandle) poolHandle
                          did:(NSString*) did
-                         msg:(NSString*) msg
                    signature:(NSString*) signature
                   completion:(void (^)(NSError* error, BOOL valid)) handler
 {
@@ -114,7 +113,6 @@
                                   walletHandle,
                                   poolHandle,
                                   [did UTF8String],
-                                  [msg UTF8String],
                                   [signature UTF8String],
                                   SovrinWrapperCommon3PBCallback);
     if( ret != Success )

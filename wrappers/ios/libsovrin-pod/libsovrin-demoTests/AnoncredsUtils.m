@@ -96,7 +96,7 @@
     {
         err = error;
         outRevocRegUpdateJSON = revocRegUpdateJSON;
-        outClaimJson = claimJson;
+        outClaimJson = claimJSON;
         [completionExpectation fulfill];
     }];
     

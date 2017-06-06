@@ -166,7 +166,6 @@ extern "C" {
                                                   sovrin_handle_t pool_handle,
                                                   
                                                   const char *    did,
-                                                  const char *    msg,
                                                   const char *    signature,
                                                   
                                                   void           (*cb)(sovrin_handle_t xcommand_handle,
