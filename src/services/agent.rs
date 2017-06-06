@@ -284,81 +284,85 @@ mod tests {
         assert_eq!(str, AgentWorkerCommand::Connect(expected_cmd).to_json().unwrap());
     }
 
-    #[test]
-    fn agent_worker_connect_works() {
-        ::utils::logger::LoggerUtils::init();
-        let send_key_pair = zmq::CurveKeyPair::new().unwrap();
-        let recv_key_pair = zmq::CurveKeyPair::new().unwrap();
-        let ctx = zmq::Context::new();
-        let recv_soc = ctx.socket(zmq::SocketType::ROUTER).unwrap();
-        recv_soc.set_curve_publickey(recv_key_pair.public_key.as_str()).unwrap();
-        recv_soc.set_curve_secretkey(recv_key_pair.secret_key.as_str()).unwrap();
-        recv_soc.set_curve_server(true).unwrap();
-        recv_soc.bind("tcp://127.0.0.1:*").unwrap();
-        let addr = recv_soc.get_last_endpoint().unwrap().unwrap();
-        info!("addr {}", addr);
+    mod agent_worker {
+        use super::*;
 
-        let mut agent_worker = AgentWorker {
-            agent_connections: Vec::new(),
-            cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
-        };
-        let cmd = ConnectCmd {
-            endpoint: addr,
-            public_key: zmq::z85_decode(send_key_pair.public_key.as_str()).unwrap().to_base58(),
-            secret_key: zmq::z85_decode(send_key_pair.secret_key.as_str()).unwrap().to_base58(),
-            did: "".to_string(),
-            server_key: zmq::z85_decode(recv_key_pair.public_key.as_str()).unwrap().to_base58(),
-            conn_handle: 0,
-        };
+        #[test]
+        fn agent_worker_connect_works() {
+            ::utils::logger::LoggerUtils::init();
+            let send_key_pair = zmq::CurveKeyPair::new().unwrap();
+            let recv_key_pair = zmq::CurveKeyPair::new().unwrap();
+            let ctx = zmq::Context::new();
+            let recv_soc = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+            recv_soc.set_curve_publickey(recv_key_pair.public_key.as_str()).unwrap();
+            recv_soc.set_curve_secretkey(recv_key_pair.secret_key.as_str()).unwrap();
+            recv_soc.set_curve_server(true).unwrap();
+            recv_soc.bind("tcp://127.0.0.1:*").unwrap();
+            let addr = recv_soc.get_last_endpoint().unwrap().unwrap();
+            info!("addr {}", addr);
 
-        agent_worker.connect(&cmd).unwrap();
-
-        assert_eq!(agent_worker.agent_connections.len(), 1);
-        recv_soc.recv_string(0).unwrap().unwrap(); //ignore identity
-        assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "DID");
-    }
-
-    #[test]
-    fn agent_worker_poll_works_for_cmd_socket() {
-        let (send_soc, recv_soc) = _create_zmq_socket_pair("aw_poll_cmd", true).unwrap();
-        let agent_worker = AgentWorker {
-            agent_connections: Vec::new(),
-            cmd_socket: recv_soc,
-        };
-        send_soc.send_str(r#"{"cmd": "Exit"}"#, zmq::DONTWAIT).unwrap();
-
-        let cmds = agent_worker.poll().unwrap();
-
-        assert_eq!(cmds.len(), 1);
-        assert_match!(AgentWorkerCommand::Exit, cmds[0]);
-    }
-
-    #[test]
-    fn agent_worker_poll_works_for_agent_socket() {
-        let (send_soc, recv_soc) = _create_zmq_socket_pair("aw_poll_cmd", true).unwrap();
-        let agent_worker = AgentWorker {
-            agent_connections: vec!(RemoteAgent {
-                socket: recv_soc,
-                addr: String::new(),
-                public_key: Vec::new(),
-                secret_key: Vec::new(),
-                server_key: Vec::new(),
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            let cmd = ConnectCmd {
+                endpoint: addr,
+                public_key: zmq::z85_decode(send_key_pair.public_key.as_str()).unwrap().to_base58(),
+                secret_key: zmq::z85_decode(send_key_pair.secret_key.as_str()).unwrap().to_base58(),
+                did: "".to_string(),
+                server_key: zmq::z85_decode(recv_key_pair.public_key.as_str()).unwrap().to_base58(),
                 conn_handle: 0,
-            }),
-            cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
-        };
-        send_soc.send_str("msg", zmq::DONTWAIT).unwrap();
+            };
 
-        let mut cmds = agent_worker.poll().unwrap();
+            agent_worker.connect(&cmd).unwrap();
 
-        assert_eq!(cmds.len(), 1);
-        let cmd = cmds.remove(0);
-        match cmd {
-            AgentWorkerCommand::Response(resp) => {
-                assert_eq!(resp.agent_ind, 0);
-                assert_eq!(resp.msg, "msg");
+            assert_eq!(agent_worker.agent_connections.len(), 1);
+            recv_soc.recv_string(0).unwrap().unwrap(); //ignore identity
+            assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "DID");
+        }
+
+        #[test]
+        fn agent_worker_poll_works_for_cmd_socket() {
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("aw_poll_cmd", true).unwrap();
+            let agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                cmd_socket: recv_soc,
+            };
+            send_soc.send_str(r#"{"cmd": "Exit"}"#, zmq::DONTWAIT).unwrap();
+
+            let cmds = agent_worker.poll().unwrap();
+
+            assert_eq!(cmds.len(), 1);
+            assert_match!(AgentWorkerCommand::Exit, cmds[0]);
+        }
+
+        #[test]
+        fn agent_worker_poll_works_for_agent_socket() {
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("aw_poll_cmd", true).unwrap();
+            let agent_worker = AgentWorker {
+                agent_connections: vec!(RemoteAgent {
+                    socket: recv_soc,
+                    addr: String::new(),
+                    public_key: Vec::new(),
+                    secret_key: Vec::new(),
+                    server_key: Vec::new(),
+                    conn_handle: 0,
+                }),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            send_soc.send_str("msg", zmq::DONTWAIT).unwrap();
+
+            let mut cmds = agent_worker.poll().unwrap();
+
+            assert_eq!(cmds.len(), 1);
+            let cmd = cmds.remove(0);
+            match cmd {
+                AgentWorkerCommand::Response(resp) => {
+                    assert_eq!(resp.agent_ind, 0);
+                    assert_eq!(resp.msg, "msg");
+                }
+                _ => panic!("unexpected cmd {:?}", cmd),
             }
-            _ => panic!("unexpected cmd {:?}", cmd),
         }
     }
 
