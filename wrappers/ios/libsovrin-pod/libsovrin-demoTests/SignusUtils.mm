@@ -72,7 +72,7 @@
     __block NSString *verKey = nil;
     __block NSString *pk = nil;
     NSError *ret;
-    
+
     ret = [SovrinSignus createAndStoreMyDid:walletHandle
                                     didJSON:myDidJson
                                  completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)

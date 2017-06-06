@@ -317,6 +317,7 @@
     
     ret = [SovrinLedger buildClaimDefTxn:submitterDid
                                     xref:xref
+                           signatureType:signatureType
                                     data:data
                               completion:^(NSError* error, NSString* request)
            {
