@@ -17,11 +17,28 @@
                          seqNo:(NSNumber*) claimDefSeqNo;
 
 -(NSString*) getGvtClaimJson;
+-(NSString*) getXyzSchemaJson:(NSNumber*) schemaSeqNo;
+-(NSString*) getXyzClaimJson;
 
 -(NSError*) createClaimDefinitionAndSetLink:(SovrinHandle) walletHandle
                                      schema:(NSString*) schema
                                       seqNo:(NSNumber*) claimDefSeqNo
                                     outJson:(NSString**) outJson;
+
+
+/**
+
+ @param proofClaims Dictionary with format:
+        {
+             "requested_attr1_uuid": [claim1, claim2],
+             "requested_attr2_uuid": [],
+             "requested_attr3_uuid": [claim3],
+             "requested_predicate_1_uuid": [claim1, claim3],
+        }
+ @return Array of unique claims
+ */
+-(NSArray*) getUniqueClaimsFrom: (NSDictionary*)proofClaims;
+
 
 -(NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
                     masterSecretName:(NSString*) name;
@@ -41,10 +58,15 @@
                          outClaimReqJson:(NSString**) outJson;
 
 -(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
-                 claimReqJson:(NSString*) claimReqJson
-                    claimJson:(NSString*) claimJson
-        outRevocRegUpdateJSON:(NSString**) outRevocRegUpdateJson
-                 outClaimJson:(NSString**) outClaimJson;
+                    claimJson:(NSString *) claimJson
+                 claimReqJson:(NSString *) claimReqJson
+                 outClaimJson:(NSString**) xClaimJson
+        outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON;
+
+- (NSError *)issuerCreateClaimDefinifion:(SovrinHandle) walletHandle
+                              schemaJson:(NSString *) schemaJson
+                            claimDefJson:(NSString**) claimDefJson
+                            claimDefUUID:(NSString**) claimDefUUID;
 
 -(NSError*) proverStoreClaim:(SovrinHandle) walletHandle
                   claimsJson:(NSString*) str;

@@ -11,10 +11,11 @@
 
 + (WalletUtils *)sharedInstance;
 
--(NSError*) createWallet:(NSString*) poolName
+-(NSError*) createAndOpenWallet:(NSString*) poolName
               walletName:(NSString*) walletName
                    xtype:(NSString*) xtype
                   handle:(SovrinHandle*) handle;
+
 
 -(NSError*) walletSetSeqNoForValue:(SovrinHandle) walletHandle
                       claimDefUUID:(NSString*) uuid
