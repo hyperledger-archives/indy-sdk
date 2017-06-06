@@ -21,8 +21,9 @@
 
 - (NSString *)createPoolConfig:(NSString *)poolName;
 
-- (NSError *)openPoolLedger:(NSString *)configName
-                     config:(NSString *)config;
+- (NSError *)openPoolLedger:(NSString*)poolName
+                     config:(NSString*)config
+                poolHandler:(SovrinHandle**)handle;
 
 - (NSError *)sendRequest:(SovrinHandle)poolHandle
                  request:(NSString *)request

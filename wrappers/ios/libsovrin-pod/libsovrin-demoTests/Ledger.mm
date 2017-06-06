@@ -129,56 +129,30 @@
     NSLog(@"trusteePk = %@", trusteePk);
     
     // 4. Create my did
-//    NSString* myDid = nil;
-//    NSString* myVerKey = nil;
-//    NSString* myPk = nil;
-//    
-//    NSString* myDidJson = [NSString stringWithFormat:@"{"\
-//                 "\"seed\":\"000000000000000000000000My1\"" \
-//                 "}"];
-//    
-//    res = [[SignusUtils sharedInstance] createMyDid:walletHandle
-//                                          myDidJson:myDidJson
-//                                              myDid:&myDid
-//                                           myVerkey:&myVerKey
-//                                               myPk:&myPk];
-//    XCTAssertEqual(res.code, Success, @"SignusUtils::createMyDid() failed");
-//    XCTAssertNotNil(myDid, @"myDid is nil!");
-//   // XCTAssertNotNil(myVerKey, @"myVerKey is nil!"); // can be nil?
-//    XCTAssertNotNil(myPk, @"myPk is nil!");
+    NSString* myDid = nil;
+    NSString* myVerKey = nil;
+    NSString* myPk = nil;
     
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                                    "\"seed\":\"000000000000000000000000My1\"" \
-                                    "}"];
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+                 "\"seed\":\"000000000000000000000000My1\"" \
+                 "}"];
     
-    __block NSString *myDid = nil;
-    __block NSString *myVerkey = nil;
-    __block NSString *myPk = nil;
-    ret = [SovrinSignus createAndStoreMyDid:  walletHandle
-                                    didJSON:  myDidJson
-                                 completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"myDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               myDid = did;
-               myVerkey = verkey;
-               myPk = pk;
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
+    ret = [[SignusUtils sharedInstance] createMyDid:walletHandle
+                                          myDidJson:myDidJson
+                                              myDid:&myDid
+                                           myVerkey:&myVerKey
+                                               myPk:&myPk];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDid() failed");
+    XCTAssertNotNil(myDid, @"myDid is nil!");
+    XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
+    XCTAssertNotNil(myPk, @"myPk is nil!");
     
     // 5. Build nym request
     
     NSString *nymRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNymRequest:trusteeDid
                                               targetDid:myDid
-                                                 verkey:myVerkey
+                                                 verkey:myVerKey
                                                    xref:@""
                                                    data:@""
                                                    role:@""

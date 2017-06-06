@@ -89,14 +89,14 @@
 }
 
 - (NSError *)openPoolLedger:(NSString*)poolName
-                     config:(NSString*)config
-                poolHandler:(SovrinHandle*)handle
+                poolHandler:(SovrinHandle**)handle
 {
     NSError *ret = nil;
       XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block SovrinHandle poolHandle = 0;
     
+    ret = [SovrinPool open]
     ret = [SovrinPool openPoolWithName:poolName
                              andConfig:config
                             completion:^(NSError *error, SovrinHandle handle)
