@@ -167,7 +167,6 @@
     ret = [SovrinSignus verifySignature:  myWalletHandle
                                    pool:  poolHandle
                                     did:  theirDid
-                                    msg:  message
                               signature:  theirSignature
                              completion: ^(NSError *error, BOOL valid)
     {
