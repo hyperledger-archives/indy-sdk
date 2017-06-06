@@ -62,6 +62,10 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ConnectAck command received");
                 self.open_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res) //TODO extract method
             }
+            AgentCommand::Listen(wallet_handle, listen_cb, connect_cb, message_cb) => {
+                info!(target: "agent_command_executor", "Listen command received");
+                self.listen(wallet_handle, listen_cb, connect_cb, message_cb);
+            }
             _ => unimplemented!(),
         }
     }
@@ -104,6 +108,14 @@ impl AgentCommandExecutor {
             endpoint: their_did.endpoint.unwrap(),
             server_key: their_did.pk.unwrap()
         })
+    }
+
+    fn listen(&self, wallet_handle: i32,
+              listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
+              connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
+              message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+        let res = self.agent_service.as_ref().listen();
+        unimplemented!();
     }
 }
 

@@ -82,6 +82,17 @@ impl AgentService {
         agent.as_ref().unwrap().cmd_socket.send_str(connect_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
         Ok(conn_handle)
     }
+
+    pub fn listen(&self) -> Result<i32, CommonError> {
+        let mut agent = self.agent.borrow_mut();
+        if agent.is_none() {
+            *agent = Some(Agent::new());
+        }
+        let listen_handle = SequenceUtils::get_next_id();
+        let listen_cmd = AgentWorkerCommand::Listen(ListenCmd { listen_handle: listen_handle });
+        agent.as_ref().unwrap().cmd_socket.send_str(listen_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
+        Ok(listen_handle)
+    }
 }
 
 impl AgentWorker {
@@ -93,6 +104,7 @@ impl AgentWorker {
                 info!("received cmd {:?}", cmd);
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
+                    AgentWorkerCommand::Listen(cmd) => unimplemented!(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Exit => break 'agent_pool_loop,
                 }
@@ -200,6 +212,7 @@ impl RemoteAgent {
 #[derive(Serialize, Deserialize, Debug)]
 enum AgentWorkerCommand {
     Connect(ConnectCmd),
+    Listen(ListenCmd),
     Response(Response),
     Exit,
 }
@@ -216,6 +229,11 @@ struct ConnectCmd {
     public_key: String,
     server_key: String,
     conn_handle: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ListenCmd {
+    listen_handle: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -258,30 +276,55 @@ mod tests {
         receiver.recv_timeout(TimeoutUtils::short_timeout()).expect("drop not finished");
     }
 
-    #[test]
-    fn agent_service_connect_works() {
-        let (sender, receiver) = channel();
-        let (send_soc, recv_soc) = _create_zmq_socket_pair("test_connect", true).unwrap();
-        let agent = Agent {
-            cmd_socket: send_soc,
-            worker: Some(thread::spawn(move || {
-                sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap()
-            }))
-        };
-        let agent_service = AgentService {
-            agent: RefCell::new(Some(agent)),
-        };
-        let conn_handle = agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
-        let expected_cmd = ConnectCmd {
-            server_key: "serv".to_string(),
-            public_key: "pk".to_string(),
-            secret_key: "sk".to_string(),
-            endpoint: "ep".to_string(),
-            did: "sd".to_string(),
-            conn_handle: conn_handle,
-        };
-        let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-        assert_eq!(str, AgentWorkerCommand::Connect(expected_cmd).to_json().unwrap());
+    mod agent_service {
+        use super::*;
+
+        #[test]
+        fn agent_service_connect_works() {
+            let (sender, receiver) = channel();
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("test_connect", true).unwrap();
+            let agent = Agent {
+                cmd_socket: send_soc,
+                worker: Some(thread::spawn(move || {
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap()
+                }))
+            };
+            let agent_service = AgentService {
+                agent: RefCell::new(Some(agent)),
+            };
+            let conn_handle = agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
+            let expected_cmd = ConnectCmd {
+                server_key: "serv".to_string(),
+                public_key: "pk".to_string(),
+                secret_key: "sk".to_string(),
+                endpoint: "ep".to_string(),
+                did: "sd".to_string(),
+                conn_handle: conn_handle,
+            };
+            let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(str, AgentWorkerCommand::Connect(expected_cmd).to_json().unwrap());
+        }
+
+        #[test]
+        fn agent_service_listen_works() {
+            let (sender, receiver) = channel();
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("test_connect", true).unwrap();
+            let agent = Agent {
+                cmd_socket: send_soc,
+                worker: Some(thread::spawn(move || {
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap()
+                }))
+            };
+            let agent_service = AgentService {
+                agent: RefCell::new(Some(agent)),
+            };
+            let conn_handle = agent_service.listen().unwrap();
+            let expected_cmd = ListenCmd {
+                listen_handle: conn_handle,
+            };
+            let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(str, AgentWorkerCommand::Listen(expected_cmd).to_json().unwrap());
+        }
     }
 
     mod agent_worker {
