@@ -263,6 +263,7 @@ extern "C" {
     extern sovrin_error_t sovrin_build_claim_def_txn(sovrin_handle_t command_handle,
                                                      const char *    submitter_did,
                                                      const char *    xref,
+                                                     const char *    signature_type,
                                                      const char *    data,
                                                           
                                                      void           (*cb)(sovrin_handle_t xcommand_handle,

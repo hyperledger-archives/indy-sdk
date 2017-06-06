@@ -134,11 +134,9 @@
     NSString* myPk = nil;
     
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                 "\"seed\":\"000000000000000000000000My1\"" \
+                 "\"seed\":\"00000000000000000000000000000My1\"" \
                  "}"];
     
-    // TODO: thread '<unnamed>' panicked at 'destination and source slices have different lengths', src/libcore/slice.rs:519
-
     ret = [[SignusUtils sharedInstance] createMyDid:walletHandle
                                           myDidJson:myDidJson
                                               myDid:&myDid
@@ -200,7 +198,7 @@
     NSLog(@"Ledger: testAttributeRequestsWorks() started...");
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"pool1";
+    NSString* poolName = @"pool2";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *res = nil;
@@ -240,7 +238,7 @@
     NSString* myPk = nil;
     
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000My1\"" \
+                           "\"seed\":\"00000000000000000000000000000My1\"" \
                            "}"];
     
     // TODO: thread '<unnamed>' panicked at 'destination and source slices have different lengths', src/libcore/slice.rs:519
@@ -336,7 +334,7 @@
     NSLog(@"Ledger: testSchemaRequestsWorks() started...");
     [TestUtils cleanupStorage];
 
-    NSString* poolName = @"pool1";
+    NSString* poolName = @"pool3";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *res = nil;
@@ -376,7 +374,7 @@
     NSString *myPk = nil;
     
     NSString *myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000My1\"" \
+                           "\"seed\":\"00000000000000000000000000000My1\"" \
                            "}"];
     res = [[SignusUtils sharedInstance] createMyDid:walletHandle
                                           myDidJson:myDidJson
@@ -466,7 +464,7 @@
     NSLog(@"Ledger: testNodeRequestWorks() started...");
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"pool1";
+    NSString* poolName = @"pool4";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *res = nil;
@@ -556,9 +554,9 @@
     NSString *nodeIp = [PoolUtils nodeIp];
     NSString *nodeData = [NSString stringWithFormat:@"{"\
                             "\"node_ip\":\"%@\"," \
-                            "\"node_port\":\"9710\"," \
+                            "\"node_port\":9710," \
                             "\"client_ip\":\"%@\"," \
-                            "\"client_port\":\"9709\"," \
+                            "\"client_port\":9709," \
                            "\"alias\":\"Node5\"," \
                            "\"services\":[\"VALIDATOR\"]" \
                             "}", nodeIp, nodeIp];
@@ -593,7 +591,7 @@
     NSLog(@"Ledger: testClaimDefRequests() started...");
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"pool1";
+    NSString* poolName = @"pool5";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *res = nil;
@@ -627,7 +625,6 @@
     XCTAssertNotNil(trusteeVerKey, @"trusteeVerKey is nil!");
     XCTAssertNotNil(trusteePk, @"trusteePk is nil!");
     
-    [TestUtils cleanupStorage];
     NSLog(@"Ledger: testClaimDefRequests() finished...");
     
     // 4. Create my did
@@ -722,7 +719,7 @@
     schema[@"name"] = getSchemaResponse[@"result"][@"data"][@"name"];
     schema[@"keys"] = getSchemaResponse[@"result"][@"data"][@"keys"];
     schema[@"version"] = getSchemaResponse[@"result"][@"data"][@"version"];
-    schema[@"seq_no"] = getSchemaResponse[@"result"][@"seq_no"];
+    schema[@"seq_no"] = getSchemaResponse[@"result"][@"seqNo"];
     
     // 12. Create claim definition
     
@@ -747,7 +744,7 @@
     
     NSString *claimDefRequest;
     res = [[LedgerUtils sharedInstance] buildClaimDefTxn:myDid
-                                                    xref:schema[@"seq_no"]
+                                                    xref:[schema[@"seq_no"] stringValue]
                                            signatureType:claimDefinition[@"signature_type"]
                                                     data:[NSDictionary toString:claimDefData]
                                               resultJson:&claimDefRequest];
@@ -768,7 +765,7 @@
     // 16. Build get claim definition request
     NSString *getClaimDefRequest;
     res = [[LedgerUtils sharedInstance] buildGetClaimDefTxn:myDid
-                                                       xref:schema[@"seq_no"]
+                                                       xref:[schema[@"seq_no"] stringValue]
                                               signatureType:claimDefinition[@"signature_type"]
                                                      origin:getSchemaResponse[@"result"][@"data"][@"origin"]
                                                  resultJson:&getClaimDefRequest];

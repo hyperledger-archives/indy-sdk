@@ -58,9 +58,9 @@
 
 + (NSError*) buildClaimDefTxn:(NSString*) submitterDid
                          xref:(NSString*) xref
+                signatureType:(NSString*) signatureType
                          data:(NSString*) data
                    completion:(void (^)(NSError* error, NSString* requestJSON)) handler;
-
 
 + (NSError*) buildGetClaimDefTxn:(NSString*) submitterDid
                             xref:(NSString*) xref

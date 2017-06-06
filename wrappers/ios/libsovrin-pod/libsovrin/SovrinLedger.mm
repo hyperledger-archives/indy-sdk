@@ -225,6 +225,7 @@
 
 + (NSError*) buildClaimDefTxn:(NSString*) submitterDid
                          xref:(NSString*) xref
+                signatureType:(NSString*) signatureType
                          data:(NSString*) data
                    completion:(void (^)(NSError* error, NSString* requestJSON)) handler
 {
@@ -235,6 +236,7 @@
     ret = sovrin_build_claim_def_txn( handle,
                                       [submitterDid UTF8String],
                                       [xref UTF8String],
+                                      [signatureType UTF8String],
                                       [data UTF8String],
                                       SovrinWrapperCommon3PSCallback );
     if( ret != Success )
