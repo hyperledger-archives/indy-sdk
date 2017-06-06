@@ -11,7 +11,6 @@
 
 + (WalletUtils *)sharedInstance;
 
-// replaced with create and open wallet
 -(NSError*) createAndOpenWallet:(NSString*) poolName
               walletName:(NSString*) walletName
                    xtype:(NSString*) xtype

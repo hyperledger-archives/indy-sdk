@@ -144,9 +144,11 @@
     XCTAssertNotNil(revocRegUpdateJson, @"revocRegUpdateJson is nil!");
     NSLog(@"xclaimJson: %@", xclaimJson);
     NSLog(@"revocRegUpdateJson: %@", revocRegUpdateJson);
+    // TODO: revocRegUpdateJson is empty
     
     // 9. Prover store received Claim
     
+    // TODO: 110 error
     res = [[AnoncredsUtils sharedInstance] proverStoreClaim: proverWalletHandle
                                                  claimsJson: xclaimJson];
 
@@ -399,6 +401,7 @@
     
     //13. Prover store received GVT Claim
 
+    // TODO: 110 error
     res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
                                                  claimsJson:gvtClaimJson];
     
@@ -753,6 +756,7 @@
     
     //11. Prover store received GVT Claim
     
+    // TODO: 110 error
     res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
                                                  claimsJson:gvtClaimJson];
     
