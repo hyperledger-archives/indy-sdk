@@ -9,7 +9,9 @@ use services::ledger::constants::{
     GET_NYM,
     GET_SCHEMA,
     CLAIM_DEF,
-    GET_CLAIM_DEF
+    GET_CLAIM_DEF,
+    STEWARD,
+    TRUSTEE
 };
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -49,6 +51,12 @@ pub struct ReplyResult {
     pub data: Option<String>
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
+pub enum Role {
+    STEWARD = STEWARD,
+    TRUSTEE = TRUSTEE
+}
+
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NymOperation {
     #[serde(rename = "type")]
@@ -56,48 +64,26 @@ pub struct NymOperation {
     pub dest: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub verkey: Option<String>,
-    #[serde(rename = "ref")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub _ref: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<NymOperationData>,
+    pub alias: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>
 }
 
 impl NymOperation {
-    pub fn new(dest: String, verkey: Option<String>, _ref: Option<String>,
-               data: Option<NymOperationData>, role: Option<String>) -> NymOperation {
+    pub fn new(dest: String, verkey: Option<String>,
+               alias: Option<String>, role: Option<String>) -> NymOperation {
         NymOperation {
             _type: NYM.to_string(),
             dest: dest,
             verkey: verkey,
-            _ref: _ref,
-            data: data,
+            alias: alias,
             role: role
         }
     }
 }
 
 impl JsonEncodable for NymOperation {}
-
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct NymOperationData {
-    pub alias: String
-}
-
-impl NymOperationData {
-    pub fn new(alias: String) -> NymOperationData {
-        NymOperationData {
-            alias: alias
-        }
-    }
-}
-
-impl JsonEncodable for NymOperationData {}
-
-impl<'a> JsonDecodable<'a> for NymOperationData {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetNymOperation {

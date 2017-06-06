@@ -40,8 +40,7 @@ pub enum LedgerCommand {
         String, // submitter did
         String, // target did
         Option<String>, // verkey
-        Option<String>, // xref
-        Option<String>, // data
+        Option<String>, // alias
         Option<String>, // role
         Box<Fn(Result<String, SovrinError>) + Send>),
     BuildAttribRequest(
@@ -134,12 +133,11 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
                 self.build_get_ddo_request(&submitter_did, &target_did, cb);
             }
-            LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, xref, data, role, cb) => {
+            LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, alias, role, cb) => {
                 info!(target: "ledger_command_executor", "BuildNymRequest command received");
                 self.build_nym_request(&submitter_did, &target_did,
                                        verkey.as_ref().map(String::as_str),
-                                       xref.as_ref().map(String::as_str),
-                                       data.as_ref().map(String::as_str),
+                                       alias.as_ref().map(String::as_str),
                                        role.as_ref().map(String::as_str),
                                        cb);
             }
@@ -232,15 +230,13 @@ impl LedgerCommandExecutor {
                          submitter_did: &str,
                          target_did: &str,
                          verkey: Option<&str>,
-                         xref: Option<&str>,
-                         data: Option<&str>,
+                         alias: Option<&str>,
                          role: Option<&str>,
                          cb: Box<Fn(Result<String, SovrinError>) + Send>) {
         cb(self.ledger_service.build_nym_request(submitter_did,
                                                  target_did,
                                                  verkey,
-                                                 xref,
-                                                 data,
+                                                 alias,
                                                  role
         ).map_err(|err| SovrinError::CommonError(err)))
     }

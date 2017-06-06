@@ -118,7 +118,7 @@ impl TransactionHandler {
             Message::Reply(reply) => {
                 self.process_reply(&reply, raw_msg);
             }
-            Message::Reject(response) => {
+            Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
             }
             _ => {

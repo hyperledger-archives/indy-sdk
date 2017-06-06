@@ -65,9 +65,11 @@ impl SignusService {
         let public_key = signus.verkey_to_public_key(&ver_key);
         let secret_key = signus.signkey_to_private_key(&sign_key);
 
-        let did = my_did_info.did.as_ref()
-            .map(|did| Base58::decode(did))
-            .unwrap_or(Ok(ver_key[0..16].to_vec()))?;
+        let did = match my_did_info.did {
+            Some(ref did) => Base58::decode(did)?,
+            _ if my_did_info.cid == Some(true) => ver_key.clone(),
+            _ => ver_key[0..16].to_vec()
+        };
 
         let my_did = MyDid::new(Base58::encode(&did),
                                 xtype.clone(),

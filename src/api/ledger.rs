@@ -143,8 +143,7 @@ pub extern fn sovrin_build_get_ddo_request(command_handle: i32,
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
 /// verkey: verification key
-/// xref: id of a NYM record
-/// data: alias
+/// alias
 /// role: Role of a user NYM record
 /// cb: Callback that takes command result as parameter.
 ///
@@ -158,26 +157,23 @@ pub extern fn sovrin_build_nym_request(command_handle: i32,
                                        submitter_did: *const c_char,
                                        target_did: *const c_char,
                                        verkey: *const c_char,
-                                       xref: *const c_char,
-                                       data: *const c_char,
+                                       alias: *const c_char,
                                        role: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(verkey, ErrorCode::CommonInvalidParam4);
-    check_useful_opt_c_str!(xref, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(data, ErrorCode::CommonInvalidParam6);
-    check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam7);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+    check_useful_opt_c_str!(alias, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildNymRequest(
             submitter_did,
             target_did,
             verkey,
-            xref,
-            data,
+            alias,
             role,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
