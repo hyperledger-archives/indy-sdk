@@ -8,12 +8,26 @@
 
 #import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
+#import <libsovrin/libsovrin.h>
 
 @interface PoolUtils : XCTestCase
 
 + (PoolUtils *)sharedInstance;
 
 - (NSError*)createPoolLedgerConfig:(NSString *)poolName;
+
+- (NSError*)createAndOpenPoolLedgerConfig: (SovrinHandle*) poolHandle
+                                 poolName: (NSString *)poolName;
+
 - (NSString *)createPoolConfig:(NSString *)poolName;
+
+- (NSError *)openPoolLedger:(NSString *)configName
+                     config:(NSString *)config;
+
+- (NSError *)sendRequest:(SovrinHandle)poolHandle
+                 request:(NSString *)request
+                response:(NSString **)response;
+
++ (NSString *) nodeIp;
 
 @end
