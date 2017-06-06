@@ -24,6 +24,7 @@
     
     
     ret = sovrin_sign_and_submit_request( handle,
+                                          poolHandle,
                                           walletHandle,
                                           [submitterDid UTF8String],
                                           [request UTF8String],
