@@ -60,8 +60,8 @@
 -(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
                     claimJson:(NSString *) claimJson
                  claimReqJson:(NSString *) claimReqJson
-                   outClaimJson:(NSString**) xClaimJson
-           outRevocRegUpdateJSON:(NSString **) revocRegUpdateJSON;
+                 outClaimJson:(NSString**) xClaimJson
+        outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON;
 
 - (NSError *)issuerCreateClaimDefinifion:(SovrinHandle) walletHandle
                               schemaJson:(NSString *) schemaJson

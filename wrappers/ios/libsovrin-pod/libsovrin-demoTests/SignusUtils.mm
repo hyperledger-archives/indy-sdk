@@ -42,14 +42,16 @@
     {
         err = error;
         signSignature =blockSignature;
+        
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *signature = signSignature;
     
@@ -60,8 +62,8 @@
 - (NSError *)createMyDid:(SovrinHandle)walletHandle
                myDidJson:(NSString *)myDidJson
                    myDid:(NSString **)myDid
-               myVerkey:(NSString **)myVerkey
-                   myPk:(NSString **)myPk
+                myVerkey:(NSString **)myVerkey
+                    myPk:(NSString **)myPk
 {
    
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -79,14 +81,16 @@
         did = blockDid;
         verKey = blockVerKey;
         pk = blockPk;
+        
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *myDid = did;
     *myVerkey = verKey;
@@ -108,14 +112,15 @@
                            completion:^(NSError *error)
     {
         err = error;
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     return err;
 }

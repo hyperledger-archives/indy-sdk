@@ -75,10 +75,10 @@
 
 // MARK: issuer claim
 -(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
-                 claimReqJson:(NSString *) claimReqJson
                     claimJson:(NSString *) claimJson
-                   outClaimJson:(NSString**) xClaimJson
-           outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON
+                 claimReqJson:(NSString *) claimReqJson
+                 outClaimJson:(NSString**) xClaimJson
+        outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON
 {
     __block NSError *err = nil;
     __block NSString *outClaimJson;
@@ -97,6 +97,7 @@
         err = error;
         outRevocRegUpdateJSON = revocRegUpdateJSON;
         outClaimJson = claimJson;
+        [completionExpectation fulfill];
     }];
     
     
@@ -235,12 +236,12 @@
         [completionExpectation fulfill];
     }];
     
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
  
 }
@@ -249,6 +250,7 @@
                       filterJson:(NSString*) filterJson
               outClaimOffersJSON:(NSString**) outJson
 {
+    __block NSString *json;
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = nil;
     
@@ -259,19 +261,18 @@
                                                completion:^(NSError *error, NSString *claimOffersJSON)
     {
         err = error;
-        if(outJson)
-        {
-            *outJson = claimOffersJSON;
-        }
+        json = claimOffersJSON;
         [completionExpectation fulfill];
     }];
-
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    *outJson = json;
     return err;
 }
 
@@ -326,13 +327,14 @@
         err = error;
         [completionExpectation fulfill];
     }];
-
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
 }
 
@@ -341,6 +343,7 @@
                          outClaimsJson:(NSString**) outClaimsJson
 {
     __block NSError *err = nil;
+    __block NSString *outJson;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -350,19 +353,19 @@
                                                     completion:^(NSError *error, NSString *claimsJSON)
     {
         err = error;
-        if(outClaimsJson)
-        {
-            *outClaimsJson = claimsJSON;
-        }
+        outJson = claimsJSON;
         [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    *outClaimsJson = outJson;
+    
     return err;
 }
 

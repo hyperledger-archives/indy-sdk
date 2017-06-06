@@ -26,7 +26,6 @@
 }
 
 
-
 - (NSError *)signAndSubmitRequest:(SovrinHandle)poolHandle
                      walletHandle:(SovrinHandle)walletHandle
                      submitterDid:(NSString *)submitterDid
@@ -46,14 +45,15 @@
     {
         err = error;
         outJson = resultJson;
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *responseJson = outJson;
     
@@ -89,15 +89,15 @@
            {
                err = error;
                outJson = json;
-               
+               [completionExpectation fulfill];
            }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = outJson;
     
@@ -120,14 +120,15 @@
     {
         err = error;
         outJson = json;
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = outJson;
     
@@ -161,14 +162,15 @@
            {
                err = error;
                outJson = requestJson;
+               [completionExpectation fulfill];
            }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = outJson;
     return err;
@@ -192,14 +194,15 @@
     {
         err = error;
         outRequest = request;
+        [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = outRequest;
     return err;
@@ -221,13 +224,15 @@
            {
                err = error;
                result = request;
+               [completionExpectation fulfill];
            }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = result;
     return err;
@@ -251,14 +256,15 @@
            {
                err = error;
                result = request;
+               [completionExpectation fulfill];
            }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = result;
     return err;
@@ -283,14 +289,14 @@
            {
                err = error;
                result = request;
+               [completionExpectation fulfill];
            }];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = result;
     return err;
@@ -316,14 +322,15 @@
            {
                err = error;
                result = request;
+               [completionExpectation fulfill];
            }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = result;
     return err;
@@ -348,14 +355,15 @@
            {
                err = error;
                result = request;
+               [completionExpectation fulfill];
            }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     *resultJson = result;
     return err;

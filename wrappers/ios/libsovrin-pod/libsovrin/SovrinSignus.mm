@@ -110,15 +110,13 @@
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_verify_signature( handle,
-                                   walletHandle,
-                                   poolHandle,
-                                   [did UTF8String],
-                                   [msg UTF8String],
-                                   [signature UTF8String],
-                                   SovrinWrapperCommon3PBCallback
-                                 );
-
+    ret = sovrin_verify_signature(handle,
+                                  walletHandle,
+                                  poolHandle,
+                                  [did UTF8String],
+                                  [msg UTF8String],
+                                  [signature UTF8String],
+                                  SovrinWrapperCommon3PBCallback);
     if( ret != Success )
     {
         [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
