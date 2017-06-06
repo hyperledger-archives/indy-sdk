@@ -42,7 +42,7 @@
     
     //1. Obtain trusteeVerKey
     NSString * myDidJson = [NSString stringWithFormat:@"{"\
-                            "\"seed\":\"000000000000000000000000Trustee1\"," \
+                            "\"seed\":\"000000000000000000000000Trustee1\"" \
                             "}"];
     NSString *did = nil;
     NSString *verKey = nil;
@@ -66,7 +66,7 @@
     //2. Use obtained trusteeVerKey
     myDidJson = [NSString stringWithFormat:@"{"\
                             "\"did\":\"%@\"," \
-                            "\"seed\":\"000000000000000000000000Trustee1\"," \
+                            "\"seed\":\"000000000000000000000000Trustee1\"" \
                             "}", verKey];
    
     ret = [[SignusUtils sharedInstance] createMyDid:walletHandle

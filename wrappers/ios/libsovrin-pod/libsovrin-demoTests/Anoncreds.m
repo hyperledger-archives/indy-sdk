@@ -30,7 +30,7 @@
     [super tearDown];
 }
 
--(void) anoncredsWorksForSingleIssuerSingleProverTest
+-(void) testAnoncredsWorksForSingleIssuerSingleProverTest
 {
     NSLog(@"anoncredsWorksForSingleIssuerSingleProverTest() started...");
     [TestUtils cleanupStorage];
@@ -45,11 +45,17 @@
     
     //1. Create Issuer wallet, get wallet handle
     
-    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName walletName:issuerWalletName xtype:xtype handle:&issuerWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName
+                                                 walletName:issuerWalletName
+                                                      xtype:xtype
+                                                     handle:&issuerWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName
+                                                 walletName:proverWalletName
+                                                      xtype:xtype
+                                                     handle:&proverWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Issuer create claim definition
@@ -95,6 +101,13 @@
                                              outClaimOffersJSON: &claimOffersJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverGetClaimOffers() failed");
+    NSArray *claimOffers = (NSArray *)[NSDictionary fromString: claimOffersJson];
+    
+    XCTAssertTrue(claimOffers, @"claimOffers == nil");
+    XCTAssertEqual([claimOffers count], 1, @"[claimOffers count] != 1");
+    
+    NSDictionary *claimOffer1 = claimOffers[0];
+    claimOfferJson = [NSDictionary toString: claimOffer1];
 
     // TODO: add more asserts here
     
@@ -110,6 +123,8 @@
                                                          outClaimReqJson:&claimReq ];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
+    NSLog(@"claimReqJson: %@", claimReq);
+    
 
     //8. Issuer create Claim
     NSString *revocRegUpdateJson = nil;
@@ -127,6 +142,8 @@
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     XCTAssertNotNil(xclaimJson, @"xclaimJson is nil!");
     XCTAssertNotNil(revocRegUpdateJson, @"revocRegUpdateJson is nil!");
+    NSLog(@"xclaimJson: %@", xclaimJson);
+    NSLog(@"revocRegUpdateJson: %@", revocRegUpdateJson);
     
     // 9. Prover store received Claim
     
@@ -153,6 +170,7 @@
                                                          "}", [schemaSeqNo integerValue] ];
     NSString *claimsJson = nil;
     
+     // TODO: attr1_uuid & predicate1_uuid are empty! why?
     res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReq:proverWalletHandle
                                                      proofRequestJson:proofReqJson
                                                         outClaimsJson:&claimsJson];
@@ -164,7 +182,6 @@
     XCTAssertTrue( claims,  @"serialization failed");
     XCTAssertFalse([claims count] == 0, @"claims array is empty.");
     
-    // attr1_uuid is empty! why?
     NSDictionary *claims_for_attr_1 = claims[@"attrs" ][@"attr1_uuid"][0];
 
     XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
@@ -213,7 +230,7 @@
     [TestUtils cleanupStorage];
 }
 
--(void) anoncredsWorksForMultiplyIssuerSingleProver
+-(void) testAnoncredsWorksForMultiplyIssuerSingleProver
 {
     [TestUtils cleanupStorage];
     
@@ -263,10 +280,12 @@
                                                                     outJson:&gvtClaimDefJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::createClaimDefinitionAndSetLink() failed");
+    NSLog(@"gvtSchena: %@", gvtSchema);
+    NSLog(@"gvtClaimDefJson: %@", gvtClaimDefJson);
     
     [schemas setValue: gvtSchema forKey: [gvtSchemaSeqNo stringValue]];
     [claimDefs setValue: gvtClaimDefJson forKey: [gvtClaimDefSeqNo stringValue]];
-
+    
     //5. Issuer1 create claim definition by xyz schema
 
     NSNumber* xyzSchemaSeqNo = @2;
@@ -279,6 +298,7 @@
                                                                    outJson:&xyzClaimDefJson];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::createClaimDefinitionAndSetLink() failed");
+    NSLog(@"xyzClaimDefJson: %@", xyzClaimDefJson);
     
     [schemas setValue:xyzSchema forKey:[xyzSchemaSeqNo stringValue]];
     [claimDefs setValue: xyzClaimDefJson forKey:[xyzClaimDefSeqNo stringValue]];
@@ -328,6 +348,7 @@
                                              outClaimOffersJSON:&claimOffsersJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils:: proverGetClaimOffers() failed");
+    NSLog(@"claimOffsersJson: %@", claimOffsersJson);
 
     NSArray *claimOffers = (NSArray *)[NSDictionary fromString: claimOffsersJson];
 
@@ -569,7 +590,7 @@
     [TestUtils cleanupStorage];
 }
 
--(void) anoncredsWorksForSingleIssuerMultiplyClaimsSingleProver
+-(void) testAnoncredsWorksForSingleIssuerMultiplyClaimsSingleProver
 {
     [TestUtils cleanupStorage];
     
@@ -912,11 +933,11 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testAnoncreds
-{
-    [self anoncredsWorksForSingleIssuerSingleProverTest];
-   // [self anoncredsWorksForMultiplyIssuerSingleProver];
-   // [self anoncredsWorksForSingleIssuerMultiplyClaimsSingleProver];
-}
+//- (void)testAnoncreds
+//{
+//    [self anoncredsWorksForSingleIssuerSingleProverTest];
+//    //[self anoncredsWorksForMultiplyIssuerSingleProver];
+//    //[self anoncredsWorksForSingleIssuerMultiplyClaimsSingleProver];
+//}
 
 @end

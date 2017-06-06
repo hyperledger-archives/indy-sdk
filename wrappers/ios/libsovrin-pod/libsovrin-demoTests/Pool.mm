@@ -21,7 +21,7 @@
 
 @implementation Pool
 
-- (void) createPoolLedgerConfigWorks
+- (void) testCreatePoolLedgerConfigWorks
 {
     [TestUtils cleanupStorage];
     
