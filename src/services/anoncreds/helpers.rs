@@ -1,5 +1,4 @@
 extern crate rand;
-extern crate milagro_crypto;
 extern crate openssl;
 
 use errors::common::CommonError;
@@ -37,7 +36,7 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Com
 }
 
 pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
-    let mut result: Vec<u8> = vec![0; 28];
+    let mut result: Vec<u8> = vec![0; 60];
     for i in (0..4).rev() {
         let shift = i * 8;
         let b = (x >> shift) as u8;
@@ -162,7 +161,7 @@ mod tests {
     #[test]
     fn transform_u32_to_array_of_u8_works() {
         let int = 1958376517;
-        let answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 186, 116, 69];
+        let answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 186, 116, 69];
         assert_eq!(transform_u32_to_array_of_u8(int), answer)
     }
 }
