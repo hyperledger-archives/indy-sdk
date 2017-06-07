@@ -167,6 +167,11 @@ impl AgentWorker {
             poll_items.push(agent_conn.socket.as_poll_item(zmq::POLLIN));
         }
 
+        for agent_listener in &self.agent_listeners {
+            let agent_listener: &AgentListener = agent_listener;
+            poll_items.push(agent_listener.socket.as_poll_item(zmq::POLLIN));
+        }
+
         zmq::poll(poll_items.as_mut_slice(), -1).map_err(map_err_trace!("agent poll failed"))?;
 
         if poll_items[0].is_readable() {
@@ -460,6 +465,42 @@ mod tests {
                 AgentWorkerCommand::Response(resp) => {
                     assert_eq!(resp.agent_ind, 0);
                     assert_eq!(resp.msg, "msg");
+                }
+                _ => panic!("unexpected cmd {:?}", cmd),
+            }
+        }
+
+        #[test]
+        fn agent_worker_poll_works_for_listener() {
+            let identity = "identity";
+            let (send_soc, recv_soc) = {
+                let ctx = zmq::Context::new();
+                let recv_soc = ctx.socket(zmq::ROUTER).unwrap();
+                recv_soc.bind("tcp://127.0.0.1:*").unwrap();
+                let send_soc = ctx.socket(zmq::DEALER).unwrap();
+                send_soc.set_identity(identity.as_bytes()).unwrap();
+                send_soc.connect(recv_soc.get_last_endpoint().unwrap().unwrap().as_str()).unwrap();
+                (send_soc, recv_soc)
+            };
+            let agent_worker = AgentWorker {
+                agent_listeners: vec!(AgentListener {
+                    socket: recv_soc,
+                    connections: Vec::new(),
+                }),
+                agent_connections: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            send_soc.send_str("msg", zmq::DONTWAIT).unwrap();
+
+            let mut cmds = agent_worker.poll().unwrap();
+
+            assert_eq!(cmds.len(), 1);
+            let cmd = cmds.remove(0);
+            match cmd {
+                AgentWorkerCommand::Request(req) => {
+                    assert_eq!(req.listener_ind, 0);
+                    assert_eq!(req.identity, identity);
+                    assert_eq!(req.msg, "msg");
                 }
                 _ => panic!("unexpected cmd {:?}", cmd),
             }
