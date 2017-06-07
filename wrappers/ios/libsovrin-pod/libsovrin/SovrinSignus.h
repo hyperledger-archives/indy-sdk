@@ -30,7 +30,6 @@
 + (NSError*) verifySignature:(SovrinHandle) walletHandle
                         pool:(SovrinHandle) poolHandle
                          did:(NSString*) did
-                         msg:(NSString*) msg
                    signature:(NSString*) signature
                   completion:(void (^)(NSError* error, BOOL valid)) handler;
 

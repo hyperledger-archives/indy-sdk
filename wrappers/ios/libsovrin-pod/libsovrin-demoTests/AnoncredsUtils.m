@@ -30,8 +30,8 @@
     return [NSString stringWithFormat:@"{"\
                                        "\"name\":\"gvt\"," \
                                        "\"version\":\"1.0\"," \
-                                       "\"attribute_names\":[\"age\",\"sex\",\"height\",\"name\"]," \
-                                       "\"seq_no\":%d" \
+                                       "\"keys\":[\"age\",\"sex\",\"height\",\"name\"]," \
+                                       "\"seq_no\":%ld" \
                                        "}", [seqNo integerValue]
     ];
 }
@@ -40,7 +40,7 @@
 {
     return [NSString stringWithFormat:@"{"\
             "\"issuer_did\":\"%@\"," \
-            "\"claim_def_seq_no\":%d" \
+            "\"claim_def_seq_no\":%ld" \
             "}", issuerDid, [claimDefSeqNo integerValue]
             ];
 }
@@ -55,66 +55,146 @@
                                        "}"];
 }
 
--(NSError*) issuerCreateClaimDefinition:(SovrinHandle) walletHandle
-                                 schema:(NSString*) schema
-                        outClaimDefJson:(NSString**) outClaimDefJson
-                        outClaimDefUUID:(NSString**) outClaimDefUUID
+-(NSString*) getXyzSchemaJson:(NSNumber*) schemaSeqNo
+{
+    return [NSString stringWithFormat:@"{"\
+            "\"name\":\"xyz\","\
+            "\"version\":\"1.0\","\
+            "\"keys\":[\"status\",\"period\"],"\
+            "\"seq_no\":%ld"\
+            "}",[schemaSeqNo integerValue]];
+}
+
+-(NSString*) getXyzClaimJson
+{
+    return [NSString stringWithFormat:@"{"\
+                                       "  \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],"\
+                                       "  \"period\":[\"8\",\"8\"]"\
+                                       "}"];
+}
+
+// MARK: issuer claim
+-(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
+                    claimJson:(NSString *) claimJson
+                 claimReqJson:(NSString *) claimReqJson
+                 outClaimJson:(NSString**) xClaimJson
+        outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON
 {
     __block NSError *err = nil;
+    __block NSString *outClaimJson;
+    __block NSString *outRevocRegUpdateJSON;
     XCTestExpectation* completionExpectation = nil;
 
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDef:walletHandle
-                                                       schemaJSON:schema
-                                                    signatureType:nil
-                                                   createNonRevoc:NO
-                                                       completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)
+    NSError *ret = [SovrinAnoncreds  issuerCreateClaim:walletHandle
+                                          claimReqJSON:claimReqJson
+                                             claimJSON:claimJson
+                                         revocRegSeqNo:@(-1)
+                                        userRevocIndex:@(-1)
+                                            completion:^(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)
     {
         err = error;
-        if(claimDefJSON && outClaimDefJson)
-        {
-            *outClaimDefJson = claimDefJSON;
-        }
-        if(claimDefUUID && outClaimDefUUID)
-        {
-            *outClaimDefUUID = claimDefUUID;
-        }
+        outRevocRegUpdateJSON = revocRegUpdateJSON;
+        outClaimJson = claimJSON;
         [completionExpectation fulfill];
     }];
+    
     
     if( ret.code != Success)
     {
         return ret;
     }
 
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils shortTimeout]];
+    
+    *xClaimJson = outClaimJson;
+    *revocRegUpdateJSON = outRevocRegUpdateJSON;
+    return err;
+}
+
+- (NSError *)issuerCreateClaimDefinifion:(SovrinHandle) walletHandle
+                              schemaJson:(NSString *) schemaJson
+                            claimDefJson:(NSString**) claimDefJson
+                            claimDefUUID:(NSString**) claimDefUUID
+{
+    __block NSError *err = nil;
+    __block NSString *outClaimDefJson = nil;
+    __block NSString *outClaimDefUUID = nil;
+    XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDef:walletHandle
+                                                       schemaJSON:schemaJson
+                                                    signatureType:nil
+                                                   createNonRevoc:NO
+                                                       completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)
+                    {
+                        err = error;
+                        outClaimDefJson = claimDefJSON;
+                        outClaimDefUUID = claimDefUUID;
+                        
+                        [completionExpectation fulfill];
+                    }];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    *claimDefJson = outClaimDefJson;
+    *claimDefUUID = outClaimDefUUID;
     
     return err;
 }
+
 
 -(NSError*) createClaimDefinitionAndSetLink:(SovrinHandle) walletHandle
                                      schema:(NSString*) schema
                                       seqNo:(NSNumber*) claimDefSeqNo
                                     outJson:(NSString**) outJson
 {
-    NSString* uuid = nil;
+    NSString *json = nil;
+    NSString *uuid;
+    NSError *ret;
     
-    NSError *ret = [ self issuerCreateClaimDefinition:walletHandle
-                                               schema:schema
-                                      outClaimDefJson:outJson
-                                      outClaimDefUUID:&uuid ];
+    ret = [self issuerCreateClaimDefinifion:walletHandle
+                                 schemaJson:schema
+                               claimDefJson:&json
+                               claimDefUUID:&uuid];
     if( ret.code != Success )
     {
         return ret;
     }
     
     ret = [[WalletUtils sharedInstance] walletSetSeqNoForValue:walletHandle
-                                                  claimDefUUID:uuid
-                                                 claimDefSeqNo:claimDefSeqNo];
+                                            claimDefUUID:uuid
+                                           claimDefSeqNo:claimDefSeqNo];
+    *outJson = json;
     return ret;
 }
 
+-(NSArray*) getUniqueClaimsFrom: (NSDictionary*)proofClaims
+{
+    NSMutableArray* uniqueClaims =  [[NSMutableArray alloc] init];
+    
+    for (NSDictionary* claims in proofClaims.allValues )
+    {
+    
+        for (NSArray* claim in claims.allValues)
+        {
+            if ( ![uniqueClaims containsObject: claim[0]] )
+            {
+                [uniqueClaims addObject:claim[0]];
+            }
+        }
+    }
+    
+    NSArray* res = [NSArray arrayWithArray:uniqueClaims];
+    return res;
+    
+}
 -(NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
                     masterSecretName:(NSString*) name
 {
@@ -156,12 +236,12 @@
         [completionExpectation fulfill];
     }];
     
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
  
 }
@@ -170,6 +250,7 @@
                       filterJson:(NSString*) filterJson
               outClaimOffersJSON:(NSString**) outJson
 {
+    __block NSString *json;
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = nil;
     
@@ -180,19 +261,18 @@
                                                completion:^(NSError *error, NSString *claimOffersJSON)
     {
         err = error;
-        if(outJson)
-        {
-            *outJson = claimOffersJSON;
-        }
+        json = claimOffersJSON;
         [completionExpectation fulfill];
     }];
-
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    *outJson = json;
     return err;
 }
 
@@ -204,6 +284,7 @@
                          outClaimReqJson:(NSString**) outJson
 {
     __block NSError *err = nil;
+    __block NSString *json;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -216,80 +297,45 @@
                                                        completion:^(NSError* error, NSString* claimReqJSON)
     {
         err = error;
-        if(outJson)
-        {
-            *outJson = claimReqJSON;
-        }
+        json = claimReqJSON;
         [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    *outJson = json;
     return err;
 }
 
--(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
-                 claimReqJson:(NSString*) claimReqJson
-                    claimJson:(NSString*) claimJson
-        outRevocRegUpdateJSON:(NSString**) outRevocRegUpdateJson
-                 outClaimJson:(NSString**) outClaimJson
-{
-    __block NSError *err = nil;
-    XCTestExpectation* completionExpectation = nil;
-    
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    NSError *ret = [SovrinAnoncreds issuerCreateClaim:walletHandle
-                                         claimReqJSON:claimReqJson
-                                            claimJSON:claimJson
-                                        revocRegSeqNo:nil
-                                       userRevocIndex:nil completion:^(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)
-    {
-        err = error;
-        if(outRevocRegUpdateJson)
-        {
-            *outRevocRegUpdateJson = revocRegUpdateJSON;
-        }
-        if(claimJson)
-        {
-            *outClaimJson = claimJSON;
-        }
-        [completionExpectation fulfill];
-    }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    return err;
-}
+
 
 -(NSError*) proverStoreClaim:(SovrinHandle) walletHandle
                   claimsJson:(NSString*) str
 {
     __block NSError *err = nil;
-    XCTestExpectation* completionExpectation = nil;
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    NSError *ret = [SovrinAnoncreds proverStoreClaim: walletHandle claimsJSON:str completion:^(NSError *error)
+    NSError *ret = [SovrinAnoncreds proverStoreClaim: walletHandle
+                                          claimsJSON:str
+                                          completion:^(NSError *error)
     {
+        XCTAssertEqual(err.code, Success, @"proverStoreClaim failed!");
         err = error;
         [completionExpectation fulfill];
     }];
-
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
 }
 
@@ -298,6 +344,7 @@
                          outClaimsJson:(NSString**) outClaimsJson
 {
     __block NSError *err = nil;
+    __block NSString *outJson;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -307,19 +354,19 @@
                                                     completion:^(NSError *error, NSString *claimsJSON)
     {
         err = error;
-        if(outClaimsJson)
-        {
-            *outClaimsJson = claimsJSON;
-        }
+        outJson = claimsJSON;
         [completionExpectation fulfill];
     }];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    *outClaimsJson = outJson;
+    
     return err;
 }
 

@@ -1,6 +1,6 @@
-extern crate time;
+use std::sync::mpsc::{channel};
+use std::ffi::{CString};
 
-use sovrin::api::ErrorCode;
 use sovrin::api::signus::{
     sovrin_sign,
     sovrin_create_and_store_my_did,
@@ -8,12 +8,10 @@ use sovrin::api::signus::{
     sovrin_replace_keys,
     sovrin_verify_signature
 };
+use sovrin::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
-
-use std::ffi::CString;
-use std::sync::mpsc::channel;
 
 pub struct SignusUtils {}
 
@@ -48,6 +46,30 @@ impl SignusUtils {
         }
 
         Ok(signature)
+    }
+
+    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<String>) -> Result<(String, String, String), ErrorCode> {
+        let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
+        let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| {
+            create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap();
+        });
+        let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
+
+        let my_did_json = seed.map_or("{}".to_string(), |seed| format!("{{\"seed\":\"{}\" }}", seed));
+        let err =
+            sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
+                                           wallet_handle,
+                                           CString::new(my_did_json).unwrap().as_ptr(),
+                                           create_and_store_my_did_callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok((my_did, my_verkey, my_pk))
     }
 
     pub fn create_my_did(wallet_handle: i32, my_did_json: &str) -> Result<(String, String, String), ErrorCode> {

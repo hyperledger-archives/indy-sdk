@@ -287,17 +287,17 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    
-    extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
-                                                         const char *    submitter_did,
-                                                         const char *    xref,
-                                                         const char *    signature_type,
-                                                         const char *    origin,
 
-                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                              sovrin_error_t  err,
-                                                                              const char*     request_json)
-                                                        );
+     extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
+                                                          const char *    submitter_did,
+                                                          const char *    xref,
+                                                          const char *    signature_type,
+                                                          const char *    origin,
+                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
+                                                                               sovrin_error_t  err,
+                                                                               const char*     request_json)
+                                                          );
+
 
     /// Builds a NODE request.
     ///

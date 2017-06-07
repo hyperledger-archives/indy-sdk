@@ -74,15 +74,17 @@ impl<'a> JsonDecodable<'a> for MyDid {}
 pub struct TheirDidInfo {
     pub did: String,
     pub crypto_type: Option<String>,
-    pub verkey: Option<String>
+    pub verkey: Option<String>,
+    pub endpoint: Option<String>,
 }
 
 impl TheirDidInfo {
-    pub fn new(did: String, crypto_type: Option<String>, verkey: Option<String>) -> TheirDidInfo {
+    pub fn new(did: String, crypto_type: Option<String>, verkey: Option<String>, endpoint: Option<String>) -> TheirDidInfo {
         TheirDidInfo {
             did: did,
             crypto_type: crypto_type,
-            verkey: verkey
+            verkey: verkey,
+            endpoint: endpoint,
         }
     }
 }
@@ -96,16 +98,18 @@ pub struct TheirDid {
     pub did: String,
     pub crypto_type: String,
     pub verkey: Option<String>,
-    pub pk: Option<String>
+    pub pk: Option<String>,
+    pub endpoint: Option<String>,
 }
 
 impl TheirDid {
-    pub fn new(did: String, crypto_type: String, verkey: Option<String>, pk: Option<String>) -> TheirDid {
+    pub fn new(did: String, crypto_type: String, verkey: Option<String>, pk: Option<String>, endpoint: Option<String>) -> TheirDid {
         TheirDid {
             did: did,
             crypto_type: crypto_type,
             verkey: verkey,
-            pk: pk
+            pk: pk,
+            endpoint: endpoint,
         }
     }
 }

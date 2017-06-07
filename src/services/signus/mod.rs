@@ -78,6 +78,8 @@ impl SignusService {
                                 Base58::encode(&secret_key),
                                 Base58::encode(&ver_key),
                                 Base58::encode(&sign_key));
+        info!("did {:?}", my_did.did);
+
         Ok(my_did)
     }
 
@@ -107,7 +109,8 @@ impl SignusService {
         let their_did = TheirDid::new(their_did_info.did.clone(),
                                       xtype.clone(),
                                       verkey,
-                                      pk);
+                                      pk,
+                                      their_did_info.endpoint.as_ref().cloned());
         Ok(their_did)
     }
 
@@ -356,6 +359,7 @@ mod tests {
             did: "sw2SA2jCbsiq2kfns".to_string(),
             crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
             pk: None,
+            endpoint: None,
             verkey: Some(my_did.verkey)
         };
 
@@ -392,6 +396,7 @@ mod tests {
             did: "sw2SA2jCbsiq2kfns".to_string(),
             crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
             pk: None,
+            endpoint: None,
             verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
@@ -421,6 +426,7 @@ mod tests {
             did: their_did.did,
             crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
             pk: Some(their_did.pk),
+            endpoint: None,
             verkey: Some(their_did.verkey)
         };
 
@@ -446,6 +452,7 @@ mod tests {
             did: my_did.did,
             crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
             pk: Some(my_did.pk),
+            endpoint: None,
             verkey: Some(my_did.verkey)
         };
 
@@ -460,6 +467,7 @@ mod tests {
             did: their_did.did,
             crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
             pk: Some(their_did.pk),
+            endpoint: None,
             verkey: Some(their_did.verkey)
         };
 

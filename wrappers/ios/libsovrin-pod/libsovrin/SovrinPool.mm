@@ -12,7 +12,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_create_pool_ledger_config(handle,
                                            [name UTF8String],
@@ -21,7 +21,7 @@
                                           );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -33,7 +33,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_open_pool_ledger(handle,
                                   [name UTF8String],
@@ -42,7 +42,7 @@
                                  );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -53,7 +53,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_refresh_pool_ledger(handle,
                                      (sovrin_handle_t) SovrinHandle,
@@ -61,7 +61,7 @@
                                     );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -72,7 +72,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_close_pool_ledger(handle,
                                    (sovrin_handle_t) SovrinHandle,
@@ -80,7 +80,7 @@
                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
@@ -91,7 +91,7 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_delete_pool_ledger_config(handle,
                                            [name UTF8String],
@@ -99,7 +99,7 @@
                                           );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
