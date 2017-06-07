@@ -53,9 +53,6 @@ impl CommandExecutor {
 
     fn new() -> CommandExecutor {
 
-        use utils::logger::LoggerUtils;
-        LoggerUtils::init();
-
         let (sender, receiver) = channel();
 
         CommandExecutor {
