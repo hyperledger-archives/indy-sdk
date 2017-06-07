@@ -97,9 +97,8 @@ typedef enum
 
     // Signus errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500,
-    
-    ProofRejected
+    SignusUnknownCryptoError = 500
+
 } sovrin_error_t;
 
 #endif
