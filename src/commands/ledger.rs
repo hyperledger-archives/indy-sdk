@@ -213,9 +213,7 @@ impl LedgerCommandExecutor {
                       handle: i32,
                       request_json: &str,
                       cb: Box<Fn(Result<String, SovrinError>) + Send>) {
-
         let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
-
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(SovrinError::PoolError(err))); }

@@ -52,7 +52,6 @@ impl CommandExecutor {
     }
 
     fn new() -> CommandExecutor {
-
         let (sender, receiver) = channel();
 
         CommandExecutor {
