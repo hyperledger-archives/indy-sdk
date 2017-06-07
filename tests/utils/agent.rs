@@ -40,12 +40,12 @@ impl AgentUtils {
     pub fn listen(wallet_handle: i32) -> Result<(i32, String), ErrorCode> {
         let (sender, receiver) = channel();
         let on_msg = Box::new(|conn_handle, err, msg| {
-            println!("On connection {} received (with error {:?}) agent message {}", conn_handle, err, msg);
+            info!("On connection {} received (with error {:?}) agent message {}", conn_handle, err, msg);
         }); //TODO make as parameter?
         let on_msg = CallbackUtils::closure_to_agent_message_cb(on_msg);
 
         let on_connect = Box::new(|listener_handle, err, conn_handle, sender_did, receiver_did| {
-            println!("New connection {} on listener {}, err {:?}, sender DID {}, receiver DID {}",
+            info!("New connection {} on listener {}, err {:?}, sender DID {}, receiver DID {}",
                      conn_handle, listener_handle, err, sender_did, receiver_did);
         });
         let on_connect = CallbackUtils::closure_to_agent_connected_cb(on_connect);

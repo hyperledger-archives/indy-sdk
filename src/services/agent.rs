@@ -24,8 +24,9 @@ struct RemoteAgent {
 }
 
 struct AgentListener {
+    connections: Vec<(i32 /* connection_handle*/, String /* identity */)>,
+    listener_handle: i32,
     socket: zmq::Socket,
-    connections: Vec<(i32, String)>, // (connection_handle, identity for zmq (did)
 }
 
 struct AgentWorker {
@@ -108,12 +109,12 @@ impl AgentWorker {
             trace!("agent worker poll loop >>");
             let cmds = self.poll().unwrap();
             for cmd in cmds {
-                info!("received cmd {:?}", cmd);
+                debug!("AgentWorker::run received cmd {:?}", cmd);
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
-                    AgentWorkerCommand::Request(_) => unimplemented!(),
+                    AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg),
                     AgentWorkerCommand::Exit => break 'agent_pool_loop,
                 }
             }
@@ -133,14 +134,18 @@ impl AgentWorker {
     }
 
     fn start_listen(&mut self, handle: i32) -> Result<(), CommonError> {
-        let res = self.try_start_listen();
+        let res = self.try_start_listen(handle);
         let cmd = AgentCommand::ListenAck(handle, res.map(|endpoint| (handle, endpoint)));
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
 
-    fn try_start_listen(&mut self) -> Result<String, CommonError> {
+    fn try_start_listen(&mut self, handle: i32) -> Result<String, CommonError> {
         let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER)?;
-        //FIXME setup keys
+        //FIXME setup real keys
+        sock.set_curve_publickey(zmq::z85_encode("41mUSR3cj2YzM1azwvRk8Wmu4FNzHAdzP1pAfy7SBX1q".from_base58().unwrap().as_slice()).unwrap().as_str())?;
+        sock.set_curve_secretkey(zmq::z85_encode("96RHZeH94AY5M3HfC5dQjJ6KYr3N5j2nKibz6sYtd3g3".from_base58().unwrap().as_slice()).unwrap().as_str())?;
+        //FIXME /setup real keys
+        sock.set_curve_server(true)?;
         sock.bind("tcp://0.0.0.0:*")?; //TODO configure base IP?
         let endpoint = sock.get_last_endpoint()?
             .map_err(|err|
@@ -148,8 +153,9 @@ impl AgentWorker {
                     format!("Can't decode socket endpoint after bind for listener {:?}.",
                             err)))?;
         let al = AgentListener {
-            socket: sock,
             connections: Vec::new(),
+            listener_handle: handle,
+            socket: sock,
         };
         self.agent_listeners.push(al);
         info!("Agent listener started at {}", endpoint);
@@ -176,14 +182,14 @@ impl AgentWorker {
 
         if poll_items[0].is_readable() {
             let msg = self.cmd_socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
-            info!("Input on cmd socket {}", msg);
+            trace!("Input on cmd socket {}", msg);
             result.push(AgentWorkerCommand::from_json(msg.as_str()).unwrap());
         }
 
         for i in 0..agent_connections_cnt {
             if poll_items[1 + i].is_readable() {
                 let msg = self.agent_connections[i].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
-                info!("Input on agent socket {}: {}", i, msg);
+                trace!("Input on remote agent socket {}: {}", i, msg);
                 result.push(AgentWorkerCommand::Response(Response {
                     agent_ind: i,
                     msg: msg,
@@ -194,7 +200,7 @@ impl AgentWorker {
             if poll_items[1 + agent_connections_cnt + i].is_readable() {
                 let identity = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 let msg = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
-                info!("Input on listener socket {}: identity {} send msg {}", i, identity, msg);
+                trace!("Input on agent listener socket {}: identity {} msg {}", i, identity, msg);
                 result.push(AgentWorkerCommand::Request(Request {
                     listener_ind: i,
                     identity: identity,
@@ -256,6 +262,24 @@ impl RemoteAgent {
             //check state, transfer message to client
             unimplemented!();
         }
+    }
+}
+
+impl AgentListener {
+    fn handle_request(&mut self, identity: String, msg: String) {
+        if let Some(_) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
+            unimplemented!(); //FIXME handle and return
+        }
+
+        info!("New connection to agent listener from {} with msg {}", identity, msg);
+        let conn_handle = SequenceUtils::get_next_id();
+        self.connections.push((conn_handle, identity.clone()));
+        let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
+                                                  Ok((self.listener_handle, conn_handle,
+                                                      identity.clone(), msg.clone())));
+        CommandExecutor::instance().send(Command::Agent(cmd)).unwrap();
+        self.socket.send_str(identity.as_str(), zmq::SNDMORE).unwrap();
+        self.socket.send_str("DID_ACK", zmq::DONTWAIT).unwrap();
     }
 }
 
@@ -401,7 +425,7 @@ mod tests {
             recv_soc.set_curve_server(true).unwrap();
             recv_soc.bind("tcp://127.0.0.1:*").unwrap();
             let addr = recv_soc.get_last_endpoint().unwrap().unwrap();
-            info!("addr {}", addr);
+            trace!("addr {}", addr);
 
             let mut agent_worker = AgentWorker {
                 agent_connections: Vec::new(),
@@ -484,8 +508,9 @@ mod tests {
             };
             let agent_worker = AgentWorker {
                 agent_listeners: vec!(AgentListener {
-                    socket: recv_soc,
                     connections: Vec::new(),
+                    listener_handle: 0,
+                    socket: recv_soc,
                 }),
                 agent_connections: Vec::new(),
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -514,16 +539,21 @@ mod tests {
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
             };
 
-            let endpoint = agent_worker.try_start_listen().unwrap();
+            let endpoint = agent_worker.try_start_listen(0).unwrap();
             assert!(endpoint.starts_with("tcp://0.0.0.0:"));
             assert_eq!(agent_worker.agent_listeners.len(), 1);
 
             let msg = "msg";
             let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
+            let kp = zmq::CurveKeyPair::new().unwrap();
+            sock.set_curve_publickey(kp.public_key.as_str()).unwrap();
+            sock.set_curve_secretkey(kp.secret_key.as_str()).unwrap();
+            sock.set_curve_serverkey(zmq::z85_encode("41mUSR3cj2YzM1azwvRk8Wmu4FNzHAdzP1pAfy7SBX1q".from_base58().unwrap().as_slice()).unwrap().as_str()).unwrap();
             sock.connect(endpoint.as_str()).unwrap();
             sock.send_str(msg, 0).unwrap();
-            agent_worker.agent_listeners[0].socket.recv_bytes(0).unwrap(); //ignore identity
-            let act_msg = agent_worker.agent_listeners[0].socket.recv_string(0).unwrap().unwrap();
+            agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
+            agent_worker.agent_listeners[0].socket.recv_bytes(zmq::DONTWAIT).unwrap(); //ignore identity
+            let act_msg = agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
             assert_eq!(act_msg, msg);
         }
     }
