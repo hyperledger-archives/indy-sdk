@@ -207,6 +207,8 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_node_request_works() {
             TestUtils::cleanup_storage();
+            use utils::logger::LoggerUtils;
+            LoggerUtils::init();
             let pool_name = "pool4";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 

@@ -126,6 +126,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::SubmitAck(handle, result) => {
                 info!(target: "ledger_command_executor", "SubmitAck command received");
+                println!("10 {:?}", result);
                 self.send_callbacks.borrow_mut().remove(&handle)
                     .expect("Expect callback to process ack command")
                     (result.map_err(SovrinError::from));
@@ -213,7 +214,11 @@ impl LedgerCommandExecutor {
                       handle: i32,
                       request_json: &str,
                       cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        println!("1 ");
+
         let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
+        println!("2 {:?}", x);
+
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(SovrinError::PoolError(err))); }
