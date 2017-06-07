@@ -73,7 +73,7 @@ impl AgentService {
     }
 
     pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<i32, CommonError> {
-        let agent = self.agent.borrow_mut();
+        let agent = self.agent.try_borrow_mut()?;
         let conn_handle = SequenceUtils::get_next_id();
         let connect_cmd: AgentWorkerCommand = AgentWorkerCommand::Connect(ConnectCmd {
             did: sender_did.to_string(),
@@ -91,7 +91,7 @@ impl AgentService {
     }
 
     pub fn listen(&self) -> Result<i32, CommonError> {
-        let agent = self.agent.borrow_mut();
+        let agent = self.agent.try_borrow_mut()?;
         let listen_handle = SequenceUtils::get_next_id();
         let listen_cmd = AgentWorkerCommand::Listen(ListenCmd { listen_handle: listen_handle });
         agent.cmd_socket.send_str(listen_cmd.to_json()
