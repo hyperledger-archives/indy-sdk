@@ -5,6 +5,7 @@ extern crate zmq;
 
 use self::rust_base58::FromBase58;
 use std::cell::RefCell;
+use std::error::Error;
 use std::thread;
 
 use commands::{Command, CommandExecutor};
@@ -48,7 +49,7 @@ impl Drop for Agent {
 }
 
 pub struct AgentService {
-    agent: RefCell<Option<Agent>>,
+    agent: RefCell<Agent>,
 }
 
 impl Agent {
@@ -68,14 +69,11 @@ impl Agent {
 
 impl AgentService {
     pub fn new() -> AgentService {
-        AgentService { agent: RefCell::new((None)) }
+        AgentService { agent: RefCell::new(Agent::new()) }
     }
 
     pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<i32, CommonError> {
-        let mut agent = self.agent.borrow_mut();
-        if agent.is_none() {
-            *agent = Some(Agent::new());
-        }
+        let agent = self.agent.borrow_mut();
         let conn_handle = SequenceUtils::get_next_id();
         let connect_cmd: AgentWorkerCommand = AgentWorkerCommand::Connect(ConnectCmd {
             did: sender_did.to_string(),
@@ -85,18 +83,21 @@ impl AgentService {
             server_key: server_key.to_string(),
             conn_handle: conn_handle,
         });
-        agent.as_ref().unwrap().cmd_socket.send_str(connect_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
+        agent.cmd_socket.send_str(connect_cmd.to_json()
+                                      .map_err(|err|
+                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
+                                      .as_str(), zmq::DONTWAIT)?;
         Ok(conn_handle)
     }
 
     pub fn listen(&self) -> Result<i32, CommonError> {
-        let mut agent = self.agent.borrow_mut();
-        if agent.is_none() {
-            *agent = Some(Agent::new());
-        }
+        let agent = self.agent.borrow_mut();
         let listen_handle = SequenceUtils::get_next_id();
         let listen_cmd = AgentWorkerCommand::Listen(ListenCmd { listen_handle: listen_handle });
-        agent.as_ref().unwrap().cmd_socket.send_str(listen_cmd.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap();
+        agent.cmd_socket.send_str(listen_cmd.to_json()
+                                      .map_err(|err|
+                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
+                                      .as_str(), zmq::DONTWAIT)?;
         Ok(listen_handle)
     }
 }
@@ -110,9 +111,9 @@ impl AgentWorker {
                 info!("received cmd {:?}", cmd);
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
-                    AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle),
+                    AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
-                    AgentWorkerCommand::Request(req) => unimplemented!(),
+                    AgentWorkerCommand::Request(_) => unimplemented!(),
                     AgentWorkerCommand::Exit => break 'agent_pool_loop,
                 }
             }
@@ -131,14 +132,15 @@ impl AgentWorker {
         Ok(())
     }
 
-    fn start_listen(&mut self, handle: i32) {
+    fn start_listen(&mut self, handle: i32) -> Result<(), CommonError> {
         let res = self.try_start_listen();
         let cmd = AgentCommand::ListenAck(handle, res.map(|endpoint| (handle, endpoint)));
-        CommandExecutor::instance().send(Command::Agent(cmd)).unwrap(); //TODO
+        CommandExecutor::instance().send(Command::Agent(cmd))
     }
 
     fn try_start_listen(&mut self) -> Result<String, CommonError> {
         let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER)?;
+        //FIXME setup keys
         sock.bind("tcp://0.0.0.0:*")?; //TODO configure base IP?
         let endpoint = sock.get_last_endpoint()?
             .map_err(|err|
