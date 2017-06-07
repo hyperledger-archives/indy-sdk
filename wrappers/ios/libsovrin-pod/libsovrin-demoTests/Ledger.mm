@@ -383,7 +383,7 @@
                                                myPk:&myPk];
     XCTAssertEqual(res.code, Success, @"SignusUtils::createMyDid() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
-    // XCTAssertNotNil(myVerKey, @"myVerKey is nil!"); // can be nil?
+    XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
     XCTAssertNotNil(myPk, @"myPk is nil!");
     
     // 5. Build nym request
