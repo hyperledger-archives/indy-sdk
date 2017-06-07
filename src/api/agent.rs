@@ -38,6 +38,7 @@ use self::libc::c_char;
 /// - err: Error code.
 /// - message: Received message.
 #[no_mangle]
+#[warn(unused_variables)]
 pub extern fn sovrin_agent_connect(command_handle: i32,
                                    wallet_handle: i32,
                                    sender_did: *const c_char,
@@ -101,6 +102,7 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 /// - listener_handle: Listener handle to use for mapping of incomming connections to this listener.
+/// - endpoint: Endpoint of started listener
 /// connection_cb:
 /// - xlistener_handle: Listener handle. Identifies listener.
 /// - err: Error code
@@ -112,11 +114,13 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// - err: Error code.
 /// - message: Received message.
 #[no_mangle]
+#[warn(unused_variables)]
 pub extern fn sovrin_agent_listen(command_handle: i32,
                                   wallet_handle: i32,
                                   listener_cb: Option<extern fn(xcommand_handle: i32,
                                                                 err: ErrorCode,
-                                                                listener_handle: i32)>,
+                                                                listener_handle: i32,
+                                                                endpoint: *const c_char)>,
                                   connection_cb: Option<extern fn(xlistener_handle: i32,
                                                                   err: ErrorCode,
                                                                   connection_handle: i32,
@@ -133,7 +137,8 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
         wallet_handle,
         Box::new(move |result| {
             let (err, handle, endpoint) = result_to_err_code_2!(result, 0, String::new());
-            listener_cb(command_handle, err, handle);
+            let endpoint = CStringUtils::string_to_cstring(endpoint);
+            listener_cb(command_handle, err, handle, endpoint.as_ptr());
         }),
         Box::new(move |result| {
             let (err, listener_handle, conn_handle, sender_did, receiver_did) =

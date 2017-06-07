@@ -37,7 +37,7 @@ impl AgentUtils {
         Ok(conn_handle)
     }
 
-    pub fn listen(wallet_handle: i32) -> Result<i32, ErrorCode> {
+    pub fn listen(wallet_handle: i32) -> Result<(i32, String), ErrorCode> {
         let (sender, receiver) = channel();
         let on_msg = Box::new(|conn_handle, err, msg| {
             println!("On connection {} received (with error {:?}) agent message {}", conn_handle, err, msg);
@@ -50,7 +50,7 @@ impl AgentUtils {
         });
         let on_connect = CallbackUtils::closure_to_agent_connected_cb(on_connect);
 
-        let cb = Box::new(move |err, listener_handle| sender.send((err, listener_handle)).unwrap());
+        let cb = Box::new(move |err, listener_handle, endpoint| sender.send((err, listener_handle, endpoint)).unwrap());
         let (cmd_id, cb) = CallbackUtils::closure_to_agent_listen_cb(cb);
 
         let res = sovrin_agent_listen(cmd_id, wallet_handle, cb, on_connect, on_msg);
@@ -58,11 +58,11 @@ impl AgentUtils {
             return Err(res);
         }
 
-        let (err, listener_handle) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, listener_handle, endpoint) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if res != ErrorCode::Success {
             return Err(res);
         }
 
-        Ok(listener_handle)
+        Ok((listener_handle, endpoint))
     }
 }

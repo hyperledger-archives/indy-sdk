@@ -1,7 +1,7 @@
 macro_rules! result_to_err_code {
     ($result:ident) => {
         match $result {
-            Ok(res) => ErrorCode::Success,
+            Ok(_) => ErrorCode::Success,
             Err(err) => err.to_error_code()
         };
     }
