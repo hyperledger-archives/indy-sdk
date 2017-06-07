@@ -343,7 +343,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(Some(agent)),
+                agent: RefCell::new(agent),
             };
             let conn_handle = agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
             let expected_cmd = ConnectCmd {
@@ -369,7 +369,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(Some(agent)),
+                agent: RefCell::new(agent),
             };
             let conn_handle = agent_service.listen().unwrap();
             let expected_cmd = ListenCmd {
