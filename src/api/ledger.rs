@@ -396,6 +396,7 @@ pub extern fn sovrin_build_get_schema_request(command_handle: i32,
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// xref: Seq. number of schema
+/// signature_type: signature type (only CL supported now)
 /// data: components of a key in json: N, R, S, Z
 /// cb: Callback that takes command result as parameter.
 ///
@@ -440,7 +441,7 @@ pub extern fn sovrin_build_claim_def_txn(command_handle: i32,
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// xref: Seq. number of schema
 /// signature_type: signature type (only CL supported now)
-/// origin
+/// origin: issuer did
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns

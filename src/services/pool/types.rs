@@ -102,6 +102,11 @@ pub struct Response {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct PoolLedgerTxns {
+    pub txn: Response,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SimpleRequest {
     pub req_id: u64,
@@ -130,6 +135,8 @@ pub enum Message {
     Reply(Reply),
     #[serde(rename = "REJECT")]
     Reject(Response),
+    #[serde(rename = "POOL_LEDGER_TXNS")]
+    PoolLedgerTxns(PoolLedgerTxns),
     Ping,
     Pong,
 }

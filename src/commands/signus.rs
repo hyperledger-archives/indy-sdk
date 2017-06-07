@@ -156,7 +156,7 @@ impl SignusCommandExecutor {
 
         let my_did = self.signus_service.create_my_did(&my_did_info)?;
 
-        let my_did_json = my_did.to_json()
+        let my_did_json = MyDid::to_json(&my_did)
             .map_err(|err|
                 CommonError::InvalidState(
                     format!("Can't serialize MyDid: {}", err.description())))?;

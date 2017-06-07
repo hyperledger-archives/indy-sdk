@@ -116,7 +116,10 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(&reply, raw_msg);
+                self.process_reply(reply.result.req_id, raw_msg);
+            }
+            Message::PoolLedgerTxns(response) => {
+                self.process_reply(response.txn.req_id, raw_msg);
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -128,8 +131,7 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
-        let req_id = reply.result.req_id;
+    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.reply_cnt += 1;
@@ -459,7 +461,7 @@ impl RemoteNode {
         let public_key = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key)?,
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
@@ -519,7 +521,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key).expect("dest field in GenTransaction isn't valid"),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -887,8 +889,8 @@ mod tests {
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8]));
-            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
+            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
             let gt = GenTransaction {
