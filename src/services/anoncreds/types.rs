@@ -1,5 +1,5 @@
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
+use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use errors::common::CommonError;
 use services::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
@@ -18,14 +18,14 @@ pub enum PredicateType {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Accumulator {
-    pub acc: PointG1,
+    pub acc: PointG2,
     pub v: HashSet<i32>,
     pub max_claim_num: i32,
     pub current_i: i32
 }
 
 impl Accumulator {
-    pub fn new(acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
+    pub fn new(acc: PointG2, v: HashSet<i32>, max_claim_num: i32,
                current_i: i32) -> Accumulator {
         Accumulator {
             acc: acc,
@@ -484,14 +484,14 @@ pub struct NonRevocProofCList {
     pub d: PointG1,
     pub a: PointG1,
     pub g: PointG1,
-    pub w: PointG1,
-    pub s: PointG1,
-    pub u: PointG1
+    pub w: PointG2,
+    pub s: PointG2,
+    pub u: PointG2
 }
 
 impl NonRevocProofCList {
-    pub fn new(e: PointG1, d: PointG1, a: PointG1, g: PointG1, w: PointG1, s: PointG1,
-               u: PointG1) -> NonRevocProofCList {
+    pub fn new(e: PointG1, d: PointG1, a: PointG1, g: PointG1, w: PointG2, s: PointG2,
+               u: PointG2) -> NonRevocProofCList {
         NonRevocProofCList {
             e: e,
             d: d,
@@ -503,8 +503,9 @@ impl NonRevocProofCList {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<PointG1>, CommonError> {
-        Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
+        Ok(vec![self.e.to_bytes()?, self.d.to_bytes()?, self.a.to_bytes()?, self.g.to_bytes()?,
+                self.w.to_bytes()?, self.s.to_bytes()?, self.u.to_bytes()?])
     }
 }
 
@@ -530,7 +531,7 @@ impl NonRevocInitProof {
         }
     }
 
-    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CommonError> {
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let vec = self.c_list.as_list()?;
         Ok(vec)
     }
@@ -937,14 +938,17 @@ impl<'a> JsonDecodable<'a> for RevocationRegistry {}
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistryPrivate {
     pub acc_sk: AccumulatorSecretKey,
-    pub tails: HashMap<i32, PointG1>
+    pub tails: HashMap<i32, PointG1>,
+    pub tails_dash: HashMap<i32, PointG2>
 }
 
 impl RevocationRegistryPrivate {
-    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
+    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>,
+               tails_dash: HashMap<i32, PointG2>) -> RevocationRegistryPrivate {
         RevocationRegistryPrivate {
             acc_sk: acc_sk,
-            tails: tails
+            tails: tails,
+            tails_dash: tails_dash
         }
     }
 }
@@ -956,27 +960,31 @@ impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
+    pub g_dash: PointG2,
     pub h: PointG1,
     pub h0: PointG1,
     pub h1: PointG1,
     pub h2: PointG1,
     pub htilde: PointG1,
-    pub u: PointG1,
+    pub h_cap: PointG2,
+    pub u: PointG2,
     pub pk: PointG1,
-    pub y: PointG1,
+    pub y: PointG2,
     pub x: GroupOrderElement
 }
 
 impl RevocationPublicKey {
-    pub fn new(g: PointG1, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
-               u: PointG1, pk: PointG1, y: PointG1, x: GroupOrderElement) -> RevocationPublicKey {
+    pub fn new(g: PointG1, g_dash: PointG2, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
+               h_cap: PointG2, u: PointG2, pk: PointG1, y: PointG2, x: GroupOrderElement) -> RevocationPublicKey {
         RevocationPublicKey {
             g: g,
+            g_dash: g_dash,
             h: h,
             h0: h0,
             h1: h1,
             h2: h2,
             htilde: htilde,
+            h_cap: h_cap,
             u: u,
             pk: pk,
             y: y,
@@ -1115,15 +1123,15 @@ impl<'a> JsonDecodable<'a> for SecretKey {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Witness {
-    pub sigma_i: PointG1,
-    pub u_i: PointG1,
+    pub sigma_i: PointG2,
+    pub u_i: PointG2,
     pub g_i: PointG1,
-    pub omega: PointG1,
+    pub omega: PointG2,
     pub v: HashSet<i32>
 }
 
 impl Witness {
-    pub fn new(sigma_i: PointG1, u_i: PointG1, g_i: PointG1, omega: PointG1,
+    pub fn new(sigma_i: PointG2, u_i: PointG2, g_i: PointG1, omega: PointG2,
                v: HashSet<i32>) -> Witness {
         Witness {
             sigma_i: sigma_i,

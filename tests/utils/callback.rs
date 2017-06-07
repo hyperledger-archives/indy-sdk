@@ -167,6 +167,32 @@ impl CallbackUtils {
         (command_handle, Some(closure_to_wallet_set_seq_no_for_value_callback))
     }
 
+    pub fn closure_to_issuer_create_and_store_revoc_reg_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+                                                                                                    Option<extern fn(command_handle: i32,
+                                                                                                                     err: ErrorCode,
+                                                                                                                     revoc_reg_json: *const c_char,
+                                                                                                                     revoc_reg_uuid: *const c_char)>) {
+        lazy_static! {
+            static ref ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn issuer_create_and_store_revoc_reg_callback(command_handle: i32, err: ErrorCode,
+                                                                 revoc_reg_json: *const c_char,
+                                                                 revoc_reg_uuid: *const c_char) {
+            let mut callbacks = ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let revoc_reg_json = unsafe { CStr::from_ptr(revoc_reg_json).to_str().unwrap().to_string() };
+            let revoc_reg_uuid = unsafe { CStr::from_ptr(revoc_reg_uuid).to_str().unwrap().to_string() };
+            cb(err, revoc_reg_json, revoc_reg_uuid)
+        }
+
+        let mut callbacks = ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
+    }
+
     pub fn closure_to_prover_create_master_secret_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                                 Option<extern fn(command_handle: i32,
                                                                                                                  err: ErrorCode)>) {
@@ -447,6 +473,47 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(prover_get_claim_offers_callback))
+    }
+
+    pub fn closure_to_agent_connect_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
+                                       -> (i32,
+                                           Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                            pool_handle: i32)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_connect_callback(command_handle: i32, err: ErrorCode, pool_handle: i32) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err, pool_handle)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(agent_connect_callback))
+    }
+
+    pub fn closure_to_agent_message_cb(closure: Box<FnMut(i32, ErrorCode, String) + Send>)
+                                       -> Option<extern fn(connection_handle: i32, err: ErrorCode, msg: *const c_char)> {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_message_callback(conn_handle: i32, err: ErrorCode, msg: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let msg = unsafe { CStr::from_ptr(msg).to_str().unwrap().to_string() };
+            for cb in callbacks.iter_mut() {
+                cb(conn_handle, err, msg.clone())
+            }
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.push(closure);
+
+        Some(agent_message_callback)
     }
 
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,

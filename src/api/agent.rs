@@ -1,9 +1,10 @@
 extern crate libc;
 
 use api::ErrorCode;
-//use errors::ToErrorCode;
-//use commands::{Command, CommandExecutor};
-//use utils::cstring::CStringUtils;
+use commands::{Command, CommandExecutor};
+use commands::agent::AgentCommand;
+use errors::ToErrorCode;
+use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 
@@ -47,7 +48,31 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
                                    message_cb: Option<extern fn(xconnection_handle: i32,
                                                                 err: ErrorCode,
                                                                 message: *const c_char)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_str!(sender_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(receiver_did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance().send(
+        Command::Agent(
+            AgentCommand::Connect(
+                wallet_handle,
+                sender_did,
+                receiver_did,
+                Box::new(move |result| {
+                    let (err, handle) = result_to_err_code_1!(result, 0);
+                    connection_cb(command_handle, err, handle);
+                }),
+                Box::new(move |result| {
+                    let (err, handle, msg) = result_to_err_code_2!(result, 0, String::new());
+                    let msg = CStringUtils::string_to_cstring(msg);
+                    message_cb(handle, err, msg.as_ptr());
+                })
+            )
+        )
+    );
+
+    result_to_err_code!(result)
 }
 
 /// Starts listening of agent connections.
