@@ -501,6 +501,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn generate_claim_definition_works_with_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
