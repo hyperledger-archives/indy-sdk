@@ -1,9 +1,7 @@
 extern crate zmq;
 extern crate serde_json;
 
-use std::cell::{BorrowError, BorrowMutError};
 use std::{error, fmt, io};
-use std::error::Error;
 
 use errors::common::CommonError;
 
@@ -69,18 +67,6 @@ impl From<io::Error> for PoolError {
 impl From<zmq::Error> for PoolError {
     fn from(err: zmq::Error) -> PoolError {
         PoolError::CommonError(From::from(err))
-    }
-}
-
-impl From<BorrowError> for PoolError {
-    fn from(err: BorrowError) -> Self {
-        PoolError::CommonError(CommonError::InvalidState(err.description().to_string()))
-    }
-}
-
-impl From<BorrowMutError> for PoolError {
-    fn from(err: BorrowMutError) -> Self {
-        PoolError::CommonError(CommonError::InvalidState(err.description().to_string()))
     }
 }
 
