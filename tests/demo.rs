@@ -220,7 +220,7 @@ fn anoncreds_demo_works() {
 //                                                       issuer_create_and_store_revoc_reg_callback);
 //    assert_eq!(ErrorCode::Success, err);
 //    let (err, revoc_reg_json, revoc_reg_uuid) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-//    println!("revocation_reg_json: {:?}", revoc_reg_json);
+//    info!("revocation_reg_json: {:?}", revoc_reg_json);
 //    assert_eq!(ErrorCode::Success, err);
 //
 //    // Create relationship between revoc_reg_seq_no and revoc_reg_uuid in wallet

@@ -164,7 +164,6 @@ impl IssuerCommandExecutor {
         let tails_dash = serde_json::to_string(&revocation_registry_private.tails_dash)
             .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry private: {}", err.to_string())))?;
         self.wallet_service.set(wallet_handle, &format!("tails"), &tails_dash)?;
-        println!("end of the function");
         Ok((revocation_registry_json, uuid))
     }
 
