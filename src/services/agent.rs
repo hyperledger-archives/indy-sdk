@@ -140,24 +140,12 @@ impl AgentWorker {
     }
 
     fn try_start_listen(&mut self, handle: i32) -> Result<String, CommonError> {
-        let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER)?;
-        //FIXME setup real keys
-        sock.set_curve_publickey(zmq::z85_encode("41mUSR3cj2YzM1azwvRk8Wmu4FNzHAdzP1pAfy7SBX1q".from_base58().unwrap().as_slice()).unwrap().as_str())?;
-        sock.set_curve_secretkey(zmq::z85_encode("96RHZeH94AY5M3HfC5dQjJ6KYr3N5j2nKibz6sYtd3g3".from_base58().unwrap().as_slice()).unwrap().as_str())?;
-        //FIXME /setup real keys
-        sock.set_curve_server(true)?;
-        sock.bind("tcp://0.0.0.0:*")?; //TODO configure base IP?
-        let endpoint = sock.get_last_endpoint()?
+        let listener = AgentListener::new(handle).map_err(map_err_trace!("AgentListener::new"))?;
+        let endpoint = listener.socket.get_last_endpoint()?
             .map_err(|err|
                 CommonError::InvalidState(
-                    format!("Can't decode socket endpoint after bind for listener {:?}.",
-                            err)))?;
-        let al = AgentListener {
-            connections: Vec::new(),
-            listener_handle: handle,
-            socket: sock,
-        };
-        self.agent_listeners.push(al);
+                    format!("Can't decode socket endpoint after bind for listener {:?}.", err)))?;
+        self.agent_listeners.push(listener);
         info!("Agent listener started at {}", endpoint);
         Ok(endpoint)
     }
@@ -266,6 +254,21 @@ impl RemoteAgent {
 }
 
 impl AgentListener {
+    fn new(handle: i32) -> Result<AgentListener, zmq::Error> {
+        let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER)?;
+        //FIXME setup real keys
+        sock.set_curve_publickey(zmq::z85_encode("41mUSR3cj2YzM1azwvRk8Wmu4FNzHAdzP1pAfy7SBX1q".from_base58().unwrap().as_slice()).unwrap().as_str())?;
+        sock.set_curve_secretkey(zmq::z85_encode("96RHZeH94AY5M3HfC5dQjJ6KYr3N5j2nKibz6sYtd3g3".from_base58().unwrap().as_slice()).unwrap().as_str())?;
+        //FIXME /setup real keys
+        sock.set_curve_server(true)?;
+        sock.bind("tcp://0.0.0.0:*")?; //TODO configure base IP?
+        Ok(AgentListener {
+            connections: Vec::new(),
+            listener_handle: handle,
+            socket: sock,
+        })
+    }
+
     fn handle_request(&mut self, identity: String, msg: String) {
         if let Some(_) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
             unimplemented!(); //FIXME handle and return
