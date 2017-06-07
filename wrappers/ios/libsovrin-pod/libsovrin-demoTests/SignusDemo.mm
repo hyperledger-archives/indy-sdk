@@ -8,6 +8,7 @@
 #import "TestUtils.h"
 #import <libsovrin/libsovrin.h>
 #import "WalletUtils.h"
+#import "SignusUtils.h"
 
 @interface SignusDemo : XCTestCase
 
@@ -44,27 +45,30 @@
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create and open my wallet
 
-    ret = [[WalletUtils sharedInstance] createWallet:  poolName
-                                          walletName:  myWalletName
-                                               xtype:  xtype
-                                              handle: &myWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWallet:  poolName
+                                                 walletName:  myWalletName
+                                                      xtype:  xtype
+                                                     handle: &myWalletHandle];
     
-    NSAssert( ret.code == Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWallet() failed!");
 
     //2. Create and open Their Wallet
 
-    ret = [[WalletUtils sharedInstance] createWallet:  poolName
-                                          walletName:  theirWalletName
-                                               xtype:  xtype
-                                              handle: &theirWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWallet:  poolName
+                                                 walletName:  theirWalletName
+                                                      xtype:  xtype
+                                                     handle: &theirWalletHandle];
     
-    NSAssert( ret.code == Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed!");
 
     // 3. Create My DID
     
     NSString *myDidJson = @"{}";
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
+    __block NSString *myDid = nil;
+    __block NSString *myVerkey = nil;
+    __block NSString *myPk = nil;
     ret = [SovrinSignus createAndStoreMyDid:  myWalletHandle
                                     didJSON:  myDidJson
                                  completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
@@ -74,11 +78,14 @@
         NSLog(@"did = %@", did);
         NSLog(@"verkey = %@", verkey);
         NSLog(@"pk = %@", pk);
+        myDid = did;
+        myVerkey = verkey;
+        myPk = pk;
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 4. Create Their DID
 
@@ -104,8 +111,8 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
 
     // 5. Store Their DID
     
@@ -122,12 +129,18 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 6. Their Sign message
     
-    NSString* message = @"test message";
+    NSString* message = @"{"\
+                         "  \"reqId\":1495034346617224651,"
+                         "  \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\","
+                         "  \"operation\":{"
+                         "        \"type\":\"1\","
+                         "        \"dest\":\"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB\"}"
+                         "}";
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSString *theirSignature = nil;
@@ -143,18 +156,17 @@
         [completionExpectation fulfill];
     }];
 
-    NSAssert( ret.code == Success, @"sign() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
     // 7. I Verify message
     SovrinHandle poolHandle = 1;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
+
     ret = [SovrinSignus verifySignature:  myWalletHandle
                                    pool:  poolHandle
                                     did:  theirDid
-                                    msg:  message
                               signature:  theirSignature
                              completion: ^(NSError *error, BOOL valid)
     {
@@ -163,9 +175,11 @@
         [completionExpectation fulfill];
     }];
 
-    NSAssert( ret.code == Success, @"verifySignature() failed!");
+    // TODO: There is some error inside closure at rust level
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
     
+    [TestUtils cleanupStorage];
 }
 
 @end

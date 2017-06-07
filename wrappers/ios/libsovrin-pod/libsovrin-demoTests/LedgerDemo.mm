@@ -8,6 +8,7 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import <libsovrin/libsovrin.h>
+#import "NSDictionary+JSON.h"
 
 @interface LedgerDemo : XCTestCase
 
@@ -49,7 +50,7 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"openPoolWithName() failed!");
+    XCTAssertEqual(ret.code, Success, @"openPoolWithName() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     
@@ -76,15 +77,12 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"submitRequest() failed!");
+    XCTAssertEqual(ret.code, Success, @"submitRequest() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     NSError *error;
     
-    NSDictionary *dictionary1 = [NSJSONSerialization JSONObjectWithData: [NSData dataWithBytes:[result UTF8String]
-                                                                                       length:[result length]]
-                                                                                      options:kNilOptions
-                                                                                        error:&error];
-    NSAssert( dictionary1, @"dictionary1 must not be nil!");
+    NSDictionary *dictionary1 = [NSDictionary fromString: result];
+    XCTAssertTrue( dictionary1, @"dictionary1 must not be nil!");
     
     NSString *str = @"{"\
                     @"  \"op\": \"REPLY\","\
@@ -93,15 +91,12 @@
                     @"    }"\
                     @"}";
 
-    NSDictionary *dictionary2 = [NSJSONSerialization JSONObjectWithData:  [NSData dataWithBytes:[str UTF8String]
-                                                                                         length:[str length]]
-                                                                options:  kNilOptions
-                                                                  error: &error];
+    NSDictionary *dictionary2 = [NSDictionary fromString: str];
     
-    NSAssert( [self validate:@"op" d1: dictionary1 d2: dictionary2] == YES, @"unexpected result");
+    XCTAssertTrue([self validate:@"op" d1: dictionary1 d2: dictionary2], @"unexpected result");
     NSDictionary *r1 = [ dictionary1 objectForKey: @"result"];
     NSDictionary *r2 = [ dictionary2 objectForKey: @"result"];
-    NSAssert( [self validate:@"reqId" d1: r1 d2: r2] == YES, @"unexpected result");
+    XCTAssertTrue( [self validate:@"reqId" d1: r1 d2: r2], @"unexpected result");
     NSLog(@"test ended");
 }
 

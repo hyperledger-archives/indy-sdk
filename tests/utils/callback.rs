@@ -475,6 +475,47 @@ impl CallbackUtils {
         (command_handle, Some(prover_get_claim_offers_callback))
     }
 
+    pub fn closure_to_agent_connect_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
+                                       -> (i32,
+                                           Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                            pool_handle: i32)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_connect_callback(command_handle: i32, err: ErrorCode, pool_handle: i32) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err, pool_handle)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(agent_connect_callback))
+    }
+
+    pub fn closure_to_agent_message_cb(closure: Box<FnMut(i32, ErrorCode, String) + Send>)
+                                       -> Option<extern fn(connection_handle: i32, err: ErrorCode, msg: *const c_char)> {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_message_callback(conn_handle: i32, err: ErrorCode, msg: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let msg = unsafe { CStr::from_ptr(msg).to_str().unwrap().to_string() };
+            for cb in callbacks.iter_mut() {
+                cb(conn_handle, err, msg.clone())
+            }
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.push(closure);
+
+        Some(agent_message_callback)
+    }
+
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                     Option<extern fn(command_handle: i32,
                                                                                                                      err: ErrorCode,

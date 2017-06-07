@@ -9,6 +9,7 @@ pub mod cstring;
 pub mod ccallback;
 
 pub mod crypto;
+#[macro_use]
 pub mod logger;
 
 #[macro_use]
@@ -18,3 +19,5 @@ pub mod sequence;
 
 #[macro_use]
 pub mod test;
+
+pub mod timeout;
