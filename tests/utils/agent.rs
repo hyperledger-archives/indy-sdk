@@ -58,7 +58,7 @@ impl AgentUtils {
             return Err(res);
         }
 
-        let (err, listener_handle, endpoint) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (res, listener_handle, endpoint) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if res != ErrorCode::Success {
             return Err(res);
         }
