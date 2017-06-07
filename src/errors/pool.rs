@@ -68,7 +68,7 @@ impl From<io::Error> for PoolError {
 
 impl From<zmq::Error> for PoolError {
     fn from(err: zmq::Error) -> PoolError {
-        PoolError::CommonError(CommonError::IOError(io::Error::from(err)))
+        PoolError::CommonError(From::from(err))
     }
 }
 

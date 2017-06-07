@@ -1,3 +1,5 @@
+extern crate zmq;
+
 use std::error;
 use std::fmt;
 use std::io;
@@ -92,6 +94,12 @@ impl ToErrorCode for CommonError {
             CommonError::InvalidStructure(ref description) => ErrorCode::CommonInvalidStructure,
             CommonError::IOError(ref description) => ErrorCode::CommonIOError
         }
+    }
+}
+
+impl From<zmq::Error> for CommonError {
+    fn from(err: zmq::Error) -> Self {
+        CommonError::IOError(From::from(err))
     }
 }
 

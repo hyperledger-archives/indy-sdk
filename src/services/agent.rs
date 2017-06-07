@@ -10,7 +10,6 @@ use std::thread;
 use commands::{Command, CommandExecutor};
 use commands::agent::AgentCommand;
 use errors::common::CommonError;
-use errors::pool::PoolError; //TODO use new one error agent::AgentError?
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 
@@ -122,7 +121,7 @@ impl AgentWorker {
         trace!("agent poll finished");
     }
 
-    fn connect(&mut self, cmd: &ConnectCmd) -> Result<(), PoolError> {
+    fn connect(&mut self, cmd: &ConnectCmd) -> Result<(), CommonError> {
         let ra = RemoteAgent::new(cmd.public_key.as_str(), cmd.secret_key.as_str(),
                                   cmd.server_key.as_str(), cmd.endpoint.as_str(),
                                   cmd.conn_handle)
@@ -137,7 +136,7 @@ impl AgentWorker {
         unimplemented!(); //TODO send Command ListenAck
     }
 
-    fn try_start_listen(&mut self) -> Result<String, PoolError> {
+    fn try_start_listen(&mut self) -> Result<String, CommonError> {
         let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER)?;
         sock.bind("tcp://0.0.0.0:*")?; //TODO configure base IP?
         let endpoint = sock.get_last_endpoint()?
@@ -201,24 +200,24 @@ impl AgentWorker {
 }
 
 impl RemoteAgent {
-    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str, conn_handle: i32) -> Result<RemoteAgent, PoolError> {
+    fn new(pub_key: &str, sec_key: &str, ver_key: &str, addr: &str, conn_handle: i32) -> Result<RemoteAgent, CommonError> {
         Ok(RemoteAgent {
             socket: zmq::Context::new().socket(zmq::SocketType::DEALER)?,
             public_key: pub_key.from_base58()
-                .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid pub_key {}", err))))?,
+                .map_err(|err| CommonError::InvalidStructure(format!("invalid pub_key {}", err)))?,
             secret_key: sec_key.from_base58()
-                .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid sec_key {}", err))))?,
+                .map_err(|err| CommonError::InvalidStructure(format!("invalid sec_key {}", err)))?,
             server_key: ver_key.from_base58()
-                .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure(format!("invalid server_key {}", err))))?,
+                .map_err(|err| CommonError::InvalidStructure(format!("invalid server_key {}", err)))?,
             addr: addr.to_string(),
             conn_handle: conn_handle,
         })
     }
 
-    fn connect(&self) -> Result<(), PoolError> {
-        impl From<zmq::EncodeError> for PoolError {
-            fn from(err: zmq::EncodeError) -> PoolError {
-                PoolError::CommonError(CommonError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err)))
+    fn connect(&self) -> Result<(), CommonError> {
+        impl From<zmq::EncodeError> for CommonError {
+            fn from(err: zmq::EncodeError) -> CommonError {
+                CommonError::InvalidState(format!("Invalid data stored RemoteAgent detected while connect {:?}", err))
             }
         }
         self.socket.set_identity(zmq::z85_encode(self.public_key.as_slice())?.as_bytes())
