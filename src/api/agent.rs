@@ -132,7 +132,7 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
     let cmd = Command::Agent(AgentCommand::Listen(
         wallet_handle,
         Box::new(move |result| {
-            let (err, handle) = result_to_err_code_1!(result, 0);
+            let (err, handle, endpoint) = result_to_err_code_2!(result, 0, String::new());
             listener_cb(command_handle, err, handle);
         }),
         Box::new(move |result| {

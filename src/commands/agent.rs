@@ -26,9 +26,13 @@ pub enum AgentCommand {
     CloseConnection,
     Listen(
         i32, // wallet handle
-        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
+        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // listen cb
         Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
         Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+    ),
+    ListenAck(
+        i32, // cmd handle (eq listener handle)
+        Result<(i32, String), CommonError> // (listener handle, endpoint) or error
     ),
     CloseListener,
     Send,
@@ -39,6 +43,7 @@ pub struct AgentCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
+    listen_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(i32, String), SovrinError>)>>>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
 }
 
@@ -48,6 +53,7 @@ impl AgentCommandExecutor {
             agent_service: agent_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
+            listen_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new())
         }
     }
@@ -65,6 +71,10 @@ impl AgentCommandExecutor {
             AgentCommand::Listen(wallet_handle, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
                 self.listen(wallet_handle, listen_cb, connect_cb, message_cb);
+            }
+            AgentCommand::ListenAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "ListenAck command received");
+                self.listen_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from)) //TODO extract method
             }
             _ => unimplemented!(),
         }
@@ -111,11 +121,20 @@ impl AgentCommandExecutor {
     }
 
     fn listen(&self, wallet_handle: i32,
-              listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
+              listen_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
               connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
-        let res = self.agent_service.as_ref().listen();
-        unimplemented!();
+        let result = self.agent_service.as_ref().listen()
+            .and_then(|cmd_id| {
+                match self.listen_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, cmd_id)),
+                    Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
+                }
+            });
+        match result {
+            Err(err) => listen_cb(Err(From::from(err))),
+            Ok((mut cbs, handle)) => { cbs.insert(handle, listen_cb); /* TODO check if map contains same key */ }
+        };
     }
 }
 

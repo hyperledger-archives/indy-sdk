@@ -110,7 +110,7 @@ impl AgentWorker {
                 info!("received cmd {:?}", cmd);
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
-                    AgentWorkerCommand::Listen(cmd) => self.start_listen(),
+                    AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Request(req) => unimplemented!(),
                     AgentWorkerCommand::Exit => break 'agent_pool_loop,
@@ -131,9 +131,10 @@ impl AgentWorker {
         Ok(())
     }
 
-    fn start_listen(&mut self) {
+    fn start_listen(&mut self, handle: i32) {
         let res = self.try_start_listen();
-        unimplemented!(); //TODO send Command ListenAck
+        let cmd = AgentCommand::ListenAck(handle, res.map(|endpoint| (handle, endpoint)));
+        CommandExecutor::instance().send(Command::Agent(cmd)).unwrap(); //TODO
     }
 
     fn try_start_listen(&mut self) -> Result<String, CommonError> {
