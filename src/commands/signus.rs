@@ -257,7 +257,7 @@ impl SignusCommandExecutor {
             let signed_msg = signed_msg.to_string();
             let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
             if get_nym_request.is_err() {
-                cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
+                return cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
             }
             let get_nym_request = get_nym_request.unwrap();
 

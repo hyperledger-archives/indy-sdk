@@ -56,10 +56,13 @@ impl SignusUtils {
         let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
 
         let my_did_json = seed.map_or("{}".to_string(), |seed| format!("{{\"seed\":\"{}\" }}", seed));
+
+        let my_did_json = CString::new(my_did_json).unwrap();
+
         let err =
             sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
                                            wallet_handle,
-                                           CString::new(my_did_json).unwrap().as_ptr(),
+                                           my_did_json.as_ptr(),
                                            create_and_store_my_did_callback);
 
         if err != ErrorCode::Success {
@@ -144,10 +147,13 @@ impl SignusUtils {
                                             \"endpoint\":\"{}\"\
                                            }}",
                                           their_did, their_pk, their_verkey, endpoint);
+
+        let their_identity_json = CString::new(their_identity_json).unwrap();
+
         let err =
             sovrin_store_their_did(store_their_did_command_handle,
                                    wallet_handle,
-                                   CString::new(their_identity_json).unwrap().as_ptr(),
+                                   their_identity_json.as_ptr(),
                                    store_their_did_callback);
 
         if err != ErrorCode::Success {

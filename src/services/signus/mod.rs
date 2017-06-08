@@ -129,6 +129,11 @@ impl SignusService {
                 SignusError::CommonError(
                     CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
+        if !msg.is_object(){
+            return Err(SignusError::CommonError(
+                CommonError::InvalidStructure(format!("Message is invalid json: {}", msg))))
+        }
+
         let signature = serialize_signature(msg.clone())?;
         let signature = signus.sign(&sign_key, signature.as_bytes())?;
         let signature = Base58::encode(&signature);
@@ -156,6 +161,11 @@ impl SignusService {
             .map_err(|err|
                 SignusError::CommonError(
                     CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
+
+        if !signed_msg.is_object(){
+            return Err(SignusError::CommonError(
+                CommonError::InvalidStructure(format!("Message is invalid json: {}", signed_msg))))
+        }
 
         // TODO: FIXME: This code seem unreliable and hard to understand
         // simple match on Value::String() will be better
