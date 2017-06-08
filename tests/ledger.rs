@@ -8,6 +8,8 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 #[path = "utils/mod.rs"]
@@ -44,7 +46,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_send_request_works_for_invalid_pool_handle() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool1";
+            let pool_name = "sovrin_send_request_works_for_invalid_pool_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -65,7 +67,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_sign_and_submit_request_works_for_invalid_pool_handle() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool2";
+            let pool_name = "sovrin_sign_and_submit_request_works_for_invalid_pool_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -87,7 +89,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_sign_and_submit_request_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool3";
+            let pool_name = "sovrin_sign_and_submit_request_works_for_invalid_wallet_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -109,7 +111,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_sign_and_submit_request_works_for_not_found_signer() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool4";
+            let pool_name = "sovrin_sign_and_submit_request_works_for_not_found_signer";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -131,8 +133,8 @@ mod high_cases {
         fn sovrin_sign_and_submit_request_works_for_incompatible_wallet_and_pool() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("pool4").unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool5", "wallet1", "default").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("pool1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool2", "wallet1", "default").unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
 
@@ -253,7 +255,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_nym_request_works_without_signature() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool5";
+            let pool_name = "sovrin_nym_request_works_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -273,7 +275,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_send_get_nym_request_works() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool9";
+            let pool_name = "sovrin_send_get_nym_request_works";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -293,7 +295,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_nym_requests_works() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool10";
+            let pool_name = "sovrin_nym_requests_works";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -304,12 +306,12 @@ mod high_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
 
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
-            println!("nym_response {:?}", nym_response);
+            info!("nym_response {:?}", nym_response);
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
 
             let get_nym_response = PoolUtils::send_request(pool_handle, &get_nym_request).unwrap();
-            println!("get_nym_response {:?}", get_nym_response);
+            info!("get_nym_response {:?}", get_nym_response);
 
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
             assert!(get_nym_response.result.data.is_some());
@@ -377,7 +379,7 @@ mod high_cases {
         fn sovrin_attrib_request_works_without_signature() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool11";
+            let pool_name = "sovrin_attrib_request_works_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -401,7 +403,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_attrib_requests_works() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool15";
+            let pool_name = "sovrin_attrib_requests_works";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -419,12 +421,12 @@ mod high_cases {
                                                                    None).unwrap();
 
             let attrib_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &attrib_request).unwrap();
-            println!("attrib_response {}", attrib_response);
+            info!("attrib_response {}", attrib_response);
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&my_did.clone(), &my_did.clone(), "endpoint").unwrap();
 
             let get_attrib_response = PoolUtils::send_request(pool_handle, &get_attrib_request).unwrap();
-            println!("get_attrib_response {}", get_attrib_response);
+            info!("get_attrib_response {}", get_attrib_response);
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_some());
@@ -466,7 +468,7 @@ mod high_cases {
         fn sovrin_schema_request_works_without_signature() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool16";
+            let pool_name = "sovrin_schema_request_works_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -490,7 +492,7 @@ mod high_cases {
         fn sovrin_schema_requests_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool19";
+            let pool_name = "sovrin_schema_requests_works";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -500,7 +502,7 @@ mod high_cases {
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
-            println!("nym_response {}", nym_response.clone());
+            info!("nym_response {}", nym_response.clone());
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
@@ -508,14 +510,14 @@ mod high_cases {
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
 
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
-            println!("schema_response {}", schema_response);
+            info!("schema_response {}", schema_response);
 
             let get_schema_data = "{\"name\":\"gvt2\",\
                                     \"version\":\"2.0\"}";
             let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
 
             let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
-            println!("get_schema_response {}", get_schema_response.clone());
+            info!("get_schema_response {}", get_schema_response.clone());
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
             assert!(get_schema_response.result.data.is_some());
@@ -544,7 +546,7 @@ mod high_cases {
         fn sovrin_send_node_request_works_without_signature() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool20";
+            let pool_name = "sovrin_send_node_request_works_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -570,9 +572,8 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_submit_node_request_works_for_new_steward() {
             TestUtils::cleanup_storage();
-            use utils::logger::LoggerUtils;
-            LoggerUtils::init();
-            let pool_name = "pool23";
+
+            let pool_name = "sovrin_submit_node_request_works_for_new_steward";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -636,7 +637,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_claim_def_requests_works() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool24";
+            let pool_name = "sovrin_claim_def_requests_works";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -669,7 +670,7 @@ mod high_cases {
 
             let (claim_def_json, claim_def_uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                                                   &serde_json::to_string(&schema).unwrap()).unwrap();
-            println!("claim_def_json {:}", claim_def_json);
+            info!("claim_def_json {:}", claim_def_json);
 
             let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
             let claim_def_data = ClaimDefinitionData {
@@ -681,12 +682,12 @@ mod high_cases {
             let claim_def_request = LedgerUtils::build_claim_def_txn(&my_did.clone(), schema.seq_no, &claim_def.signature_type, &claim_def_data_json).unwrap();
 
             let claim_def_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &claim_def_request).unwrap();
-            println!("claim_def_response {}", claim_def_response);
+            info!("claim_def_response {}", claim_def_response);
 
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&my_did.clone(), schema.seq_no, &claim_def.signature_type, &schema_result_data.origin).unwrap();
 
             let get_claim_def_response = PoolUtils::send_request(pool_handle, &get_claim_def_request).unwrap();
-            println!("get_claim_def_response {}", get_claim_def_response);
+            info!("get_claim_def_response {}", get_claim_def_response);
             let get_claim_def_response: Reply<GetClaimDefReplyResult> = serde_json::from_str(&get_claim_def_response).unwrap();
 
             TestUtils::cleanup_storage();
@@ -704,7 +705,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_send_nym_request_works_for_only_required_fields() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool25";
+            let pool_name = "sovrin_send_nym_request_works_for_only_required_fields";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -724,7 +725,7 @@ mod medium_cases {
         fn sovrin_send_nym_request_works_with_option_fields() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool26";
+            let pool_name = "sovrin_send_nym_request_works_with_option_fields";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -738,7 +739,7 @@ mod medium_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey), Some(alias), Some(role)).unwrap();
 
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
-            println!("nym_response {:?}", nym_response);
+            info!("nym_response {:?}", nym_response);
 
             TestUtils::cleanup_storage();
         }
@@ -760,19 +761,19 @@ mod medium_cases {
         fn sovrin_nym_request_works_for_wrong_signer_role() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool6";
+            let pool_name = "sovrin_nym_request_works_for_wrong_signer_role";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
             let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
 
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\", \"cid\":true}").unwrap();
+            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{\"cid\":true}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let (my_did2, my_verkey2, my_pk2) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My2\"}").unwrap();
+            let (my_did2, my_verkey2, my_pk2) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
             let nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did2.clone(), None, None, None).unwrap();
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request);
             assert!(res.is_err());
@@ -786,7 +787,7 @@ mod medium_cases {
         fn sovrin_nym_request_works_for_unknown_signer_did() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool7";
+            let pool_name = "sovrin_nym_request_works_for_unknown_signer_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -807,7 +808,7 @@ mod medium_cases {
         fn sovrin_get_nym_request_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool8";
+            let pool_name = "sovrin_get_nym_request_works_for_unknown_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -832,7 +833,7 @@ mod medium_cases {
         fn sovrin_attrib_request_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool12";
+            let pool_name = "sovrin_attrib_request_works_for_unknown_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -857,7 +858,7 @@ mod medium_cases {
         fn sovrin_get_attrib_request_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool13";
+            let pool_name = "sovrin_get_attrib_request_works_for_unknown_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -878,7 +879,7 @@ mod medium_cases {
         fn sovrin_get_attrib_request_works_for_unknown_attribute() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool14";
+            let pool_name = "sovrin_get_attrib_request_works_for_unknown_attribute";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -937,7 +938,7 @@ mod medium_cases {
         fn sovrin_schema_request_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool17";
+            let pool_name = "sovrin_schema_request_works_for_unknown_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -961,7 +962,7 @@ mod medium_cases {
         fn sovrin_get_schema_request_works_for_unknown_name() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool18";
+            let pool_name = "sovrin_get_schema_request_works_for_unknown_name";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -1009,7 +1010,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_send_node_request_works_for_wrong_role() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool21";
+            let pool_name = "sovrin_send_node_request_works_for_wrong_role";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
@@ -1035,7 +1036,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_submit_node_request_works_for_already_has_node() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool22";
+            let pool_name = "sovrin_submit_node_request_works_for_already_has_node";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();

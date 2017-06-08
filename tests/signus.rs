@@ -18,6 +18,7 @@ use utils::wallet::WalletUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
 use utils::pool::PoolUtils;
+use utils::ledger::LedgerUtils;
 
 use sovrin::api::ErrorCode;
 
@@ -44,7 +45,7 @@ mod high_cases {
         #[test]
         fn sovrin_create_my_did_works_with_seed() {
             TestUtils::cleanup_storage();
-            let pool_name = "pool1";
+            let pool_name = "sovrin_create_my_did_works_with_seed";
 
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
@@ -148,7 +149,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
 
-            let some_did = "some_did";
+            let some_did = "invalid_base58_string";
             let res = SignusUtils::replace_keys(wallet_handle, some_did, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
@@ -307,6 +308,121 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod verify {
+        use super::*;
+
+        #[test]
+        fn sovrin_verify_works_for_verkey_cached_in_wallet() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_verify_works_for_verkey_cached_in_wallet";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (did, verkey, pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\"}").unwrap();
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
+
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{
+                "reqId":1496822211362017764,
+                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "operation":{
+                    "type":"1",
+                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
+                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                },
+                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
+            }"#;
+
+            let msg = SignusUtils::verify(wallet_handle, pool_handle, "V4SGRU86Z58d6TV7PBUe6f", message).unwrap();
+            assert!(msg);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_verify_works_for_get_verkey_from_ledger() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_verify_works_for_get_verkey_from_ledger";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (trustee_did, trustee_verkey, trustee_pk) =
+                SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
+            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+            let signed_messege = SignusUtils::sign(wallet_handle, &my_did, message).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}"}}"#, my_did);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &signed_messege).unwrap();
+            assert!(valid);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_verify_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_verify_works_for_invalid_wallet_handle";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let message = r#"{
+                "reqId":1496822211362017764,
+                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "operation":{
+                    "type":"1",
+                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
+                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                },
+                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
+            }"#;
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            let res = SignusUtils::verify(invalid_wallet_handle, pool_handle, "did", message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_verify_works_for_invalid_pool_handle() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_verify_works_for_invalid_pool_handle";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let message = r#"{
+                "reqId":1496822211362017764,
+                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "operation":{
+                    "type":"1",
+                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
+                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                },
+                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
+            }"#;
+
+            let invalid_pool_handle = pool_handle + 1;
+            let res = SignusUtils::verify(wallet_handle, invalid_pool_handle, "did", message);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+
+            TestUtils::cleanup_storage();
+        }
+
+    }
 }
 
 mod medium_cases {
@@ -415,116 +531,4 @@ mod medium_cases {
             TestUtils::cleanup_storage();
         }
     }
-}
-
-#[test]
-fn sovrin_verify_works_did_cached_in_wallet() {
-    TestUtils::cleanup_storage();
-    let pool_name = "pool1";
-
-    let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-    let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
-
-    let (did, verkey, pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\"}").unwrap();
-    let identity_json = format!(r#"{"did":"{}", "verkey":"{}"}"#, did, verkey);
-
-    SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
-
-    let message = r#"{
-                "reqId":1496822211362017764,
-                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-                "operation":{
-                    "type":"1",
-                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
-                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
-                },
-                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
-            }"#;
-
-    let msg = SignusUtils::verify(wallet_handle, pool_handle, "V4SGRU86Z58d6TV7PBUe6f", message).unwrap();
-    assert!(msg);
-
-    TestUtils::cleanup_storage();
-}
-
-//#[test]
-//fn sovrin_verify_works_for_get_verkey_from_ledger() {
-//    TestUtils::cleanup_storage();
-//    let pool_name = "pool1";
-//
-//    let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-//    let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
-//
-//    let (did, verkey, pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\"}").unwrap();
-//    let identity_json = fotmat!(r#"{"did":"{}"}"#, did);
-//
-//    SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
-//
-//    let message = r#"{
-//                "reqId":1496822211362017764,
-//                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-//                "operation":{
-//                    "type":"1",
-//                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
-//                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
-//                },
-//                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
-//            }"#;
-//
-//    let msg = SignusUtils::verify(wallet_handle, pool_handle, &did, message).unwrap();
-//    assert!(msg);
-//
-//    TestUtils::cleanup_storage();
-//}
-
-#[test]
-fn sovrin_verify_works_for_invalid_wallet_handle() {
-    TestUtils::cleanup_storage();
-    let pool_name = "pool2";
-
-    let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-    let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
-
-    let message = r#"{
-                "reqId":1496822211362017764,
-                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-                "operation":{
-                    "type":"1",
-                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
-                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
-                },
-                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
-            }"#;
-
-    let invalid_wallet_handle = wallet_handle + 1;
-    let res = SignusUtils::verify(invalid_wallet_handle, pool_handle, "did", message);
-    assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
-
-    TestUtils::cleanup_storage();
-}
-
-#[test]
-fn sovrin_verify_works_for_invalid_pool_handle() {
-    TestUtils::cleanup_storage();
-    let pool_name = "pool2";
-
-    let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-    let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
-
-    let message = r#"{
-                "reqId":1496822211362017764,
-                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-                "operation":{
-                    "type":"1",
-                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
-                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
-                },
-                "signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
-            }"#;
-
-    let invalid_pool_handle = pool_handle + 1;
-    let res = SignusUtils::verify(wallet_handle, invalid_pool_handle, "did", message);
-    assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
-
-    TestUtils::cleanup_storage();
 }

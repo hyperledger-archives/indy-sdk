@@ -133,6 +133,33 @@ impl SignusUtils {
         Ok(())
     }
 
+    pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_pk: &str, their_verkey: &str, endpoint: &str) -> Result<(), ErrorCode> {
+        let (store_their_did_sender, store_their_did_receiver) = channel();
+        let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
+        let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
+
+        let their_identity_json = format!("{{\"did\":\"{}\",\
+                                            \"pk\":\"{}\",\
+                                            \"verkey\":\"{}\",\
+                                            \"endpoint\":\"{}\"\
+                                           }}",
+                                          their_did, their_pk, their_verkey, endpoint);
+        let err =
+            sovrin_store_their_did(store_their_did_command_handle,
+                                   wallet_handle,
+                                   CString::new(their_identity_json).unwrap().as_ptr(),
+                                   store_their_did_callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let err = store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(())
+    }
+
     pub fn replace_keys(wallet_handle: i32, did: &str, identity_json: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 

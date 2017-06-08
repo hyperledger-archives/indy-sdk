@@ -27,7 +27,7 @@ mod high_cases {
     fn sovrin_create_wallet_works() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_create_wallet_works";
         let wallet_name = "wallet1";
         let xtype = "default";
 
@@ -40,7 +40,7 @@ mod high_cases {
     fn sovrin_create_wallet_works_for_unknown_type() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_create_wallet_works_for_unknown_type";
         let wallet_name = "wallet1";
         let xtype = "type";
 
@@ -55,7 +55,7 @@ mod high_cases {
     fn sovrin_delete_wallet_works() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_delete_wallet_works";
         let wallet_name = "wallet1";
 
         let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
@@ -69,7 +69,7 @@ mod high_cases {
     fn sovrin_open_wallet_works() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_open_wallet_works";
         let wallet_name = "wallet1";
 
         WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
@@ -82,7 +82,7 @@ mod high_cases {
     fn sovrin_close_wallet_works() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_close_wallet_works";
         let wallet_name = "wallet1";
 
         WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
@@ -97,7 +97,7 @@ mod high_cases {
     fn sovrin_wallet_set_seqno_works() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_wallet_set_seqno_works";
         let wallet_name = "wallet1";
         let xtype = "default";
 
@@ -121,7 +121,7 @@ mod medium_cases {
     fn sovrin_create_wallet_works_for_empty_type() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_create_wallet_works_for_empty_type";
         let wallet_name = "wallet1";
 
         let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
@@ -133,7 +133,7 @@ mod medium_cases {
     fn sovrin_create_wallet_works_for_duplicate_name() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_create_wallet_works_for_duplicate_name";
         let wallet_name = "wallet1";
 
         WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
@@ -147,7 +147,7 @@ mod medium_cases {
     fn sovrin_delete_wallet_works_for_invalid_name() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_delete_wallet_works_for_invalid_name";
         let wallet_name = "wallet1";
 
         let res = WalletUtils::delete_wallet(wallet_name);
@@ -160,7 +160,7 @@ mod medium_cases {
     fn sovrin_delete_wallet_works_for_deleted_wallet() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_delete_wallet_works_for_deleted_wallet";
         let wallet_name = "wallet1";
 
         let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
@@ -199,7 +199,7 @@ mod medium_cases {
     fn sovrin_close_wallet_works_for_closed_wallet() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_close_wallet_works_for_closed_wallet";
         let wallet_name = "wallet1";
         let xtype = "default";
 
@@ -217,7 +217,7 @@ mod medium_cases {
     fn sovrin_wallet_set_seqno_works_for_not_exists_key() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_wallet_set_seqno_works_for_not_exists_key";
         let wallet_name = "wallet1";
         let xtype = "default";
 
@@ -237,7 +237,7 @@ mod medium_cases {
     fn sovrin_wallet_set_seqno_works_for_invalid_wallet() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
+        let pool_name = "sovrin_wallet_set_seqno_works_for_invalid_wallet";
         let wallet_name = "wallet1";
         let xtype = "default";
 

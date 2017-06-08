@@ -23,7 +23,7 @@ pub struct GenTransaction {
     pub dest: String,
     pub identifier: String,
     #[serde(rename = "txnId")]
-    pub txn_id: String,
+    pub txn_id: Option<String>,
     #[serde(rename = "type")]
     pub txn_type: String,
 }

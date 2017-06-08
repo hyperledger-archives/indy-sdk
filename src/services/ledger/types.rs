@@ -37,20 +37,6 @@ impl<T: JsonEncodable> Request<T> {
 
 impl<T: JsonEncodable> JsonEncodable for Request<T> {}
 
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct Reply {
-    pub op: String,
-    pub result: ReplyResult,
-}
-
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ReplyResult {
-    pub txn_id: String,
-    pub req_id: u64,
-    pub data: Option<String>
-}
-
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub enum Role {
     STEWARD = STEWARD,
@@ -102,15 +88,6 @@ impl GetNymOperation {
 }
 
 impl JsonEncodable for GetNymOperation {}
-
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetNymResultData {
-    pub dest: String,
-    pub identifier: String,
-    pub role: Option<String>,
-    pub txn_id: String,
-}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct AttribOperation {
@@ -390,3 +367,35 @@ impl GetDdoOperation {
 }
 
 impl JsonEncodable for GetDdoOperation {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+pub struct GetNymReply {
+    pub op: String,
+    pub result: GetNymReplyResult,
+}
+
+impl<'a> JsonDecodable<'a> for GetNymReply {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetNymReplyResult {
+    pub identifier: String,
+    pub req_id: u64,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: String,
+    pub dest: String
+}
+
+impl<'a> JsonDecodable<'a> for GetNymReplyResult {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetNymResultData {
+    pub identifier: Option<String>,
+    pub dest: String,
+    pub role: Option<String>,
+    pub verkey: Option<String>
+}
+
+impl<'a> JsonDecodable<'a> for GetNymResultData {}

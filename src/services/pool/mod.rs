@@ -62,6 +62,7 @@ struct TransactionHandler {
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         let msg = Message::from_raw_str(raw_msg)
+            .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::IOError(
                     io::Error::from(io::ErrorKind::InvalidData)))?;
@@ -289,7 +290,7 @@ impl PoolWorker {
 
             let actions = self.poll_zmq()?;
 
-            self.process_actions(actions)?;
+            self.process_actions(actions).map_err(map_err_trace!("process_actions"))?;
 
             trace!("zmq poll loop <<");
         }
@@ -817,7 +818,7 @@ mod tests {
             },
         };
 
-        th.process_reply(&reply, &"".to_string());
+        th.process_reply(reply.result.req_id, &"".to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -903,7 +904,7 @@ mod tests {
                     node_ip: "".to_string(),
                     node_port: 0,
                 },
-                txn_id: "".to_string(),
+                txn_id: None,
                 txn_type: "0".to_string(),
                 dest: (&vk.0 as &[u8]).to_base58(),
             };

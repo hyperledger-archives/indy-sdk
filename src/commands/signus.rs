@@ -4,11 +4,12 @@ use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::sovrin::SovrinError;
 use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid};
-
+use services::ledger::types::{GetNymReply, GetNymResultData};
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
+use services::ledger::LedgerService;
 
 use std::error::Error;
 use std::rc::Rc;
@@ -80,6 +81,7 @@ pub struct SignusCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
     signus_service: Rc<SignusService>,
+    ledger_service: Rc<LedgerService>,
     verify_callbacks: RefCell<HashMap<i32, Box<Fn(Result<bool, SovrinError>)>>>,
     encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(String, String), SovrinError>)>>>,
 
@@ -89,12 +91,14 @@ impl SignusCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>,
-               signus_service: Rc<SignusService>) -> SignusCommandExecutor {
+               signus_service: Rc<SignusService>,
+               ledger_service: Rc<LedgerService>) -> SignusCommandExecutor {
         SignusCommandExecutor {
             anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
             signus_service: signus_service,
+            ledger_service: ledger_service,
             verify_callbacks: RefCell::new(HashMap::new()),
             encrypt_callbacks: RefCell::new(HashMap::new()),
         }
@@ -251,7 +255,12 @@ impl SignusCommandExecutor {
                         cb: Box<Fn(Result<bool, SovrinError>) + Send>) {
         let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, SovrinError>)>| {
             let signed_msg = signed_msg.to_string();
-            let get_nym_request = "".to_string(); //TODO add build_nym_request function in ledger service
+            let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
+            if get_nym_request.is_err() {
+                cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
+            }
+            let get_nym_request = get_nym_request.unwrap();
+
             let cb_id: i32 = SequenceUtils::get_next_id();
 
             match self.verify_callbacks.try_borrow_mut() {
@@ -325,9 +334,23 @@ impl SignusCommandExecutor {
 
     fn _verify_signature_get_nym_ack(&self,
                                      wallet_handle: i32,
-                                     their_did_json: &str,
+                                     get_nym_response: &str,
                                      signed_msg: &str) -> Result<bool, SovrinError> {
-        let their_did = TheirDid::from_json(&their_did_json).map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
+        let get_nym_response = GetNymReply::from_json(&get_nym_response)
+            .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
+
+        let gen_nym_result_data = GetNymResultData::from_json(&get_nym_response.result.data)
+            .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
+
+        let their_did_info = TheirDidInfo::new(gen_nym_result_data.dest, None, gen_nym_result_data.verkey, None);
+
+        let their_did = self.signus_service.create_their_did(&their_did_info)?;
+
+        let their_did_json = their_did.to_json()
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't serialize TheirDid: {}", err.description())))?;
+
         self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
         self.signus_service.verify(&their_did, &signed_msg).map_err(|err| SovrinError::SignusError(err))
     }
