@@ -383,7 +383,7 @@
                                                myPk:&myPk];
     XCTAssertEqual(res.code, Success, @"SignusUtils::createMyDid() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
-    // XCTAssertNotNil(myVerKey, @"myVerKey is nil!"); // can be nil?
+    XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
     XCTAssertNotNil(myPk, @"myPk is nil!");
     
     // 5. Build nym request
@@ -449,6 +449,7 @@
     
     // 10. Sign and seng getSchemaRequest
     NSString *getSchemaResponse = nil;
+    
     res = [[PoolUtils sharedInstance] sendRequest:poolHandle
                                           request:getSchemaRequest
                                          response:&getSchemaResponse];
@@ -577,7 +578,7 @@
                                                 submitterDid:myDid
                                                  requestJson:nodeRequest
                                                 responseJson:&nodeResponse];
-    XCTAssertEqual(res.code, Success, @"LedgerUtils::signAndSubmitRequest() failed");
+    XCTAssertEqual(res.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
     
     // TODO: Correct handling of reject

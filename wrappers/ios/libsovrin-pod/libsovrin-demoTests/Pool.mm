@@ -90,7 +90,7 @@
 
     
     NSString *request = [NSString stringWithFormat:@"{"\
-                         "\"reqId\":\"1491566332010860\"," \
+                         "\"reqId\":1491566332010860," \
                          "\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\"," \
                          "\"operation\":{"\
                                 "\"type\":\"105\","\
@@ -108,23 +108,20 @@
     
     NSDictionary *actualReply = [NSDictionary fromString:responseJson];
     
-    // Configure expected reply
-    NSMutableDictionary *expecredReply = [NSMutableDictionary new];
-    expecredReply[@"op"] = @"REPLY"; // "REPLY".to_string(),
     
-    NSMutableDictionary *replyResult = [NSMutableDictionary new];
-    replyResult[@"req_id"] = @"1491566332010860";
-    replyResult[@"data"] = [NSString stringWithFormat:@"{"\
-                            "\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"," \
-                            "\"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\"," \
-                            "\"role\":\"2\"," \
-                            "\"verkey\":null" \
-                            "}"];
-    replyResult[@"identifier"] = @"Th7MpTaRZVRYnPiabds81Y";
+    NSString *dataStr = [NSString stringWithFormat:@"{"\
+                         "\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"," \
+                         "\"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\"," \
+                         "\"role\":\"2\"," \
+                         "\"verkey\":null" \
+                         "}"];
     
-    // Actual reply
-    XCTAssertEqual(actualReply, expecredReply, @"replies are not equal!");
- 
+    NSString *actualData = actualReply[@"result"][@"data"];
+    XCTAssertTrue([actualReply[@"op"] isEqualToString:@"REPLY"], @"Wrong actualReply[op]");
+    XCTAssertEqual(actualReply[@"result"][@"reqId"], @(1491566332010860), @"Wrong actualReply[reqId]");
+    XCTAssertTrue([actualData isEqualToString:dataStr], "Wrong actualReply[result][data]");
+    XCTAssertTrue([actualReply[@"result"][@"identifier"] isEqualToString:@"Th7MpTaRZVRYnPiabds81Y"], @"Wrong actualReply[identifier]" );
+
     [TestUtils cleanupStorage];
 }
 
