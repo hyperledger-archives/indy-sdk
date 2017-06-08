@@ -9,7 +9,9 @@ use services::ledger::constants::{
     GET_NYM,
     GET_SCHEMA,
     CLAIM_DEF,
-    GET_CLAIM_DEF
+    GET_CLAIM_DEF,
+    STEWARD,
+    TRUSTEE
 };
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -35,18 +37,10 @@ impl<T: JsonEncodable> Request<T> {
 
 impl<T: JsonEncodable> JsonEncodable for Request<T> {}
 
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct Reply {
-    pub op: String,
-    pub result: ReplyResult,
-}
-
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ReplyResult {
-    pub txn_id: String,
-    pub req_id: u64,
-    pub data: Option<String>
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
+pub enum Role {
+    STEWARD = STEWARD,
+    TRUSTEE = TRUSTEE
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -56,48 +50,26 @@ pub struct NymOperation {
     pub dest: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub verkey: Option<String>,
-    #[serde(rename = "ref")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub _ref: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<NymOperationData>,
+    pub alias: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>
 }
 
 impl NymOperation {
-    pub fn new(dest: String, verkey: Option<String>, _ref: Option<String>,
-               data: Option<NymOperationData>, role: Option<String>) -> NymOperation {
+    pub fn new(dest: String, verkey: Option<String>,
+               alias: Option<String>, role: Option<String>) -> NymOperation {
         NymOperation {
             _type: NYM.to_string(),
             dest: dest,
             verkey: verkey,
-            _ref: _ref,
-            data: data,
+            alias: alias,
             role: role
         }
     }
 }
 
 impl JsonEncodable for NymOperation {}
-
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct NymOperationData {
-    pub alias: String
-}
-
-impl NymOperationData {
-    pub fn new(alias: String) -> NymOperationData {
-        NymOperationData {
-            alias: alias
-        }
-    }
-}
-
-impl JsonEncodable for NymOperationData {}
-
-impl<'a> JsonDecodable<'a> for NymOperationData {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetNymOperation {
@@ -116,15 +88,6 @@ impl GetNymOperation {
 }
 
 impl JsonEncodable for GetNymOperation {}
-
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetNymResultData {
-    pub dest: String,
-    pub identifier: String,
-    pub role: Option<String>,
-    pub txn_id: String,
-}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct AttribOperation {
@@ -404,3 +367,35 @@ impl GetDdoOperation {
 }
 
 impl JsonEncodable for GetDdoOperation {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+pub struct GetNymReply {
+    pub op: String,
+    pub result: GetNymReplyResult,
+}
+
+impl<'a> JsonDecodable<'a> for GetNymReply {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetNymReplyResult {
+    pub identifier: String,
+    pub req_id: u64,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: String,
+    pub dest: String
+}
+
+impl<'a> JsonDecodable<'a> for GetNymReplyResult {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetNymResultData {
+    pub identifier: Option<String>,
+    pub dest: String,
+    pub role: Option<String>,
+    pub verkey: Option<String>
+}
+
+impl<'a> JsonDecodable<'a> for GetNymResultData {}

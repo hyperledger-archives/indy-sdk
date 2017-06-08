@@ -9,7 +9,8 @@ pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
-pub enum ErrorCode {
+pub enum ErrorCode
+{
     Success = 0,
 
     // Common errors

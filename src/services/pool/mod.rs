@@ -62,6 +62,7 @@ struct TransactionHandler {
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         let msg = Message::from_raw_str(raw_msg)
+            .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::IOError(
                     io::Error::from(io::ErrorKind::InvalidData)))?;
@@ -116,9 +117,12 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(&reply, raw_msg);
+                self.process_reply(reply.result.req_id, raw_msg);
             }
-            Message::Reject(response) => {
+            Message::PoolLedgerTxns(response) => {
+                self.process_reply(response.txn.req_id, raw_msg);
+            }
+            Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
             }
             _ => {
@@ -128,17 +132,21 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
-        let req_id = reply.result.req_id;
+    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
-            pend_cmd.reply_cnt += 1;
-            if pend_cmd.reply_cnt == self.f + 1 {
+            let pend_cmd: &mut CommandProcess = pend_cmd;
+            let json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
+            if reply_cnt == self.f {
+                //already have f same replies and receive f+1 now
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
                 }
                 remove = true;
+            } else {
+                pend_cmd.replies.insert(json_msg, reply_cnt + 1);
             }
         }
         if remove {
@@ -185,7 +193,7 @@ impl TransactionHandler {
             let pc = CommandProcess {
                 cmd_ids: vec!(cmd_id),
                 nack_cnt: 0,
-                reply_cnt: 0,
+                replies: HashMap::new(),
             };
             self.pending_commands.insert(request_id, pc);
             for node in &self.nodes {
@@ -287,7 +295,7 @@ impl PoolWorker {
 
             let actions = self.poll_zmq()?;
 
-            self.process_actions(actions)?;
+            self.process_actions(actions).map_err(map_err_trace!("process_actions"))?;
 
             trace!("zmq poll loop <<");
         }
@@ -459,7 +467,7 @@ impl RemoteNode {
         let public_key = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key)?,
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
@@ -519,7 +527,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key).expect("dest field in GenTransaction isn't valid"),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -802,11 +810,13 @@ mod tests {
     fn transaction_handler_process_reply_works() {
         let mut th: TransactionHandler = Default::default();
         th.f = 1;
-        let pc = super::types::CommandProcess {
+        let mut pc = super::types::CommandProcess {
             cmd_ids: Vec::new(),
-            reply_cnt: th.f,
+            replies: HashMap::new(),
             nack_cnt: 0,
         };
+        let json = "{\"value\":1}";
+        pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
         let reply = super::types::Reply {
@@ -815,9 +825,35 @@ mod tests {
             },
         };
 
-        th.process_reply(&reply, &"".to_string());
+        th.process_reply(reply.result.req_id, &json.to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
+    }
+
+    #[test]
+    fn transaction_handler_process_reply_works_for_different_replies_with_same_req_id() {
+        let mut th: TransactionHandler = Default::default();
+        th.f = 1;
+        let mut pc = super::types::CommandProcess {
+            cmd_ids: Vec::new(),
+            replies: HashMap::new(),
+            nack_cnt: 0,
+        };
+        let json1 = "{\"value\":1}";
+        let json2 = "{\"value\":2}";
+        pc.replies.insert(HashableValue { inner: serde_json::from_str(json1).unwrap() }, 1);
+        let req_id = 1;
+        th.pending_commands.insert(req_id, pc);
+        let reply = super::types::Reply {
+            result: super::types::Response {
+                req_id: req_id,
+            },
+        };
+
+        th.process_reply(reply.result.req_id, &json2.to_string());
+
+        assert_eq!(th.pending_commands.len(), 1);
+        assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
     }
 
     #[test]
@@ -834,7 +870,7 @@ mod tests {
         let pending_cmd = th.pending_commands.get(&req_id).unwrap();
         let exp_command_process = CommandProcess {
             nack_cnt: 0,
-            reply_cnt: 0,
+            replies: HashMap::new(),
             cmd_ids: vec!(cmd_id),
         };
         assert_eq!(pending_cmd, &exp_command_process);
@@ -887,8 +923,8 @@ mod tests {
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8]));
-            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
+            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
             let gt = GenTransaction {
@@ -901,7 +937,7 @@ mod tests {
                     node_ip: "".to_string(),
                     node_port: 0,
                 },
-                txn_id: "".to_string(),
+                txn_id: None,
                 txn_type: "0".to_string(),
                 dest: (&vk.0 as &[u8]).to_base58(),
             };

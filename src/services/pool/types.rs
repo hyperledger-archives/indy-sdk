@@ -1,10 +1,12 @@
 extern crate serde_json;
 
 use std::cmp;
+use std::cmp::Eq;
 use std::collections::{BinaryHeap, HashMap};
+use std::hash::{Hash, Hasher};
+use super::zmq;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
-use super::zmq;
 use utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -23,7 +25,7 @@ pub struct GenTransaction {
     pub dest: String,
     pub identifier: String,
     #[serde(rename = "txnId")]
-    pub txn_id: String,
+    pub txn_id: Option<String>,
     #[serde(rename = "type")]
     pub txn_type: String,
 }
@@ -102,6 +104,11 @@ pub struct Response {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct PoolLedgerTxns {
+    pub txn: Response,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SimpleRequest {
     pub req_id: u64,
@@ -130,6 +137,8 @@ pub enum Message {
     Reply(Reply),
     #[serde(rename = "REJECT")]
     Reject(Response),
+    #[serde(rename = "POOL_LEDGER_TXNS")]
+    PoolLedgerTxns(PoolLedgerTxns),
     Ping,
     Pong,
 }
@@ -178,10 +187,29 @@ pub struct CatchUpProcess {
     pub pending_reps: BinaryHeap<CatchupRep>,
 }
 
+#[derive(Debug)]
+pub struct HashableValue {
+    pub inner: serde_json::Value
+}
+
+impl Eq for HashableValue {}
+
+impl Hash for HashableValue {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        serde_json::to_string(&self.inner).unwrap().hash(state); //TODO
+    }
+}
+
+impl PartialEq for HashableValue {
+    fn eq(&self, other: &HashableValue) -> bool {
+        self.inner.eq(&other.inner)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
-    pub reply_cnt: usize,
+    pub replies: HashMap<HashableValue, usize>,
     pub cmd_ids: Vec<i32>,
 }
 
