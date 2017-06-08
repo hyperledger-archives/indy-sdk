@@ -1,7 +1,5 @@
 // TODO: FIXME: It must be removed after code layout stabilization!
 #![allow(dead_code)]
-#![allow(unused_variables)]
-
 extern crate sovrin;
 
 #[macro_use]
@@ -283,7 +281,7 @@ fn anoncreds_demo_works() {
                                    issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, revoc_reg_update_json, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     info!("xclaim_json {:?}", xclaim_json);
     assert_eq!(ErrorCode::Success, err);
 
@@ -376,7 +374,7 @@ fn ledger_demo_works() {
     let my_wallet_name = "my_wallet";
     let their_wallet_name = "their_wallet";
     let wallet_type = "default";
-    let pool_name = "test_submit_tx";
+    let pool_name = "ledger_demo_works";
     let c_pool_name = CString::new(pool_name).unwrap();
 
     let (submit_sender, submit_receiver) = channel();
@@ -811,7 +809,6 @@ fn signus_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 9. I Verify message
-    let pool_handle = 1;
     let err =
         sovrin_verify_signature(verify_command_handle,
                                 my_wallet_handle,

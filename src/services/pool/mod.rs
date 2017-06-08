@@ -62,6 +62,7 @@ struct TransactionHandler {
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         let msg = Message::from_raw_str(raw_msg)
+            .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::IOError(
                     io::Error::from(io::ErrorKind::InvalidData)))?;
@@ -116,9 +117,12 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(&reply, raw_msg);
+                self.process_reply(reply.result.req_id, raw_msg);
             }
-            Message::Reject(response) => {
+            Message::PoolLedgerTxns(response) => {
+                self.process_reply(response.txn.req_id, raw_msg);
+            }
+            Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
             }
             _ => {
@@ -128,8 +132,7 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
-        let req_id = reply.result.req_id;
+    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.reply_cnt += 1;
@@ -287,7 +290,7 @@ impl PoolWorker {
 
             let actions = self.poll_zmq()?;
 
-            self.process_actions(actions)?;
+            self.process_actions(actions).map_err(map_err_trace!("process_actions"))?;
 
             trace!("zmq poll loop <<");
         }
@@ -459,7 +462,7 @@ impl RemoteNode {
         let public_key = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key)?,
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
@@ -519,7 +522,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key).expect("dest field in GenTransaction isn't valid"),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -815,7 +818,7 @@ mod tests {
             },
         };
 
-        th.process_reply(&reply, &"".to_string());
+        th.process_reply(reply.result.req_id, &"".to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -887,8 +890,8 @@ mod tests {
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8]));
-            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
+            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
             let gt = GenTransaction {
@@ -901,7 +904,7 @@ mod tests {
                     node_ip: "".to_string(),
                     node_port: 0,
                 },
-                txn_id: "".to_string(),
+                txn_id: None,
                 txn_type: "0".to_string(),
                 dest: (&vk.0 as &[u8]).to_base58(),
             };

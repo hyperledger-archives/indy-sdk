@@ -11,7 +11,6 @@ use self::types::{
     GetSchemaOperationData,
     GetSchemaOperation,
     NymOperation,
-    NymOperationData,
     Request,
     SchemaOperation,
     SchemaOperationData,
@@ -20,7 +19,8 @@ use self::types::{
     GetClaimDefOperation,
     GetDdoOperation,
     NodeOperation,
-    NodeOperationData
+    NodeOperationData,
+    Role
 };
 use errors::common::CommonError;
 use utils::json::{JsonEncodable, JsonDecodable};
@@ -36,22 +36,24 @@ impl LedgerService {
         LedgerService {}
     }
 
-    pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>, _ref: Option<&str>,
-                             data: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
-
+    pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
+                             alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
         //TODO: check identifier, dest, verkey
         let req_id = LedgerService::get_req_id();
 
-        let data = match data {
-            Some(d) => Some(NymOperationData::from_json(d)
-                .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?),
+        let role = match role {
+            Some(r) =>
+                match r.clone() {
+                    "STEWARD" => Some(Role::STEWARD as i32),
+                    "TRUSTEE" => Some(Role::TRUSTEE as i32),
+                    role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
+                },
             _ => None
         };
 
         let operation = NymOperation::new(dest.to_string(),
                                           verkey.as_ref().map(|s| s.to_string()),
-                                          _ref.as_ref().map(|s| s.to_string()),
-                                          data,
+                                          alias.as_ref().map(|s| s.to_string()),
                                           role.as_ref().map(|s| s.to_string()));
         let request = Request::new(req_id,
                                    identifier.to_string(),
@@ -141,7 +143,7 @@ impl LedgerService {
 
     pub fn build_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, data: &str) -> Result<String, CommonError> {
         let req_id = LedgerService::get_req_id();
-        println!("data {:?}", data);
+
         ClaimDefOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
         let operation = ClaimDefOperation::new(_ref, signature_type.to_string(), data.to_string());
@@ -196,7 +198,7 @@ mod tests {
 
         let expected_result = r#""identifier":"some_identifier","operation":{"type":"1","dest":"some_dest"}"#;
 
-        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None, None);
+        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
         let nym_request = nym_request.unwrap();
         assert!(nym_request.contains(expected_result));
@@ -208,39 +210,14 @@ mod tests {
         let identifier = "some_identifier";
         let dest = "some_dest";
         let verkey = "some_verkey";
+        let alias = "some_alias";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"1","dest":"some_dest","verkey":"some_verkey"}"#;
+        let expected_result = r#""identifier":"some_identifier","operation":{"type":"1","dest":"some_dest","verkey":"some_verkey","alias":"some_alias"}"#;
 
-        let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), None, None, None);
+        let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), None);
         assert!(nym_request.is_ok());
         let nym_request = nym_request.unwrap();
         assert!(nym_request.contains(expected_result));
-    }
-
-    #[test]
-    fn build_nym_request_works_for_data_json() {
-        let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
-        let data = r#"{"alias":"some_alias"}"#;
-
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"1","dest":"some_dest","data":{"alias":"some_alias"}}"#;
-
-        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some(data), None);
-        assert!(nym_request.is_ok());
-        let nym_request = nym_request.unwrap();
-        assert!(nym_request.contains(expected_result));
-    }
-
-    #[test]
-    fn build_nym_request_works_for_wrong_data_json() {
-        let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
-        let data = r#"{"field": "field"}"#;
-
-        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some(data), None);
-        assert!(nym_request.is_err());
     }
 
     #[test]

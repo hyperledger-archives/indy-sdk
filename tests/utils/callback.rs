@@ -581,4 +581,48 @@ impl CallbackUtils {
 
         (command_handle, Some(closure_to_build_request_callback))
     }
+
+    pub fn closure_to_delete_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                  Option<extern fn(command_handle: i32,
+                                                                                                   err: ErrorCode)>) {
+        lazy_static! {
+            static ref DELETE_WALLET_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn delete_wallet_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = DELETE_WALLET_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = DELETE_WALLET_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(delete_wallet_callback))
+    }
+
+    pub fn closure_to_replace_keys_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+                                                                                                 Option<extern fn(command_handle: i32,
+                                                                                                                  err: ErrorCode,
+                                                                                                                  verkey: *const c_char,
+                                                                                                                  pk: *const c_char)>) {
+        lazy_static! {
+            static ref REPLACE_KEYS_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn replace_keys_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char, pk: *const c_char) {
+            let mut callbacks = REPLACE_KEYS_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
+            let pk = unsafe { CStr::from_ptr(pk).to_str().unwrap().to_string() };
+            cb(err, verkey, pk)
+        }
+
+        let mut callbacks = REPLACE_KEYS_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(replace_keys_callback))
+    }
 }
