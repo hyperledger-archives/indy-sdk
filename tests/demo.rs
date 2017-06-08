@@ -374,7 +374,7 @@ fn ledger_demo_works() {
     let my_wallet_name = "my_wallet";
     let their_wallet_name = "their_wallet";
     let wallet_type = "default";
-    let pool_name = "test_submit_tx";
+    let pool_name = "ledger_demo_works";
     let c_pool_name = CString::new(pool_name).unwrap();
 
     let (submit_sender, submit_receiver) = channel();
