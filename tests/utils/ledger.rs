@@ -120,7 +120,7 @@ impl LedgerUtils {
         Ok(request_json)
     }
 
-    pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>, xref: Option<&str>,
+    pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                              data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -134,7 +134,6 @@ impl LedgerUtils {
         let target_did = CString::new(target_did).unwrap();
 
         let verkey_str = verkey.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
-        let xref_str = xref.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
         let data_str = data.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
         let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
         let err =
@@ -142,7 +141,6 @@ impl LedgerUtils {
                                      submitter_did.as_ptr(),
                                      target_did.as_ptr(),
                                      if verkey.is_some() { verkey_str.as_ptr() } else { null() },
-                                     if xref.is_some() { xref_str.as_ptr() } else { null() },
                                      if data.is_some() { data_str.as_ptr() } else { null() },
                                      if role.is_some() { role_str.as_ptr() } else { null() },
                                      cb);

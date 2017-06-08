@@ -28,11 +28,11 @@ trait CryptoType {
     fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8>;
     fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn gen_nonce(&self) -> Vec<u8>;
-    fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> (Vec<u8>, Vec<u8>);
-    fn sign(&self, private_key: &[u8], doc: &[u8]) -> Vec<u8>;
-    fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> bool;
-    fn verkey_to_public_key(&self, vk: &[u8]) -> Vec<u8>;
-    fn signkey_to_private_key(&self, sk: &[u8]) -> Vec<u8>;
+    fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
+    fn sign(&self, private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> Result<bool, CommonError>;
+    fn verkey_to_public_key(&self, vk: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn signkey_to_private_key(&self, sk: &[u8]) -> Result<Vec<u8>, CommonError>;
 }
 
 pub struct SignusService {
@@ -61,13 +61,16 @@ impl SignusService {
         let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
 
         let seed = my_did_info.seed.as_ref().map(String::as_bytes);
-        let (ver_key, sign_key) = signus.create_key_pair_for_signature(seed);
-        let public_key = signus.verkey_to_public_key(&ver_key);
-        let secret_key = signus.signkey_to_private_key(&sign_key);
+        let (ver_key, sign_key) = signus.create_key_pair_for_signature(seed)?;
 
-        let did = my_did_info.did.as_ref()
-            .map(|did| Base58::decode(did))
-            .unwrap_or(Ok(ver_key[0..16].to_vec()))?;
+        let public_key = signus.verkey_to_public_key(&ver_key)?;
+        let secret_key = signus.signkey_to_private_key(&sign_key)?;
+
+        let did = match my_did_info.did {
+            Some(ref did) => Base58::decode(did)?,
+            _ if my_did_info.cid == Some(true) => ver_key.clone(),
+            _ => ver_key[0..16].to_vec()
+        };
 
         let my_did = MyDid::new(Base58::encode(&did),
                                 xtype.clone(),
@@ -94,10 +97,11 @@ impl SignusService {
         // Check did is correct Base58
         Base58::decode(&their_did_info.did)?;
 
+        //TODO according to Api we can pass pk but now we ignore it and get it from verkey
         let (verkey, pk) = match their_did_info.verkey {
             Some(ref verkey) => (
                 Some(verkey.clone()),
-                Some(Base58::encode(&signus.verkey_to_public_key(&Base58::decode(verkey)?))))
+                Some(Base58::encode(&signus.verkey_to_public_key(&Base58::decode(verkey)?)?)))
             ,
             None => (None, None)
         };
@@ -125,8 +129,13 @@ impl SignusService {
                 SignusError::CommonError(
                     CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
+        if !msg.is_object(){
+            return Err(SignusError::CommonError(
+                CommonError::InvalidStructure(format!("Message is invalid json: {}", msg))))
+        }
+
         let signature = serialize_signature(msg.clone())?;
-        let signature = signus.sign(&sign_key, signature.as_bytes());
+        let signature = signus.sign(&sign_key, signature.as_bytes())?;
         let signature = Base58::encode(&signature);
         msg["signature"] = Value::String(signature);
         let signed_msg: String = serde_json::to_string(&msg)
@@ -153,6 +162,11 @@ impl SignusService {
                 SignusError::CommonError(
                     CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
+        if !signed_msg.is_object(){
+            return Err(SignusError::CommonError(
+                CommonError::InvalidStructure(format!("Message is invalid json: {}", signed_msg))))
+        }
+
         // TODO: FIXME: This code seem unreliable and hard to understand
         // simple match on Value::String() will be better
         if let Some(signature) = signed_msg["signature"].as_str() {
@@ -163,7 +177,7 @@ impl SignusService {
                     message[key] = signed_msg[key].clone();
                 }
             }
-            Ok(signus.verify(&verkey, &serialize_signature(message)?.as_bytes(), &signature))
+            Ok(signus.verify(&verkey, &serialize_signature(message)?.as_bytes(), &signature)?)
         } else {
             return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("No signature field in message json"))));
         }
@@ -302,6 +316,30 @@ mod tests {
 
         let signature = service.sign(&my_did, message);
         assert!(signature.is_ok());
+    }
+
+    #[test]
+    fn sign_works_for_invalid_signkey() {
+        let service = SignusService::new();
+
+        let message = r#"{
+            "reqId":1495034346617224651,
+            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            "operation":{
+                "type":"1",
+                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
+            }
+        }"#;
+
+        let my_did = MyDid::new("NcYxiDXkpYi6ov5FcYDi1e".to_string(),
+                                DEFAULT_CRYPTO_TYPE.to_string(),
+                                "pk".to_string(),
+                                "sk".to_string(),
+                                "verkey".to_string(),
+                                "signkey".to_string());
+
+        let signature = service.sign(&my_did, message);
+        assert!(signature.is_err());
     }
 
     #[test]
