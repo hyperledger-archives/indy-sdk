@@ -29,7 +29,7 @@ mod high_cases {
         let wallet_name = "wallet1";
         let xtype = "default";
 
-        let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype)).unwrap();
+        WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype)).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -56,9 +56,9 @@ mod high_cases {
         let pool_name = "sovrin_delete_wallet_works";
         let wallet_name = "wallet1";
 
-        let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
+        WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
         WalletUtils::delete_wallet(wallet_name).unwrap();
-        let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
+        WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -104,9 +104,9 @@ mod high_cases {
         let schema_seq_no = 1;
         let claim_def_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
-        let (claim_def_json, uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema).unwrap();
+        let (_, uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema).unwrap();
 
-        let res = WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &uuid, claim_def_seq_no).unwrap();
+        WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &uuid, claim_def_seq_no).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -122,7 +122,7 @@ mod medium_cases {
         let pool_name = "sovrin_create_wallet_works_for_empty_type";
         let wallet_name = "wallet1";
 
-        let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
+        WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -145,7 +145,6 @@ mod medium_cases {
     fn sovrin_delete_wallet_works_for_invalid_name() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "sovrin_delete_wallet_works_for_invalid_name";
         let wallet_name = "wallet1";
 
         let res = WalletUtils::delete_wallet(wallet_name);
@@ -161,7 +160,7 @@ mod medium_cases {
         let pool_name = "sovrin_delete_wallet_works_for_deleted_wallet";
         let wallet_name = "wallet1";
 
-        let wallet_handle = WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
+        WalletUtils::create_wallet(pool_name, wallet_name, None).unwrap();
         WalletUtils::delete_wallet(wallet_name).unwrap();
         let res = WalletUtils::delete_wallet(wallet_name);
         assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
@@ -221,12 +220,11 @@ mod medium_cases {
 
         let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
 
-        let schema_seq_no = 1;
         let seq_no = 1;
         let some_key = "key";
 
         //TODO may be we must return WalletNotFound in case if key not exists in wallet
-        let res = WalletUtils::wallet_set_seq_no_for_value(wallet_handle, some_key, seq_no).unwrap();
+        WalletUtils::wallet_set_seq_no_for_value(wallet_handle, some_key, seq_no).unwrap();
 
         TestUtils::cleanup_storage();
     }
