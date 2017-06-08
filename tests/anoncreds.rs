@@ -1,7 +1,5 @@
 // TODO: FIXME: It must be removed after code layout stabilization!
 #![allow(dead_code)]
-#![allow(unused_variables)]
-
 extern crate sovrin;
 
 #[macro_use]
@@ -90,7 +88,7 @@ fn anoncreds_works_for_single_issuer_single_prover() {
                                                   &claim_req,
                                                   &claim_json);
     assert!(res.is_ok());
-    let (revoc_reg_update_json, xclaim_json) = res.unwrap();
+    let (_, xclaim_json) = res.unwrap();
 
     // 9. Prover store received Claim
     let res = AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json);
@@ -261,7 +259,7 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
                                                   &gvt_claim_req,
                                                   &gvt_claim_json);
     assert!(res.is_ok());
-    let (revoc_reg_update_json, gvt_claim_json) = res.unwrap();
+    let (_, gvt_claim_json) = res.unwrap();
 
     //13. Prover store received GVT Claim
     let res = AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json);
@@ -283,7 +281,7 @@ fn anoncreds_works_for_multiply_issuer_single_prover() {
                                                   &xyz_claim_req,
                                                   &xyz_claim_json);
     assert!(res.is_ok());
-    let (revoc_reg_update_json, xyz_claim_json) = res.unwrap();
+    let (_, xyz_claim_json) = res.unwrap();
 
     // 16. Prover store received XYZ Claim
     let res = AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json);
@@ -472,7 +470,7 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
                                                   &gvt_claim_req,
                                                   &gvt_claim_json);
     assert!(res.is_ok());
-    let (revoc_reg_update_json, gvt_claim_json) = res.unwrap();
+    let (_, gvt_claim_json) = res.unwrap();
 
     //11. Prover store received GVT Claim
     let res = AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json);
@@ -494,7 +492,7 @@ fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
                                                   &xyz_claim_req,
                                                   &xyz_claim_json);
     assert!(res.is_ok());
-    let (revoc_reg_update_json, xyz_claim_json) = res.unwrap();
+    let (_, xyz_claim_json) = res.unwrap();
 
     //14. Prover store received XYZ Claim
     let res = AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json);

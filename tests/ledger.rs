@@ -1,6 +1,4 @@
 #![allow(dead_code)]
-#![allow(unused_variables)]
-
 extern crate sovrin;
 
 #[macro_use]
@@ -300,8 +298,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
 
@@ -408,11 +406,11 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-            let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let attrib_request = LedgerUtils::build_attrib_request(&my_did.clone(),
                                                                    &my_did.clone(),
@@ -497,8 +495,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
@@ -583,9 +581,7 @@ mod high_cases {
 
             let role = "STEWARD";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey), None, Some(role)).unwrap();
-            let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
-
-            let (node_id, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"cid\":true}").unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let node_data = "{\"node_ip\":\"10.0.0.100\",\
                               \"node_port\":9710, \
@@ -642,17 +638,17 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-            let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
                                 \"keys\": [\"name\", \"male\"]}";
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
-            let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
 
             let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
             let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
@@ -668,7 +664,7 @@ mod high_cases {
                 seq_no: get_schema_response.result.seq_no.unwrap()
             };
 
-            let (claim_def_json, claim_def_uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+            let (claim_def_json, _) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                                                   &serde_json::to_string(&schema).unwrap()).unwrap();
             info!("claim_def_json {:}", claim_def_json);
 
@@ -688,7 +684,8 @@ mod high_cases {
 
             let get_claim_def_response = PoolUtils::send_request(pool_handle, &get_claim_def_request).unwrap();
             info!("get_claim_def_response {}", get_claim_def_response);
-            let get_claim_def_response: Reply<GetClaimDefReplyResult> = serde_json::from_str(&get_claim_def_response).unwrap();
+            let get_claim_def_response: Result<Reply<GetClaimDefReplyResult>, _> = serde_json::from_str(&get_claim_def_response);
+            assert!(get_claim_def_response.is_ok());
 
             TestUtils::cleanup_storage();
         }
@@ -715,7 +712,7 @@ mod medium_cases {
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
-            let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -766,14 +763,14 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}").unwrap();
 
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_my_did(wallet_handle, "{\"cid\":true}").unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{\"cid\":true}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-            let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let (my_did2, my_verkey2, my_pk2) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did2, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
             let nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did2.clone(), None, None, None).unwrap();
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request);
             assert!(res.is_err());
@@ -792,7 +789,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee9\", \"cid\":true}").unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"000000000000000000000000Trustee9\", \"cid\":true}").unwrap();
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{\"seed\":\"00000000000000000000000000000My1\"}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();

@@ -30,7 +30,7 @@ fn sovrin_agent_connect_works_for_all_data_in_wallet_present() {
     LoggerUtils::init();
     TestUtils::cleanup_storage();
 
-    let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").expect("create wallet");
+    let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_all_data_in_wallet_present", "wallet1", "default").expect("create wallet");
 
     let seed: Option<String> = Some("sovrin_agent_connect_works_for_a".to_string());
     let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
