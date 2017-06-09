@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 extern crate sovrin;
 
+extern crate rust_base58;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -27,6 +28,7 @@ mod high_cases {
 
     mod create_my_did {
         use super::*;
+        use rust_base58::FromBase58;
 
         #[test]
         fn sovrin_create_my_did_works_for_empty_json() {
@@ -36,8 +38,8 @@ mod high_cases {
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            assert_eq!(my_did.len(), 22);
-            assert_eq!(my_verkey.len(), 44);
+            assert_eq!(my_did.from_base58().unwrap().len(), 16);
+            assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
 
             TestUtils::cleanup_storage();
         }

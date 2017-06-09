@@ -371,7 +371,8 @@ mod tests {
             let agent = Agent {
                 cmd_socket: send_soc,
                 worker: Some(thread::spawn(move || {
-                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap()
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap();
+                    recv_soc.recv_string(0).unwrap().unwrap();
                 }))
             };
             let agent_service = AgentService {
