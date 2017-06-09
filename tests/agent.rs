@@ -18,7 +18,6 @@ use std::thread;
 mod utils;
 
 use utils::agent::AgentUtils;
-use utils::logger::LoggerUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
 use utils::wallet::WalletUtils;
@@ -28,7 +27,6 @@ mod high_cases {
 
     #[test]
     fn sovrin_agent_listen_works_with_sovrin_agent_connect() {
-        LoggerUtils::init();
         TestUtils::cleanup_storage();
         let wallet_handle = WalletUtils::create_and_open_wallet("pool3", "wallet3", "default").unwrap();
         let seed: Option<String> = Some("fixed_seed_for_agent_tests______".to_string());
@@ -49,7 +47,6 @@ mod high_cases {
 
         #[test]
         fn sovrin_agent_connect_works_for_all_data_in_wallet_present() {
-            LoggerUtils::init();
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").expect("create wallet");
@@ -91,7 +88,6 @@ mod high_cases {
 
         #[test]
         fn sovrin_agent_listen_works_for_all_data_in_wallet_present() {
-            LoggerUtils::init();
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool2", "wallet2", "default").expect("create wallet");

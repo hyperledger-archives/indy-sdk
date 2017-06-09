@@ -14,7 +14,6 @@ extern crate log;
 #[path = "utils/mod.rs"]
 mod utils;
 
-use utils::logger::LoggerUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
@@ -65,7 +64,6 @@ use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
-    LoggerUtils::init();
     TestUtils::cleanup_storage();
 
     let (create_wallet_sender, create_wallet_receiver) = channel();
@@ -369,7 +367,6 @@ fn anoncreds_demo_works() {
 #[test]
 #[cfg(feature="local_nodes_pool")]
 fn ledger_demo_works() {
-    LoggerUtils::init();
     TestUtils::cleanup_storage();
     let my_wallet_name = "my_wallet";
     let their_wallet_name = "their_wallet";
@@ -630,7 +627,6 @@ fn ledger_demo_works() {
 
 #[test]
 fn signus_demo_works() {
-    LoggerUtils::init();
     TestUtils::cleanup_storage();
 
     let (create_my_wallet_sender, create_my_wallet_receiver) = channel();

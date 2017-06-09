@@ -13,10 +13,6 @@ pub mod anoncreds;
 #[path = "../../src/utils/test.rs"]
 pub mod test;
 
-#[macro_use]
-#[path = "../../src/utils/logger.rs"]
-pub mod logger;
-
 #[path = "../../src/utils/timeout.rs"]
 pub mod timeout;
 pub mod agent;
