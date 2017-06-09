@@ -16,8 +16,8 @@
 
 - (NSError*)createPoolLedgerConfig:(NSString *)poolName;
 
-- (NSError*)createAndOpenPoolLedgerConfig: (SovrinHandle*) poolHandle
-                                 poolName: (NSString *)poolName;
+- (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
+                                       poolHandle: (SovrinHandle *) handle;
 
 - (NSString *)createPoolConfig:(NSString *)poolName;
 
@@ -25,9 +25,9 @@
                      config:(NSString*)config
                 poolHandler:(SovrinHandle*)handle;
 
-- (NSError *)sendRequest:(SovrinHandle)poolHandle
-                 request:(NSString *)request
-                response:(NSString **)response;
+- (NSError *)sendRequestWithPoolHandle:(SovrinHandle)poolHandle
+                               request:(NSString *)request
+                              response:(NSString **)response;
 
 + (NSString *) nodeIp;
 

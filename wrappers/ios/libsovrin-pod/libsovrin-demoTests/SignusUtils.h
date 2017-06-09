@@ -19,11 +19,11 @@
          message:(NSString*)message
        outString:(NSString**)outString;
 
-- (NSError *)createMyDid:(SovrinHandle)walletHandle
-               myDidJson:(NSString *)myDidJson
-                   myDid:(NSString **)myDid
-                myVerkey:(NSString **)myVerkey
-                    myPk:(NSString **)myPk;
+- (NSError *)createMyDidWithWalletHandle:(SovrinHandle)walletHandle
+                               myDidJson:(NSString *)myDidJson
+                                outMyDid:(NSString **)myDid
+                             outMyVerkey:(NSString **)myVerkey
+                                 outMyPk:(NSString **)myPk;
 
 - (NSError *)storeTheirDid: (SovrinHandle) walletHandle
               identityJson: (NSString *)identityJson;

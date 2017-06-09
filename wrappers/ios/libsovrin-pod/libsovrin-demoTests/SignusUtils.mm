@@ -59,11 +59,11 @@
 }
 
 
-- (NSError *)createMyDid:(SovrinHandle)walletHandle
-               myDidJson:(NSString *)myDidJson
-                   myDid:(NSString **)myDid
-                myVerkey:(NSString **)myVerkey
-                    myPk:(NSString **)myPk
+- (NSError *)createMyDidWithWalletHandle:(SovrinHandle)walletHandle
+                               myDidJson:(NSString *)myDidJson
+                                outMyDid:(NSString **)myDid
+                             outMyVerkey:(NSString **)myVerkey
+                                 outMyPk:(NSString **)myPk
 {
    
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -85,12 +85,12 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *myDid = did;
     *myVerkey = verKey;

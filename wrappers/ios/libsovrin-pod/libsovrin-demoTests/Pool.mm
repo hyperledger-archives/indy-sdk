@@ -100,9 +100,9 @@
     
     NSString *responseJson;
     // TODO: 110 error, response is empty
-    ret = [[PoolUtils sharedInstance] sendRequest:poolHandle
-                                          request:request
-                                         response:&responseJson];
+    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
+                                                        request:request
+                                                       response:&responseJson];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequest() failed!");
     NSLog(@"responseJson: %@", responseJson);
     

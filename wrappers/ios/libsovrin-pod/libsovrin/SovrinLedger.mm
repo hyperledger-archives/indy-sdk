@@ -84,7 +84,6 @@
 + (NSError*) buildNymRequest:(NSString*) submitterDid
                    targetDID:(NSString*) targetDid
                       verkey:(NSString*) key
-                        xref:(NSString*) ref
                         data:(NSString*) data
                         role:(NSString*) role
                   completion:(void (^)(NSError* error, NSString* requestJSON)) handler
@@ -93,14 +92,14 @@
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_build_nym_request( handle,
-                                    [submitterDid UTF8String],
-                                    [targetDid UTF8String],
-                                    [key UTF8String],
-                                    [ref UTF8String],
-                                    [data UTF8String],
-                                    [role UTF8String],
-                                    SovrinWrapperCommon3PSCallback );
+    
+    ret = sovrin_build_nym_request(handle,
+                                   [submitterDid UTF8String],
+                                   [targetDid UTF8String],
+                                   [key UTF8String],
+                                   [data UTF8String],
+                                   [role UTF8String],
+                                   SovrinWrapperCommon3PSCallback);
 
     if( ret != Success )
     {

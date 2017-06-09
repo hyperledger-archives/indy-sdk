@@ -119,8 +119,8 @@
 }
 
 
-- (NSError*)createAndOpenPoolLedgerConfig: (SovrinHandle*) handle
-                                 poolName: (NSString *)poolName
+- (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
+                                       poolHandle: (SovrinHandle *) handle
 {
     NSError *ret = nil;
     
@@ -142,12 +142,12 @@
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
-    
     if (ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
     
     if (closureError.code != Success)
     {
@@ -168,7 +168,7 @@
                [completionExpectation fulfill];
            }];
    
-    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils shortTimeout]];
     
     if (ret.code != Success)
     {
@@ -179,9 +179,9 @@
     return closureError;
 }
 
-- (NSError *)sendRequest:(SovrinHandle)poolHandle
-                 request:(NSString *)request
-                response:(NSString **)response
+- (NSError *)sendRequestWithPoolHandle:(SovrinHandle)poolHandle
+                               request:(NSString *)request
+                              response:(NSString **)response
 {
     
     NSError *ret = nil;

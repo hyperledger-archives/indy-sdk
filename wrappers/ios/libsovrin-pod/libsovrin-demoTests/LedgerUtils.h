@@ -15,23 +15,22 @@
 
 + (LedgerUtils *)sharedInstance;
 
-- (NSError *)signAndSubmitRequest:(SovrinHandle)poolHandle
-                     walletHandle:(SovrinHandle)walletHandle
-                     submitterDid:(NSString *)submitterDid
-                      requestJson:(NSString *)requestJson
-                     responseJson:(NSString **)responseJson;
+- (NSError *)signAndSubmitRequestWithPoolHandle:(SovrinHandle)poolHandle
+                                   walletHandle:(SovrinHandle)walletHandle
+                                   submitterDid:(NSString *)submitterDid
+                                    requestJson:(NSString *)requestJson
+                                outResponseJson:(NSString **)responseJson;
 
-- (NSError *) buildNymRequest:(NSString *)submitterDid
-                    targetDid:(NSString *)targetDid
-                       verkey:(NSString *)verkey
-                         xref:(NSString *)xref
-                         data:(NSString *)data
-                         role:(NSString *)role
-                   resultJson:(NSString **)resultJson;
+- (NSError *) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                    targetDid:(NSString *)targetDid
+                                       verkey:(NSString *)verkey
+                                         data:(NSString *)data
+                                         role:(NSString *)role
+                                   outRequest:(NSString **)resultJson;
 
-- (NSError *) buildGetNymRequest:(NSString *)submitterDid
-                    targetDid:(NSString *)targetDid
-                   resultJson:(NSString **)resultJson;
+- (NSError *) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                       targetDid:(NSString *)targetDid
+                                      outRequest:(NSString **)requestJson;
 
 - (NSError *)buildAttribRequest:(NSString *)submitterDid
                       targetDid:(NSString *)targetDid

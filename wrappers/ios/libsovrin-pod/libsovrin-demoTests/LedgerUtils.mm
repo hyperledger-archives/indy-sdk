@@ -26,11 +26,11 @@
 }
 
 
-- (NSError *)signAndSubmitRequest:(SovrinHandle)poolHandle
-                     walletHandle:(SovrinHandle)walletHandle
-                     submitterDid:(NSString *)submitterDid
-                      requestJson:(NSString *)requestJson
-                     responseJson:(NSString **)responseJson
+- (NSError *)signAndSubmitRequestWithPoolHandle:(SovrinHandle)poolHandle
+                                   walletHandle:(SovrinHandle)walletHandle
+                                   submitterDid:(NSString *)submitterDid
+                                    requestJson:(NSString *)requestJson
+                                outResponseJson:(NSString **)responseJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
@@ -62,13 +62,12 @@
 
 // MARK: Build nym request
 
-- (NSError *) buildNymRequest:(NSString *)submitterDid
-                    targetDid:(NSString *)targetDid
-                       verkey:(NSString *)verkey
-                         xref:(NSString *)xref
-                         data:(NSString *)data
-                         role:(NSString *)role
-                   resultJson:(NSString **)resultJson
+- (NSError *) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                    targetDid:(NSString *)targetDid
+                                       verkey:(NSString *)verkey
+                                         data:(NSString *)data
+                                         role:(NSString *)role
+                                   outRequest:(NSString **)resultJson;
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
@@ -105,9 +104,9 @@
 }
 
 
-- (NSError *) buildGetNymRequest:(NSString *)submitterDid
-                       targetDid:(NSString *)targetDid
-                      resultJson:(NSString **)resultJson
+- (NSError *) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                       targetDid:(NSString *)targetDid
+                                      outRequest:(NSString **)requestJson;
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
@@ -123,14 +122,15 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = outJson;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    *requestJson = outJson;
     
     return err;
 }

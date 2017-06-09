@@ -30,6 +30,7 @@
 		84881A8C1EE553E5001B5302 /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A8B1EE553E5001B5302 /* LedgerUtils.mm */; };
 		84881A991EE6EA93001B5302 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84881A981EE6EA93001B5302 /* libsovrin.framework */; };
 		84881A9A1EE6EA93001B5302 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 84881A981EE6EA93001B5302 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +68,7 @@
 
 /* Begin PBXFileReference section */
 		070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.release.xcconfig"; sourceTree = "<group>"; };
+		179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F851EC36186006194EC /* libsovrin-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libsovrin-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F891EC36186006194EC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		3E2A7F8B1EC36186006194EC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -111,6 +113,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				84881A991EE6EA93001B5302 /* libsovrin.framework in Frameworks */,
+				C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,6 +237,7 @@
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
