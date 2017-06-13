@@ -1,4 +1,5 @@
 #![warn(unused_variables)]
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
@@ -142,11 +143,14 @@ impl AgentCommandExecutor {
         })
     }
 
-    fn listen(&self, /* FIXME wallet_handle */ _: i32,
+    fn listen(&self, wallet_handle: i32,
               listen_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
               connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
-        let result = self.agent_service.as_ref().listen()
+        let my_did_json: String = self.wallet_service.list(wallet_handle, "my_did::").as_ref().unwrap().get(0).as_ref().unwrap().1.clone();
+        let my_did: MyDid = MyDid::from_json(my_did_json.as_str()).map_err(|_| CommonError::InvalidState((format!("Invalid my did json")))).unwrap();
+
+        let result = self.agent_service.as_ref().listen(my_did.pk.as_str(), my_did.sk.as_str())
             .and_then(|cmd_id| {
                 match self.listen_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),
