@@ -92,6 +92,7 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
+/// endpoint: endpoint to use in starting listener.
 /// listener_cb: Callback that will be called after listening started or on error.
 /// connection_cb: Callback that will be called after establishing of incomming connection.
 /// message_cb: Callback that will be called on receiving of an incomming message.
@@ -102,7 +103,6 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 /// - listener_handle: Listener handle to use for mapping of incomming connections to this listener.
-/// - endpoint: Endpoint of started listener
 /// connection_cb:
 /// - xlistener_handle: Listener handle. Identifies listener.
 /// - err: Error code
@@ -117,10 +117,10 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 #[warn(unused_variables)]
 pub extern fn sovrin_agent_listen(command_handle: i32,
                                   wallet_handle: i32,
+                                  endpoint: *const c_char,
                                   listener_cb: Option<extern fn(xcommand_handle: i32,
                                                                 err: ErrorCode,
-                                                                listener_handle: i32,
-                                                                endpoint: *const c_char)>,
+                                                                listener_handle: i32)>,
                                   connection_cb: Option<extern fn(xlistener_handle: i32,
                                                                   err: ErrorCode,
                                                                   connection_handle: i32,
@@ -129,16 +129,17 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
                                   message_cb: Option<extern fn(xconnection_handle: i32,
                                                                err: ErrorCode,
                                                                message: *const c_char)>) -> ErrorCode {
-    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam6);
 
     let cmd = Command::Agent(AgentCommand::Listen(
         wallet_handle,
+        endpoint,
         Box::new(move |result| {
-            let (err, handle, endpoint) = result_to_err_code_2!(result, 0, String::new());
-            let endpoint = CStringUtils::string_to_cstring(endpoint);
-            listener_cb(command_handle, err, handle, endpoint.as_ptr());
+            let (err, handle) = result_to_err_code_1!(result, 0);
+            listener_cb(command_handle, err, handle);
         }),
         Box::new(move |result| {
             let (err, listener_handle, conn_handle, sender_did, receiver_did) =

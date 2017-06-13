@@ -28,11 +28,11 @@ mod high_cases {
         TestUtils::cleanup_storage();
         let wallet_handle = WalletUtils::create_and_open_wallet("pool3", "wallet3", "default").unwrap();
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+        let endpoint = "tcp://127.0.0.1:9701";
 
-        let (_, endpoint): (i32, String) = AgentUtils::listen(wallet_handle).unwrap();
+        let _ = AgentUtils::listen(wallet_handle, endpoint).unwrap();
 
-        let endpoint = endpoint.replace("0.0.0.0", "127.0.0.1");
-        SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint.as_str()).unwrap();
+        SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
         AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
     }
@@ -93,7 +93,7 @@ mod high_cases {
             let endpoint = "tcp://127.0.0.1:9700";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            AgentUtils::listen(wallet_handle).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint).unwrap();
 
             TestUtils::cleanup_storage();
         }
