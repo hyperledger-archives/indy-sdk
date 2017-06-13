@@ -29,7 +29,6 @@ RL -> RW: Store receiver keys
 RA -> RL: <b>2. sovrin_agent_listen
 RL -> RS: Start listening
 RL -> RA: Listener handle (cb)
-RA -> L: Update endpoint info
 
 === Establish connection ==
 

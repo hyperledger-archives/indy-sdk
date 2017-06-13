@@ -516,19 +516,18 @@ impl CallbackUtils {
         Some(agent_message_callback)
     }
 
-    pub fn closure_to_agent_listen_cb(closure: Box<FnMut(ErrorCode, i32, String) + Send>)
+    pub fn closure_to_agent_listen_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
                                       -> (i32,
                                           Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                           pool_handle: i32, endpoint: *const c_char)>) {
+                                                           pool_handle: i32)>) {
         lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32, String) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
         }
 
-        extern "C" fn agent_listen_callback(command_handle: i32, err: ErrorCode, pool_handle: i32, endpoint: *const c_char) {
+        extern "C" fn agent_listen_callback(command_handle: i32, err: ErrorCode, pool_handle: i32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            let endpoint = unsafe { CStr::from_ptr(endpoint).to_str().unwrap().to_string() };
-            cb(err, pool_handle, endpoint)
+            cb(err, pool_handle)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();

@@ -28,13 +28,14 @@ pub enum AgentCommand {
     CloseConnection,
     Listen(
         i32, // wallet handle
-        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // listen cb
+        String, // endpoint
+        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
         Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
     ),
     ListenAck(
         i32, // cmd handle (eq listener handle)
-        Result<(i32, String), CommonError> // (listener handle, endpoint) or error
+        Result<i32, CommonError> // listener handle or error
     ),
     ListenerOnConnect(
         i32, // listener handle
@@ -52,7 +53,7 @@ pub struct AgentCommandExecutor {
     listeners: RefCell<HashMap<i32, Listener>>,
 
     listen_callbacks: RefCell<HashMap<i32, (
-        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // listen cb
+        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Listener
     )>>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
@@ -85,9 +86,9 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ConnectAck command received");
                 self.open_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res) //TODO extract method
             }
-            AgentCommand::Listen(wallet_handle, listen_cb, connect_cb, message_cb) => {
+            AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
-                self.listen(wallet_handle, listen_cb, connect_cb, message_cb);
+                self.listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb);
             }
             AgentCommand::ListenAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ListenAck command received");
@@ -143,14 +144,15 @@ impl AgentCommandExecutor {
         })
     }
 
-    fn listen(&self, wallet_handle: i32,
-              listen_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
+    fn listen(&self, wallet_handle: i32, endpoint: String,
+              listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
               connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
         let my_did_json: String = self.wallet_service.list(wallet_handle, "my_did::").as_ref().unwrap().get(0).as_ref().unwrap().1.clone();
         let my_did: MyDid = MyDid::from_json(my_did_json.as_str()).map_err(|_| CommonError::InvalidState((format!("Invalid my did json")))).unwrap();
 
-        let result = self.agent_service.as_ref().listen(my_did.pk.as_str(), my_did.sk.as_str())
+        let result = self.agent_service.as_ref()
+            .listen(endpoint.as_str(), my_did.pk.as_str(), my_did.sk.as_str())
             .and_then(|cmd_id| {
                 match self.listen_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),
