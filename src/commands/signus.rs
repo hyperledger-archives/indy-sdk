@@ -4,7 +4,7 @@ use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::sovrin::SovrinError;
 use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid};
-use services::ledger::types::{GetNymReply, GetNymResultData};
+use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -42,6 +42,7 @@ pub enum SignusCommand {
         String, // did
         String, // msg
         Box<Fn(Result<String, SovrinError>) + Send>),
+    //TODO divide on two commands
     VerifySignature(
         i32, // wallet handle
         i32, // pool_handle,
@@ -260,7 +261,6 @@ impl SignusCommandExecutor {
                 return cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
             }
             let get_nym_request = get_nym_request.unwrap();
-
             let cb_id: i32 = SequenceUtils::get_next_id();
 
             match self.verify_callbacks.try_borrow_mut() {
@@ -336,7 +336,7 @@ impl SignusCommandExecutor {
                                      wallet_handle: i32,
                                      get_nym_response: &str,
                                      signed_msg: &str) -> Result<bool, SovrinError> {
-        let get_nym_response = GetNymReply::from_json(&get_nym_response)
+        let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
             .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
 
         let gen_nym_result_data = GetNymResultData::from_json(&get_nym_response.result.data)

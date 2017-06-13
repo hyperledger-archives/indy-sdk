@@ -31,6 +31,7 @@ use services::anoncreds::types::{
 use std::collections::HashMap;
 use utils::crypto::pair::PointG2;
 use std::cell::RefCell;
+use utils::crypto::base58::Base58;
 
 pub enum ProverCommand {
     StoreClaimOffer(
@@ -142,6 +143,13 @@ impl ProverCommandExecutor {
 
     fn _store_claim_offer(&self, wallet_handle: i32, claim_offer_json: &str) -> Result<(), SovrinError> {
         let uuid = Uuid::new_v4().to_string();
+
+        let claim_offer: ClaimOffer = ClaimOffer::from_json(claim_offer_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
+
+        Base58::decode(&claim_offer.issuer_did)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {}", err.to_string())))?;
+
         self.wallet_service.set(wallet_handle, &format!("claim_offer_json::{}", &uuid), &claim_offer_json)?;
 
         Ok(())
@@ -176,6 +184,9 @@ impl ProverCommandExecutor {
             }
             if let Some(ref issuer_did) = filter.issuer_did {
                 condition = condition && claim_offer.issuer_did == issuer_did.clone();
+            }
+            if let Some(ref schema_seq_no) = filter.schema_seq_no {
+                condition = condition && claim_offer.schema_seq_no == schema_seq_no.clone();
             }
             condition
         });
@@ -228,6 +239,10 @@ impl ProverCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_json: {}", err.to_string())))?;
         let claim_offer = ClaimOffer::from_json(&claim_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
+        Base58::decode(&prover_did)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid prover did: {}", err.to_string())))?;
+
+        //TODO check claim_offer.claim_def_seq_no == claim_def.schema_seq_no
 
         let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
             self.anoncreds_service.prover.create_claim_request(claim_def.public_key,
@@ -288,7 +303,6 @@ impl ProverCommandExecutor {
             }
             _ => (None, None)
         };
-
 
         let primary_claim_init_data_json = self.wallet_service.get(wallet_handle,
                                                                    &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;

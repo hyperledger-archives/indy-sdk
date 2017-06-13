@@ -8,6 +8,7 @@ pub mod signus;
 pub mod wallet;
 pub mod ledger;
 pub mod anoncreds;
+pub mod types;
 
 #[macro_use]
 #[path = "../../src/utils/test.rs"]
