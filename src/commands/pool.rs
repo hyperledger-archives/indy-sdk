@@ -1,3 +1,4 @@
+use errors::common::CommonError;
 use errors::sovrin::SovrinError;
 use errors::pool::PoolError;
 
@@ -104,7 +105,7 @@ impl PoolCommandExecutor {
             .and_then(|handle| {
                 match self.open_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, handle)),
-                    Err(err) => Err(SovrinError::PoolError(PoolError::from(err))),
+                    Err(err) => Err(SovrinError::PoolError(PoolError::from(CommonError::from(err)))),
                 }
             });
         match result {

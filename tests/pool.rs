@@ -1,5 +1,3 @@
-//// TODO: FIXME: It must be removed after code layout stabilization!
-#![allow(dead_code)]
 extern crate sovrin;
 
 #[macro_use]
@@ -7,6 +5,8 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 #[path = "utils/mod.rs"]
@@ -17,8 +17,6 @@ use sovrin::api::ErrorCode;
 
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
-#[cfg(feature = "local_nodes_pool")]
-use utils::logger::LoggerUtils;
 
 
 #[test]
@@ -49,7 +47,6 @@ fn open_pool_ledger_works() {
 #[cfg(feature = "local_nodes_pool")]
 fn open_pool_ledger_works_for_twice() {
     TestUtils::cleanup_storage();
-    LoggerUtils::init();
     let pool_name = "pool_open_twice";
 
     let res = PoolUtils::create_pool_ledger_config(pool_name);

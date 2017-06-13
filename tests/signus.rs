@@ -1,5 +1,3 @@
-// TODO: FIXME: It must be removed after code layout stabilization!
-#![allow(dead_code)]
 extern crate sovrin;
 
 extern crate rust_base58;
@@ -8,6 +6,8 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 #[path = "utils/mod.rs"]

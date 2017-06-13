@@ -587,7 +587,7 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
-        for pool in self.pools.try_borrow()?.values() {
+        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
                 return Err(PoolError::InvalidHandle("Already opened".to_string()));
@@ -598,13 +598,13 @@ impl PoolService {
         let new_pool = Pool::new(name, cmd_id)?;
         //FIXME process config: check None (use default), transfer to Pool instance
 
-        self.pools.try_borrow_mut()?.insert(new_pool.id, new_pool);
+        self.pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.id, new_pool);
         return Ok(cmd_id);
     }
 
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow()?
+        self.pools.try_borrow().map_err(CommonError::from)?
             .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
             .send_tx(cmd_id, json)?;
         Ok(cmd_id)
@@ -619,7 +619,7 @@ impl PoolService {
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
-        self.pools.try_borrow()?.get(&handle).map_or(
+        self.pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle("Doesn't exists".to_string())),
             |pool: &Pool| Ok(pool.name.clone()))
     }

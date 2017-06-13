@@ -1,6 +1,8 @@
-use std::error;
-use std::fmt;
-use std::io;
+extern crate zmq;
+
+use std::cell::{BorrowError, BorrowMutError};
+use std::error::Error;
+use std::{fmt, io};
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -40,7 +42,7 @@ impl fmt::Display for CommonError {
     }
 }
 
-impl error::Error for CommonError {
+impl Error for CommonError {
     fn description(&self) -> &str {
         match *self {
             CommonError::InvalidParam1(ref description) |
@@ -58,7 +60,7 @@ impl error::Error for CommonError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&Error> {
         match *self {
             CommonError::InvalidParam1(ref description) |
             CommonError::InvalidParam2(ref description) |
@@ -92,6 +94,24 @@ impl ToErrorCode for CommonError {
             CommonError::InvalidStructure(ref description) => ErrorCode::CommonInvalidStructure,
             CommonError::IOError(ref description) => ErrorCode::CommonIOError
         }
+    }
+}
+
+impl From<zmq::Error> for CommonError {
+    fn from(err: zmq::Error) -> Self {
+        CommonError::IOError(From::from(err))
+    }
+}
+
+impl From<BorrowError> for CommonError {
+    fn from(err: BorrowError) -> Self {
+        CommonError::InvalidState(err.description().to_string())
+    }
+}
+
+impl From<BorrowMutError> for CommonError {
+    fn from(err: BorrowMutError) -> Self {
+        CommonError::InvalidState(err.description().to_string())
     }
 }
 
