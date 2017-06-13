@@ -36,4 +36,16 @@
                                                            error: &error];
     return dict;
 }
+
+- (BOOL) contains:(NSDictionary*) dict
+{
+    for (NSString *key in [dict allKeys])
+    {
+        if ([self objectForKey:key] != [dict objectForKey:key])
+        {
+            return NO;
+        }
+    }
+    return YES;
+}
 @end

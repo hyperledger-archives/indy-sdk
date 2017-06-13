@@ -63,10 +63,10 @@
                  outClaimJson:(NSString**) xClaimJson
         outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON;
 
-- (NSError *)issuerCreateClaimDefinifion:(SovrinHandle) walletHandle
-                              schemaJson:(NSString *) schemaJson
-                            claimDefJson:(NSString**) claimDefJson
-                            claimDefUUID:(NSString**) claimDefUUID;
+- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle) walletHandle
+                                              schemaJson:(NSString *) schemaJson
+                                            claimDefJson:(NSString**) claimDefJson
+                                            claimDefUUID:(NSString**) claimDefUUID;
 
 -(NSError*) proverStoreClaim:(SovrinHandle) walletHandle
                   claimsJson:(NSString*) str;

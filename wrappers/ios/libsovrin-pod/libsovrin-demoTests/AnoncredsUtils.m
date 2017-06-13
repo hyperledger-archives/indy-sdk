@@ -113,10 +113,10 @@
     return err;
 }
 
-- (NSError *)issuerCreateClaimDefinifion:(SovrinHandle) walletHandle
-                              schemaJson:(NSString *) schemaJson
-                            claimDefJson:(NSString**) claimDefJson
-                            claimDefUUID:(NSString**) claimDefUUID
+- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle) walletHandle
+                                              schemaJson:(NSString *) schemaJson
+                                            claimDefJson:(NSString**) claimDefJson
+                                            claimDefUUID:(NSString**) claimDefUUID
 {
     __block NSError *err = nil;
     __block NSString *outClaimDefJson = nil;
@@ -159,10 +159,10 @@
     NSString *uuid;
     NSError *ret;
     
-    ret = [self issuerCreateClaimDefinifion:walletHandle
-                                 schemaJson:schema
-                               claimDefJson:&json
-                               claimDefUUID:&uuid];
+    ret = [self issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                 schemaJson:schema
+                                               claimDefJson:&json
+                                               claimDefUUID:&uuid];
     if( ret.code != Success )
     {
         return ret;

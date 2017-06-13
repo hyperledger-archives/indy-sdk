@@ -24,6 +24,7 @@
 		3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE561EC9DA9700881380 /* PoolUtils.m */; };
 		3EF020D81EC4593900CF985C /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
 		3EF020DB1EC4595500CF985C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020DA1EC4595500CF985C /* Environment.m */; };
+		846074A91EF00B2C00E700A5 /* Ledger-MediumCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074A81EF00B2C00E700A5 /* Ledger-MediumCases.mm */; };
 		84881A851EE1A7B7001B5302 /* Ledger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A841EE1A7B7001B5302 /* Ledger.mm */; };
 		84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A861EE1BBDE001B5302 /* SignusUtils.mm */; };
 		84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A891EE53E1B001B5302 /* Pool.mm */; };
@@ -97,6 +98,7 @@
 		3EF020D71EC4593900CF985C /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
 		3EF020D91EC4595500CF985C /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
 		3EF020DA1EC4595500CF985C /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
+		846074A81EF00B2C00E700A5 /* Ledger-MediumCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "Ledger-MediumCases.mm"; sourceTree = "<group>"; };
 		84881A841EE1A7B7001B5302 /* Ledger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Ledger.mm; sourceTree = "<group>"; };
 		84881A861EE1BBDE001B5302 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
 		84881A881EE1BBF0001B5302 /* SignusUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
@@ -187,6 +189,7 @@
 				3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */,
 				3E2FFA3E1ED5C06E00536EAD /* Anoncreds.m */,
 				84881A841EE1A7B7001B5302 /* Ledger.mm */,
+				846074A81EF00B2C00E700A5 /* Ledger-MediumCases.mm */,
 				84881A891EE53E1B001B5302 /* Pool.mm */,
 			);
 			name = "Demo Tests";
@@ -420,6 +423,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */,
+				846074A91EF00B2C00E700A5 /* Ledger-MediumCases.mm in Sources */,
 				3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */,
 				3EF020DB1EC4595500CF985C /* Environment.m in Sources */,
 				84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */,
