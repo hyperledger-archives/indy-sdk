@@ -40,7 +40,7 @@
     
     // 1. Create and open the wallet
     
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWallet:  poolName
+    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
                                                    walletName:  walletName
                                                         xtype:  xType
                                                        handle: &walletHandle];

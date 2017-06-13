@@ -68,9 +68,9 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinLedger submitRequest:poolHandle
-                          requestJSON:request
-                           completion:^ (NSError *error, NSString *requestResultJSON)
+    ret = [SovrinLedger submitRequestWithPoolHandle:poolHandle
+                                        requestJSON:request
+                                         completion:^ (NSError *error, NSString *requestResultJSON)
     {
         XCTAssertEqual(error.code, Success, "submitRequest() got error in completion");
         result = [NSString stringWithString: requestResultJSON];
@@ -79,7 +79,6 @@
     
     XCTAssertEqual(ret.code, Success, @"submitRequest() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    NSError *error;
     
     NSDictionary *dictionary1 = [NSDictionary fromString: result];
     XCTAssertTrue( dictionary1, @"dictionary1 must not be nil!");

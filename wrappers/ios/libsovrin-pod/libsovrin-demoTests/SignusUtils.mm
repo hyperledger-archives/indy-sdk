@@ -92,9 +92,9 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *myDid = did;
-    *myVerkey = verKey;
-    *myPk = pk;
+    if (myDid) { *myDid = did; }
+    if (myVerkey){ *myVerkey = verKey; }
+    if (myPk) { *myPk = pk; }
     
     return err;
 }

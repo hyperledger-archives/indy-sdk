@@ -45,17 +45,17 @@
     
     //1. Create Issuer wallet, get wallet handle
     
-    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName
-                                                 walletName:issuerWalletName
-                                                      xtype:xtype
-                                                     handle:&issuerWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                             walletName:issuerWalletName
+                                                                  xtype:xtype
+                                                                 handle:&issuerWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName
-                                                 walletName:proverWalletName
-                                                      xtype:xtype
-                                                     handle:&proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                             walletName:proverWalletName
+                                                                  xtype:xtype
+                                                                 handle:&proverWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Issuer create claim definition
@@ -250,19 +250,28 @@
     //1. Issuer1 create wallet, get wallet handles
   
     SovrinHandle issuerGvtWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:issuer1WalletName xtype:xtype handle:&issuerGvtWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName:issuer1WalletName
+                                                                  xtype:xtype
+                                                                 handle:&issuerGvtWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Issuer2 create wallet, get wallet handles
    
     SovrinHandle issuerXyzWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:issuer2WalletName xtype:xtype handle:&issuerXyzWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName:issuer2WalletName
+                                                                  xtype:xtype
+                                                                 handle:&issuerXyzWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Prover create wallet, get wallet handles
   
     SovrinHandle proverWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName:proverWalletName
+                                                                  xtype:xtype
+                                                                 handle:&proverWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     NSMutableDictionary* schemas = [ NSMutableDictionary new];
@@ -609,20 +618,20 @@
     //1. Issuer create wallet, get wallet handles
     
     SovrinHandle issuerWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName
-                                          walletName: issuerWalletName
-                                               xtype: xtype
-                                              handle: &issuerWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName: issuerWalletName
+                                                                  xtype: xtype
+                                                                 handle: &issuerWalletHandle];
     
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //2. Prover create wallet, get wallet handles
     
     SovrinHandle proverWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName
-                                          walletName: proverWalletName
-                                               xtype: xtype
-                                              handle: &proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName: proverWalletName
+                                                                  xtype: xtype
+                                                                 handle: &proverWalletHandle];
     
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     

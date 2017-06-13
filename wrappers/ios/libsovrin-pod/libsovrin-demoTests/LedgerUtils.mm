@@ -48,12 +48,12 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *responseJson = outJson;
     
@@ -74,13 +74,13 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    NSString *verKey = (verKey) ? verKey : @"";
+    NSString *verkeyStr = (verkey) ? verkey : @"";
     NSString *aliasStr = (alias) ? alias : @"";
     NSString *roleStr = (role) ? role : @"";
     
     ret = [SovrinLedger buildNymRequestWithSubmitterDid:submitterDid
                                               targetDID:targetDid
-                                                 verkey:verKey
+                                                 verkey:verkeyStr
                                                    alias:alias
                                                    role:roleStr
                                              completion:^(NSError *error, NSString *json)

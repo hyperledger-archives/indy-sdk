@@ -191,9 +191,9 @@
     __block NSString* outResponse = nil;
     
     
-    ret = [SovrinLedger submitRequest:poolHandle
-                          requestJSON:request
-                           completion:^(NSError* error, NSString* result)
+    ret = [SovrinLedger submitRequestWithPoolHandle:poolHandle
+                                        requestJSON:request
+                                         completion:^(NSError* error, NSString* result)
     {
         err = error;
         outResponse = result;

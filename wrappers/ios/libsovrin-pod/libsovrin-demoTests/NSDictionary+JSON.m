@@ -41,7 +41,13 @@
 {
     for (NSString *key in [dict allKeys])
     {
-        if ([self objectForKey:key] != [dict objectForKey:key])
+        id object = [self objectForKey:key];
+        if ([object isKindOfClass:[NSDictionary class]])
+        {
+            [[self objectForKey:key] contains:(NSDictionary *)object];
+        }
+        else if ([self objectForKey:key] != nil
+                 && ![[self objectForKey:key] isEqual:[dict objectForKey:key]])
         {
             return NO;
         }

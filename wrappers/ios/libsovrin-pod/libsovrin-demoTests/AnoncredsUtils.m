@@ -143,8 +143,8 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *claimDefJson = outClaimDefJson;
-    *claimDefUUID = outClaimDefUUID;
+    if ( claimDefJson != nil ) { *claimDefJson = outClaimDefJson; }
+    if ( claimDefUUID != nil ) { *claimDefUUID = outClaimDefUUID; }
     
     return err;
 }
@@ -236,12 +236,13 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
     return err;
  
 }
@@ -265,12 +266,12 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *outJson = json;
     return err;
@@ -301,12 +302,12 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *outJson = json;
     return err;
@@ -329,12 +330,12 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     return err;
 }
@@ -358,12 +359,12 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *outClaimsJson = outJson;
     

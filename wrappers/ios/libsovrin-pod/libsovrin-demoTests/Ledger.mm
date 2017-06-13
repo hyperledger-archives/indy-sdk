@@ -152,7 +152,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:nil
-                                                                   data:nil
+                                                                   alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
@@ -231,7 +231,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:nil
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
@@ -241,8 +241,8 @@
     
     SovrinHandle invalidWalletHandle = walletHandle + 1;
     NSString *nymResponse;
-    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:invalidWalletHandle
-                                                              walletHandle:walletHandle
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:invalidWalletHandle
                                                               submitterDid:trusteeDid
                                                                requestJson:nymRequest outResponseJson:&nymResponse];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"PoolUtils::sendRequestWithPoolHandle() returned invalid error");
@@ -296,7 +296,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:nil
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
@@ -362,7 +362,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:nil
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
@@ -503,7 +503,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:identifier
                                                               targetDid:dest
                                                                  verkey:verkey
-                                                                   data:alias
+                                                                  alias:alias
                                                                    role:role
                                                              outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed!");
@@ -591,7 +591,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:myDid
                                                               targetDid:myDid
                                                                  verkey:nil
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
@@ -610,7 +610,7 @@
     [TestUtils cleanupStorage];
 }
 
-- (void) testGetNymRequestWorks
+- (void) testSendGetNymRequestWorks
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_send_get_nym_request_works";
@@ -649,6 +649,7 @@
     NSLog(@"myDid: %@", myDid);
     
     // 4. Build NYM Request
+    
     NSString *getNymRequest;
     ret = [[LedgerUtils sharedInstance] buildGetNymRequestWithSubmitterDid:myDid
                                                                  targetDid:myDid
@@ -662,7 +663,7 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:getNymRequest
                                                        response:&getNymResponseJson];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"PoolUtils::sendRequestWithPoolHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
     NSLog(@"getNymResponseJson: %@", getNymResponseJson);
     
     NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
@@ -723,7 +724,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
+                                                        outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
@@ -736,7 +737,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:myVerKey
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
    
@@ -972,7 +973,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
+                                                        outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
@@ -985,7 +986,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:myVerKey
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
@@ -1174,7 +1175,6 @@
 
 -(void)testSchemaRequestsWorks
 {
-    NSLog(@"Ledger: testSchemaRequestsWorks() started...");
     [TestUtils cleanupStorage];
 
     NSString* poolName = @"pool3";
@@ -1223,7 +1223,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
+                                                        outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
@@ -1236,7 +1236,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:myVerKey
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequest() failed");
@@ -1298,7 +1298,6 @@
     XCTAssertNotNil(getSchemaResponse, @"getSchemaResponse is nil!");
     
     [TestUtils cleanupStorage];
-    NSLog(@"Ledger: testSchemaRequestsWorks() finished...");
 }
 
 // MARK: - Node request
@@ -1440,7 +1439,7 @@
     NSString* trusteeDid = nil;
     NSString* trusteeDidJson = [NSString stringWithFormat:@"{"\
                                 "\"seed\":\"000000000000000000000000Trustee1\"," \
-                                "\"cid\":true" \
+                                "\"cid\":true"\
                                 "}"];
     
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
@@ -1456,13 +1455,14 @@
     NSString* myDid = nil;
     NSString* myVerKey = nil;
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"00000000000000000000000000000My1\"" \
+                           "\"seed\":\"00000000000000000000000000000My1\"," \
+                           "\"cid\":true"\
                            "}"];
     
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
+                                                        outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
@@ -1475,7 +1475,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:myVerKey
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:@"STEWARD"
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
@@ -1518,7 +1518,7 @@
                                                            outResponseJson:&nodeResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
-    
+    // TODO: 304 - LedgerInvalidTransaction
     [TestUtils cleanupStorage];
 }
 
@@ -1537,7 +1537,7 @@
         "\"r\":{"\
             "\"name\":\"1\"},"\
         "\"rctxt\":\"1\","\
-        "\"z\":\"1\"}";
+        "\"z\":\"1\"}}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
@@ -1571,6 +1571,8 @@
     
     NSDictionary *request = [NSDictionary fromString:claimDefrequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
+    
+    //TODO: 110 error
     
     [TestUtils cleanupStorage];
 }
@@ -1670,7 +1672,7 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:myVerKey
-                                                                   data:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequest() failed");
