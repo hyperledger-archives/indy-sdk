@@ -1,5 +1,3 @@
-//// TODO: FIXME: It must be removed after code layout stabilization!
-#![allow(dead_code)]
 extern crate sovrin;
 
 #[macro_use]

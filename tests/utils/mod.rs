@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod callback;
 
 #[path = "../../src/utils/environment.rs"]
