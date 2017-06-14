@@ -143,8 +143,8 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    if ( claimDefJson != nil ) { *claimDefJson = outClaimDefJson; }
-    if ( claimDefUUID != nil ) { *claimDefUUID = outClaimDefUUID; }
+    if ( claimDefJson ) { *claimDefJson = outClaimDefJson; }
+    if ( claimDefUUID ) { *claimDefUUID = outClaimDefUUID; }
     
     return err;
 }

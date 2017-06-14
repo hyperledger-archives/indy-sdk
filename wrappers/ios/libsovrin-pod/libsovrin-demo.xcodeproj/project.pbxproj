@@ -30,6 +30,8 @@
 		84738E291EF11C6900827956 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84738E281EF11C6900827956 /* LedgerNodeRequest.mm */; };
 		84738E2C1EF1271700827956 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E2B1EF1271700827956 /* SignusHighCases.m */; };
 		84738E2E1EF1272B00827956 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E2D1EF1272B00827956 /* SignusMediumCases.m */; };
+		84738E311EF15DD100827956 /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E301EF15DD100827956 /* WalletHighCases.m */; };
+		84738E331EF15DE200827956 /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E321EF15DE200827956 /* WalletMediumCases.m */; };
 		84881A851EE1A7B7001B5302 /* Ledger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A841EE1A7B7001B5302 /* Ledger.mm */; };
 		84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A861EE1BBDE001B5302 /* SignusUtils.mm */; };
 		84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A891EE53E1B001B5302 /* Pool.mm */; };
@@ -109,6 +111,8 @@
 		84738E281EF11C6900827956 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
 		84738E2B1EF1271700827956 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
 		84738E2D1EF1272B00827956 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
+		84738E301EF15DD100827956 /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
+		84738E321EF15DE200827956 /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
 		84881A841EE1A7B7001B5302 /* Ledger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Ledger.mm; sourceTree = "<group>"; };
 		84881A861EE1BBDE001B5302 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
 		84881A881EE1BBF0001B5302 /* SignusUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
@@ -194,6 +198,7 @@
 		3E7005311EE02CC7005069FD /* Demo Tests */ = {
 			isa = PBXGroup;
 			children = (
+				84738E2F1EF15DB900827956 /* Wallet */,
 				84738E2A1EF126E300827956 /* Signus */,
 				846074AA1EF036ED00E700A5 /* Ledger */,
 				3E9CDB991ECC841700B1980D /* SignusDemo.mm */,
@@ -266,6 +271,15 @@
 				84738E2D1EF1272B00827956 /* SignusMediumCases.m */,
 			);
 			path = Signus;
+			sourceTree = "<group>";
+		};
+		84738E2F1EF15DB900827956 /* Wallet */ = {
+			isa = PBXGroup;
+			children = (
+				84738E301EF15DD100827956 /* WalletHighCases.m */,
+				84738E321EF15DE200827956 /* WalletMediumCases.m */,
+			);
+			path = Wallet;
 			sourceTree = "<group>";
 		};
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
@@ -454,6 +468,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				84738E291EF11C6900827956 /* LedgerNodeRequest.mm in Sources */,
+				84738E331EF15DE200827956 /* WalletMediumCases.m in Sources */,
 				84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */,
 				3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */,
 				846074AE1EF0374000E700A5 /* LedgerAttribRequest.mm in Sources */,
@@ -472,6 +487,7 @@
 				3EC6BCF91EDD9D6600A290DE /* NSDictionary+JSON.m in Sources */,
 				3EF020D81EC4593900CF985C /* TestUtils.m in Sources */,
 				3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */,
+				84738E311EF15DD100827956 /* WalletHighCases.m in Sources */,
 				3E2FFA3F1ED5C06E00536EAD /* Anoncreds.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

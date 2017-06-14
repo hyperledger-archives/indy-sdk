@@ -31,12 +31,12 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] createWallet:  poolName
-                                                 name:  walletName
-                                                xType:  xtype
-                                               config:  nil
-                                          credentials:  nil
-                                           completion: ^(NSError* error)
+    ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:  poolName
+                                                             name:  walletName
+                                                            xType:  xtype
+                                                           config:  nil
+                                                      credentials:  nil
+                                                       completion: ^(NSError* error)
            {
                err = error;
                [completionExpectation fulfill];
@@ -57,10 +57,10 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block SovrinHandle walletHandle = 0;
     
-    ret = [[SovrinWallet sharedInstance] openWallet:  walletName
-                                      runtimeConfig:  nil
-                                        credentials:  nil
-                                         completion: ^(NSError* error, SovrinHandle h)
+    ret = [[SovrinWallet sharedInstance] openWalletWithName:walletName
+                                              runtimeConfig:nil
+                                                credentials:nil
+                                                 completion:^(NSError *error, SovrinHandle h)
            {
                err = error;
                walletHandle = h;
@@ -74,7 +74,37 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *handle = walletHandle;
+    if (handle) { *handle = walletHandle; }
+    
+    return err;
+}
+
+- (NSError *)createWalletWithPoolName:(NSString*) poolName
+                           walletName:(NSString*) walletName
+                                xtype:(NSString*) xtype
+{
+    __block NSError *err = nil;
+    NSError *ret = nil;
+    
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:  poolName
+                                                             name:  walletName
+                                                            xType:  xtype
+                                                           config:  nil
+                                                      credentials:  nil
+                                                       completion: ^(NSError *error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
 }
 
@@ -102,6 +132,85 @@
     }
 
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    return err;
+}
+
+- (NSError *)deleteWalletWithName:(NSString *)walletName
+{
+    __block NSError *err;
+    NSError *ret = nil;
+    
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    ret = [[SovrinWallet sharedInstance] deleteWalletWithName:walletName
+                                                  credentials:nil
+                                                   completion:^(NSError *error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    return err;
+}
+
+- (NSError *)openWalletWithName:(NSString *)walletName
+                      outHandle:(SovrinHandle *)handle
+{
+    __block NSError *err;
+    __block SovrinHandle outHandle = 0;
+    NSError *ret = nil;
+    
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    ret = [[SovrinWallet sharedInstance] openWalletWithName:walletName
+                                              runtimeConfig:nil
+                                                credentials:nil
+                                                 completion:^(NSError *error, SovrinHandle h)
+           {
+               err = error;
+               outHandle = h;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (handle) { *handle = outHandle; }
+    return err;
+}
+
+- (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle
+{
+    __block NSError *err;
+    NSError *ret = nil;
+    
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    ret = [[SovrinWallet sharedInstance] closeWalletWithHandle:walletHandle
+                                                    completion:^(NSError *error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils shortTimeout]];
+    
     return err;
 }
 

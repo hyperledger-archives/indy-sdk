@@ -271,8 +271,8 @@
     // 11. close wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [[SovrinWallet sharedInstance] closeWallet: walletHandle
-                                          completion: ^ (NSError *error)
+    ret = [[SovrinWallet sharedInstance] closeWalletWithHandle: walletHandle
+                                                    completion: ^ (NSError *error)
     {
         XCTAssertEqual(error.code, Success, "closeWallet got error in completion");
         [completionExpectation fulfill];
