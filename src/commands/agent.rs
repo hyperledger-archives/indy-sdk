@@ -42,7 +42,11 @@ pub enum AgentCommand {
         Result<(i32, i32, String, String), SovrinError>, // (listener handle, new connection handle, sender and receiver did) or error
     ),
     CloseListener,
-    Send,
+    Send(
+        i32, // connection handle
+        Option<String>, // message
+        Box<Fn(Result<(), SovrinError>) + Send>, // send cb
+    ),
 }
 
 pub struct AgentCommandExecutor {
