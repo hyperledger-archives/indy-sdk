@@ -74,14 +74,23 @@ impl VerifierCommandExecutor {
                      claim_defs_jsons: &str,
                      revoc_regs_json: &str) -> Result<bool, SovrinError> {
         let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_request_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_request_json: {}", err.to_string())))?;
+
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schemas_json: {}", err.to_string())))?;
+
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_defs_jsons)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_defs_jsons: {}", err.to_string())))?;
+
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid revoc_regs_json: {}", err.to_string())))?;
+
         let proof_claims: ProofJson = ProofJson::from_json(&proof_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_json: {}", err.to_string())))?;
 
         let requested_attrs: HashSet<String> =

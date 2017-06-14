@@ -167,12 +167,12 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let schema_seq_no = 1;
-    let schema = format!("{{\
-                            \"name\":\"gvt\",\
-                            \"version\":\"1.0\",\
-                            \"keys\":[\"age\",\"sex\",\"height\",\"name\"],\
-                            \"seq_no\":{}\
-                         }}", schema_seq_no);
+    let schema = format!(r#"{{
+                            "name":"gvt",
+                            "version":"1.0",
+                            "keys":["age","sex","height","name"],
+                            "seq_no":{}
+                         }}"#, schema_seq_no);
 
     // 3. Issuer create Claim Definition for Schema
     let err =
@@ -242,7 +242,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let prover_did = "BzfFCYk";
-    let claim_offer_json = format!("{{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"claim_def_seq_no\":{}, \"schema_seq_no\":{}}}", claim_def_seq_no, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":{}, "schema_seq_no":{}}}"#, claim_def_seq_no, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
@@ -259,12 +259,12 @@ fn anoncreds_demo_works() {
     info!("claim_req_json {:?}", claim_req_json);
     assert_eq!(ErrorCode::Success, err);
 
-    let claim_json = "{\
-                           \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\
-                           \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\
-                           \"height\":[\"175\",\"175\"],\
-                           \"age\":[\"28\",\"28\"]\
-                     }";
+    let claim_json = r#"{
+                       "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+                       "name":["Alex","1139481716457488690172217916278103335"],
+                       "height":["175","175"],
+                       "age":["28","28"]
+                     }"#;
 
     // 7. Issuer create Claim for Claim Request
     let err =
@@ -292,11 +292,11 @@ fn anoncreds_demo_works() {
     let err = prover_store_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let proof_req_json = format!("{{\
-                                   \"nonce\":\"123432421212\",\
-                                   \"requested_attrs\":{{\"attr1_uuid\":{{\"schema_seq_no\":{},\"name\":\"name\"}}}},\
-                                   \"requested_predicates\":{{\"predicate1_uuid\":{{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}}}\
-                                }}", schema_seq_no);
+    let proof_req_json = format!(r#"{{
+                                   "nonce":"123432421212",
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
+                                }}"#, schema_seq_no);
 
     // 8. Prover gets Claims for Proof Request
     let err =
@@ -315,14 +315,14 @@ fn anoncreds_demo_works() {
 
     let claim = claims_for_attr_1[0].clone();
 
-    let requested_claims_json = format!("{{\
-                                          \"self_attested_attributes\":{{}},\
-                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
-                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{}\"}}\
-                                        }}", claim.claim_uuid, claim.claim_uuid);
+    let requested_claims_json = format!(r#"{{
+                                          "self_attested_attributes":{{}},
+                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
+                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
+                                        }}"#, claim.claim_uuid, claim.claim_uuid);
 
-    let schemas_json = format!("{{\"{}\":{}}}", claim.claim_uuid, schema);
-    let claim_defs_json = format!("{{\"{}\":{}}}", claim.claim_uuid, claim_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
     let revoc_regs_jsons = "{}";
     // TODO: uncomment this for revocation part
     //    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
@@ -496,7 +496,7 @@ fn ledger_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 8. Create Their DID from Trustee1 seed
-    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
+    let their_did_json = r#"{"seed":"000000000000000000000000Trustee1"}"#;
     let err =
         sovrin_create_and_store_my_did(create_and_store_their_did_command_handle,
                                        their_wallet_handle,
@@ -511,10 +511,10 @@ fn ledger_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 9. Store Their DID
-    let their_identity_json = format!("{{\"did\":\"{}\",\
-                                        \"pk\":\"{}\",\
-                                        \"verkey\":\"{}\"\
-                                      }}",
+    let their_identity_json = format!(r#"{{"did":"{}",
+                                        "pk":"{}",
+                                        "verkey":"{}"
+                                      }}"#,
                                       their_did, their_pk, their_verkey);
     let err =
         sovrin_store_their_did(store_their_did_command_handle,
@@ -765,10 +765,10 @@ fn signus_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Store Their DID
-    let their_identity_json = format!("{{\"did\":\"{}\",\
-                                        \"pk\":\"{}\",\
-                                        \"verkey\":\"{}\"\
-                                      }}",
+    let their_identity_json = format!(r#"{{"did":"{}",
+                                        "pk":"{}",
+                                        "verkey":"{}"
+                                      }}"#,
                                       their_did, their_pk, their_verkey);
     let err =
         sovrin_store_their_did(store_their_did_command_handle,

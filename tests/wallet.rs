@@ -46,7 +46,6 @@ mod high_cases {
             let xtype = "type";
 
             let res = WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletUnknownTypeError);
 
             TestUtils::cleanup_storage();
@@ -139,6 +138,7 @@ mod high_cases {
             let wallet_name = "wallet1";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
+
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
             WalletUtils::open_wallet(wallet_name, None).unwrap();
@@ -160,12 +160,10 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
 
-            let schema_seq_no = 1;
-            let claim_def_seq_no = 1;
-            let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+            let schema = AnoncredsUtils::get_gvt_schema_json(1);
             let (_, uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false).unwrap();
 
-            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &uuid, claim_def_seq_no).unwrap();
+            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &uuid, 1).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -199,12 +197,10 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn sovrin_delete_wallet_works_for_invalid_name() {
+        fn sovrin_delete_wallet_works_for_invalid_wallet_name() {
             TestUtils::cleanup_storage();
 
-            let wallet_name = "wallet1";
-
-            let res = WalletUtils::delete_wallet(wallet_name);
+            let res = WalletUtils::delete_wallet("wallet1");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -233,9 +229,7 @@ mod medium_cases {
         fn sovrin_open_wallet_works_for_not_created_wallet() {
             TestUtils::cleanup_storage();
 
-            let wallet_name = "wallet1";
-
-            let res = WalletUtils::open_wallet(wallet_name, None);
+            let res = WalletUtils::open_wallet("wallet1", None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -248,9 +242,9 @@ mod medium_cases {
 
             let pool_name = "sovrin_create_wallet_works";
             let wallet_name = "wallet1";
-            let xtype = "default";
 
-            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
+
             WalletUtils::open_wallet(wallet_name, None).unwrap();
             let res =  WalletUtils::open_wallet(wallet_name, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
@@ -297,9 +291,7 @@ mod medium_cases {
         fn sovrin_close_wallet_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = 1;
-
-            let res = WalletUtils::close_wallet(wallet_handle);
+            let res = WalletUtils::close_wallet(1);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             TestUtils::cleanup_storage();
@@ -309,14 +301,9 @@ mod medium_cases {
         fn sovrin_close_wallet_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_close_wallet_works_for_closed_wallet";
-            let wallet_name = "wallet1";
-            let xtype = "default";
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_close_wallet_works_for_closed_wallet", "wallet1", "default").unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
-
             let res = WalletUtils::close_wallet(wallet_handle);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
@@ -331,17 +318,10 @@ mod medium_cases {
         fn sovrin_wallet_set_seqno_works_for_not_exists_key() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_wallet_set_seqno_works_for_not_exists_key";
-            let wallet_name = "wallet1";
-            let xtype = "default";
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
-
-            let seq_no = 1;
-            let some_key = "key";
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_not_exists_key", "wallet1", "default").unwrap();
 
             //TODO may be we must return WalletNotFound in case if key not exists in wallet
-            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, some_key, seq_no).unwrap();
+            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, "key", 1).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -350,17 +330,11 @@ mod medium_cases {
         fn sovrin_wallet_set_seqno_works_for_invalid_wallet() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_wallet_set_seqno_works_for_invalid_wallet";
-            let wallet_name = "wallet1";
-            let xtype = "default";
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_invalid_wallet", "wallet1", "default").unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
 
-            let key = "some_key";
-            let seq_no = 1;
             let invalid_wallet_handle = wallet_handle + 1;
-
-            let res = WalletUtils::wallet_set_seq_no_for_value(invalid_wallet_handle, &key, seq_no);
+            let res = WalletUtils::wallet_set_seq_no_for_value(invalid_wallet_handle, "key", 1);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             TestUtils::cleanup_storage();

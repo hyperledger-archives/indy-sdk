@@ -78,7 +78,6 @@ impl SignusService {
                                 Base58::encode(&secret_key),
                                 Base58::encode(&ver_key),
                                 Base58::encode(&sign_key));
-        info!("did {:?}", my_did.did);
 
         Ok(my_did)
     }
@@ -97,7 +96,6 @@ impl SignusService {
         // Check did is correct Base58
         Base58::decode(&their_did_info.did)?;
 
-        //TODO according to Api we can pass pk but now we ignore it and get it from verkey
         let (verkey, pk) = match their_did_info.verkey {
             Some(ref verkey) => (
                 Some(verkey.clone()),

@@ -145,9 +145,11 @@ impl ProverCommandExecutor {
         let uuid = Uuid::new_v4().to_string();
 
         let claim_offer: ClaimOffer = ClaimOffer::from_json(claim_offer_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
 
         Base58::decode(&claim_offer.issuer_did)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {}", err.to_string())))?;
 
         self.wallet_service.set(wallet_handle, &format!("claim_offer_json::{}", &uuid), &claim_offer_json)?;
@@ -171,10 +173,12 @@ impl ProverCommandExecutor {
 
         for &(ref uuid, ref claim_offer_json) in claim_offer_jsons.iter() {
             claim_offers.push(ClaimOffer::from_json(claim_offer_json)
+                .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid claim_offer_jsons: {}", err.to_string())))?);
         }
 
         let filter = ClaimOfferFilter::from_json(filter_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_json: {}", err.to_string())))?;
 
         claim_offers.retain(move |claim_offer| {
@@ -192,6 +196,7 @@ impl ProverCommandExecutor {
         });
 
         let claim_offers_json = serde_json::to_string(&claim_offers)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_offers: {}", err.to_string())))?;
 
         Ok(claim_offers_json)
@@ -206,13 +211,14 @@ impl ProverCommandExecutor {
 
     fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), SovrinError> {
         if self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)).is_ok() {
-            return Err(SovrinError::AnoncredsError(AnoncredsError::MasterSecretDuplicateNameError(format!("Master Secret already exists {}", master_secret_name))))
+            return Err(SovrinError::AnoncredsError(AnoncredsError::MasterSecretDuplicateNameError(
+                format!("Master Secret already exists {}", master_secret_name))))
         };
 
         let master_secret = self.anoncreds_service.prover.generate_master_secret()?;
-        self.wallet_service.set(wallet_handle,
-                                &format!("master_secret::{}", master_secret_name),
-                                &master_secret.to_dec()?)?;
+
+        self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret.to_dec()?)?;
+
         Ok(())
     }
 
@@ -227,22 +233,31 @@ impl ProverCommandExecutor {
                                                 claim_def_json, master_secret_name))
     }
 
-    fn _create_and_store_claim_request(&self, wallet_handle: i32,
+    fn _create_and_store_claim_request(&self,
+                                       wallet_handle: i32,
                                        prover_did: &str,
                                        claim_offer_json: &str,
                                        claim_def_json: &str,
                                        master_secret_name: &str) -> Result<String, SovrinError> {
         let master_secret_str = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &master_secret_name))?;
+
         let master_secret = BigNumber::from_dec(&master_secret_str)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid master_secret_str: {}", err.to_string())))?;
+
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_json: {}", err.to_string())))?;
+
         let claim_offer = ClaimOffer::from_json(&claim_offer_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
+
         Base58::decode(&prover_did)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid prover did: {}", err.to_string())))?;
 
-        //TODO check claim_offer.claim_def_seq_no == claim_def.schema_seq_no
+        //TODO check claim_offer.claim_def_seq_no == claim_def.claim_def_seq_no
 
         let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
             self.anoncreds_service.prover.create_claim_request(claim_def.public_key,
@@ -254,14 +269,18 @@ impl ProverCommandExecutor {
                                 &claim_def_json)?;
 
         let primary_claim_init_data_json = ClaimInitData::to_json(&primary_claim_init_data)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid primary_claim_init_data: {}", err.to_string())))?;
+
         self.wallet_service.set(wallet_handle,
                                 &format!("primary_claim_init_data::{}", &claim_offer.claim_def_seq_no),
                                 &primary_claim_init_data_json)?;
 
         if let Some(data) = revocation_claim_init_data {
             let revocation_claim_init_data_json = RevocationClaimInitData::to_json(&data)
+                .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid data: {}", err.to_string())))?;
+
             self.wallet_service.set(wallet_handle,
                                     &format!("revocation_claim_init_data::{}", &claim_offer.claim_def_seq_no),
                                     &revocation_claim_init_data_json)?;
@@ -269,6 +288,7 @@ impl ProverCommandExecutor {
 
         let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.claim_def_seq_no);
         let claim_request_json = ClaimRequestJson::to_json(&claim_request)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_request: {}", err.to_string())))?;
 
         Ok(claim_request_json)
@@ -283,20 +303,23 @@ impl ProverCommandExecutor {
 
     fn _store_claim(&self, wallet_handle: i32, claims_json: &str) -> Result<(), SovrinError> {
         let claim_json = ClaimJson::from_json(&claims_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_json: {}", err.to_string())))?;
 
         let (revocation_registry, revocation_claim_init_data) = match claim_json.revoc_reg_seq_no {
             Some(seq_no) => {
-                let revocation_registry_uuid = self.wallet_service.get(wallet_handle,
-                                                                       &format!("seq_no::{}", &seq_no))?;
+                let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &seq_no))?;
                 let revocation_registry_json = self.wallet_service.get(wallet_handle,
                                                                        &format!("revocation_registry::{}", &revocation_registry_uuid))?;
+
                 let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
+                    .map_err(map_err_trace!())
                     .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?;
 
                 let revocation_claim_init_data_json = self.wallet_service.get(wallet_handle,
                                                                               &format!("revocation_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
                 let revocation_claim_init_data = RevocationClaimInitData::from_json(&revocation_claim_init_data_json)
+                    .map_err(map_err_trace!())
                     .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_claim_init_data_json: {}", err.to_string())))?;
 
                 (Some(revocation_registry), Some(revocation_claim_init_data))
@@ -307,11 +330,13 @@ impl ProverCommandExecutor {
         let primary_claim_init_data_json = self.wallet_service.get(wallet_handle,
                                                                    &format!("primary_claim_init_data::{}", &claim_json.claim_def_seq_no))?;
         let primary_claim_init_data = ClaimInitData::from_json(&primary_claim_init_data_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid primary_claim_init_data_json: {}", err.to_string())))?;
 
         let claim_def_json = self.wallet_service.get(wallet_handle,
                                                      &format!("claim_definition::{}", &claim_json.claim_def_seq_no))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_json: {}", err.to_string())))?;
 
         let claim_json = RefCell::new(claim_json);
@@ -323,12 +348,13 @@ impl ProverCommandExecutor {
                                                     revocation_registry)?;
 
         let claim = ClaimJson::to_json(&claim_json.borrow())
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
 
         let uuid = Uuid::new_v4().to_string();
         self.wallet_service.set(wallet_handle,
                                 &format!("claim::{}", &uuid),
-                                &claim)?; //TODO uuid ??? or claim_def_seq_no
+                                &claim)?;
 
         Ok(())
     }
@@ -337,7 +363,6 @@ impl ProverCommandExecutor {
                   wallet_handle: i32,
                   filter_json: &str,
                   cb: Box<Fn(Result<String, SovrinError>) + Send>) {
-
         let result = self._get_claims(wallet_handle, filter_json);
         cb(result)
     }
@@ -349,6 +374,7 @@ impl ProverCommandExecutor {
         let mut claims_info: Vec<ClaimInfo> = ProverCommandExecutor::get_all_claims(claims)?;
 
         let filter = ClaimInfoFilter::from_json(filter_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid filter_json: {}", err.to_string())))?;
 
         claims_info.retain(move |claim_info| {
@@ -367,6 +393,7 @@ impl ProverCommandExecutor {
         });
 
         let claims_info_json = serde_json::to_string(&claims_info)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_info: {}", err.to_string())))?;
 
         Ok(claims_info_json)
@@ -377,6 +404,7 @@ impl ProverCommandExecutor {
 
         for &(ref uuid, ref claim) in claims.iter() {
             let claim_json: ClaimJson = ClaimJson::from_json(claim)
+                .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid claim: {}", err.to_string())))?;
 
             let mut attrs: HashMap<String, String> = HashMap::new();
@@ -404,6 +432,7 @@ impl ProverCommandExecutor {
                                  wallet_handle: i32,
                                  proof_req_json: &str, ) -> Result<String, SovrinError> {
         let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_req_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_req_json: {}", err.to_string())))?;
 
         let claims: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim::"))?;
@@ -416,6 +445,7 @@ impl ProverCommandExecutor {
         let proof_claims = ProofClaimsJson::new(attributes, predicates);
 
         let proof_claims_json = ProofClaimsJson::to_json(&proof_claims)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid proof_claims: {}", err.to_string())))?;
 
         Ok(proof_claims_json)
@@ -442,14 +472,23 @@ impl ProverCommandExecutor {
                      claim_def_jsons: &str,
                      revoc_regs_jsons: &str) -> Result<String, SovrinError> {
         let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_req_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_req_json: {}", err.to_string())))?;
+
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_jsons)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schemas_jsons: {}", err.to_string())))?;
+
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_def_jsons)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_jsons: {}", err.to_string())))?;
+
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_jsons)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid revoc_regs_jsons: {}", err.to_string())))?;
+
         let requested_claims: RequestedClaimsJson = RequestedClaimsJson::from_json(requested_claims_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid requested_claims_json: {}", err.to_string())))?;
 
         let mut claims: HashMap<String, ClaimJson> = HashMap::new();
@@ -457,9 +496,12 @@ impl ProverCommandExecutor {
         for claim_uuid in claim_defs.keys() {
             let claim_json = self.wallet_service.get(wallet_handle, &claim_uuid)?;
             let claim = ClaimJson::from_json(&claim_json)
+                .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
+
             claims.insert(claim_uuid.clone(), claim);
         }
+
         let ms = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name))?;
 
         let ms: BigNumber = BigNumber::from_dec(&ms)?;
@@ -469,6 +511,7 @@ impl ProverCommandExecutor {
             // TODO: need to change
             let tails_json = self.wallet_service.get(wallet_handle, &format!("tails"))?;
             tails = serde_json::from_str(&tails_json)
+                .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid tails_json: {}", err.to_string())))?;
         }
 
@@ -482,6 +525,7 @@ impl ProverCommandExecutor {
                                                                       &tails)?;
 
         let proof_claims_json = ProofJson::to_json(&proof_claims)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid proof_claims: {}", err.to_string())))?;
 
         Ok(proof_claims_json)
