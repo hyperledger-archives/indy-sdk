@@ -168,10 +168,10 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_issuer_create_and_store_revoc_reg_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                    Option<extern fn(command_handle: i32,
-                                                                                                                     err: ErrorCode,
-                                                                                                                     revoc_reg_json: *const c_char,
-                                                                                                                     revoc_reg_uuid: *const c_char)>) {
+                                                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                                                       err: ErrorCode,
+                                                                                                                                       revoc_reg_json: *const c_char,
+                                                                                                                                       revoc_reg_uuid: *const c_char)>) {
         lazy_static! {
             static ref ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
         }
@@ -565,6 +565,27 @@ impl CallbackUtils {
 
         Some(agent_connected_callback)
     }
+
+    pub fn closure_to_agent_send_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                               Option<extern fn(command_handle: i32,
+                                                                                                err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
 
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                     Option<extern fn(command_handle: i32,

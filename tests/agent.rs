@@ -98,4 +98,25 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod sovrin_agent_send {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_send_works_for_all_data_in_wallet_present() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", "wallet4", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9704";
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint).unwrap();
+            let client_connect_id = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
+            let client_msg = "msg_from_client";
+
+            AgentUtils::send(client_connect_id, client_msg).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
