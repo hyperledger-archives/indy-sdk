@@ -9,6 +9,7 @@
 #import "TestUtils.h"
 #import "WalletUtils.h"
 #import "NSDictionary+JSON.h"
+#import "AnoncredsUtils.h"
 
 @interface AnoncredsDemo : XCTestCase
 
@@ -41,31 +42,30 @@
     // 1. Create and open the wallet
     
     NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
-                                                   walletName:  walletName
-                                                        xtype:  xType
-                                                       handle: &walletHandle];
+                                                                      walletName:  walletName
+                                                                           xtype:  xType
+                                                                          handle: &walletHandle];
 
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWallet() failed!");
+    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
 
     // 2. Issuer create Claim Definition for Schema
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSUInteger seqNo = 1;
+    NSNumber *seqNo = @(1);
     NSString *schema = [ NSString stringWithFormat:@"{\
                         \"name\":\"gvt\",\
                         \"version\":\"1.0\",\
                         \"keys\":[\"age\",\"sex\",\"height\",\"name\"],\
-                        \"seq_no\":%lu\
-                        }", (unsigned long)seqNo ];
+                        \"seq_no\":%@\
+                        }", seqNo ];
     
     __block NSString *claimJSON = nil;
     __block NSString *claimDefUUID = nil;
     
-    ret = [SovrinAnoncreds issuerCreateAndStoreClaimDef:  walletHandle
-                                             schemaJSON:  schema
-                                          signatureType:  nil
-                                         createNonRevoc:  false
-                                             completion: ^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID1)
+    ret = [SovrinAnoncreds issuerCreateAndStoreClaimDefWithWalletHandle:  walletHandle
+                                                             schemaJSON:schema
+                                                          signatureType:nil
+                                                         createNonRevoc:false
+                                                             completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID1)
     {
         XCTAssertEqual(error.code, Success, "issuerCreateAndStoreClaimDef got error in completion");
         claimJSON = [ NSString stringWithString: claimDefJSON];
@@ -79,7 +79,7 @@
     // 3. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: seqNo]
+    ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: [seqNo intValue]]
                                               forHandle:  walletHandle
                                                  andKey:  claimDefUUID
                                              completion: ^(NSError *error)
@@ -95,10 +95,9 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString *masterSecretName = @"master_secret";
-    
-    ret = [SovrinAnoncreds proverCreateMasterSecret:  walletHandle
-                                   masterSecretName:  masterSecretName
-                                         completion: ^(NSError *error)
+    ret = [SovrinAnoncreds proverCreateMasterSecretWithWalletHandle:walletHandle
+                                                   masterSecretName:masterSecretName
+                                                         completion:^(NSError *error)
     {
         XCTAssertEqual(error.code, Success, "proverCreateMasterSecret got error in completion");
         [completionExpectation fulfill];
@@ -112,16 +111,17 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString *proverDiD = @"some_prover_did";
-    
-    NSString *claimOfferJSON =  [NSString stringWithFormat: @"{\"issuer_did\":\"some_issuer_did\",\"claim_def_seq_no\":%lu}", (unsigned long)seqNo];
+    NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
+                                 "\"issuer_did\":\"some_issuer_did\","\
+                                 "\"claim_def_seq_no\":%lu}", (unsigned long)seqNo];
     __block NSString *claimReqJSON = nil;
     
-    ret = [SovrinAnoncreds proverCreateAndStoreClaimReq: walletHandle
-                                              proverDid: proverDiD
-                                         claimOfferJSON: claimOfferJSON
-                                       masterSecretName: masterSecretName
-                                           claimDefJSON: claimJSON
-                                             completion:^ (NSError *error, NSString *claimReqJSON1)
+    ret = [SovrinAnoncreds proverCreateAndStoreClaimReqWithWalletHandle:walletHandle
+                                                              proverDid:proverDiD
+                                                         claimOfferJSON:claimOfferJSON
+                                                       masterSecretName:masterSecretName
+                                                           claimDefJSON:claimJSON
+                                                             completion:^(NSError *error, NSString *claimReqJSON1)
     {
         XCTAssertEqual(error.code, Success, "proverCreateAndStoreClaimReq got error in completion");
         claimReqJSON = [ NSString stringWithString: claimReqJSON1 ];
@@ -143,12 +143,12 @@
                                  }";
     __block NSString *xClaimJSON = nil;
     
-    ret = [SovrinAnoncreds issuerCreateClaim:  walletHandle
-                                claimReqJSON:  claimReqJSON
-                                   claimJSON:  testClaimJson
-                               revocRegSeqNo:  nil
-                              userRevocIndex:  nil
-                                  completion: ^ (NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
+    ret = [SovrinAnoncreds issuerCreateClaimWithWalletHandle:walletHandle
+                                                claimReqJSON:claimReqJSON
+                                                   claimJSON:testClaimJson
+                                               revocRegSeqNo:nil
+                                              userRevocIndex:nil
+                                                  completion:^(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
     {
         XCTAssertEqual(error.code, Success, "issuerCreateClaim() got error in completion");
         xClaimJSON = [ NSString stringWithString: claimJSON1];
@@ -161,9 +161,9 @@
     // 7. Prover process and store Claim
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinAnoncreds proverStoreClaim:  walletHandle
-                                 claimsJSON:  xClaimJSON
-                                 completion: ^(NSError *error)
+    ret = [SovrinAnoncreds proverStoreClaimWithWalletHandle:walletHandle
+                                                 claimsJSON:xClaimJSON
+                                                 completion:^(NSError *error)
     {
         XCTAssertEqual(error.code, Success, "proverStoreClaim() got error in completion");
         [completionExpectation fulfill];
@@ -195,9 +195,9 @@
   
     __block NSString *claimsJson = nil;
     
-    ret = [SovrinAnoncreds proverGetClaimsForProofReq:  walletHandle
-                                         proofReqJSON:  proofReqJSON
-                                           completion: ^(NSError* error, NSString* claimsJSON1)
+    ret = [SovrinAnoncreds proverGetClaimsForProofReqWithWalletHandle:walletHandle
+                                                         proofReqJSON:proofReqJSON
+                                                           completion:^(NSError* error, NSString* claimsJSON1)
     {
         claimsJson = claimsJSON1;
         XCTAssertEqual(error.code, Success, "proverGetClaimsForProofReq() got error in completion");
@@ -232,14 +232,14 @@
     
     __block NSString *proofJSON = nil;
     
-    ret =  [SovrinAnoncreds proverCreateProof:  walletHandle
-                                 proofReqJSON:  proofReqJSON
-                          requestedClaimsJSON:  requestedClaimsJSON
-                                  schemasJSON:  schemas_json
-                             masterSecretName:  masterSecretName
-                                claimDefsJSON:  claimDefsJSON
-                                revocRegsJSON:  revocRegsJsons
-                                   completion: ^(NSError* error, NSString* proofJSON1)
+    ret =  [SovrinAnoncreds proverCreateProofWithWalletHandle:walletHandle
+                                                 proofReqJSON:proofReqJSON
+                                          requestedClaimsJSON:requestedClaimsJSON
+                                                  schemasJSON:schemas_json
+                                             masterSecretName:masterSecretName
+                                                claimDefsJSON:claimDefsJSON
+                                                revocRegsJSON:revocRegsJsons
+                                                   completion:^(NSError* error, NSString* proofJSON1)
     {
         XCTAssertEqual(error.code, Success, "proverCreateProof() got error in completion");
         proofJSON = [ NSString stringWithString: proofJSON1];
@@ -252,12 +252,12 @@
     // 10. Verifier verify proof
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinAnoncreds verifierVerifyProof:  proofReqJSON
-                                     proofJSON:  proofJSON
-                                   schemasJSON:  schemas_json
-                                 claimDefsJSON:  claimDefsJSON
-                                 revocRegsJSON:  revocRegsJsons
-                                    completion: ^(NSError *error, BOOL valid)
+    ret = [SovrinAnoncreds verifierVerifyProofWithWalletHandle:  proofReqJSON
+                                                     proofJSON:  proofJSON
+                                                   schemasJSON:  schemas_json
+                                                 claimDefsJSON:  claimDefsJSON
+                                                 revocRegsJSON:  revocRegsJsons
+                                                    completion: ^(NSError *error, BOOL valid)
     {
         XCTAssertEqual(error.code, Success, "verifierVerifyProof() got error in completion");
         XCTAssertEqual(valid, true, "verifierVerifyProof() got error in completion");

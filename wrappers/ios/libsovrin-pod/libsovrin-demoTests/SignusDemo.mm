@@ -44,7 +44,6 @@
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create and open my wallet
-
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:  poolName
                                                              walletName:  myWalletName
                                                                   xtype:  xtype
