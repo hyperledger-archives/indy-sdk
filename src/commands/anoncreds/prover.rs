@@ -337,7 +337,9 @@ impl ProverCommandExecutor {
                   wallet_handle: i32,
                   filter_json: &str,
                   cb: Box<Fn(Result<String, SovrinError>) + Send>) {
-        cb(Ok("".to_string()));
+
+        let result = self._get_claims(wallet_handle, filter_json);
+        cb(result)
     }
 
     fn _get_claims(&self,

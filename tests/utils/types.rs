@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct ClaimDefinition {
@@ -150,4 +151,40 @@ pub struct ClaimRequest {
     pub prover_did: String,
     pub u: String,
     pub ur: Option<String>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimJson {
+    pub claim: HashMap<String, Vec<String>>,
+    pub claim_def_seq_no: i32,
+    pub revoc_reg_seq_no: Option<i32>,
+    pub schema_seq_no: i32,
+    pub signature: ClaimSignature
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimSignature {
+    pub primary_claim: PrimaryClaim,
+    pub non_revocation_claim: Option<RefCell<String>>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PrimaryClaim {
+    pub m2: String,
+    pub a: String,
+    pub e: String,
+    pub v_prime: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProofJson {
+    pub requested_proof: RequestedProofJson
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RequestedProofJson {
+    pub revealed_attrs: HashMap<String, (String, String, String)>,
+    pub unrevealed_attrs: HashMap<String, String>,
+    pub self_attested_attrs: HashMap<String, String>,
+    pub predicates: HashMap<String, String>
 }

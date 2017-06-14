@@ -55,7 +55,6 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_twice() {
             TestUtils::cleanup_storage();
-            LoggerUtils::init();
             let pool_name = "pool_open_twice";
 
             PoolUtils::create_pool_ledger_config(pool_name).unwrap();

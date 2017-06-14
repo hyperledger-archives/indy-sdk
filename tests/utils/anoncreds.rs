@@ -9,7 +9,8 @@ use sovrin::api::anoncreds::{
     sovrin_prover_create_proof,
     sovrin_prover_store_claim_offer,
     sovrin_prover_get_claim_offers,
-    sovrin_verifier_verify_proof
+    sovrin_verifier_verify_proof,
+    sovrin_prover_get_claims
 };
 
 use utils::callback::CallbackUtils;
@@ -259,6 +260,35 @@ impl AnoncredsUtils {
         Ok(())
     }
 
+    pub fn prover_get_claims(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, claims_json| {
+            sender.send((err, claims_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims(cb);
+
+        let filter_json = CString::new(filter_json).unwrap();
+
+        let err = sovrin_prover_get_claims(command_handle,
+                                           wallet_handle,
+                                           filter_json.as_ptr(),
+                                           cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, claims_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(claims_json)
+    }
+
     pub fn prover_get_claims_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -468,27 +498,42 @@ impl AnoncredsUtils {
                 //TODO Need clean after tests but not exists After function in Cargo
                 TestUtils::cleanup_storage();
 
+                //1. Create and Open wallet
                 WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", "common_wallet", "default").unwrap();
 
-                let claim_def_seq_no = 1;
+                //2. Create ClaimDefinition
                 let schema = AnoncredsUtils::get_gvt_schema_json(1);
-
                 //TODO Fix it.....Convert String to &'static str
-                let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(WALLET_HANDLE, &schema, claim_def_seq_no).unwrap();
+                let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(WALLET_HANDLE, &schema, COMMON_CLAIM_DEF_SEQ_NO).unwrap();
                 let res = mem::transmute(&claim_def_json as &str);
                 mem::forget(claim_def_json);
                 CLAIM_DEF_JSON = res;
 
-                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+                //3. Store three claim offers
+                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", COMMON_CLAIM_DEF_SEQ_NO, COMMON_SCHEMA_SEQ_NO);
                 let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2, 2);
                 let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 3, 2);
-
-                let master_secret_name = "common_master_secret_name";
-                AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, master_secret_name).unwrap();
 
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_1).unwrap();
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_2).unwrap();
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_3).unwrap();
+
+                //4. Create MasterSecret
+                AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
+
+                //5. Create and Store Claim Request
+                let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+                                                                                  "HEJ9gvWX64wW7UD",
+                                                                                  &claim_offer_json_1,
+                                                                                  CLAIM_DEF_JSON,
+                                                                                  COMMON_MASTER_SECRET).unwrap();
+                let claim_json = AnoncredsUtils::get_gvt_claim_json();
+
+                //6. Create Claim
+                let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json).unwrap();
+
+                //7. Store Claim
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json).unwrap();
             });
 
             (WALLET_HANDLE, CLAIM_DEF_JSON)
@@ -496,3 +541,6 @@ impl AnoncredsUtils {
     }
 }
 
+pub const COMMON_CLAIM_DEF_SEQ_NO: i32 = 1;
+pub const COMMON_SCHEMA_SEQ_NO: i32 = 1;
+pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
