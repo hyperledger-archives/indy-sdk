@@ -61,6 +61,7 @@ pub struct AgentCommandExecutor {
         Listener
     )>>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
+    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
 }
 
 struct Listener {
@@ -76,7 +77,8 @@ impl AgentCommandExecutor {
             wallet_service: wallet_service,
             listeners: RefCell::new(HashMap::new()),
             listen_callbacks: RefCell::new(HashMap::new()),
-            open_callbacks: RefCell::new(HashMap::new())
+            open_callbacks: RefCell::new(HashMap::new()),
+            send_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -104,6 +106,10 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
                 (self.listeners.borrow().get(&listener_id).unwrap().on_connect)(res);
             }
+            AgentCommand::Send(connection_id, msg, cb) => {
+                info!(target: "agent_command_executor", "Send command received");
+                self.send(connection_id, msg, cb)
+            }
             _ => unimplemented!(),
         }
     }
@@ -115,9 +121,10 @@ impl AgentCommandExecutor {
         let result = self._get_connection_info(wallet_handle, &sender_did, &receiver_did)
             .and_then(|info: ConnectInfo| {
                 debug!("AgentCommandExecutor::connect try to service.connect with {:?}", info);
-                self.agent_service.as_ref().connect(sender_did.as_str(),
-                                                    info.secret_key.as_str(), info.public_key.as_str(),
-                                                    info.endpoint.as_str(), info.server_key.as_str())
+                self.agent_service
+                    .connect(sender_did.as_str(),
+                             info.secret_key.as_str(), info.public_key.as_str(),
+                             info.endpoint.as_str(), info.server_key.as_str())
                     .map_err(From::from)
             })
             .and_then(|conn_handle| {
@@ -155,7 +162,7 @@ impl AgentCommandExecutor {
         let my_did_json: String = self.wallet_service.list(wallet_handle, "my_did::").as_ref().unwrap().get(0).as_ref().unwrap().1.clone();
         let my_did: MyDid = MyDid::from_json(my_did_json.as_str()).map_err(|_| CommonError::InvalidState((format!("Invalid my did json")))).unwrap();
 
-        let result = self.agent_service.as_ref()
+        let result = self.agent_service
             .listen(endpoint.as_str(), my_did.pk.as_str(), my_did.sk.as_str())
             .and_then(|cmd_id| {
                 match self.listen_callbacks.try_borrow_mut() {
@@ -170,6 +177,21 @@ impl AgentCommandExecutor {
                                     Listener { on_connect: connect_cb, on_msg: message_cb })); /* TODO check if map contains same key */
             }
         };
+    }
+
+    fn send(&self, conn_id: i32, msg: Option<String>, cb: Box<Fn(Result<(), SovrinError>)>) {
+        let result = self.agent_service
+            .send(conn_id, msg.as_ref().map(String::as_str))
+            .and_then(|cmd_id| {
+                match self.send_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, cmd_id)),
+                    Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
+                }
+            });
+        match result {
+            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
+            Err(err) => cb(Err(From::from(err))),
+        }
     }
 }
 

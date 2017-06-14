@@ -106,6 +106,10 @@ impl AgentService {
                                       .as_str(), zmq::DONTWAIT)?;
         Ok(listen_handle)
     }
+
+    pub fn send(&self, conn_id: i32, msg: Option<&str>) -> Result<i32, CommonError> {
+        unimplemented!();
+    }
 }
 
 impl AgentWorker {
