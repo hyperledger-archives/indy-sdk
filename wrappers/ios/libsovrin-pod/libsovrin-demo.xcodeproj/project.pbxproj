@@ -27,6 +27,9 @@
 		846074AC1EF0371000E700A5 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074AB1EF0371000E700A5 /* LedgerNymRequest.mm */; };
 		846074AE1EF0374000E700A5 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074AD1EF0374000E700A5 /* LedgerAttribRequest.mm */; };
 		846074B01EF03BC800E700A5 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074AF1EF03BC800E700A5 /* LedgerSchemaRequest.mm */; };
+		84738E291EF11C6900827956 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84738E281EF11C6900827956 /* LedgerNodeRequest.mm */; };
+		84738E2C1EF1271700827956 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E2B1EF1271700827956 /* SignusHighCases.m */; };
+		84738E2E1EF1272B00827956 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E2D1EF1272B00827956 /* SignusMediumCases.m */; };
 		84881A851EE1A7B7001B5302 /* Ledger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A841EE1A7B7001B5302 /* Ledger.mm */; };
 		84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A861EE1BBDE001B5302 /* SignusUtils.mm */; };
 		84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A891EE53E1B001B5302 /* Pool.mm */; };
@@ -103,6 +106,9 @@
 		846074AB1EF0371000E700A5 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
 		846074AD1EF0374000E700A5 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		846074AF1EF03BC800E700A5 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
+		84738E281EF11C6900827956 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
+		84738E2B1EF1271700827956 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
+		84738E2D1EF1272B00827956 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
 		84881A841EE1A7B7001B5302 /* Ledger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Ledger.mm; sourceTree = "<group>"; };
 		84881A861EE1BBDE001B5302 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
 		84881A881EE1BBF0001B5302 /* SignusUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
@@ -188,6 +194,7 @@
 		3E7005311EE02CC7005069FD /* Demo Tests */ = {
 			isa = PBXGroup;
 			children = (
+				84738E2A1EF126E300827956 /* Signus */,
 				846074AA1EF036ED00E700A5 /* Ledger */,
 				3E9CDB991ECC841700B1980D /* SignusDemo.mm */,
 				3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */,
@@ -247,8 +254,18 @@
 				846074AB1EF0371000E700A5 /* LedgerNymRequest.mm */,
 				846074AD1EF0374000E700A5 /* LedgerAttribRequest.mm */,
 				846074AF1EF03BC800E700A5 /* LedgerSchemaRequest.mm */,
+				84738E281EF11C6900827956 /* LedgerNodeRequest.mm */,
 			);
 			path = Ledger;
+			sourceTree = "<group>";
+		};
+		84738E2A1EF126E300827956 /* Signus */ = {
+			isa = PBXGroup;
+			children = (
+				84738E2B1EF1271700827956 /* SignusHighCases.m */,
+				84738E2D1EF1272B00827956 /* SignusMediumCases.m */,
+			);
+			path = Signus;
 			sourceTree = "<group>";
 		};
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
@@ -436,12 +453,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84738E291EF11C6900827956 /* LedgerNodeRequest.mm in Sources */,
 				84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */,
 				3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */,
 				846074AE1EF0374000E700A5 /* LedgerAttribRequest.mm in Sources */,
 				3EF020DB1EC4595500CF985C /* Environment.m in Sources */,
 				84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */,
 				84881A8C1EE553E5001B5302 /* LedgerUtils.mm in Sources */,
+				84738E2E1EF1272B00827956 /* SignusMediumCases.m in Sources */,
 				3E2FFA441ED5C37100536EAD /* WalletUtils.m in Sources */,
 				3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */,
 				3E9CDB9A1ECC841700B1980D /* SignusDemo.mm in Sources */,
@@ -449,6 +468,7 @@
 				846074B01EF03BC800E700A5 /* LedgerSchemaRequest.mm in Sources */,
 				84881A851EE1A7B7001B5302 /* Ledger.mm in Sources */,
 				846074AC1EF0371000E700A5 /* LedgerNymRequest.mm in Sources */,
+				84738E2C1EF1271700827956 /* SignusHighCases.m in Sources */,
 				3EC6BCF91EDD9D6600A290DE /* NSDictionary+JSON.m in Sources */,
 				3EF020D81EC4593900CF985C /* TestUtils.m in Sources */,
 				3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */,
