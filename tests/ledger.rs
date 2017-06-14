@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 extern crate sovrin;
 
 #[macro_use]
@@ -574,6 +573,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[ignore] //FIXME currently unstable pool behaviour after new non-existing node was added
         fn sovrin_submit_node_request_works_for_new_steward() {
             TestUtils::cleanup_storage();
 

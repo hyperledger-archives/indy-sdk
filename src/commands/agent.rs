@@ -1,3 +1,5 @@
+#![warn(unused_variables)]
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
@@ -24,7 +26,21 @@ pub enum AgentCommand {
         Result<i32, SovrinError> // conn handle or error
     ),
     CloseConnection,
-    Listen,
+    Listen(
+        i32, // wallet handle
+        String, // endpoint
+        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
+        Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
+        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+    ),
+    ListenAck(
+        i32, // cmd handle (eq listener handle)
+        Result<i32, CommonError> // listener handle or error
+    ),
+    ListenerOnConnect(
+        i32, // listener handle
+        Result<(i32, i32, String, String), SovrinError>, // (listener handle, new connection handle, sender and receiver did) or error
+    ),
     CloseListener,
     Send,
 }
@@ -34,7 +50,18 @@ pub struct AgentCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
+    listeners: RefCell<HashMap<i32, Listener>>,
+
+    listen_callbacks: RefCell<HashMap<i32, (
+        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
+        Listener
+    )>>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
+}
+
+struct Listener {
+    on_connect: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
+    on_msg: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
 }
 
 impl AgentCommandExecutor {
@@ -43,6 +70,8 @@ impl AgentCommandExecutor {
             agent_service: agent_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
+            listeners: RefCell::new(HashMap::new()),
+            listen_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new())
         }
     }
@@ -57,13 +86,27 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ConnectAck command received");
                 self.open_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res) //TODO extract method
             }
+            AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
+                info!(target: "agent_command_executor", "Listen command received");
+                self.listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb);
+            }
+            AgentCommand::ListenAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "ListenAck command received");
+                let cbs = self.listen_callbacks.borrow_mut().remove(&cmd_id).unwrap();
+                self.listeners.borrow_mut().insert(cmd_id, cbs.1);
+                cbs.0(res.map_err(From::from)) //TODO extract method
+            }
+            AgentCommand::ListenerOnConnect(listener_id, res) => {
+                info!(target: "agent_command_executor", "ListenerOnConnect command received");
+                (self.listeners.borrow().get(&listener_id).unwrap().on_connect)(res);
+            }
             _ => unimplemented!(),
         }
     }
 
     fn connect(&self, wallet_handle: i32, sender_did: String, receiver_did: String,
                connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
+               /* FIXME message_cb */ _: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
     ) {
         let result = self._get_connection_info(wallet_handle, &sender_did, &receiver_did)
             .and_then(|info: ConnectInfo| {
@@ -99,6 +142,30 @@ impl AgentCommandExecutor {
             endpoint: their_did.endpoint.unwrap(),
             server_key: their_did.pk.unwrap()
         })
+    }
+
+    fn listen(&self, wallet_handle: i32, endpoint: String,
+              listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
+              connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
+              message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+        let my_did_json: String = self.wallet_service.list(wallet_handle, "my_did::").as_ref().unwrap().get(0).as_ref().unwrap().1.clone();
+        let my_did: MyDid = MyDid::from_json(my_did_json.as_str()).map_err(|_| CommonError::InvalidState((format!("Invalid my did json")))).unwrap();
+
+        let result = self.agent_service.as_ref()
+            .listen(endpoint.as_str(), my_did.pk.as_str(), my_did.sk.as_str())
+            .and_then(|cmd_id| {
+                match self.listen_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, cmd_id)),
+                    Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
+                }
+            });
+        match result {
+            Err(err) => listen_cb(Err(From::from(err))),
+            Ok((mut cbs, handle)) => {
+                cbs.insert(handle, (listen_cb,
+                                    Listener { on_connect: connect_cb, on_msg: message_cb })); /* TODO check if map contains same key */
+            }
+        };
     }
 }
 

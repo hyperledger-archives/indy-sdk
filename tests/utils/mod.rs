@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod callback;
 
 #[path = "../../src/utils/environment.rs"]
@@ -13,10 +15,6 @@ pub mod types;
 #[macro_use]
 #[path = "../../src/utils/test.rs"]
 pub mod test;
-
-#[macro_use]
-#[path = "../../src/utils/logger.rs"]
-pub mod logger;
 
 #[path = "../../src/utils/timeout.rs"]
 pub mod timeout;

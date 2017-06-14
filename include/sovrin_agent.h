@@ -65,6 +65,7 @@ extern sovrin_error_t sovrin_agent_connect(sovrin_handle_t command_handle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
+/// endpoint: endpoint to use in starting listener.
 /// listener_cb: Callback that will be called after listening started or on error.
 /// connection_cb: Callback that will be called after establishing of incomming connection.
 /// message_cb: Callback that will be called on receiving of an incomming message.
@@ -88,6 +89,7 @@ extern sovrin_error_t sovrin_agent_connect(sovrin_handle_t command_handle,
 
 extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
                                           sovrin_handle_t wallet_handle,
+                                          const char *    endpoint,
 
                                           void     (*listener_cb)(sovrin_handle_t xcommand_handle,
                                                                   sovrin_error_t  err,

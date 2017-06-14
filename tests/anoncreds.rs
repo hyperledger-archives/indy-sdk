@@ -1,5 +1,3 @@
-// TODO: FIXME: It must be removed after code layout stabilization!
-#![allow(dead_code)]
 extern crate sovrin;
 
 #[macro_use]
@@ -7,6 +5,8 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 #[path = "utils/mod.rs"]
@@ -15,7 +15,6 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::test::TestUtils;
-use utils::logger::LoggerUtils;
 use std::collections::HashMap;
 use utils::types::{
     ClaimDefinition,
