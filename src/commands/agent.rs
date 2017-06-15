@@ -114,6 +114,10 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "Send command received");
                 self.send(connection_id, msg, cb)
             }
+            AgentCommand::SendAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "SendAck command received");
+                self.send_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+            }
             _ => unimplemented!(),
         }
     }
