@@ -47,6 +47,10 @@ pub enum AgentCommand {
         Option<String>, // message
         Box<Fn(Result<(), SovrinError>) + Send>, // send cb
     ),
+    SendAck(
+        i32, // send cmd handle
+        Result<(), CommonError>,
+    )
 }
 
 pub struct AgentCommandExecutor {
