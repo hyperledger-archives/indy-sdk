@@ -49,7 +49,7 @@ impl Verifier {
                 .ok_or(CommonError::InvalidStructure(format!("Schema is not found")))?;
 
             if let (Some(ref non_revocation_proof), Some(ref pkr), Some(ref revoc_reg)) = (proof_item.proof.non_revoc_proof.clone(),
-                                                                                           claim_definition.public_key_revocation.clone(),
+                                                                                           claim_definition.data.public_key_revocation.clone(),
                                                                                            revoc_regs.get(proof_uuid)) {
 
                 tau_list.extend_from_slice(
@@ -63,7 +63,7 @@ impl Verifier {
             };
 
             tau_list.append_vec(
-                &Verifier::_verify_primary_proof(&claim_definition.public_key,
+                &Verifier::_verify_primary_proof(&claim_definition.data.public_key,
                                                  &proof.aggregated_proof.c_hash,
                                                  &proof_item.proof.primary_proof,
                                                  &schema)?
@@ -101,7 +101,7 @@ impl Verifier {
         use std::iter::FromIterator;
 
         let unrevealed_attrs: Vec<String> =
-            schema.keys
+            schema.data.keys
                 .difference(&HashSet::from_iter(proof.revealed_attrs.keys().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();

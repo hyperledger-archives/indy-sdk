@@ -352,7 +352,7 @@ impl Prover {
                                                                &proof_claim.revocation_registry.clone()
                                                                    .ok_or(CommonError::InvalidStructure("Revocation registry not found".to_string()))?
                                                                    .accumulator,
-                                                               &proof_claim.claim_definition.public_key_revocation.clone()
+                                                               &proof_claim.claim_definition.data.public_key_revocation.clone()
                                                                    .ok_or(CommonError::InvalidStructure("Field public_key_revocation not found".to_string()))?,
                                                                tails)?;
 
@@ -362,7 +362,7 @@ impl Prover {
                 non_revoc_init_proof = Some(proof);
             }
 
-            let primary_init_proof = Prover::_init_proof(&proof_claim.claim_definition.public_key,
+            let primary_init_proof = Prover::_init_proof(&proof_claim.claim_definition.data.public_key,
                                                          &proof_claim.schema,
                                                          &proof_claim.claim_json.signature.primary_claim,
                                                          &proof_claim.claim_json.claim,
@@ -515,7 +515,7 @@ impl Prover {
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
         let unrevealed_attrs: Vec<String> =
-            schema.keys
+            schema.data.keys
                 .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();
@@ -1332,7 +1332,7 @@ pub mod mocks {
     use super::*;
     use services::anoncreds::issuer;
     use services::anoncreds::verifier;
-    use services::anoncreds::types::Witness;
+    use services::anoncreds::types::{ClaimDefinitionData,Witness};
     use std::iter::FromIterator;
     use services::anoncreds::types::SignatureTypes;
 
@@ -1577,20 +1577,22 @@ pub mod mocks {
     }
 
     pub fn get_gvt_claim_definition() -> ClaimDefinition {
+        let claim_def_data = ClaimDefinitionData ::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
-            public_key: issuer::mocks::get_pk(),
-            public_key_revocation: None,
             schema_seq_no: 1,
-            signature_type: SignatureTypes::CL
+            claim_def_seq_no: None,
+            signature_type: SignatureTypes::CL,
+            data: claim_def_data
         }
     }
 
     pub fn get_xyz_claim_definition() -> ClaimDefinition {
+        let claim_def_data = ClaimDefinitionData ::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
-            public_key: issuer::mocks::get_pk(),
-            public_key_revocation: None,
             schema_seq_no: 2,
-            signature_type: SignatureTypes::CL
+            claim_def_seq_no: None,
+            signature_type: SignatureTypes::CL,
+            data: claim_def_data
         }
     }
 

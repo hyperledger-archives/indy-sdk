@@ -32,8 +32,7 @@ use utils::types::{
     GetClaimDefReplyResult,
     GetNymReplyResult,
     GetSchemaReplyResult,
-    Reply,
-    Schema
+    Reply
 };
 
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
@@ -661,32 +660,28 @@ mod high_cases {
             let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
-            let schema_result_data = get_schema_response.result.data.clone().unwrap();
-
-            let schema = Schema {
-                name: schema_result_data.name,
-                keys: schema_result_data.keys,
-                version: schema_result_data.version,
-                seq_no: get_schema_response.result.seq_no.unwrap()
-            };
 
             let (claim_def_json, _) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
-                                                                                     &serde_json::to_string(&schema).unwrap(), None, false).unwrap();
+                                                                                     &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
             info!("claim_def_json {:}", claim_def_json);
 
             let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
             let claim_def_data = ClaimDefinitionData {
-                primary: claim_def.public_key,
-                revocation: claim_def.public_key_revocation
+                public_key: claim_def.data.public_key,
+                public_key_revocation: claim_def.data.public_key_revocation
             };
             let claim_def_data_json = serde_json::to_string(&claim_def_data).unwrap();
 
-            let claim_def_request = LedgerUtils::build_claim_def_txn(&my_did.clone(), schema.seq_no, &claim_def.signature_type, &claim_def_data_json).unwrap();
+            let claim_def_request = LedgerUtils::build_claim_def_txn(&my_did.clone(), get_schema_response.result.seq_no.unwrap(),
+                                                                     &claim_def.signature_type, &claim_def_data_json).unwrap();
 
             let claim_def_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &claim_def_request).unwrap();
             info!("claim_def_response {}", claim_def_response);
 
-            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&my_did.clone(), schema.seq_no, &claim_def.signature_type, &schema_result_data.origin).unwrap();
+            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&my_did.clone(),
+                                                                             get_schema_response.result.seq_no.unwrap(),
+                                                                             &claim_def.signature_type,
+                                                                             &get_schema_response.result.data.unwrap().origin).unwrap();
 
             let get_claim_def_response = PoolUtils::send_request(pool_handle, &get_claim_def_request).unwrap();
             info!("get_claim_def_response {}", get_claim_def_response);

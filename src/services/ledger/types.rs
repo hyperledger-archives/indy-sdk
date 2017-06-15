@@ -399,30 +399,3 @@ pub struct GetNymResultData {
 }
 
 impl<'a> JsonDecodable<'a> for GetNymResultData {}
-
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct GetClaimDefReplyResult {
-    pub identifier: String,
-    #[serde(rename = "reqId")]
-    pub req_id: u64,
-    #[serde(rename = "seqNo")]
-    pub  seq_no: i32,
-    #[serde(rename = "type")]
-    pub _type: String,
-    pub data: ClaimDefinitionData,
-    pub origin: String,
-    pub signature_type: String,
-    #[serde(rename = "ref")]
-    pub _ref: i32
-}
-
-impl<'a> JsonDecodable<'a> for GetClaimDefReplyResult {}
-
-
-#[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct ClaimDefinitionData {
-    pub primary: PublicKey,
-    pub revocation: Option<String>
-}
-
-impl<'a> JsonDecodable<'a> for ClaimDefinitionData {}

@@ -257,16 +257,20 @@ impl ProverCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid prover did: {}", err.to_string())))?;
 
-        //TODO check claim_offer.claim_def_seq_no == claim_def.claim_def_seq_no
+
+        if claim_def.claim_def_seq_no != Some(claim_offer.claim_def_seq_no) {
+            return Err(SovrinError::CommonError(CommonError::InvalidStructure(
+                format!("ClaimOffer claim_def_seq_no {} does not correspond to ClaimDef claim_def_seq_no {:?}", claim_offer.claim_def_seq_no, claim_def.claim_def_seq_no))))
+        }
 
         if claim_def.schema_seq_no != claim_offer.schema_seq_no {
             return Err(SovrinError::CommonError(CommonError::InvalidStructure(
-                format!("ClaimOffer schema_seq_no {} does not correcpond to ClaimDef schema_seq_no{}", claim_offer.schema_seq_no, claim_def.schema_seq_no))))
+                format!("ClaimOffer schema_seq_no {} does not correspond to ClaimDef schema_seq_no{}", claim_offer.schema_seq_no, claim_def.schema_seq_no))))
         }
 
         let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
-            self.anoncreds_service.prover.create_claim_request(claim_def.public_key,
-                                                               claim_def.public_key_revocation,
+            self.anoncreds_service.prover.create_claim_request(claim_def.data.public_key,
+                                                               claim_def.data.public_key_revocation,
                                                                master_secret, prover_did)?;
 
         self.wallet_service.set(wallet_handle,
@@ -349,7 +353,7 @@ impl ProverCommandExecutor {
         self.anoncreds_service.prover.process_claim(&claim_json,
                                                     primary_claim_init_data,
                                                     revocation_claim_init_data,
-                                                    claim_def.public_key_revocation,
+                                                    claim_def.data.public_key_revocation,
                                                     revocation_registry)?;
 
         let claim = ClaimJson::to_json(&claim_json.borrow())
