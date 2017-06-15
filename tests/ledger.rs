@@ -157,7 +157,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "test_submit_tx";
 
-            let res = PoolUtils::create_pool_ledger_config(pool_name);
+            let res = PoolUtils::create_pool_ledger_config(pool_name, None);
             assert!(res.is_ok());
             let res = PoolUtils::open_pool_ledger(pool_name);
             assert!(res.is_ok());
