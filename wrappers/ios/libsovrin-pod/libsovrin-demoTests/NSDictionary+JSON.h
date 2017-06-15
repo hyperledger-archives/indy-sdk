@@ -10,5 +10,6 @@
 
 + (NSString*) toString:(NSDictionary*) dict;
 + (NSDictionary*) fromString:(NSString*) s;
+- (BOOL) contains:(NSDictionary*) dict;
 
 @end

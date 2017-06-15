@@ -25,7 +25,7 @@
     return instance;
 }
 
--(NSString*) getGvtSchemaJson:(NSNumber*) seqNo
+- (NSString *)getGvtSchemaJson:(NSNumber *)seqNo
 {
     return [NSString stringWithFormat:@"{"\
                                        "\"name\":\"gvt\"," \
@@ -36,7 +36,8 @@
     ];
 }
 
--(NSString*) getClaimOfferJson:(NSString*) issuerDid seqNo:(NSNumber*) claimDefSeqNo
+- (NSString *)getClaimOfferJson:(NSString *)issuerDid
+                          seqNo:(NSNumber *)claimDefSeqNo
 {
     return [NSString stringWithFormat:@"{"\
             "\"issuer_did\":\"%@\"," \
@@ -45,7 +46,7 @@
             ];
 }
 
--(NSString*) getGvtClaimJson
+- (NSString *)getGvtClaimJson
 {
     return [NSString stringWithFormat:@"{"\
                                        "\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],"\
@@ -55,7 +56,7 @@
                                        "}"];
 }
 
--(NSString*) getXyzSchemaJson:(NSNumber*) schemaSeqNo
+- (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo
 {
     return [NSString stringWithFormat:@"{"\
             "\"name\":\"xyz\","\
@@ -65,7 +66,7 @@
             "}",[schemaSeqNo integerValue]];
 }
 
--(NSString*) getXyzClaimJson
+- (NSString *)getXyzClaimJson
 {
     return [NSString stringWithFormat:@"{"\
                                        "  \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],"\
@@ -74,11 +75,11 @@
 }
 
 // MARK: issuer claim
--(NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
-                    claimJson:(NSString *) claimJson
-                 claimReqJson:(NSString *) claimReqJson
-                 outClaimJson:(NSString**) xClaimJson
-        outRevocRegUpdateJSON:(NSString**) revocRegUpdateJSON
+- (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
+                                     claimJson:(NSString *)claimJson
+                                  claimReqJson:(NSString *)claimReqJson
+                                  outClaimJson:(NSString **)xClaimJson
+                         outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON
 {
     __block NSError *err = nil;
     __block NSString *outClaimJson;
@@ -87,12 +88,12 @@
 
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSError *ret = [SovrinAnoncreds  issuerCreateClaim:walletHandle
-                                          claimReqJSON:claimReqJson
-                                             claimJSON:claimJson
-                                         revocRegSeqNo:@(-1)
-                                        userRevocIndex:@(-1)
-                                            completion:^(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)
+    NSError *ret = [SovrinAnoncreds  issuerCreateClaimWithWalletHandle:walletHandle
+                                                          claimReqJSON:claimReqJson
+                                                             claimJSON:claimJson
+                                                         revocRegSeqNo:@(-1)
+                                                        userRevocIndex:@(-1)
+                                                            completion:^(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)
     {
         err = error;
         outRevocRegUpdateJSON = revocRegUpdateJSON;
@@ -113,21 +114,21 @@
     return err;
 }
 
-- (NSError *)issuerCreateClaimDefinifion:(SovrinHandle) walletHandle
-                              schemaJson:(NSString *) schemaJson
-                            claimDefJson:(NSString**) claimDefJson
-                            claimDefUUID:(NSString**) claimDefUUID
+- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle)walletHandle
+                                              schemaJson:(NSString *)schemaJson
+                                            claimDefJson:(NSString **)claimDefJson
+                                            claimDefUUID:(NSString **)claimDefUUID;
 {
     __block NSError *err = nil;
     __block NSString *outClaimDefJson = nil;
     __block NSString *outClaimDefUUID = nil;
     XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDef:walletHandle
-                                                       schemaJSON:schemaJson
-                                                    signatureType:nil
-                                                   createNonRevoc:NO
-                                                       completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)
+    NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDefWithWalletHandle:walletHandle
+                                                                       schemaJSON:schemaJson
+                                                                    signatureType:nil
+                                                                   createNonRevoc:NO
+                                                                       completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)
                     {
                         err = error;
                         outClaimDefJson = claimDefJSON;
@@ -143,26 +144,26 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *claimDefJson = outClaimDefJson;
-    *claimDefUUID = outClaimDefUUID;
+    if ( claimDefJson ) { *claimDefJson = outClaimDefJson; }
+    if ( claimDefUUID ) { *claimDefUUID = outClaimDefUUID; }
     
     return err;
 }
 
 
--(NSError*) createClaimDefinitionAndSetLink:(SovrinHandle) walletHandle
-                                     schema:(NSString*) schema
-                                      seqNo:(NSNumber*) claimDefSeqNo
-                                    outJson:(NSString**) outJson
+- (NSError *) createClaimDefinitionAndSetLink:(SovrinHandle)walletHandle
+                                       schema:(NSString *)schema
+                                        seqNo:(NSNumber *)claimDefSeqNo
+                                      outJson:(NSString **)outJson
 {
     NSString *json = nil;
     NSString *uuid;
     NSError *ret;
     
-    ret = [self issuerCreateClaimDefinifion:walletHandle
-                                 schemaJson:schema
-                               claimDefJson:&json
-                               claimDefUUID:&uuid];
+    ret = [self issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                 schemaJson:schema
+                                               claimDefJson:&json
+                                               claimDefUUID:&uuid];
     if( ret.code != Success )
     {
         return ret;
@@ -175,7 +176,7 @@
     return ret;
 }
 
--(NSArray*) getUniqueClaimsFrom: (NSDictionary*)proofClaims
+- (NSArray *)getUniqueClaimsFrom:(NSDictionary *)proofClaims
 {
     NSMutableArray* uniqueClaims =  [[NSMutableArray alloc] init];
     
@@ -195,17 +196,18 @@
     return res;
     
 }
--(NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
-                    masterSecretName:(NSString*) name
+
+- (NSError *)proverCreateMasterSecret:(SovrinHandle)walletHandle
+                     masterSecretName:(NSString *)name
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverCreateMasterSecret:  walletHandle
-                                            masterSecretName:  name
-                                                  completion: ^(NSError *error)
+    NSError *ret = [SovrinAnoncreds proverCreateMasterSecretWithWalletHandle:walletHandle
+                                                            masterSecretName:name
+                                                                  completion:^(NSError *error)
     {
         err = error;
         [completionExpectation fulfill];
@@ -220,35 +222,36 @@
     return err;
 }
 
--(NSError*) proverStoreClaimOffer:(SovrinHandle) walletHandle
-                   claimOfferJson:(NSString*) str
+- (NSError *)proverStoreClaimOffer:(SovrinHandle)walletHandle
+                    claimOfferJson:(NSString *)str
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverStoreClaimOffer:  walletHandle
-                                           claimOfferJSON:  str
-                                               completion: ^(NSError *error)
+    NSError *ret = [SovrinAnoncreds proverStoreClaimOfferWithWalletHandle:walletHandle
+                                                           claimOfferJSON:str
+                                                               completion: ^(NSError *error)
     {
         err = error;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
     return err;
  
 }
 
--(NSError*) proverGetClaimOffers:(SovrinHandle) walletHandle
-                      filterJson:(NSString*) filterJson
-              outClaimOffersJSON:(NSString**) outJson
+- (NSError *)proverGetClaimOffers:(SovrinHandle)walletHandle
+                       filterJson:(NSString *)filterJson
+               outClaimOffersJSON:(NSString **)outJson
 {
     __block NSString *json;
     __block NSError *err = nil;
@@ -256,32 +259,32 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [ SovrinAnoncreds proverGetClaimOffers: walletHandle
-                                               filterJSON: filterJson
-                                               completion:^(NSError *error, NSString *claimOffersJSON)
+    NSError *ret = [ SovrinAnoncreds proverGetClaimOffersWithWalletHandle:walletHandle
+                                                               filterJSON:filterJson
+                                                               completion:^(NSError *error, NSString *claimOffersJSON)
     {
         err = error;
         json = claimOffersJSON;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     *outJson = json;
     return err;
 }
 
--(NSError*) proverCreateAndStoreClaimReq:(SovrinHandle) walletHandle
-                               proverDid:(NSString*) pd
-                          claimOfferJson:(NSString*) coj
-                            claimDefJson:(NSString*) cdj
-                        masterSecretName:(NSString*) name
-                         outClaimReqJson:(NSString**) outJson
+- (NSError *)proverCreateAndStoreClaimReq:(SovrinHandle)walletHandle
+                                proverDid:(NSString *)pd
+                           claimOfferJson:(NSString *)coj
+                             claimDefJson:(NSString *)cdj
+                         masterSecretName:(NSString *)name
+                          outClaimReqJson:(NSString **)outJson
 {
     __block NSError *err = nil;
     __block NSString *json;
@@ -289,24 +292,25 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [ SovrinAnoncreds proverCreateAndStoreClaimReq: walletHandle
-                                                        proverDid: pd
-                                                   claimOfferJSON: coj
-                                                 masterSecretName: name
-                                                     claimDefJSON: cdj
-                                                       completion:^(NSError* error, NSString* claimReqJSON)
+    NSError *ret = [ SovrinAnoncreds proverCreateAndStoreClaimReqWithWalletHandle: walletHandle
+                                                                        proverDid:pd
+                                                                   claimOfferJSON:coj
+                    
+                                                                     claimDefJSON:cdj
+                                                                 masterSecretName:name
+                                                                       completion:^(NSError* error, NSString* claimReqJSON)
     {
         err = error;
         json = claimReqJSON;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *outJson = json;
     return err;
@@ -314,34 +318,34 @@
 
 
 
--(NSError*) proverStoreClaim:(SovrinHandle) walletHandle
-                  claimsJson:(NSString*) str
+- (NSError *) proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle
+                                    claimsJson:(NSString *)str
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverStoreClaim: walletHandle
-                                          claimsJSON:str
-                                          completion:^(NSError *error)
+    NSError *ret = [SovrinAnoncreds proverStoreClaimWithWalletHandle:walletHandle
+                                                          claimsJSON:str
+                                                          completion:^(NSError *error)
     {
         XCTAssertEqual(err.code, Success, @"proverStoreClaim failed!");
         err = error;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     return err;
 }
 
--(NSError*) proverGetClaimsForProofReq:(SovrinHandle) walletHandle
-                      proofRequestJson:(NSString*) str
-                         outClaimsJson:(NSString**) outClaimsJson
+- (NSError *)proverGetClaimsForProofReqWithWalletHandle:(SovrinHandle)walletHandle
+                                       proofRequestJson:(NSString *)str
+                                          outClaimsJson:(NSString **)outClaimsJson
 {
     __block NSError *err = nil;
     __block NSString *outJson;
@@ -349,49 +353,49 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSError *ret = [SovrinAnoncreds proverGetClaimsForProofReq: walletHandle
-                                                  proofReqJSON: str
-                                                    completion:^(NSError *error, NSString *claimsJSON)
+    NSError *ret = [SovrinAnoncreds proverGetClaimsForProofReqWithWalletHandle:walletHandle
+                                                                  proofReqJSON:str
+                                                                    completion:^(NSError *error, NSString *claimsJSON)
     {
         err = error;
         outJson = claimsJSON;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     *outClaimsJson = outJson;
     
     return err;
 }
 
--(NSError*) proverCreateProof:(SovrinHandle) walletHandle
-                 proofReqJson:(NSString*) proofReqJson
-          requestedClaimsJson:(NSString*) requestedClaimsJson
-                  schemasJson:(NSString*) schemasJson
-             masterSecretName:(NSString*) masterSecreteName
-                claimDefsJson:(NSString*) claimDefsJson
-                revocRegsJson:(NSString*) revocRegsJson
-                 outProofJson:(NSString**) outProofJson
+- (NSError *)proverCreateProofWithWalletHandle:(SovrinHandle)walletHandle
+                                  proofReqJson:(NSString *)proofReqJson
+                           requestedClaimsJson:(NSString *)requestedClaimsJson
+                                   schemasJson:(NSString *)schemasJson
+                              masterSecretName:(NSString *)masterSecreteName
+                                 claimDefsJson:(NSString *)claimDefsJson
+                                 revocRegsJson:(NSString *)revocRegsJson
+                                  outProofJson:(NSString **)outProofJson
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
    
-    NSError *ret = [SovrinAnoncreds proverCreateProof:walletHandle
-                                         proofReqJSON:proofReqJson
-                                  requestedClaimsJSON:requestedClaimsJson
-                                          schemasJSON:schemasJson
-                                     masterSecretName:masterSecreteName
-                                        claimDefsJSON:claimDefsJson
-                                        revocRegsJSON:revocRegsJson
-                                           completion:^(NSError *error, NSString *proofJSON)
+    NSError *ret = [SovrinAnoncreds proverCreateProofWithWalletHandle:walletHandle
+                                                         proofReqJSON:proofReqJson
+                                                  requestedClaimsJSON:requestedClaimsJson
+                                                          schemasJSON:schemasJson
+                                                     masterSecretName:masterSecreteName
+                                                        claimDefsJSON:claimDefsJson
+                                                        revocRegsJSON:revocRegsJson
+                                                           completion:^(NSError *error, NSString *proofJSON)
     {
         err = error;
         if (outProofJson)
@@ -410,24 +414,24 @@
     return err;
 }
 
--(NSError*) verifierVerifyProof:(NSString*) proofRequestJson
-                      proofJson:(NSString*) proofJson
-                    schemasJson:(NSString*) schemasJson
-                  claimDefsJson:(NSString*) claimDefsJson
-                  revocRegsJson:(NSString*) revocRegsJson
-                       outValid:(BOOL*) isValid
+- (NSError *)verifierVerifyProof:(NSString *)proofRequestJson
+                       proofJson:(NSString *)proofJson
+                     schemasJson:(NSString *)schemasJson
+                   claimDefsJson:(NSString *)claimDefsJson
+                   revocRegsJson:(NSString *)revocRegsJson
+                        outValid:(BOOL *)isValid
 {
     __block NSError *err = nil;
-    XCTestExpectation* completionExpectation = nil;
+    XCTestExpectation *completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError* ret = [SovrinAnoncreds verifierVerifyProof:proofRequestJson
-                                              proofJSON:proofJson
-                                            schemasJSON:schemasJson
-                                          claimDefsJSON:claimDefsJson
-                                          revocRegsJSON:revocRegsJson
-                                             completion:^(NSError *error, BOOL valid)
+    NSError *ret = [SovrinAnoncreds verifierVerifyProofWithWalletHandle:proofRequestJson
+                                                              proofJSON:proofJson
+                                                            schemasJSON:schemasJson
+                                                          claimDefsJSON:claimDefsJson
+                                                          revocRegsJSON:revocRegsJson
+                                                             completion:^(NSError *error, BOOL valid)
     {
         err = error;
         if(isValid)
