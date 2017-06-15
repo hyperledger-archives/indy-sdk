@@ -1776,12 +1776,13 @@
     XCTAssertNotNil(claimDefResponse, @"claimDefResponse is nil!");
     
     // 14. Build get claim def request
-    // TODO: 103 Error, origin is GrC6YjKWTpg7m2FGczBaL3
+    // TODO: 103 Error, origin is equal to myDid
     NSString *getClaimDefRequest;
+    NSString *origin = response[@"result"][@"data"][@"origin"];
     ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:myDid
                                                                        xref:[seqNo stringValue]
                                                               signatureType:claimDef[@"signatyre_Type"]
-                                                                     origin:response[@"result"][@"data"][@"origin"]
+                                                                     origin:origin
                                                                  resultJson:&getClaimDefRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetClaimDefTxnWithSubmitterDid() failed");
     XCTAssertNotNil(getClaimDefRequest, @"getClaimDefRequest is nil!");

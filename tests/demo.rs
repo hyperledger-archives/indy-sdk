@@ -546,7 +546,6 @@ fn ledger_demo_works() {
     // 11. Send NYM request with signing
     let msg = serde_json::to_string(&nym_txn_req).unwrap();
     let req = CString::new(msg).unwrap();
-    print!("request {:?}", req);
     let did_for_sign = CString::new(their_did).unwrap();
     let err = sovrin_sign_and_submit_request(send_command_handle,
                                              pool_handle,
