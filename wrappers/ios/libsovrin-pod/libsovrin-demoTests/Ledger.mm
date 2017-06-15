@@ -1530,10 +1530,10 @@
     NSString *signatureType = @"CL";
     NSString *schemaSeqNo = @"1";
     NSString *data = @"{"\
-    "\"primary\":{"\
+        "\"primary\":{"\
         "\"n\":\"1\","\
         "\"s\":\"2\","\
-        "\"rsm\":\"3\","\
+        "\"rms\":\"3\","\
         "\"r\":{"\
             "\"name\":\"1\"},"\
         "\"rctxt\":\"1\","\
@@ -1559,7 +1559,6 @@
     expectedResult[@"operation"][@"data"][@"type"] = @"102";
     expectedResult[@"operation"][@"data"][@"signature_type"] = @"CL";
     
-    // TODO: 110 Error
     NSString *claimDefrequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:identifier
                                                                              xref:schemaSeqNo
@@ -1572,8 +1571,6 @@
     
     NSDictionary *request = [NSDictionary fromString:claimDefrequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
-    
-    //TODO: 110 error
     
     [TestUtils cleanupStorage];
 }
