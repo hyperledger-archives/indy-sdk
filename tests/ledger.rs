@@ -25,9 +25,16 @@ use utils::ledger::LedgerUtils;
 use utils::signus::SignusUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::anoncreds::AnoncredsUtils;
-
-use std::collections::{HashMap, HashSet};
-
+use utils::types::{
+    ClaimDefinition,
+    ClaimDefinitionData,
+    GetAttribReplyResult,
+    GetClaimDefReplyResult,
+    GetNymReplyResult,
+    GetSchemaReplyResult,
+    Reply,
+    Schema
+};
 
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
 // See: https://github.com/hyperledger/indy-sdk/issues/25
@@ -165,7 +172,7 @@ mod high_cases {
                             "dest":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
                          },
                          "signature":"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"}"#;
-            
+
             let resp = PoolUtils::send_request(pool_handle, request);
 
             let exp_reply = Reply {
@@ -664,7 +671,7 @@ mod high_cases {
             };
 
             let (claim_def_json, _) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
-                                                                                                  &serde_json::to_string(&schema).unwrap()).unwrap();
+                                                                                     &serde_json::to_string(&schema).unwrap(), None, false).unwrap();
             info!("claim_def_json {:}", claim_def_json);
 
             let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
@@ -890,7 +897,6 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
-
     }
 
     mod schemas_requests {
@@ -1073,123 +1079,3 @@ mod medium_cases {
         }
     }
 }
-
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-struct Response {
-    op: String,
-    reason: String,
-    req_id: u64,
-    identifier: String
-}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-struct Reply<T> {
-    op: String,
-    result: T,
-}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-struct GetNymReplyResult {
-    identifier: String,
-    req_id: u64,
-    #[serde(rename = "type")]
-    _type: String,
-    data: Option<String>,
-    dest: String
-}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-struct GetNymResultData {
-    identifier: String,
-    dest: String,
-    role: Option<String>,
-    verkey: Option<String>
-}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-struct GetAttribReplyResult {
-    identifier: String,
-    req_id: u64,
-    #[serde(rename = "type")]
-    _type: String,
-    data: Option<String>,
-    dest: String,
-    raw: String,
-    seq_no: Option<i32>
-}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-struct GetSchemaReplyResult {
-    identifier: String,
-    req_id: u64,
-    seq_no: Option<i32>,
-    //For tests/ In normal case seq_no exists
-    #[serde(rename = "type")]
-    _type: String,
-    data: Option<GetSchemaResultData>,
-    dest: Option<String>
-}
-
-#[derive(Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct GetSchemaResultData {
-    pub keys: HashSet<String>,
-    pub name: String,
-    pub origin: String,
-    pub version: String
-}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-struct GetClaimDefReplyResult {
-    identifier: String,
-    #[serde(rename = "reqId")]
-    req_id: u64,
-    #[serde(rename = "seqNo")]
-    seq_no: i32,
-    #[serde(rename = "type")]
-    _type: String,
-    data: ClaimDefinitionData,
-    origin: String,
-    signature_type: String,
-    #[serde(rename = "ref")]
-    _ref: i32
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Schema {
-    pub name: String,
-    pub version: String,
-    pub keys: HashSet<String>,
-    pub seq_no: i32
-}
-
-#[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct ClaimDefinition {
-    pub public_key: PublicKey,
-    pub public_key_revocation: Option<String>,
-    pub schema_seq_no: i32,
-    pub signature_type: String
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub struct PublicKey {
-    pub n: String,
-    pub s: String,
-    pub rms: String,
-    pub r: HashMap<String, String>,
-    pub rctxt: String,
-    pub z: String
-}
-
-#[derive(Deserialize, Debug, Serialize, Eq, PartialEq)]
-pub struct ClaimDefinitionData {
-    pub primary: PublicKey,
-    pub revocation: Option<String>
-}
-
-
