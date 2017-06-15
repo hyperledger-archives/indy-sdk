@@ -1,5 +1,3 @@
-// TODO: FIXME: It must be removed after code layout stabilization!
-#![allow(dead_code)]
 extern crate sovrin;
 
 #[macro_use]
@@ -14,7 +12,6 @@ extern crate log;
 #[path = "utils/mod.rs"]
 mod utils;
 
-use utils::logger::LoggerUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
@@ -58,14 +55,13 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
-use utils::anoncreds::ProofClaimsJson;
+use utils::types::ProofClaimsJson;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
-    LoggerUtils::init();
     TestUtils::cleanup_storage();
 
     let (create_wallet_sender, create_wallet_receiver) = channel();
@@ -96,12 +92,12 @@ fn anoncreds_demo_works() {
         wallet_set_seq_no_for_value_sender.send(err).unwrap();
     });
     // TODO: uncomment this for revocation part
-//    let wallet_set_seq_no_for_value_cb2 = Box::new(move |err| {
-//        wallet_set_seq_no_for_value_sender2.send(err).unwrap();
-//    });
-//    let issuer_create_and_store_revoc_reg_cb = Box::new(move |err, revoc_reg_json, revoc_reg_uuid| {
-//        issuer_create_and_store_revoc_reg_sender.send((err, revoc_reg_json, revoc_reg_uuid)).unwrap();
-//    });
+    //    let wallet_set_seq_no_for_value_cb2 = Box::new(move |err| {
+    //        wallet_set_seq_no_for_value_sender2.send(err).unwrap();
+    //    });
+    //    let issuer_create_and_store_revoc_reg_cb = Box::new(move |err, revoc_reg_json, revoc_reg_uuid| {
+    //        issuer_create_and_store_revoc_reg_sender.send((err, revoc_reg_json, revoc_reg_uuid)).unwrap();
+    //    });
     let prover_create_master_secret_cb = Box::new(move |err| {
         prover_create_master_secret_sender.send(err).unwrap();
     });
@@ -129,8 +125,8 @@ fn anoncreds_demo_works() {
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
     let (wallet_set_seq_no_for_value_command_handle, wallet_set_seq_no_for_value_callback) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb);
     // TODO: uncomment this for revocation part
-//    let (wallet_set_seq_no_for_value_command_handle2, wallet_set_seq_no_for_value_callback2) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb2);
-//    let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
+    //    let (wallet_set_seq_no_for_value_command_handle2, wallet_set_seq_no_for_value_callback2) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb2);
+    //    let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
     let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
     let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
     let (issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::closure_to_issuer_create_claim_cb(issuer_create_claim_cb);
@@ -171,12 +167,12 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let schema_seq_no = 1;
-    let schema = format!("{{\
-                            \"name\":\"gvt\",\
-                            \"version\":\"1.0\",\
-                            \"keys\":[\"age\",\"sex\",\"height\",\"name\"],\
-                            \"seq_no\":{}\
-                         }}", schema_seq_no);
+    let schema = format!(r#"{{
+                            "name":"gvt",
+                            "version":"1.0",
+                            "keys":["age","sex","height","name"],
+                            "seq_no":{}
+                         }}"#, schema_seq_no);
 
     // 3. Issuer create Claim Definition for Schema
     let err =
@@ -208,31 +204,31 @@ fn anoncreds_demo_works() {
     let master_secret_name = "master_secret";
 
     // TODO: uncomment this for revocation part
-//    // Issuer creates a revocation registry
-//    let max_claim_num: i32 = 5;
-//
-//    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
-//                                                       wallet_handle,
-//                                                       claim_def_seq_no,
-//                                                       max_claim_num,
-//                                                       issuer_create_and_store_revoc_reg_callback);
-//    assert_eq!(ErrorCode::Success, err);
-//    let (err, revoc_reg_json, revoc_reg_uuid) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-//    info!("revocation_reg_json: {:?}", revoc_reg_json);
-//    assert_eq!(ErrorCode::Success, err);
-//
-//    // Create relationship between revoc_reg_seq_no and revoc_reg_uuid in wallet
-//    let revoc_reg_seq_no = 2;
-//
-//    let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle2,
-//                                                 wallet_handle,
-//                                                 CString::new(revoc_reg_uuid).unwrap().as_ptr(),
-//                                                 revoc_reg_seq_no,
-//                                                 wallet_set_seq_no_for_value_callback2);
-//
-//    assert_eq!(ErrorCode::Success, err);
-//    let err = wallet_set_seq_no_for_value_receiver2.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-//    assert_eq!(ErrorCode::Success, err);
+    //    // Issuer creates a revocation registry
+    //    let max_claim_num: i32 = 5;
+    //
+    //    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
+    //                                                       wallet_handle,
+    //                                                       claim_def_seq_no,
+    //                                                       max_claim_num,
+    //                                                       issuer_create_and_store_revoc_reg_callback);
+    //    assert_eq!(ErrorCode::Success, err);
+    //    let (err, revoc_reg_json, revoc_reg_uuid) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    //    info!("revocation_reg_json: {:?}", revoc_reg_json);
+    //    assert_eq!(ErrorCode::Success, err);
+    //
+    //    // Create relationship between revoc_reg_seq_no and revoc_reg_uuid in wallet
+    //    let revoc_reg_seq_no = 2;
+    //
+    //    let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle2,
+    //                                                 wallet_handle,
+    //                                                 CString::new(revoc_reg_uuid).unwrap().as_ptr(),
+    //                                                 revoc_reg_seq_no,
+    //                                                 wallet_set_seq_no_for_value_callback2);
+    //
+    //    assert_eq!(ErrorCode::Success, err);
+    //    let err = wallet_set_seq_no_for_value_receiver2.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    //    assert_eq!(ErrorCode::Success, err);
 
     // 5. Prover create Master Secret
     let err =
@@ -245,8 +241,8 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let prover_did = "some_prover_did";
-    let claim_offer_json = format!("{{\"issuer_did\":\"some_issuer_did\",\"claim_def_seq_no\":{}}}", claim_def_seq_no);
+    let prover_did = "BzfFCYk";
+    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":{}, "schema_seq_no":{}}}"#, claim_def_seq_no, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
@@ -263,12 +259,12 @@ fn anoncreds_demo_works() {
     info!("claim_req_json {:?}", claim_req_json);
     assert_eq!(ErrorCode::Success, err);
 
-    let claim_json = "{\
-                           \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\
-                           \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\
-                           \"height\":[\"175\",\"175\"],\
-                           \"age\":[\"28\",\"28\"]\
-                     }";
+    let claim_json = r#"{
+                       "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+                       "name":["Alex","1139481716457488690172217916278103335"],
+                       "height":["175","175"],
+                       "age":["28","28"]
+                     }"#;
 
     // 7. Issuer create Claim for Claim Request
     let err =
@@ -296,11 +292,11 @@ fn anoncreds_demo_works() {
     let err = prover_store_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let proof_req_json = format!("{{\
-                                   \"nonce\":\"123432421212\",\
-                                   \"requested_attrs\":{{\"attr1_uuid\":{{\"schema_seq_no\":{},\"name\":\"name\"}}}},\
-                                   \"requested_predicates\":{{\"predicate1_uuid\":{{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}}}\
-                                }}", schema_seq_no);
+    let proof_req_json = format!(r#"{{
+                                   "nonce":"123432421212",
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
+                                }}"#, schema_seq_no);
 
     // 8. Prover gets Claims for Proof Request
     let err =
@@ -319,17 +315,17 @@ fn anoncreds_demo_works() {
 
     let claim = claims_for_attr_1[0].clone();
 
-    let requested_claims_json = format!("{{\
-                                          \"self_attested_attributes\":{{}},\
-                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{}\",true]}},\
-                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{}\"}}\
-                                        }}", claim.claim_uuid, claim.claim_uuid);
+    let requested_claims_json = format!(r#"{{
+                                          "self_attested_attributes":{{}},
+                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
+                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
+                                        }}"#, claim.claim_uuid, claim.claim_uuid);
 
-    let schemas_json = format!("{{\"{}\":{}}}", claim.claim_uuid, schema);
-    let claim_defs_json = format!("{{\"{}\":{}}}", claim.claim_uuid, claim_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
     let revoc_regs_jsons = "{}";
     // TODO: uncomment this for revocation part
-//    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+    //    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
 
     // 9. Prover create Proof for Proof Request
     let err =
@@ -367,9 +363,8 @@ fn anoncreds_demo_works() {
 }
 
 #[test]
-#[cfg(feature="local_nodes_pool")]
+#[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
-    LoggerUtils::init();
     TestUtils::cleanup_storage();
     let my_wallet_name = "my_wallet";
     let their_wallet_name = "their_wallet";
@@ -501,7 +496,7 @@ fn ledger_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 8. Create Their DID from Trustee1 seed
-    let their_did_json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
+    let their_did_json = r#"{"seed":"000000000000000000000000Trustee1"}"#;
     let err =
         sovrin_create_and_store_my_did(create_and_store_their_did_command_handle,
                                        their_wallet_handle,
@@ -516,10 +511,10 @@ fn ledger_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 9. Store Their DID
-    let their_identity_json = format!("{{\"did\":\"{}\",\
-                                        \"pk\":\"{}\",\
-                                        \"verkey\":\"{}\"\
-                                      }}",
+    let their_identity_json = format!(r#"{{"did":"{}",
+                                        "pk":"{}",
+                                        "verkey":"{}"
+                                      }}"#,
                                       their_did, their_pk, their_verkey);
     let err =
         sovrin_store_their_did(store_their_did_command_handle,
@@ -630,7 +625,6 @@ fn ledger_demo_works() {
 
 #[test]
 fn signus_demo_works() {
-    LoggerUtils::init();
     TestUtils::cleanup_storage();
 
     let (create_my_wallet_sender, create_my_wallet_receiver) = channel();
@@ -771,10 +765,10 @@ fn signus_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Store Their DID
-    let their_identity_json = format!("{{\"did\":\"{}\",\
-                                        \"pk\":\"{}\",\
-                                        \"verkey\":\"{}\"\
-                                      }}",
+    let their_identity_json = format!(r#"{{"did":"{}",
+                                        "pk":"{}",
+                                        "verkey":"{}"
+                                      }}"#,
                                       their_did, their_pk, their_verkey);
     let err =
         sovrin_store_their_did(store_their_did_command_handle,

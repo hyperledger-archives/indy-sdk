@@ -1,5 +1,24 @@
 # sovrin-client-rust
 
+# Linux (Ubuntu 16.04) build
+
+- Install Rust (https://www.rust-lang.org/install.html)
+- Install prerequisites:
+  - build-essential
+  - cmake
+  - pkg-config
+  - libsodium-dev
+  - libssl-dev
+  - libsqlite3-dev
+  - libzmq3-dev
+```
+  # apt-get update && apt-get install -y pkg-config libzmq3-dev libssl-dev build-essential libsqlite3-dev libsodium-dev cmake
+```
+- Build library `cargo build`
+- To run integration tests
+  - start local nodes pool on `10.0.0.2:9701-9708`, see `ci/sovrin-pool.dockerfile`
+  - run `RUST_TEST_THREADS=1 cargo test`
+
 # Windows build
 
 - Get binary dependencies (libamcl*, openssl, libsodium, libzmq, sqlite3).

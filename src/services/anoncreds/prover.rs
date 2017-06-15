@@ -1334,6 +1334,7 @@ pub mod mocks {
     use services::anoncreds::verifier;
     use services::anoncreds::types::Witness;
     use std::iter::FromIterator;
+    use services::anoncreds::types::SignatureTypes;
 
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {
         NonRevocProofCList::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
@@ -1580,7 +1581,7 @@ pub mod mocks {
             public_key: issuer::mocks::get_pk(),
             public_key_revocation: None,
             schema_seq_no: 1,
-            signature_type: "CL".to_string()
+            signature_type: SignatureTypes::CL
         }
     }
 
@@ -1589,7 +1590,7 @@ pub mod mocks {
             public_key: issuer::mocks::get_pk(),
             public_key_revocation: None,
             schema_seq_no: 2,
-            signature_type: "CL".to_string()
+            signature_type: SignatureTypes::CL
         }
     }
 

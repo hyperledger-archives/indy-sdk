@@ -115,23 +115,25 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub claim_def_seq_no: i32
+    pub claim_def_seq_no: i32,
+    pub schema_seq_no: i32
 }
 
 impl ClaimOffer {
-    pub fn new(issuer_did: String, claim_def_seq_no: i32) -> ClaimOffer {
+    pub fn new(issuer_did: String, claim_def_seq_no: i32, schema_seq_no: i32) -> ClaimOffer {
         ClaimOffer {
             issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no
+            claim_def_seq_no: claim_def_seq_no,
+            schema_seq_no: schema_seq_no
         }
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimOfferFilter{
+pub struct ClaimOfferFilter {
     pub issuer_did: Option<String>,
-    pub claim_def_seq_no: Option<i32>
-
+    pub claim_def_seq_no: Option<i32>,
+    pub schema_seq_no: Option<i32>
 }
 
 impl<'a> JsonDecodable<'a> for ClaimOfferFilter {}
@@ -184,11 +186,10 @@ impl ClaimInfo {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimInfoFilter{
+pub struct ClaimInfoFilter {
     pub issuer_did: Option<String>,
     pub claim_def_seq_no: Option<i32>,
     pub schema_seq_no: Option<i32>
-
 }
 
 impl<'a> JsonDecodable<'a> for ClaimInfoFilter {}
@@ -231,17 +232,22 @@ impl ClaimProof {
     }
 }
 
+#[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
+pub enum SignatureTypes {
+    CL
+}
+
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinition {
     pub public_key: PublicKey,
     pub public_key_revocation: Option<RevocationPublicKey>,
     pub schema_seq_no: i32,
-    pub signature_type: String
+    pub signature_type: SignatureTypes
 }
 
 impl ClaimDefinition {
     pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>,
-               schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
+               schema_seq_no: i32, signature_type: SignatureTypes) -> ClaimDefinition {
         ClaimDefinition {
             public_key: public_key,
             public_key_revocation: public_key_revocation,

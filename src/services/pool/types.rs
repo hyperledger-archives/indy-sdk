@@ -1,10 +1,12 @@
 extern crate serde_json;
 
 use std::cmp;
+use std::cmp::Eq;
 use std::collections::{BinaryHeap, HashMap};
+use std::hash::{Hash, Hasher};
+use super::zmq;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
-use super::zmq;
 use utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -185,10 +187,29 @@ pub struct CatchUpProcess {
     pub pending_reps: BinaryHeap<CatchupRep>,
 }
 
+#[derive(Debug)]
+pub struct HashableValue {
+    pub inner: serde_json::Value
+}
+
+impl Eq for HashableValue {}
+
+impl Hash for HashableValue {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        serde_json::to_string(&self.inner).unwrap().hash(state); //TODO
+    }
+}
+
+impl PartialEq for HashableValue {
+    fn eq(&self, other: &HashableValue) -> bool {
+        self.inner.eq(&other.inner)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
-    pub reply_cnt: usize,
+    pub replies: HashMap<HashableValue, usize>,
     pub cmd_ids: Vec<i32>,
 }
 

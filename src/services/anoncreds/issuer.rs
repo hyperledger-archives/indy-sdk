@@ -6,8 +6,7 @@ use services::anoncreds::constants::{
     LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
     LARGE_PRIME,
-    LARGE_VPRIME_PRIME,
-    SIGNATURE_TYPE
+    LARGE_VPRIME_PRIME
 };
 use services::anoncreds::types::{
     Accumulator,
@@ -30,7 +29,8 @@ use services::anoncreds::types::{
     RevocationRegistryPrivate,
     Schema,
     SecretKey,
-    Witness
+    Witness,
+    SignatureTypes
 };
 use services::anoncreds::helpers::{
     random_qr,
@@ -56,14 +56,18 @@ impl Issuer {
                                      create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> start", &schema);
 
-        let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
+        let signature_type = match signature_type {
+            Some("CL") => SignatureTypes::CL,
+            None => SignatureTypes::CL,
+            _ => return Err(AnoncredsError::CommonError(CommonError::InvalidStructure(format!("Invalid Signature Type"))))
+        };
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
         let (pkr, skr) = if create_non_revoc {
             Issuer::_generate_revocation_keys()?
         } else {
             (None, None)
         };
-        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, signature_type);
+        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, SignatureTypes::CL);
         let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
 
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> done", &schema);
@@ -324,7 +328,7 @@ impl Issuer {
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
-            return Err(AnoncredsError::AccumulatorIsFull(format!("{}",revocation_registry.borrow().claim_def_seq_no)))
+            return Err(AnoncredsError::AccumulatorIsFull(format!("{}", revocation_registry.borrow().claim_def_seq_no)))
         }
 
         let i = match seq_number {
@@ -577,7 +581,7 @@ pub mod mocks {
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap(),
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap()
         );
-        ClaimDefinition::new(public_key, None, 1, "CL".to_string())
+        ClaimDefinition::new(public_key, None, 1, SignatureTypes::CL)
     }
 
     pub fn get_claim_definition_private() -> ClaimDefinitionPrivate {

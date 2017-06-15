@@ -369,12 +369,12 @@ impl GetDdoOperation {
 impl JsonEncodable for GetDdoOperation {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
-pub struct GetNymReply {
+pub struct Reply<T> {
     pub op: String,
-    pub result: GetNymReplyResult,
+    pub result: T,
 }
 
-impl<'a> JsonDecodable<'a> for GetNymReply {}
+impl<'a, T: JsonDecodable<'a>> JsonDecodable<'a> for Reply<T> {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -399,3 +399,30 @@ pub struct GetNymResultData {
 }
 
 impl<'a> JsonDecodable<'a> for GetNymResultData {}
+
+#[derive(Deserialize, PartialEq, Debug)]
+pub struct GetClaimDefReplyResult {
+    pub identifier: String,
+    #[serde(rename = "reqId")]
+    pub req_id: u64,
+    #[serde(rename = "seqNo")]
+    pub  seq_no: i32,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: ClaimDefinitionData,
+    pub origin: String,
+    pub signature_type: String,
+    #[serde(rename = "ref")]
+    pub _ref: i32
+}
+
+impl<'a> JsonDecodable<'a> for GetClaimDefReplyResult {}
+
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinitionData {
+    pub primary: PublicKey,
+    pub revocation: Option<String>
+}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinitionData {}

@@ -16,8 +16,9 @@ use std::sync::mpsc::channel;
 
 pub struct WalletUtils {}
 
+
 impl WalletUtils {
-    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -29,13 +30,14 @@ impl WalletUtils {
         let pool_name = CString::new(pool_name).unwrap();
         let wallet_name = CString::new(wallet_name).unwrap();
         let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
             sovrin_create_wallet(command_handle,
                                  pool_name.as_ptr(),
                                  wallet_name.as_ptr(),
                                  if xtype.is_some() { xtype_str.as_ptr() } else { null() },
-                                 null(),
+                                 if config.is_some() { config_str.as_ptr() } else { null() },
                                  null(),
                                  cb);
 
@@ -52,7 +54,7 @@ impl WalletUtils {
         Ok(())
     }
 
-    pub fn open_wallet(wallet_name: &str) -> Result<i32, ErrorCode> {
+    pub fn open_wallet(wallet_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, handle| {
@@ -62,11 +64,12 @@ impl WalletUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_open_wallet_cb(cb);
 
         let wallet_name = CString::new(wallet_name).unwrap();
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
             sovrin_open_wallet(command_handle,
                                wallet_name.as_ptr(),
-                               null(),
+                               if config.is_some() { config_str.as_ptr() } else { null() },
                                null(),
                                cb);
 

@@ -245,7 +245,8 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "claim_def_seq_no": string
+///            "claim_def_seq_no": string,
+///            "schema_seq_no": string
 ///        }
 ///
 /// #Returns
@@ -294,7 +295,8 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 /// A json with a list of claim offers for the filter.
 ///        {
 ///            [{"issuer_did": string,
-///            "claim_def_seq_no": string}]
+///            "claim_def_seq_no": string,
+///            "schema_seq_no": string}]
 ///        }
 ///
 /// #Errors
@@ -378,7 +380,8 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "claim_def_seq_no": string
+///            "claim_def_seq_no": string,
+///            "schema_seq_no": string
 ///        }
 /// claim_def_json: claim definition json associated with a claim_def_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
