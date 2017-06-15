@@ -81,8 +81,8 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::CreateClaim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "CreateClaim command received");
-                self.create_and_store_claim(wallet_handle, &claim_req_json, &claim_json,
-                                            revoc_reg_seq_no, user_revoc_index, cb);
+                self.create_claim(wallet_handle, &claim_req_json, &claim_json,
+                                  revoc_reg_seq_no, user_revoc_index, cb);
             }
             IssuerCommand::RevokeClaim(wallet_handle, claim_def_seq_no, revoc_reg_seq_no,
                                        user_revoc_index, cb) => {
@@ -98,16 +98,16 @@ impl IssuerCommandExecutor {
                                          signature_type: Option<&str>,
                                          create_non_revoc: bool,
                                          cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
-        let result = self._create_and_store_claim_definition(wallet_handle, schema_json,
-                                                             signature_type, create_non_revoc);
+        let result = self._create_claim_definition(wallet_handle, schema_json,
+                                                   signature_type, create_non_revoc);
         cb(result)
     }
 
-    fn _create_and_store_claim_definition(&self,
-                                          wallet_handle: i32,
-                                          schema_json: &str,
-                                          signature_type: Option<&str>,
-                                          create_non_revoc: bool) -> Result<(String, String), SovrinError> {
+    fn _create_claim_definition(&self,
+                                wallet_handle: i32,
+                                schema_json: &str,
+                                signature_type: Option<&str>,
+                                create_non_revoc: bool) -> Result<(String, String), SovrinError> {
         let schema = Schema::from_json(schema_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
@@ -178,23 +178,23 @@ impl IssuerCommandExecutor {
         Ok((revocation_registry_json, uuid))
     }
 
-    fn create_and_store_claim(&self,
-                              wallet_handle: i32,
-                              claim_req_json: &str,
-                              claim_json: &str,
-                              revoc_reg_seq_no: Option<i32>,
-                              user_revoc_index: Option<i32>,
-                              cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
-        let result = self._create_and_store_claim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index);
+    fn create_claim(&self,
+                    wallet_handle: i32,
+                    claim_req_json: &str,
+                    claim_json: &str,
+                    revoc_reg_seq_no: Option<i32>,
+                    user_revoc_index: Option<i32>,
+                    cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
+        let result = self._create_claim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index);
         cb(result)
     }
 
-    fn _create_and_store_claim(&self,
-                               wallet_handle: i32,
-                               claim_req_json: &str,
-                               claim_json: &str,
-                               revoc_reg_seq_no: Option<i32>,
-                               user_revoc_index: Option<i32>) -> Result<(String, String), SovrinError> {
+    fn _create_claim(&self,
+                     wallet_handle: i32,
+                     claim_req_json: &str,
+                     claim_json: &str,
+                     revoc_reg_seq_no: Option<i32>,
+                     user_revoc_index: Option<i32>) -> Result<(String, String), SovrinError> {
         let claim_req_json: ClaimRequestJson = ClaimRequestJson::from_json(claim_req_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_req_json: {}", err.to_string())))?;
@@ -238,7 +238,7 @@ impl IssuerCommandExecutor {
 
         let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)
             .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_json: {}", err.to_string())))?;
 
         let claims = self.anoncreds_service.issuer.create_claim(&claim_def,
                                                                 &claim_def_private,

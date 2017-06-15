@@ -397,42 +397,42 @@ impl AnoncredsUtils {
     }
 
     pub fn get_gvt_schema_json(schema_seq_no: i32) -> String {
-        format!("{{\
-                    \"name\":\"gvt\",\
-                    \"version\":\"1.0\",\
-                    \"keys\":[\"age\",\"sex\",\"height\",\"name\"],\
-                    \"seq_no\":{}\
-                 }}", schema_seq_no)
+        format!(r#"{{
+                    "name":"gvt",
+                    "version":"1.0",
+                    "keys":["age","sex","height","name"],
+                    "seq_no":{}
+                 }}"#, schema_seq_no)
     }
 
     pub fn get_xyz_schema_json(schema_seq_no: i32) -> String {
-        format!("{{\
-                    \"name\":\"xyz\",\
-                    \"version\":\"1.0\",\
-                    \"keys\":[\"status\",\"period\"],\
-                    \"seq_no\":{}\
-                 }}", schema_seq_no)
+        format!(r#"{{
+                    "name":"xyz",
+                    "version":"1.0",
+                    "keys":["status","period"],
+                    "seq_no":{}
+                 }}"#, schema_seq_no)
     }
 
     pub fn get_claim_offer(issuer_did: &str, claim_def_seq_no: i32, schema_seq_no: i32) -> String {
-        format!("{{ \"issuer_did\":\"{}\", \"claim_def_seq_no\":{}, \"schema_seq_no\":{} }}",
+        format!(r#"{{"issuer_did":"{}","claim_def_seq_no":{},"schema_seq_no":{} }}"#,
                 issuer_did, claim_def_seq_no, schema_seq_no)
     }
 
     pub fn get_gvt_claim_json() -> String {
-        "{\
-               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\
-               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\
-               \"height\":[\"175\",\"175\"],\
-               \"age\":[\"28\",\"28\"]\
-        }".to_string()
+        r#"{
+               "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+               "name":["Alex","1139481716457488690172217916278103335"],
+               "height":["175","175"],
+               "age":["28","28"]
+        }"#.to_string()
     }
 
     pub fn get_xyz_claim_json() -> String {
-        "{\
-               \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\
-               \"period\":[\"8\",\"8\"]\
-        }".to_string()
+        r#"{
+               "status":["partial","51792877103171595686471452153480627530895"],
+               "period":["8","8"]
+        }"#.to_string()
     }
 
     pub fn get_gvt_claim_def() -> String {
@@ -501,7 +501,7 @@ impl AnoncredsUtils {
                 //1. Create and Open wallet
                 WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", "common_wallet", "default").unwrap();
 
-                //2. Create ClaimDefinition
+                //2. Create GVT ClaimDefinition
                 let schema = AnoncredsUtils::get_gvt_schema_json(1);
                 //TODO Fix it.....Convert String to &'static str
                 let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(WALLET_HANDLE, &schema, COMMON_CLAIM_DEF_SEQ_NO).unwrap();
