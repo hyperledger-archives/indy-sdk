@@ -9,6 +9,7 @@ extern crate rust_base58;
 extern crate serde_derive;
 extern crate zmq;
 
+use std::sync::mpsc::channel;
 use std::thread;
 
 #[macro_use]
@@ -18,6 +19,7 @@ mod utils;
 use utils::agent::AgentUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
+use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
 
 mod high_cases {
@@ -30,11 +32,11 @@ mod high_cases {
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
         let endpoint = "tcp://127.0.0.1:9701";
 
-        let _ = AgentUtils::listen(wallet_handle, endpoint).unwrap();
+        let _ = AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
 
         SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-        AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
+        AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
     }
 
     mod sovrin_agent_connect {
@@ -73,7 +75,7 @@ mod high_cases {
             });
             //FIXME /temporary code
 
-            AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
+            AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -93,7 +95,7 @@ mod high_cases {
             let endpoint = "tcp://127.0.0.1:9700";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            AgentUtils::listen(wallet_handle, endpoint).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -106,15 +108,33 @@ mod high_cases {
         fn sovrin_agent_send_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
+            let (wait_conn_send, wait_conn_recv) = channel();
+            let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
+            let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool4", "wallet4", "default").unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "tcp://127.0.0.1:9704";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
-            AgentUtils::listen(wallet_handle, endpoint).unwrap();
-            let client_connect_id = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint,
+                               Some(Box::new(move |_, conn_handle| {
+                                   wait_conn_send.send(conn_handle).unwrap();
+                               })),
+                               Some(Box::new(move |_, msg| {
+                                   wait_msg_from_cli_send.send(msg).unwrap();
+                               }))
+            ).unwrap();
+            let cli_to_srv_connect_id = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(),
+                                                            Some(Box::new(move |_, msg| {
+                                                                wait_msg_from_srv_send.send(msg).unwrap();
+                                                            }))).unwrap();
+            let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
             let client_msg = "msg_from_client";
+            let server_msg = "msg_from_server";
 
-            AgentUtils::send(client_connect_id, client_msg).unwrap();
+            AgentUtils::send(cli_to_srv_connect_id, client_msg).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
+            AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap();
+            assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), server_msg);
 
             TestUtils::cleanup_storage();
         }

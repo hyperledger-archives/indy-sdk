@@ -13,6 +13,10 @@ lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 }
 
+lazy_static! {
+    static ref CLOSURE_CB_MAP: Mutex<HashMap<i32, i32>> = Default::default();
+}
+
 pub struct CallbackUtils {}
 
 impl CallbackUtils {
@@ -497,23 +501,29 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_agent_message_cb(closure: Box<FnMut(i32, ErrorCode, String) + Send>)
-                                       -> Option<extern fn(connection_handle: i32, err: ErrorCode, msg: *const c_char)> {
+                                       -> (i32, Option<extern fn(connection_handle: i32, err: ErrorCode, msg: *const c_char)>) {
         lazy_static! {
-            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, String) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, ErrorCode, String) + Send>>> = Default::default();
         }
 
         extern "C" fn agent_message_callback(conn_handle: i32, err: ErrorCode, msg: *const c_char) {
+            info!("CallbackUtils::agent_message_callback");
             let mut callbacks = CALLBACKS.lock().unwrap();
             let msg = unsafe { CStr::from_ptr(msg).to_str().unwrap().to_string() };
-            for cb in callbacks.iter_mut() {
-                cb(conn_handle, err, msg.clone())
-            }
+            let cb_id: i32 = *CLOSURE_CB_MAP.lock().unwrap().get(&conn_handle).unwrap();
+            callbacks.get_mut(&cb_id).unwrap()(conn_handle, err, msg);
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.push(closure);
+        let cb_id = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(cb_id, closure);
 
-        Some(agent_message_callback)
+        (cb_id, Some(agent_message_callback))
+    }
+
+    pub fn closure_map_ids(cb_id: i32, param_id: i32) {
+        let mut map = CLOSURE_CB_MAP.lock().unwrap();
+        map.insert(param_id, cb_id);
     }
 
     pub fn closure_to_agent_listen_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
