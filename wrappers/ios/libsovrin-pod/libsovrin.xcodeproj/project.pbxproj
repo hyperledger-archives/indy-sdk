@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0498459B28BFFB90F99DF5AB /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */; };
 		3E08C0201EB3336A000A73BA /* libsovrin.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E08C01E1EB3336A000A73BA /* libsovrin.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3E0FCFDA1EE6E1E700E26EEE /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E0FCFD81EE6E1E700E26EEE /* libPods-libsovrin-demo.a */; };
 		3E0FCFDB1EE6E1E700E26EEE /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */; };
@@ -29,7 +30,6 @@
 		3ED5BE611ECB362C00881380 /* SovrinSignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5F1ECB362C00881380 /* SovrinSignus.mm */; };
 		84D476E11EDD8AA900D8583C /* SovrinAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84D476E01EDD8AA900D8583C /* SovrinAgent.mm */; };
 		84D476E31EDD8B5900D8583C /* SovrinAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 84D476E21EDD8B5900D8583C /* SovrinAgent.h */; };
-		B05049699102E9C4AE6B0889 /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,7 +70,7 @@
 				3E0FCFDA1EE6E1E700E26EEE /* libPods-libsovrin-demo.a in Frameworks */,
 				3E0FCFDB1EE6E1E700E26EEE /* libPods-libsovrin.a in Frameworks */,
 				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
-				B05049699102E9C4AE6B0889 /* libPods-libsovrin.a in Frameworks */,
+				0498459B28BFFB90F99DF5AB /* libPods-libsovrin.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -11,11 +11,11 @@
 
 @implementation SovrinAnoncreds
 
-+ (NSError*) issuerCreateAndStoreClaimDef:(SovrinHandle) walletHandle
-                               schemaJSON:(NSString*) schema
-                            signatureType:(NSString*) signatureType
-                           createNonRevoc:(BOOL) createNonRevoc
-                               completion:(void (^)(NSError* error, NSString* claimDefJSON, NSString* claimDefUUID)) handler
++ (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(SovrinHandle)walletHandle
+                                               schemaJSON:(NSString *)schema
+                                            signatureType:(NSString *)signatureType
+                                           createNonRevoc:(BOOL)createNonRevoc
+                                               completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler
 {
     sovrin_error_t ret;
     
@@ -36,10 +36,10 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) issuerCreateAndStoreRevocReg:(SovrinHandle) walletHandle
-                            claimDefSeqNo:(NSNumber*) seqNo
-                              maxClaimNum:(NSNumber*) maxClaimNum
-                               completion:(void (^)(NSError* error, NSString* revocRegJSON, NSString* revocRegUUID)) handler
++ (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(SovrinHandle)walletHandle
+                                            claimDefSeqNo:(NSNumber *)seqNo
+                                              maxClaimNum:(NSNumber *)maxClaimNum
+                                               completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler
 {
     sovrin_error_t ret;
     
@@ -59,12 +59,12 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) issuerCreateClaim:(SovrinHandle) walletHandle
-                  claimReqJSON:(NSString*) reqJSON
-                     claimJSON:(NSString*) claimJSON
-                 revocRegSeqNo:(NSNumber*) seqNo       // TODO: check how to deal with option<>
-                userRevocIndex:(NSNumber*) revocIndex  // TODO: check how to deal with option<>
-                    completion:(void (^)(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON)) handler
++ (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
+                                  claimReqJSON:(NSString *)reqJSON
+                                     claimJSON:(NSString *)claimJSON
+                                 revocRegSeqNo:(NSNumber *)seqNo       // TODO: check how to deal with option<>
+                                userRevocIndex:(NSNumber *)revocIndex  // TODO: check how to deal with option<>
+                                    completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -87,11 +87,11 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) issuerRevokeClaim:(SovrinHandle) walletHandle
-                 claimDefSeqNo:(NSNumber*) claimSeqNo
-                 revocRegSeqNo:(NSNumber*) revocSeqNo
-                userRevocIndex:(NSNumber*) revocIndex
-                    completion:(void (^)(NSError* error, NSString* revocRegUpdateJSON)) handler
++ (NSError *)issuerRevokeClaimWithWalletHandle:(SovrinHandle)walletHandle
+                                 claimDefSeqNo:(NSNumber *)claimSeqNo
+                                 revocRegSeqNo:(NSNumber *)revocSeqNo
+                                userRevocIndex:(NSNumber *)revocIndex
+                                    completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -113,9 +113,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverStoreClaimOffer:(SovrinHandle) walletHandle
-                    claimOfferJSON:(NSString*) json
-                        completion:(void (^)(NSError* error)) handler
++ (NSError *)proverStoreClaimOfferWithWalletHandle:(SovrinHandle)walletHandle
+                                    claimOfferJSON:(NSString *)json
+                                        completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -135,9 +135,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverGetClaimOffers:(SovrinHandle) walletHandle
-                       filterJSON:(NSString*) json
-                       completion:(void (^)(NSError* error, NSString* claimOffersJSON)) handler
++ (NSError *)proverGetClaimOffersWithWalletHandle:(SovrinHandle)walletHandle
+                                       filterJSON:(NSString *)json
+                                       completion:(void (^)(NSError *error, NSString *claimOffersJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -157,9 +157,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverCreateMasterSecret:(SovrinHandle) walletHandle
-                     masterSecretName:(NSString*) name
-                           completion:(void (^)(NSError* error)) handler
++ (NSError *)proverCreateMasterSecretWithWalletHandle:(SovrinHandle)walletHandle
+                                     masterSecretName:(NSString *)name
+                                           completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -179,12 +179,12 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverCreateAndStoreClaimReq:(SovrinHandle) walletHandle
-                                proverDid:(NSString*) prover
-                           claimOfferJSON:(NSString*) offerJson
-                         masterSecretName:(NSString*) name
-                             claimDefJSON:(NSString*) claimJson
-                               completion:(void (^)(NSError* error, NSString* claimReqJSON)) handler
++ (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(SovrinHandle)walletHandle
+                                                proverDid:(NSString *)prover
+                                           claimOfferJSON:(NSString *)offerJson
+                                             claimDefJSON:(NSString *)claimJson
+                                         masterSecretName:(NSString *)name
+                                               completion:(void (^)(NSError *error, NSString *claimReqJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -207,9 +207,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverStoreClaim:(SovrinHandle) walletHandle
-                   claimsJSON:(NSString*) claimsJson
-                   completion:(void (^)(NSError* error)) handler
++ (NSError *)proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle
+                                   claimsJSON:(NSString *)claimsJson
+                                   completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -228,9 +228,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverGetClaims:(SovrinHandle) walletHandle
-                  filterJSON:(NSString*) json
-                  completion:(void (^)(NSError* error, NSString* claimsJSON)) handler
++ (NSError *)proverGetClaimsWithWalletHandle:(SovrinHandle) walletHandle
+                                  filterJSON:(NSString *)json
+                                  completion:(void (^)(NSError *error, NSString *claimsJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -249,9 +249,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverGetClaimsForProofReq:(SovrinHandle) walletHandle
-                           proofReqJSON:(NSString*) json
-                             completion:(void (^)(NSError* error, NSString* claimsJSON)) handler
++ (NSError *)proverGetClaimsForProofReqWithWalletHandle:(SovrinHandle)walletHandle
+                                           proofReqJSON:(NSString *)json
+                                             completion:(void (^)(NSError *error, NSString *claimsJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -270,14 +270,14 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) proverCreateProof:(SovrinHandle) walletHandle
-                  proofReqJSON:(NSString*) reqJSON
-           requestedClaimsJSON:(NSString*) claimsJSON
-                   schemasJSON:(NSString*) schemasJSON
-              masterSecretName:(NSString*) name
-                  claimDefsJSON:(NSString*) claimDefsJSON
-                 revocRegsJSON:(NSString*) revocJSON
-                    completion:(void (^)(NSError* error, NSString* proofJSON)) handler
++ (NSError *)proverCreateProofWithWalletHandle:(SovrinHandle)walletHandle
+                                  proofReqJSON:(NSString *)reqJSON
+                           requestedClaimsJSON:(NSString *)claimsJSON
+                                   schemasJSON:(NSString *)schemasJSON
+                              masterSecretName:(NSString *)name
+                                 claimDefsJSON:(NSString *)claimDefsJSON
+                                 revocRegsJSON:(NSString *)revocJSON
+                                    completion:(void (^)(NSError *error, NSString *proofJSON)) handler;
 {
     sovrin_error_t ret;
     
@@ -301,12 +301,12 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) verifierVerifyProof:(NSString*) proofReqJSON
-                       proofJSON:(NSString*) proofJSON
-                     schemasJSON:(NSString*) schemasJSON
-                   claimDefsJSON:(NSString*) claimDefsJSON
-                   revocRegsJSON:(NSString*) revocJSON
-                      completion:(void (^)(NSError* error, BOOL valid)) handler
++ (NSError *)verifierVerifyProofWithWalletHandle:(NSString *)proofReqJSON
+                                       proofJSON:(NSString *)proofJSON
+                                     schemasJSON:(NSString *)schemasJSON
+                                   claimDefsJSON:(NSString *)claimDefsJSON
+                                   revocRegsJSON:(NSString *)revocJSON
+                                      completion:(void (^)(NSError *error, BOOL valid)) handler
 {
     sovrin_error_t ret;
     
