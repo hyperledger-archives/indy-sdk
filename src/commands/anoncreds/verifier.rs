@@ -11,8 +11,9 @@ use services::anoncreds::types::{
     Schema,
     ProofRequestJson,
     ProofJson,
+    Predicate,
     RevocationRegistry};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use utils::json::JsonDecodable;
 
@@ -73,15 +74,64 @@ impl VerifierCommandExecutor {
                      claim_defs_jsons: &str,
                      revoc_regs_json: &str) -> Result<bool, SovrinError> {
         let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_request_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_request_json: {}", err.to_string())))?;
+
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schemas_json: {}", err.to_string())))?;
+
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_defs_jsons)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_defs_jsons: {}", err.to_string())))?;
+
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid revoc_regs_json: {}", err.to_string())))?;
+
         let proof_claims: ProofJson = ProofJson::from_json(&proof_json)
+            .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_json: {}", err.to_string())))?;
+
+        let requested_attrs: HashSet<String> =
+            proof_req.requested_attrs
+                .values()
+                .map(|uuid| uuid.name.clone())
+                .into_iter()
+                .collect::<HashSet<String>>();
+
+        let requested_predicates: HashSet<Predicate> =
+            proof_req.requested_predicates
+                .values()
+                .map(|uuid| uuid.clone())
+                .into_iter()
+                .collect::<HashSet<Predicate>>();
+
+        let received_attrs: HashSet<String> =
+            proof_claims.proofs
+                .values()
+                .flat_map(|k| k.proof.primary_proof.eq_proof.revealed_attrs.keys())
+                .map(|uuid| uuid.clone())
+                .into_iter()
+                .collect::<HashSet<String>>();
+
+        let received_predicates: HashSet<Predicate> =
+            proof_claims.proofs
+                .values()
+                .flat_map(|k| k.proof.primary_proof.ge_proofs.iter()
+                    .map(|p| p.predicate.clone()))
+                .into_iter()
+                .collect::<HashSet<Predicate>>();
+
+        if requested_attrs != received_attrs {
+            return Err(SovrinError::CommonError(CommonError::InvalidStructure(
+                format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs))))
+        }
+
+        if requested_predicates != received_predicates {
+            return Err(SovrinError::CommonError(CommonError::InvalidStructure(
+                format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))))
+        }
 
         let result = self.anoncreds_service.verifier.verify(&proof_claims,
                                                             &proof_req.nonce,

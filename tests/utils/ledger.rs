@@ -174,7 +174,6 @@ impl LedgerUtils {
         let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-
         let err =
             sovrin_build_attrib_request(command_handle,
                                         submitter_did.as_ptr(),

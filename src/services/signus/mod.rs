@@ -78,7 +78,6 @@ impl SignusService {
                                 Base58::encode(&secret_key),
                                 Base58::encode(&ver_key),
                                 Base58::encode(&sign_key));
-        info!("did {:?}", my_did.did);
 
         Ok(my_did)
     }
@@ -97,12 +96,10 @@ impl SignusService {
         // Check did is correct Base58
         Base58::decode(&their_did_info.did)?;
 
-        //TODO according to Api we can pass pk but now we ignore it and get it from verkey
         let (verkey, pk) = match their_did_info.verkey {
             Some(ref verkey) => (
                 Some(verkey.clone()),
-                Some(Base58::encode(&signus.verkey_to_public_key(&Base58::decode(verkey)?)?)))
-            ,
+                Some(Base58::encode(&signus.verkey_to_public_key(&Base58::decode(verkey)?)?))),
             None => (None, None)
         };
 
@@ -129,7 +126,7 @@ impl SignusService {
                 SignusError::CommonError(
                     CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
-        if !msg.is_object(){
+        if !msg.is_object() {
             return Err(SignusError::CommonError(
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", msg))))
         }
@@ -146,11 +143,11 @@ impl SignusService {
     }
 
     pub fn verify(&self, their_did: &TheirDid, signed_msg: &str) -> Result<bool, SignusError> {
-        if !self.crypto_types.contains_key(&their_did.crypto_type.as_str()) {
+        if !self.crypto_types.contains_key(their_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to verify message with unknown crypto: {}", their_did.crypto_type)));
         }
 
-        let signus = self.crypto_types.get(&their_did.crypto_type.as_str()).unwrap();
+        let signus = self.crypto_types.get(their_did.crypto_type.as_str()).unwrap();
 
         let verkey = match their_did.verkey {
             Some(ref verkey) => Base58::decode(&verkey)?,
@@ -162,14 +159,13 @@ impl SignusService {
                 SignusError::CommonError(
                     CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
-        if !signed_msg.is_object(){
+        if !signed_msg.is_object() {
             return Err(SignusError::CommonError(
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", signed_msg))))
         }
 
         // TODO: FIXME: This code seem unreliable and hard to understand
-        // simple match on Value::String() will be better
-        if let Some(signature) = signed_msg["signature"].as_str() {
+        if let Value::String(ref signature) = signed_msg["signature"] {
             let signature = Base58::decode(signature)?;
             let mut message: Value = Value::Object(serde_json::map::Map::new());
             for key in signed_msg.as_object().unwrap().keys() {

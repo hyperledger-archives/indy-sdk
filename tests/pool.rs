@@ -19,43 +19,51 @@ use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 
 
-#[test]
-fn create_pool_ledger_config_works() {
-    TestUtils::cleanup_storage();
+mod high_cases {
+    use super::*;
 
-    let res = PoolUtils::create_pool_ledger_config("pool_create");
-    assert!(res.is_ok());
+    mod create {
+        use super::*;
 
-    TestUtils::cleanup_storage();
-}
+        #[test]
+        fn create_pool_ledger_config_works() {
+            TestUtils::cleanup_storage();
 
-#[test]
-#[cfg(feature = "local_nodes_pool")]
-fn open_pool_ledger_works() {
-    TestUtils::cleanup_storage();
-    let name = "pool_open";
-    let res = PoolUtils::create_pool_ledger_config(name);
-    assert!(res.is_ok());
+            PoolUtils::create_pool_ledger_config("pool_create").unwrap();
 
-    let res = PoolUtils::open_pool_ledger(name);
-    assert!(res.is_ok());
+            TestUtils::cleanup_storage();
+        }
+    }
 
-    TestUtils::cleanup_storage();
-}
+    mod open {
+        use super::*;
 
-#[test]
-#[cfg(feature = "local_nodes_pool")]
-fn open_pool_ledger_works_for_twice() {
-    TestUtils::cleanup_storage();
-    let pool_name = "pool_open_twice";
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works() {
+            TestUtils::cleanup_storage();
+            let name = "pool_open";
 
-    let res = PoolUtils::create_pool_ledger_config(pool_name);
-    assert!(res.is_ok());
+            PoolUtils::create_pool_ledger_config(name).unwrap();
 
-    let res = PoolUtils::open_pool_ledger(pool_name);
-    assert!(res.is_ok());
-    let res = PoolUtils::open_pool_ledger(pool_name);
-    assert_match!(Err(ErrorCode::PoolLedgerInvalidPoolHandle), res);
+            PoolUtils::open_pool_ledger(name).unwrap();
 
-    TestUtils::cleanup_storage();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_twice() {
+            TestUtils::cleanup_storage();
+            let pool_name = "pool_open_twice";
+
+            PoolUtils::create_pool_ledger_config(pool_name).unwrap();
+
+            PoolUtils::open_pool_ledger(pool_name).unwrap();
+            let res = PoolUtils::open_pool_ledger(pool_name);
+            assert_match!(Err(ErrorCode::PoolLedgerInvalidPoolHandle), res);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }

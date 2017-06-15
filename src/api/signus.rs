@@ -123,7 +123,6 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 ///     {
 ///        "did": string, (required)
 ///        "verkey": string (optional, if only pk is provided),
-///        "pk": string (optional, if only verification key is provided),
 ///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
 ///     }

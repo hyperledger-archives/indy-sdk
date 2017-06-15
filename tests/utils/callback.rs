@@ -305,6 +305,28 @@ impl CallbackUtils {
         (command_handle, Some(prover_get_claims_for_proof_req_callback))
     }
 
+    pub fn closure_to_prover_get_claims(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                           Option<extern fn(command_handle: i32,
+                                                                                                            err: ErrorCode,
+                                                                                                            claims_json: *const c_char)>) {
+        lazy_static! {
+            static ref PROVER_GET_CLAIMS_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn prover_get_claims_callback(command_handle: i32, err: ErrorCode, claims_json: *const c_char) {
+            let mut callbacks = PROVER_GET_CLAIMS_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let claims_json = unsafe { CStr::from_ptr(claims_json).to_str().unwrap().to_string() };
+            cb(err, claims_json)
+        }
+
+        let mut callbacks = PROVER_GET_CLAIMS_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(prover_get_claims_callback))
+    }
+
     pub fn closure_to_prover_create_proof_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                 Option<extern fn(command_handle: i32,
                                                                                                                  err: ErrorCode,
