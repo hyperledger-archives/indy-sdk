@@ -48,8 +48,8 @@
 + (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(SovrinHandle)walletHandle
                                                 proverDid:(NSString *)prover
                                            claimOfferJSON:(NSString *)offerJson
-                                         masterSecretName:(NSString *)name
                                              claimDefJSON:(NSString *)claimJson
+                                         masterSecretName:(NSString *)name
                                                completion:(void (^)(NSError *error, NSString *claimReqJSON)) handler;
 
 + (NSError *)proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle

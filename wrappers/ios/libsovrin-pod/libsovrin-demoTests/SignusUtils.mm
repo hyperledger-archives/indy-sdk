@@ -173,10 +173,10 @@
     NSError *ret;
     
     ret = [SovrinSignus verifySignatureWithWalletHandle:walletHandle
-                                                 pool:poolHandle
-                                                  did:did
-                                            signature:signature
-                                           completion:^(NSError *error, BOOL valid)
+                                             poolHandle:poolHandle
+                                                    did:did
+                                              signature:signature
+                                             completion:^(NSError *error, BOOL valid)
     {
         err = error;
         outVerified = valid;

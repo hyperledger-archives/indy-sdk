@@ -1559,6 +1559,7 @@
     expectedResult[@"operation"][@"data"][@"type"] = @"102";
     expectedResult[@"operation"][@"data"][@"signature_type"] = @"CL";
     
+    // TODO: 110 Error
     NSString *claimDefrequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:identifier
                                                                              xref:schemaSeqNo
@@ -1652,14 +1653,12 @@
     // 4. Obtain my did
     NSString* myDid = nil;
     NSString* myVerKey = nil;
-    NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"00000000000000000000000000000My1\"" \
-                           "}"];
+    NSString* myDidJson = [NSString stringWithFormat:@"{}"];
     
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
+                                                        outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
@@ -1739,13 +1738,15 @@
     schema[@"name"] = response[@"result"][@"data"][@"name"];
     schema[@"keys"] = response[@"result"][@"data"][@"keys"];
     schema[@"version"] = response[@"result"][@"data"][@"version"];
-    schema[@"seq_no"] = response[@"result"][@"seq_no"];
+    schema[@"seq_no"] = response[@"result"][@"seqNo"];
+    NSNumber *seqNo = response[@"result"][@"seqNo"];
     
     // 11. Create claim definition
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
                                                                             schemaJson:[NSDictionary toString:schema]
-                                                                          claimDefJson:&claimDefJson claimDefUUID:nil];
+                                                                          claimDefJson:&claimDefJson
+                                                                          claimDefUUID:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed");
     XCTAssertNotNil(claimDefJson, @"claimDefJson is nil!");
     
@@ -1759,8 +1760,9 @@
     // 12. Build claim def request
     NSString *claimDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:myDid
-                                                                    xref:schema[@"seq_no"]
-                                                           signatureType:claimDef[@"signature_type"] data:claimDefDataJson
+                                                                    xref:[seqNo stringValue]
+                                                           signatureType:claimDef[@"signature_type"]
+                                                                    data:claimDefDataJson
                                                               resultJson:&claimDefRequestJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::buildClaimDefTxnWithSubmitterDid() failed");
     XCTAssertNotNil(claimDefRequestJson, @"claimDefRequestJson is nil!");
@@ -1777,11 +1779,15 @@
     XCTAssertNotNil(claimDefResponse, @"claimDefResponse is nil!");
     
     // 14. Build get claim def request
+    // TODO: 103 Error, origin is GrC6YjKWTpg7m2FGczBaL3
     NSString *getClaimDefRequest;
     ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:myDid
-                                                                       xref:schema[@"seq_no"] signatureType:claimDef[@"signatyre_Type"]
+                                                                       xref:[seqNo stringValue]
+                                                              signatureType:claimDef[@"signatyre_Type"]
                                                                      origin:response[@"result"][@"data"][@"origin"]
                                                                  resultJson:&getClaimDefRequest];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetClaimDefTxnWithSubmitterDid() failed");
+    XCTAssertNotNil(getClaimDefRequest, @"getClaimDefRequest is nil!");
     
     // 15. Send getClaimDefRequest
     NSString *getClaimDefResponse;

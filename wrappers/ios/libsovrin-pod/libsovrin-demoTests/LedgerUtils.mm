@@ -55,7 +55,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *responseJson = outJson;
+    if (responseJson){ *responseJson = outJson; }
     
     return err;
 }
@@ -97,7 +97,7 @@
         return ret;
     }
     
-    *resultJson = outJson;
+    if (resultJson){ *resultJson = outJson; }
     
     return err;
 }
@@ -128,7 +128,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *requestJson = outJson;
+    if (requestJson){ *requestJson = outJson; }
     
     return err;
 }
@@ -170,7 +170,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = outJson;
+    if (resultJson){ *resultJson = outJson; }
     return err;
 }
 
@@ -202,7 +202,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = outRequest;
+    if (resultJson){ *resultJson = outRequest; }
     return err;
 }
 // MARK: Build schema request
@@ -232,7 +232,7 @@
 
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = result;
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
@@ -264,7 +264,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = result;
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
@@ -297,7 +297,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = result;
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
@@ -332,7 +332,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = result;
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
@@ -365,7 +365,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = result;
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 

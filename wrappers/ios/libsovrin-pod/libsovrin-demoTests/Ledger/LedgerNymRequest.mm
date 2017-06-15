@@ -285,6 +285,7 @@
                                                            outResponseJson:&nymResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
     XCTAssertNotNil(nymResponse, @"nymResponse is nil!");
+    
     // 7. Obtain my did 2
     NSString *myDid2;
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
@@ -302,7 +303,7 @@
                                                                   alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed");
     XCTAssertNotNil(nymRequest, @"nymRequest is nil!");
     //TODO: code 0, not 304
     

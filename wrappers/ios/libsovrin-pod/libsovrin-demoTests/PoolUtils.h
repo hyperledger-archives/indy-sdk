@@ -14,6 +14,8 @@
 
 + (PoolUtils *)sharedInstance;
 
+- (NSNumber *)getRequestId;
+
 - (NSError*)createPoolLedgerConfig:(NSString *)poolName;
 
 - (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName

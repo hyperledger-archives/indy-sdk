@@ -115,9 +115,9 @@
     // 4. Build schema request
     NSString *nodeData = [NSString stringWithFormat:@"{"\
                             "\"node_ip\":\"10.0.0.100\"," \
-                            "\"node_port\":\"9710\"," \
+                            "\"node_port\":9710," \
                             "\"client_ip\":\"10.0.0.100\"," \
-                            "\"client_port\":\"9709\"," \
+                            "\"client_port\":9709," \
                             "\"alias\":\"Node5\"," \
                             "\"services\":[\"VALIDATOR\"]" \
                             "}"];
@@ -184,9 +184,9 @@
     // 4. Build schema request
     NSString *nodeData = [NSString stringWithFormat:@"{"\
                           "\"node_ip\":\"10.0.0.100\"," \
-                          "\"node_port\":\"9710\"," \
+                          "\"node_port\":9710," \
                           "\"client_ip\":\"10.0.0.100\"," \
-                          "\"client_port\":\"9709\"," \
+                          "\"client_port\":9709," \
                           "\"alias\":\"Node5\"," \
                           "\"services\":[\"VALIDATOR\"]" \
                           "}"];

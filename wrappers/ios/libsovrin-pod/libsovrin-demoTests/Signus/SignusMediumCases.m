@@ -160,7 +160,7 @@
     // 2. replace keys
     ret = [[SignusUtils sharedInstance] replaceKeysWithWalletHandle:walletHandle
                                                                 did:@"8wZcEriaNLNKtteJvx7f8i"
-                                                       identityJson:@""
+                                                       identityJson:@"{}"
                                                         outMyVerKey:nil
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils:replaceKeysWithWalletHandle failed");

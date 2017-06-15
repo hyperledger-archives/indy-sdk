@@ -28,7 +28,7 @@
     [super tearDown];
 }
 
-- (void)testSignus
+- (void)testSignusDemo
 {
     [TestUtils cleanupStorage];
 
@@ -49,7 +49,7 @@
                                                                   xtype:  xtype
                                                                  handle: &myWalletHandle];
     
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
 
     //2. Create and open Their Wallet
 
@@ -58,7 +58,7 @@
                                                                   xtype:  xtype
                                                                  handle: &theirWalletHandle];
     
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed!");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
 
     // 3. Create My DID
     
@@ -164,7 +164,7 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     ret = [SovrinSignus verifySignatureWithWalletHandle:  myWalletHandle
-                                                   pool:  poolHandle
+                                             poolHandle:  poolHandle
                                                     did:  theirDid
                                               signature:  theirSignature
                                              completion: ^(NSError *error, BOOL valid)

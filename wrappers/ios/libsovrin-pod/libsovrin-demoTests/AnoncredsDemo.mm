@@ -35,28 +35,32 @@
     NSString *poolName = @"pool1";
     NSString *walletName = @"issuer_wallet";
     NSString *xType = @"default";
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     SovrinHandle walletHandle = 0;
+    NSError *ret;
     
-    // 1. Create and open the wallet
+    // 1. Create wallet
     
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
-                                                                      walletName:  walletName
-                                                                           xtype:  xType
-                                                                          handle: &walletHandle];
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:walletName
+                                                           xtype:xType];
+    XCTAssertEqual( ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed!");
+    
+    // 2. Open wallet
+    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                 outHandle:&walletHandle];
+    XCTAssertEqual( ret.code, Success, @"WalletUtils::openWalletWithName() failed!");
 
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-
-    // 2. Issuer create Claim Definition for Schema
+    // 3. Issuer create Claim Definition for Schema
 
     NSNumber *seqNo = @(1);
-    NSString *schema = [ NSString stringWithFormat:@"{\
-                        \"name\":\"gvt\",\
-                        \"version\":\"1.0\",\
-                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"],\
-                        \"seq_no\":%@\
-                        }", seqNo ];
+    NSString *schema = [ NSString stringWithFormat:@"{"\
+                        "\"name\":\"gvt\","\
+                        "\"version\":\"1.0\","\
+                        "\"keys\":[\"age\",\"sex\",\"height\",\"name\"],"\
+                        "\"seq_no\":%@"\
+                        "}", seqNo ];
     
     __block NSString *claimJSON = nil;
     __block NSString *claimDefUUID = nil;
@@ -76,7 +80,7 @@
     XCTAssertEqual( ret.code, Success, @"issuerCreateAndStoreClaimDef() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
-    // 3. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
+    // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: [seqNo intValue]]
@@ -91,7 +95,7 @@
     XCTAssertEqual(ret.code, Success, @"walletSetSeqNo() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 4. Prover create Master Secret
+    // 5. Prover create Master Secret
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString *masterSecretName = @"master_secret";
@@ -107,20 +111,20 @@
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 5. Prover create Claim Request
+    // 6. Prover create Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString *proverDiD = @"some_prover_did";
     NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
                                  "\"issuer_did\":\"some_issuer_did\","\
-                                 "\"claim_def_seq_no\":%lu}", (unsigned long)seqNo];
+                                 "\"claim_def_seq_no\":%@}", seqNo];
     __block NSString *claimReqJSON = nil;
     
     ret = [SovrinAnoncreds proverCreateAndStoreClaimReqWithWalletHandle:walletHandle
                                                               proverDid:proverDiD
                                                          claimOfferJSON:claimOfferJSON
-                                                       masterSecretName:masterSecretName
                                                            claimDefJSON:claimJSON
+                                                       masterSecretName:masterSecretName
                                                              completion:^(NSError *error, NSString *claimReqJSON1)
     {
         XCTAssertEqual(error.code, Success, "proverCreateAndStoreClaimReq got error in completion");
@@ -132,7 +136,7 @@
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreClaimReq() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
-    // 6. Issuer create Claim for Claim Request
+    // 7. Issuer create Claim for Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString*  testClaimJson = @"{\
@@ -146,8 +150,8 @@
     ret = [SovrinAnoncreds issuerCreateClaimWithWalletHandle:walletHandle
                                                 claimReqJSON:claimReqJSON
                                                    claimJSON:testClaimJson
-                                               revocRegSeqNo:nil
-                                              userRevocIndex:nil
+                                               revocRegSeqNo:nil//@(-1)
+                                              userRevocIndex:nil//@(-1)
                                                   completion:^(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
     {
         XCTAssertEqual(error.code, Success, "issuerCreateClaim() got error in completion");
@@ -158,7 +162,7 @@
     XCTAssertEqual( ret.code, Success, @"issuerCreateClaim() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
-    // 7. Prover process and store Claim
+    // 8. Prover process and store Claim
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     ret = [SovrinAnoncreds proverStoreClaimWithWalletHandle:walletHandle
@@ -172,26 +176,26 @@
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
-    // 8. Prover gets Claims for Proof Request
+    // 9. Prover gets Claims for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString* proofReqJSON = [NSString stringWithFormat: @"\
                                {\
                                \"nonce\":\"123432421212\",\
                                \"requested_attrs\":{\
-                               \"attr1_uuid\":{\
-                              \"schema_seq_no\":%lu,\
-                              \"name\":\"name\"\
-                              }\
+                                    \"attr1_uuid\":{\
+                                    \"schema_seq_no\":%@,\
+                                    \"name\":\"name\"\
+                                }\
                               },\
                               \"requested_predicates\":{\
-                              \"predicate1_uuid\":{\
-                              \"attr_name\":\"age\",\
-                              \"p_type\":\"GE\",\
-                              \"value\":18\
+                                    \"predicate1_uuid\":{\
+                                        \"attr_name\":\"age\",\
+                                        \"p_type\":\"GE\",\
+                                        \"value\":18\
+                                    }\
                               }\
-                              }\
-                              }", (unsigned long)seqNo ];
+                              }", seqNo ];
   
     __block NSString *claimsJson = nil;
     
@@ -215,7 +219,7 @@
     XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
     NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
     
-    // 9. Prover create Proof for Proof Request
+    // 10. Prover create Proof for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
@@ -249,7 +253,7 @@
     XCTAssertEqual( ret.code, Success, @"proverCreateProof() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
-    // 10. Verifier verify proof
+    // 11. Verifier verify proof
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     ret = [SovrinAnoncreds verifierVerifyProofWithWalletHandle:  proofReqJSON
@@ -268,7 +272,7 @@
     XCTAssertEqual(ret.code, Success, @"verifierVerifyProof() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 11. close wallet
+    // 12. close wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     ret = [[SovrinWallet sharedInstance] closeWalletWithHandle: walletHandle
@@ -281,7 +285,6 @@
     XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     [TestUtils cleanupStorage];
-}
-
+}  
 
 @end

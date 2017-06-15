@@ -256,9 +256,19 @@
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
+    NSString *xrefStr;
+    if ([xref isKindOfClass:[NSNumber class]])
+    {
+        xrefStr = [(NSNumber *)xref stringValue];
+    }
+    else
+    {
+        xrefStr = xref;
+    }
+    
     ret = sovrin_build_get_claim_def_txn(handle,
                                          [submitterDid UTF8String],
-                                         [xref UTF8String],
+                                         [xrefStr UTF8String],
                                          [signatureType UTF8String],
                                          [origin UTF8String],
                                          SovrinWrapperCommon3PSCallback);

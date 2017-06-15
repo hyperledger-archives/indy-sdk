@@ -29,10 +29,10 @@
            withHandle:(SovrinHandle)handle;
 
 @required
-- (NSError *)close:(SovrinHandle) handle;
+- (NSError *)close:(SovrinHandle)handle;
 
 @required
-- (NSError *)deleteWithName:(NSString *) name;
+- (NSError *)deleteWithName:(NSString *)name;
 
 @end
 
@@ -43,7 +43,7 @@
              withImplementation:(id<SovrinWalletImplementation>) implementation;
 */
 
-+ (SovrinWallet*) sharedInstance;
++ (SovrinWallet *)sharedInstance;
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                                  name:(NSString *)name

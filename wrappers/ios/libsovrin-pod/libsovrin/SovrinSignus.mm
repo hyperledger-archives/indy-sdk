@@ -100,7 +100,7 @@
 }
 
 + (NSError *)verifySignatureWithWalletHandle:(SovrinHandle)walletHandle
-                                        pool:(SovrinHandle)poolHandle
+                                  poolHandle:(SovrinHandle)poolHandle
                                          did:(NSString *)did
                                    signature:(NSString *)signature
                                   completion:(void (^)(NSError *error, BOOL valid)) handler

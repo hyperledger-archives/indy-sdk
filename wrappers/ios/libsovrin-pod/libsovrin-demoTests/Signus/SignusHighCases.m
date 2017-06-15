@@ -152,10 +152,8 @@
     NSString *myDid;
     NSString *myVerKey;
     NSString *myDidJson = [NSString stringWithFormat:@"{\"did\":\"%@\", "\
-                           "\"cid\":true}", did];
-    
-    @"{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", "\
-    "\"cid\":true}";
+                           "\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}", did];
+
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
@@ -164,8 +162,6 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertTrue([myDid isEqualToString:did], @"wrong myDid!");
     XCTAssertTrue([myVerKey isEqualToString:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"], @"wrong myVerKey!");
-    
-    // TODO: myVerkey is H7VUCKUmV1UAhPak9z9dtf21z8E1xXE887deJGBd9TGt. is it right?
     
     [TestUtils cleanupStorage];
 }

@@ -295,8 +295,9 @@
     NSError *ret = [ SovrinAnoncreds proverCreateAndStoreClaimReqWithWalletHandle: walletHandle
                                                                         proverDid:pd
                                                                    claimOfferJSON:coj
-                                                                 masterSecretName:name
+                    
                                                                      claimDefJSON:cdj
+                                                                 masterSecretName:name
                                                                        completion:^(NSError* error, NSString* claimReqJSON)
     {
         err = error;
