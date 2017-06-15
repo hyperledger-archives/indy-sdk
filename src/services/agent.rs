@@ -298,18 +298,15 @@ impl RemoteAgent {
     }
 
     fn handle_response(&self, msg: String) {
-        if msg.eq("DID_ACK") {
-            let send_res: Result<(), CommonError> =
-                CommandExecutor::instance().send(
-                    Command::Agent(
-                        AgentCommand::ConnectAck(self.conn_handle, Ok(self.conn_handle))));
-            if let Err(err) = send_res {
-                error!("RemoteAgent::handle_response got connection ack, but can't send to client {}", err);
-            };
+        // TODO check state
+        let cmd: AgentCommand = if msg.eq("DID_ACK") {
+            AgentCommand::ConnectAck(self.conn_handle, Ok(self.conn_handle))
         } else {
-            //check state, transfer message to client
-            unimplemented!();
-        }
+            AgentCommand::MessageReceived(self.conn_handle, Ok((self.conn_handle, msg)))
+        };
+        if let Err(err) = CommandExecutor::instance().send(Command::Agent(cmd)) {
+            error!("RemoteAgent::handle_response got incoming msg, but can't send to user {}", err);
+        };
     }
 }
 
@@ -330,8 +327,10 @@ impl AgentListener {
     }
 
     fn handle_request(&mut self, identity: String, msg: String) {
-        if let Some(_) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
-            unimplemented!(); //FIXME handle and return
+        if let Some(&(conn_handle, _)) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
+            CommandExecutor::instance().send(Command::Agent(AgentCommand::MessageReceived(
+                conn_handle, Ok((conn_handle, msg))))).unwrap();
+            return;
         }
 
         info!("New connection to agent listener from {} with msg {}", identity, msg);

@@ -1,7 +1,7 @@
 #![warn(unused_variables)]
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::rc::Rc;
 
@@ -39,7 +39,11 @@ pub enum AgentCommand {
     ),
     ListenerOnConnect(
         i32, // listener handle
-        Result<(i32, i32, String, String), SovrinError>, // (listener handle, new connection handle, sender and receiver did) or error
+        Result<(i32, i32, String, String), CommonError>, // (listener handle, new connection handle, sender and receiver did) or error
+    ),
+    MessageReceived(
+        i32, // connection handle
+        Result<(i32, String), CommonError> // result for message
     ),
     CloseListener,
     Send(
@@ -58,19 +62,23 @@ pub struct AgentCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
+    out_connections: RefCell<HashMap<i32, Box<Fn(Result<(i32, String), SovrinError>)>>>,
     listeners: RefCell<HashMap<i32, Listener>>,
 
     listen_callbacks: RefCell<HashMap<i32, (
         Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Listener
     )>>,
-    open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
+    open_callbacks: RefCell<HashMap<i32,
+        (Box<Fn(Result<i32, SovrinError>)>,
+         Box<Fn(Result<(i32, String), SovrinError>)>)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
 }
 
 struct Listener {
     on_connect: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
     on_msg: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
+    conn_handles: HashSet<i32>,
 }
 
 impl AgentCommandExecutor {
@@ -79,6 +87,7 @@ impl AgentCommandExecutor {
             agent_service: agent_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
+            out_connections: RefCell::new(HashMap::new()),
             listeners: RefCell::new(HashMap::new()),
             listen_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new()),
@@ -94,7 +103,11 @@ impl AgentCommandExecutor {
             }
             AgentCommand::ConnectAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ConnectAck command received");
-                self.open_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res) //TODO extract method
+                let cbs = self.open_callbacks.borrow_mut().remove(&cmd_id).unwrap();
+                if let &Ok(conn_handle) = &res {
+                    self.out_connections.borrow_mut().insert(conn_handle, cbs.1);
+                }
+                cbs.0(res);
             }
             AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
@@ -102,13 +115,29 @@ impl AgentCommandExecutor {
             }
             AgentCommand::ListenAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ListenAck command received");
+                //TODO extract method
                 let cbs = self.listen_callbacks.borrow_mut().remove(&cmd_id).unwrap();
-                self.listeners.borrow_mut().insert(cmd_id, cbs.1);
-                cbs.0(res.map_err(From::from)) //TODO extract method
+                if let Ok(listener_handle) = res {
+                    self.listeners.borrow_mut().insert(listener_handle, cbs.1);
+                }
+                cbs.0(res.map_err(From::from))
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
-                (self.listeners.borrow().get(&listener_id).unwrap().on_connect)(res);
+                let mut listeners = self.listeners.borrow_mut();
+                let mut cbs = listeners.get_mut(&listener_id).unwrap();
+                if let Ok((_, connection_handle, _, _)) = res {
+                    cbs.conn_handles.insert(connection_handle);
+                }
+                (cbs.on_connect)(res.map_err(From::from));
+            }
+            AgentCommand::MessageReceived(connection_id, res) => {
+                info!(target: "agent_command_executor", "ListenerOnConnect command received");
+                let res: Result<(i32, String), SovrinError> = res.map_err(From::from);
+                match self.listeners.borrow_mut().iter().find(|&(_, listener)| listener.conn_handles.contains(&connection_id)) {
+                    Some((_, listener)) => (listener.on_msg)(res),
+                    None => self.out_connections.borrow().get(&connection_id).unwrap()(res),
+                }
             }
             AgentCommand::Send(connection_id, msg, cb) => {
                 info!(target: "agent_command_executor", "Send command received");
@@ -124,7 +153,7 @@ impl AgentCommandExecutor {
 
     fn connect(&self, wallet_handle: i32, sender_did: String, receiver_did: String,
                connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-               /* FIXME message_cb */ _: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
+               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
     ) {
         let result = self._get_connection_info(wallet_handle, &sender_did, &receiver_did)
             .and_then(|info: ConnectInfo| {
@@ -143,7 +172,7 @@ impl AgentCommandExecutor {
             });
         match result {
             Err(err) => { connect_cb(Err(err)); }
-            Ok((mut cbs, handle)) => { cbs.insert(handle, connect_cb); /* TODO check if map contains same key */ }
+            Ok((mut cbs, handle)) => { cbs.insert(handle, (connect_cb, message_cb)); /* TODO check if map contains same key */ }
         };
     }
 
@@ -182,7 +211,11 @@ impl AgentCommandExecutor {
             Err(err) => listen_cb(Err(From::from(err))),
             Ok((mut cbs, handle)) => {
                 cbs.insert(handle, (listen_cb,
-                                    Listener { on_connect: connect_cb, on_msg: message_cb })); /* TODO check if map contains same key */
+                                    Listener {
+                                        on_connect: connect_cb,
+                                        on_msg: message_cb,
+                                        conn_handles: HashSet::new()
+                                    })); /* TODO check if map contains same key */
             }
         };
     }
