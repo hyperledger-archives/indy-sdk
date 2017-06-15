@@ -12,11 +12,11 @@
 @implementation SovrinLedger
 
 
-+ (NSError*) signAndSubmitRequest:(SovrinHandle) walletHandle
-                       poolHandle:(SovrinHandle) poolHandle
-                     submitterDID:(NSString*) submitterDid
-                      requestJSON:(NSString*) request
-                       completion:(void (^)(NSError* error, NSString* requestResultJSON)) handler
++ (NSError*) signAndSubmitRequestWithWalletHandle:(SovrinHandle)walletHandle
+                                       poolHandle:(SovrinHandle)poolHandle
+                                     submitterDID:(NSString *)submitterDid
+                                      requestJSON:(NSString *)request
+                                       completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -39,9 +39,9 @@
     
 }
 
-+ (NSError*) submitRequest:(SovrinHandle) poolHandle
-               requestJSON:(NSString*) request
-                completion:(void (^)(NSError* error, NSString* requestResultJSON)) handler
++ (NSError*) submitRequestWithPoolHandle:(SovrinHandle)poolHandle
+                             requestJSON:(NSString *)request
+                              completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -60,9 +60,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildGetDdoRequest:(NSString*) submitterDid
-                      targetDID:(NSString*) targetDid
-                     completion:(void (^)(NSError* error, NSString* requestResultJSON)) handler
++ (NSError*) buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                     completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -81,27 +81,25 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildNymRequest:(NSString*) submitterDid
-                   targetDID:(NSString*) targetDid
-                      verkey:(NSString*) key
-                        xref:(NSString*) ref
-                        data:(NSString*) data
-                        role:(NSString*) role
-                  completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                   targetDID:(NSString *)targetDid
+                                      verkey:(NSString *)key
+                                       alias:(NSString *)alias
+                                        role:(NSString *)role
+                                  completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_build_nym_request( handle,
-                                    [submitterDid UTF8String],
-                                    [targetDid UTF8String],
-                                    [key UTF8String],
-                                    [ref UTF8String],
-                                    [data UTF8String],
-                                    [role UTF8String],
-                                    SovrinWrapperCommon3PSCallback );
-
+    
+    ret = sovrin_build_nym_request(handle,
+                                   [submitterDid UTF8String],
+                                   [targetDid UTF8String],
+                                   [key UTF8String],
+                                   [alias UTF8String],
+                                   [role UTF8String],
+                                   SovrinWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -110,12 +108,12 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildAttribRequest:(NSString*) submitterDid
-                      targetDID:(NSString*) targetDid
-                           hash:(NSString*) hash
-                            raw:(NSString*) raw
-                            enc:(NSString*) enc
-                     completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                           hash:(NSString *)hash
+                                            raw:(NSString *)raw
+                                            enc:(NSString *)enc
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -137,10 +135,10 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildGetAttribRequest:(NSString*) submitterDid
-                         targetDID:(NSString*) targetDid
-                              data:(NSString*) data
-                        completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
+                                         targetDID:(NSString *)targetDid
+                                              data:(NSString *)data
+                                        completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -159,9 +157,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildGetNymRequest:(NSString*) submitterDid
-                      targetDID:(NSString*) targetDid
-                     completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -180,9 +178,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildSchemaRequest:(NSString*) submitterDid
-                           data:(NSString*) data
-                     completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSString *)data
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -200,10 +198,10 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildGetSchemaRequest:(NSString*) submitterDid
-                              dest:(NSString*) dest
-                              data:(NSString*) data
-                        completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
+                                              dest:(NSString *)dest
+                                              data:(NSString *)data
+                                        completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -223,11 +221,11 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildClaimDefTxn:(NSString*) submitterDid
-                         xref:(NSString*) xref
-                signatureType:(NSString*) signatureType
-                         data:(NSString*) data
-                   completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
+                                         xref:(NSString *)xref
+                                signatureType:(NSString *)signatureType
+                                         data:(NSString *)data
+                                   completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
@@ -248,19 +246,29 @@
 }
 
 
-+ (NSError*) buildGetClaimDefTxn:(NSString*) submitterDid
-                            xref:(NSString*) xref
-                   signatureType:(NSString *) signatureType
-                          origin:(NSString *) origin
-                      completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildGetClaimDefTxnWithSubmitterDid:(NSString *) submitterDid
+                                            xref:(NSString *) xref
+                                   signatureType:(NSString *) signatureType
+                                          origin:(NSString *) origin
+                                      completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
+    NSString *xrefStr;
+    if ([xref isKindOfClass:[NSNumber class]])
+    {
+        xrefStr = [(NSNumber *)xref stringValue];
+    }
+    else
+    {
+        xrefStr = xref;
+    }
+    
     ret = sovrin_build_get_claim_def_txn(handle,
                                          [submitterDid UTF8String],
-                                         [xref UTF8String],
+                                         [xrefStr UTF8String],
                                          [signatureType UTF8String],
                                          [origin UTF8String],
                                          SovrinWrapperCommon3PSCallback);
@@ -272,10 +280,10 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) buildNodeRequest:(NSString*) submitterDid
-                    targetDid:(NSString*) targetDid
-                         data:(NSString*) data
-                   completion:(void (^)(NSError* error, NSString* requestJSON)) handler
++ (NSError*) buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
+                                    targetDid:(NSString *)targetDid
+                                         data:(NSString *)data
+                                   completion:(void (^)(NSError *error, NSString *requestJSON)) handler
 {
     sovrin_error_t ret;
     

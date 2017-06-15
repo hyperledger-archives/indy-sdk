@@ -24,10 +24,10 @@
     
     return instance;
 }
-- (NSError *) sign:(SovrinHandle)walletHandle
-          theirDid:(NSString*)theirDid
-           message:(NSString*)message
-         signature:(NSString**)signature
+- (NSError *)signWithWalletHandle:(SovrinHandle)walletHandle
+                         theirDid:(NSString *)theirDid
+                          message:(NSString *)message
+                     outSignature:(NSString **)signature
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
@@ -35,35 +35,34 @@
     NSError *ret;
 
     
-    ret = [SovrinSignus sign:walletHandle
-                         did:theirDid
-                         msg:message
-                  completion:^(NSError *error, NSString *blockSignature)
+    ret = [SovrinSignus signWithWalletHandle:walletHandle
+                                         did:theirDid
+                                         msg:message
+                                  completion:^(NSError *error, NSString *blockSignature)
     {
         err = error;
-        signSignature =blockSignature;
-        
+        signSignature = blockSignature;
         [completionExpectation fulfill];
     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *signature = signSignature;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (signature) { *signature = signSignature; }
     
     return err;
 }
 
 
-- (NSError *)createMyDid:(SovrinHandle)walletHandle
-               myDidJson:(NSString *)myDidJson
-                   myDid:(NSString **)myDid
-                myVerkey:(NSString **)myVerkey
-                    myPk:(NSString **)myPk
+- (NSError *)createMyDidWithWalletHandle:(SovrinHandle)walletHandle
+                               myDidJson:(NSString *)myDidJson
+                                outMyDid:(NSString **)myDid
+                             outMyVerkey:(NSString **)myVerkey
+                                 outMyPk:(NSString **)myPk
 {
    
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -73,9 +72,9 @@
     __block NSString *pk = nil;
     NSError *ret;
 
-    ret = [SovrinSignus createAndStoreMyDid:walletHandle
-                                    didJSON:myDidJson
-                                 completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
+    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:walletHandle
+                                                    didJSON:myDidJson
+                                                 completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
     {
         err = error;
         did = blockDid;
@@ -85,42 +84,113 @@
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *myDid = did;
-    *myVerkey = verKey;
-    *myPk = pk;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (myDid) { *myDid = did; }
+    if (myVerkey){ *myVerkey = verKey; }
+    if (myPk) { *myPk = pk; }
     
     return err;
 }
 
-- (NSError *)storeTheirDid: (SovrinHandle) walletHandle
-              identityJson: (NSString *)identityJson
+- (NSError *)storeTheirDidWithWalletHandle: (SovrinHandle) walletHandle
+                              identityJson: (NSString *)identityJson
 {
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     NSError *ret;
     
-    ret = [SovrinSignus storeTheirDid:walletHandle
-                         identityJSON:identityJson
-                           completion:^(NSError *error)
+    ret = [SovrinSignus storeTheirDidWithWalletHandle:walletHandle
+                                         identityJSON:identityJson
+                                           completion:^(NSError *error)
     {
         err = error;
         [completionExpectation fulfill];
     }];
     
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    return err;
+}
+
+- (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
+                                     did:(NSString *)did
+                            identityJson:(NSString *)identityJson
+                             outMyVerKey:(NSString **)myVerKey
+                                 outMyPk:(NSString **)myPk
+{
+    
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *verkey;
+    __block NSString *pk;
+    NSError *ret;
+    
+    ret = [SovrinSignus replaceKeysWithWalletHandle:walletHandle
+                                                did:did
+                                       identityJSON:identityJson
+                                         completion: ^(NSError *error, NSString *blockVerkey, NSString *blockPk)
+    {
+        err = error;
+        verkey = blockVerkey;
+        pk = blockPk;
+        [completionExpectation fulfill];
+    }];
+ 
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (myVerKey) { *myVerKey = verkey; }
+    if (myPk) { *myPk = pk; }
+    
+    return err;
+}
+
+- (NSError *)verifyWithWalletHandle:(SovrinHandle)walletHandle
+                         poolHandle:(SovrinHandle)poolHandle
+                                did:(NSString *)did
+                          signature:(NSString *)signature
+                        outVerified:(BOOL *)verified
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block BOOL outVerified;
+    NSError *ret;
+    
+    ret = [SovrinSignus verifySignatureWithWalletHandle:walletHandle
+                                             poolHandle:poolHandle
+                                                    did:did
+                                              signature:signature
+                                             completion:^(NSError *error, BOOL valid)
+    {
+        err = error;
+        outVerified = valid;
+        [completionExpectation fulfill];
+    }];
     
     if( ret.code != Success)
     {
         return ret;
     }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (verified) { *verified = outVerified; }
     
     return err;
 }
