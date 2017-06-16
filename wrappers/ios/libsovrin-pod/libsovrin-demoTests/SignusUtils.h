@@ -14,17 +14,29 @@
 
 + (SignusUtils *)sharedInstance;
 
-- (NSError *) sign:(SovrinHandle)walletHandle
-        theirDid:(NSString*)theirDid
-         message:(NSString*)message
-       outString:(NSString**)outString;
+- (NSError *)signWithWalletHandle:(SovrinHandle)walletHandle
+                         theirDid:(NSString *)theirDid
+                          message:(NSString *)message
+                     outSignature:(NSString **)signature;
 
-- (NSError *)createMyDid:(SovrinHandle)walletHandle
-               myDidJson:(NSString *)myDidJson
-                   myDid:(NSString **)myDid
-                myVerkey:(NSString **)myVerkey
-                    myPk:(NSString **)myPk;
+- (NSError *)createMyDidWithWalletHandle:(SovrinHandle)walletHandle
+                               myDidJson:(NSString *)myDidJson
+                                outMyDid:(NSString **)myDid
+                             outMyVerkey:(NSString **)myVerkey
+                                 outMyPk:(NSString **)myPk;
 
-- (NSError *)storeTheirDid: (SovrinHandle) walletHandle
-              identityJson: (NSString *)identityJson;
+- (NSError *)storeTheirDidWithWalletHandle:(SovrinHandle)walletHandle
+                              identityJson:(NSString *)identityJson;
+
+- (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
+                                     did:(NSString *)did
+                            identityJson:(NSString *)identityJson
+                             outMyVerKey:(NSString **)myVerKey
+                                 outMyPk:(NSString **)myPk;
+
+- (NSError *)verifyWithWalletHandle:(SovrinHandle)walletHandle
+                         poolHandle:(SovrinHandle)poolHandle
+                                did:(NSString *)did
+                          signature:(NSString *)signature
+                        outVerified:(BOOL *)verified;
 @end
