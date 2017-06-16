@@ -393,7 +393,9 @@ impl ProverCommandExecutor {
                 condition = condition && claim_info.schema_seq_no == schema_seq_no;
             }
 
-            if let Some(_) = filter.issuer_did {}//TODO Claim info does not contain issuer_did
+            if let Some(issuer_did) = filter.issuer_did.clone() {
+                condition = condition && claim_info.issuer_did == issuer_did;
+            }
 
             if let Some(claim_def_seq_no) = filter.claim_def_seq_no {
                 condition = condition && claim_info.claim_def_seq_no == claim_def_seq_no;
@@ -422,8 +424,8 @@ impl ProverCommandExecutor {
                 attrs.insert(attr.clone(), values[1].clone());
             }
 
-            claims_info.push(ClaimInfo::new(uuid.clone(), attrs, claim_json.claim_def_seq_no.clone(),
-                                            claim_json.revoc_reg_seq_no.clone(), claim_json.schema_seq_no.clone()));
+            claims_info.push(ClaimInfo::new(uuid.clone(), attrs, claim_json.claim_def_seq_no.clone(), claim_json.revoc_reg_seq_no.clone(),
+                                            claim_json.schema_seq_no.clone(), claim_json.issuer_did.clone()));
         }
 
         Ok(claims_info)

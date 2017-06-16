@@ -169,18 +169,20 @@ pub struct ClaimInfo {
     pub attrs: HashMap<String, String>,
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
-    pub schema_seq_no: i32
+    pub schema_seq_no: i32,
+    pub issuer_did: String
 }
 
 impl ClaimInfo {
     pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
-               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32) -> ClaimInfo {
+               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
             claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
-            schema_seq_no: schema_seq_no
+            schema_seq_no: schema_seq_no,
+            issuer_did: issuer_did
         }
     }
 }
@@ -360,18 +362,20 @@ pub struct ClaimJson {
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    pub signature: ClaimSignature
+    pub signature: ClaimSignature,
+    pub issuer_did: String
 }
 
 impl ClaimJson {
     pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
-               signature: ClaimSignature, schema_seq_no: i32) -> ClaimJson {
+               signature: ClaimSignature, schema_seq_no: i32, issuer_did: String) -> ClaimJson {
         ClaimJson {
             claim: claim,
             claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
-            signature: signature
+            signature: signature,
+            issuer_did: issuer_did
         }
     }
 }

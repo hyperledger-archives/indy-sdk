@@ -140,7 +140,6 @@ impl Prover {
     }
 
     pub fn _init_primary_claim(claim: &RefCell<ClaimJson>, v_prime: &BigNumber) -> Result<(), CommonError> {
-        //TODO replace ClaimJson on PrimaryClaim
         let ref mut primary_claim = claim.borrow_mut().signature.primary_claim;
         primary_claim.v_prime = v_prime.add(&primary_claim.v_prime)?;
         Ok(())
@@ -1544,17 +1543,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, 1, None, 1)
+        ClaimInfo::new("1".to_string(), attrs, 1, None, 1, "did".to_string())
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, 2, None, 2)
+        ClaimInfo::new("2".to_string(), attrs, 2, None, 2, "did".to_string())
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, 2, None, 1)
+        ClaimInfo::new("3".to_string(), attrs, 2, None, 1, "did".to_string())
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1629,7 +1628,8 @@ pub mod mocks {
             claim_def_seq_no: 1,
             revoc_reg_seq_no: None,
             schema_seq_no: 1,
-            signature: mocks::get_gvt_claims_object()
+            signature: mocks::get_gvt_claims_object(),
+            issuer_did: "did".to_string()
         }
     }
 
@@ -1639,7 +1639,8 @@ pub mod mocks {
             claim_def_seq_no: 2,
             revoc_reg_seq_no: None,
             schema_seq_no: 2,
-            signature: mocks::get_xyz_claims_object()
+            signature: mocks::get_xyz_claims_object(),
+            issuer_did: "did".to_string()
         }
     }
 }

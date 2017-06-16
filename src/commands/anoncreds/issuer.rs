@@ -256,7 +256,7 @@ impl IssuerCommandExecutor {
             self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid), &revocation_registry_json)?;
         }
 
-        let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no);
+        let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no, claim_req_json.issuer_did);
 
         let claim_json = ClaimJson::to_json(&claim_json)
             .map_err(map_err_trace!())
