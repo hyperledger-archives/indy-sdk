@@ -14,6 +14,7 @@ use services::anoncreds::types::{
     AccumulatorSecretKey,
     ByteOrder,
     ClaimDefinition,
+    ClaimDefinitionData,
     ClaimDefinitionPrivate,
     ClaimRequest,
     ClaimSignature,
@@ -67,7 +68,8 @@ impl Issuer {
         } else {
             (None, None)
         };
-        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, SignatureTypes::CL);
+        let claim_definition_data = ClaimDefinitionData::new(pk, pkr);
+        let claim_definition = ClaimDefinition::new(schema.seq_no, None, SignatureTypes::CL, claim_definition_data);
         let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
 
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> done", &schema);
@@ -78,7 +80,7 @@ impl Issuer {
         info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> start", &schema);
         let mut ctx = BigNumber::new_context()?;
 
-        if schema.keys.len() == 0 {
+        if schema.data.keys.len() == 0 {
             return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
@@ -98,7 +100,7 @@ impl Issuer {
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
-        for attribute in &schema.keys {
+        for attribute in &schema.data.keys {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
             r.insert(attribute.to_string(), s.mod_exp(&random, &n, Some(&mut ctx))?);
         }
@@ -207,7 +209,7 @@ impl Issuer {
 
         let primary_claim =
             Issuer::_issue_primary_claim(
-                &claim_definition.public_key,
+                &claim_definition.data.public_key,
                 &claim_definition_private.secret_key,
                 &claim_request.u,
                 &context_attribute,
@@ -215,7 +217,7 @@ impl Issuer {
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
         if let (Some(ref pk_r), Some(ref sk_r),
-            &Some(ref revoc_reg), &Some(ref revoc_reg_priv), Some(ref ur)) = (claim_definition.public_key_revocation.clone(),
+            &Some(ref revoc_reg), &Some(ref revoc_reg_priv), Some(ref ur)) = (claim_definition.data.public_key_revocation.clone(),
                                                                               claim_definition_private.secret_key_revocation.clone(),
                                                                               revocation_registry, revocation_registry_private,
                                                                               claim_request.ur) {
@@ -500,7 +502,7 @@ mod tests {
 
         let (claim_definition, claim_definition_private) = result.unwrap();
 
-        assert!(claim_definition.public_key_revocation.is_none());
+        assert!(claim_definition.data.public_key_revocation.is_none());
         assert!(claim_definition_private.secret_key_revocation.is_none());
     }
 
@@ -517,7 +519,7 @@ mod tests {
 
         let (claim_definition, claim_definition_private) = result.unwrap();
 
-        assert!(claim_definition.public_key_revocation.is_some());
+        assert!(claim_definition.data.public_key_revocation.is_some());
         assert!(claim_definition_private.secret_key_revocation.is_some());
     }
 
@@ -525,7 +527,7 @@ mod tests {
     fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
-        schema.keys = HashSet::new();
+        schema.data.keys = HashSet::new();
 
         let signature_type = None;
         let create_non_revoc = false;
@@ -566,6 +568,7 @@ mod tests {
 
 pub mod mocks {
     use super::*;
+    use services::anoncreds::types::SchemaData;
 
     pub fn get_claim_definition() -> ClaimDefinition {
         let mut r: HashMap<String, BigNumber> = HashMap::new();
@@ -581,7 +584,8 @@ pub mod mocks {
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap(),
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap()
         );
-        ClaimDefinition::new(public_key, None, 1, SignatureTypes::CL)
+        let claim_def_data = ClaimDefinitionData::new(public_key, None);
+        ClaimDefinition::new(1, None, SignatureTypes::CL, claim_def_data)
     }
 
     pub fn get_claim_definition_private() -> ClaimDefinitionPrivate {
@@ -596,11 +600,10 @@ pub mod mocks {
         keys.insert("height".to_string());
         keys.insert("sex".to_string());
 
+        let schema_data = SchemaData::new("gvt".to_string(), "1.0".to_string(), keys);
         Schema {
-            name: "gvt".to_string(),
-            version: "1.0".to_string(),
-            keys: keys,
-            seq_no: 1
+            seq_no: 1,
+            data: schema_data
         }
     }
 
@@ -609,11 +612,10 @@ pub mod mocks {
         keys.insert("status".to_string());
         keys.insert("period".to_string());
 
+        let schema_data = SchemaData::new("xyz".to_string(), "1.0".to_string(), keys);
         Schema {
-            name: "xyz".to_string(),
-            version: "1.0".to_string(),
-            keys: keys,
-            seq_no: 2
+            seq_no: 2,
+            data: schema_data
         }
     }
 

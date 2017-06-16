@@ -1,12 +1,22 @@
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinition {
-    pub public_key: PublicKey,
-    pub public_key_revocation: Option<String>,
+    #[serde(rename = "ref")]
     pub schema_seq_no: i32,
-    pub signature_type: String
+    #[serde(rename = "seqNo")]
+    pub claim_def_seq_no: Option<i32>,
+    pub signature_type: String,
+    pub data: ClaimDefinitionData
+}
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinitionData {
+    #[serde(rename = "primary")]
+    pub public_key: PublicKey,
+    #[serde(rename = "revocation")]
+    pub public_key_revocation: Option<String>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize, Eq)]
@@ -67,7 +77,7 @@ pub struct GetAttribReplyResult {
     pub  seq_no: Option<i32>
 }
 
-#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSchemaReplyResult {
     pub identifier: String,
@@ -80,7 +90,7 @@ pub struct GetSchemaReplyResult {
     pub  dest: Option<String>
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct GetSchemaResultData {
     pub keys: HashSet<String>,
     pub name: String,
@@ -88,7 +98,7 @@ pub struct GetSchemaResultData {
     pub version: String
 }
 
-#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[derive(Deserialize, PartialEq, Debug)]
 pub struct GetClaimDefReplyResult {
     pub identifier: String,
     #[serde(rename = "reqId")]
@@ -106,17 +116,18 @@ pub struct GetClaimDefReplyResult {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
-    pub name: String,
-    pub version: String,
-    pub keys: HashSet<String>,
-    pub seq_no: i32
+    #[serde(rename = "seqNo")]
+    pub seq_no: i32,
+    pub data: SchemaData
 }
 
-#[derive(Deserialize, Debug, Serialize, Eq, PartialEq)]
-pub struct ClaimDefinitionData {
-    pub primary: PublicKey,
-    pub revocation: Option<String>
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaData {
+    pub name: String,
+    pub version: String,
+    pub keys: HashSet<String>
 }
+
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct ClaimOffer {
