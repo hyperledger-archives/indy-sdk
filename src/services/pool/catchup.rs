@@ -178,7 +178,7 @@ impl CatchupHandler {
     pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
         CommandExecutor::instance().send(
             Command::Pool(
-                PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id))))
+                PoolCommand::OpenAck(self.open_cmd_id, status.map(|()|self.pool_id))))
             .map_err(|err|
                 PoolError::CommonError(
                     CommonError::InvalidState("Can't send ACK cmd".to_string())))

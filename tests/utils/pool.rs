@@ -21,7 +21,7 @@ use std::sync::mpsc::channel;
 pub struct PoolUtils {}
 
 impl PoolUtils {
-    pub fn create_pool_ledger_config(pool_name: &str) -> Result<(), ErrorCode> {
+    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -31,7 +31,7 @@ impl PoolUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
-        PoolUtils::create_genesis_txn_file(pool_name);
+        PoolUtils::create_genesis_txn_file(pool_name, nodes);
         let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
@@ -93,7 +93,7 @@ impl PoolUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
-        PoolUtils::create_genesis_txn_file(pool_name);
+        PoolUtils::create_genesis_txn_file(pool_name, None);
         let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
@@ -166,7 +166,7 @@ impl PoolUtils {
         Ok(resp)
     }
 
-    pub fn create_genesis_txn_file(pool_name: &str) -> PathBuf {
+    pub fn create_genesis_txn_file(pool_name: &str, predefined_data: Option<String>) -> PathBuf {
         let path = EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str());
 
         if !path.parent().unwrap().exists() {
@@ -181,6 +181,9 @@ impl PoolUtils {
                            "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"10.0.0.2\",\"client_port\":9704,\"node_ip\":\"10.0.0.2\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
                            "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"10.0.0.2\",\"client_port\":9706,\"node_ip\":\"10.0.0.2\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
                            "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"10.0.0.2\",\"client_port\":9708,\"node_ip\":\"10.0.0.2\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
+
+        let data = predefined_data.unwrap_or(data);
+
         f.write_all(data.as_bytes()).unwrap();
         f.flush().unwrap();
         f.sync_all().unwrap();
