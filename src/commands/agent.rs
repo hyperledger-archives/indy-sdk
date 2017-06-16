@@ -25,7 +25,14 @@ pub enum AgentCommand {
         i32, // cmd handle (eq conn handle)
         Result<i32, SovrinError> // conn handle or error
     ),
-    CloseConnection,
+    CloseConnection(
+        i32, // connection handle
+        Box<Fn(Result<(), SovrinError>) + Send>, //
+    ),
+    CloseConnectionAck(
+        i32, // close cmd handle
+        Result<(), CommonError>,
+    ),
     Listen(
         i32, // wallet handle
         String, // endpoint
