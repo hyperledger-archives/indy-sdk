@@ -1422,9 +1422,10 @@ mod demos {
         // 10. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
+                                                       "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#, schema_seq_no);
+                                }}"#, schema_seq_no, schema_seq_no);
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
         let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
@@ -1434,11 +1435,13 @@ mod demos {
         let claim = claims_for_attr_1[0].clone();
 
         // 11. Prover create Proof
+        let self_attested_value = "value";
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{"self1":"value"}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
+                                          "self_attested_attributes":{{"self1":"{}"}},
+                                          "requested_attrs":{{"attr1_uuid":["{}",true],
+                                                              "attr2_uuid":["{}", false]}},
                                           "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, claim.claim_uuid, claim.claim_uuid);
+                                        }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid, claim.claim_uuid);
 
         let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
         let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
@@ -1453,11 +1456,14 @@ mod demos {
                                                              &revoc_regs_jsons).unwrap();
 
         let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
+        
         let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
         assert_eq!(value, "Alex");
 
+        proof.requested_proof.unrevealed_attrs.get("attr2_uuid").unwrap();
+
         let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
-        assert_eq!(value, "value");
+        assert_eq!(value, self_attested_value);
 
         // 12. Verifier verify proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
