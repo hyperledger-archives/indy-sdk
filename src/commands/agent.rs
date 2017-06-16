@@ -80,6 +80,7 @@ pub struct AgentCommandExecutor {
         (Box<Fn(Result<i32, SovrinError>)>,
          Box<Fn(Result<(i32, String), SovrinError>)>)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
+    close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
 }
 
 struct Listener {
@@ -99,6 +100,7 @@ impl AgentCommandExecutor {
             listen_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new()),
             send_callbacks: RefCell::new(HashMap::new()),
+            close_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -153,6 +155,14 @@ impl AgentCommandExecutor {
             AgentCommand::SendAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "SendAck command received");
                 self.send_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+            }
+            AgentCommand::CloseConnection(connection_id, cb) => {
+                info!(target: "agent_command_executor", "CloseConnection command received");
+                self.close_connection(connection_id, cb)
+            }
+            AgentCommand::CloseConnectionAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "CloseConnectionAck command received");
+                self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
             }
             _ => unimplemented!(),
         }
@@ -232,6 +242,21 @@ impl AgentCommandExecutor {
             .send(conn_id, msg.as_ref().map(String::as_str))
             .and_then(|cmd_id| {
                 match self.send_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, cmd_id)),
+                    Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
+                }
+            });
+        match result {
+            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
+            Err(err) => cb(Err(From::from(err))),
+        }
+    }
+
+    fn close_connection(&self, conn_id: i32, cb: Box<Fn(Result<(), SovrinError>)>) {
+        let result = self.agent_service
+            .close_connection(conn_id)
+            .and_then(|cmd_id| {
+                match self.close_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),
                     Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
                 }
