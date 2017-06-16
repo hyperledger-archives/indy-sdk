@@ -13,31 +13,32 @@
 		3E2A7F931EC36186006194EC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F911EC36186006194EC /* Main.storyboard */; };
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
-		3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */; };
-		3E2FFA3F1ED5C06E00536EAD /* Anoncreds.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2FFA3E1ED5C06E00536EAD /* Anoncreds.m */; };
-		3E2FFA441ED5C37100536EAD /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2FFA431ED5C37100536EAD /* WalletUtils.m */; };
-		3E2FFA471ED5CC5E00536EAD /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3E2FFA461ED5CC5E00536EAD /* AnoncredsUtils.m */; };
-		3E9CDB9A1ECC841700B1980D /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E9CDB991ECC841700B1980D /* SignusDemo.mm */; };
-		3EC6BCF91EDD9D6600A290DE /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EC6BCF81EDD9D6600A290DE /* NSDictionary+JSON.m */; };
-		3ED5BE521EC98D6600881380 /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
-		3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */; };
-		3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE561EC9DA9700881380 /* PoolUtils.m */; };
-		3EF020D81EC4593900CF985C /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020D71EC4593900CF985C /* TestUtils.m */; };
-		3EF020DB1EC4595500CF985C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF020DA1EC4595500CF985C /* Environment.m */; };
-		846074AC1EF0371000E700A5 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074AB1EF0371000E700A5 /* LedgerNymRequest.mm */; };
-		846074AE1EF0374000E700A5 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074AD1EF0374000E700A5 /* LedgerAttribRequest.mm */; };
-		846074B01EF03BC800E700A5 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 846074AF1EF03BC800E700A5 /* LedgerSchemaRequest.mm */; };
-		84738E291EF11C6900827956 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84738E281EF11C6900827956 /* LedgerNodeRequest.mm */; };
-		84738E2C1EF1271700827956 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E2B1EF1271700827956 /* SignusHighCases.m */; };
-		84738E2E1EF1272B00827956 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E2D1EF1272B00827956 /* SignusMediumCases.m */; };
-		84738E311EF15DD100827956 /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E301EF15DD100827956 /* WalletHighCases.m */; };
-		84738E331EF15DE200827956 /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84738E321EF15DE200827956 /* WalletMediumCases.m */; };
-		84881A851EE1A7B7001B5302 /* Ledger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A841EE1A7B7001B5302 /* Ledger.mm */; };
-		84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A861EE1BBDE001B5302 /* SignusUtils.mm */; };
-		84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A891EE53E1B001B5302 /* Pool.mm */; };
-		84881A8C1EE553E5001B5302 /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84881A8B1EE553E5001B5302 /* LedgerUtils.mm */; };
 		84881A991EE6EA93001B5302 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84881A981EE6EA93001B5302 /* libsovrin.framework */; };
 		84881A9A1EE6EA93001B5302 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 84881A981EE6EA93001B5302 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		84CFCAD61EF3F7C500F91426 /* Anoncreds.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAC81EF3F7C500F91426 /* Anoncreds.m */; };
+		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
+		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
+		84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */; };
+		84CFCADA1EF3F7C500F91426 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACD1EF3F7C500F91426 /* LedgerSchemaRequest.mm */; };
+		84CFCADB1EF3F7C500F91426 /* Ledger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACE1EF3F7C500F91426 /* Ledger.mm */; };
+		84CFCADC1EF3F7C500F91426 /* Pool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACF1EF3F7C500F91426 /* Pool.mm */; };
+		84CFCADD1EF3F7C500F91426 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAD11EF3F7C500F91426 /* SignusHighCases.m */; };
+		84CFCADE1EF3F7C500F91426 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAD21EF3F7C500F91426 /* SignusMediumCases.m */; };
+		84CFCADF1EF3F7C500F91426 /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAD41EF3F7C500F91426 /* WalletHighCases.m */; };
+		84CFCAE01EF3F7C500F91426 /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAD51EF3F7C500F91426 /* WalletMediumCases.m */; };
+		84CFCAE41EF3F7CC00F91426 /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAE11EF3F7CC00F91426 /* AnoncredsDemo.mm */; };
+		84CFCAE51EF3F7CC00F91426 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAE21EF3F7CC00F91426 /* LedgerDemo.mm */; };
+		84CFCAE61EF3F7CC00F91426 /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAE31EF3F7CC00F91426 /* SignusDemo.mm */; };
+		84CFCAF51EF3F7D300F91426 /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAE81EF3F7D300F91426 /* AnoncredsUtils.m */; };
+		84CFCAF61EF3F7D300F91426 /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAEA1EF3F7D300F91426 /* Environment.m */; };
+		84CFCAF71EF3F7D300F91426 /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAEC1EF3F7D300F91426 /* LedgerUtils.mm */; };
+		84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAEE1EF3F7D300F91426 /* PoolUtils.m */; };
+		84CFCAF91EF3F7D300F91426 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAF01EF3F7D300F91426 /* SignusUtils.mm */; };
+		84CFCAFA1EF3F7D300F91426 /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAF21EF3F7D300F91426 /* TestUtils.m */; };
+		84CFCAFB1EF3F7D300F91426 /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAF41EF3F7D300F91426 /* WalletUtils.m */; };
+		84CFCAFE1EF3F7D900F91426 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */; };
+		84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCB001EF3F80E00F91426 /* AnoncredsHighCases.m */; };
+		84CFCB031EF3F83200F91426 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCB021EF3F83200F91426 /* AnoncredsMediumCases.m */; };
 		C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */; };
 /* End PBXBuildFile section */
 
@@ -88,38 +89,40 @@
 		3E2A7F971EC36187006194EC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		3E2A7F991EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3E2A7F9E1EC36187006194EC /* libsovrin-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libsovrin-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
 		3E2A7FA41EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		3E2FFA3E1ED5C06E00536EAD /* Anoncreds.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Anoncreds.m; sourceTree = "<group>"; };
-		3E2FFA421ED5C37100536EAD /* WalletUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WalletUtils.h; sourceTree = "<group>"; };
-		3E2FFA431ED5C37100536EAD /* WalletUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletUtils.m; sourceTree = "<group>"; };
-		3E2FFA451ED5CC5E00536EAD /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
-		3E2FFA461ED5CC5E00536EAD /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
-		3E9CDB991ECC841700B1980D /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
-		3EC6BCF71EDD9D6600A290DE /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
-		3EC6BCF81EDD9D6600A290DE /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
-		3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
-		3ED5BE551EC9DA9700881380 /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
-		3ED5BE561EC9DA9700881380 /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
-		3EF020D61EC4593900CF985C /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
-		3EF020D71EC4593900CF985C /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
-		3EF020D91EC4595500CF985C /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
-		3EF020DA1EC4595500CF985C /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
-		846074AB1EF0371000E700A5 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
-		846074AD1EF0374000E700A5 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
-		846074AF1EF03BC800E700A5 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
-		84738E281EF11C6900827956 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
-		84738E2B1EF1271700827956 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
-		84738E2D1EF1272B00827956 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
-		84738E301EF15DD100827956 /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
-		84738E321EF15DE200827956 /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
-		84881A841EE1A7B7001B5302 /* Ledger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Ledger.mm; path = "libsovrin-demoTests/Ledger.mm"; sourceTree = SOURCE_ROOT; };
-		84881A861EE1BBDE001B5302 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
-		84881A881EE1BBF0001B5302 /* SignusUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
-		84881A891EE53E1B001B5302 /* Pool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Pool.mm; sourceTree = "<group>"; };
-		84881A8B1EE553E5001B5302 /* LedgerUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerUtils.mm; sourceTree = "<group>"; };
-		84881A8D1EE553F9001B5302 /* LedgerUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LedgerUtils.h; sourceTree = "<group>"; };
 		84881A981EE6EA93001B5302 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		84CFCAC81EF3F7C500F91426 /* Anoncreds.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Anoncreds.m; sourceTree = "<group>"; };
+		84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
+		84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
+		84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
+		84CFCACD1EF3F7C500F91426 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
+		84CFCACE1EF3F7C500F91426 /* Ledger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Ledger.mm; sourceTree = "<group>"; };
+		84CFCACF1EF3F7C500F91426 /* Pool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Pool.mm; sourceTree = "<group>"; };
+		84CFCAD11EF3F7C500F91426 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
+		84CFCAD21EF3F7C500F91426 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
+		84CFCAD41EF3F7C500F91426 /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
+		84CFCAD51EF3F7C500F91426 /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
+		84CFCAE11EF3F7CC00F91426 /* AnoncredsDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
+		84CFCAE21EF3F7CC00F91426 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
+		84CFCAE31EF3F7CC00F91426 /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
+		84CFCAE71EF3F7D300F91426 /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
+		84CFCAE81EF3F7D300F91426 /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
+		84CFCAE91EF3F7D300F91426 /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
+		84CFCAEA1EF3F7D300F91426 /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
+		84CFCAEB1EF3F7D300F91426 /* LedgerUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LedgerUtils.h; sourceTree = "<group>"; };
+		84CFCAEC1EF3F7D300F91426 /* LedgerUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerUtils.mm; sourceTree = "<group>"; };
+		84CFCAED1EF3F7D300F91426 /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
+		84CFCAEE1EF3F7D300F91426 /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
+		84CFCAEF1EF3F7D300F91426 /* SignusUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
+		84CFCAF01EF3F7D300F91426 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
+		84CFCAF11EF3F7D300F91426 /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
+		84CFCAF21EF3F7D300F91426 /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
+		84CFCAF31EF3F7D300F91426 /* WalletUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WalletUtils.h; sourceTree = "<group>"; };
+		84CFCAF41EF3F7D300F91426 /* WalletUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletUtils.m; sourceTree = "<group>"; };
+		84CFCAFC1EF3F7D900F91426 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
+		84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
+		84CFCB001EF3F80E00F91426 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
+		84CFCB021EF3F83200F91426 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
 		A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -187,32 +190,13 @@
 		3E2A7FA11EC36187006194EC /* libsovrin-demoTests */ = {
 			isa = PBXGroup;
 			children = (
-				3EC6BCFA1EDD9E8700A290DE /* Utils */,
-				3EF020D51EC458C900CF985C /* TestUtils */,
-				84738E341EF17BF300827956 /* Case Tests */,
-				3E7005311EE02CC7005069FD /* Demo Tests */,
+				84CFCAC71EF3F78500F91426 /* Utils */,
+				84CFCAC61EF3F72F00F91426 /* Test Utils */,
+				84CFCAC51EF3F71500F91426 /* Demo Tests */,
+				84CFCAC41EF3F6FD00F91426 /* Case Tests */,
 				3E2A7FA41EC36187006194EC /* Info.plist */,
 			);
 			path = "libsovrin-demoTests";
-			sourceTree = "<group>";
-		};
-		3E7005311EE02CC7005069FD /* Demo Tests */ = {
-			isa = PBXGroup;
-			children = (
-				3E9CDB991ECC841700B1980D /* SignusDemo.mm */,
-				3E2A7FA21EC36187006194EC /* AnoncredsDemo.mm */,
-				3ED5BE531EC9D8F200881380 /* LedgerDemo.mm */,
-			);
-			name = "Demo Tests";
-			sourceTree = "<group>";
-		};
-		3EC6BCFA1EDD9E8700A290DE /* Utils */ = {
-			isa = PBXGroup;
-			children = (
-				3EC6BCF71EDD9D6600A290DE /* NSDictionary+JSON.h */,
-				3EC6BCF81EDD9D6600A290DE /* NSDictionary+JSON.m */,
-			);
-			name = Utils;
 			sourceTree = "<group>";
 		};
 		3EF020D31EC4588500CF985C /* GUI */ = {
@@ -227,67 +211,96 @@
 			name = GUI;
 			sourceTree = "<group>";
 		};
-		3EF020D51EC458C900CF985C /* TestUtils */ = {
+		84CFCAC41EF3F6FD00F91426 /* Case Tests */ = {
 			isa = PBXGroup;
 			children = (
-				3EF020D61EC4593900CF985C /* TestUtils.h */,
-				3EF020D71EC4593900CF985C /* TestUtils.m */,
-				3EF020D91EC4595500CF985C /* Environment.h */,
-				3EF020DA1EC4595500CF985C /* Environment.m */,
-				3ED5BE551EC9DA9700881380 /* PoolUtils.h */,
-				3ED5BE561EC9DA9700881380 /* PoolUtils.m */,
-				3E2FFA421ED5C37100536EAD /* WalletUtils.h */,
-				3E2FFA431ED5C37100536EAD /* WalletUtils.m */,
-				3E2FFA451ED5CC5E00536EAD /* AnoncredsUtils.h */,
-				3E2FFA461ED5CC5E00536EAD /* AnoncredsUtils.m */,
-				84881A881EE1BBF0001B5302 /* SignusUtils.h */,
-				84881A861EE1BBDE001B5302 /* SignusUtils.mm */,
-				84881A8D1EE553F9001B5302 /* LedgerUtils.h */,
-				84881A8B1EE553E5001B5302 /* LedgerUtils.mm */,
+				84CFCAFF1EF3F7F600F91426 /* Anoncreds */,
+				84CFCAC81EF3F7C500F91426 /* Anoncreds.m */,
+				84CFCAC91EF3F7C500F91426 /* Ledger */,
+				84CFCACE1EF3F7C500F91426 /* Ledger.mm */,
+				84CFCACF1EF3F7C500F91426 /* Pool.mm */,
+				84CFCAD01EF3F7C500F91426 /* Signus */,
+				84CFCAD31EF3F7C500F91426 /* Wallet */,
 			);
-			name = TestUtils;
+			path = "Case Tests";
 			sourceTree = "<group>";
 		};
-		846074AA1EF036ED00E700A5 /* Ledger */ = {
+		84CFCAC51EF3F71500F91426 /* Demo Tests */ = {
 			isa = PBXGroup;
 			children = (
-				84881A841EE1A7B7001B5302 /* Ledger.mm */,
-				846074AB1EF0371000E700A5 /* LedgerNymRequest.mm */,
-				846074AD1EF0374000E700A5 /* LedgerAttribRequest.mm */,
-				846074AF1EF03BC800E700A5 /* LedgerSchemaRequest.mm */,
-				84738E281EF11C6900827956 /* LedgerNodeRequest.mm */,
+				84CFCAE11EF3F7CC00F91426 /* AnoncredsDemo.mm */,
+				84CFCAE21EF3F7CC00F91426 /* LedgerDemo.mm */,
+				84CFCAE31EF3F7CC00F91426 /* SignusDemo.mm */,
+			);
+			path = "Demo Tests";
+			sourceTree = "<group>";
+		};
+		84CFCAC61EF3F72F00F91426 /* Test Utils */ = {
+			isa = PBXGroup;
+			children = (
+				84CFCAE71EF3F7D300F91426 /* AnoncredsUtils.h */,
+				84CFCAE81EF3F7D300F91426 /* AnoncredsUtils.m */,
+				84CFCAE91EF3F7D300F91426 /* Environment.h */,
+				84CFCAEA1EF3F7D300F91426 /* Environment.m */,
+				84CFCAEB1EF3F7D300F91426 /* LedgerUtils.h */,
+				84CFCAEC1EF3F7D300F91426 /* LedgerUtils.mm */,
+				84CFCAED1EF3F7D300F91426 /* PoolUtils.h */,
+				84CFCAEE1EF3F7D300F91426 /* PoolUtils.m */,
+				84CFCAEF1EF3F7D300F91426 /* SignusUtils.h */,
+				84CFCAF01EF3F7D300F91426 /* SignusUtils.mm */,
+				84CFCAF11EF3F7D300F91426 /* TestUtils.h */,
+				84CFCAF21EF3F7D300F91426 /* TestUtils.m */,
+				84CFCAF31EF3F7D300F91426 /* WalletUtils.h */,
+				84CFCAF41EF3F7D300F91426 /* WalletUtils.m */,
+			);
+			path = "Test Utils";
+			sourceTree = "<group>";
+		};
+		84CFCAC71EF3F78500F91426 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				84CFCAFC1EF3F7D900F91426 /* NSDictionary+JSON.h */,
+				84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		84CFCAC91EF3F7C500F91426 /* Ledger */ = {
+			isa = PBXGroup;
+			children = (
+				84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */,
+				84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */,
+				84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */,
+				84CFCACD1EF3F7C500F91426 /* LedgerSchemaRequest.mm */,
 			);
 			path = Ledger;
 			sourceTree = "<group>";
 		};
-		84738E2A1EF126E300827956 /* Signus */ = {
+		84CFCAD01EF3F7C500F91426 /* Signus */ = {
 			isa = PBXGroup;
 			children = (
-				84738E2B1EF1271700827956 /* SignusHighCases.m */,
-				84738E2D1EF1272B00827956 /* SignusMediumCases.m */,
+				84CFCAD11EF3F7C500F91426 /* SignusHighCases.m */,
+				84CFCAD21EF3F7C500F91426 /* SignusMediumCases.m */,
 			);
 			path = Signus;
 			sourceTree = "<group>";
 		};
-		84738E2F1EF15DB900827956 /* Wallet */ = {
+		84CFCAD31EF3F7C500F91426 /* Wallet */ = {
 			isa = PBXGroup;
 			children = (
-				84738E301EF15DD100827956 /* WalletHighCases.m */,
-				84738E321EF15DE200827956 /* WalletMediumCases.m */,
+				84CFCAD41EF3F7C500F91426 /* WalletHighCases.m */,
+				84CFCAD51EF3F7C500F91426 /* WalletMediumCases.m */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
 		};
-		84738E341EF17BF300827956 /* Case Tests */ = {
+		84CFCAFF1EF3F7F600F91426 /* Anoncreds */ = {
 			isa = PBXGroup;
 			children = (
-				3E2FFA3E1ED5C06E00536EAD /* Anoncreds.m */,
-				84881A891EE53E1B001B5302 /* Pool.mm */,
-				84738E2F1EF15DB900827956 /* Wallet */,
-				84738E2A1EF126E300827956 /* Signus */,
-				846074AA1EF036ED00E700A5 /* Ledger */,
+				84CFCB001EF3F80E00F91426 /* AnoncredsHighCases.m */,
+				84CFCB021EF3F83200F91426 /* AnoncredsMediumCases.m */,
 			);
-			name = "Case Tests";
+			path = Anoncreds;
 			sourceTree = "<group>";
 		};
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
@@ -467,7 +480,6 @@
 				3E2A7F901EC36186006194EC /* ViewController.m in Sources */,
 				3E2A7F8D1EC36186006194EC /* AppDelegate.mm in Sources */,
 				3E2A7F8A1EC36186006194EC /* main.m in Sources */,
-				3ED5BE521EC98D6600881380 /* TestUtils.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -475,28 +487,30 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84738E291EF11C6900827956 /* LedgerNodeRequest.mm in Sources */,
-				84738E331EF15DE200827956 /* WalletMediumCases.m in Sources */,
-				84881A8A1EE53E1B001B5302 /* Pool.mm in Sources */,
-				3E2A7FA31EC36187006194EC /* AnoncredsDemo.mm in Sources */,
-				846074AE1EF0374000E700A5 /* LedgerAttribRequest.mm in Sources */,
-				3EF020DB1EC4595500CF985C /* Environment.m in Sources */,
-				84881A871EE1BBDE001B5302 /* SignusUtils.mm in Sources */,
-				84881A8C1EE553E5001B5302 /* LedgerUtils.mm in Sources */,
-				84738E2E1EF1272B00827956 /* SignusMediumCases.m in Sources */,
-				3E2FFA441ED5C37100536EAD /* WalletUtils.m in Sources */,
-				3ED5BE571EC9DA9700881380 /* PoolUtils.m in Sources */,
-				3E9CDB9A1ECC841700B1980D /* SignusDemo.mm in Sources */,
-				3E2FFA471ED5CC5E00536EAD /* AnoncredsUtils.m in Sources */,
-				846074B01EF03BC800E700A5 /* LedgerSchemaRequest.mm in Sources */,
-				84881A851EE1A7B7001B5302 /* Ledger.mm in Sources */,
-				846074AC1EF0371000E700A5 /* LedgerNymRequest.mm in Sources */,
-				84738E2C1EF1271700827956 /* SignusHighCases.m in Sources */,
-				3EC6BCF91EDD9D6600A290DE /* NSDictionary+JSON.m in Sources */,
-				3EF020D81EC4593900CF985C /* TestUtils.m in Sources */,
-				3ED5BE541EC9D8F200881380 /* LedgerDemo.mm in Sources */,
-				84738E311EF15DD100827956 /* WalletHighCases.m in Sources */,
-				3E2FFA3F1ED5C06E00536EAD /* Anoncreds.m in Sources */,
+				84CFCAF71EF3F7D300F91426 /* LedgerUtils.mm in Sources */,
+				84CFCADE1EF3F7C500F91426 /* SignusMediumCases.m in Sources */,
+				84CFCAE01EF3F7C500F91426 /* WalletMediumCases.m in Sources */,
+				84CFCAE41EF3F7CC00F91426 /* AnoncredsDemo.mm in Sources */,
+				84CFCADC1EF3F7C500F91426 /* Pool.mm in Sources */,
+				84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */,
+				84CFCADF1EF3F7C500F91426 /* WalletHighCases.m in Sources */,
+				84CFCAF51EF3F7D300F91426 /* AnoncredsUtils.m in Sources */,
+				84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */,
+				84CFCADB1EF3F7C500F91426 /* Ledger.mm in Sources */,
+				84CFCAE51EF3F7CC00F91426 /* LedgerDemo.mm in Sources */,
+				84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */,
+				84CFCAD61EF3F7C500F91426 /* Anoncreds.m in Sources */,
+				84CFCAE61EF3F7CC00F91426 /* SignusDemo.mm in Sources */,
+				84CFCADD1EF3F7C500F91426 /* SignusHighCases.m in Sources */,
+				84CFCAFE1EF3F7D900F91426 /* NSDictionary+JSON.m in Sources */,
+				84CFCADA1EF3F7C500F91426 /* LedgerSchemaRequest.mm in Sources */,
+				84CFCAF61EF3F7D300F91426 /* Environment.m in Sources */,
+				84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */,
+				84CFCAF91EF3F7D300F91426 /* SignusUtils.mm in Sources */,
+				84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */,
+				84CFCAFA1EF3F7D300F91426 /* TestUtils.m in Sources */,
+				84CFCB031EF3F83200F91426 /* AnoncredsMediumCases.m in Sources */,
+				84CFCAFB1EF3F7D300F91426 /* WalletUtils.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
