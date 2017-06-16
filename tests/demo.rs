@@ -168,10 +168,12 @@ fn anoncreds_demo_works() {
 
     let schema_seq_no = 1;
     let schema = format!(r#"{{
-                            "name":"gvt",
-                            "version":"1.0",
-                            "keys":["age","sex","height","name"],
-                            "seq_no":{}
+                            "seqNo":{},
+                            "data":{{
+                                "name":"gvt",
+                                "version":"1.0",
+                                "keys":["age","sex","height","name"]
+                            }}
                          }}"#, schema_seq_no);
 
     // 3. Issuer create Claim Definition for Schema
@@ -184,11 +186,13 @@ fn anoncreds_demo_works() {
                                                  create_claim_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, claim_def_json, claim_def_uuid) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, mut claim_def_json, claim_def_uuid) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
     info!("claim_def_json {:?}", claim_def_json);
     assert_eq!(ErrorCode::Success, err);
 
     let claim_def_seq_no = 1;
+    claim_def_json = claim_def_json.replace(r#""seqNo":null"#, &format!(r#""seqNo":{}"#, claim_def_seq_no));//Need for tests
 
     // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
     let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle,
@@ -407,7 +411,7 @@ fn ledger_demo_works() {
     let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
 
     // 1. Create ledger config from genesis txn file
-    PoolUtils::create_genesis_txn_file(pool_name);
+    PoolUtils::create_genesis_txn_file(pool_name, None);
     let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
     let err = sovrin_create_pool_ledger_config(create_command_handle,
                                                c_pool_name.as_ptr(),

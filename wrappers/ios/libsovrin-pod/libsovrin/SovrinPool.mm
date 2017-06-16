@@ -6,9 +6,9 @@
 
 @implementation SovrinPool
 
-+ (NSError*) createPoolWithName:(NSString*) name
-                      andConfig:(NSString*) config
-                     completion:(void (^)(NSError* error)) handler
++ (NSError *)createPoolLedgerConfigWithName:(NSString *)name
+                                 poolConfig:(NSString *)config
+                                 completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -27,9 +27,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) openPoolWithName:(NSString*) name
-                    andConfig:(NSString*) config
-                   completion:(void (^)(NSError* error, SovrinHandle handle)) handler
++ (NSError *)openPoolLedgerWithName:(NSString *)name
+                         poolConfig:(NSString *)config
+                         completion:(void (^)(NSError *error, SovrinHandle handle)) handler
 {
     sovrin_error_t ret;
     
@@ -48,8 +48,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) refreshPoolWithHandle:(SovrinHandle) SovrinHandle
-                        completion:(void (^)(NSError* error)) handler
++ (NSError *)refreshPoolWithHandle:(SovrinHandle)SovrinHandle
+                        completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -67,8 +67,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) closePoolWithHandle:(SovrinHandle) SovrinHandle
-                      completion:(void (^)(NSError* error)) handler
++ (NSError *)closePoolWithHandle:(SovrinHandle)SovrinHandle
+                      completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -86,8 +86,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) deletePoolWithName:(NSString*) name
-                     completion:(void (^)(NSError* error)) handler
++ (NSError *)deletePoolWithName:(NSString *)name
+                     completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     

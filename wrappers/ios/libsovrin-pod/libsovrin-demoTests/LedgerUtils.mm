@@ -26,66 +26,64 @@
 }
 
 
-- (NSError *)signAndSubmitRequest:(SovrinHandle)poolHandle
-                     walletHandle:(SovrinHandle)walletHandle
-                     submitterDid:(NSString *)submitterDid
-                      requestJson:(NSString *)requestJson
-                     responseJson:(NSString **)responseJson
+- (NSError *)signAndSubmitRequestWithPoolHandle:(SovrinHandle)poolHandle
+                                   walletHandle:(SovrinHandle)walletHandle
+                                   submitterDid:(NSString *)submitterDid
+                                    requestJson:(NSString *)requestJson
+                                outResponseJson:(NSString **)responseJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
     NSError *ret;
 
-    ret = [SovrinLedger signAndSubmitRequest:walletHandle
-                                  poolHandle:poolHandle
-                                submitterDID:submitterDid
-                                 requestJSON:requestJson
-                                  completion:^(NSError* error, NSString *resultJson)
+    ret = [SovrinLedger signAndSubmitRequestWithWalletHandle:walletHandle
+                                                  poolHandle:poolHandle
+                                                submitterDID:submitterDid
+                                                 requestJSON:requestJson
+                                                  completion:^(NSError* error, NSString *resultJson)
     {
         err = error;
         outJson = resultJson;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *responseJson = outJson;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (responseJson){ *responseJson = outJson; }
     
     return err;
 }
 
 // MARK: Build nym request
 
-- (NSError *) buildNymRequest:(NSString *)submitterDid
-                    targetDid:(NSString *)targetDid
-                       verkey:(NSString *)verkey
-                         xref:(NSString *)xref
-                         data:(NSString *)data
-                         role:(NSString *)role
-                   resultJson:(NSString **)resultJson
+- (NSError *) buildNymRequestWithSubmitterDid:(NSString*) submitterDid
+                                    targetDid:(NSString*) targetDid
+                                       verkey:(NSString*) verkey
+                                        alias:(NSString*) alias
+                                         role:(NSString*) role
+                                   outRequest:(NSString**)resultJson;
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
     NSError *ret;
     
-    NSString *xrefStr = (xref) ? xref : @"";
-    NSString *dataStr = (data) ? data : @"";
-    NSString *roleStr = (xref) ? role : @"";
+    NSString *verkeyStr = (verkey) ? verkey : @"";
+    NSString *aliasStr = (alias) ? alias : @"";
+    NSString *roleStr = (role) ? role : @"";
     
-    ret = [SovrinLedger buildNymRequest:submitterDid
-                              targetDID:targetDid
-                                 verkey:verkey
-                                   xref:xrefStr
-                                   data:dataStr
-                                   role:roleStr
-                             completion:^(NSError *error, NSString *json)
+    ret = [SovrinLedger buildNymRequestWithSubmitterDid:submitterDid
+                                              targetDID:targetDid
+                                                 verkey:verkeyStr
+                                                   alias:alias
+                                                   role:roleStr
+                                             completion:^(NSError *error, NSString *json)
            {
                err = error;
                outJson = json;
@@ -99,50 +97,50 @@
         return ret;
     }
     
-    *resultJson = outJson;
+    if (resultJson){ *resultJson = outJson; }
     
     return err;
 }
 
 
-- (NSError *) buildGetNymRequest:(NSString *)submitterDid
-                       targetDid:(NSString *)targetDid
-                      resultJson:(NSString **)resultJson
+- (NSError *) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                       targetDid:(NSString *)targetDid
+                                      outRequest:(NSString **)requestJson;
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetNymRequest:submitterDid
-                                 targetDID:targetDid
-                                completion:^(NSError* error, NSString* json)
+    ret = [SovrinLedger buildGetNymRequestWithSubmitterDid:submitterDid
+                                                 targetDID:targetDid
+                                                completion:^(NSError *error, NSString *json)
     {
         err = error;
         outJson = json;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = outJson;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (requestJson){ *requestJson = outJson; }
     
     return err;
 }
 
 // MARK: Build Attribute request
 
-- (NSError *)buildAttribRequest:(NSString *)submitterDid
-                      targetDid:(NSString *)targetDid
-                           hash:(NSString *)hash
-                            raw:(NSString *)raw
-                            enc:(NSString *)enc
-                    resultJson:(NSString **)resultJson
+- (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDid:(NSString *)targetDid
+                                           hash:(NSString *)hash
+                                            raw:(NSString *)raw
+                                            enc:(NSString *)enc
+                                     resultJson:(NSString **)resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
@@ -153,95 +151,95 @@
     NSString* rawStr = (raw) ? raw : @"";
     NSString* encStr = (enc) ? enc : @"";
     
-    ret = [SovrinLedger buildAttribRequest:submitterDid
-                                 targetDID:targetDid
-                                      hash:hashStr
-                                       raw:rawStr
-                                       enc:encStr
-                                completion:^(NSError* error, NSString* requestJson)
+    ret = [SovrinLedger buildAttribRequestWithSubmitterDid:submitterDid
+                                                 targetDID:targetDid
+                                                      hash:hashStr
+                                                       raw:rawStr
+                                                       enc:encStr
+                                                completion:^(NSError* error, NSString* requestJson)
            {
                err = error;
                outJson = requestJson;
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = outJson;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson){ *resultJson = outJson; }
     return err;
 }
 
 
-- (NSError *)buildGetAttribRequest:(NSString *)submitterDid
-                         targetDid:(NSString *)targetDid
-                              data:(NSString *)data
-                        resultJson:(NSString **)resultJson
+- (NSError *)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
+                                         targetDid:(NSString *)targetDid
+                                              data:(NSString *)data
+                                        resultJson:(NSString **)resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outRequest = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetAttribRequest:submitterDid
-                                    targetDID:targetDid
-                                         data:data
-                                   completion:^(NSError* error, NSString* request)
+    ret = [SovrinLedger buildGetAttribRequestWithSubmitterDid:submitterDid
+                                                    targetDID:targetDid
+                                                         data:data
+                                                   completion:^(NSError *error, NSString *request)
     {
         err = error;
         outRequest = request;
         [completionExpectation fulfill];
     }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = outRequest;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson){ *resultJson = outRequest; }
     return err;
 }
 // MARK: Build schema request
 
-- (NSError *)buildSchemaRequest:(NSString *)submitterDid
-                           data:(NSString *)data
-                     resultJson:(NSString **)resultJson
+- (NSError *)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSString *)data
+                                     resultJson:(NSString **)resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildSchemaRequest:submitterDid
-                                      data:data
-                                completion:^(NSError* error, NSString* request)
+    ret = [SovrinLedger buildSchemaRequestWithSubmitterDid:submitterDid
+                                                      data:data
+                                                completion:^(NSError *error, NSString *request)
            {
                err = error;
                result = request;
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
+
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
-    *resultJson = result;
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
-- (NSError *)buildGetSchemaRequest:(NSString *)submitterDid
-                              dest:(NSString *)dest
-                              data:(NSString *)data
-                        resultJson:(NSString **)resultJson
+- (NSError *)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
+                                              dest:(NSString *)dest
+                                              data:(NSString *)data
+                                        resultJson:(NSString **)resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
@@ -249,124 +247,125 @@
     NSError *ret;
     
     
-    ret = [SovrinLedger buildGetSchemaRequest:submitterDid
-                                         dest:dest
-                                         data:data
-                                   completion:^(NSError* error, NSString* request)
+    ret = [SovrinLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
+                                                         dest:dest
+                                                         data:data
+                                                   completion:^(NSError *error, NSString *request)
            {
                err = error;
                result = request;
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = result;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
 // MARK: Build Node request
 
-- (NSError *)buildNodeRequest:(NSString *) submitterDid
-                    targetDid:(NSString *) targetDid
-                         data:(NSString *) data
-                   resultJson:(NSString **) resultJson
+- (NSError *)buildNodeRequestWithSubmitterDid:(NSString *) submitterDid
+                                    targetDid:(NSString *) targetDid
+                                         data:(NSString *) data
+                                   resultJson:(NSString **) resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildNodeRequest:submitterDid
-                               targetDid:targetDid
-                                    data:data
-                              completion:^(NSError* error, NSString* request)
+    ret = [SovrinLedger buildNodeRequestWithSubmitterDid:submitterDid
+                                               targetDid:targetDid
+                                                    data:data
+                                              completion:^(NSError *error, NSString *request)
            {
                err = error;
                result = request;
                [completionExpectation fulfill];
            }];
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = result;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
 // MARK: Build claim definition txn
 
-- (NSError *)buildClaimDefTxn:(NSString *) submitterDid
-                         xref:(NSString *) xref
-                signatureType:(NSString *) signatureType
-                         data:(NSString *) data
-                   resultJson:(NSString**) resultJson
+- (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *) submitterDid
+                                         xref:(NSString *) xref
+                                signatureType:(NSString *) signatureType
+                                         data:(NSString *) data
+                                   resultJson:(NSString**) resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildClaimDefTxn:submitterDid
-                                    xref:xref
-                           signatureType:signatureType
-                                    data:data
-                              completion:^(NSError* error, NSString* request)
+    ret = [SovrinLedger buildClaimDefTxnWithSubmitterDid:submitterDid
+                                                    xref:xref
+                                           signatureType:signatureType
+                                                    data:data
+                                              completion:^(NSError* error, NSString* request)
            {
                err = error;
                result = request;
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = result;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 
-- (NSError *)buildGetClaimDefTxn:(NSString *) submitterDid
-                            xref:(NSString *) xref
-                   signatureType:(NSString *) signatureType
-                          origin:(NSString *) origin
-                      resultJson:(NSString**) resultJson
+- (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *) submitterDid
+                                            xref:(NSString *) xref
+                                   signatureType:(NSString *) signatureType
+                                          origin:(NSString *) origin
+                                      resultJson:(NSString**) resultJson
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetClaimDefTxn:submitterDid
-                                       xref:xref
-                              signatureType:signatureType
-                                     origin:origin
-                                 completion:^(NSError* error, NSString* request)
+    ret = [SovrinLedger buildGetClaimDefTxnWithSubmitterDid:submitterDid
+                                                       xref:xref
+                                              signatureType:signatureType
+                                                     origin:origin
+                                                 completion:^(NSError* error, NSString* request)
            {
                err = error;
                result = request;
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
     if( ret.code != Success)
     {
         return ret;
     }
     
-    *resultJson = result;
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson){ *resultJson = result; }
     return err;
 }
 

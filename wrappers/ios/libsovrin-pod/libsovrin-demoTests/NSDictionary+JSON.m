@@ -36,4 +36,22 @@
                                                            error: &error];
     return dict;
 }
+
+- (BOOL) contains:(NSDictionary*) dict
+{
+    for (NSString *key in [dict allKeys])
+    {
+        id object = [self objectForKey:key];
+        if ([object isKindOfClass:[NSDictionary class]])
+        {
+            [[self objectForKey:key] contains:(NSDictionary *)object];
+        }
+        else if ([self objectForKey:key] != nil
+                 && ![[self objectForKey:key] isEqual:[dict objectForKey:key]])
+        {
+            return NO;
+        }
+    }
+    return YES;
+}
 @end

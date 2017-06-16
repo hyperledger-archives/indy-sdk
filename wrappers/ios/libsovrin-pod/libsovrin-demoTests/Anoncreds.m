@@ -45,17 +45,17 @@
     
     //1. Create Issuer wallet, get wallet handle
     
-    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName
-                                                 walletName:issuerWalletName
-                                                      xtype:xtype
-                                                     handle:&issuerWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                             walletName:issuerWalletName
+                                                                  xtype:xtype
+                                                                 handle:&issuerWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    res = [[WalletUtils sharedInstance] createAndOpenWallet:poolName
-                                                 walletName:proverWalletName
-                                                      xtype:xtype
-                                                     handle:&proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                             walletName:proverWalletName
+                                                                  xtype:xtype
+                                                                 handle:&proverWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Issuer create claim definition
@@ -132,11 +132,11 @@
     
     NSString *claimJson = [[ AnoncredsUtils sharedInstance] getGvtClaimJson];
     
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerWalletHandle
-                                                   claimJson:claimJson
-                                                claimReqJson:claimReq
-                                                outClaimJson:&xclaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
+                                                                   claimJson:claimJson
+                                                                claimReqJson:claimReq
+                                                                outClaimJson:&xclaimJson
+                                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
@@ -144,13 +144,11 @@
     XCTAssertNotNil(revocRegUpdateJson, @"revocRegUpdateJson is nil!");
     NSLog(@"xclaimJson: %@", xclaimJson);
     NSLog(@"revocRegUpdateJson: %@", revocRegUpdateJson);
-    // TODO: revocRegUpdateJson is empty
     
     // 9. Prover store received Claim
     
-    // TODO: 110 error
-    res = [[AnoncredsUtils sharedInstance] proverStoreClaim: proverWalletHandle
-                                                 claimsJson: xclaimJson];
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
+                                                                 claimsJson: xclaimJson];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
@@ -172,10 +170,9 @@
                                                          "}", [schemaSeqNo integerValue] ];
     NSString *claimsJson = nil;
     
-     // TODO: attr1_uuid & predicate1_uuid are empty! why?
-    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReq:proverWalletHandle
-                                                     proofRequestJson:proofReqJson
-                                                        outClaimsJson:&claimsJson];
+    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:proverWalletHandle
+                                                                     proofRequestJson:proofReqJson
+                                                                        outClaimsJson:&claimsJson];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReq() failed");
     XCTAssertNotNil(claimsJson, @"claimsJson is nil!");
@@ -206,14 +203,14 @@
     
     NSString* proofJson = nil;
     
-    res = [[AnoncredsUtils sharedInstance] proverCreateProof: proverWalletHandle
-                                                proofReqJson: proofReqJson
-                                         requestedClaimsJson: requestedClaimsJson
-                                                 schemasJson: schemasJson
-                                            masterSecretName: masterSecretName
-                                               claimDefsJson: claimDefsJson
-                                               revocRegsJson: revocRegsJsons
-                                                outProofJson:&proofJson];
+    res = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle: proverWalletHandle
+                                                                proofReqJson: proofReqJson
+                                                         requestedClaimsJson: requestedClaimsJson
+                                                                 schemasJson: schemasJson
+                                                            masterSecretName: masterSecretName
+                                                               claimDefsJson: claimDefsJson
+                                                               revocRegsJson: revocRegsJsons
+                                                                outProofJson:&proofJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
     
@@ -250,19 +247,28 @@
     //1. Issuer1 create wallet, get wallet handles
   
     SovrinHandle issuerGvtWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:issuer1WalletName xtype:xtype handle:&issuerGvtWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName:issuer1WalletName
+                                                                  xtype:xtype
+                                                                 handle:&issuerGvtWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Issuer2 create wallet, get wallet handles
    
     SovrinHandle issuerXyzWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:issuer2WalletName xtype:xtype handle:&issuerXyzWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName:issuer2WalletName
+                                                                  xtype:xtype
+                                                                 handle:&issuerXyzWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //3. Prover create wallet, get wallet handles
   
     SovrinHandle proverWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName walletName:proverWalletName xtype:xtype handle:&proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName:proverWalletName
+                                                                  xtype:xtype
+                                                                 handle:&proverWalletHandle];
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     NSMutableDictionary* schemas = [ NSMutableDictionary new];
@@ -391,19 +397,18 @@
     NSString* revocRegUpdateJson = nil;
     NSString* gvtClaimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
                               
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerGvtWalletHandle
-                                                   claimJson:gvtClaimJson
-                                                claimReqJson:gvtClaimReq
-                                                outClaimJson:&gvtClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerGvtWalletHandle
+                                                                   claimJson:gvtClaimJson
+                                                                claimReqJson:gvtClaimReq
+                                                                outClaimJson:&gvtClaimJson
+                                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     
     //13. Prover store received GVT Claim
 
-    // TODO: 110 error
-    res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
-                                                 claimsJson:gvtClaimJson];
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
+                                                                 claimsJson:gvtClaimJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
@@ -425,19 +430,19 @@
     
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
                               
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerXyzWalletHandle
-                                                   claimJson:xyzClaimJson
-                                                claimReqJson:xyzClaimReq
-                                                outClaimJson:&xyzClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerXyzWalletHandle
+                                                                   claimJson:xyzClaimJson
+                                                                claimReqJson:xyzClaimReq
+                                                                outClaimJson:&xyzClaimJson
+                                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
 
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
 
     // 16. Prover store received XYZ Claim
     
 
-    res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
-                                                 claimsJson:xyzClaimJson];
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
+                                                                 claimsJson:xyzClaimJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
 
@@ -466,9 +471,9 @@
     
     NSString *claimsJson = nil;
     
-    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReq: proverWalletHandle
-                                                     proofRequestJson: proofReqJson
-                                                        outClaimsJson:&claimsJson];
+    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:proverWalletHandle
+                                                                     proofRequestJson:proofReqJson
+                                                                        outClaimsJson:&claimsJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReq() failed");
     
@@ -566,14 +571,14 @@
     NSString *revocRegsJson = @"{}";
     NSString *proofJson;
     
-    res = [[AnoncredsUtils sharedInstance] proverCreateProof:proverWalletHandle
-                                                proofReqJson:proofReqJson
-                                         requestedClaimsJson:requestedClaimsJson
-                                                 schemasJson:schemasJson
-                                            masterSecretName:masterSecretName1
-                                               claimDefsJson:claimDefsJson
-                                               revocRegsJson:revocRegsJson
-                                                outProofJson:&proofJson];
+    res = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
+                                                                proofReqJson:proofReqJson
+                                                         requestedClaimsJson:requestedClaimsJson
+                                                                 schemasJson:schemasJson
+                                                            masterSecretName:masterSecretName1
+                                                               claimDefsJson:claimDefsJson
+                                                               revocRegsJson:revocRegsJson
+                                                                outProofJson:&proofJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
     
@@ -609,20 +614,20 @@
     //1. Issuer create wallet, get wallet handles
     
     SovrinHandle issuerWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName
-                                          walletName: issuerWalletName
-                                               xtype: xtype
-                                              handle: &issuerWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName: issuerWalletName
+                                                                  xtype: xtype
+                                                                 handle: &issuerWalletHandle];
     
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //2. Prover create wallet, get wallet handles
     
     SovrinHandle proverWalletHandle = 0;
-    res = [[WalletUtils sharedInstance] createAndOpenWallet: poolName
-                                          walletName: proverWalletName
-                                               xtype: xtype
-                                              handle: &proverWalletHandle];
+    res = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
+                                                             walletName: proverWalletName
+                                                                  xtype: xtype
+                                                                 handle: &proverWalletHandle];
     
     XCTAssertEqual(res.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
@@ -746,19 +751,18 @@
     NSString* revocRegUpdateJson = nil;
     NSString* gvtClaimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
     
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerWalletHandle
-                                                   claimJson:gvtClaimJson
-                                                claimReqJson:gvtClaimReq
-                                                outClaimJson:&gvtClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
+                                                                   claimJson:gvtClaimJson
+                                                                claimReqJson:gvtClaimReq
+                                                                outClaimJson:&gvtClaimJson
+                                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     
     //11. Prover store received GVT Claim
     
-    // TODO: 110 error
-    res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
-                                                 claimsJson:gvtClaimJson];
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
+                                                                 claimsJson:gvtClaimJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
@@ -780,18 +784,18 @@
     
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
     
-    res = [[AnoncredsUtils sharedInstance] issuerCreateClaim:issuerWalletHandle
-                                                   claimJson:xyzClaimJson
-                                                claimReqJson:xyzClaimReq
-                                                outClaimJson:&xyzClaimJson
-                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
+    res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
+                                                                   claimJson:xyzClaimJson
+                                                                claimReqJson:xyzClaimReq
+                                                                outClaimJson:&xyzClaimJson
+                                                       outRevocRegUpdateJSON:&revocRegUpdateJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::issuerCreateClaim() failed");
     
     //14. Prover store received XYZ Claim
     
-    res = [[AnoncredsUtils sharedInstance] proverStoreClaim:proverWalletHandle
-                                                 claimsJson:xyzClaimJson];
+    res = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
+                                                                 claimsJson:xyzClaimJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
 
@@ -816,9 +820,9 @@
     
     NSString *claimsJson = nil;
     
-    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReq: proverWalletHandle
-                                                     proofRequestJson: proofReqJson
-                                                        outClaimsJson:&claimsJson];
+    res = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle: proverWalletHandle
+                                                                     proofRequestJson: proofReqJson
+                                                                        outClaimsJson:&claimsJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReq() failed");
 
@@ -910,14 +914,14 @@
     NSString *revocRegsJson = @"{}";
     NSString *proofJson;
     
-    res = [[AnoncredsUtils sharedInstance] proverCreateProof:proverWalletHandle
-                                                proofReqJson:proofReqJson
-                                         requestedClaimsJson:requestedClaimsJson
-                                                 schemasJson:schemasJson
-                                            masterSecretName:masterSecretName
-                                               claimDefsJson:claimDefsJson
-                                               revocRegsJson:revocRegsJson
-                                                outProofJson:&proofJson];
+    res = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
+                                                                proofReqJson:proofReqJson
+                                                         requestedClaimsJson:requestedClaimsJson
+                                                                 schemasJson:schemasJson
+                                                            masterSecretName:masterSecretName
+                                                               claimDefsJson:claimDefsJson
+                                                               revocRegsJson:revocRegsJson
+                                                                outProofJson:&proofJson];
     
     XCTAssertEqual(res.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
     
@@ -936,12 +940,5 @@
     
     [TestUtils cleanupStorage];
 }
-
-//- (void)testAnoncreds
-//{
-//    [self anoncredsWorksForSingleIssuerSingleProverTest];
-//    //[self anoncredsWorksForMultiplyIssuerSingleProver];
-//    //[self anoncredsWorksForSingleIssuerMultiplyClaimsSingleProver];
-//}
 
 @end

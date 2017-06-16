@@ -11,14 +11,26 @@
 
 + (WalletUtils *)sharedInstance;
 
--(NSError*) createAndOpenWallet:(NSString*) poolName
-              walletName:(NSString*) walletName
-                   xtype:(NSString*) xtype
-                  handle:(SovrinHandle*) handle;
+- (NSError *)createAndOpenWalletWithPoolName:(NSString *)poolName
+                                  walletName:(NSString *)walletName
+                                       xtype:(NSString *)xtype
+                                      handle:(SovrinHandle *)handle;
+
+- (NSError *)createWalletWithPoolName:(NSString *)poolName
+                           walletName:(NSString *)walletName
+                                xtype:(NSString *)xtype;
+
+- (NSError *)deleteWalletWithName:(NSString *)walletName;
+
+- (NSError *)openWalletWithName:(NSString *)walletName
+                      outHandle:(SovrinHandle *)handle;
+
+- (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle;
 
 
--(NSError*) walletSetSeqNoForValue:(SovrinHandle) walletHandle
-                      claimDefUUID:(NSString*) uuid
-                     claimDefSeqNo:(NSNumber*) seqNo;
+
+- (NSError *)walletSetSeqNoForValue:(SovrinHandle)walletHandle
+                       claimDefUUID:(NSString *)uuid
+                      claimDefSeqNo:(NSNumber *)seqNo;
 
 @end
