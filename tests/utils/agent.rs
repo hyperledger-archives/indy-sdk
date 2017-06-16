@@ -86,11 +86,17 @@ impl AgentUtils {
         let (send_cmd_id, send_cb) = CallbackUtils::closure_to_agent_send_cb(
             Box::new(move |err_code| send_sender.send(err_code).unwrap())
         );
-        sovrin_agent_send(send_cmd_id, conn_handle, CString::new(msg).unwrap().as_ptr(), send_cb);
-        let send_result = send_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-        if send_result != ErrorCode::Success {
-            return Err(send_result)
+
+        let res = sovrin_agent_send(send_cmd_id, conn_handle, CString::new(msg).unwrap().as_ptr(), send_cb);
+        if res != ErrorCode::Success {
+            return Err(res);
         }
+
+        let res = send_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res)
+        }
+
         Ok(())
     }
 }

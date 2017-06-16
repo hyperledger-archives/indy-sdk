@@ -4,7 +4,6 @@ extern crate serde_json;
 extern crate zmq;
 
 use self::rust_base58::FromBase58;
-use std::cell::RefCell;
 use std::error::Error;
 use std::thread;
 
@@ -50,7 +49,7 @@ impl Drop for Agent {
 }
 
 pub struct AgentService {
-    agent: RefCell<Agent>,
+    agent: Agent,
 }
 
 impl Agent {
@@ -70,11 +69,10 @@ impl Agent {
 
 impl AgentService {
     pub fn new() -> AgentService {
-        AgentService { agent: RefCell::new(Agent::new()) }
+        AgentService { agent: Agent::new() }
     }
 
     pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<i32, CommonError> {
-        let agent = self.agent.try_borrow_mut()?;
         let conn_handle = SequenceUtils::get_next_id();
         let connect_cmd: AgentWorkerCommand = AgentWorkerCommand::Connect(ConnectCmd {
             did: sender_did.to_string(),
@@ -84,15 +82,14 @@ impl AgentService {
             server_key: server_key.to_string(),
             conn_handle: conn_handle,
         });
-        agent.cmd_socket.send_str(connect_cmd.to_json()
-                                      .map_err(|err|
-                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
-                                      .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send_str(connect_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
         Ok(conn_handle)
     }
 
     pub fn listen(&self, endpoint: &str, pk: &str, sk: &str) -> Result<i32, CommonError> {
-        let agent = self.agent.try_borrow_mut()?;
         let listen_handle = SequenceUtils::get_next_id();
         let listen_cmd = AgentWorkerCommand::Listen(ListenCmd {
             listen_handle: listen_handle,
@@ -100,25 +97,24 @@ impl AgentService {
             pk: pk.to_string(),
             sk: sk.to_string()
         });
-        agent.cmd_socket.send_str(listen_cmd.to_json()
-                                      .map_err(|err|
-                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
-                                      .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send_str(listen_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
         Ok(listen_handle)
     }
 
     pub fn send(&self, conn_id: i32, msg: Option<&str>) -> Result<i32, CommonError> {
-        let agent = self.agent.try_borrow_mut()?;
         let send_handle = SequenceUtils::get_next_id();
         let send_cmd = AgentWorkerCommand::Send(SendCmd {
             cmd_id: send_handle,
             conn_handle: conn_id,
             msg: msg.map(str::to_string),
         });
-        agent.cmd_socket.send_str(send_cmd.to_json()
-                                      .map_err(|err|
-                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
-                                      .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send_str(send_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
         Ok(send_handle)
     }
 }
@@ -134,7 +130,7 @@ impl AgentWorker {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint, cmd.pk, cmd.sk).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
-                    AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg),
+                    AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
                     AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
                     AgentWorkerCommand::Exit => break 'agent_pool_loop,
                 }
@@ -326,22 +322,27 @@ impl AgentListener {
         })
     }
 
-    fn handle_request(&mut self, identity: String, msg: String) {
+    fn handle_request(&mut self, identity: String, msg: String) -> Result<(), CommonError> {
         if let Some(&(conn_handle, _)) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
-            CommandExecutor::instance().send(Command::Agent(AgentCommand::MessageReceived(
-                conn_handle, Ok((conn_handle, msg))))).unwrap();
-            return;
+            return CommandExecutor::instance().send(Command::Agent(AgentCommand::MessageReceived(
+                conn_handle, Ok((conn_handle, msg)))));
         }
 
-        info!("New connection to agent listener from {} with msg {}", identity, msg);
-        let conn_handle = SequenceUtils::get_next_id();
-        self.connections.push((conn_handle, identity.clone()));
-        let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
-                                                  Ok((self.listener_handle, conn_handle,
-                                                      identity.clone(), msg.clone())));
-        CommandExecutor::instance().send(Command::Agent(cmd)).unwrap();
-        self.socket.send_str(identity.as_str(), zmq::SNDMORE).unwrap();
-        self.socket.send_str("DID_ACK", zmq::DONTWAIT).unwrap();
+        if msg.eq("DID") {
+            info!("New connection to agent listener from {} with msg {}", identity, msg);
+            let conn_handle = SequenceUtils::get_next_id();
+            self.connections.push((conn_handle, identity.clone()));
+            let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
+                                                      Ok((self.listener_handle, conn_handle,
+                                                          identity.clone(), msg.clone())));
+            CommandExecutor::instance().send(Command::Agent(cmd))?;
+            self.socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT)?;
+        } else {
+            info!("Message {} from unknown connection to agent listener from {}", msg, identity);
+            // TODO may be notify: ListenOnConnect(self.listener_handle, Err(incorrect connection))
+            self.socket.send_multipart(&[identity.as_bytes(), "NOT_CONNECTED".as_bytes()], zmq::DONTWAIT)?;
+        }
+        Ok(())
     }
 }
 
@@ -446,7 +447,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(agent),
+                agent: agent,
             };
             let conn_handle = agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
             let expected_cmd = ConnectCmd {
@@ -472,7 +473,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(agent),
+                agent: agent,
             };
             let conn_handle = agent_service.listen("endpoint", "pk", "sk").unwrap();
             let expected_cmd = ListenCmd {
@@ -496,7 +497,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(agent),
+                agent: agent,
             };
             let conn_handle = SequenceUtils::get_next_id();
             let msg = Some("test_msg");

@@ -37,6 +37,8 @@ mod high_cases {
         SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
         AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+
+        TestUtils::cleanup_storage();
     }
 
     mod sovrin_agent_connect {
