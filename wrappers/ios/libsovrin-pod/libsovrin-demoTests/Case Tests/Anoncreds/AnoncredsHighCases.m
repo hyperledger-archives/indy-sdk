@@ -41,11 +41,54 @@
     // 1. init commmon wallet
     SovrinHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefjson:nil];
+                                                                    claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. issuer create claim definition
-    NSString *schema = [[AnoncredsUtils sharedInstance] ];
+    // TODO: 109 error
+    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
+    NSString *claimDefJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                                            schemaJson:schema
+                                                                         signatureType:nil
+                                                                        createNonRevoc:NO
+                                                                          claimDefJson:&claimDefJson
+                                                                          claimDefUUID:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle failed");
+    XCTAssertNotNil(claimDefJson, @"claimDefJsom is nil!");
+    
+    // 3. Check claim definition
+    NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
+    XCTAssertEqual([claimDef[@"public_key"][@"r"] length], 4, @"wrong length:claimDef[publicKey][r]");
+    XCTAssertTrue([claimDef[@"publicKey"][@"n"] length] > 0, @"wrong length:claimDef[publicKey][n]");
+    XCTAssertTrue([claimDef[@"publicKey"][@"s"] length] > 0, @"wrong length:claimDef[publicKey][s]");
+    XCTAssertTrue([claimDef[@"publicKey"][@"rms"] length] > 0, @"wrong length:claimDef[publicKey][rms]");
+    XCTAssertTrue([claimDef[@"publicKey"][@"z"] length] > 0, @"wrong length:claimDef[publicKey][z]");
+    XCTAssertTrue([claimDef[@"publicKey"][@"rctxt"] length] > 0, @"wrong length:claimDef[publicKey][rctxt]");
+    
+    [TestUtils cleanupStorage];
+}
+
+- (void)testIssuerCreateAndStoreClaimDefWorksForInvalidWallet
+{
+    [TestUtils cleanupStorage];
+    NSError *ret;
+    
+    // 1. init commmon wallet
+    SovrinHandle walletHandle = 0;
+    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
+                                                                    claimDefJson:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
+    
+    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
+    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:invalidWalletHandle
+                                                                            schemaJson:schema
+                                                                         signatureType:nil
+                                                                        createNonRevoc:NO
+                                                                          claimDefJson:nil
+                                                                          claimDefUUID:nil];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle failed: returned wrong error code");
     
     [TestUtils cleanupStorage];
 }

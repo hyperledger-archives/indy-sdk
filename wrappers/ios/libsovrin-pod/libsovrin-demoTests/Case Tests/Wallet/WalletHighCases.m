@@ -233,6 +233,7 @@
     NSString *claimDefUUID;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
                                                                             schemaJson:schema
+                                                                         signatureType:nil
                                                                         createNonRevoc:NO
                                                                           claimDefJson:nil
                                                                           claimDefUUID:&claimDefUUID];

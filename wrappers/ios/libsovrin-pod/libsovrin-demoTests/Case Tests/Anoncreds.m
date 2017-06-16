@@ -84,7 +84,8 @@
     //5. Prover store Claim Offer received from Issuer
     
     NSString *claimOfferJson = [[ AnoncredsUtils sharedInstance] getClaimOfferJson: issuerDid
-                                                                             seqNo: claimDefSeqNo ];
+                                                                             seqNo: claimDefSeqNo
+                                                                       schemaSeqNo:nil];
     
     res = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer: proverWalletHandle
                                                   claimOfferJson: claimOfferJson ];
@@ -329,7 +330,8 @@
     
     //8. Prover store Claim Offer received from Issuer1
     NSString* issuer1ClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuer1Did
-                                                                                   seqNo:gvtClaimDefSeqNo];
+                                                                                   seqNo:gvtClaimDefSeqNo
+                                                                             schemaSeqNo:nil];
 
     res = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuer1ClaimOfferJson];
@@ -338,7 +340,8 @@
     
     //9. Prover store Claim Offer received from Issuer2
     NSString* issuer2ClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuer2Did
-                                                                                   seqNo:xyzClaimDefSeqNo];
+                                                                                   seqNo:xyzClaimDefSeqNo
+                                                                             schemaSeqNo:nil];
     
     
     res = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
@@ -680,7 +683,8 @@
     //6. Prover store GVT Claim Offer received from Issuer
     
     NSString* issuerGVTClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                                   seqNo:gvtClaimDefSeqNo];
+                                                                                   seqNo:gvtClaimDefSeqNo
+                                                                               schemaSeqNo:nil];
     
     res = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuerGVTClaimOfferJson];
@@ -690,7 +694,8 @@
     //7. Prover store XYZ Claim Offer received from Issuer
     
     NSString* issuerXYZClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                                   seqNo:xyzClaimDefSeqNo];
+                                                                                   seqNo:xyzClaimDefSeqNo
+                                                                               schemaSeqNo:nil];
     
     res = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuerXYZClaimOfferJson];

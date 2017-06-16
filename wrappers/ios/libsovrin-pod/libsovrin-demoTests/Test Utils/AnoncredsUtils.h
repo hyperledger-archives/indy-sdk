@@ -21,6 +21,9 @@
 - (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo;
 - (NSString *)getXyzClaimJson;
 
+- (NSString *)getGvtClaimDef;
+- (NSString *)getGvtClaimRequest;
+
 - (NSError *) createClaimDefinitionAndSetLink:(SovrinHandle)walletHandle
                                        schema:(NSString *)schema
                                         seqNo:(NSNumber *)claimDefSeqNo
@@ -66,6 +69,7 @@
 
 - (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle)walletHandle
                                               schemaJson:(NSString *)schemaJson
+                                           signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc
                                             claimDefJson:(NSString **)claimDefJson
                                             claimDefUUID:(NSString **)claimDefUUID;
@@ -94,6 +98,6 @@
                         outValid:(BOOL *)isValid;
 
 - (NSError *)initializeCommonWalletAndReturnHandle:(SovrinHandle *)walletHandle
-                                      claimDefjson:(NSString **)claimDefJson;
+                                      claimDefJson:(NSString **)claimDefJson;
 
 @end
