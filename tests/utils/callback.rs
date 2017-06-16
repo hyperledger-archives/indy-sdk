@@ -618,6 +618,26 @@ impl CallbackUtils {
         (command_handle, Some(callback))
     }
 
+    pub fn closure_to_agent_close_connection_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                           Option<extern fn(command_handle: i32,
+                                                                                                            err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_close_connection_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(agent_close_connection_callback))
+    }
+
 
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                     Option<extern fn(command_handle: i32,
