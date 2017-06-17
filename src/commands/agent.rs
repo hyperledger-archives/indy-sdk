@@ -27,7 +27,7 @@ pub enum AgentCommand {
     ),
     CloseConnection(
         i32, // connection handle
-        Box<Fn(Result<(), SovrinError>) + Send>, //
+        Box<Fn(Result<(), SovrinError>) + Send>, // close conn cb
     ),
     CloseConnectionAck(
         i32, // close cmd handle
@@ -52,7 +52,14 @@ pub enum AgentCommand {
         i32, // connection handle
         Result<(i32, String), CommonError> // result for message
     ),
-    CloseListener,
+    CloseListener(
+        i32, // listener handle
+        Box<Fn(Result<(), SovrinError>) + Send>, // close listener cb
+    ),
+    CloseListenerAck(
+        i32, // close cmd handle
+        Result<(), CommonError>,
+    ),
     Send(
         i32, // connection handle
         Option<String>, // message
@@ -158,13 +165,20 @@ impl AgentCommandExecutor {
             }
             AgentCommand::CloseConnection(connection_id, cb) => {
                 info!(target: "agent_command_executor", "CloseConnection command received");
-                self.close_connection(connection_id, cb)
+                self.close_connection_or_listener(connection_id, cb, false)
             }
             AgentCommand::CloseConnectionAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "CloseConnectionAck command received");
                 self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
             }
-            _ => unimplemented!(),
+            AgentCommand::CloseListener(listener_id, cb) => {
+                info!(target: "agent_command_executor", "CloseListener command received");
+                self.close_connection_or_listener(listener_id, cb, true)
+            }
+            AgentCommand::CloseListenerAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "CloseListenerAck command received");
+                self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+            }
         }
     }
 
@@ -252,9 +266,9 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn close_connection(&self, conn_id: i32, cb: Box<Fn(Result<(), SovrinError>)>) {
+    fn close_connection_or_listener(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>)>, close_listener: bool) {
         let result = self.agent_service
-            .close_connection(conn_id)
+            .close_connection_or_listener(handle, close_listener)
             .and_then(|cmd_id| {
                 match self.close_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),

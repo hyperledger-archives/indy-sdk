@@ -3,6 +3,7 @@ use std::ffi::{CString};
 
 use sovrin::api::agent::{
     sovrin_agent_close_connection,
+    sovrin_agent_close_listener,
     sovrin_agent_connect,
     sovrin_agent_listen,
     sovrin_agent_send,
@@ -102,13 +103,32 @@ impl AgentUtils {
         Ok(())
     }
 
-    pub fn close(conn_handle: i32) -> Result<(), ErrorCode> {
+    pub fn close_connection(conn_handle: i32) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
-        let (cmd_id, cb) = CallbackUtils::closure_to_agent_close_connection_cb(Box::new(move |res| {
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_close_cb(Box::new(move |res| {
             sender.send(res).unwrap();
         }));
 
         let res = sovrin_agent_close_connection(cmd_id, conn_handle, cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        let res = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        Ok(())
+    }
+
+    pub fn close_listener(listener_handle: i32) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_close_cb(Box::new(move |res| {
+            sender.send(res).unwrap();
+        }));
+
+        let res = sovrin_agent_close_listener(cmd_id, listener_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }

@@ -618,9 +618,9 @@ impl CallbackUtils {
         (command_handle, Some(callback))
     }
 
-    pub fn closure_to_agent_close_connection_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                           Option<extern fn(command_handle: i32,
-                                                                                                            err: ErrorCode)>) {
+    pub fn closure_to_agent_close_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                Option<extern fn(command_handle: i32,
+                                                                                                 err: ErrorCode)>) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
