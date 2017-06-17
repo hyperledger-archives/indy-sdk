@@ -214,13 +214,27 @@ impl AgentWorker {
     }
 
     fn close_connection(&mut self, cmd_handle: i32, conn_handle: i32) -> Result<(), CommonError> {
+        let cmd = Command::Agent(AgentCommand::CloseConnectionAck(cmd_handle, self.try_close_connection(conn_handle)));
+        return CommandExecutor::instance().send(cmd)
+    }
+
+    fn try_close_connection(&mut self, conn_handle: i32) -> Result<(), CommonError> {
+        /* TODO check duplicates */
         for i in 0..self.agent_connections.len() {
             if self.agent_connections[i].conn_handle == conn_handle {
                 self.agent_connections.remove(i);
-                return CommandExecutor::instance().send(Command::Agent(AgentCommand::CloseConnectionAck(cmd_handle, Ok(()))))
+                return Ok(())
             }
         }
-        unimplemented!();
+        for mut agent_listener in &mut self.agent_listeners {
+            for i in 0..agent_listener.connections.len() {
+                if agent_listener.connections[i].0 == conn_handle {
+                    agent_listener.connections.remove(i);
+                    return Ok(())
+                }
+            }
+        }
+        return Err(CommonError::InvalidStructure(format!("Can't close agent connection {} - not found", conn_handle)))
     }
 
     fn try_start_listen(&mut self, handle: i32, endpoint: String, pk: String, sk: String) -> Result<(), CommonError> {
@@ -686,6 +700,55 @@ mod tests {
                 }
                 _ => panic!("unexpected cmd {:?}", cmd),
             }
+        }
+
+        #[test]
+        fn agent_worker_try_close_connection_works_for_not_found() {
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+
+            let res = agent_worker.try_close_connection(conn_handle);
+
+            assert_match!(Err(CommonError::InvalidStructure(_)), res);
+        }
+
+        #[test]
+        fn agent_worker_try_close_connection_works_for_listener() {
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: vec![AgentListener {
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    connections: vec![(conn_handle, "test_identity".to_string())],
+                    listener_handle: SequenceUtils::get_next_id(),
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_close_connection(conn_handle).unwrap();
+        }
+
+        #[test]
+        fn agent_worker_try_close_connection_works_for_connection() {
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: vec![RemoteAgent {
+                    conn_handle: conn_handle,
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    public_key: Vec::new(),
+                    secret_key: Vec::new(),
+                    server_key: Vec::new(),
+                    addr: String::new(),
+                }],
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_close_connection(conn_handle).unwrap();
         }
 
         #[test]
