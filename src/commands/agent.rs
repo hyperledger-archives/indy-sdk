@@ -23,7 +23,7 @@ pub enum AgentCommand {
     ),
     ConnectAck(
         i32, // cmd handle (eq conn handle)
-        Result<i32, SovrinError> // conn handle or error
+        Result<i32, CommonError> // conn handle or error
     ),
     CloseConnection(
         i32, // connection handle
@@ -116,7 +116,7 @@ impl AgentCommandExecutor {
                 if let &Ok(conn_handle) = &res {
                     self.out_connections.borrow_mut().insert(conn_handle, cbs.1);
                 }
-                cbs.0(res);
+                cbs.0(res.map_err(map_err_err!()).map_err(From::from));
             }
             AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
@@ -129,7 +129,7 @@ impl AgentCommandExecutor {
                 if let Ok(listener_handle) = res {
                     self.listeners.borrow_mut().insert(listener_handle, cbs.1);
                 }
-                cbs.0(res.map_err(From::from))
+                cbs.0(res.map_err(map_err_err!()).map_err(From::from))
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
@@ -138,7 +138,7 @@ impl AgentCommandExecutor {
                 if let Ok((_, connection_handle, _, _)) = res {
                     cbs.conn_handles.insert(connection_handle);
                 }
-                (cbs.on_connect)(res.map_err(From::from));
+                (cbs.on_connect)(res.map_err(map_err_err!()).map_err(From::from));
             }
             AgentCommand::MessageReceived(connection_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
@@ -188,7 +188,7 @@ impl AgentCommandExecutor {
                 }
             });
         match result {
-            Err(err) => { connect_cb(Err(err)); }
+            Err(err) => { connect_cb(Err(err).map_err(map_err_err!())); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, (connect_cb, message_cb)); /* TODO check if map contains same key */ }
         };
     }
@@ -225,7 +225,7 @@ impl AgentCommandExecutor {
                 }
             });
         match result {
-            Err(err) => listen_cb(Err(From::from(err))),
+            Err(err) => listen_cb(Err(From::from(err)).map_err(map_err_err!())),
             Ok((mut cbs, handle)) => {
                 cbs.insert(handle, (listen_cb,
                                     Listener {
@@ -248,7 +248,7 @@ impl AgentCommandExecutor {
             });
         match result {
             Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
-            Err(err) => cb(Err(From::from(err))),
+            Err(err) => cb(Err(From::from(err)).map_err(map_err_err!())),
         }
     }
 

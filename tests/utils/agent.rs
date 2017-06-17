@@ -63,7 +63,7 @@ impl AgentUtils {
             CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle);
             info!("New connection {} on listener {}, err {:?}, sender DID {}, receiver DID {}", conn_handle, listener_handle, err, sender_did, receiver_did);
         });
-        let on_connect = CallbackUtils::closure_to_agent_connected_cb(on_connect);
+        let (on_connect_cb_id, on_connect) = CallbackUtils::closure_to_agent_connected_cb(on_connect);
 
         let cb = Box::new(move |err, listener_handle| sender.send((err, listener_handle)).unwrap());
         let (cmd_id, cb) = CallbackUtils::closure_to_agent_listen_cb(cb);
@@ -75,6 +75,7 @@ impl AgentUtils {
         }
 
         let (res, listener_handle) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        CallbackUtils::closure_map_ids(on_connect_cb_id, listener_handle);
         if res != ErrorCode::Success {
             return Err(res);
         }

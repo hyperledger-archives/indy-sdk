@@ -53,7 +53,7 @@ mod high_cases {
 
             let seed: Option<String> = Some("sovrin_agent_connect_works_for_a".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
-            let endpoint = "tcp://127.0.0.1:9700";
+            let endpoint = "tcp://127.0.0.1:9702";
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -94,7 +94,7 @@ mod high_cases {
 
             let seed: Option<String> = Some("sovrin_agent_listen_works_for_al".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
-            let endpoint = "tcp://127.0.0.1:9700";
+            let endpoint = "tcp://127.0.0.1:9703";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
             AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
@@ -151,7 +151,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool3", "wallet3", "default").unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "tcp://127.0.0.1:9701";
+            let endpoint = "tcp://127.0.0.1:9705";
 
             let _ = AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
 
