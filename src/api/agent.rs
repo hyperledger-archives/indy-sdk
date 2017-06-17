@@ -215,12 +215,21 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn sovrin_agent_close_connection(command_handle: i32,
                                             connection_handle: i32,
                                             cb: Option<extern fn(xcommand_handle: i32,
                                                                  err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let cmd = Command::Agent(AgentCommand::CloseConnection(
+        connection_handle,
+        Box::new(move |result| {
+            cb(command_handle, result_to_err_code!(result))
+        })
+    ));
+
+    let res = CommandExecutor::instance().send(cmd);
+    result_to_err_code!(res)
 }
 
 /// Closes listener and stops listening for agent connections.
@@ -240,10 +249,19 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn sovrin_agent_close_listener(command_handle: i32,
                                           listener_handle: i32,
                                           cb: Option<extern fn(xcommand_handle: i32,
                                                                err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let cmd = Command::Agent(AgentCommand::CloseListener(
+        listener_handle,
+        Box::new(move |result| {
+            cb(command_handle, result_to_err_code!(result))
+        })
+    ));
+
+    let res = CommandExecutor::instance().send(cmd);
+    result_to_err_code!(res)
 }

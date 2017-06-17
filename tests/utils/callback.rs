@@ -570,32 +570,32 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_agent_connected_cb(closure: Box<FnMut(i32, ErrorCode, i32, String, String) + Send>)
-                                         -> Option<extern fn(listener_handle: i32,
-                                                             err: ErrorCode,
-                                                             conn_handle: i32,
-                                                             sender_did: *const c_char,
-                                                             receiver_did: *const c_char)> {
+                                         -> (i32, Option<extern fn(listener_handle: i32,
+                                                                   err: ErrorCode,
+                                                                   conn_handle: i32,
+                                                                   sender_did: *const c_char,
+                                                                   receiver_did: *const c_char)>) {
         lazy_static! {
-            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, i32, String, String) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, ErrorCode, i32, String, String) + Send>>> = Default::default();
         }
 
-        extern "C" fn agent_connected_callback(listener_handle: i32,
-                                               err: ErrorCode,
-                                               conn_handle: i32,
-                                               sender_did: *const c_char,
-                                               receiver_did: *const c_char) {
+        extern "C" fn callback(listener_handle: i32,
+                               err: ErrorCode,
+                               conn_handle: i32,
+                               sender_did: *const c_char,
+                               receiver_did: *const c_char) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let sender_did = unsafe { CStr::from_ptr(sender_did).to_str().unwrap().to_string() };
             let receiver_did = unsafe { CStr::from_ptr(receiver_did).to_str().unwrap().to_string() };
-            for cb in callbacks.iter_mut() {
-                cb(listener_handle, err, conn_handle, sender_did.clone(), receiver_did.clone())
-            }
+            let cb_id: i32 = *CLOSURE_CB_MAP.lock().unwrap().get(&listener_handle).unwrap();
+            callbacks.get_mut(&cb_id).unwrap()(listener_handle, err, conn_handle, sender_did.clone(), receiver_did.clone());
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.push(closure);
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
 
-        Some(agent_connected_callback)
+        (command_handle, Some(callback))
     }
 
     pub fn closure_to_agent_send_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
@@ -616,6 +616,26 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(callback))
+    }
+
+    pub fn closure_to_agent_close_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                Option<extern fn(command_handle: i32,
+                                                                                                 err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_close_connection_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(agent_close_connection_callback))
     }
 
 

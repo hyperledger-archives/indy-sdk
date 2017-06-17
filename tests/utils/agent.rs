@@ -2,6 +2,8 @@ use std::sync::mpsc::{channel};
 use std::ffi::{CString};
 
 use sovrin::api::agent::{
+    sovrin_agent_close_connection,
+    sovrin_agent_close_listener,
     sovrin_agent_connect,
     sovrin_agent_listen,
     sovrin_agent_send,
@@ -62,7 +64,7 @@ impl AgentUtils {
             CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle);
             info!("New connection {} on listener {}, err {:?}, sender DID {}, receiver DID {}", conn_handle, listener_handle, err, sender_did, receiver_did);
         });
-        let on_connect = CallbackUtils::closure_to_agent_connected_cb(on_connect);
+        let (on_connect_cb_id, on_connect) = CallbackUtils::closure_to_agent_connected_cb(on_connect);
 
         let cb = Box::new(move |err, listener_handle| sender.send((err, listener_handle)).unwrap());
         let (cmd_id, cb) = CallbackUtils::closure_to_agent_listen_cb(cb);
@@ -74,6 +76,7 @@ impl AgentUtils {
         }
 
         let (res, listener_handle) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        CallbackUtils::closure_map_ids(on_connect_cb_id, listener_handle);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -95,6 +98,44 @@ impl AgentUtils {
         let res = send_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if res != ErrorCode::Success {
             return Err(res)
+        }
+
+        Ok(())
+    }
+
+    pub fn close_connection(conn_handle: i32) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_close_cb(Box::new(move |res| {
+            sender.send(res).unwrap();
+        }));
+
+        let res = sovrin_agent_close_connection(cmd_id, conn_handle, cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        let res = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        Ok(())
+    }
+
+    pub fn close_listener(listener_handle: i32) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_close_cb(Box::new(move |res| {
+            sender.send(res).unwrap();
+        }));
+
+        let res = sovrin_agent_close_listener(cmd_id, listener_handle, cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        let res = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res);
         }
 
         Ok(())

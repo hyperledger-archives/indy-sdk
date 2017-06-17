@@ -23,9 +23,16 @@ pub enum AgentCommand {
     ),
     ConnectAck(
         i32, // cmd handle (eq conn handle)
-        Result<i32, SovrinError> // conn handle or error
+        Result<i32, CommonError> // conn handle or error
     ),
-    CloseConnection,
+    CloseConnection(
+        i32, // connection handle
+        Box<Fn(Result<(), SovrinError>) + Send>, // close conn cb
+    ),
+    CloseConnectionAck(
+        i32, // close cmd handle
+        Result<(), CommonError>,
+    ),
     Listen(
         i32, // wallet handle
         String, // endpoint
@@ -45,7 +52,14 @@ pub enum AgentCommand {
         i32, // connection handle
         Result<(i32, String), CommonError> // result for message
     ),
-    CloseListener,
+    CloseListener(
+        i32, // listener handle
+        Box<Fn(Result<(), SovrinError>) + Send>, // close listener cb
+    ),
+    CloseListenerAck(
+        i32, // close cmd handle
+        Result<(), CommonError>,
+    ),
     Send(
         i32, // connection handle
         Option<String>, // message
@@ -73,6 +87,7 @@ pub struct AgentCommandExecutor {
         (Box<Fn(Result<i32, SovrinError>)>,
          Box<Fn(Result<(i32, String), SovrinError>)>)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
+    close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
 }
 
 struct Listener {
@@ -92,6 +107,7 @@ impl AgentCommandExecutor {
             listen_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new()),
             send_callbacks: RefCell::new(HashMap::new()),
+            close_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -107,7 +123,7 @@ impl AgentCommandExecutor {
                 if let &Ok(conn_handle) = &res {
                     self.out_connections.borrow_mut().insert(conn_handle, cbs.1);
                 }
-                cbs.0(res);
+                cbs.0(res.map_err(map_err_err!()).map_err(From::from));
             }
             AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
@@ -120,7 +136,7 @@ impl AgentCommandExecutor {
                 if let Ok(listener_handle) = res {
                     self.listeners.borrow_mut().insert(listener_handle, cbs.1);
                 }
-                cbs.0(res.map_err(From::from))
+                cbs.0(res.map_err(map_err_err!()).map_err(From::from))
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
@@ -129,7 +145,7 @@ impl AgentCommandExecutor {
                 if let Ok((_, connection_handle, _, _)) = res {
                     cbs.conn_handles.insert(connection_handle);
                 }
-                (cbs.on_connect)(res.map_err(From::from));
+                (cbs.on_connect)(res.map_err(map_err_err!()).map_err(From::from));
             }
             AgentCommand::MessageReceived(connection_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
@@ -147,7 +163,22 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "SendAck command received");
                 self.send_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
             }
-            _ => unimplemented!(),
+            AgentCommand::CloseConnection(connection_id, cb) => {
+                info!(target: "agent_command_executor", "CloseConnection command received");
+                self.close_connection_or_listener(connection_id, cb, false)
+            }
+            AgentCommand::CloseConnectionAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "CloseConnectionAck command received");
+                self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+            }
+            AgentCommand::CloseListener(listener_id, cb) => {
+                info!(target: "agent_command_executor", "CloseListener command received");
+                self.close_connection_or_listener(listener_id, cb, true)
+            }
+            AgentCommand::CloseListenerAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "CloseListenerAck command received");
+                self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+            }
         }
     }
 
@@ -171,7 +202,7 @@ impl AgentCommandExecutor {
                 }
             });
         match result {
-            Err(err) => { connect_cb(Err(err)); }
+            Err(err) => { connect_cb(Err(err).map_err(map_err_err!())); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, (connect_cb, message_cb)); /* TODO check if map contains same key */ }
         };
     }
@@ -208,7 +239,7 @@ impl AgentCommandExecutor {
                 }
             });
         match result {
-            Err(err) => listen_cb(Err(From::from(err))),
+            Err(err) => listen_cb(Err(From::from(err)).map_err(map_err_err!())),
             Ok((mut cbs, handle)) => {
                 cbs.insert(handle, (listen_cb,
                                     Listener {
@@ -225,6 +256,21 @@ impl AgentCommandExecutor {
             .send(conn_id, msg.as_ref().map(String::as_str))
             .and_then(|cmd_id| {
                 match self.send_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, cmd_id)),
+                    Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
+                }
+            });
+        match result {
+            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
+            Err(err) => cb(Err(From::from(err)).map_err(map_err_err!())),
+        }
+    }
+
+    fn close_connection_or_listener(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>)>, close_listener: bool) {
+        let result = self.agent_service
+            .close_connection_or_listener(handle, close_listener)
+            .and_then(|cmd_id| {
+                match self.close_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),
                     Err(err) => Err(CommonError::InvalidState(err.description().to_string())),
                 }
