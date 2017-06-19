@@ -17,13 +17,16 @@ use services::wallet::WalletService;
 use utils::json::JsonDecodable;
 use utils::sequence::SequenceUtils;
 
+pub type AgentConnectCB = Box<Fn(Result<i32, SovrinError>) + Send>;
+pub type AgentMessageCB = Box<Fn(Result<(i32, String), SovrinError>) + Send>;
+
 pub enum AgentCommand {
     Connect(
         i32, // wallet handle
         String, // sender did
         String, // receiver did
-        Box<Fn(Result<i32, SovrinError>) + Send>, // connect cb
-        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+        AgentConnectCB, // connect cb
+        AgentMessageCB, // message cb
     ),
     ResumeConnectProcess(
         i32, // cmd handle
@@ -46,7 +49,7 @@ pub enum AgentCommand {
         String, // endpoint
         Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
-        Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+        AgentMessageCB, // message cb
     ),
     ListenAck(
         i32, // cmd handle (eq listener handle)
@@ -85,23 +88,21 @@ pub struct AgentCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
-    out_connections: RefCell<HashMap<i32, Box<Fn(Result<(i32, String), SovrinError>) + Send>>>,
+    out_connections: RefCell<HashMap<i32, AgentMessageCB>>,
     listeners: RefCell<HashMap<i32, Listener>>,
 
     listen_callbacks: RefCell<HashMap<i32, (
         Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Listener
     )>>,
-    connect_callbacks: RefCell<HashMap<i32,
-        (Box<Fn(Result<i32, SovrinError>) + Send>,
-         Box<Fn(Result<(i32, String), SovrinError>) + Send>)>>,
+    connect_callbacks: RefCell<HashMap<i32, (AgentConnectCB, AgentMessageCB)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
     close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
 }
 
 struct Listener {
     on_connect: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
-    on_msg: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
+    on_msg: AgentMessageCB,
     conn_handles: HashSet<i32>,
 }
 
@@ -188,8 +189,7 @@ impl AgentCommandExecutor {
 
     fn connect(&self, pool_handle: i32, wallet_handle: i32,
                sender_did: String, receiver_did: String,
-               connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+               connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         match self.get_connection_info_local(wallet_handle, &sender_did, &receiver_did) {
             Ok(info) => match info {
                 (my_info, Some(info)) => self.do_connect(my_info, info, connect_cb, message_cb),
@@ -204,8 +204,7 @@ impl AgentCommandExecutor {
     }
 
     fn do_connect(&self, my_info: MyConnectInfo, info: ConnectInfo,
-                  connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-                  message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+                  connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         debug!("AgentCommandExecutor::connect try to service.connect with {:?}", info);
         let result = self.agent_service
             .connect(my_info.did.as_str(), my_info.secret_key.as_str(), my_info.public_key.as_str(),
@@ -257,8 +256,7 @@ impl AgentCommandExecutor {
 
     fn request_connection_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32,
                                            my_conn_info: MyConnectInfo, receiver_did: &str,
-                                           connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-                                           message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+                                           connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         let ddo_request = match self.ledger_service.build_get_ddo_request(my_conn_info.did.as_str(), receiver_did) {
             Ok(ddo_request) => ddo_request,
             Err(err) => {
@@ -291,7 +289,7 @@ impl AgentCommandExecutor {
     fn listen(&self, wallet_handle: i32, endpoint: String,
               listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
               connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
-              message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+              message_cb: AgentMessageCB) {
         let my_did_json: String = self.wallet_service.list(wallet_handle, "my_did::").as_ref().unwrap().get(0).as_ref().unwrap().1.clone();
         let my_did: MyDid = MyDid::from_json(my_did_json.as_str()).map_err(|_| CommonError::InvalidState((format!("Invalid my did json")))).unwrap();
 
