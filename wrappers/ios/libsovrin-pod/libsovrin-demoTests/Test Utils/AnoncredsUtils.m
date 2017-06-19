@@ -10,6 +10,7 @@
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
 #import "WalletUtils.h"
+#import "NSString+Validation.h"
 
 @implementation AnoncredsUtils
 
@@ -112,8 +113,8 @@
 
 // MARK: issuer claim
 - (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
-                                     claimJson:(NSString *)claimJson
                                   claimReqJson:(NSString *)claimReqJson
+                                     claimJson:(NSString *)claimJson
                                   outClaimJson:(NSString **)xClaimJson
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON
 {
@@ -315,7 +316,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *outJson = json;
+    if (outJson) { *outJson = json; }
     return err;
 }
 
@@ -352,7 +353,7 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *outJson = json;
+    if (outJson) { *outJson = json; }
     return err;
 }
 
@@ -409,7 +410,38 @@
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    *outClaimsJson = outJson;
+    if (outClaimsJson) { *outClaimsJson = outJson; }
+    
+    return err;
+}
+
+- (NSError *)proverGetClaimsForWalletHandle:(SovrinHandle)walletHandle
+                                 filterJson:(NSString *)filterJson
+                              outClaimsJson:(NSString **)claimsJson
+{
+    __block NSError *err = nil;
+    __block NSString *outJson;
+    XCTestExpectation* completionExpectation = nil;
+    
+    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    NSError *ret = [SovrinAnoncreds proverGetClaimsWithWalletHandle:walletHandle
+                                                         filterJSON:filterJson
+                                                         completion:^(NSError *error, NSString *claimsJSON)
+                    {
+                        err = error;
+                        outJson = claimsJSON;
+                        [completionExpectation fulfill];
+                    }];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (claimsJson) { *claimsJson = outJson;}
     
     return err;
 }
@@ -515,7 +547,7 @@
                                           seqNo:seqNo
                                         outJson:&tempClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"createClaimDefinitionAndSetLink failed");
-    XCTAssertNotNil(tempClaimDefJson, @"tempClaimDefJson is nil!");
+    XCTAssertTrue([tempClaimDefJson isValid], @"invalid tempClaimDefJson: %@", tempClaimDefJson);
     
     //3. Store three claim offers
     NSString *claimOfferJson1 = [self getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
@@ -552,19 +584,19 @@
                             masterSecretName:masterSecret
                              outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreClaimReq failed for claimOfferJson1");
+    XCTAssertTrue([claimRequest isValid], @"invalid claim request: %@", claimRequest);
     
     NSString *claimJson = [self getGvtClaimJson];
     
     //6. Create Claim
     NSString *xClaimJson;
     ret = [self issuerCreateClaimWithWalletHandle:tempWalletHandle
-                                        claimJson:claimJson
                                      claimReqJson:claimRequest
+                                        claimJson:claimJson
                                      outClaimJson:&xClaimJson
                             outRevocRegUpdateJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateClaimWithWalletHandle failed");
-    XCTAssertNotNil(xClaimJson, @"xClaimJson is nil!");
-    XCTAssertFalse([xClaimJson length] == 0, @"xClaimJson is nil!");
+    XCTAssertTrue([xClaimJson isValid], @"invalid xClaimJson: %@", xClaimJson);
     
     // 7. Store claim
     ret = [self proverStoreClaimWithWalletHandle:tempWalletHandle
@@ -573,8 +605,6 @@
     
     if (walletHandle) { *walletHandle = tempWalletHandle; }
     if (claimDefJson) { *claimDefJson = tempClaimDefJson; }
-    
-    [TestUtils cleanupStorage];
     
     return ret;
 }

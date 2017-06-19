@@ -35,11 +35,7 @@
 - (NSNumber *) getRequestId
 {
     NSTimeInterval timeInSeconds = [[NSDate date] timeIntervalSince1970];
-    return @(timeInSeconds);
-    
-//    pub fn get_req_id() -> u64 {
-//        time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
-//    }
+    return @(timeInSeconds * 2 + 1);
 }
 
 - (void)createGenesisTXNFile:(NSString *)poolName

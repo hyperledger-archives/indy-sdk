@@ -134,8 +134,8 @@
     NSString *claimJson = [[ AnoncredsUtils sharedInstance] getGvtClaimJson];
     
     res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
-                                                                   claimJson:claimJson
                                                                 claimReqJson:claimReq
+                                                                   claimJson:claimJson
                                                                 outClaimJson:&xclaimJson
                                                        outRevocRegUpdateJSON:&revocRegUpdateJson];
     
@@ -401,8 +401,8 @@
     NSString* gvtClaimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
                               
     res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerGvtWalletHandle
-                                                                   claimJson:gvtClaimJson
                                                                 claimReqJson:gvtClaimReq
+                                                                   claimJson:gvtClaimJson
                                                                 outClaimJson:&gvtClaimJson
                                                        outRevocRegUpdateJSON:&revocRegUpdateJson];
     
@@ -434,8 +434,8 @@
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
                               
     res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerXyzWalletHandle
-                                                                   claimJson:xyzClaimJson
                                                                 claimReqJson:xyzClaimReq
+                                                                   claimJson:xyzClaimJson
                                                                 outClaimJson:&xyzClaimJson
                                                        outRevocRegUpdateJSON:&revocRegUpdateJson];
 
@@ -757,8 +757,8 @@
     NSString* gvtClaimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
     
     res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
-                                                                   claimJson:gvtClaimJson
                                                                 claimReqJson:gvtClaimReq
+                                                                   claimJson:gvtClaimJson
                                                                 outClaimJson:&gvtClaimJson
                                                        outRevocRegUpdateJSON:&revocRegUpdateJson];
     
@@ -790,8 +790,8 @@
     NSString *xyzClaimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
     
     res = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
-                                                                   claimJson:xyzClaimJson
                                                                 claimReqJson:xyzClaimReq
+                                                                   claimJson:xyzClaimJson
                                                                 outClaimJson:&xyzClaimJson
                                                        outRevocRegUpdateJSON:&revocRegUpdateJson];
     

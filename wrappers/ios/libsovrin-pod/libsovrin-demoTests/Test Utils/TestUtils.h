@@ -16,7 +16,6 @@
 + (NSTimeInterval) shortTimeout;
 + (NSTimeInterval) longTimeout;
 
-
 + (void) cleanupStorage;
 
 @end

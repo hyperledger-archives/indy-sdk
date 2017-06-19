@@ -62,8 +62,8 @@
                           outClaimReqJson:(NSString **)outJson;
 
 - (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
-                                     claimJson:(NSString *)claimJson
                                   claimReqJson:(NSString *)claimReqJson
+                                     claimJson:(NSString *)claimJson
                                   outClaimJson:(NSString **)xClaimJson
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON;
 
@@ -80,6 +80,10 @@
 - (NSError *)proverGetClaimsForProofReqWithWalletHandle:(SovrinHandle)walletHandle
                                        proofRequestJson:(NSString *)str
                                           outClaimsJson:(NSString **)outClaimsJson;
+
+- (NSError *)proverGetClaimsForWalletHandle:(SovrinHandle)walletHandle
+                                 filterJson:(NSString *)filterJson
+                              outClaimsJson:(NSString **)claimsJson;
 
 - (NSError *)proverCreateProofWithWalletHandle:(SovrinHandle)walletHandle
                                   proofReqJson:(NSString *)proofReqJson

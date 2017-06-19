@@ -13,8 +13,7 @@
 		3E2A7F931EC36186006194EC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F911EC36186006194EC /* Main.storyboard */; };
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
-		84881A991EE6EA93001B5302 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84881A981EE6EA93001B5302 /* libsovrin.framework */; };
-		84881A9A1EE6EA93001B5302 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 84881A981EE6EA93001B5302 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Validation.m */; };
 		84CFCAD61EF3F7C500F91426 /* Anoncreds.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAC81EF3F7C500F91426 /* Anoncreds.m */; };
 		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
 		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
@@ -39,6 +38,7 @@
 		84CFCAFE1EF3F7D900F91426 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */; };
 		84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCB001EF3F80E00F91426 /* AnoncredsHighCases.m */; };
 		84CFCB031EF3F83200F91426 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCB021EF3F83200F91426 /* AnoncredsMediumCases.m */; };
+		84F0FD3E1EF7F0D80022A01D /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F0FD3D1EF7F0D80022A01D /* NSArray+JSON.m */; };
 		C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */; };
 /* End PBXBuildFile section */
 
@@ -62,17 +62,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		84881A971EE6EA83001B5302 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				84881A9A1EE6EA93001B5302 /* libsovrin.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -90,7 +79,8 @@
 		3E2A7F991EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3E2A7F9E1EC36187006194EC /* libsovrin-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libsovrin-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7FA41EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		84881A981EE6EA93001B5302 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8404D1411EF7D0E900709F1B /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString\U0010+Validation.m"; sourceTree = "<group>"; };
+		8404D1431EF7D0F900709F1B /* NSString+Validation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString\U0010+Validation.h"; sourceTree = "<group>"; };
 		84CFCAC81EF3F7C500F91426 /* Anoncreds.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Anoncreds.m; sourceTree = "<group>"; };
 		84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
@@ -123,6 +113,8 @@
 		84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
 		84CFCB001EF3F80E00F91426 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
 		84CFCB021EF3F83200F91426 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
+		84F0FD3D1EF7F0D80022A01D /* NSArray+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+JSON.m"; sourceTree = "<group>"; };
+		84F0FD3F1EF7F0E40022A01D /* NSArray+JSON.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSArray+JSON.h"; sourceTree = "<group>"; };
 		A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -131,7 +123,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84881A991EE6EA93001B5302 /* libsovrin.framework in Frameworks */,
 				C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -149,7 +140,6 @@
 		3E2A7F7C1EC36186006194EC = {
 			isa = PBXGroup;
 			children = (
-				84881A981EE6EA93001B5302 /* libsovrin.framework */,
 				3E2A7F871EC36186006194EC /* libsovrin-demo */,
 				3E2A7FA11EC36187006194EC /* libsovrin-demoTests */,
 				3E2A7F861EC36186006194EC /* Products */,
@@ -261,6 +251,10 @@
 			children = (
 				84CFCAFC1EF3F7D900F91426 /* NSDictionary+JSON.h */,
 				84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */,
+				8404D1431EF7D0F900709F1B /* NSString+Validation.h */,
+				8404D1411EF7D0E900709F1B /* NSString+Validation.m */,
+				84F0FD3F1EF7F0E40022A01D /* NSArray+JSON.h */,
+				84F0FD3D1EF7F0D80022A01D /* NSArray+JSON.m */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -333,7 +327,6 @@
 				3E2A7F831EC36186006194EC /* Resources */,
 				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
 				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
-				84881A971EE6EA83001B5302 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -493,7 +486,9 @@
 				84CFCAE41EF3F7CC00F91426 /* AnoncredsDemo.mm in Sources */,
 				84CFCADC1EF3F7C500F91426 /* Pool.mm in Sources */,
 				84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */,
+				8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */,
 				84CFCADF1EF3F7C500F91426 /* WalletHighCases.m in Sources */,
+				84F0FD3E1EF7F0D80022A01D /* NSArray+JSON.m in Sources */,
 				84CFCAF51EF3F7D300F91426 /* AnoncredsUtils.m in Sources */,
 				84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */,
 				84CFCADB1EF3F7C500F91426 /* Ledger.mm in Sources */,
