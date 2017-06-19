@@ -263,7 +263,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool9", "wallet9", "default").unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "tcp://127.0.0.1:9709";
-            let listener_handle = AgentUtils::listen(wallet_handle, endpoint, None,
+            AgentUtils::listen(wallet_handle, endpoint, None,
                                                      Some(Box::new(move |_, msg| {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
                                                      }))).unwrap();
