@@ -5,13 +5,17 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::rc::Rc;
 
+use commands::{Command, CommandExecutor};
+use commands::ledger::LedgerCommand;
 use errors::sovrin::SovrinError;
 use errors::common::CommonError;
 use services::agent::AgentService;
+use services::ledger::LedgerService;
 use services::pool::PoolService;
 use services::signus::types::{MyDid, TheirDid};
 use services::wallet::WalletService;
 use utils::json::JsonDecodable;
+use utils::sequence::SequenceUtils;
 
 pub enum AgentCommand {
     Connect(
@@ -20,6 +24,10 @@ pub enum AgentCommand {
         String, // receiver did
         Box<Fn(Result<i32, SovrinError>) + Send>, // connect cb
         Box<Fn(Result<(i32, String), SovrinError>) + Send>, // message cb
+    ),
+    ResumeConnectProcess(
+        i32, // cmd handle
+        Result<(MyConnectInfo, String /* get DDO result JSON */), SovrinError>
     ),
     ConnectAck(
         i32, // cmd handle (eq conn handle)
@@ -73,6 +81,7 @@ pub enum AgentCommand {
 
 pub struct AgentCommandExecutor {
     agent_service: Rc<AgentService>,
+    ledger_service: Rc<LedgerService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
@@ -83,7 +92,7 @@ pub struct AgentCommandExecutor {
         Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Listener
     )>>,
-    open_callbacks: RefCell<HashMap<i32,
+    connect_callbacks: RefCell<HashMap<i32,
         (Box<Fn(Result<i32, SovrinError>) + Send>,
          Box<Fn(Result<(i32, String), SovrinError>) + Send>)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
@@ -97,15 +106,16 @@ struct Listener {
 }
 
 impl AgentCommandExecutor {
-    pub fn new(agent_service: Rc<AgentService>, pool_service: Rc<PoolService>, wallet_service: Rc<WalletService>) -> AgentCommandExecutor {
+    pub fn new(agent_service: Rc<AgentService>, ledger_service: Rc<LedgerService>, pool_service: Rc<PoolService>, wallet_service: Rc<WalletService>) -> AgentCommandExecutor {
         AgentCommandExecutor {
             agent_service: agent_service,
+            ledger_service: ledger_service,
             pool_service: pool_service,
             wallet_service: wallet_service,
             out_connections: RefCell::new(HashMap::new()),
             listeners: RefCell::new(HashMap::new()),
             listen_callbacks: RefCell::new(HashMap::new()),
-            open_callbacks: RefCell::new(HashMap::new()),
+            connect_callbacks: RefCell::new(HashMap::new()),
             send_callbacks: RefCell::new(HashMap::new()),
             close_callbacks: RefCell::new(HashMap::new()),
         }
@@ -115,7 +125,19 @@ impl AgentCommandExecutor {
         match agent_cmd {
             AgentCommand::Connect(wallet_handle, sender_did, receiver_did, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Connect command received");
-                self.connect(wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
+                self.connect(0/* FIXME pool_handle */, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
+            }
+            AgentCommand::ResumeConnectProcess(cmd_id, res) => {
+                info!(target: "agent_command_executor", "GetInfoAck command received");
+                /* TODO extract method, resolve unwraps */
+                let (connect_cb, on_msg) = self.connect_callbacks.borrow_mut().remove(&cmd_id).unwrap();
+                let (my_info, ddo_resp) = res.unwrap();
+                let ddo_resp = DDO::from_json(ddo_resp.as_str()).unwrap();
+                let conn_info = ConnectInfo {
+                    endpoint: ddo_resp.endpoint,
+                    server_key: ddo_resp.verkey,
+                };
+                self.do_connect(my_info, conn_info, connect_cb, on_msg);
             }
             AgentCommand::ConnectAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ConnectAck command received");
@@ -164,21 +186,33 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn connect(&self, wallet_handle: i32, sender_did: String, receiver_did: String,
+    fn connect(&self, pool_handle: i32, wallet_handle: i32,
+               sender_did: String, receiver_did: String,
                connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
-    ) {
-        let result = self.get_connection_info(wallet_handle, &sender_did, &receiver_did)
-            .and_then(|info: ConnectInfo| {
-                debug!("AgentCommandExecutor::connect try to service.connect with {:?}", info);
-                self.agent_service
-                    .connect(sender_did.as_str(),
-                             info.secret_key.as_str(), info.public_key.as_str(),
-                             info.endpoint.as_str(), info.server_key.as_str())
-                    .map_err(From::from)
-            })
+               message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+        match self.get_connection_info_local(wallet_handle, &sender_did, &receiver_did) {
+            Ok(info) => match info {
+                (my_info, Some(info)) => self.do_connect(my_info, info, connect_cb, message_cb),
+                (my_info, None) => self.request_connection_info_from_ledger(pool_handle,
+                                                                            wallet_handle,
+                                                                            my_info,
+                                                                            receiver_did.as_str(),
+                                                                            connect_cb, message_cb),
+            },
+            Err(err) => connect_cb(Err(err))
+        }
+    }
+
+    fn do_connect(&self, my_info: MyConnectInfo, info: ConnectInfo,
+                  connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
+                  message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+        debug!("AgentCommandExecutor::connect try to service.connect with {:?}", info);
+        let result = self.agent_service
+            .connect(my_info.did.as_str(), my_info.secret_key.as_str(), my_info.public_key.as_str(),
+                     info.endpoint.as_str(), info.server_key.as_str())
+            .map_err(From::from)
             .and_then(|conn_handle| {
-                match self.open_callbacks.try_borrow_mut() {
+                match self.connect_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, conn_handle)),
                     Err(err) => Err(SovrinError::CommonError(CommonError::InvalidState(err.description().to_string()))),
                 }
@@ -189,24 +223,61 @@ impl AgentCommandExecutor {
         };
     }
 
-    fn get_connection_info(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
-                           -> Result<ConnectInfo, SovrinError> {
+    fn get_connection_info_local(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
+                                 -> Result<(MyConnectInfo, Option<ConnectInfo>), SovrinError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", sender_did))?;
-        let my_did: MyDid = MyDid::from_json(&my_did_json).map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
-
-        let their_did_json = self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", receiver_did))?; //FIXME implement: get from ledger
-        let their_did: TheirDid = TheirDid::from_json(&their_did_json).map_err(|_| CommonError::InvalidState((format!("Invalid their did json"))))?;
-        assert!(their_did.endpoint.is_some()); //FIXME implement: get from ledger
-        Ok(ConnectInfo {
+        let my_did: MyDid = MyDid::from_json(&my_did_json)
+            .map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
+        let my_connect_info = MyConnectInfo {
+            did: sender_did.clone(),
             secret_key: my_did.sk,
             public_key: my_did.pk,
-            endpoint: their_did.endpoint.unwrap(),
-            server_key: their_did.pk.unwrap()
-        })
+        };
+
+        let their_did_json = self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", receiver_did));
+        let their_did_json = if let Ok(their_did_json) = their_did_json {
+            their_did_json
+        } else {
+            /* TODO match Ok/NotFound/OtherErr ? */
+            return Ok((my_connect_info, None));
+        };
+
+        let their_did: TheirDid = TheirDid::from_json(&their_did_json)
+            .map_err(|_| CommonError::InvalidState((format!("Invalid their did json"))))?;
+        if let (Some(endpoint), Some(pk)) = (their_did.endpoint, their_did.pk) {
+            Ok((my_connect_info,
+                Some(ConnectInfo {
+                    endpoint: endpoint,
+                    server_key: pk,
+                })))
+        } else {
+            Ok((my_connect_info, None))
+        }
+    }
+
+    fn request_connection_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32,
+                                           my_conn_info: MyConnectInfo, receiver_did: &str,
+                                           connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
+                                           message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>) {
+        let ddo_request = match self.ledger_service.build_get_ddo_request(my_conn_info.did.as_str(), receiver_did) {
+            Ok(ddo_request) => ddo_request,
+            Err(err) => {
+                return connect_cb(Err(SovrinError::from(err)));
+            }
+        };
+        let cmd_id = SequenceUtils::get_next_id();
+        self.connect_callbacks.borrow_mut().insert(cmd_id, (connect_cb, message_cb));
+        CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
+            pool_handle, wallet_handle, my_conn_info.did.clone(), ddo_request.to_string(),
+            Box::new(move |res: Result<String, SovrinError>| {
+                let res = res.and_then(|ddo_resp| { Ok((my_conn_info.clone(), ddo_resp)) });
+                CommandExecutor::instance().send(Command::Agent(
+                    AgentCommand::ResumeConnectProcess(cmd_id, res))).unwrap();
+            })))).unwrap();
     }
 
     fn on_connect_ack(&self, cmd_id: i32, res: Result<i32, CommonError>) {
-        if let Some(cbs) = self.open_callbacks.borrow_mut().remove(&cmd_id) {
+        if let Some(cbs) = self.connect_callbacks.borrow_mut().remove(&cmd_id) {
             if let &Ok(conn_handle) = &res {
                 self.out_connections.borrow_mut().insert(conn_handle, cbs.1); /* TODO check insert result */
             }
@@ -333,11 +404,24 @@ impl AgentCommandExecutor {
     }
 }
 
-#[derive(Debug)]
-struct ConnectInfo {
-    //TODO push to public service structure and use in service calls?
+#[derive(Debug, Clone)]
+pub struct MyConnectInfo {
+    did: String,
     secret_key: String,
     public_key: String,
+}
+
+#[derive(Debug)]
+pub struct ConnectInfo {
+    //TODO push to public service structure and use in service calls?
     server_key: String,
     endpoint: String,
 }
+
+#[derive(Deserialize)]
+struct DDO {
+    verkey: String,
+    endpoint: String,
+}
+
+impl<'a> JsonDecodable<'a> for DDO {}
