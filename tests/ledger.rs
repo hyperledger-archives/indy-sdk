@@ -443,7 +443,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_schema_requests_works_for_correct_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name", "version":"1.0", "keys":["name","male"]}"#;
 
             let expected_result = "\"operation\":{\"type\":\"101\",\"data\":\"{\\\"name\\\":\\\"name\\\", \\\"version\\\":\\\"1.0\\\", \\\"keys\\\":[\\\"name\\\",\\\"male\\\"]";
@@ -456,10 +456,10 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_get_schema_requests_works_for_correct_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name","version":"1.0"}"#;
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"type":"107","dest":"some_identifier","data":{"name":"name","version":"1.0"}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}}"#;
 
             let get_schema_request = LedgerUtils::build_get_schema_request(identifier, identifier, data).unwrap();
             assert!(get_schema_request.contains(expected_result));
@@ -533,11 +533,11 @@ mod high_cases {
 
         #[test]
         fn sovrin_build_node_request_works_for_correct_data_json() {
-            let identifier = "some_identifier";
-            let dest = "some_dest";
+            let identifier = "identifier";
+            let dest = "dest";
             let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"type":"0","dest":"some_dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
 
             let node_request = LedgerUtils::build_node_request(identifier, dest, data).unwrap();
             assert!(node_request.contains(expected_result));
@@ -610,12 +610,12 @@ mod high_cases {
 
         #[test]
         fn sovrin_build_claim_def_request_works_for_correct_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let signature_type = "CL";
             let schema_seq_no = 1;
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}}"#;
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"ref":1,"data":"{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}","type":"102","signature_type":"CL""#;
+            let expected_result = r#""identifier":"identifier","operation":{"ref":1,"data":"{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}","type":"102","signature_type":"CL""#;
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(identifier, schema_seq_no, signature_type, data).unwrap();
             assert!(claim_def_request.contains(expected_result));
@@ -623,12 +623,12 @@ mod high_cases {
 
         #[test]
         fn sovrin_build_get_claim_def_request_works() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let _ref = 1;
             let signature_type = "signature_type";
             let origin = "some_origin";
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"some_origin"}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"some_origin"}"#;
 
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(identifier, _ref, signature_type, origin).unwrap();
             assert!(get_claim_def_request.contains(expected_result));
@@ -821,6 +821,26 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_nym_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+            let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+
+            let res = LedgerUtils::build_nym_request(identifier, dest, None, None, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_get_nym_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+            let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+
+            let res = LedgerUtils::build_get_nym_request(identifier, dest);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
     }
 
     mod attrib_requests {
@@ -892,6 +912,24 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_attrib_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+
+            let res = LedgerUtils::build_attrib_request(identifier, identifier, None, Some(r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#), None);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_get_attrib_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+
+            let res = LedgerUtils::build_get_attrib_request(identifier, identifier, "endpoint");
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
     }
 
     mod schemas_requests {
@@ -900,7 +938,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_schema_requests_works_for_missed_field_in_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name"}"#;
 
             let res = LedgerUtils::build_schema_request(identifier, data);
@@ -911,7 +949,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_schema_requests_works_for_invalid_data_json_format() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name", "keys":"name"}"#;
 
             let res = LedgerUtils::build_schema_request(identifier, data);
@@ -922,7 +960,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_get_schema_requests_works_for_invalid_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name"}"#;
 
             let res = LedgerUtils::build_get_schema_request(identifier, identifier, data);
@@ -983,8 +1021,8 @@ mod medium_cases {
 
         #[test]
         fn sovrin_build_node_request_works_for_missed_field_in_data_json() {
-            let identifier = "some_identifier";
-            let dest = "some_dest";
+            let identifier = "identifier";
+            let dest = "dest";
             let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
@@ -994,8 +1032,8 @@ mod medium_cases {
 
         #[test]
         fn sovrin_build_node_request_works_for_wrong_service() {
-            let identifier = "some_identifier";
-            let dest = "some_dest";
+            let identifier = "identifier";
+            let dest = "dest";
             let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
@@ -1063,7 +1101,7 @@ mod medium_cases {
         fn sovrin_build_claim_def_request_works_for_invalid_data_json() {
             TestUtils::cleanup_storage();
 
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let signature_type = "CL";
             let schema_seq_no = 1;
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"}}}"#;

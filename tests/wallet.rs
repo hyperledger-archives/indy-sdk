@@ -13,7 +13,7 @@ extern crate log;
 mod utils;
 
 use utils::wallet::WalletUtils;
-use utils::anoncreds::AnoncredsUtils;
+use utils::signus::SignusUtils;
 use utils::test::TestUtils;
 
 use sovrin::api::ErrorCode;
@@ -160,10 +160,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
 
-            let schema = AnoncredsUtils::get_gvt_schema_json(1);
-            let (_, uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false).unwrap();
+            let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &uuid, 1).unwrap();
+            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &did, 1).unwrap();
 
             TestUtils::cleanup_storage();
         }
