@@ -121,7 +121,7 @@ mod high_cases {
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
 
-            let trustee_did = "some_trustee_did";
+            let trustee_did = "trusteedid";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
@@ -141,7 +141,7 @@ mod high_cases {
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
 
-            let trustee_did = "some_trustee_did";
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
@@ -157,9 +157,9 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "test_submit_tx";
 
-            let res = PoolUtils::create_pool_ledger_config(pool_name, None);
+            let res = PoolUtils::create_pool_ledger_config(pool_name, None, None);
             assert!(res.is_ok());
-            let res = PoolUtils::open_pool_ledger(pool_name);
+            let res = PoolUtils::open_pool_ledger(pool_name, None);
             assert!(res.is_ok());
             let pool_handle = res.unwrap();
 
@@ -626,9 +626,9 @@ mod high_cases {
             let identifier = "identifier";
             let _ref = 1;
             let signature_type = "signature_type";
-            let origin = "some_origin";
+            let origin = "origin";
 
-            let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"some_origin"}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"}"#;
 
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(identifier, _ref, signature_type, origin).unwrap();
             assert!(get_claim_def_request.contains(expected_result));

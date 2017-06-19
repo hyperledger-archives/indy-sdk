@@ -167,8 +167,6 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
-
-
 }
 
 mod medium_cases {
@@ -187,6 +185,19 @@ mod medium_cases {
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
             let res = WalletUtils::create_wallet(pool_name, wallet_name, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletAlreadyExistsError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_create_wallet_works_for_empty_name() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "pool";
+            let wallet_name = "";
+
+            let res = WalletUtils::create_wallet(pool_name, wallet_name, None, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
 
             TestUtils::cleanup_storage();
         }
