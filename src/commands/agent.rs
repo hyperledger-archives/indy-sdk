@@ -76,7 +76,7 @@ pub struct AgentCommandExecutor {
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
 
-    out_connections: RefCell<HashMap<i32, Box<Fn(Result<(i32, String), SovrinError>)>>>,
+    out_connections: RefCell<HashMap<i32, Box<Fn(Result<(i32, String), SovrinError>) + Send>>>,
     listeners: RefCell<HashMap<i32, Listener>>,
 
     listen_callbacks: RefCell<HashMap<i32, (
@@ -84,8 +84,8 @@ pub struct AgentCommandExecutor {
         Listener
     )>>,
     open_callbacks: RefCell<HashMap<i32,
-        (Box<Fn(Result<i32, SovrinError>)>,
-         Box<Fn(Result<(i32, String), SovrinError>)>)>>,
+        (Box<Fn(Result<i32, SovrinError>) + Send>,
+         Box<Fn(Result<(i32, String), SovrinError>) + Send>)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
     close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
 }
@@ -119,11 +119,7 @@ impl AgentCommandExecutor {
             }
             AgentCommand::ConnectAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ConnectAck command received");
-                let cbs = self.open_callbacks.borrow_mut().remove(&cmd_id).unwrap();
-                if let &Ok(conn_handle) = &res {
-                    self.out_connections.borrow_mut().insert(conn_handle, cbs.1);
-                }
-                cbs.0(res.map_err(map_err_err!()).map_err(From::from));
+                self.on_connect_ack(cmd_id, res);
             }
             AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
@@ -131,29 +127,15 @@ impl AgentCommandExecutor {
             }
             AgentCommand::ListenAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ListenAck command received");
-                //TODO extract method
-                let cbs = self.listen_callbacks.borrow_mut().remove(&cmd_id).unwrap();
-                if let Ok(listener_handle) = res {
-                    self.listeners.borrow_mut().insert(listener_handle, cbs.1);
-                }
-                cbs.0(res.map_err(map_err_err!()).map_err(From::from))
+                self.on_listen_ack(cmd_id, res);
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
-                let mut listeners = self.listeners.borrow_mut();
-                let mut cbs = listeners.get_mut(&listener_id).unwrap();
-                if let Ok((_, connection_handle, _, _)) = res {
-                    cbs.conn_handles.insert(connection_handle);
-                }
-                (cbs.on_connect)(res.map_err(map_err_err!()).map_err(From::from));
+                self.on_client_connected(listener_id, res);
             }
             AgentCommand::MessageReceived(connection_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
-                let res: Result<(i32, String), SovrinError> = res.map_err(From::from);
-                match self.listeners.borrow_mut().iter().find(|&(_, listener)| listener.conn_handles.contains(&connection_id)) {
-                    Some((_, listener)) => (listener.on_msg)(res),
-                    None => self.out_connections.borrow().get(&connection_id).unwrap()(res),
-                }
+                self.on_message_received(connection_id, res);
             }
             AgentCommand::Send(connection_id, msg, cb) => {
                 info!(target: "agent_command_executor", "Send command received");
@@ -161,7 +143,7 @@ impl AgentCommandExecutor {
             }
             AgentCommand::SendAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "SendAck command received");
-                self.send_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+                self.on_send_ack(cmd_id, res);
             }
             AgentCommand::CloseConnection(connection_id, cb) => {
                 info!(target: "agent_command_executor", "CloseConnection command received");
@@ -169,7 +151,7 @@ impl AgentCommandExecutor {
             }
             AgentCommand::CloseConnectionAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "CloseConnectionAck command received");
-                self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+                self.on_close_connection_ack(cmd_id, res);
             }
             AgentCommand::CloseListener(listener_id, cb) => {
                 info!(target: "agent_command_executor", "CloseListener command received");
@@ -177,7 +159,7 @@ impl AgentCommandExecutor {
             }
             AgentCommand::CloseListenerAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "CloseListenerAck command received");
-                self.close_callbacks.borrow_mut().remove(&cmd_id).unwrap()(res.map_err(From::from));
+                self.on_close_listener_ack(cmd_id, res);
             }
         }
     }
@@ -186,7 +168,7 @@ impl AgentCommandExecutor {
                connect_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
                message_cb: Box<Fn(Result<(i32, String), SovrinError>) + Send>,
     ) {
-        let result = self._get_connection_info(wallet_handle, &sender_did, &receiver_did)
+        let result = self.get_connection_info(wallet_handle, &sender_did, &receiver_did)
             .and_then(|info: ConnectInfo| {
                 debug!("AgentCommandExecutor::connect try to service.connect with {:?}", info);
                 self.agent_service
@@ -207,8 +189,8 @@ impl AgentCommandExecutor {
         };
     }
 
-    fn _get_connection_info(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
-                            -> Result<ConnectInfo, SovrinError> {
+    fn get_connection_info(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
+                           -> Result<ConnectInfo, SovrinError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", sender_did))?;
         let my_did: MyDid = MyDid::from_json(&my_did_json).map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
 
@@ -221,6 +203,18 @@ impl AgentCommandExecutor {
             endpoint: their_did.endpoint.unwrap(),
             server_key: their_did.pk.unwrap()
         })
+    }
+
+    fn on_connect_ack(&self, cmd_id: i32, res: Result<i32, CommonError>) {
+        if let Some(cbs) = self.open_callbacks.borrow_mut().remove(&cmd_id) {
+            if let &Ok(conn_handle) = &res {
+                self.out_connections.borrow_mut().insert(conn_handle, cbs.1); /* TODO check insert result */
+            }
+            cbs.0(res.map_err(map_err_err!()).map_err(From::from));
+        } else {
+            error!("Can't handle ConnectAck cmd - callback not found for {}", cmd_id);
+            return;
+        }
     }
 
     fn listen(&self, wallet_handle: i32, endpoint: String,
@@ -251,6 +245,42 @@ impl AgentCommandExecutor {
         };
     }
 
+    fn on_listen_ack(&self, cmd_id: i32, res: Result<i32, CommonError>) {
+        if let Some(cbs) = self.listen_callbacks.borrow_mut().remove(&cmd_id) {
+            if let Ok(listener_handle) = res {
+                self.listeners.borrow_mut().insert(listener_handle, cbs.1);
+            }
+            cbs.0(res.map_err(map_err_err!()).map_err(From::from))
+        } else {
+            error!("Can't handle ListenAck cmd - callback not found for {}", cmd_id);
+        }
+    }
+
+    fn on_client_connected(&self, listener_id: i32, res: Result<(i32, i32, String, String), CommonError>) {
+        if let Some(mut cbs) = self.listeners.borrow_mut().get_mut(&listener_id) {
+            if let Ok((_, connection_handle, _, _)) = res {
+                cbs.conn_handles.insert(connection_handle);
+            }
+            (cbs.on_connect)(res.map_err(map_err_err!()).map_err(From::from));
+        } else {
+            error!("Can't handle ListenerOnConnect cmd - callback not found for {}", listener_id);
+        }
+    }
+
+    fn on_message_received(&self, connection_id: i32, res: Result<(i32, String), CommonError>) {
+        let listeners = self.listeners.borrow();
+        let out_connections = self.out_connections.borrow();
+        let cb = match listeners.iter().find(|&(_, listener)| listener.conn_handles.contains(&connection_id)) {
+            Some((_, listener)) => Some(&listener.on_msg),
+            None => out_connections.get(&connection_id),
+        };
+        if let Some(cb) = cb {
+            cb(res.map_err(From::from));
+        } else {
+            error!("Can't handle MessageReceived cmd - callback not found for {}", connection_id);
+        }
+    }
+
     fn send(&self, conn_id: i32, msg: Option<String>, cb: Box<Fn(Result<(), SovrinError>)>) {
         let result = self.agent_service
             .send(conn_id, msg.as_ref().map(String::as_str))
@@ -266,6 +296,13 @@ impl AgentCommandExecutor {
         }
     }
 
+    fn on_send_ack(&self, cmd_id: i32, res: Result<(), CommonError>) {
+        match self.send_callbacks.borrow_mut().remove(&cmd_id) {
+            Some(cb) => cb(res.map_err(From::from)),
+            None => error!("Can't handle SendAck cmd - callback not found for {}", cmd_id),
+        };
+    }
+
     fn close_connection_or_listener(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>)>, close_listener: bool) {
         let result = self.agent_service
             .close_connection_or_listener(handle, close_listener)
@@ -279,6 +316,20 @@ impl AgentCommandExecutor {
             Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
             Err(err) => cb(Err(From::from(err))),
         }
+    }
+
+    fn on_close_connection_ack(&self, cmd_id: i32, res: Result<(), CommonError>, ) {
+        match self.close_callbacks.borrow_mut().remove(&cmd_id) {
+            Some(cb) => cb(res.map_err(From::from)),
+            None => error!("Can't handle CloseConnectionAck cmd - not found callback for {}", cmd_id)
+        };
+    }
+
+    fn on_close_listener_ack(&self, cmd_id: i32, res: Result<(), CommonError>, ) {
+        match self.close_callbacks.borrow_mut().remove(&cmd_id) {
+            Some(cb) => cb(res.map_err(From::from)),
+            None => error!("Can't handle CloseListenerAck cmd - not found callback for {}", cmd_id)
+        };
     }
 }
 
