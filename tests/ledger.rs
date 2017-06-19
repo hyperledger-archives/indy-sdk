@@ -60,7 +60,6 @@ mod high_cases {
 
             let invalid_pool_handle = pool_handle + 1;
             let res = PoolUtils::send_request(invalid_pool_handle, &get_nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             TestUtils::cleanup_storage();
@@ -82,7 +81,6 @@ mod high_cases {
 
             let invalid_pool_handle = pool_handle + 1;
             let res = LedgerUtils::sign_and_submit_request(invalid_pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             TestUtils::cleanup_storage();
@@ -104,29 +102,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = LedgerUtils::sign_and_submit_request(pool_handle, invalid_wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_sign_and_submit_request_works_for_not_found_signer() {
-            TestUtils::cleanup_storage();
-            let pool_name = "sovrin_sign_and_submit_request_works_for_not_found_signer";
-
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
-
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
-
-            let trustee_did = "trusteedid";
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
-
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
         }
@@ -145,7 +121,6 @@ mod high_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
 
             TestUtils::cleanup_storage();
@@ -186,6 +161,24 @@ mod high_cases {
             };
             let act_reply: Reply<GetNymReplyResult> = serde_json::from_str(resp.unwrap().as_str()).unwrap();
             assert_eq!(act_reply, exp_reply);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_sign_and_submit_request_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_sign_and_submit_request_works";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
@@ -695,6 +688,66 @@ mod high_cases {
 
 mod medium_cases {
     use super::*;
+
+    mod requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_sign_and_submit_request_works_for_not_found_signer() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_sign_and_submit_request_works_for_not_found_signer";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+
+            let trustee_did = "trusteedid";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_submit_request_works_for_invalid_json() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_submit_request_works_for_invalid_json";
+
+            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
+            let pool_handle = PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+
+            let request = r#"request"#;
+
+            let res = PoolUtils::send_request(pool_handle, request);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_sign_and_submit_request_works_for_invalid_json() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_sign_and_submit_request_works_for_invalid_json";
+
+            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
+            let pool_handle = PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let request = r#"request"#;
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 
     mod nym_requests {
         use super::*;
