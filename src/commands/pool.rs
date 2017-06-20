@@ -43,6 +43,7 @@ impl PoolCommandExecutor {
         }
     }
 
+    #[allow(unused_variables)] /* FIXME */
     pub fn execute(&self, command: PoolCommand) {
         match command {
             PoolCommand::Create(name, config, cb) => {
@@ -94,6 +95,7 @@ impl PoolCommandExecutor {
         cb(self.pool_service.create(name, config).map_err(|err| SovrinError::PoolError(err)))
     }
 
+    #[allow(unused_variables)] /* FIXME */
     fn delete(&self, name: &str, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         // TODO: FIXME: Implement me!!!
         cb(Ok(()));
@@ -114,11 +116,13 @@ impl PoolCommandExecutor {
         };
     }
 
+    #[allow(unused_variables)] /* FIXME */
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         // TODO: FIXME: Implement me!!!
         cb(Ok(()));
     }
 
+    #[allow(unused_variables)] /* FIXME */
     fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         // TODO: FIXME: Implement me!!!
         cb(Ok(()));
