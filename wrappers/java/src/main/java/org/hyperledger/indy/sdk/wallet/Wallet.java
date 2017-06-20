@@ -27,7 +27,7 @@ public class Wallet extends SovrinJava.API {
 	}
 
 	public int getWalletHandle() {
-		
+
 		return this.walletHandle;
 	}
 
@@ -89,12 +89,12 @@ public class Wallet extends SovrinJava.API {
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
 				Wallet wallet = new Wallet(handle);
-				
+
 				OpenWalletResult result = new OpenWalletResult(wallet);
 				future.complete(result);
 			}
 		};
-		
+
 		int result = LibSovrin.api.sovrin_open_wallet(
 				FIXED_COMMAND_HANDLE, 
 				name,
@@ -108,7 +108,7 @@ public class Wallet extends SovrinJava.API {
 	}
 
 	private static Future<CloseWalletResult> closeWallet(
-			int handle) throws SovrinException {
+			Wallet wallet) throws SovrinException {
 
 		final CompletableFuture<CloseWalletResult> future = new CompletableFuture<> ();
 
@@ -123,6 +123,8 @@ public class Wallet extends SovrinJava.API {
 				future.complete(result);
 			}
 		};
+
+		int handle = wallet.getWalletHandle();
 
 		int result = LibSovrin.api.sovrin_close_wallet(
 				FIXED_COMMAND_HANDLE, 
@@ -164,7 +166,7 @@ public class Wallet extends SovrinJava.API {
 	}
 
 	private static Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
-			int walletHandle, 
+			Wallet wallet, 
 			String walletKey,
 			String configName) throws SovrinException {
 
@@ -181,6 +183,8 @@ public class Wallet extends SovrinJava.API {
 				future.complete(result);
 			}
 		};
+
+		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibSovrin.api.sovrin_wallet_set_seq_no_for_value(
 				FIXED_COMMAND_HANDLE, 
@@ -199,14 +203,14 @@ public class Wallet extends SovrinJava.API {
 
 	public Future<CloseWalletResult> closeWallet(
 			) throws SovrinException {
-		
-		return closeWallet(this.walletHandle);
+
+		return closeWallet(this);
 	}
 
 	public Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
 			String walletKey,
 			String configName) throws SovrinException {
-		
-		return walletSetSeqNoForValue(this.walletHandle, walletKey, configName);
+
+		return walletSetSeqNoForValue(this, walletKey, configName);
 	}
 }
