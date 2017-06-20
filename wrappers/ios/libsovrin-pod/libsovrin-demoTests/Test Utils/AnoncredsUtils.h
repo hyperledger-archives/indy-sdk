@@ -11,6 +11,8 @@
 
 + (AnoncredsUtils *)sharedInstance;
 
++ (NSString *)commonMasterSecretName;
+
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid

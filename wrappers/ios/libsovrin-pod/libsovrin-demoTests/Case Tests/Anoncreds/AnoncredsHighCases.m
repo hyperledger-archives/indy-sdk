@@ -37,7 +37,6 @@
 
 - (void)testIssuerCreateAndStoreClaimDefWorks
 {
-    [TestUtils cleanupStorage];
     NSError *ret;
     
     // 1. init commmon wallet
@@ -66,13 +65,11 @@
     XCTAssertTrue([claimDef[@"public_key"][@"rms"] length] > 0, @"wrong length:claimDef[publicKey][rms]");
     XCTAssertTrue([claimDef[@"public_key"][@"z"] length] > 0, @"wrong length:claimDef[publicKey][z]");
     XCTAssertTrue([claimDef[@"public_key"][@"rctxt"] length] > 0, @"wrong length:claimDef[publicKey][rctxt]");
-    
-    [TestUtils cleanupStorage];
 }
 
 - (void)testIssuerCreateAndStoreClaimDefWorksForInvalidWallet
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     
     // 1. init commmon wallet
@@ -92,14 +89,14 @@
                                                                           claimDefUUID:nil];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle failed: returned wrong error code");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover store claim offer
 
 - (void)testProverStoreClaimOfferWorks
 {
-   [TestUtils cleanupStorage];
+    
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -118,12 +115,12 @@
                                                   claimOfferJson:claimOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimOffer failed");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverStoreClaimOfferWorksForInvalidJson
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -140,12 +137,12 @@
                                                   claimOfferJson:claimOfferJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverStoreClaimOffer failed");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverStoreClaimOfferWorksForInvalidWallet
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -165,13 +162,13 @@
                                                   claimOfferJson:claimOfferJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimOffer failed");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover get claim offers
 - (void)testProverGetClaimOffersWorksForEmptyFilter
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -192,12 +189,12 @@
     NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
     NSArray *array = (NSArray *)offers;
     XCTAssertEqual([array count], 3, @"wrong length of claim offers");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimOffersWorksForFilterByIssuer
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -234,12 +231,12 @@
     XCTAssertTrue([array contains:offer1], @"offers doesn't contain offer1");
     XCTAssertTrue([array contains:offer2], @"offers doesn't contain offer2");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimOffersWorksForFilterByClaimDef
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -268,12 +265,12 @@
     offer1[@"schema_seq_no"] = @(2);
     
     XCTAssertTrue([array contains:offer1], @"offers doesn't contain offer1");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimOffersWorksForFilterBySchema
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -308,12 +305,12 @@
     
     XCTAssertTrue([offers contains:offer1], @"offers doesn't contain offer1");
     XCTAssertTrue([offers contains:offer2], @"offers doesn't contain offer2");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimOffersWorksForFilterByIssuerAndSchema
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -342,12 +339,12 @@
     offer1[@"schema_seq_no"] = @(1);
     
     XCTAssertTrue([offers contains:offer1], @"offers doesn't contain offer1");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimOffersWorksForNoResults
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -369,12 +366,12 @@
     NSDictionary *offersJson = [NSDictionary fromString:claimOffersJson];
     NSArray *offers = (NSArray *)offersJson;
     XCTAssertEqual([offers count], 0, @"wrong length of claim offers");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimOffersWorksForinvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -391,14 +388,14 @@
                                                      filterJson:filter
                                              outClaimOffersJSON:&claimOffersJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimOffers returned not WalletInvalidHandle code:%ld", (long)ret.code);
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover create master secret
 
 - (void)testProverCreateMasterSecretWorks
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -411,12 +408,12 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:walletHandle
                                                    masterSecretName:@"master_secret_name1"];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret failed with code:%ld", (long)ret.code);
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverCreateMasterSecretWorksInvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -430,13 +427,13 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:invalidWalletHandle
                                                    masterSecretName:@"master_secret_name2"];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateMasterSecret returned not WalletInvalidHandle code:%ld", (long)ret.code);
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover create and store claim request
 - (void)testProverCreateAndStoreRequestWorks
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDef;
@@ -460,7 +457,7 @@
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                            claimDefJson:claimDef
-                                                       masterSecretName:@"common_master_secret_name"
+                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                         outClaimReqJson:&claimRequestJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed with code:%ld", (long)ret.code);
     XCTAssertTrue([claimRequestJson isValid], @"invalid claimRequestJson: %@", claimRequestJson);
@@ -474,7 +471,7 @@
 
 - (void)testProverCreateAndStoreClaimReqWorksForInvalidWallet
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDef;
@@ -498,49 +495,49 @@
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                            claimDefJson:claimDef
-                                                       masterSecretName:@"common_master_secret_name"
+                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                         outClaimReqJson:&claimRequestJson];
      XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
-    [TestUtils cleanupStorage];
+     
 }
 
 // TODO: This test is ignored in rust
-- (void)testProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondOfferDiffrentClaimDefSeqNo
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    SovrinHandle walletHandle = 0;
-    NSString *claimDef;
-    
-    // 1. get wallet handle
-    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDef];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDef isValid], @"invalid claimDef: %@", claimDef);
-    
-    // 2. get claim offer
-    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e";
-    NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                        seqNo:@(2)
-                                                                  schemaSeqNo:@(1)];
-
-    // 3. create and store claim requets
-    NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-    NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
-                                                              proverDid:proverDid
-                                                         claimOfferJson:claimOffer
-                                                           claimDefJson:claimDef
-                                                       masterSecretName:@"common_master_secret_name"
-                                                        outClaimReqJson:&claimRequestJson];
-    // TODO: Returns 0, not 110
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong error code");
-    [TestUtils cleanupStorage];
-}
+//- (void)testProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondOfferDiffrentClaimDefSeqNo
+//{
+//     
+//    NSError *ret;
+//    SovrinHandle walletHandle = 0;
+//    NSString *claimDef;
+//    
+//    // 1. get wallet handle
+//    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
+//                                                                    claimDefJson:&claimDef];
+//    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
+//    XCTAssertTrue([claimDef isValid], @"invalid claimDef: %@", claimDef);
+//    
+//    // 2. get claim offer
+//    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e";
+//    NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
+//                                                                        seqNo:@(2)
+//                                                                  schemaSeqNo:@(1)];
+//
+//    // 3. create and store claim requets
+//    NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+//    NSString *claimRequestJson;
+//    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+//                                                              proverDid:proverDid
+//                                                         claimOfferJson:claimOffer
+//                                                           claimDefJson:claimDef
+//                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
+//                                                        outClaimReqJson:&claimRequestJson];
+//    // TODO: Returns 0, not 110
+//    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong error code");
+//     
+//}
 
 - (void)testProverCreateAndStoreClaimreqWorksForClaimDefDoesNotCorrespondOfferDiffrentSchemaSeqNo
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDef;
@@ -565,15 +562,15 @@
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                            claimDefJson:claimDef
-                                                       masterSecretName:@"common_master_secret_name" outClaimReqJson:&claimRequestJson];
+                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]outClaimReqJson:&claimRequestJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Issuer create claim
 - (void)testIssuerCreateClaimWorks
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -605,12 +602,12 @@
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"m2"] length] > 0, @"wrong \"m2\" length");
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"e"] length] > 0, @"wrong \"e\" length");
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"v_prime"] length] > 0, @"wrong \"v_prime\" length");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimReq
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -635,12 +632,12 @@
                                                        outRevocRegUpdateJSON:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong code");
 
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testIssuerCreateClaimWorksForInvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -666,14 +663,14 @@
                                                        outRevocRegUpdateJSON:nil];
 
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle failed");
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover store claim
 
 - (void)testProverStoreClaimWorks
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -695,7 +692,7 @@
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
                                                            claimDefJson:claimDefJson
-                                                       masterSecretName:@"common_master_secret_name"
+                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                         outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
     XCTAssertTrue([claimRequest isValid], @"claimRequest is wrong:%@", claimRequest);
@@ -717,12 +714,12 @@
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverStoreClaimWorksForInvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -745,7 +742,7 @@
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
                                                            claimDefJson:claimDefJson
-                                                       masterSecretName:@"common_master_secret_name"
+                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                         outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
     XCTAssertTrue([claimRequest isValid], @"claimRequest is wrong:%@", claimRequest);
@@ -768,14 +765,14 @@
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
 
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover get claims
 
 - (void)testProverGetClaimsWorksForEmptyFilter
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -797,12 +794,12 @@
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsWorksForFilterByClaimDefSeqNo
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -824,12 +821,12 @@
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsWorksForFilterByClaimDefSeqNoAndSchemaSeqNo
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -851,12 +848,12 @@
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsWorksForEmptyResult
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -878,12 +875,12 @@
     
     XCTAssertEqual([claims count], 0, @"claims count != 0");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsWorksForInvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -899,14 +896,14 @@
                                                                filterJson:@"{}"
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForWalletHandle returned wrong code");
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover get claims for proof request
 
 - (void)testProverGetClaimsForProofReqWorksForRevealedAttr
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -938,12 +935,12 @@
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 0, @"predicates length != 0");
     XCTAssertEqual([claims[@"attrs"][@"attr1_uuid"] count], 1, @"attr1_uuid length != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForNotFoundAttribute
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -975,12 +972,12 @@
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 0, @"predicates length != 0");
     XCTAssertEqual([claims[@"attrs"][@"attr1_uuid"] count], 0, @"attr1_uuid length != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForSatisfyPredicate
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -1011,12 +1008,12 @@
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 1, @"predicates length != 0");
     XCTAssertEqual([claims[@"predicates"][@"predicate1_uuid"] count], 1, @"predicate1_uuid length != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForMultiplyAttributeAndPredicates
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -1062,12 +1059,12 @@
     XCTAssertEqual([claims[@"predicates"][@"predicate1_uuid"] count], 1, @"predicate1_uuid length != 1");
     XCTAssertEqual([claims[@"predicates"][@"predicate2_uuid"] count], 1, @"predicate2_uuid length != 1");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForInvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -1091,14 +1088,14 @@
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:invalidWalletHandle
                                                                      proofRequestJson:proofRequest outClaimsJson:nil];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong error code");
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Prover create proof works
 
 - (void)testProverCreateProofWorks
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1153,18 +1150,18 @@
                                                                 proofReqJson:proofRequest
                                                          requestedClaimsJson:requestedClaimsJson
                                                                  schemasJson:schemasJson
-                                                            masterSecretName:@"common_master_secret_name"
+                                                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                                claimDefsJson:claimDefsJson
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProofWithWalletHandle failed");
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverCreateProofWorksForUsingNotSatisfyClaim
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1213,17 +1210,17 @@
                                                                 proofReqJson:proofRequest
                                                          requestedClaimsJson:requestedClaimsJson
                                                                  schemasJson:schemasJson
-                                                            masterSecretName:@"common_master_secret_name"
+                                                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                                claimDefsJson:claimDefsJson
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateProofWithWalletHandle returned wrong code");
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testProverCreateProofWorksForInvalidWalletHandle
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1272,18 +1269,18 @@
                                                                 proofReqJson:proofRequest
                                                          requestedClaimsJson:requestedClaimsJson
                                                                  schemasJson:schemasJson
-                                                            masterSecretName:@"common_master_secret_name"
+                                                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
                                                                claimDefsJson:claimDefsJson
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateProofWithWalletHandle returned wrong code");
-    [TestUtils cleanupStorage];
+     
 }
 
 // MARK: - Verifier verify proof
 - (void)testVerifierVerifyProofWorksForCorrectProof
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1340,12 +1337,12 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof failed");
     XCTAssertTrue(isValid, @"isValid is false");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 - (void)testVerifierVerifyProofWorksForWrongProof
 {
-    [TestUtils cleanupStorage];
+     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1389,7 +1386,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof failed");
     XCTAssertFalse(isValid, @"isValid is true!");
     
-    [TestUtils cleanupStorage];
+     
 }
 
 

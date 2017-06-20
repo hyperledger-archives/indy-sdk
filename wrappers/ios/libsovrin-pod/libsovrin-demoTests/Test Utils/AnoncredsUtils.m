@@ -12,7 +12,16 @@
 #import "WalletUtils.h"
 #import "NSString+Validation.h"
 
+@interface AnoncredsUtils ()
+
+@property (assign) BOOL isCommonWalletCreated;
+@property (assign) SovrinHandle singletoneWalletHandle;
+@property (strong) NSString* singletoneClaimdefJson;
+
+@end
+
 @implementation AnoncredsUtils
+
 
 + (AnoncredsUtils *)sharedInstance
 {
@@ -21,9 +30,15 @@
     
     dispatch_once(&dispatch_once_block, ^{
         instance = [AnoncredsUtils new];
+        instance.isCommonWalletCreated = false;
     });
     
     return instance;
+}
+
++ (NSString *)commonMasterSecretName
+{
+    return @"common_master_secret_name";
 }
 
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo
@@ -527,7 +542,23 @@
 - (NSError *)initializeCommonWalletAndReturnHandle:(SovrinHandle *)walletHandle
                                       claimDefJson:(NSString **)claimDefJson
 {
+    if (self.isCommonWalletCreated)
+    {
+        if (walletHandle)
+        {
+            *walletHandle = _singletoneWalletHandle;
+        }
+        if (claimDefJson)
+        {
+            *claimDefJson = _singletoneClaimdefJson;
+        }
+        return [NSError errorWithDomain:@""
+                                   code:Success
+                               userInfo:nil];
+    }
+    
     [TestUtils cleanupStorage];
+    
     ////TODO Need clean after tests but not exists After function in Cargo
     NSError *ret;
     
@@ -571,9 +602,8 @@
     XCTAssertEqual(ret.code, Success, @"proverStoreClaimOffer failed for claimOfferJson3");
     
     //4. Create MasterSecret
-    NSString *masterSecret = @"common_master_secret_name";
     ret = [self proverCreateMasterSecret:tempWalletHandle
-                        masterSecretName:masterSecret];
+                        masterSecretName:[AnoncredsUtils commonMasterSecretName]];
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret failed");
     
     //5. Create and Store Claim Request
@@ -582,7 +612,7 @@
                                    proverDid:@"HEJ9gvWX64wW7UD"
                               claimOfferJson:claimOfferJson1
                                 claimDefJson:tempClaimDefJson
-                            masterSecretName:masterSecret
+                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
                              outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreClaimReq failed for claimOfferJson1");
     XCTAssertTrue([claimRequest isValid], @"invalid claim request: %@", claimRequest);
@@ -604,8 +634,12 @@
                                       claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, Success, @"proverStoreClaimWithWalletHandle failed");
     
-    if (walletHandle) { *walletHandle = tempWalletHandle; }
-    if (claimDefJson) { *claimDefJson = tempClaimDefJson; }
+    if (walletHandle){ *walletHandle = tempWalletHandle; }
+    if (claimDefJson){ *claimDefJson = tempClaimDefJson; }
+    _singletoneWalletHandle = tempWalletHandle;
+    _singletoneClaimdefJson = tempClaimDefJson;
+    
+    self.isCommonWalletCreated = true;
     
     return ret;
 }
