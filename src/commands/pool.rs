@@ -118,8 +118,7 @@ impl PoolCommandExecutor {
 
     #[allow(unused_variables)] /* FIXME */
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
-        // TODO: FIXME: Implement me!!!
-        cb(Ok(()));
+        unimplemented!();
     }
 
     #[allow(unused_variables)] /* FIXME */
