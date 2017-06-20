@@ -32,6 +32,7 @@ pub enum PoolCommand {
 
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
+    close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
 }
 
@@ -39,6 +40,7 @@ impl PoolCommandExecutor {
     pub fn new(pool_service: Rc<PoolService>) -> PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service: pool_service,
+            close_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -60,11 +62,10 @@ impl PoolCommandExecutor {
             }
             PoolCommand::OpenAck(handle, result) => {
                 info!("OpenAck handle {:?}, result {:?}", handle, result);
-                let result = result.map_err(SovrinError::from);
                 match self.open_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
-                            Some(cb) => cb(result),
+                            Some(cb) => cb(result.map_err(SovrinError::from)),
                             None => {
                                 error!("Can't process PoolCommand::OpenAck for handle {} with result {:?} - appropriate callback not found!",
                                 handle, result);
@@ -79,7 +80,19 @@ impl PoolCommandExecutor {
                 self.close(handle, cb);
             }
             PoolCommand::CloseAck(handle, result) => {
-                unimplemented!();
+                info!(target: "pool_command_executor", "CloseAck command received");
+                match self.close_callbacks.try_borrow_mut() {
+                    Ok(mut cbs) => {
+                        match cbs.remove(&handle) {
+                            Some(cb) => cb(result.map_err(SovrinError::from)),
+                            None => {
+                                error!("Can't process PoolCommand::CloseAck for handle {} with result {:?} - appropriate callback not found!",
+                                handle, result);
+                            }
+                        }
+                    }
+                    Err(err) => { error!("{:?}", err); }
+                }
             }
             PoolCommand::Refresh(handle, cb) => {
                 info!(target: "pool_command_executor", "Refresh command received");
@@ -116,9 +129,19 @@ impl PoolCommandExecutor {
         };
     }
 
-    #[allow(unused_variables)] /* FIXME */
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
-        unimplemented!();
+        let result = self.pool_service.close(handle)
+            .map_err(From::from)
+            .and_then(|handle| {
+                match self.close_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, handle)),
+                    Err(err) => Err(SovrinError::PoolError(PoolError::from(CommonError::from(err))))
+                }
+            });
+        match result {
+            Err(err) => { cb(Err(err)); }
+            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
+        };
     }
 
     #[allow(unused_variables)] /* FIXME */

@@ -610,7 +610,7 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn close(&self, handle: i32) -> Result<(), PoolError> {
+    pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         unimplemented!()
     }
 
