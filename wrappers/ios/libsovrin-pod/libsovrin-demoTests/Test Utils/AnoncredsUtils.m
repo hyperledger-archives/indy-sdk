@@ -456,6 +456,7 @@
                                   outProofJson:(NSString **)outProofJson
 {
     __block NSError *err = nil;
+    __block NSString *outJson;
     XCTestExpectation* completionExpectation = nil;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -470,10 +471,8 @@
                                                            completion:^(NSError *error, NSString *proofJSON)
                     {
                         err = error;
-                        if (outProofJson)
-                        {
-                            *outProofJson = proofJSON;
-                        }
+                        outJson = proofJSON;
+                        
                         [completionExpectation fulfill];
                     }];
     
@@ -483,6 +482,8 @@
     }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (outProofJson) { *outProofJson = outJson; }
     return err;
 }
 
