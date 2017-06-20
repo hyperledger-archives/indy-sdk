@@ -132,15 +132,7 @@ impl AgentCommandExecutor {
             }
             AgentCommand::ResumeConnectProcess(cmd_id, res) => {
                 info!(target: "agent_command_executor", "GetInfoAck command received");
-                /* TODO extract method, resolve unwraps */
-                let (connect_cb, on_msg) = self.connect_callbacks.borrow_mut().remove(&cmd_id).unwrap();
-                let (my_info, ddo_resp) = res.unwrap();
-                let ddo_resp = DDO::from_json(ddo_resp.as_str()).unwrap();
-                let conn_info = ConnectInfo {
-                    endpoint: ddo_resp.endpoint,
-                    server_key: ddo_resp.verkey,
-                };
-                self.do_connect(my_info, conn_info, connect_cb, on_msg);
+                self.resume_connect_process(cmd_id, res);
             }
             AgentCommand::ConnectAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ConnectAck command received");
@@ -222,6 +214,27 @@ impl AgentCommandExecutor {
             Err(err) => { connect_cb(Err(err).map_err(map_err_err!())); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, (connect_cb, message_cb)); /* TODO check if map contains same key */ }
         };
+    }
+
+    fn resume_connect_process(&self, cmd_id: i32, res: Result<(MyConnectInfo, String), SovrinError>) {
+        if let Some((connect_cb, on_msg)) = self.connect_callbacks.borrow_mut().remove(&cmd_id) {
+            let res = res.and_then(|(my_info, ddo_resp)| -> Result<(MyConnectInfo, ConnectInfo), SovrinError> {
+                let ddo_resp = DDO::from_json(ddo_resp.as_str()).map_err(|err|
+                    CommonError::InvalidStructure(
+                        format!("Can't parse get DDO response {}", err.description())))?;
+                let conn_info = ConnectInfo {
+                    endpoint: ddo_resp.endpoint,
+                    server_key: ddo_resp.verkey,
+                };
+                Ok((my_info, conn_info))
+            });
+            match res {
+                Ok((my_info, conn_info)) => self.do_connect(my_info, conn_info, connect_cb, on_msg),
+                Err(err) => connect_cb(Err(err))
+            }
+        } else {
+            error!("Can't handle ResumeConnectProcess cmd - callback not found for {}", cmd_id);
+        }
     }
 
     fn get_connection_info_local(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
