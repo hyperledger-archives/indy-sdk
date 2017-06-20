@@ -22,6 +22,7 @@ use self::libc::c_char;
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
+/// pool_handle: Pool handle (created by open_pool_ledger).
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// sender_did: Id of sender Identity stored in secured Wallet.
 /// receiver_did: Id of receiver Identity.
@@ -40,6 +41,7 @@ use self::libc::c_char;
 /// - message: Received message.
 #[no_mangle]
 pub extern fn sovrin_agent_connect(command_handle: i32,
+                                   pool_handle: i32,
                                    wallet_handle: i32,
                                    sender_did: *const c_char,
                                    receiver_did: *const c_char,
@@ -57,6 +59,7 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
     let result = CommandExecutor::instance().send(
         Command::Agent(
             AgentCommand::Connect(
+                pool_handle,
                 wallet_handle,
                 sender_did,
                 receiver_did,

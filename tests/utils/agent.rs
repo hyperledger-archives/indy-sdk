@@ -16,7 +16,7 @@ use utils::timeout::TimeoutUtils;
 pub struct AgentUtils {}
 
 impl AgentUtils {
-    pub fn connect(wallet_handle: i32, sender_did: &str, receiver_did: &str,
+    pub fn connect(pool_handle: i32, wallet_handle: i32, sender_did: &str, receiver_did: &str,
                    on_msg: Option<Box<Fn(i32, String) + Send>>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
         let closure = Box::new(move |err, connection_handle| { sender.send((err, connection_handle)).unwrap(); });
@@ -28,7 +28,7 @@ impl AgentUtils {
             }
         })); //TODO make as parameter?
 
-        let err = sovrin_agent_connect(cmd_connect, wallet_handle,
+        let err = sovrin_agent_connect(cmd_connect, pool_handle, wallet_handle,
                                        CString::new(sender_did).unwrap().as_ptr(),
                                        CString::new(receiver_did).unwrap().as_ptr(),
                                        cb, msg_cb);

@@ -7,6 +7,7 @@ use std::rc::Rc;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
+use commands::utils::check_wallet_and_pool_handles_consistency;
 use errors::sovrin::SovrinError;
 use errors::common::CommonError;
 use services::agent::AgentService;
@@ -22,6 +23,7 @@ pub type AgentMessageCB = Box<Fn(Result<(i32, String), SovrinError>) + Send>;
 
 pub enum AgentCommand {
     Connect(
+        i32, // pool handle
         i32, // wallet handle
         String, // sender did
         String, // receiver did
@@ -124,9 +126,9 @@ impl AgentCommandExecutor {
 
     pub fn execute(&self, agent_cmd: AgentCommand) {
         match agent_cmd {
-            AgentCommand::Connect(wallet_handle, sender_did, receiver_did, connect_cb, message_cb) => {
+            AgentCommand::Connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Connect command received");
-                self.connect(0/* FIXME pool_handle */, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
+                self.connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
             }
             AgentCommand::ResumeConnectProcess(cmd_id, res) => {
                 info!(target: "agent_command_executor", "GetInfoAck command received");
@@ -257,6 +259,7 @@ impl AgentCommandExecutor {
     fn request_connection_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32,
                                            my_conn_info: MyConnectInfo, receiver_did: &str,
                                            connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service, wallet_handle, pool_handle, connect_cb);
         let ddo_request = match self.ledger_service.build_get_ddo_request(my_conn_info.did.as_str(), receiver_did) {
             Ok(ddo_request) => ddo_request,
             Err(err) => {

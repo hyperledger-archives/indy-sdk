@@ -18,6 +18,7 @@ extern "C" {
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
+/// pool_handle: Pool handle (created by open_pool).
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// sender_did: Id of sender Identity stored in secured Wallet.
 /// receiver_did: Id of receiver Identity.
@@ -36,6 +37,7 @@ extern "C" {
 /// - message: Received message.
 
 extern sovrin_error_t sovrin_agent_connect(sovrin_handle_t command_handle,
+                                           sovrin_handle_t pool_handle,
                                            sovrin_handle_t wallet_handle,
                                            const char *    sender_did,
                                            const char *    receiver_did,
