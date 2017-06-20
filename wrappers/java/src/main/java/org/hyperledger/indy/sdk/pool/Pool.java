@@ -43,7 +43,7 @@ public class Pool extends SovrinJava.API {
 
 		final CompletableFuture<CreatePoolLedgerConfigResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -59,7 +59,7 @@ public class Pool extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				configName, 
 				config == null ? null : config.toJson(), 
-						callback);
+				cb);
 
 		checkResult(result);
 
@@ -72,7 +72,7 @@ public class Pool extends SovrinJava.API {
 
 		final CompletableFuture<OpenPoolLedgerResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, int pool_handle) {
@@ -90,7 +90,7 @@ public class Pool extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				configName, 
 				config == null ? null : config.toJson(), 
-						callback);
+				cb);
 
 		checkResult(result);
 
@@ -102,7 +102,7 @@ public class Pool extends SovrinJava.API {
 
 		final CompletableFuture<RefreshPoolLedgerResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -119,7 +119,7 @@ public class Pool extends SovrinJava.API {
 		int result = LibSovrin.api.sovrin_refresh_pool_ledger(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -131,7 +131,7 @@ public class Pool extends SovrinJava.API {
 
 		final CompletableFuture<ClosePoolLedgerResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -148,7 +148,7 @@ public class Pool extends SovrinJava.API {
 		int result = LibSovrin.api.sovrin_refresh_pool_ledger(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -160,7 +160,7 @@ public class Pool extends SovrinJava.API {
 
 		final CompletableFuture<DeletePoolLedgerConfigResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -175,7 +175,7 @@ public class Pool extends SovrinJava.API {
 		int result = LibSovrin.api.sovrin_delete_pool_ledger_config(
 				FIXED_COMMAND_HANDLE, 
 				configName, 
-				callback);
+				cb);
 
 		checkResult(result);
 

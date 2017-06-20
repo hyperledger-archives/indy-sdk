@@ -108,7 +108,7 @@ public class Agent extends SovrinJava.API {
 
 		final CompletableFuture<AgentSendResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -126,7 +126,7 @@ public class Agent extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				connectionHandle, 
 				message,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -138,7 +138,7 @@ public class Agent extends SovrinJava.API {
 
 		final CompletableFuture<AgentCloseConnectionResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -155,7 +155,7 @@ public class Agent extends SovrinJava.API {
 		int result = LibSovrin.api.sovrin_agent_close_connection(
 				FIXED_COMMAND_HANDLE, 
 				connectionHandle, 
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -167,7 +167,7 @@ public class Agent extends SovrinJava.API {
 
 		final CompletableFuture<AgentCloseListenerResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -184,7 +184,7 @@ public class Agent extends SovrinJava.API {
 		int result = LibSovrin.api.sovrin_agent_close_connection(
 				FIXED_COMMAND_HANDLE, 
 				listenerHandle, 
-				callback);
+				cb);
 
 		checkResult(result);
 

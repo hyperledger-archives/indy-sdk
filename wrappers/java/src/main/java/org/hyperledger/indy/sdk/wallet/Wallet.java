@@ -48,7 +48,7 @@ public class Wallet extends SovrinJava.API {
 
 		final CompletableFuture<CreateWalletResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -67,7 +67,7 @@ public class Wallet extends SovrinJava.API {
 				xtype,
 				config,
 				credentials,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -81,7 +81,7 @@ public class Wallet extends SovrinJava.API {
 
 		final CompletableFuture<OpenWalletResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, int handle) {
@@ -100,7 +100,7 @@ public class Wallet extends SovrinJava.API {
 				name,
 				runtimeConfig,
 				credentials,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -112,7 +112,7 @@ public class Wallet extends SovrinJava.API {
 
 		final CompletableFuture<CloseWalletResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -129,7 +129,7 @@ public class Wallet extends SovrinJava.API {
 		int result = LibSovrin.api.sovrin_close_wallet(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -142,7 +142,7 @@ public class Wallet extends SovrinJava.API {
 
 		final CompletableFuture<DeleteWalletResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -158,7 +158,7 @@ public class Wallet extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				name,
 				credentials,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -172,7 +172,7 @@ public class Wallet extends SovrinJava.API {
 
 		final CompletableFuture<WalletSetSeqNoForValueResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -190,7 +190,7 @@ public class Wallet extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				walletHandle,
 				walletKey, 
-				callback);
+				cb);
 
 		checkResult(result);
 

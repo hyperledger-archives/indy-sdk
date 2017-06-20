@@ -44,7 +44,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<SignAndSubmitRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_result_json) {
@@ -65,7 +65,7 @@ public class Ledger extends SovrinJava.API {
 				walletHandle, 
 				submitterDid,
 				requestJson,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -78,7 +78,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<SubmitRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_result_json) {
@@ -96,7 +96,7 @@ public class Ledger extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				poolHandle,
 				requestJson,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -110,7 +110,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildGetDdoRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -126,7 +126,7 @@ public class Ledger extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -142,7 +142,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildNymRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -161,7 +161,7 @@ public class Ledger extends SovrinJava.API {
 				verkey,
 				alias,
 				role,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -177,7 +177,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildAttribRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -196,7 +196,7 @@ public class Ledger extends SovrinJava.API {
 				hash,
 				raw,
 				enc,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -210,7 +210,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildGetAttribRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -227,7 +227,7 @@ public class Ledger extends SovrinJava.API {
 				submitterDid,
 				targetDid,
 				data,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -240,7 +240,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildGetNymRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -256,7 +256,7 @@ public class Ledger extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -269,7 +269,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildSchemaRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -285,7 +285,7 @@ public class Ledger extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				data,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -298,7 +298,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildGetSchemaRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -314,7 +314,7 @@ public class Ledger extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				data,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -328,7 +328,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildClaimDefTxnResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -345,7 +345,7 @@ public class Ledger extends SovrinJava.API {
 				submitterDid,
 				xref,
 				data,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -358,7 +358,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildGetClaimDefTxnResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -374,7 +374,7 @@ public class Ledger extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				xref,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -388,7 +388,7 @@ public class Ledger extends SovrinJava.API {
 
 		final CompletableFuture<BuildNodeRequestResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String request_json) {
@@ -405,7 +405,7 @@ public class Ledger extends SovrinJava.API {
 				submitterDid,
 				targetDid,
 				data,
-				callback);
+				cb);
 
 		checkResult(result);
 

@@ -37,7 +37,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		final CompletableFuture<IssuerCreateAndStoreClaimDefResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String claim_def_json, String claim_def_uuid) {
@@ -57,7 +57,7 @@ public class Anoncreds extends SovrinJava.API {
 				schemaJson,
 				signatureType,
 				createNonRevoc,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -71,7 +71,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		final CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String revoc_reg_json, String revoc_reg_uuid) {
@@ -90,7 +90,7 @@ public class Anoncreds extends SovrinJava.API {
 				walletHandle, 
 				claimDefSeqNo,
 				maxClaimNum,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -106,7 +106,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		final CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String revoc_reg_update_json, String xclaim_json) {
@@ -127,7 +127,7 @@ public class Anoncreds extends SovrinJava.API {
 				claimJson,
 				revocRegSeqNo,
 				userRevocIndex,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -142,7 +142,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		final CompletableFuture<IssuerRevokeClaimResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String revoc_reg_update_json) {
@@ -162,7 +162,7 @@ public class Anoncreds extends SovrinJava.API {
 				claimDefSeqNo,
 				revocRegSeqNo,
 				userRevocIndex,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -175,7 +175,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		final CompletableFuture<ProverStoreClaimOfferResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -193,7 +193,7 @@ public class Anoncreds extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				claimOfferJson,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -206,7 +206,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		final CompletableFuture<ProverGetClaimOffersResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String claim_offers_json) {
@@ -224,7 +224,7 @@ public class Anoncreds extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				filterJson,
-				callback);
+				cb);
 
 		checkResult(result);
 

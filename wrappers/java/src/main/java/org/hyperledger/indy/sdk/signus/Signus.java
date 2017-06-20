@@ -38,7 +38,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
@@ -56,7 +56,7 @@ public class Signus extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				didJson == null ? null : didJson.toJson(),
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -70,7 +70,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String verkey, String pk) {
@@ -89,7 +89,7 @@ public class Signus extends SovrinJava.API {
 				walletHandle, 
 				did,
 				identityJson,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -102,7 +102,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<StoreTheirDidResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err) {
@@ -120,7 +120,7 @@ public class Signus extends SovrinJava.API {
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				identityJson,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -134,7 +134,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<SignResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String signature) {
@@ -153,7 +153,7 @@ public class Signus extends SovrinJava.API {
 				walletHandle, 
 				did,
 				msg,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -168,7 +168,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<VerifySignatureResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, boolean valid) {
@@ -189,7 +189,7 @@ public class Signus extends SovrinJava.API {
 				poolHandle,
 				did,
 				signedMsg,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -203,7 +203,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<EncryptResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String encryptedMsg) {
@@ -222,7 +222,7 @@ public class Signus extends SovrinJava.API {
 				walletHandle, 
 				did,
 				msg,
-				callback);
+				cb);
 
 		checkResult(result);
 
@@ -236,7 +236,7 @@ public class Signus extends SovrinJava.API {
 
 		final CompletableFuture<DecryptResult> future = new CompletableFuture<> ();
 
-		Callback callback = new Callback() {
+		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
 			public void callback(int xcommand_handle, int err, String decryptedMsg) {
@@ -255,7 +255,7 @@ public class Signus extends SovrinJava.API {
 				walletHandle, 
 				did,
 				encryptedMsg,
-				callback);
+				cb);
 
 		checkResult(result);
 
