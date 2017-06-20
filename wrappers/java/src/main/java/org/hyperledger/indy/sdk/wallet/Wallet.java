@@ -21,7 +21,7 @@ public class Wallet extends SovrinJava.API {
 
 	private final int walletHandle;
 
-	Wallet(int walletHandle) {
+	private Wallet(int walletHandle) {
 
 		this.walletHandle = walletHandle;
 	}

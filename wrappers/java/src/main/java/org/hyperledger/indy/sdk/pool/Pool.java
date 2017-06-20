@@ -23,7 +23,7 @@ public class Pool extends SovrinJava.API {
 
 	private final int poolHandle;
 
-	Pool(int poolHandle) {
+	private Pool(int poolHandle) {
 
 		this.poolHandle = poolHandle;
 	}
