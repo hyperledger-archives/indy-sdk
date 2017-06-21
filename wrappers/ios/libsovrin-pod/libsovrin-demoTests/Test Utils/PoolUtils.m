@@ -28,14 +28,14 @@
 + (NSString *) nodeIp
 {
     //return @"192.168.53.190";
-    return @"192.168.52.38";
-    //return @"127.0.0.1";
+    //return @"192.168.52.38";
+    return @"127.0.0.1";
 }
 
 - (NSNumber *) getRequestId
 {
     NSTimeInterval timeInSeconds = [[NSDate date] timeIntervalSince1970];
-    return @(timeInSeconds * 2 + 1);
+    return @(timeInSeconds * pow(10.0,9.0) + timeInSeconds * 3.0);
 }
 
 - (void)createGenesisTXNFile:(NSString *)poolName

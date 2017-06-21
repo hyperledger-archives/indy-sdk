@@ -420,7 +420,7 @@
     
     NSString *actualData = actualReply[@"result"][@"data"];
     XCTAssertTrue([actualReply[@"op"] isEqualToString:@"REPLY"], @"Wrong actualReply[op]");
-    XCTAssertEqual(actualReply[@"result"][@"reqId"], @(1491566332010860), @"Wrong actualReply[reqId]");
+    XCTAssertTrue([actualReply[@"result"][@"reqId"] isEqualToValue:@(1491566332010860)], @"Wrong actualReply[reqId]");
     XCTAssertTrue([actualData isEqualToString:dataStr], "Wrong actualReply[result][data]");
     XCTAssertTrue([actualReply[@"result"][@"identifier"] isEqualToString:@"Th7MpTaRZVRYnPiabds81Y"], @"Wrong actualReply[identifier]" );
     
@@ -638,8 +638,7 @@
     
     NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
     
-    XCTAssertTrue([[getNymResponse[@"result"][@""] allValues] count] > 0, @"getNymResponse data is empty");
-    
+    XCTAssertNotNil(getNymResponse[@"result"][@"data"], @"getNymResponse data is empty");
     [TestUtils cleanupStorage];
 }
 
@@ -1699,19 +1698,15 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequest() failed");
     XCTAssertNotNil(getSchemaResponseJson, @"getSchemaResponseJson is nil!");
     
-    NSDictionary *response = [NSDictionary fromString:getSchemaResponseJson];
+    NSDictionary *getSchemaResponse = [NSDictionary fromString:getSchemaResponseJson];
     
-    NSMutableDictionary *schema = [NSMutableDictionary new];
-    schema[@"name"] = response[@"result"][@"data"][@"name"];
-    schema[@"keys"] = response[@"result"][@"data"][@"keys"];
-    schema[@"version"] = response[@"result"][@"data"][@"version"];
-    schema[@"seq_no"] = response[@"result"][@"seqNo"];
-    NSNumber *seqNo = response[@"result"][@"seqNo"];
+    NSNumber *seqNo = getSchemaResponse[@"result"][@"seqNo"];
+    NSString *schemaJson = [NSDictionary toString:(NSDictionary*)getSchemaResponse[@"result"]];
     
     // 11. Create claim definition
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                            schemaJson:[NSDictionary toString:schema]
+                                                                            schemaJson:schemaJson
                                                                          signatureType:nil
                                                                         createNonRevoc:NO
                                                                           claimDefJson:&claimDefJson
@@ -1722,8 +1717,8 @@
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
     
     NSMutableDictionary *claimDefData = [NSMutableDictionary new];
-    claimDefData[@"primary"] = claimDef[@"public_key"];
-    claimDefData[@"revocation"] = claimDef[@"public_key_revocation"];
+    claimDefData[@"primary"] = claimDef[@"data"][@"primary"];
+    claimDefData[@"revocation"] = claimDef[@"data"][@"revocation"];
     NSString *claimDefDataJson = [NSDictionary toString:claimDefData];
     
     // 12. Build claim def request
@@ -1750,10 +1745,10 @@
     // 14. Build get claim def request
     // TODO: 103 Error, origin is equal to myDid
     NSString *getClaimDefRequest;
-    NSString *origin = response[@"result"][@"data"][@"origin"];
+    NSString *origin = getSchemaResponse[@"result"][@"data"][@"origin"];
     ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:myDid
-                                                                       xref:[seqNo stringValue]
-                                                              signatureType:claimDef[@"signatyre_Type"]
+                                                                       xref:getSchemaResponse[@"result"][@"seq_no"]
+                                                              signatureType:claimDef[@"signature_type"]
                                                                      origin:origin
                                                                  resultJson:&getClaimDefRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetClaimDefTxnWithSubmitterDid() failed");
