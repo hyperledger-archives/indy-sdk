@@ -33,6 +33,7 @@ pub enum PoolCommand {
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
     close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
+    refresh_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32, SovrinError>)>>>,
 }
 
@@ -41,6 +42,7 @@ impl PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service: pool_service,
             close_callbacks: RefCell::new(HashMap::new()),
+            refresh_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -96,10 +98,22 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Refresh(handle, cb) => {
                 info!(target: "pool_command_executor", "Refresh command received");
-                self.close(handle, cb);
+                self.refresh(handle, cb);
             }
             PoolCommand::RefreshAck(handle, result) => {
-                unimplemented!();
+                info!(target: "pool_command_executor", "RefreshAck command received");
+                match self.refresh_callbacks.try_borrow_mut() {
+                    Ok(mut cbs) => {
+                        match cbs.remove(&handle) {
+                            Some(cb) => cb(result.map_err(SovrinError::from)),
+                            None => {
+                                error!("Can't process PoolCommand::RefreshAck for handle {} with result {:?} - appropriate callback not found!",
+                                handle, result);
+                            }
+                        }
+                    }
+                    Err(err) => { error!("{:?}", err); }
+                }
             }
         };
     }
@@ -142,9 +156,18 @@ impl PoolCommandExecutor {
         };
     }
 
-    #[allow(unused_variables)] /* FIXME */
     fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
-        // TODO: FIXME: Implement me!!!
-        cb(Ok(()));
+        let result = self.pool_service.refresh(handle)
+            .map_err(From::from)
+            .and_then(|handle| {
+                match self.refresh_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, handle)),
+                    Err(err) => Err(SovrinError::PoolError(PoolError::from(CommonError::from(err))))
+                }
+            });
+        match result {
+            Err(err) => { cb(Err(err)); }
+            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
+        };
     }
 }
