@@ -218,6 +218,7 @@ pub enum ZMQLoopAction {
     RequestToSend(RequestToSend),
     MessageToProcess(MessageToProcess),
     Terminate(i32),
+    Refresh(i32),
 }
 
 #[derive(Debug, PartialEq, Eq)]

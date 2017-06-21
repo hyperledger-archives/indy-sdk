@@ -3,7 +3,7 @@ extern crate time;
 use sovrin::api::ErrorCode;
 use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_delete_pool_ledger_config};
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::pool::{sovrin_close_pool_ledger, sovrin_open_pool_ledger};
+use sovrin::api::pool::{sovrin_close_pool_ledger, sovrin_open_pool_ledger, sovrin_refresh_pool_ledger};
 use sovrin::api::ledger::sovrin_submit_request;
 
 use utils::callback::CallbackUtils;
@@ -140,6 +140,23 @@ impl PoolUtils {
         }
 
         Ok(pool_handle)
+    }
+
+    pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (command_handle, cb) = CallbackUtils::closure_to_refresh_pool_ledger_cb(
+            Box::new(move |res| sender.send(res).unwrap()));
+
+        let res = sovrin_refresh_pool_ledger(command_handle, pool_handle, cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        Ok(())
     }
 
     pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
