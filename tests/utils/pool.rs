@@ -31,7 +31,7 @@ impl PoolUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
-        PoolUtils::create_genesis_txn_file(pool_name, nodes);
+        PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), nodes);
         let pool_config = pool_config.unwrap_or(PoolUtils::create_default_pool_config(pool_name));
         let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
@@ -167,8 +167,8 @@ impl PoolUtils {
         Ok(resp)
     }
 
-    pub fn create_genesis_txn_file(pool_name: &str, predefined_data: Option<String>) -> PathBuf {
-        let path = EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str());
+    pub fn create_genesis_txn_file(txn_file_name: &str, predefined_data: Option<String>) -> PathBuf {
+        let path = EnvironmentUtils::tmp_file_path(txn_file_name);
 
         if !path.parent().unwrap().exists() {
             fs::DirBuilder::new()
