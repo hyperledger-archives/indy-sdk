@@ -1,11 +1,12 @@
-use errors::crypto::CryptoError;
+use errors::anoncreds::AnoncredsError;
+use errors::common::CommonError;
+
 use services::anoncreds::constants::{
     LARGE_E_START,
     LARGE_E_END_RANGE,
     LARGE_MASTER_SECRET,
     LARGE_PRIME,
-    LARGE_VPRIME_PRIME,
-    SIGNATURE_TYPE
+    LARGE_VPRIME_PRIME
 };
 use services::anoncreds::types::{
     Accumulator,
@@ -13,9 +14,10 @@ use services::anoncreds::types::{
     AccumulatorSecretKey,
     ByteOrder,
     ClaimDefinition,
+    ClaimDefinitionData,
     ClaimDefinitionPrivate,
     ClaimRequest,
-    Claims,
+    ClaimSignature,
     NonRevocationClaim,
     NonRevocProofCList,
     NonRevocProofTauList,
@@ -28,7 +30,8 @@ use services::anoncreds::types::{
     RevocationRegistryPrivate,
     Schema,
     SecretKey,
-    Witness
+    Witness,
+    SignatureTypes
 };
 use services::anoncreds::helpers::{
     random_qr,
@@ -37,7 +40,7 @@ use services::anoncreds::helpers::{
     transform_u32_to_array_of_u8
 };
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
+use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 
@@ -51,27 +54,40 @@ impl Issuer {
     }
 
     pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
-                         create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), CryptoError> {
-        let signature_type = signature_type.unwrap_or(SIGNATURE_TYPE).to_string();
+                                     create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), AnoncredsError> {
+        info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> start", &schema);
+
+        let signature_type = match signature_type {
+            Some("CL") => SignatureTypes::CL,
+            None => SignatureTypes::CL,
+            _ => return Err(AnoncredsError::CommonError(CommonError::InvalidStructure(format!("Invalid Signature Type"))))
+        };
         let (pk, sk) = Issuer::_generate_keys(&schema)?;
         let (pkr, skr) = if create_non_revoc {
             Issuer::_generate_revocation_keys()?
         } else {
             (None, None)
         };
-        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, signature_type);
+        let claim_definition_data = ClaimDefinitionData::new(pk, pkr);
+        let claim_definition = ClaimDefinition::new(schema.seq_no, None, SignatureTypes::CL, claim_definition_data);
         let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
 
+        info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> done", &schema);
         Ok((claim_definition, claim_definition_private))
     }
 
-    fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CryptoError> {
-        if schema.attribute_names.len() == 0 {
-            return Err(CryptoError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
+    fn _generate_keys(schema: &Schema) -> Result<(PublicKey, SecretKey), CommonError> {
+        info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> start", &schema);
+        let mut ctx = BigNumber::new_context()?;
+
+        if schema.data.keys.len() == 0 {
+            return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
+        info!(target: "anoncreds_service", "Issuer generate_safe_prime");
         let p = BigNumber::generate_safe_prime(LARGE_PRIME)?;
         let q = BigNumber::generate_safe_prime(LARGE_PRIME)?;
+        info!(target: "anoncreds_service", "Issuer generate_safe_prime -> done");
 
         let mut p_prime = p.sub(&BigNumber::from_u32(1)?)?;
         p_prime.div_word(2)?;
@@ -79,51 +95,61 @@ impl Issuer {
         let mut q_prime = q.sub(&BigNumber::from_u32(1)?)?;
         q_prime.div_word(2)?;
 
-        let n = p.mul(&q, None)?;
+        let n = p.mul(&q, Some(&mut ctx))?;
         let s = random_qr(&n)?;
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
-        for attribute in &schema.attribute_names {
+        for attribute in &schema.data.keys {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
-            r.insert(attribute.to_string(), s.mod_exp(&random, &n, None)?);
+            r.insert(attribute.to_string(), s.mod_exp(&random, &n, Some(&mut ctx))?);
         }
 
-        let z = s.mod_exp(&xz, &n, None)?;
+        let z = s.mod_exp(&xz, &n, Some(&mut ctx))?;
 
-        let rms = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, None)?;
-        let rctxt = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, None)?;
+        let rms = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, Some(&mut ctx))?;
+        let rctxt = s.mod_exp(&Issuer::_gen_x(&p_prime, &q_prime)?, &n, Some(&mut ctx))?;
+
+        info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> done", &schema);
         Ok((
             PublicKey::new(n, s, rms, r, rctxt, z),
             SecretKey::new(p_prime, q_prime)
         ))
     }
 
-    fn _generate_revocation_keys() -> Result<(Option<RevocationPublicKey>, Option<RevocationSecretKey>), CryptoError> {
+    fn _generate_revocation_keys() -> Result<(Option<RevocationPublicKey>, Option<RevocationSecretKey>), CommonError> {
+        info!(target: "anoncreds_service", "Issuer generate revocation keys -> start");
         let h = PointG1::new()?;
         let h0 = PointG1::new()?;
         let h1 = PointG1::new()?;
         let h2 = PointG1::new()?;
-        let g = PointG1::new()?;
         let htilde = PointG1::new()?;
-        let u = PointG1::new()?;
+        let g = PointG1::new()?;
+
+        let u = PointG2::new()?;
+        let hcap = PointG2::new()?;
+
         let x = GroupOrderElement::new()?;
         let sk = GroupOrderElement::new()?;
+        let gdash = PointG2::new()?;
+
         let pk = g.mul(&sk)?;
-        let y = h.mul(&x)?;
+        let y = hcap.mul(&x)?;
+
+        info!(target: "anoncreds_service", "Issuer generate revocation keys -> done");
         Ok((
-            Some(RevocationPublicKey::new(g, h, h0, h1, h2, htilde, u, pk, y, x)),
+            Some(RevocationPublicKey::new(g, gdash, h, h0, h1, h2, htilde, hcap, u, pk, y, x)),
             Some(RevocationSecretKey::new(x, sk))
         ))
     }
 
     #[cfg(test)]
-    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
+    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CommonError> {
         Ok(BigNumber::from_dec("21756443327382027172985704617047967597993694788495380290694324827806324727974811069286883097008098972826137846700650885182803802394920367284736320514617598740869006348763668941791139304299497512001555851506177534398138662287596439312757685115968057647052806345903116050638193978301573172649243964671896070438965753820826200974052042958554415386005813811429117062833340444950490735389201033755889815382997617514953672362380638953231325483081104074039069074312082459855104868061153181218462493120741835250281211598658590317583724763093211076383033803581749876979865965366178002285968278439178209181121479879436785731938")?)
     }
 
     #[cfg(not(test))]
-    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CryptoError> {
+    fn _gen_x(p: &BigNumber, q: &BigNumber) -> Result<BigNumber, CommonError> {
         let mut result = p
             .mul(&q, None)?
             .sub_word(3)?
@@ -134,9 +160,12 @@ impl Issuer {
     }
 
     pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
-                             -> Result<(RevocationRegistry, RevocationRegistryPrivate), CryptoError> {
+                             -> Result<(RevocationRegistry, RevocationRegistryPrivate), AnoncredsError> {
+        info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> start", claim_def_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
+        let mut g_dash: HashMap<i32, PointG2> = HashMap::new();
+
         let g_count = 2 * max_claim_num;
 
         for i in 0..g_count {
@@ -145,14 +174,15 @@ impl Issuer {
                 let mut pow = GroupOrderElement::from_bytes(&i_bytes)?;
                 pow = gamma.pow_mod(&pow)?;
                 g.insert(i, pk_r.g.mul(&pow)?);
+                g_dash.insert(i, pk_r.g_dash.mul(&pow)?);
             }
         }
 
-        let mut z = Pair::pair(&pk_r.g, &pk_r.g)?;
+        let mut z = Pair::pair(&pk_r.g, &pk_r.g_dash)?;
         let mut pow = GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8((max_claim_num + 1) as u32))?;
         pow = gamma.pow_mod(&pow)?;
         z = z.pow(&pow)?;
-        let acc = PointG1::new_inf()?;
+        let acc = PointG2::new_inf()?;
         let v: HashSet<i32> = HashSet::new();
 
         let acc = Accumulator::new(acc, v, max_claim_num, 1);
@@ -160,8 +190,9 @@ impl Issuer {
         let acc_sk = AccumulatorSecretKey::new(gamma);
 
         let revocation_registry = RevocationRegistry::new(acc, acc_pk, claim_def_seq_no);
-        let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g);
+        let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g, g_dash);
 
+        info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> done", claim_def_seq_no);
         Ok((revocation_registry, revocation_registry_private))
     }
 
@@ -171,42 +202,47 @@ impl Issuer {
                         revocation_registry_private: &Option<RevocationRegistryPrivate>,
                         claim_request: &ClaimRequest,
                         attributes: &HashMap<String, Vec<String>>,
-                        user_revoc_index: Option<i32>) -> Result<Claims, CryptoError> {
-        let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no, &claim_request.prover_did)?;
+                        user_revoc_index: Option<i32>) -> Result<ClaimSignature, AnoncredsError> {
+        info!(target: "anoncreds_service", "Issuer create claim for schema {} -> start", claim_definition.schema_seq_no);
+        let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no,
+                                                                    &claim_request.prover_did)?;
 
         let primary_claim =
             Issuer::_issue_primary_claim(
-                &claim_definition.public_key,
+                &claim_definition.data.public_key,
                 &claim_definition_private.secret_key,
                 &claim_request.u,
                 &context_attribute,
-                attributes
-            )?;
+                attributes)?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
-        if let (Some(ref pk_r), &Some(ref revoc_reg), &Some(ref revoc_reg_priv)) = (claim_definition.public_key_revocation.clone(),
-                                                                                    revocation_registry, revocation_registry_private){
+        if let (Some(ref pk_r), Some(ref sk_r),
+            &Some(ref revoc_reg), &Some(ref revoc_reg_priv), Some(ref ur)) = (claim_definition.data.public_key_revocation.clone(),
+                                                                              claim_definition_private.secret_key_revocation.clone(),
+                                                                              revocation_registry, revocation_registry_private,
+                                                                              claim_request.ur) {
             let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
                 &revoc_reg,
                 &pk_r,
-                &claim_definition_private.secret_key_revocation.clone()
-                    .ok_or(CryptoError::InvalidStructure("Field secret_key_revocation not found".to_string()))?,
+                &sk_r,
                 &revoc_reg_priv.tails,
+                &revoc_reg_priv.tails_dash,
                 &revoc_reg_priv.acc_sk,
                 &context_attribute,
-                &claim_request.ur.ok_or(CryptoError::InvalidStructure("Field ur not found".to_string()))?,
+                &ur,
                 user_revoc_index
             )?;
             non_revocation_claim = Some(RefCell::new(claim));
         };
 
-        Ok(Claims {
+        info!(target: "anoncreds_service", "Issuer create claim for schema {} -> done", claim_definition.schema_seq_no);
+        Ok(ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
         })
     }
 
-    fn _generate_context_attribute(accumulator_id: i32, prover_did: &str) -> Result<BigNumber, CryptoError> {
+    fn _generate_context_attribute(accumulator_id: i32, prover_did: &str) -> Result<BigNumber, CommonError> {
         let accumulator_id_encoded = Issuer::_encode_attribute(&accumulator_id.to_string(), ByteOrder::Little)?;
         let prover_did_encoded = Issuer::_encode_attribute(prover_did, ByteOrder::Little)?;
         let mut s = vec![
@@ -219,7 +255,9 @@ impl Issuer {
     }
 
     fn _issue_primary_claim(public_key: &PublicKey, secret_key: &SecretKey, u: &BigNumber, context_attribute: &BigNumber,
-                            attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CryptoError> {
+                            attributes: &HashMap<String, Vec<String>>) -> Result<PrimaryClaim, CommonError> {
+        info!(target: "anoncreds_service", "Issuer issue primary claim for attributes {:?} -> start", &attributes.keys());
+
         let v_prime_prime = Issuer::_generate_v_prime_prime()?;
         let e_start = BigNumber::from_u32(2)?.exp(&BigNumber::from_u32(LARGE_E_START)?, None)?;
         let e_end = BigNumber::from_u32(2)?
@@ -230,6 +268,8 @@ impl Issuer {
 
         let a = Issuer::_sign(public_key, secret_key, context_attribute, &attributes, &v_prime_prime, u, &e)?;
 
+        info!(target: "anoncreds_service", "Issuer issue primary claim -> done");
+
         Ok(PrimaryClaim {
             m2: context_attribute.clone()?,
             a: a,
@@ -239,15 +279,17 @@ impl Issuer {
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
-             attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CryptoError> {
-        let mut rx = BigNumber::from_u32(1)?;
+             attributes: &HashMap<String, Vec<String>>, v: &BigNumber, u: &BigNumber, e: &BigNumber) -> Result<BigNumber, CommonError> {
+        info!(target: "anoncreds_service", "Issuer sign attributes {:?} -> start", &attributes.keys());
+
         let mut context = BigNumber::new_context()?;
+        let mut rx = BigNumber::from_u32(1)?;
 
         for (key, value) in attributes {
             let pk_r = public_key.r.get(key)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in pk.r", key)))?;
             let cur_val = value.get(1)
-                .ok_or(CryptoError::InvalidStructure(format!("Encoded value by key '{}' not found in attributes", key)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Encoded value by key '{}' not found in attributes", key)))?;
 
             rx = rx.mul(
                 &pk_r.mod_exp(&BigNumber::from_dec(cur_val)?, &public_key.n, Some(&mut context))?,
@@ -255,12 +297,12 @@ impl Issuer {
             )?;
         }
 
-        let pk_rctxt_pow = public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context))?;
-        rx = rx.mul(&pk_rctxt_pow, Some(&mut context))?;
+        rx = public_key.rctxt.mod_exp(&context_attribute, &public_key.n, Some(&mut context))?
+            .mul(&rx, Some(&mut context))?;
 
         if u != &BigNumber::from_u32(0)? {
-            let module = u.modulus(&public_key.n, Some(&mut context))?;
-            rx = rx.mul(&module, Some(&mut context))?;
+            rx = u.modulus(&public_key.n, Some(&mut context))?
+                .mul(&rx, Some(&mut context))?;
         }
 
         let n = secret_key.p.mul(&secret_key.q, Some(&mut context))?;
@@ -274,18 +316,21 @@ impl Issuer {
         e_inverse = e_inverse.inverse(&n, Some(&mut context))?;
         a = a.mod_exp(&e_inverse, &public_key.n, Some(&mut context))?;
 
+        info!(target: "anoncreds_service", "Issuer sign attributes -> done");
         Ok(a)
     }
 
     fn _issue_non_revocation_claim(revocation_registry: &RefCell<RevocationRegistry>, pk_r: &RevocationPublicKey,
                                    sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
-                                   sk_accum: &AccumulatorSecretKey, context_attribute: &BigNumber,
+                                   g_dash: &HashMap<i32, PointG2>, sk_accum: &AccumulatorSecretKey,
+                                   context_attribute: &BigNumber,
                                    ur: &PointG1, seq_number: Option<i32>) ->
-                                   Result<(NonRevocationClaim, i64), CryptoError> {
+                                   Result<(NonRevocationClaim, i64), AnoncredsError> {
+        info!(target: "anoncreds_service", "Issuer issue non-revocation claim -> start");
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
-            return Err(CryptoError::InvalidStructure("Accumulator is full. New one must be issued.".to_string()))
+            return Err(AnoncredsError::AccumulatorIsFull(format!("{}", revocation_registry.borrow().claim_def_seq_no)))
         }
 
         let i = match seq_number {
@@ -300,7 +345,7 @@ impl Issuer {
         let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
 
         let g_i = g.get(&i)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", i)))?;
 
         let sigma =
             pk_r.h0.add(&pk_r.h1.mul(&m2)?)?
@@ -309,15 +354,15 @@ impl Issuer {
                 .add(&pk_r.h2.mul(&vr_prime_prime)?)?
                 .mul(&sk_r.x.add_mod(&c)?.inverse()?)?;
 
-        let mut omega = PointG1::new_inf()?;
+        let mut omega = PointG2::new_inf()?;
 
         for j in &accumulator.v {
             let index = accumulator.max_claim_num + 1 - j + i;
-            omega = omega.add(g.get(&index)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+            omega = omega.add(g_dash.get(&index)
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         }
 
-        let sigma_i = pk_r.g
+        let sigma_i = pk_r.g_dash
             .mul(&sk_r.sk
                 .add_mod(&sk_accum.gamma
                     .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?
@@ -327,13 +372,14 @@ impl Issuer {
                 .pow_mod(&GroupOrderElement::from_bytes(&transform_u32_to_array_of_u8(i as u32))?)?)?;
 
         let index = accumulator.max_claim_num + 1 - i;
-        accumulator.acc = accumulator.acc.add(g.get(&index)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
+        accumulator.acc = accumulator.acc.add(g_dash.get(&index)
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?)?;
         accumulator.v.insert(i);
 
         let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
 
+        info!(target: "anoncreds_service", "Issuer issue non-revocation claim -> done");
         Ok(
             (
                 NonRevocationClaim::new(sigma, c, vr_prime_prime, witness, g_i.clone(), i, m2),
@@ -342,7 +388,7 @@ impl Issuer {
         )
     }
 
-    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CryptoError> {
+    fn _encode_attribute(attribute: &str, byte_order: ByteOrder) -> Result<BigNumber, CommonError> {
         let mut result = BigNumber::hash(attribute.as_bytes())?;
 
         let index = result.iter().position(|&value| value == 0);
@@ -355,7 +401,7 @@ impl Issuer {
         Ok(BigNumber::from_bytes(&result)?)
     }
 
-    fn _generate_v_prime_prime() -> Result<BigNumber, CryptoError> {
+    fn _generate_v_prime_prime() -> Result<BigNumber, CommonError> {
         let a = BigNumber::rand(LARGE_VPRIME_PRIME)?;
         let b = BigNumber::from_u32(2)?
             .exp(&BigNumber::from_u32(LARGE_VPRIME_PRIME - 1)?, None)?;
@@ -363,57 +409,62 @@ impl Issuer {
         Ok(v_prime_prime)
     }
 
-    pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>, g: &HashMap<i32, PointG1>, i: i32) -> Result<i64, CryptoError> {
+    pub fn revoke(&self, revocation_registry: &RefCell<RevocationRegistry>,
+                  g_dash: &HashMap<i32, PointG2>, i: i32) -> Result<i64, AnoncredsError> {
+        info!(target: "anoncreds_service", "Issuer revoke claim by index {} -> start", i);
+
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
         accumulator.v.remove(&i);
         let index: i32 = accumulator.max_claim_num + 1 - i;
-        let element = g.get(&index)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
+        let element = g_dash.get(&index)
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
         accumulator.acc = accumulator.acc.sub(element)?;
         let timestamp = time::now_utc().to_timespec().sec;
+
+        info!(target: "anoncreds_service", "Issuer revoke claim by index {} -> done", i);
         Ok(timestamp)
     }
 
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                                   params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                   params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CommonError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
         let t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
-        let t3 = Pair::pair(&proof_c.a, &pk_r.h)?.pow(&params.c)?
-            .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.r)?)?
+        let t3 = Pair::pair(&proof_c.a, &pk_r.h_cap)?.pow(&params.c)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.r)?)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
-                .mul(&Pair::pair(&pk_r.htilde, &pk_r.h)?.pow(&params.m)?)?
-                .mul(&Pair::pair(&pk_r.h1, &pk_r.h)?.pow(&params.m2)?)?
-                .mul(&Pair::pair(&pk_r.h2, &pk_r.h)?.pow(&params.s)?)?)?.inverse()?;
+                .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.m)?)?
+                .mul(&Pair::pair(&pk_r.h1, &pk_r.h_cap)?.pow(&params.m2)?)?
+                .mul(&Pair::pair(&pk_r.h2, &pk_r.h_cap)?.pow(&params.s)?)?)?.inverse()?;
         let t4 = Pair::pair(&pk_r.htilde, &accumulator.acc)?
             .pow(&params.r)?
-            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime)?)?;
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.h_cap)?.pow(&params.r_prime)?)?;
         let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
         let t6 = proof_c.d.mul(&params.r_prime_prime)?
             .add(&pk_r.g.mul(&params.m_prime.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t_prime.mod_neg()?)?)?;
-        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.htilde)?.pow(&params.r_prime_prime)?
-            .mul(&Pair::pair(&pk_r.htilde, &pk_r.htilde)?.pow(&params.m_prime.mod_neg()?)?)?
+        let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.h_cap)?.pow(&params.r_prime_prime)?
+            .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.m_prime.mod_neg()?)?)?
             .mul(&Pair::pair(&pk_r.htilde, &proof_c.s)?.pow(&params.r)?)?;
         let t8 = Pair::pair(&pk_r.htilde, &pk_r.u)?.pow(&params.r)?
-            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.htilde)?.pow(&params.r_prime_prime_prime)?)?;
+            .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.h_cap)?.pow(&params.r_prime_prime_prime)?)?;
 
         Ok(NonRevocProofTauList::new(t1, t2, t3, t4, t5, t6, t7, t8))
     }
 
     pub fn _create_tau_list_expected_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
-                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CryptoError> {
+                                            accum_pk: &AccumulatorPublicKey, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CommonError> {
         let t1 = proof_c.e;
         let t2 = PointG1::new_inf()?;
-        let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h)?
+        let t3 = Pair::pair(&pk_r.h0.add(&proof_c.g)?, &pk_r.h_cap)?
             .mul(&Pair::pair(&proof_c.a, &pk_r.y)?.inverse()?)?;
         let t4 = Pair::pair(&proof_c.g, &accumulator.acc)?
             .mul(&Pair::pair(&pk_r.g, &proof_c.w)?.mul(&accum_pk.z)?.inverse()?)?;
         let t5 = proof_c.d;
         let t6 = PointG1::new_inf()?;
         let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &proof_c.s)?
-            .mul(&Pair::pair(&pk_r.g, &pk_r.g)?.inverse()?)?;
+            .mul(&Pair::pair(&pk_r.g, &pk_r.g_dash)?.inverse()?)?;
         let t8 = Pair::pair(&proof_c.g, &pk_r.u)?
             .mul(&Pair::pair(&pk_r.g, &proof_c.u)?.inverse()?)?;
 
@@ -434,18 +485,13 @@ mod tests {
     }
 
     #[test]
-    fn create_claim_works() {
-
-    }
-
-    #[test]
     fn generate_v_prime_prime_works() {
         let result = BigNumber::from_dec("6620937836014079781509458870800001917950459774302786434315639456568768602266735503527631640833663968617512880802104566048179854406925811731340920442625764155409951969854303612644121780700879432308016935250101960876405664503219252820761501606507817390189252221968804450207070282033815280889897882643560437257171838117793768660731379360330750300543760457608638753190279419951706206819943151918535286779337023708838891906829360439545064730288538139152367417882097349210427894031568623898916625312124319876670702064561291393993815290033742478045530118808274555627855247830659187691067893683525651333064738899779446324124393932782261375663033826174482213348732912255948009062641783238846143256448824091556005023241191311617076266099622843011796402959351074671886795391490945230966123230485475995208322766090290573654498779155").unwrap();
         assert_eq!(Issuer::_generate_v_prime_prime().unwrap(), result);
     }
 
     #[test]
-    fn generate_claim_definition_without_revocation_part_works() {
+    fn generate_claim_definition_works_without_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
         let signature_type = None;
@@ -456,12 +502,13 @@ mod tests {
 
         let (claim_definition, claim_definition_private) = result.unwrap();
 
-        assert!(claim_definition.public_key_revocation.is_none());
+        assert!(claim_definition.data.public_key_revocation.is_none());
         assert!(claim_definition_private.secret_key_revocation.is_none());
     }
 
     #[test]
-    fn generate_claim_definition_with_revocation_part_works() {
+    #[ignore]
+    fn generate_claim_definition_works_with_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
         let signature_type = None;
@@ -472,19 +519,18 @@ mod tests {
 
         let (claim_definition, claim_definition_private) = result.unwrap();
 
-        assert!(claim_definition.public_key_revocation.is_some());
+        assert!(claim_definition.data.public_key_revocation.is_some());
         assert!(claim_definition_private.secret_key_revocation.is_some());
     }
 
     #[test]
-    fn generate_claim_definition_without_attributes_does_not_works() {
+    fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
+        schema.data.keys = HashSet::new();
+
         let signature_type = None;
         let create_non_revoc = false;
-
-        let empty_attrs: HashSet<String> = HashSet::new();
-        schema.attribute_names = empty_attrs;
 
         let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
         assert!(result.is_err());
@@ -505,7 +551,7 @@ mod tests {
         let result = Issuer::_generate_context_attribute(accumulator_id, user_id).unwrap();
         assert_eq!(result, answer);
     }
-    
+
     #[test]
     fn sign_works() {
         let public_key = mocks::get_pk();
@@ -522,6 +568,7 @@ mod tests {
 
 pub mod mocks {
     use super::*;
+    use services::anoncreds::types::SchemaData;
 
     pub fn get_claim_definition() -> ClaimDefinition {
         let mut r: HashMap<String, BigNumber> = HashMap::new();
@@ -537,7 +584,8 @@ pub mod mocks {
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap(),
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap()
         );
-        ClaimDefinition::new(public_key, None, 1, "CL".to_string())
+        let claim_def_data = ClaimDefinitionData::new(public_key, None);
+        ClaimDefinition::new(1, None, SignatureTypes::CL, claim_def_data)
     }
 
     pub fn get_claim_definition_private() -> ClaimDefinitionPrivate {
@@ -546,30 +594,28 @@ pub mod mocks {
     }
 
     pub fn get_gvt_schema() -> Schema {
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert("name".to_string());
-        attr_names.insert("age".to_string());
-        attr_names.insert("height".to_string());
-        attr_names.insert("sex".to_string());
+        let mut keys: HashSet<String> = HashSet::new();
+        keys.insert("name".to_string());
+        keys.insert("age".to_string());
+        keys.insert("height".to_string());
+        keys.insert("sex".to_string());
 
+        let schema_data = SchemaData::new("gvt".to_string(), "1.0".to_string(), keys);
         Schema {
-            name: "gvt".to_string(),
-            version: "1.0".to_string(),
-            attribute_names: attr_names,
-            seq_no: 1
+            seq_no: 1,
+            data: schema_data
         }
     }
 
     pub fn get_xyz_schema() -> Schema {
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert("status".to_string());
-        attr_names.insert("period".to_string());
+        let mut keys: HashSet<String> = HashSet::new();
+        keys.insert("status".to_string());
+        keys.insert("period".to_string());
 
+        let schema_data = SchemaData::new("xyz".to_string(), "1.0".to_string(), keys);
         Schema {
-            name: "xyz".to_string(),
-            version: "1.0".to_string(),
-            attribute_names: attr_names,
-            seq_no: 2
+            seq_no: 2,
+            data: schema_data
         }
     }
 

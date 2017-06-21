@@ -1,6 +1,9 @@
 source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/evernym/sovrin-client-rust.git'
 platform :ios, '10.2'
+
+workspace 'libsovrin.xcworkspace'
+
 #use_frameworks!
 
 def appPods
@@ -11,16 +14,14 @@ def appPods
     pod 'libsovrin-core'
 end
 
-target 'libsovrin-test' do
-    project 'libsovrin-test'
+target 'libsovrin-demo' do
+    project 'libsovrin-demo'
 end
 
 target 'libsovrin' do
     project 'libsovrin'
     appPods
 end
-
-workspace './libsovrin.xcworkspace'
 
 # ignore all warnings from all pods
 #inhibit_all_warnings!

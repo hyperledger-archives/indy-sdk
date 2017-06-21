@@ -32,7 +32,7 @@ macro_rules! check_useful_c_str {
         let $x = match CStringUtils::c_str_to_string($x) {
             Ok(Some(val)) => val,
             Ok(None) => return $e,
-            Err(err) => return $e
+            Err(_) => return $e
         };
 
         if $x.is_empty() {
@@ -46,7 +46,7 @@ macro_rules! check_useful_opt_c_str {
         let $x = match CStringUtils::c_str_to_string($x) {
             Ok(Some(val)) => if val.is_empty() { None } else { Some(val) },
             Ok(None) => None,
-            Err(err) => return $e
+            Err(_) => return $e
         };
     }
 }

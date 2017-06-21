@@ -14,6 +14,16 @@ pub mod base58;
 #[path = "pair/milagro.rs"]
 pub mod pair;
 
+#[cfg(feature = "pair_amcl")]
+#[path = "pair/amcl.rs"]
+pub mod pair;
+
 #[cfg(feature = "xsalsa20_sodium")]
 #[path = "xsalsa20/sodium.rs"]
 pub mod xsalsa20;
+
+#[cfg(feature = "hash_openssl")]
+#[path = "hash/openssl.rs"]
+pub mod hash;
+
+pub mod signature_serializer;

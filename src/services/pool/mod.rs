@@ -1,25 +1,30 @@
 mod types;
+mod catchup;
 
-extern crate base64;
 extern crate byteorder;
 extern crate rust_base58;
+extern crate serde_json;
 extern crate zmq;
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
+use self::serde_json::Value;
 use std::cell::RefCell;
-use std::collections::{HashMap, BinaryHeap};
-use std::{cmp, fmt, fs, io, thread};
+use std::collections::{HashMap};
+use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
+use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
+use errors::common::CommonError;
+use self::catchup::CatchupHandler;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::crypto::ed25519::Ed25519ToCurve25519;
+use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
@@ -31,7 +36,7 @@ pub struct PoolService {
 struct Pool {
     name: String,
     id: i32,
-    send_sock: zmq::Socket,
+    cmd_sock: zmq::Socket,
     worker: Option<thread::JoinHandle<()>>,
 }
 
@@ -39,55 +44,130 @@ struct PoolWorker {
     cmd_sock: zmq::Socket,
     open_cmd_id: i32,
     pool_id: i32,
-    nodes: Vec<RemoteNode>,
-    merkle_tree: MerkleTree,
-    new_mt_size: usize,
-    new_mt_vote: usize,
-    f: usize,
-    pending_catchup: Option<CatchUpProcess>,
     name: String,
+    handler: PoolWorkerHandler,
+}
+
+enum PoolWorkerHandler {
+    //TODO trait ?
+    CatchupHandler(CatchupHandler),
+    TransactionHandler(TransactionHandler),
+}
+
+struct TransactionHandler {
+    f: usize,
+    nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
 }
 
-impl PoolWorker {
-    fn restore_merkle_tree(&mut self) {
-        let mut p = EnvironmentUtils::pool_path(self.name.as_str());
-        //TODO firstly try to deserialize merkle tree
-        p.push(&self.name);
-        p.set_extension("txn");
-        let f = fs::File::open(p).expect("open file");
-        let reader = io::BufReader::new(&f);
-        for line in reader.lines() {
-            let line: String = line.expect("read transaction line");
-            self.merkle_tree.append(line);
+impl PoolWorkerHandler {
+    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
+        let msg = Message::from_raw_str(raw_msg)
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::IOError(
+                    io::Error::from(io::ErrorKind::InvalidData)))?;
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
         }
     }
 
-    fn connect_to_known_nodes(&mut self) {
-        if self.merkle_tree.is_empty() {
-            self.restore_merkle_tree();
+    fn send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => {
+                Err(PoolError::CommonError(
+                    CommonError::InvalidState("Try send request while CatchUp.".to_string())))
+            }
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => {
+                ch.try_send_request(cmd, cmd_id)
+            }
         }
-        let ctx: zmq::Context = zmq::Context::new();
-        for gen_txn in &self.merkle_tree {
-            let mut rn: RemoteNode = RemoteNode::new(gen_txn.as_str());
-            rn.connect(&ctx);
-            rn.zsock.as_ref().unwrap().send("pi".as_bytes(), 0).expect("send ping");
-            self.nodes.push(rn);
-        }
-        self.f = self.merkle_tree.count(); //FIXME
-        info!("merkle tree {:?}", self.merkle_tree);
     }
 
-    fn process_reply(&mut self, reply: &Reply, raw_msg: &String) {
-        let req_id = reply.result.req_id;
+    fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.flush_requests(status),
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.flush_requests(status),
+        }
+    }
+
+    fn nodes(&self) -> &Vec<RemoteNode> {
+        match self {
+            &PoolWorkerHandler::CatchupHandler(ref ch) => &ch.nodes,
+            &PoolWorkerHandler::TransactionHandler(ref ch) => &ch.nodes,
+        }
+    }
+
+    fn nodes_mut(&mut self) -> &mut Vec<RemoteNode> {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => &mut ch.nodes,
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => &mut ch.nodes,
+        }
+    }
+
+    fn set_f(&mut self, f: usize) {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.f = f,
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.f = f,
+        };
+    }
+}
+
+impl TransactionHandler {
+    fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
+        match msg {
+            Message::Reply(reply) => {
+                self.process_reply(reply.result.req_id, raw_msg);
+            }
+            Message::PoolLedgerTxns(response) => {
+                self.process_reply(response.txn.req_id, raw_msg);
+            }
+            Message::Reject(response) | Message::ReqNACK(response) => {
+                self.process_reject(&response, raw_msg);
+            }
+            _ => {
+                warn!("unhandled msg {:?}", msg);
+            }
+        };
+        Ok(None)
+    }
+
+    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
         let mut remove = false;
-        {
-            let mut pend_cmd = self.pending_commands.get_mut(&req_id).unwrap();
-            pend_cmd.reply_cnt += 1;
-            if pend_cmd.reply_cnt == self.f {
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
+            let pend_cmd: &mut CommandProcess = pend_cmd;
+            let json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
+            if reply_cnt == self.f {
+                //already have f same replies and receive f+1 now
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+                }
+                remove = true;
+            } else {
+                pend_cmd.replies.insert(json_msg, reply_cnt + 1);
+            }
+        }
+        if remove {
+            self.pending_commands.remove(&req_id);
+        }
+    }
+
+    //TODO correct handling of Reject
+    fn process_reject(&mut self, response: &Response, raw_msg: &String) {
+        let req_id = response.req_id;
+        let mut remove = false;
+        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
+            pend_cmd.nack_cnt += 1;
+            if pend_cmd.nack_cnt == self.f + 1 {
+                for &cmd_id in &pend_cmd.cmd_ids {
+                    CommandExecutor::instance().send(
+                        Command::Ledger(
+                            LedgerCommand::SubmitAck(cmd_id,
+                                                     Err(PoolError::Rejected(raw_msg.clone()))))
+                    ).unwrap();
                 }
                 remove = true;
             }
@@ -97,184 +177,246 @@ impl PoolWorker {
         }
     }
 
-    fn start_catchup(&mut self) {
-        assert!(self.pending_catchup.is_none());
-        self.pending_catchup = Some(CatchUpProcess {
-            merkle_tree: self.merkle_tree.clone(),
-            pending_reps: BinaryHeap::new(),
-        });
-        let node_cnt = self.nodes.len();
-        assert!(self.merkle_tree.count() == node_cnt);
+    fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
+        info!("cmd {:?}", cmd);
+        let request: Value = serde_json::from_str(cmd)
+            .map_err(|err|
+                CommonError::InvalidStructure(
+                    format!("Invalid request json: {}", err.description())))?;
 
-        let cnt_to_catchup = self.new_mt_size - self.merkle_tree.count();
-        assert!(cnt_to_catchup > 0);
-        let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
-        let mut catchup_req = CatchupReq {
-            ledgerType: 0,
-            seqNoStart: node_cnt + 1,
-            seqNoEnd: node_cnt + 1 + portion - 1,
-            catchupTill: self.new_mt_size,
-        };
-        for node in &self.nodes {
-            node.send_msg(&Message::CatchupReq(catchup_req.clone()));
-            catchup_req.seqNoStart += portion;
-            catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
-                                            catchup_req.catchupTill);
-        }
-    }
+        let request_id: u64 = request["reqId"]
+            .as_u64()
+            .ok_or(CommonError::InvalidStructure("No reqId in request".to_string()))?;
 
-    fn process_catchup(&mut self, catchup: CatchupRep) {
-        trace!("append {:?}", catchup);
-        let catchup_finished = {
-            let mut process = self.pending_catchup.as_mut().unwrap();
-            process.pending_reps.push(catchup);
-            while !process.pending_reps.is_empty()
-                && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
-                let mut first_resp = process.pending_reps.pop().unwrap();
-                while !first_resp.txns.is_empty() {
-                    let key = first_resp.min_tx().to_string();
-                    let new_gen_tx = first_resp.txns.remove(&key).unwrap().to_json().unwrap();
-                    trace!("append to tree {}", new_gen_tx);
-                    process.merkle_tree.append(
-                        new_gen_tx
-                    );
-                }
-            }
-            trace!("updated mt hash {}, tree {:?}", base64::encode(process.merkle_tree.root_hash()), process.merkle_tree);
-            if &process.merkle_tree.count() == &self.new_mt_size {
-                //TODO check also root hash?
-                true
-            } else {
-                false
-            }
-        };
-        if catchup_finished {
-            self.finish_catchup();
-        }
-    }
-
-    fn finish_catchup(&mut self) {
-        self.merkle_tree = self.pending_catchup.take().unwrap().merkle_tree;
-        self.nodes.clear();
-        self.connect_to_known_nodes();
-    }
-
-    fn process_msg(&mut self, raw_msg: &String, src_ind: usize) {
-        let resp: Option<String> = if raw_msg.eq("po") {
-            //sending ledger status
-            //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
-            let ls: LedgerStatus = LedgerStatus {
-                txnSeqNo: self.nodes.len(),
-                merkleRoot: base64::encode(self.merkle_tree.root_hash()),
-                ..Default::default()
-            };
-            let msg: Message = Message::LedgerStatus(ls);
-            Some(msg.to_json().unwrap())
+        if self.pending_commands.contains_key(&request_id) {
+            self.pending_commands.get_mut(&request_id).unwrap().cmd_ids.push(cmd_id);
         } else {
-            let msg = Message::from_json(raw_msg).unwrap();
-            match msg {
-                Message::LedgerStatus(ledger_status) => {
-                    //TODO nothing?
-                }
-                Message::ConsistencyProof(cons_proof) => {
-                    trace!("{:?}", cons_proof);
-                    if cons_proof.seqNoStart == self.merkle_tree.count()
-                        && cons_proof.seqNoEnd > self.merkle_tree.count() {
-                        self.new_mt_size = cmp::max(cons_proof.seqNoEnd, self.new_mt_size);
-                        self.new_mt_vote += 1;
-                        debug!("merkle tree expected size now {}", self.new_mt_size);
-                    }
-                    if self.new_mt_vote == self.f {
-                        self.start_catchup();
-                    }
-                }
-                Message::CatchupRep(catchup) => {
-                    self.process_catchup(catchup);
-                }
-                Message::Reply(reply) => {
-                    self.process_reply(&reply, raw_msg);
-                }
-                _ => {
-                    info!("unhandled msg {:?}", msg);
-                }
+            let pc = CommandProcess {
+                cmd_ids: vec!(cmd_id),
+                nack_cnt: 0,
+                replies: HashMap::new(),
+            };
+            self.pending_commands.insert(request_id, pc);
+            for node in &self.nodes {
+                let node: &RemoteNode = node;
+                node.send_str(cmd)?;
             }
-            None
+        }
+        Ok(())
+    }
+
+    fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        match status {
+            Ok(()) => {
+                return Err(PoolError::CommonError(
+                    CommonError::InvalidState(
+                        "Can't flash all transaction requests with common success status".to_string())));
+            }
+            Err(err) => {
+                for (_, pending_cmd) in &self.pending_commands {
+                    let pending_cmd: &CommandProcess = pending_cmd;
+                    for cmd_id in &pending_cmd.cmd_ids {
+                        CommandExecutor::instance()
+                            .send(Command::Ledger(LedgerCommand::SubmitAck(
+                                cmd_id.clone(), Err(PoolError::Terminate))))
+                            .map_err(|err|
+                                CommonError::InvalidState("Can't send ACK cmd".to_string()))?;
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Default for TransactionHandler {
+    fn default() -> Self {
+        TransactionHandler {
+            pending_commands: HashMap::new(),
+            f: 0,
+            nodes: Vec::new(),
+        }
+    }
+}
+
+impl PoolWorker {
+    fn connect_to_known_nodes(&mut self, merkle_tree: Option<&MerkleTree>) -> Result<(), PoolError> {
+        let merkle_tree = match merkle_tree {
+            Some(merkle_tree) => Some(merkle_tree.clone()),
+            None => match self.handler {
+                PoolWorkerHandler::CatchupHandler(ref ch) => Some(ch.merkle_tree.clone()),
+                PoolWorkerHandler::TransactionHandler(_) => None
+            }
+        }
+            .ok_or(CommonError::InvalidState("Expect catchup state".to_string()))?;
+
+        let ctx: zmq::Context = zmq::Context::new();
+        let key_pair = zmq::CurveKeyPair::new()?;
+        for gen_txn in &merkle_tree {
+            let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)
+                .map_err(|e|
+                    CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
+
+            let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
+            rn.connect(&ctx, &key_pair)?;
+            rn.send_str("pi")?;
+            self.handler.nodes_mut().push(rn);
+        }
+        self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+        Ok(())
+    }
+
+    fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
+        let catchup_handler = CatchupHandler {
+            merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
+            initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
+            is_refresh: refresh_cmd_id.is_some(),
+            pool_id: self.pool_id,
+            ..Default::default()
         };
-        if resp.is_some() {
-            self.nodes[src_ind].zsock.as_ref().unwrap().send(resp.unwrap().as_bytes(), zmq::DONTWAIT).expect("send resp msg");
+        self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
+        self.connect_to_known_nodes(None)?;
+        Ok(())
+    }
+
+    fn refresh(&mut self, cmd_id: i32) -> Result<(), PoolError> {
+        match self.handler.flush_requests(Err(PoolError::Terminate)) {
+            Ok(()) => self.init_catchup(Some(cmd_id)),
+            Err(err) => CommandExecutor::instance().send(Command::Pool(PoolCommand::RefreshAck(cmd_id, Err(err)))).map_err(PoolError::from),
         }
     }
 
+    pub fn run(&mut self) -> Result<(), PoolError> {
+        self._run().or_else(|err: PoolError| {
+            self.handler.flush_requests(Err(PoolError::Terminate))?;
+            match err {
+                PoolError::Terminate => Ok(()),
+                _ => Err(err),
+            }
+        })
+    }
 
-    pub fn run(&mut self) {
-        self.connect_to_known_nodes();
-
-        CommandExecutor::instance().send(Command::Pool(
-            PoolCommand::OpenAck(self.open_cmd_id, Ok(self.pool_id)))).expect("send ack cmd"); //TODO send only after catch-up?
+    fn _run(&mut self) -> Result<(), PoolError> {
+        self.init_catchup(None)?; //TODO consider error as PoolOpen error
 
         loop {
             trace!("zmq poll loop >>");
-            let mut msgs_to_handle: Vec<(String, usize)> = Vec::new();
-            let mut cmds_to_send: Vec<(String, i32)> = Vec::new();
-            {
-                let mut ss_to_poll: Vec<zmq::PollItem> = Vec::new();
-                ss_to_poll.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
-                for ref node in &self.nodes {
-                    let s: &zmq::Socket = node.zsock.as_ref().unwrap();
-                    ss_to_poll.push(s.as_poll_item(zmq::POLLIN));
-                }
 
-                let r = zmq::poll(ss_to_poll.as_mut_slice(), -1).expect("poll");
-                trace!("zmq poll loop ... {:?}", r);
-                for i in 0..self.nodes.len() {
-                    if ss_to_poll[1 + i].is_readable() {
-                        let msg: Option<String> = self.nodes[i].recv_msg().expect("recv msg");
-                        if msg.is_some() {
-                            msgs_to_handle.push((msg.unwrap(), i));
-                        }
-                    }
-                }
-                if ss_to_poll[0].is_readable() {
-                    let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT);
-                    trace!("cmd {:?}", cmd);
-                    if cmd.is_ok() {
-                        let v = cmd.unwrap();
-                        let cmd_s = String::from_utf8(v[0].clone()).expect("non-string command");
-                        if "exit".eq(cmd_s.as_str()) {
-                            break;
-                        } else {
-                            cmds_to_send.push((cmd_s, LittleEndian::read_i32(v[1].as_slice())));
-                        }
-                    }
-                }
-            }
+            let actions = self.poll_zmq()?;
 
-            for &(ref msg, rn_ind) in &msgs_to_handle {
-                self.process_msg(msg, rn_ind);
-            }
-
-            for &(ref msg, cmd_id) in &cmds_to_send {
-                info!("msg {:?}", msg);
-                let tmp = SimpleRequest::from_json(msg).unwrap();
-                if self.pending_commands.contains_key(&tmp.req_id) {
-                    self.pending_commands.get_mut(&tmp.req_id).unwrap().cmd_ids.push(cmd_id);
-                } else {
-                    let pc = CommandProcess {
-                        cmd_ids: vec!(cmd_id),
-                        nack_cnt: 0,
-                        reply_cnt: 0,
-                    };
-                    self.pending_commands.insert(tmp.req_id, pc);
-                    for node in &self.nodes {
-                        let node: &RemoteNode = node;
-                        node.send_str(msg);
-                    }
-                }
-            }
+            self.process_actions(actions).map_err(map_err_trace!("process_actions"))?;
 
             trace!("zmq poll loop <<");
         }
-        info!("zmq poll loop finished");
+    }
+
+    fn process_actions(&mut self, actions: Vec<ZMQLoopAction>) -> Result<(), PoolError> {
+        for action in &actions {
+            match action {
+                &ZMQLoopAction::Terminate(cmd_id) => {
+                    let res = self.handler.flush_requests(Err(PoolError::Terminate));
+                    if cmd_id >= 0 {
+                        CommandExecutor::instance().send(Command::Pool(PoolCommand::CloseAck(cmd_id, res)))?;
+                    }
+                    return Err(PoolError::Terminate);
+                }
+                &ZMQLoopAction::Refresh(cmd_id) => {
+                    self.refresh(cmd_id)?;
+                }
+                &ZMQLoopAction::MessageToProcess(ref msg) => {
+                    if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
+                        self.handler.flush_requests(Ok(()))?;
+                        self.handler = PoolWorkerHandler::TransactionHandler(Default::default());
+                        self.connect_to_known_nodes(Some(&new_mt))?;
+                    }
+                }
+                &ZMQLoopAction::RequestToSend(ref req) => {
+                    self.handler.send_request(req.request.as_str(), req.id).or_else(|err| {
+                        CommandExecutor::instance()
+                            .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
+                            .map_err(|err| {
+                                CommonError::InvalidState("Can't send ACK cmd".to_string())
+                            })
+                    })?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn poll_zmq(&mut self) -> Result<Vec<ZMQLoopAction>, PoolError> {
+        let mut actions: Vec<ZMQLoopAction> = Vec::new();
+
+        let mut poll_items = self.get_zmq_poll_items()?;
+        let r = zmq::poll(poll_items.as_mut_slice(), -1)?;
+        trace!("zmq poll {:?}", r);
+
+        for i in 0..self.handler.nodes().len() {
+            if poll_items[1 + i].is_readable() {
+                if let Some(msg) = self.handler.nodes()[i].recv_msg()? {
+                    actions.push(ZMQLoopAction::MessageToProcess(MessageToProcess {
+                        node_idx: i,
+                        message: msg,
+                    }));
+                }
+            }
+        }
+        if poll_items[0].is_readable() {
+            let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT)?;
+            trace!("cmd {:?}", cmd);
+            let cmd_s = String::from_utf8(cmd[0].clone())
+                .map_err(|err|
+                    CommonError::InvalidState("Invalid command received".to_string()))?;
+            let id = if cmd.len() > 1 { LittleEndian::read_i32(cmd[1].as_slice()) } else { -1 };
+            if "exit".eq(cmd_s.as_str()) {
+                actions.push(ZMQLoopAction::Terminate(id));
+            } else if "refresh".eq(cmd_s.as_str()) {
+                actions.push(ZMQLoopAction::Refresh(id));
+            } else {
+                actions.push(ZMQLoopAction::RequestToSend(RequestToSend {
+                    id: id,
+                    request: cmd_s,
+                }));
+            }
+        }
+        Ok(actions)
+    }
+
+    fn get_zmq_poll_items(&self) -> Result<Vec<zmq::PollItem>, PoolError> {
+        let mut poll_items: Vec<zmq::PollItem> = Vec::new();
+        poll_items.push(self.cmd_sock.as_poll_item(zmq::POLLIN));
+        for ref node in self.handler.nodes() {
+            let s: &zmq::Socket = node.zsock.as_ref()
+                .ok_or(CommonError::InvalidState(
+                    "Try to poll from ZMQ socket for unconnected RemoteNode".to_string()))?;
+            poll_items.push(s.as_poll_item(zmq::POLLIN));
+        }
+        Ok(poll_items)
+    }
+
+
+    fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+        let mut mt = MerkleTree::from_vec(Vec::new())?;
+        //TODO firstly try to deserialize merkle tree
+        p.push(pool_name);
+        p.set_extension("txn");
+        let f = fs::File::open(p)?;
+        let reader = io::BufReader::new(&f);
+        for line in reader.lines() {
+            let line: String = line?;
+            mt.append(line)?;
+        }
+        Ok(mt)
+    }
+
+    #[allow(unreachable_code)]
+    fn get_f(cnt: usize) -> usize {
+        return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
+        if cnt < 4 {
+            return 0
+        }
+        (cnt - 1) / 3
     }
 }
 
@@ -293,30 +435,42 @@ impl Pool {
             cmd_sock: recv_cmd_sock,
             open_cmd_id: cmd_id,
             pool_id: pool_id,
-            nodes: Vec::new(),
-            merkle_tree: MerkleTree::from_vec(Vec::new()),
-            new_mt_size: 0,
-            new_mt_vote: 0,
-            f: 0,
-            pending_catchup: None,
             name: name.to_string(),
-            pending_commands: HashMap::new(),
+            handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                initiate_cmd_id: cmd_id,
+                pool_id: pool_id,
+                ..Default::default()
+            }),
         };
 
         Ok(Pool {
             name: name.to_string(),
             id: pool_id,
-            send_sock: send_cmd_sock,
+            cmd_sock: send_cmd_sock,
             worker: Some(thread::spawn(move || {
-                pool_worker.run();
+                pool_worker.run().unwrap_or_else(|err| {
+                    error!("Pool worker thread finished with error {:?}", err);
+                })
             })),
         })
     }
 
-    pub fn send_tx(&self, cmd_id: i32, json: &str) {
+    pub fn send_tx(&self, cmd_id: i32, json: &str) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        self.send_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("send to cmd sock");
+        Ok(self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT)?)
+    }
+
+    pub fn close(&self, cmd_id: i32) -> Result<(), PoolError> {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        Ok(self.cmd_sock.send_multipart(&["exit".as_bytes(), &buf], zmq::DONTWAIT)?)
+    }
+
+    pub fn refresh(&self, cmd_id: i32) -> Result<(), PoolError> {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        Ok(self.cmd_sock.send_multipart(&["refresh".as_bytes(), &buf], zmq::DONTWAIT)?)
     }
 }
 
@@ -324,20 +478,14 @@ impl Drop for Pool {
     fn drop(&mut self) {
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
-        self.send_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
+        self.cmd_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
         info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join().unwrap();
+        if let Some(worker) = self.worker.take() {
+            worker.join().unwrap();
+        }
         info!(target: target.as_str(), "Drop finished");
     }
-}
-
-struct RemoteNode {
-    name: String,
-    public_key: Vec<u8>,
-    verify_key: Vec<u8>,
-    zaddr: String,
-    zsock: Option<zmq::Socket>,
 }
 
 impl Debug for RemoteNode {
@@ -348,46 +496,63 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new(txn: &str) -> RemoteNode {
-        let gen_tx = GenTransaction::from_json(txn).expect("RemoteNode parsing");
-        RemoteNode::from(gen_tx)
+    fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
+        let public_key = txn.dest.as_str().from_base58()
+            .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
+        Ok(RemoteNode {
+            verify_key: ED25519::vk_to_curve25519(&public_key)?,
+            public_key: public_key,
+            zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
+            zsock: None,
+            name: txn.data.alias.clone(),
+        })
     }
 
-    fn connect(&mut self, ctx: &zmq::Context) {
-        let key_pair = zmq::CurveKeyPair::new().expect("create key pair");
-        let s = ctx.socket(zmq::SocketType::DEALER).expect("socket for Node");
-        s.set_curve_secretkey(key_pair.secret_key.as_str()).expect("set secret key");
-        s.set_curve_publickey(key_pair.public_key.as_str()).expect("set public key");
-        s.set_curve_serverkey(zmq::z85_encode(self.verify_key.as_slice()).unwrap().as_str()).expect("set verify key");
-        s.set_linger(0).expect("set linger"); //TODO set correct timeout
-        s.connect(self.zaddr.as_str()).expect("connect to Node");
+    fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
+        let s = ctx.socket(zmq::SocketType::DEALER)?;
+        s.set_identity(key_pair.public_key.as_bytes())?;
+        s.set_curve_secretkey(key_pair.secret_key.as_str())?;
+        s.set_curve_publickey(key_pair.public_key.as_str())?;
+        s.set_curve_serverkey(
+            zmq::z85_encode(self.verify_key.as_slice())
+                .map_err(|err| { CommonError::InvalidStructure("Can't encode server key as z85".to_string()) })?
+                .as_str())?;
+        s.set_linger(0)?; //TODO set correct timeout
+        s.connect(self.zaddr.as_str())?;
         self.zsock = Some(s);
+        Ok(())
     }
 
     fn recv_msg(&self) -> Result<Option<String>, PoolError> {
         impl From<Vec<u8>> for PoolError {
             fn from(_: Vec<u8>) -> Self {
-                PoolError::Io(io::Error::from(io::ErrorKind::InvalidData))
+                PoolError::CommonError(
+                    CommonError::IOError(
+                        io::Error::from(io::ErrorKind::InvalidData)))
             }
         }
-        let msg: String = self.zsock.as_ref().unwrap().recv_string(zmq::DONTWAIT)??;
-        info!(target: "RemoteNode_recv_msg", "{} {}", self.name, msg);
+        let msg: String = self.zsock.as_ref()
+            .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
+            .recv_string(zmq::DONTWAIT)??;
+        info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
-        match msg.as_ref() {
-            "pi" => Ok(None), //TODO send pong
-            _ => Ok(Some(msg))
-        }
+        Ok(Some(msg))
     }
 
-    fn send_str(&self, str: &str) {
+    fn send_str(&self, str: &str) -> Result<(), PoolError> {
         info!("Sending {:?}", str);
-        self.zsock.as_ref().unwrap()
-            .send_str(str, zmq::DONTWAIT)
-            .unwrap();
+        self.zsock.as_ref()
+            .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
+            .send_str(str, zmq::DONTWAIT)?;
+        Ok(())
     }
 
-    fn send_msg(&self, msg: &Message) {
-        self.send_str(msg.to_json().unwrap().as_str());
+    fn send_msg(&self, msg: &Message) -> Result<(), PoolError> {
+        self.send_str(
+            msg.to_json()
+                .map_err(|err|
+                    CommonError::InvalidState(format!("Can't serialize message: {}", err.description())))?
+                .as_str())
     }
 }
 
@@ -395,7 +560,7 @@ impl From<GenTransaction> for RemoteNode {
     fn from(tx: GenTransaction) -> RemoteNode {
         let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
         RemoteNode {
-            verify_key: Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&public_key),
+            verify_key: ED25519::vk_to_curve25519(&public_key).expect("dest field in GenTransaction isn't valid"),
             public_key: public_key,
             zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
             zsock: None,
@@ -414,7 +579,9 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config = match config {
-            Some(config) => PoolConfig::from_json(config)?,
+            Some(config) => PoolConfig::from_json(config)
+                .map_err(|err|
+                    CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
             None => PoolConfig::default_for_name(name)
         };
 
@@ -432,7 +599,12 @@ impl PoolService {
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path())?;
-        f.write(pool_config.to_json()?.as_bytes())?;
+
+        f.write(pool_config
+            .to_json()
+            .map_err(|err|
+                CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description())))?
+            .as_bytes())?;
         f.flush()?;
 
         // TODO probably create another one file pool.json with pool description,
@@ -442,11 +614,17 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        unimplemented!()
+        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+            if pool.name.eq(name) {
+                return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
+            }
+        }
+        let path = EnvironmentUtils::pool_path(name);
+        fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
     pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
-        for pool in self.pools.try_borrow()?.values() {
+        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
                 return Err(PoolError::InvalidHandle("Already opened".to_string()));
@@ -457,26 +635,36 @@ impl PoolService {
         let new_pool = Pool::new(name, cmd_id)?;
         //FIXME process config: check None (use default), transfer to Pool instance
 
-        self.pools.try_borrow_mut()?.insert(new_pool.id, new_pool);
+        self.pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.id, new_pool);
         return Ok(cmd_id);
     }
 
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow()?.get(&handle).unwrap().send_tx(cmd_id, json);
+        self.pools.try_borrow().map_err(CommonError::from)?
+            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .send_tx(cmd_id, json)?;
         Ok(cmd_id)
     }
 
-    pub fn close(&self, handle: i32) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .close(cmd_id)
+            .map(|()| cmd_id)
     }
 
-    pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .refresh(cmd_id)
+            .map(|()| cmd_id)
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
-        self.pools.try_borrow()?.get(&handle).map_or(
+        self.pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle("Doesn't exists".to_string())),
             |pool: &Pool| Ok(pool.name.clone()))
     }
@@ -538,20 +726,109 @@ mod mocks {
 mod tests {
     use super::*;
 
-    #[test]
-    fn pool_service_new_works() {
-        let pool_service = PoolService::new();
-        assert!(true, "No crashes on PoolService::new");
-    }
+    mod pool_service {
+        use super::*;
+        use std::path;
 
-    #[test]
-    fn pool_service_drop_works() {
-        fn drop_test() {
+        #[test]
+        fn pool_service_new_works() {
             let pool_service = PoolService::new();
+            assert!(true, "No crashes on PoolService::new");
         }
 
-        drop_test();
-        assert!(true, "No crashes on PoolService::drop");
+        #[test]
+        fn pool_service_drop_works() {
+            fn drop_test() {
+                let pool_service = PoolService::new();
+            }
+
+            drop_test();
+            assert!(true, "No crashes on PoolService::drop");
+        }
+
+        #[test]
+        fn pool_service_close_works() {
+            let ps = PoolService::new();
+            let pool_id = SequenceUtils::get_next_id();
+            let ctx = zmq::Context::new();
+            let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            recv_soc.bind("inproc://test").unwrap();
+            send_soc.connect("inproc://test").unwrap();
+            ps.pools.borrow_mut().insert(pool_id, Pool {
+                name: String::new(),
+                id: pool_id,
+                worker: None,
+                cmd_sock: send_soc,
+            });
+            let cmd_id = ps.close(pool_id).unwrap();
+            let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
+            assert_eq!(recv.len(), 2);
+            assert_eq!("exit", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+        }
+
+        #[test]
+        fn pool_service_refresh_works() {
+            let ps = PoolService::new();
+            let pool_id = SequenceUtils::get_next_id();
+            let ctx = zmq::Context::new();
+            let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            recv_soc.bind("inproc://test").unwrap();
+            send_soc.connect("inproc://test").unwrap();
+            ps.pools.borrow_mut().insert(pool_id, Pool {
+                name: String::new(),
+                id: pool_id,
+                worker: None,
+                cmd_sock: send_soc,
+            });
+            let cmd_id = ps.refresh(pool_id).unwrap();
+            let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
+            assert_eq!(recv.len(), 2);
+            assert_eq!("refresh", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+        }
+
+        #[test]
+        fn pool_service_delete_works() {
+            let ps = PoolService::new();
+            let pool_name = "pool_service_delete_works";
+            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            fs::create_dir_all(path.as_path()).unwrap();
+            assert!(path.exists());
+            ps.delete(pool_name).unwrap();
+            assert!(!path.exists());
+        }
+
+        #[test]
+        fn pool_service_delete_works_for_opened() {
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let ps = PoolService::new();
+            let pool_name = "pool_service_delete_works";
+            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            let pool_id = SequenceUtils::get_next_id();
+
+            let inproc_sock_name: String = format!("inproc://pool_{}", pool_name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+
+            let pool = Pool {
+                worker: None,
+                name: pool_name.to_string(),
+                cmd_sock: recv_cmd_sock,
+                id: pool_id
+            };
+            ps.pools.borrow_mut().insert(pool_id, pool);
+
+            fs::create_dir_all(path.as_path()).unwrap();
+            assert!(path.exists());
+            let res = ps.delete(pool_name);
+            assert_match!(Err(PoolError::CommonError(CommonError::InvalidState(_))), res);
+            assert!(path.exists());
+        }
     }
 
     #[test]
@@ -564,30 +841,24 @@ mod tests {
         recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
         send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
         let pool = Pool {
-            worker: Some(thread::spawn(|| {})),
+            worker: None,
             name: name.to_string(),
             id: 0,
-            send_sock: send_cmd_sock,
+            cmd_sock: send_cmd_sock,
         };
         let test_data = "str_instead_of_tx_json";
-        pool.send_tx(0, test_data);
+        pool.send_tx(0, test_data).unwrap();
         assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
     }
 
     impl Default for PoolWorker {
         fn default() -> Self {
             PoolWorker {
-                merkle_tree: MerkleTree::from_vec(Vec::new()),
                 pool_id: 0,
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
-                f: 0,
-                pending_catchup: None,
                 open_cmd_id: 0,
-                nodes: Vec::new(),
-                new_mt_size: 0,
-                new_mt_vote: 0,
                 name: "".to_string(),
-                pending_commands: HashMap::new(),
+                handler: PoolWorkerHandler::CatchupHandler(Default::default()),
             }
         }
     }
@@ -609,23 +880,20 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let mut pw: PoolWorker = PoolWorker {
-            name: pool_name.to_string(),
-            ..Default::default()
-        };
-        pw.restore_merkle_tree();
+        let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
 
-        assert_eq!(pw.merkle_tree.count(), 4, "test restored MT size");
-        assert_eq!(pw.merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
+        assert_eq!(merkle_tree.count(), 4, "test restored MT size");
+        assert_eq!(merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
     }
 
     #[test]
     fn pool_worker_connect_to_known_nodes_works() {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        pw.merkle_tree.append(gt.to_json().unwrap());
+        let mut merkle_tree: MerkleTree = MerkleTree::from_vec(Vec::new()).unwrap();
+        merkle_tree.append(gt.to_json().unwrap()).unwrap();
 
-        pw.connect_to_known_nodes();
+        pw.connect_to_known_nodes(Some(&merkle_tree)).unwrap();
 
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
@@ -633,43 +901,134 @@ mod tests {
     }
 
     #[test]
-    fn pool_worker_process_reply_works() {
-        let mut pw: PoolWorker = Default::default();
-        pw.f = 1;
-        let pc = super::types::CommandProcess {
+    fn pool_worker_poll_zmq_works_for_terminate() {
+        let ctx = zmq::Context::new();
+        let mut pw = PoolWorker {
+            cmd_sock: ctx.socket(zmq::SocketType::PAIR).expect("socket"),
+            ..Default::default()
+        };
+        let pair_socket_addr = "inproc://test_pool_worker_poll_zmq_works_for_terminate";
+        let send_cmd_sock = ctx.socket(zmq::SocketType::PAIR).expect("socket");
+        pw.cmd_sock.bind(pair_socket_addr).expect("bind");
+        send_cmd_sock.connect(pair_socket_addr).expect("connect");
+
+        let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
+            pw.poll_zmq().unwrap()
+        });
+        send_cmd_sock.send_str("exit", zmq::DONTWAIT).expect("send");
+        let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
+
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0], ZMQLoopAction::Terminate(-1));
+    }
+
+    #[test]
+    fn pool_worker_get_zmq_poll_items_works() {
+        let pw: PoolWorker = Default::default();
+
+        let poll_items = pw.get_zmq_poll_items().unwrap();
+
+        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1 );
+        //TODO compare poll items
+    }
+
+    #[test]
+    #[ignore] /* FIXME remove after get_f will be restored */
+    fn pool_worker_get_f_works() {
+        assert_eq!(PoolWorker::get_f(0), 0);
+        assert_eq!(PoolWorker::get_f(3), 0);
+        assert_eq!(PoolWorker::get_f(4), 1);
+        assert_eq!(PoolWorker::get_f(5), 1);
+        assert_eq!(PoolWorker::get_f(6), 1);
+        assert_eq!(PoolWorker::get_f(7), 2);
+    }
+
+    #[test]
+    fn transaction_handler_process_reply_works() {
+        let mut th: TransactionHandler = Default::default();
+        th.f = 1;
+        let mut pc = super::types::CommandProcess {
             cmd_ids: Vec::new(),
-            reply_cnt: pw.f - 1,
+            replies: HashMap::new(),
             nack_cnt: 0,
         };
+        let json = "{\"value\":1}";
+        pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
         let req_id = 1;
-        pw.pending_commands.insert(req_id, pc);
+        th.pending_commands.insert(req_id, pc);
         let reply = super::types::Reply {
             result: super::types::Response {
                 req_id: req_id,
             },
         };
 
-        pw.process_reply(&reply, &"".to_string());
+        th.process_reply(reply.result.req_id, &json.to_string());
 
-        assert_eq!(pw.pending_commands.len(), 0);
+        assert_eq!(th.pending_commands.len(), 0);
     }
 
     #[test]
-    fn pool_worker_start_catchup_works() {
-        let mut pw: PoolWorker = Default::default();
-        let (gt, handle) = nodes_emulator::start();
-        pw.merkle_tree.append(gt.to_json().unwrap());
-        let mut rn: RemoteNode = RemoteNode::from(gt);
-        rn.connect(&zmq::Context::new());
-        pw.nodes.push(rn);
-        pw.new_mt_size = 2;
+    fn transaction_handler_process_reply_works_for_different_replies_with_same_req_id() {
+        let mut th: TransactionHandler = Default::default();
+        th.f = 1;
+        let mut pc = super::types::CommandProcess {
+            cmd_ids: Vec::new(),
+            replies: HashMap::new(),
+            nack_cnt: 0,
+        };
+        let json1 = "{\"value\":1}";
+        let json2 = "{\"value\":2}";
+        pc.replies.insert(HashableValue { inner: serde_json::from_str(json1).unwrap() }, 1);
+        let req_id = 1;
+        th.pending_commands.insert(req_id, pc);
+        let reply = super::types::Reply {
+            result: super::types::Response {
+                req_id: req_id,
+            },
+        };
 
-        pw.start_catchup();
+        th.process_reply(reply.result.req_id, &json2.to_string());
+
+        assert_eq!(th.pending_commands.len(), 1);
+        assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
+    }
+
+    #[test]
+    fn transaction_handler_try_send_request_works_for_new_req_id() {
+        let mut th: TransactionHandler = Default::default();
+
+        let req_id = 2;
+        let cmd_id = 1;
+        let cmd = format!("{{\"reqId\": {}}}", req_id);
+
+        th.try_send_request(&cmd, cmd_id).unwrap();
+
+        assert_eq!(th.pending_commands.len(), 1);
+        let pending_cmd = th.pending_commands.get(&req_id).unwrap();
+        let exp_command_process = CommandProcess {
+            nack_cnt: 0,
+            replies: HashMap::new(),
+            cmd_ids: vec!(cmd_id),
+        };
+        assert_eq!(pending_cmd, &exp_command_process);
+    }
+
+    #[test]
+    fn catchup_handler_start_catchup_works() {
+        let mut ch: CatchupHandler = Default::default();
+        let (gt, handle) = nodes_emulator::start();
+        ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
+        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
+        rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
+        ch.nodes.push(rn);
+        ch.new_mt_size = 2;
+
+        ch.start_catchup().unwrap();
 
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         let expected_resp: CatchupReq = CatchupReq {
-            ledgerType: 0,
+            ledgerId: 0,
             seqNoStart: 2,
             seqNoEnd: 2,
             catchupTill: 2,
@@ -681,11 +1040,11 @@ mod tests {
     #[test]
     fn remote_node_connect_works_and_can_ping_pong() {
         let (gt, handle) = nodes_emulator::start();
-        let mut rn: RemoteNode = RemoteNode::from(gt);
+        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         let ctx = zmq::Context::new();
-        rn.connect(&ctx);
-        rn.zsock.as_ref().expect("sock").send_str("pi", zmq::DONTWAIT).expect("send");
-        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, 100).expect("poll");
+        rn.connect(&ctx, &zmq::CurveKeyPair::new().unwrap()).unwrap();
+        rn.send_str("pi").expect("send");
+        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
         assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
         handle.join().expect("join");
     }
@@ -697,10 +1056,12 @@ mod tests {
         use std::thread;
         use super::*;
 
+        pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
+
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
-            let (pk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = Ed25519ToCurve25519::crypto_sign_ed25519_pk_to_curve25519(&Vec::from(&pk.0 as &[u8]));
-            let skc = Ed25519ToCurve25519::crypto_sign_ed25519_sk_to_curve25519(&Vec::from(&sk.0 as &[u8]));
+            let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
+            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
+            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
             let gt = GenTransaction {
@@ -713,9 +1074,9 @@ mod tests {
                     node_ip: "".to_string(),
                     node_port: 0,
                 },
-                txn_id: "".to_string(),
+                txn_id: None,
                 txn_type: "0".to_string(),
-                dest: (&pk.0 as &[u8]).to_base58(),
+                dest: (&vk.0 as &[u8]).to_base58(),
             };
             let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
             s.set_curve_publickey(zmq::z85_encode(pkc.as_slice()).unwrap().as_str()).expect("set public key");
@@ -724,10 +1085,14 @@ mod tests {
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {
                 let mut received_msgs: Vec<String> = Vec::new();
-                if s.poll(zmq::POLLIN, 100).expect("poll") == 1 {
+                let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
+                if poll_res == 1 {
                     let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
+                    trace!("Node emulator poll recv {:?}", v);
                     s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
                     received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
+                } else {
+                    warn!("Node emulator poll return {}", poll_res)
                 }
                 received_msgs
             });

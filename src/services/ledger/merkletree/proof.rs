@@ -1,17 +1,11 @@
-extern crate ring;
-use self::ring::digest::Algorithm;
-
 use services::ledger::merkletree::tree::{Tree, TreeLeafData};
-use services::ledger::merkletree::hashutils::HashUtils;
+use utils::crypto::hash::Hash;
+use errors::common::CommonError;
 
 /// An inclusion proof represent the fact that a `value` is a member
-/// of a `MerkleTree` with root hash `root_hash`, and hash function `algorithm`.
+/// of a `MerkleTree` with root hash `root_hash`.
 #[derive(Clone, Debug)]
 pub struct Proof {
-
-    /// The hashing algorithm used in the original `MerkleTree`
-    pub algorithm: &'static Algorithm,
-
     /// The hash of the root of the original `MerkleTree`
     pub root_hash: Vec<u8>,
 
@@ -25,10 +19,8 @@ pub struct Proof {
 impl Proof {
 
     /// Constructs a new `Proof`
-    pub fn new(algo: &'static Algorithm, root_hash: Vec<u8>,
-               lemma: Lemma, value: TreeLeafData) -> Self {
+    pub fn new(root_hash: Vec<u8>, lemma: Lemma, value: TreeLeafData) -> Self {
         Proof {
-            algorithm: algo,
             root_hash: root_hash,
             lemma: lemma,
             value: value
@@ -37,35 +29,35 @@ impl Proof {
 
     /// Checks whether this inclusion proof is well-formed,
     /// and whether its root hash matches the given `root_hash`.
-    pub fn validate(&self, root_hash: &[u8]) -> bool {
+    pub fn validate(&self, root_hash: &[u8]) -> Result<bool, CommonError> {
         if self.root_hash != root_hash || self.lemma.node_hash != root_hash {
-            return false
+            return Ok(false)
         }
 
-        self.validate_lemma(&self.lemma)
+        Ok(self.validate_lemma(&self.lemma)?)
     }
 
-    fn validate_lemma(&self, lemma: &Lemma) -> bool {
+    fn validate_lemma(&self, lemma: &Lemma) -> Result<bool, CommonError> {
         match lemma.sub_lemma {
 
             None =>
-                lemma.sibling_hash.is_none(),
+                Ok(lemma.sibling_hash.is_none()),
 
             Some(ref sub) =>
                 match lemma.sibling_hash {
                     None =>
-                        false,
+                        Ok(false),
 
                     Some(Positioned::Left(ref hash)) => {
-                        let combined = self.algorithm.hash_nodes(hash, &sub.node_hash);
-                        let hashes_match = combined.as_ref() == lemma.node_hash.as_slice();
-                        hashes_match && self.validate_lemma(sub)
+                        let combined = Hash::hash_nodes(hash, &sub.node_hash)?;
+                        let hashes_match = combined.to_vec().as_slice() == lemma.node_hash.as_slice();
+                        Ok(hashes_match && self.validate_lemma(sub)?)
                     }
 
                     Some(Positioned::Right(ref hash)) => {
-                        let combined = self.algorithm.hash_nodes(&sub.node_hash, hash);
-                        let hashes_match = combined.as_ref() == lemma.node_hash.as_slice();
-                        hashes_match && self.validate_lemma(sub)
+                        let combined = Hash::hash_nodes(&sub.node_hash, hash)?;
+                        let hashes_match = combined.to_vec().as_slice() == lemma.node_hash.as_slice();
+                        Ok(hashes_match && self.validate_lemma(sub)?)
                     }
 
                 }

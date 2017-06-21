@@ -7,7 +7,7 @@ impl EnvironmentUtils {
     pub fn sovrin_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
         let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/sovrin"));
-        path.push(".sovrin");
+        path.push(if cfg!(target_os = "ios") { "Documents/.sovrin" } else { ".sovrin" });
         path
     }
 
@@ -67,7 +67,8 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin/wallet"));
+        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains("wallet"));
     }
 
     #[test]
@@ -76,7 +77,8 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin/wallet/wallet1"));
+        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains("wallet1"));
     }
 
     #[test]
@@ -85,7 +87,8 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin/pool"));
+        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains("pool"));
     }
 
     #[test]
@@ -94,7 +97,8 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin/pool/pool1"));
+        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains("pool1"));
     }
 
     #[test]

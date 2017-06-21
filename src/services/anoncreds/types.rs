@@ -1,6 +1,6 @@
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
-use errors::crypto::CryptoError;
+use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
+use errors::common::CommonError;
 use services::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
@@ -18,14 +18,14 @@ pub enum PredicateType {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Accumulator {
-    pub acc: PointG1,
+    pub acc: PointG2,
     pub v: HashSet<i32>,
     pub max_claim_num: i32,
     pub current_i: i32
 }
 
 impl Accumulator {
-    pub fn new(acc: PointG1, v: HashSet<i32>, max_claim_num: i32,
+    pub fn new(acc: PointG2, v: HashSet<i32>, max_claim_num: i32,
                current_i: i32) -> Accumulator {
         Accumulator {
             acc: acc,
@@ -115,23 +115,25 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub claim_def_seq_no: i32
+    pub claim_def_seq_no: i32,
+    pub schema_seq_no: i32
 }
 
 impl ClaimOffer {
-    pub fn new(issuer_did: String, claim_def_seq_no: i32) -> ClaimOffer {
+    pub fn new(issuer_did: String, claim_def_seq_no: i32, schema_seq_no: i32) -> ClaimOffer {
         ClaimOffer {
             issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no
+            claim_def_seq_no: claim_def_seq_no,
+            schema_seq_no: schema_seq_no
         }
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimOfferFilter{
+pub struct ClaimOfferFilter {
     pub issuer_did: Option<String>,
-    pub claim_def_seq_no: Option<i32>
-
+    pub claim_def_seq_no: Option<i32>,
+    pub schema_seq_no: Option<i32>
 }
 
 impl<'a> JsonDecodable<'a> for ClaimOfferFilter {}
@@ -167,28 +169,29 @@ pub struct ClaimInfo {
     pub attrs: HashMap<String, String>,
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
-    pub schema_seq_no: i32
+    pub schema_seq_no: i32,
+    pub issuer_did: String
 }
 
 impl ClaimInfo {
     pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
-               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32) -> ClaimInfo {
+               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
             claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
-            schema_seq_no: schema_seq_no
+            schema_seq_no: schema_seq_no,
+            issuer_did: issuer_did
         }
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimInfoFilter{
+pub struct ClaimInfoFilter {
     pub issuer_did: Option<String>,
     pub claim_def_seq_no: Option<i32>,
     pub schema_seq_no: Option<i32>
-
 }
 
 impl<'a> JsonDecodable<'a> for ClaimInfoFilter {}
@@ -231,31 +234,62 @@ impl ClaimProof {
     }
 }
 
+#[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
+pub enum SignatureTypes {
+    CL
+}
+
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinition {
-    pub public_key: PublicKey,
-    pub public_key_revocation: Option<RevocationPublicKey>,
+    #[serde(rename = "ref")]
     pub schema_seq_no: i32,
-    pub signature_type: String
+    #[serde(rename = "seqNo")]
+    pub claim_def_seq_no: Option<i32>,
+    pub signature_type: SignatureTypes,
+    pub data: ClaimDefinitionData
 }
 
 impl ClaimDefinition {
-    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>,
-               schema_seq_no: i32, signature_type: String) -> ClaimDefinition {
+    pub fn new(schema_seq_no: i32, claim_def_seq_no: Option<i32>, signature_type: SignatureTypes,
+               data: ClaimDefinitionData) -> ClaimDefinition {
         ClaimDefinition {
-            public_key: public_key,
-            public_key_revocation: public_key_revocation,
             schema_seq_no: schema_seq_no,
-            signature_type: signature_type
+            claim_def_seq_no: claim_def_seq_no,
+            signature_type: signature_type,
+            data: data
         }
     }
 
-    pub fn clone(&self) -> Result<ClaimDefinition, CryptoError> {
+    pub fn clone(&self) -> Result<ClaimDefinition, CommonError> {
         Ok(ClaimDefinition {
-            public_key: self.public_key.clone()?,
-            public_key_revocation: self.public_key_revocation.clone(),
-            schema_seq_no: self.schema_seq_no.clone(),
+            schema_seq_no: self.schema_seq_no,
+            claim_def_seq_no: self.claim_def_seq_no,
             signature_type: self.signature_type.clone(),
+            data: self.data.clone()?,
+        })
+    }
+}
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinitionData {
+    #[serde(rename = "primary")]
+    pub public_key: PublicKey,
+    #[serde(rename = "revocation")]
+    pub public_key_revocation: Option<RevocationPublicKey>,
+}
+
+impl ClaimDefinitionData {
+    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>) -> ClaimDefinitionData {
+        ClaimDefinitionData {
+            public_key: public_key,
+            public_key_revocation: public_key_revocation
+        }
+    }
+
+    pub fn clone(&self) -> Result<ClaimDefinitionData, CommonError> {
+        Ok(ClaimDefinitionData {
+            public_key: self.public_key.clone()?,
+            public_key_revocation: self.public_key_revocation.clone()
         })
     }
 }
@@ -284,24 +318,24 @@ impl JsonEncodable for ClaimDefinitionPrivate {}
 impl<'a> JsonDecodable<'a> for ClaimDefinitionPrivate {}
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Claims {
+pub struct ClaimSignature {
     pub primary_claim: PrimaryClaim,
     pub non_revocation_claim: Option<RefCell<NonRevocationClaim>>
 }
 
-impl Claims {
+impl ClaimSignature {
     pub fn new(primary_claim: PrimaryClaim,
-               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> Claims {
-        Claims {
+               non_revocation_claim: Option<RefCell<NonRevocationClaim>>) -> ClaimSignature {
+        ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
         }
     }
 }
 
-impl JsonEncodable for Claims {}
+impl JsonEncodable for ClaimSignature {}
 
-impl<'a> JsonDecodable<'a> for Claims {}
+impl<'a> JsonDecodable<'a> for ClaimSignature {}
 
 #[derive(Deserialize, Serialize)]
 pub struct ClaimInitData {
@@ -328,18 +362,20 @@ pub struct ClaimJson {
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    pub signature: Claims
+    pub signature: ClaimSignature,
+    pub issuer_did: String
 }
 
 impl ClaimJson {
     pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
-               signature: Claims, schema_seq_no: i32) -> ClaimJson {
+               signature: ClaimSignature, schema_seq_no: i32, issuer_did: String) -> ClaimJson {
         ClaimJson {
             claim: claim,
             claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
-            signature: signature
+            signature: signature,
+            issuer_did: issuer_did
         }
     }
 }
@@ -431,7 +467,7 @@ impl NonRevocProofXList {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<GroupOrderElement>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<GroupOrderElement>, CommonError> {
         Ok(vec![self.rho, self.o, self.c, self.o_prime, self.m, self.m_prime, self.t, self.t_prime,
                 self.m2, self.s, self.r, self.r_prime, self.r_prime_prime, self.r_prime_prime_prime])
     }
@@ -472,7 +508,7 @@ impl NonRevocProofTauList {
         }
     }
 
-    pub fn as_slice(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_slice(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.t1.to_bytes()?, self.t2.to_bytes()?, self.t3.to_bytes()?, self.t4.to_bytes()?,
                 self.t5.to_bytes()?, self.t6.to_bytes()?, self.t7.to_bytes()?, self.t8.to_bytes()?])
     }
@@ -484,14 +520,14 @@ pub struct NonRevocProofCList {
     pub d: PointG1,
     pub a: PointG1,
     pub g: PointG1,
-    pub w: PointG1,
-    pub s: PointG1,
-    pub u: PointG1
+    pub w: PointG2,
+    pub s: PointG2,
+    pub u: PointG2
 }
 
 impl NonRevocProofCList {
-    pub fn new(e: PointG1, d: PointG1, a: PointG1, g: PointG1, w: PointG1, s: PointG1,
-               u: PointG1) -> NonRevocProofCList {
+    pub fn new(e: PointG1, d: PointG1, a: PointG1, g: PointG1, w: PointG2, s: PointG2,
+               u: PointG2) -> NonRevocProofCList {
         NonRevocProofCList {
             e: e,
             d: d,
@@ -503,8 +539,9 @@ impl NonRevocProofCList {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<PointG1>, CryptoError> {
-        Ok(vec![self.e, self.d, self.a, self.g, self.w, self.s, self.u])
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
+        Ok(vec![self.e.to_bytes()?, self.d.to_bytes()?, self.a.to_bytes()?, self.g.to_bytes()?,
+                self.w.to_bytes()?, self.s.to_bytes()?, self.u.to_bytes()?])
     }
 }
 
@@ -530,12 +567,12 @@ impl NonRevocInitProof {
         }
     }
 
-    pub fn as_c_list(&self) -> Result<Vec<PointG1>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let vec = self.c_list.as_list()?;
         Ok(vec)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let vec = self.tau_list.as_slice()?;
         Ok(vec)
     }
@@ -579,7 +616,7 @@ impl PublicKey {
         }
     }
 
-    pub fn clone(&self) -> Result<PublicKey, CryptoError> {
+    pub fn clone(&self) -> Result<PublicKey, CommonError> {
         Ok(PublicKey {
             s: self.s.clone()?,
             n: self.n.clone()?,
@@ -686,7 +723,7 @@ impl PrimaryInitProof {
         }
     }
 
-    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_c_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let mut c_list: Vec<Vec<u8>> = self.eq_proof.as_list()?;
         for ge_proof in self.ge_proofs.iter() {
             c_list.append_vec(ge_proof.as_list()?)?;
@@ -694,7 +731,7 @@ impl PrimaryInitProof {
         Ok(c_list)
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         let mut tau_list: Vec<Vec<u8>> = self.eq_proof.as_tau_list()?;
         for ge_proof in self.ge_proofs.iter() {
             tau_list.append_vec(ge_proof.as_tau_list()?)?;
@@ -749,11 +786,11 @@ impl PrimaryEqualInitProof {
         }
     }
 
-    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.a_prime.to_bytes()?])
     }
 
-    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<Vec<Vec<u8>>, CommonError> {
         Ok(vec![self.t.to_bytes()?])
     }
 }
@@ -788,11 +825,11 @@ impl PrimaryPredicateGEInitProof {
         }
     }
 
-    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+    pub fn as_list(&self) -> Result<&Vec<BigNumber>, CommonError> {
         Ok(&self.c_list)
     }
 
-    pub fn as_tau_list(&self) -> Result<&Vec<BigNumber>, CryptoError> {
+    pub fn as_tau_list(&self) -> Result<&Vec<BigNumber>, CommonError> {
         Ok(&self.tau_list)
     }
 }
@@ -937,14 +974,17 @@ impl<'a> JsonDecodable<'a> for RevocationRegistry {}
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistryPrivate {
     pub acc_sk: AccumulatorSecretKey,
-    pub tails: HashMap<i32, PointG1>
+    pub tails: HashMap<i32, PointG1>,
+    pub tails_dash: HashMap<i32, PointG2>
 }
 
 impl RevocationRegistryPrivate {
-    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>) -> RevocationRegistryPrivate {
+    pub fn new(acc_sk: AccumulatorSecretKey, tails: HashMap<i32, PointG1>,
+               tails_dash: HashMap<i32, PointG2>) -> RevocationRegistryPrivate {
         RevocationRegistryPrivate {
             acc_sk: acc_sk,
-            tails: tails
+            tails: tails,
+            tails_dash: tails_dash
         }
     }
 }
@@ -956,27 +996,31 @@ impl<'a> JsonDecodable<'a> for RevocationRegistryPrivate {}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RevocationPublicKey {
     pub g: PointG1,
+    pub g_dash: PointG2,
     pub h: PointG1,
     pub h0: PointG1,
     pub h1: PointG1,
     pub h2: PointG1,
     pub htilde: PointG1,
-    pub u: PointG1,
+    pub h_cap: PointG2,
+    pub u: PointG2,
     pub pk: PointG1,
-    pub y: PointG1,
+    pub y: PointG2,
     pub x: GroupOrderElement
 }
 
 impl RevocationPublicKey {
-    pub fn new(g: PointG1, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
-               u: PointG1, pk: PointG1, y: PointG1, x: GroupOrderElement) -> RevocationPublicKey {
+    pub fn new(g: PointG1, g_dash: PointG2, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
+               h_cap: PointG2, u: PointG2, pk: PointG1, y: PointG2, x: GroupOrderElement) -> RevocationPublicKey {
         RevocationPublicKey {
             g: g,
+            g_dash: g_dash,
             h: h,
             h0: h0,
             h1: h1,
             h2: h2,
             htilde: htilde,
+            h_cap: h_cap,
             u: u,
             pk: pk,
             y: y,
@@ -1008,7 +1052,7 @@ impl JsonEncodable for RevocationSecretKey {}
 
 impl<'a> JsonDecodable<'a> for RevocationSecretKey {}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RevocationClaimInitData {
     pub u: PointG1,
     pub v_prime: GroupOrderElement
@@ -1073,19 +1117,33 @@ impl RequestedProofJson {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
-    pub name: String,
-    pub version: String,
-    pub attribute_names: HashSet<String>,
-    pub seq_no: i32
+    #[serde(rename = "seqNo")]
+    pub seq_no: i32,
+    pub data: SchemaData
 }
 
 impl Schema {
-    pub fn new(name: String, version: String, attributes_names: HashSet<String>, seq_no: i32) -> Schema {
+    pub fn new(seq_no: i32, data: SchemaData) -> Schema {
         Schema {
+            seq_no: seq_no,
+            data: data
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaData {
+    pub name: String,
+    pub version: String,
+    pub keys: HashSet<String>
+}
+
+impl SchemaData {
+    pub fn new(name: String, version: String, keys: HashSet<String>) -> SchemaData {
+        SchemaData {
             name: name,
             version: version,
-            attribute_names: attributes_names,
-            seq_no: seq_no
+            keys: keys
         }
     }
 }
@@ -1115,15 +1173,15 @@ impl<'a> JsonDecodable<'a> for SecretKey {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Witness {
-    pub sigma_i: PointG1,
-    pub u_i: PointG1,
+    pub sigma_i: PointG2,
+    pub u_i: PointG2,
     pub g_i: PointG1,
-    pub omega: PointG1,
+    pub omega: PointG2,
     pub v: HashSet<i32>
 }
 
 impl Witness {
-    pub fn new(sigma_i: PointG1, u_i: PointG1, g_i: PointG1, omega: PointG1,
+    pub fn new(sigma_i: PointG2, u_i: PointG2, g_i: PointG1, omega: PointG2,
                v: HashSet<i32>) -> Witness {
         Witness {
             sigma_i: sigma_i,

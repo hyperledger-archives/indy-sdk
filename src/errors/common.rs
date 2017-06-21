@@ -1,5 +1,8 @@
-use std::error;
-use std::fmt;
+extern crate zmq;
+
+use std::cell::{BorrowError, BorrowMutError};
+use std::error::Error;
+use std::{fmt, io};
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -15,7 +18,9 @@ pub enum CommonError {
     InvalidParam7(String),
     InvalidParam8(String),
     InvalidParam9(String),
-    InvalidState(String)
+    InvalidState(String),
+    InvalidStructure(String),
+    IOError(io::Error),
 }
 
 impl fmt::Display for CommonError {
@@ -30,39 +35,45 @@ impl fmt::Display for CommonError {
             CommonError::InvalidParam7(ref description) => write!(f, "Invalid param 4: {}", description),
             CommonError::InvalidParam8(ref description) => write!(f, "Invalid param 4: {}", description),
             CommonError::InvalidParam9(ref description) => write!(f, "Invalid param 4: {}", description),
-            CommonError::InvalidState(ref description) => write!(f, "Invalid library state: {}", description)
+            CommonError::InvalidState(ref description) => write!(f, "Invalid library state: {}", description),
+            CommonError::InvalidStructure(ref description) => write!(f, "Invalid structure: {}", description),
+            CommonError::IOError(ref err) => err.fmt(f)
         }
     }
 }
 
-impl error::Error for CommonError {
+impl Error for CommonError {
     fn description(&self) -> &str {
         match *self {
-            CommonError::InvalidParam1(ref description) => description,
-            CommonError::InvalidParam2(ref description) => description,
-            CommonError::InvalidParam3(ref description) => description,
-            CommonError::InvalidParam4(ref description) => description,
-            CommonError::InvalidParam5(ref description) => description,
-            CommonError::InvalidParam6(ref description) => description,
-            CommonError::InvalidParam7(ref description) => description,
-            CommonError::InvalidParam8(ref description) => description,
-            CommonError::InvalidParam9(ref description) => description,
-            CommonError::InvalidState(ref description) => description
+            CommonError::InvalidParam1(ref description) |
+            CommonError::InvalidParam2(ref description) |
+            CommonError::InvalidParam3(ref description) |
+            CommonError::InvalidParam4(ref description) |
+            CommonError::InvalidParam5(ref description) |
+            CommonError::InvalidParam6(ref description) |
+            CommonError::InvalidParam7(ref description) |
+            CommonError::InvalidParam8(ref description) |
+            CommonError::InvalidParam9(ref description) |
+            CommonError::InvalidState(ref description) |
+            CommonError::InvalidStructure(ref description) => description,
+            CommonError::IOError(ref err) => err.description()
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&Error> {
         match *self {
-            CommonError::InvalidParam1(ref description) => None,
-            CommonError::InvalidParam2(ref description) => None,
-            CommonError::InvalidParam3(ref description) => None,
-            CommonError::InvalidParam4(ref description) => None,
-            CommonError::InvalidParam5(ref description) => None,
-            CommonError::InvalidParam6(ref description) => None,
-            CommonError::InvalidParam7(ref description) => None,
-            CommonError::InvalidParam8(ref description) => None,
-            CommonError::InvalidParam9(ref description) => None,
-            CommonError::InvalidState(ref description) => None
+            CommonError::InvalidParam1(ref description) |
+            CommonError::InvalidParam2(ref description) |
+            CommonError::InvalidParam3(ref description) |
+            CommonError::InvalidParam4(ref description) |
+            CommonError::InvalidParam5(ref description) |
+            CommonError::InvalidParam6(ref description) |
+            CommonError::InvalidParam7(ref description) |
+            CommonError::InvalidParam8(ref description) |
+            CommonError::InvalidParam9(ref description) |
+            CommonError::InvalidState(ref description) |
+            CommonError::InvalidStructure(ref description) => None,
+            CommonError::IOError(ref err) => Some(err)
         }
     }
 }
@@ -79,8 +90,28 @@ impl ToErrorCode for CommonError {
             CommonError::InvalidParam7(ref description) => ErrorCode::CommonInvalidParam7,
             CommonError::InvalidParam8(ref description) => ErrorCode::CommonInvalidParam8,
             CommonError::InvalidParam9(ref description) => ErrorCode::CommonInvalidParam9,
-            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState
+            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState,
+            CommonError::InvalidStructure(ref description) => ErrorCode::CommonInvalidStructure,
+            CommonError::IOError(ref description) => ErrorCode::CommonIOError
         }
+    }
+}
+
+impl From<zmq::Error> for CommonError {
+    fn from(err: zmq::Error) -> Self {
+        CommonError::IOError(From::from(err))
+    }
+}
+
+impl From<BorrowError> for CommonError {
+    fn from(err: BorrowError) -> Self {
+        CommonError::InvalidState(err.description().to_string())
+    }
+}
+
+impl From<BorrowMutError> for CommonError {
+    fn from(err: BorrowMutError) -> Self {
+        CommonError::InvalidState(err.description().to_string())
     }
 }
 

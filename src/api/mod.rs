@@ -1,5 +1,8 @@
+#![warn(unused_variables)] /* FIXME move up */
+
 extern crate libc;
 
+pub mod agent;
 pub mod anoncreds;
 pub mod signus;
 pub mod ledger;
@@ -8,7 +11,8 @@ pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
-pub enum ErrorCode {
+pub enum ErrorCode
+{
     Success = 0,
 
     // Common errors
@@ -43,6 +47,12 @@ pub enum ErrorCode {
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
 
+    // Object (json, config, key, claim and etc...) passed by library caller has invalid structure
+    CommonInvalidStructure,
+
+    // IO Error
+    CommonIOError,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
@@ -59,36 +69,18 @@ pub enum ErrorCode {
     // Requested entity id isn't present in wallet
     WalletNotFoundError,
 
-    // Wallet files referenced in open_wallet have invalid data format
-    WalletInvalidDataFormat,
-
-    // IO error during access wallet backend
-    WalletIOError,
-
     // Trying to use wallet with pool that has different name
     WalletIncompatiblePoolError,
-
-    // Trying to open wallet with invalid configuration
-    WalletInvalidConfiguration,
-
-    // Error in wallet backend
-    WalletBackendError,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
 
-    // Invalid pool ledger configuration was passed to open_pool_ledger or create_pool_ledger
-    PoolLedgerInvalidConfiguration,
-
-    // Pool ledger files referenced in open_pool_ledger have invalid data format
-    PoolLedgerInvalidDataFormat,
-
     // Caller passed invalid pool ledger handle
     PoolLedgerInvalidPoolHandle,
 
-    // IO error during access pool ledger files
-    PoolLedgerIOError,
+    // Pool ledger terminated
+    PoolLedgerTerminated,
 
     // No concensus during ledger operation
     LedgerNoConsensusError,
@@ -99,28 +91,21 @@ pub enum ErrorCode {
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError,
 
-    // IO error during sending of ledger transactions or catchup process
-    LedgerIOError,
-
-    // Crypto errors
-    // Invalid structure of any crypto promitives (keys, signatures, seeds and etc...)
-    CryptoInvalidStructure = 400,
-
-    // Unknown crypto type was requested for signing/verifiyng or encoding/decoding
-    CryptoUnknownTypeError,
-
     // Revocation registry is full and creation of new registry is necessary
-    CryptoRevocationRegistryFullError,
+    AnoncredsRevocationRegistryFullError = 400,
 
-    CryptoInvalidUserRevocIndex,
+    AnoncredsInvalidUserRevocIndex,
 
-    // Error in crypto backend
-    CryptoBackendError,
+    AnoncredsAccumulatorIsFull,
 
     AnoncredsNotIssuedError,
 
     // Attempt to generate master secret with dupplicated name
     AnoncredsMasterSecretDuplicateNameError,
 
-    ProofRejected
+    AnoncredsProofRejected,
+
+    // Signus errors
+    // Unknown format of DID entity keys
+    SignusUnknownCryptoError = 500
 }

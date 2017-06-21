@@ -1,4 +1,4 @@
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use services::anoncreds::constants::{
     ITERATION,
     LARGE_MASTER_SECRET,
@@ -18,7 +18,7 @@ use services::anoncreds::types::{
     AggregatedProof,
     ClaimInitData,
     ClaimDefinition,
-    Claims,
+    ClaimSignature,
     ClaimProof,
     ClaimRequest,
     InitProof,
@@ -48,7 +48,6 @@ use services::anoncreds::types::{
     ProofJson
 };
 use services::anoncreds::helpers::{
-    AppendByteArray,
     get_mtilde,
     four_squares,
     get_hash_as_int,
@@ -59,7 +58,7 @@ use services::anoncreds::helpers::{
 use services::anoncreds::verifier::Verifier;
 use services::anoncreds::issuer::Issuer;
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, Pair};
+use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
@@ -72,43 +71,46 @@ impl Prover {
         Prover {}
     }
 
-    pub fn generate_master_secret(&self) -> Result<BigNumber, CryptoError> {
+    pub fn generate_master_secret(&self) -> Result<BigNumber, CommonError> {
         BigNumber::rand(LARGE_MASTER_SECRET)
     }
 
     pub fn create_claim_request(&self, pk: PublicKey, pkr: Option<RevocationPublicKey>, ms: BigNumber,
-                                prover_did: &str)
-                                -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CryptoError> {
+                                prover_did: &str) -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CommonError> {
+        info!(target: "anoncreds_service", "Prover create claim request -> start");
         let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
 
-        let (ur, revocation_primary_claim_init_data) =
-            if let Some(pk_r) = pkr {
-                let revocation_claim_init_data = Prover::_generate_revocation_claim_init_data(&pk_r)?;
-                (Some(revocation_claim_init_data.u.clone()), Some(revocation_claim_init_data))
-            } else { (None, None) };
+        let revocation_claim_init_data = match pkr {
+            Some(pk_r) => Some(Prover::_generate_revocation_claim_init_data(&pk_r)?),
+            _ => None
+        };
 
+        info!(target: "anoncreds_service", "Prover create claim request -> done");
         Ok((
-            ClaimRequest::new(prover_did.to_string(), primary_claim_init_data.u.clone()?, ur),
+            ClaimRequest::new(prover_did.to_string(),
+                              primary_claim_init_data.u.clone()?,
+                              revocation_claim_init_data.clone().map(|ref d| d.u)),
             primary_claim_init_data,
-            revocation_primary_claim_init_data
+            revocation_claim_init_data
         ))
     }
 
-    fn _gen_primary_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CryptoError> {
+    fn _gen_primary_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CommonError> {
+        let mut ctx = BigNumber::new_context()?;
         let v_prime = BigNumber::rand(LARGE_VPRIME)?;
 
         let u = public_key.s
-            .mod_exp(&v_prime, &public_key.n, None)?
+            .mod_exp(&v_prime, &public_key.n, Some(&mut ctx))?
             .mul(
-                &public_key.rms.mod_exp(&ms, &public_key.n, None)?,
+                &public_key.rms.mod_exp(&ms, &public_key.n, Some(&mut ctx))?,
                 None
             )?
-            .modulus(&public_key.n, None)?;
+            .modulus(&public_key.n, Some(&mut ctx))?;
 
         Ok(ClaimInitData::new(u, v_prime))
     }
 
-    fn _generate_revocation_claim_init_data(pkr: &RevocationPublicKey) -> Result<RevocationClaimInitData, CryptoError> {
+    fn _generate_revocation_claim_init_data(pkr: &RevocationPublicKey) -> Result<RevocationClaimInitData, CommonError> {
         let vr_prime = GroupOrderElement::new()?;
         let ur = pkr.h2.mul(&vr_prime)?;
         Ok(RevocationClaimInitData::new(ur, vr_prime))
@@ -117,68 +119,67 @@ impl Prover {
     pub fn process_claim(&self, claim_json: &RefCell<ClaimJson>, primary_claim_init_data: ClaimInitData,
                          revocation_claim_init_data: Option<RevocationClaimInitData>,
                          pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
-                         -> Result<(), CryptoError> {
-
+                         -> Result<(), CommonError> {
+        info!(target: "anoncreds_service", "Prover process received claim -> start");
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
 
         if let Some(ref non_revocation_claim) = claim_json.borrow().signature.non_revocation_claim {
             Prover::_init_non_revocation_claim(non_revocation_claim,
                                                &revocation_claim_init_data.
-                                                   ok_or(CryptoError::InvalidStructure("Field v_prime not found".to_string()))?.v_prime,
+                                                   ok_or(CommonError::InvalidStructure("Field v_prime not found".to_string()))?.v_prime,
                                                &pkr
-                                                   .ok_or(CryptoError::InvalidStructure("Field pkr not found".to_string()))?,
+                                                   .ok_or(CommonError::InvalidStructure("Field pkr not found".to_string()))?,
                                                &revoc_reg.clone()
-                                                   .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
+                                                   .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
                                                &revoc_reg
-                                                   .ok_or(CryptoError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk,
-                                               &BigNumber::from_bytes(&non_revocation_claim.borrow().m2.to_bytes()?)?)?;
+                                                   .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
         }
+        info!(target: "anoncreds_service", "Prover process received claim -> done");
+
         Ok(())
     }
 
-    pub fn _init_primary_claim(claim: &RefCell<ClaimJson>, v_prime: &BigNumber) -> Result<(), CryptoError> {
-        //TODO replace ClaimJson on PrimaryClaim
+    pub fn _init_primary_claim(claim: &RefCell<ClaimJson>, v_prime: &BigNumber) -> Result<(), CommonError> {
         let ref mut primary_claim = claim.borrow_mut().signature.primary_claim;
         primary_claim.v_prime = v_prime.add(&primary_claim.v_prime)?;
         Ok(())
     }
 
     pub fn _init_non_revocation_claim(claim: &RefCell<NonRevocationClaim>, v_prime: &GroupOrderElement,
-                                      pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey, m2: &BigNumber)
-                                      -> Result<(), CryptoError> {
+                                      pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey)
+                                      -> Result<(), CommonError> {
         let mut claim_mut = claim.borrow_mut();
+        let m2 = BigNumber::from_bytes(&claim_mut.m2.to_bytes()?)?;
         claim_mut.vr_prime_prime = v_prime.add_mod(&claim_mut.vr_prime_prime)?;
-        Prover::_test_witness_credential(claim, pkr, acc, acc_pk, m2)?;
+        Prover::_test_witness_credential(&claim_mut, pkr, acc, acc_pk, &m2)?;
         Ok(())
     }
 
-    pub fn _test_witness_credential(claim: &RefCell<NonRevocationClaim>, pkr: &RevocationPublicKey, acc: &Accumulator,
-                                    acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CryptoError> {
-        let z_calc = Pair::pair(&claim.borrow().g_i, &acc.acc)?
-            .mul(&Pair::pair(&pkr.g, &claim.borrow().witness.omega)?.inverse()?)?;
+    pub fn _test_witness_credential(claim: &NonRevocationClaim, pkr: &RevocationPublicKey, acc: &Accumulator,
+                                    acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CommonError> {
+        let z_calc = Pair::pair(&claim.witness.g_i, &acc.acc)?
+            .mul(&Pair::pair(&pkr.g, &claim.witness.omega)?.inverse()?)?;
         if z_calc != acc_pk.z {
-            return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
+            return Err(CommonError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
-
-        let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.borrow().g_i)?, &claim.borrow().witness.sigma_i)?;
-        let pair_gg = Pair::pair(&pkr.g, &pkr.g)?;
+        let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.g_i)?, &claim.witness.sigma_i)?;
+        let pair_gg = Pair::pair(&pkr.g, &pkr.g_dash)?;
         if pair_gg_calc != pair_gg {
-            return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
+            return Err(CommonError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
 
         let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
 
-        let pair_h1 = Pair::pair(&claim.borrow().sigma, &pkr.y.add(&pkr.h.mul(&claim.borrow().c)?)?)?;
+        let pair_h1 = Pair::pair(&claim.sigma, &pkr.y.add(&pkr.h_cap.mul(&claim.c)?)?)?;
         let pair_h2 = Pair::pair(
             &pkr.h0
                 .add(&pkr.h1.mul(&m2)?)?
-                .add(&pkr.h2.mul(&claim.borrow().vr_prime_prime)?)?
-                .add(&claim.borrow().g_i)?,
-            &pkr.h
+                .add(&pkr.h2.mul(&claim.vr_prime_prime)?)?
+                .add(&claim.g_i)?,
+            &pkr.h_cap
         )?;
-
         if pair_h1 != pair_h2 {
-            return Err(CryptoError::InvalidStructure("issuer is sending incorrect data".to_string()));
+            return Err(CommonError::InvalidStructure("issuer is sending incorrect data".to_string()));
         }
 
         Ok(())
@@ -186,18 +187,18 @@ impl Prover {
 
     pub fn find_claims(&self, requested_attrs: HashMap<String, AttributeInfo>, requested_predicates: HashMap<String, Predicate>,
                        claims: Vec<ClaimInfo>)
-                       -> Result<(HashMap<String, Vec<ClaimInfo>>, HashMap<String, Vec<ClaimInfo>>), CryptoError> {
+                       -> Result<(HashMap<String, Vec<ClaimInfo>>, HashMap<String, Vec<ClaimInfo>>), CommonError> {
+        info!(target: "anoncreds_service", "Prover find claims for proof request -> start");
+
         let mut found_attributes: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
         let mut found_predicates: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
 
         for (uuid, attribute_info) in requested_attrs {
-            let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
+            let claims_for_attribute: Vec<ClaimInfo> =
+                claims.iter().cloned()
+                    .filter(|claim| claim.attrs.contains_key(&attribute_info.name) && claim.schema_seq_no == attribute_info.schema_seq_no)
+                    .collect();
 
-            for claim in claims.iter() {
-                if claim.attrs.contains_key(&attribute_info.name) && claim.schema_seq_no == attribute_info.schema_seq_no {
-                    claims_for_attribute.push(claim.clone());
-                }
-            }
             found_attributes.insert(uuid, claims_for_attribute);
         }
 
@@ -214,28 +215,35 @@ impl Prover {
             found_predicates.insert(uuid, claims_for_predicate);
         }
 
+        info!(target: "anoncreds_service", "Prover find claims for proof request -> done");
         Ok((found_attributes, found_predicates))
     }
 
-    fn _attribute_satisfy_predicate(predicate: &Predicate, attribute_value: &String) -> Result<bool, CryptoError> {
+    fn _attribute_satisfy_predicate(predicate: &Predicate, attribute_value: &String) -> Result<bool, CommonError> {
         match predicate.p_type {
-            PredicateType::GE => Ok(attribute_value.parse::<i32>()? >= predicate.value)
+            PredicateType::GE => Ok({
+                let attribute_value = attribute_value.parse::<i32>()
+                    .map_err(|err|
+                        CommonError::InvalidStructure(
+                            format!("Ivalid format of predicate attribute: {}", attribute_value)))?;
+                attribute_value >= predicate.value
+            })
         }
     }
 
-    pub fn _prepare_proof_claims(proof_req: &ProofRequestJson,
+    fn _prepare_proof_claims(proof_req: &ProofRequestJson,
                                  schemas: &HashMap<String, Schema>,
                                  claim_defs: &HashMap<String, ClaimDefinition>,
                                  revoc_regs: &HashMap<String, RevocationRegistry>,
                                  requested_claims: &RequestedClaimsJson,
-                                 claims: HashMap<String, ClaimJson>) -> Result<HashMap<String, ProofClaims>, CryptoError> {
+                                 claims: HashMap<String, ClaimJson>) -> Result<HashMap<String, ProofClaims>, CommonError> {
         let mut proof_claims: HashMap<String, ProofClaims> = HashMap::new();
 
         for (claim_uuid, claim) in claims {
             let schema = schemas.get(&claim_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Schema not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
             let claim_definition = claim_defs.get(&claim_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Claim definition not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Claim definition not found")))?;
             let revocation_registry = revoc_regs.get(&claim_uuid);
 
             let mut predicates_for_claim: Vec<Predicate> = Vec::new();
@@ -243,7 +251,7 @@ impl Prover {
             for (predicate_uuid, claim_uuid_for_predicate) in &requested_claims.requested_predicates {
                 if claim_uuid_for_predicate.clone() == claim_uuid {
                     let predicate = proof_req.requested_predicates.get(predicate_uuid)
-                        .ok_or(CryptoError::InvalidStructure(format!("Predicate not found")))?;
+                        .ok_or(CommonError::InvalidStructure(format!("Predicate not found")))?;
 
                     predicates_for_claim.push(predicate.clone());
                 }
@@ -255,7 +263,7 @@ impl Prover {
             for (attr_uuid, &(ref claim_uuid_for_attr, ref revealed)) in &requested_claims.requested_attrs {
                 if claim_uuid_for_attr.clone() == claim_uuid.clone() {
                     let attr = proof_req.requested_attrs.get(attr_uuid)
-                        .ok_or(CryptoError::InvalidStructure(format!("Attribute not found")))?;
+                        .ok_or(CommonError::InvalidStructure(format!("Attribute not found")))?;
 
                     if revealed.clone() {
                         revealed_attrs_for_claim.push(attr.name.clone());
@@ -281,21 +289,26 @@ impl Prover {
     pub fn _split_attributes(proof_req: &ProofRequestJson,
                              requested_claims: &RequestedClaimsJson,
                              attributes: &HashMap<String, HashMap<String, Vec<String>>>)
-                             -> Result<(HashMap<String, (String, String, String)>, HashMap<String, String>), CryptoError> {
+                             -> Result<(HashMap<String, (String, String, String)>, HashMap<String, String>), CommonError> {
         let mut revealed_attrs: HashMap<String, (String, String, String)> = HashMap::new();
         let mut unrevealed_attrs: HashMap<String, String> = HashMap::new();
 
         for (attr_uuid, &(ref claim_uuid, ref revealed)) in &requested_claims.requested_attrs {
             let attribute = proof_req.requested_attrs.get(attr_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Attribute not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Attribute not found")))?;
 
             if revealed.clone() {
-                let value = attributes.get(claim_uuid)
-                    .ok_or(CryptoError::InvalidStructure(format!("Attributes for claim {} not found", claim_uuid)))?
-                    .get(&attribute.name).unwrap().get(1)
-                    .ok_or(CryptoError::InvalidStructure(format!("Encoded value not found")))?;
+                let attribute = attributes.get(claim_uuid)
+                    .ok_or(CommonError::InvalidStructure(format!("Attributes for claim {} not found", claim_uuid)))?
+                    .get(&attribute.name).unwrap();
 
-                revealed_attrs.insert(attr_uuid.clone(), (claim_uuid.clone(), attribute.name.clone(), value.clone()));
+                let value = attribute.get(0)
+                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
+
+                let encoded_value = attribute.get(1)
+                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
+
+                revealed_attrs.insert(attr_uuid.clone(), (claim_uuid.clone(), value.clone(), encoded_value.clone()));
             } else {
                 unrevealed_attrs.insert(attr_uuid.clone(), claim_uuid.clone());
             }
@@ -312,8 +325,10 @@ impl Prover {
                         revoc_regs: &HashMap<String, RevocationRegistry>,
                         requested_claims: &RequestedClaimsJson,
                         ms: &BigNumber,
-                        tails: &HashMap<i32, PointG1>)
-                        -> Result<ProofJson, CryptoError> {
+                        tails: &HashMap<i32, PointG2>)
+                        -> Result<ProofJson, CommonError> {
+        info!(target: "anoncreds_service", "Prover create proof -> start");
+
         let proof_claims = Prover::_prepare_proof_claims(proof_req,
                                                          schemas,
                                                          claim_defs,
@@ -334,19 +349,19 @@ impl Prover {
             if let Some(ref non_revocation_claim) = proof_claim.claim_json.signature.non_revocation_claim.clone() {
                 let proof = Prover::_init_non_revocation_proof(non_revocation_claim,
                                                                &proof_claim.revocation_registry.clone()
-                                                                   .ok_or(CryptoError::InvalidStructure("Revocation registry not found".to_string()))?
+                                                                   .ok_or(CommonError::InvalidStructure("Revocation registry not found".to_string()))?
                                                                    .accumulator,
-                                                               &proof_claim.claim_definition.public_key_revocation.clone()
-                                                                   .ok_or(CryptoError::InvalidStructure("Field public_key_revocation not found".to_string()))?,
+                                                               &proof_claim.claim_definition.data.public_key_revocation.clone()
+                                                                   .ok_or(CommonError::InvalidStructure("Field public_key_revocation not found".to_string()))?,
                                                                tails)?;
 
-                c_list.append_vec(&proof.as_c_list()?)?;
+                c_list.extend_from_slice(&proof.as_c_list()?);
                 tau_list.extend_from_slice(&proof.as_tau_list()?);
                 m2_tilde = Some(group_element_to_bignum(&proof.tau_list_params.m2)?);
                 non_revoc_init_proof = Some(proof);
             }
 
-            let primary_init_proof = Prover::_init_proof(&proof_claim.claim_definition.public_key,
+            let primary_init_proof = Prover::_init_proof(&proof_claim.claim_definition.data.public_key,
                                                          &proof_claim.schema,
                                                          &proof_claim.claim_json.signature.primary_claim,
                                                          &proof_claim.claim_json.claim,
@@ -375,7 +390,7 @@ impl Prover {
 
         for (proof_claim_uuid, init_proof) in init_proofs.iter() {
             let proof_claim = proof_claims.get(proof_claim_uuid)
-                .ok_or(CryptoError::InvalidStructure(format!("Claim not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Claim not found")))?;
 
             let mut non_revoc_proof: Option<NonRevocProof> = None;
             if let Some(ref non_revoc_init_proof) = init_proof.non_revoc_init_proof {
@@ -406,18 +421,23 @@ impl Prover {
 
         let (revealed_attrs, unrevealed_attrs) = Prover::_split_attributes(&proof_req, requested_claims, &attributes)?;
 
-        let requested_proof = RequestedProofJson::new(
-            revealed_attrs, unrevealed_attrs, requested_claims.self_attested_attributes.clone(),
-            requested_claims.requested_predicates.clone()
+        let requested_proof = RequestedProofJson::new(revealed_attrs,
+                                                      unrevealed_attrs,
+                                                      requested_claims.self_attested_attributes.clone(),
+                                                      requested_claims.requested_predicates.clone()
         );
 
+        info!(target: "anoncreds_service", "Prover create proof -> done");
         Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
     }
 
     fn _init_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, attributes: &HashMap<String, Vec<String>>,
                    revealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
-                   m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CryptoError> {
+                   m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CommonError> {
+        info!(target: "anoncreds_service", "Prover init primary proof -> start");
         let eq_proof = Prover::_init_eq_proof(&pk, schema, c1, revealed_attrs, m1_t, m2_t)?;
+
+
         let mut ge_proofs: Vec<PrimaryPredicateGEInitProof> = Vec::new();
 
         for predicate in predicates.iter() {
@@ -425,12 +445,14 @@ impl Prover {
             ge_proofs.push(ge_proof);
         }
 
+        info!(target: "anoncreds_service", "Prover init primary proof -> done");
         Ok(PrimaryInitProof::new(eq_proof, ge_proofs))
     }
 
     fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
-                                  pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG1>)
-                                  -> Result<NonRevocInitProof, CryptoError> {
+                                  pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG2>)
+                                  -> Result<NonRevocInitProof, CommonError> {
+        info!(target: "anoncreds_service", "Prover init non-revocation proof -> start");
         Prover::_update_non_revocation_claim(claim, accum, tails)?;
 
         let c_list_params = Prover::_gen_c_list_params(&claim)?;
@@ -439,14 +461,15 @@ impl Prover {
         let tau_list_params = Prover::_gen_tau_list_params()?;
         let proof_tau_list = Issuer::_create_tau_list_values(&pkr, &accum, &tau_list_params, &proof_c_list)?;
 
+        info!(target: "anoncreds_service", "Prover init non-revocation proof -> done");
         Ok(NonRevocInitProof::new(c_list_params, tau_list_params, proof_c_list, proof_tau_list))
     }
 
     fn _update_non_revocation_claim(claim: &RefCell<NonRevocationClaim>,
-                                    accum: &Accumulator, tails: &HashMap<i32, PointG1>)
-                                    -> Result<(), CryptoError> {
+                                    accum: &Accumulator, tails: &HashMap<i32, PointG2>)
+                                    -> Result<(), CommonError> {
         if !accum.v.contains(&claim.borrow().i) {
-            return Err(CryptoError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()))
+            return Err(CommonError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()))
         }
 
         if claim.borrow().witness.v != accum.v {
@@ -456,18 +479,18 @@ impl Prover {
                 mut_claim.witness.v.difference(&accum.v).cloned().collect();
             let v_new_minus_old: HashSet<i32> =
                 accum.v.difference(&mut_claim.witness.v).cloned().collect();
-            let mut omega_denom = PointG1::new_inf()?;
+            let mut omega_denom = PointG2::new_inf()?;
             for j in v_old_minus_new.iter() {
                 omega_denom = omega_denom.add(
                     tails.get(&(accum.max_claim_num + 1 - j + mut_claim.i))
-                        .ok_or(CryptoError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
+                        .ok_or(CommonError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
             }
-            let mut omega_num = PointG1::new_inf()?;
-            let mut new_omega: PointG1 = mut_claim.witness.omega.clone();
+            let mut omega_num = PointG2::new_inf()?;
+            let mut new_omega: PointG2 = mut_claim.witness.omega.clone();
             for j in v_old_minus_new.iter() {
                 omega_num = omega_num.add(
                     tails.get(&(accum.max_claim_num + 1 - j + mut_claim.i))
-                        .ok_or(CryptoError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
+                        .ok_or(CommonError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
                 new_omega = new_omega.add(
                     &omega_num.sub(&omega_denom)?
                 )?;
@@ -481,18 +504,17 @@ impl Prover {
     }
 
     fn _init_eq_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, revealed_attrs: &Vec<String>,
-                      m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CryptoError> {
-
+                      m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CommonError> {
         let mut ctx = BigNumber::new_context()?;
 
         let m2_tilde = m2_t.unwrap_or(BigNumber::rand(LARGE_MVECT)?);
 
-        let ra = BigNumber::rand(LARGE_VPRIME)?;
+        let r = BigNumber::rand(LARGE_VPRIME)?;
         let etilde = BigNumber::rand(LARGE_ETILDE)?;
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
         let unrevealed_attrs: Vec<String> =
-            schema.attribute_names
+            schema.data.keys
                 .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();
@@ -500,20 +522,16 @@ impl Prover {
         let mtilde = get_mtilde(&unrevealed_attrs)?;
 
         let aprime = pk.s
-            .mod_exp(&ra, &pk.n, Some(&mut ctx))?
+            .mod_exp(&r, &pk.n, Some(&mut ctx))?
             .mul(&c1.a, Some(&mut ctx))?
             .modulus(&pk.n, Some(&mut ctx))?;
-
-        let tmp =  pk.s
-            .mod_exp(&ra, &pk.n, Some(&mut ctx))?;
-        let res = c1.a.mul(&tmp, Some(&mut ctx))?.modulus(&pk.n, Some(&mut ctx))?;
-
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
         let vprime = c1.v_prime.sub(
-            &c1.e.mul(&ra, Some(&mut ctx))?
+            &c1.e.mul(&r, Some(&mut ctx))?
         )?;
+
         let eprime = c1.e.sub(
             &BigNumber::from_dec("2")?.exp(&large_e_start, Some(&mut ctx))?
         )?;
@@ -531,20 +549,23 @@ impl Prover {
 
     fn _init_ge_proof(pk: &PublicKey, mtilde: &HashMap<String, BigNumber>,
                       encoded_attributes: &HashMap<String, Vec<String>>, predicate: &Predicate)
-                      -> Result<PrimaryPredicateGEInitProof, CryptoError> {
+                      -> Result<PrimaryPredicateGEInitProof, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let (k, value) = (&predicate.attr_name, predicate.value);
 
         let attr_value = encoded_attributes.get(&k[..])
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in c1.encoded_attributes", k)))?
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in c1.encoded_attributes", k)))?
             .get(0)
-            .ok_or(CryptoError::InvalidStructure(format!("Value not found in c1.encoded_attributes")))?
-            .parse::<i32>()?;
+            .ok_or(CommonError::InvalidStructure(format!("Value not found in c1.encoded_attributes")))?
+            .parse::<i32>()
+            .map_err(|err|
+                CommonError::InvalidStructure(
+                    format!("Value by key '{}' has invalid format", k)))?;
 
         let delta: i32 = attr_value - value;
 
         if delta < 0 {
-            return Err(CryptoError::InvalidStructure("Predicate is not satisfied".to_string()))
+            return Err(CommonError::InvalidStructure("Predicate is not satisfied".to_string()))
         }
 
         let u = four_squares(delta)?;
@@ -555,7 +576,7 @@ impl Prover {
 
         for i in 0..ITERATION {
             let cur_u = u.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in u1", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in u1", i)))?;
 
             let cur_r = BigNumber::rand(LARGE_VPRIME)?;
 
@@ -598,7 +619,7 @@ impl Prover {
         let alphatilde = BigNumber::rand(LARGE_ALPHATILDE)?;
 
         let mj = mtilde.get(&k[..])
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.mtilde", k)))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.mtilde", k)))?;
 
         let tau_list = Verifier::calc_tge(&pk, &utilde, &rtilde, &mj, &alphatilde, &t)?;
 
@@ -609,7 +630,8 @@ impl Prover {
 
     fn _finalize_eq_proof(ms: &BigNumber, init_proof: &PrimaryEqualInitProof, c_h: &BigNumber,
                           encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
-                          -> Result<PrimaryEqualProof, CryptoError> {
+                          -> Result<PrimaryEqualProof, CommonError> {
+        info!(target: "anoncreds_service", "Prover finalize primary proof -> start");
         let mut ctx = BigNumber::new_context()?;
 
         let keys_hash_set: HashSet<String> = HashSet::from_iter(encoded_attributes.keys().cloned());
@@ -632,11 +654,11 @@ impl Prover {
 
         for k in unrevealed_attrs.iter() {
             let cur_mtilde = init_proof.mtilde.get(k)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.mtilde", k)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.mtilde", k)))?;
             let cur_val = encoded_attributes.get(k)
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_prook.c1", k)))?
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_prook.c1", k)))?
                 .get(1)
-                .ok_or(CryptoError::InvalidStructure(format!("Encoded Value not found in init_prook.c1")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Encoded Value not found in init_prook.c1")))?;
 
             let val = c_h
                 .mul(&BigNumber::from_dec(cur_val)?,
@@ -661,12 +683,14 @@ impl Prover {
             revealed_attrs_with_values.insert(
                 attr.clone(),
                 encoded_attributes.get(attr)
-                    .ok_or(CryptoError::InvalidStructure(format!("Encoded value not found")))?
+                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
                     .get(1)
-                    .ok_or(CryptoError::InvalidStructure(format!("Encoded value not found")))?
+                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
                     .clone()
             );
         }
+
+        info!(target: "anoncreds_service", "Prover finalize primary proof -> done");
 
         Ok(PrimaryEqualProof::new(
             revealed_attrs_with_values, init_proof.a_prime.clone()?, e, v, m, m1, m2
@@ -674,7 +698,7 @@ impl Prover {
     }
 
     fn _finalize_ge_proof(c_h: &BigNumber, init_proof: &PrimaryPredicateGEInitProof,
-                          eq_proof: &PrimaryEqualProof) -> Result<PrimaryPredicateGEProof, CryptoError> {
+                          eq_proof: &PrimaryEqualProof) -> Result<PrimaryPredicateGEProof, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let mut u: HashMap<String, BigNumber> = HashMap::new();
         let mut r: HashMap<String, BigNumber> = HashMap::new();
@@ -682,13 +706,13 @@ impl Prover {
 
         for i in 0..ITERATION {
             let cur_utilde = init_proof.u_tilde.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.u_tilde", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.u_tilde", i)))?;
             let cur_u = init_proof.u.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.u", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.u", i)))?;
             let cur_rtilde = init_proof.r_tilde.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r_tilde", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r_tilde", i)))?;
             let cur_r = init_proof.r.get(&i.to_string())
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", i)))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", i)))?;
 
             let new_u: BigNumber = c_h
                 .mul(&cur_u, Some(&mut ctx))?
@@ -705,9 +729,9 @@ impl Prover {
                 .add(&urproduct)?;
 
             let cur_rtilde_delta = init_proof.r_tilde.get("DELTA")
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r_tilde", "DELTA")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r_tilde", "DELTA")))?;
             let cur_r_delta = init_proof.r.get("DELTA")
-                .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", "DELTA")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", "DELTA")))?;
 
             let new_delta = c_h
                 .mul(&cur_r_delta, Some(&mut ctx))?
@@ -717,7 +741,7 @@ impl Prover {
         }
 
         let r_delta = init_proof.r.get("DELTA")
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", "DELTA")))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", "DELTA")))?;
 
         let alpha = r_delta
             .sub(&urproduct)?
@@ -725,7 +749,7 @@ impl Prover {
             .add(&init_proof.alpha_tilde)?;
 
         let mj = eq_proof.m.get(&init_proof.predicate.attr_name)
-            .ok_or(CryptoError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.m", init_proof.predicate.attr_name)))?;
+            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.m", init_proof.predicate.attr_name)))?;
 
         Ok(PrimaryPredicateGEProof::new(
             u, r, mj.clone()?, alpha, clone_bignum_map(&init_proof.t)?, init_proof.predicate.clone()
@@ -734,7 +758,9 @@ impl Prover {
 
     fn _finalize_proof(ms: &BigNumber, init_proof: &PrimaryInitProof, c_h: &BigNumber,
                        encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
-                       -> Result<PrimaryProof, CryptoError> {
+                       -> Result<PrimaryProof, CommonError> {
+        info!(target: "anoncreds_service", "Prover finalize proof -> start");
+
         let eq_proof = Prover::_finalize_eq_proof(ms, &init_proof.eq_proof, c_h, encoded_attributes, revealed_attrs)?;
         let mut ge_proofs: Vec<PrimaryPredicateGEProof> = Vec::new();
 
@@ -743,10 +769,12 @@ impl Prover {
             ge_proofs.push(ge_proof);
         }
 
+        info!(target: "anoncreds_service", "Prover finalize proof -> done");
+
         Ok(PrimaryProof::new(eq_proof, ge_proofs))
     }
 
-    fn _gen_c_list_params(claim: &RefCell<NonRevocationClaim>) -> Result<NonRevocProofXList, CryptoError> {
+    fn _gen_c_list_params(claim: &RefCell<NonRevocationClaim>) -> Result<NonRevocProofXList, CommonError> {
         let claim = claim.borrow();
         let rho = GroupOrderElement::new()?;
         let r = GroupOrderElement::new()?;
@@ -766,7 +794,7 @@ impl Prover {
     }
 
     fn _create_c_list_values(claim: &RefCell<NonRevocationClaim>, params: &NonRevocProofXList,
-                             pkr: &RevocationPublicKey) -> Result<NonRevocProofCList, CryptoError> {
+                             pkr: &RevocationPublicKey) -> Result<NonRevocProofCList, CommonError> {
         let claim = claim.borrow();
         let e = pkr.h
             .mul(&params.rho)?
@@ -792,23 +820,23 @@ impl Prover {
 
         let w = claim.witness.omega
             .add(
-                &pkr.htilde.mul(&params.r_prime)?
+                &pkr.h_cap.mul(&params.r_prime)?
             )?;
 
         let s = claim.witness.sigma_i
             .add(
-                &pkr.htilde.mul(&params.r_prime_prime)?
+                &pkr.h_cap.mul(&params.r_prime_prime)?
             )?;
 
         let u = claim.witness.u_i
             .add(
-                &pkr.htilde.mul(&params.r_prime_prime_prime)?
+                &pkr.h_cap.mul(&params.r_prime_prime_prime)?
             )?;
 
         Ok(NonRevocProofCList::new(e, d, a, g, w, s, u))
     }
 
-    fn _gen_tau_list_params() -> Result<NonRevocProofXList, CryptoError> {
+    fn _gen_tau_list_params() -> Result<NonRevocProofXList, CommonError> {
         Ok(NonRevocProofXList::new(GroupOrderElement::new()?, GroupOrderElement::new()?,
                                    GroupOrderElement::new()?, GroupOrderElement::new()?,
                                    GroupOrderElement::new()?, GroupOrderElement::new()?,
@@ -818,7 +846,9 @@ impl Prover {
                                    GroupOrderElement::new()?, GroupOrderElement::new()?))
     }
 
-    fn _finalize_non_revocation_proof(init_proof: &NonRevocInitProof, c_h: &BigNumber) -> Result<NonRevocProof, CryptoError> {
+    fn _finalize_non_revocation_proof(init_proof: &NonRevocInitProof, c_h: &BigNumber) -> Result<NonRevocProof, CommonError> {
+        info!(target: "anoncreds_service", "Prover finalize non-revocation proof -> start");
+
         let ch_num_z = bignum_to_group_element(&c_h)?;
         let mut x_list: Vec<GroupOrderElement> = Vec::new();
 
@@ -827,6 +857,8 @@ impl Prover {
                 &ch_num_z.add_mod(&y)?
             )?);
         }
+
+        info!(target: "anoncreds_service", "Prover finalize non-revocation proof -> done");
 
         Ok(NonRevocProof::new(NonRevocProofXList::from_list(x_list), init_proof.c_list.clone()))
     }
@@ -932,7 +964,6 @@ mod tests {
         let c_h = BigNumber::from_dec("107686359310664445046126368677755391247164319345083587464043204013905993527834").unwrap();
         let encoded_attributes = issuer::mocks::get_gvt_attributes();
         let revealed_attributes = mocks::get_revealed_attrs();
-        let unrevealed_attributes = mocks::get_unrevealed_attrs();
 
         let res = Prover::_finalize_proof(&ms, &proof, &c_h, &encoded_attributes, &revealed_attributes);
 
@@ -963,7 +994,6 @@ mod tests {
         let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
         let c_h = BigNumber::from_dec("65052515950080385170056404271846666093263620691254624189854445495335700076548").unwrap();
         let init_proof = mocks::get_primary_equal_init_proof();
-        let unrevealed_attrs = mocks::get_unrevealed_attrs();
         let revealed_attrs = mocks::get_revealed_attrs();
         let attrs = issuer::mocks::get_gvt_attributes();
 
@@ -1024,7 +1054,7 @@ mod find_claims_tests {
     use super::*;
 
     #[test]
-    fn find_claims_empty() {
+    fn find_claims_empty_works() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1044,7 +1074,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_revealed_attrs_only_with_same_schema() {
+    fn find_claims_works_for_revealed_attrs_only_with_same_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
 
@@ -1071,7 +1101,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_revealed_attrs_only_with_other_schema() {
+    fn find_claims_works_for_revealed_attrs_only_with_other_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(2, "name".to_string()));
 
@@ -1094,7 +1124,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_predicate_satisfy() {
+    fn find_claims_works_for_predicate_satisfy() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
         requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
@@ -1120,7 +1150,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_predicate_does_not_satisfy() {
+    fn find_claims_works_for_does_not_satisfy_predicate() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
         requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 38));
@@ -1142,7 +1172,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_multiply_revealed_attrs() {
+    fn find_claims_works_for_multiply_revealed_attrs() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
         requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
@@ -1177,7 +1207,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_for_multiply_satisfy_predicates() {
+    fn find_claims_works_for_multiply_satisfy_predicates() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
         requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
@@ -1211,7 +1241,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_for_multiply_attrs_and_satisfy_predicates() {
+    fn find_claims_works_for_multiply_attrs_and_satisfy_predicates() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
         requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
@@ -1247,7 +1277,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_several_matches_for_attribute() {
+    fn find_claims_works_for_several_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
 
@@ -1274,7 +1304,7 @@ mod find_claims_tests {
     }
 
     #[test]
-    fn find_claims_no_matches_for_attribute() {
+    fn find_claims_works_for_no_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "test".to_string()));
 
@@ -1301,14 +1331,15 @@ pub mod mocks {
     use super::*;
     use services::anoncreds::issuer;
     use services::anoncreds::verifier;
-    use services::anoncreds::types::Witness;
+    use services::anoncreds::types::{ClaimDefinitionData,Witness};
     use std::iter::FromIterator;
+    use services::anoncreds::types::SignatureTypes;
 
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {
         NonRevocProofCList::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
                                 PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                PointG1::new().unwrap()
+                                PointG2::new().unwrap(), PointG2::new().unwrap(),
+                                PointG2::new().unwrap()
         )
     }
 
@@ -1464,26 +1495,28 @@ pub mod mocks {
         PrimaryInitProof::new(get_primary_equal_init_proof(), vec![get_primary_ge_init_proof()])
     }
 
-    pub fn get_gvt_claims_object() -> Claims {
-        Claims::new(get_gvt_primary_claim(), None)
+    pub fn get_gvt_claims_object() -> ClaimSignature {
+        ClaimSignature::new(get_gvt_primary_claim(), None)
     }
 
-    pub fn get_xyz_claims_object() -> Claims {
-        Claims::new(get_xyz_primary_claim(), None)
+    pub fn get_xyz_claims_object() -> ClaimSignature {
+        ClaimSignature::new(get_xyz_primary_claim(), None)
     }
 
     pub fn get_public_key_revocation() -> RevocationPublicKey {
-        RevocationPublicKey::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
+        RevocationPublicKey::new(PointG1::new().unwrap(), PointG2::new().unwrap(),
                                  PointG1::new().unwrap(), PointG1::new().unwrap(),
                                  PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG1::new().unwrap(), GroupOrderElement::new().unwrap())
+                                 PointG1::new().unwrap(), PointG2::new().unwrap(),
+                                 PointG2::new().unwrap(), PointG1::new().unwrap(),
+                                 PointG2::new().unwrap(),
+                                 GroupOrderElement::new().unwrap())
     }
 
     pub fn get_accumulator() -> Accumulator {
         let mut v: HashSet<i32> = HashSet::new();
         v.insert(1);
-        Accumulator::new(PointG1::new().unwrap(), v, 5, 2)
+        Accumulator::new(PointG2::new().unwrap(), v, 5, 2)
     }
 
     pub fn get_tails() -> HashMap<i32, PointG1> {
@@ -1494,8 +1527,8 @@ pub mod mocks {
 
     pub fn get_witness() -> Witness {
         Witness::new(
-            PointG1::new().unwrap(), PointG1::new().unwrap(), PointG1::new().unwrap(),
-            PointG1::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned()
+            PointG2::new().unwrap(), PointG2::new().unwrap(), PointG1::new().unwrap(),
+            PointG2::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned()
             )
         )
     }
@@ -1510,17 +1543,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, 1, None, 1)
+        ClaimInfo::new("1".to_string(), attrs, 1, None, 1, "did".to_string())
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, 2, None, 2)
+        ClaimInfo::new("2".to_string(), attrs, 2, None, 2, "did".to_string())
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, 2, None, 1)
+        ClaimInfo::new("3".to_string(), attrs, 2, None, 1, "did".to_string())
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1543,20 +1576,22 @@ pub mod mocks {
     }
 
     pub fn get_gvt_claim_definition() -> ClaimDefinition {
+        let claim_def_data = ClaimDefinitionData ::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
-            public_key: issuer::mocks::get_pk(),
-            public_key_revocation: None,
             schema_seq_no: 1,
-            signature_type: "CL".to_string()
+            claim_def_seq_no: None,
+            signature_type: SignatureTypes::CL,
+            data: claim_def_data
         }
     }
 
     pub fn get_xyz_claim_definition() -> ClaimDefinition {
+        let claim_def_data = ClaimDefinitionData ::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
-            public_key: issuer::mocks::get_pk(),
-            public_key_revocation: None,
             schema_seq_no: 2,
-            signature_type: "CL".to_string()
+            claim_def_seq_no: None,
+            signature_type: SignatureTypes::CL,
+            data: claim_def_data
         }
     }
 
@@ -1593,7 +1628,8 @@ pub mod mocks {
             claim_def_seq_no: 1,
             revoc_reg_seq_no: None,
             schema_seq_no: 1,
-            signature: mocks::get_gvt_claims_object()
+            signature: mocks::get_gvt_claims_object(),
+            issuer_did: "did".to_string()
         }
     }
 
@@ -1603,7 +1639,8 @@ pub mod mocks {
             claim_def_seq_no: 2,
             revoc_reg_seq_no: None,
             schema_seq_no: 2,
-            signature: mocks::get_xyz_claims_object()
+            signature: mocks::get_xyz_claims_object(),
+            issuer_did: "did".to_string()
         }
     }
 }
