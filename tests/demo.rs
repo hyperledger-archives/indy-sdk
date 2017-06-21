@@ -9,7 +9,6 @@ extern crate lazy_static;
 extern crate log;
 
 #[macro_use]
-#[path = "utils/mod.rs"]
 mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
