@@ -38,7 +38,7 @@ mod high_cases {
 
         SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-        AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+        AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -79,7 +79,7 @@ mod high_cases {
             });
             //FIXME /temporary code
 
-            AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -126,7 +126,7 @@ mod high_cases {
                                Some(Box::new(move |_, msg| {
                                    wait_msg_from_cli_send.send(msg).unwrap();
                                }))).unwrap();
-            let cli_to_srv_connect_id = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(),
+            let cli_to_srv_connect_id = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(),
                                                             Some(Box::new(move |_, msg| {
                                                                 wait_msg_from_srv_send.send(msg).unwrap();
                                                             }))).unwrap();
@@ -157,7 +157,7 @@ mod high_cases {
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            let conn_handle = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
             AgentUtils::close_connection(conn_handle).unwrap();
             assert_eq!(AgentUtils::send(conn_handle, "").unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -179,7 +179,7 @@ mod high_cases {
                                    wait_conn_send.send(conn_handle).unwrap();
                                })),
                                None).unwrap();
-            AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
             let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
             AgentUtils::close_connection(srv_to_cli_connect_id).unwrap();
@@ -208,7 +208,7 @@ mod high_cases {
                                                          wait_conn_send.send(conn_handle).unwrap();
                                                      })),
                                                      None).unwrap();
-            AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
             let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -240,7 +240,7 @@ mod medium_cases {
                                            wait_msg_from_cli_send.send(msg).unwrap();
                                        }))).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
-            let conn_handle = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
             assert_eq!(AgentUtils::close_connection(conn_handle + 100).unwrap_err(), ErrorCode::CommonInvalidStructure);
 
@@ -268,7 +268,7 @@ mod medium_cases {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
                                                      }))).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
-            let conn_handle = AgentUtils::connect(wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
             let incorrect_listener_handle = conn_handle;
             assert_eq!(AgentUtils::close_listener(incorrect_listener_handle).unwrap_err(), ErrorCode::CommonInvalidStructure);
