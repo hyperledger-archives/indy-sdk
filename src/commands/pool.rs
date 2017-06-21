@@ -105,13 +105,11 @@ impl PoolCommandExecutor {
     }
 
     fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
-        cb(self.pool_service.create(name, config).map_err(|err| SovrinError::PoolError(err)))
+        cb(self.pool_service.create(name, config).map_err(SovrinError::from))
     }
 
-    #[allow(unused_variables)] /* FIXME */
     fn delete(&self, name: &str, cb: Box<Fn(Result<(), SovrinError>) + Send>) {
-        // TODO: FIXME: Implement me!!!
-        cb(Ok(()));
+        cb(self.pool_service.delete(name).map_err(SovrinError::from));
     }
 
     fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, SovrinError>) + Send>) {

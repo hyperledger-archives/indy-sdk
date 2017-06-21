@@ -133,6 +133,31 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn sovrin_delete_pool_ledger_config_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_remove_pool_ledger_config_works";
+            PoolUtils::create_pool_ledger_config(pool_name, None).unwrap();
+
+            PoolUtils::delete(pool_name).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_delete_pool_ledger_config_works_for_opened() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_remove_pool_ledger_config_works";
+            PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+
+            assert_eq!(PoolUtils::delete(pool_name).unwrap_err(), ErrorCode::CommonInvalidState);
+
+            TestUtils::cleanup_storage();
+        }
     }
 }
 
