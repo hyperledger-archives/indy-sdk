@@ -15,11 +15,11 @@
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
 		8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Validation.m */; };
 		84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */; };
+		84275F301EFA84C700352D72 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */; };
 		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
 		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
 		84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */; };
 		84CFCADA1EF3F7C500F91426 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACD1EF3F7C500F91426 /* LedgerSchemaRequest.mm */; };
-		84CFCADB1EF3F7C500F91426 /* Ledger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACE1EF3F7C500F91426 /* Ledger.mm */; };
 		84CFCADC1EF3F7C500F91426 /* Pool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACF1EF3F7C500F91426 /* Pool.mm */; };
 		84CFCADD1EF3F7C500F91426 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAD11EF3F7C500F91426 /* SignusHighCases.m */; };
 		84CFCADE1EF3F7C500F91426 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCAD21EF3F7C500F91426 /* SignusMediumCases.m */; };
@@ -82,11 +82,11 @@
 		8404D1411EF7D0E900709F1B /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString\U0010+Validation.m"; sourceTree = "<group>"; };
 		8404D1431EF7D0F900709F1B /* NSString+Validation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString\U0010+Validation.h"; sourceTree = "<group>"; };
 		84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
+		84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
 		84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
 		84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
 		84CFCACD1EF3F7C500F91426 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
-		84CFCACE1EF3F7C500F91426 /* Ledger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Ledger.mm; sourceTree = "<group>"; };
 		84CFCACF1EF3F7C500F91426 /* Pool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Pool.mm; sourceTree = "<group>"; };
 		84CFCAD11EF3F7C500F91426 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
 		84CFCAD21EF3F7C500F91426 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
@@ -206,7 +206,6 @@
 			children = (
 				84CFCAFF1EF3F7F600F91426 /* Anoncreds */,
 				84CFCAC91EF3F7C500F91426 /* Ledger */,
-				84CFCACE1EF3F7C500F91426 /* Ledger.mm */,
 				84CFCACF1EF3F7C500F91426 /* Pool.mm */,
 				84CFCAD01EF3F7C500F91426 /* Signus */,
 				84CFCAD31EF3F7C500F91426 /* Wallet */,
@@ -261,6 +260,7 @@
 		84CFCAC91EF3F7C500F91426 /* Ledger */ = {
 			isa = PBXGroup;
 			children = (
+				84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */,
 				84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */,
 				84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */,
 				84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */,
@@ -492,7 +492,6 @@
 				84F0FD3E1EF7F0D80022A01D /* NSArray+JSON.m in Sources */,
 				84CFCAF51EF3F7D300F91426 /* AnoncredsUtils.m in Sources */,
 				84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */,
-				84CFCADB1EF3F7C500F91426 /* Ledger.mm in Sources */,
 				84CFCAE51EF3F7CC00F91426 /* LedgerDemo.mm in Sources */,
 				84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */,
 				84CFCAE61EF3F7CC00F91426 /* SignusDemo.mm in Sources */,
@@ -501,6 +500,7 @@
 				84CFCADA1EF3F7C500F91426 /* LedgerSchemaRequest.mm in Sources */,
 				84CFCAF61EF3F7D300F91426 /* Environment.m in Sources */,
 				84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */,
+				84275F301EFA84C700352D72 /* LedgerHignCases.mm in Sources */,
 				84CFCAF91EF3F7D300F91426 /* SignusUtils.mm in Sources */,
 				84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */,
 				84CFCAFA1EF3F7D300F91426 /* TestUtils.m in Sources */,

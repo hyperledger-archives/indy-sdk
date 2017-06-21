@@ -16,11 +16,11 @@
 #import <libsovrin/libsovrin.h>
 #import "NSDictionary+JSON.h"
 
-@interface Ledger : XCTestCase
+@interface LedgerHignCases : XCTestCase
 
 @end
 
-@implementation Ledger
+@implementation LedgerHignCases
 
 - (void)setUp {
     [super setUp];
@@ -61,9 +61,6 @@
                             "\"cid\":true" \
                             "}"];
     NSString *myDid = nil;
-    // NSString *verKey = nil;
-    // NSString *pk = nil;
-    
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
@@ -383,62 +380,6 @@
     [TestUtils cleanupStorage];
 }
 
-
-
-//// This workaround is from rust test
-//- (void) getTrusteeKeys:(SovrinHandle) walletHandle
-//             trusteeDid:(NSString **)trusteeDid
-//          trusteeVerkey:(NSString **)trusteeVerkey
-//              trusteePk:(NSString **)trusteePk
-//{
-//    NSError *ret = nil;
-//
-//    //1. Obtain trusteeVerKey
-//    NSString * myDidJson = [NSString stringWithFormat:@"{"\
-//                            "\"seed\":\"000000000000000000000000Trustee1\"" \
-//                            "}"];
-//    NSString *did = nil;
-//    NSString *verKey = nil;
-//    NSString *pk = nil;
-//    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-//                                                          myDidJson:myDidJson
-//                                                           outMyDid:&did
-//                                                        outMyVerkey:&verKey
-//                                                            outMyPk:&pk];
-//
-//    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDid() failed");
-//    XCTAssertNotNil(did, @"myDid is nil!");
-//    XCTAssertNotNil(verKey, @"myVerKey is nil!");
-//    XCTAssertNotNil(pk, @"myPk is nil!");
-//
-//    *trusteeDid = did;
-//    *trusteeVerkey = verKey;
-//    *trusteePk = pk;
-//
-//    //2. Use obtained trusteeVerKey
-//    myDidJson = [NSString stringWithFormat:@"{"\
-//                            "\"did\":\"%@\"," \
-//                            "\"seed\":\"000000000000000000000000Trustee1\"" \
-//                            "}", verKey];
-//
-//    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-//                                                          myDidJson:myDidJson
-//                                                           outMyDid:&did
-//                                                        outMyVerkey:&verKey
-//                                                            outMyPk:&pk];
-//
-//    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDid() failed");
-//    XCTAssertNotNil(did, @"myDid is nil!");
-//    XCTAssertNotNil(verKey, @"myVerKey is nil!");
-//    XCTAssertNotNil(pk, @"myPk is nil!");
-//
-//    *trusteeDid = did;
-//    *trusteeVerkey = verKey;
-//    *trusteePk = pk;
-//
-//}
-
-
 - (void) testSubmitRequestWorks
 {
     [TestUtils cleanupStorage];
@@ -455,8 +396,8 @@
                          "\"reqId\":1491566332010860," \
                          "\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\"," \
                          "\"operation\":{"\
-                         "\"type\":\"105\","\
-                         "\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"},"\
+                            "\"type\":\"105\","\
+                            "\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"},"\
                          "\"signature\":\"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV\"" \
                          "}"];
     
@@ -489,6 +430,35 @@
 // MARK: - NYM Requests
 
 - (void) testBuildNymRequestsWorksForOnlyRequiredFields
+{
+    [TestUtils cleanupStorage];
+    
+    NSString *identifier = @"Th7MpTaRZVRYnPiabds81Y";
+    NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+    NSError *ret;
+    
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:identifier
+                                                              targetDid:dest
+                                                                 verkey:nil
+                                                                  alias:nil
+                                                                   role:nil
+                                                             outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed!");
+    
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+    
+    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
+    expectedResult[@"identifier"] = identifier;
+    expectedResult[@"operation"] = [NSMutableDictionary new];
+    expectedResult[@"operation"][@"type"] = @"1";
+    expectedResult[@"operation"][@"dest"] = dest;
+    
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+    [TestUtils cleanupStorage];
+}
+
+- (void) testBuildNymRequestsWorksWithOptionFields
 {
     [TestUtils cleanupStorage];
     
@@ -550,7 +520,7 @@
 - (void) testNymRequestWorksWithoutSignature
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_get_nym_request_works";
+    NSString *poolName = @"sovrin_nym_request_works_without_signature";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
@@ -648,7 +618,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     NSLog(@"myDid: %@", myDid);
     
-    // 4. Build NYM Request
+    // 4. Build get NYM Request
     
     NSString *getNymRequest;
     ret = [[LedgerUtils sharedInstance] buildGetNymRequestWithSubmitterDid:myDid
@@ -668,7 +638,7 @@
     
     NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
     
-    XCTAssertTrue([[getNymResponse allKeys] count] > 0, @"getNymResponse is empty");
+    XCTAssertTrue([[getNymResponse[@"result"][@""] allValues] count] > 0, @"getNymResponse data is empty");
     
     [TestUtils cleanupStorage];
 }

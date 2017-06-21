@@ -160,8 +160,8 @@
     // 1. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
-                                                           xtype:@"default"
-                                                          config:config];
+                                                           xtype:nil
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
     // 2. Open wallet

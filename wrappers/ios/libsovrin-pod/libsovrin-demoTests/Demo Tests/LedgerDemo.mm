@@ -259,13 +259,13 @@
     // 10. Prepare NYM transaction
     NSNumber *nymReqId = @(123456789);//[[PoolUtils sharedInstance] getRequestId];
     NSString *nymTxnRequest = [NSString stringWithFormat:@"{"\
-                               "\"identifier\":\"%ld\","\
+                               "\"identifier\":\"%@\","\
                                "\"operation\":{"\
                                     "\"dest\":\"%@\","\
                                     "\"type\":\"1\"},"\
                                "\"req_id\":\"%@\","\
                                "\"signature\": null"\
-                               "}", (long)[theirVerkey integerValue], myDid, nymReqId];
+                               "}", theirVerkey, myDid, nymReqId];
     
     // TODO: 111 Error
     // 11. Send NYM request with signing
@@ -277,6 +277,7 @@
                                                  requestJSON:nymTxnRequest
                                                   completion:^(NSError *error, NSString *requestResult)
             {
+                //TODO: 111 error
                 XCTAssertEqual(error.code, Success, "signAndSubmitRequestWithWalletHandle() got error in completion");
                 nymTxnResponse = requestResult;
                 [completionExpectation fulfill];

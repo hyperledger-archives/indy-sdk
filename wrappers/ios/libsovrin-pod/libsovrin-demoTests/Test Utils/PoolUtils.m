@@ -28,8 +28,8 @@
 + (NSString *) nodeIp
 {
     //return @"192.168.53.190";
-    //return @"192.168.52.38";
-    return @"127.0.0.1";
+    return @"192.168.52.38";
+    //return @"127.0.0.1";
 }
 
 - (NSNumber *) getRequestId

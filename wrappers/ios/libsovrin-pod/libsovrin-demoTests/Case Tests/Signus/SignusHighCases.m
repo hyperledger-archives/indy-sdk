@@ -60,6 +60,7 @@
                                                         outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    // TODO: What is the correct length for checks?
     XCTAssertEqual([myDid length], 16, @"length of myDid != 16"); // 22
     XCTAssertEqual([myVerKey length], 32, @"length of myVerKey != 32"); // 44
     
