@@ -217,7 +217,7 @@ pub struct CommandProcess {
 pub enum ZMQLoopAction {
     RequestToSend(RequestToSend),
     MessageToProcess(MessageToProcess),
-    Terminate,
+    Terminate(i32),
 }
 
 #[derive(Debug, PartialEq, Eq)]

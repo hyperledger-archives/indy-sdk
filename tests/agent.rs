@@ -9,7 +9,10 @@ extern crate rust_base58;
 extern crate serde_derive;
 extern crate zmq;
 
+use std::sync::mpsc::channel;
 use std::thread;
+
+use sovrin::api::ErrorCode;
 
 #[macro_use]
 #[path = "utils/mod.rs"]
@@ -18,6 +21,7 @@ mod utils;
 use utils::agent::AgentUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
+use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
 
 mod high_cases {
@@ -30,11 +34,13 @@ mod high_cases {
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
         let endpoint = "tcp://127.0.0.1:9701";
 
-        let _ = AgentUtils::listen(wallet_handle, endpoint).unwrap();
+        AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
 
         SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-        AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
+        AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+
+        TestUtils::cleanup_storage();
     }
 
     mod sovrin_agent_connect {
@@ -49,7 +55,7 @@ mod high_cases {
 
             let seed: Option<String> = Some("sovrin_agent_connect_works_for_a".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
-            let endpoint = "tcp://127.0.0.1:9700";
+            let endpoint = "tcp://127.0.0.1:9702";
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -73,7 +79,7 @@ mod high_cases {
             });
             //FIXME /temporary code
 
-            AgentUtils::connect(wallet_handle, did.as_str(), did.as_str()).unwrap();
+            AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -90,10 +96,186 @@ mod high_cases {
 
             let seed: Option<String> = Some("sovrin_agent_listen_works_for_al".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
-            let endpoint = "tcp://127.0.0.1:9700";
+            let endpoint = "tcp://127.0.0.1:9703";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            AgentUtils::listen(wallet_handle, endpoint).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod sovrin_agent_send {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_send_works_for_all_data_in_wallet_present() {
+            TestUtils::cleanup_storage();
+
+            let (wait_conn_send, wait_conn_recv) = channel();
+            let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
+            let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", "wallet4", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9704";
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint,
+                               Some(Box::new(move |_, conn_handle| {
+                                   wait_conn_send.send(conn_handle).unwrap();
+                               })),
+                               Some(Box::new(move |_, msg| {
+                                   wait_msg_from_cli_send.send(msg).unwrap();
+                               }))).unwrap();
+            let cli_to_srv_connect_id = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(),
+                                                            Some(Box::new(move |_, msg| {
+                                                                wait_msg_from_srv_send.send(msg).unwrap();
+                                                            }))).unwrap();
+            let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            let client_msg = "msg_from_client";
+            let server_msg = "msg_from_server";
+
+            AgentUtils::send(cli_to_srv_connect_id, client_msg).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
+            AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap();
+            assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), server_msg);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod sovrin_agent_close_connection {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_close_connection_works_for_outgoing() {
+            TestUtils::cleanup_storage();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool3", "wallet3", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9705";
+
+            let _ = AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
+
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+
+            let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+
+            AgentUtils::close_connection(conn_handle).unwrap();
+            assert_eq!(AgentUtils::send(conn_handle, "").unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_agent_close_connection_works_for_incoming_conn() {
+            TestUtils::cleanup_storage();
+
+            let (wait_conn_send, wait_conn_recv) = channel();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", "wallet4", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9706";
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+            AgentUtils::listen(wallet_handle, endpoint,
+                               Some(Box::new(move |_, conn_handle| {
+                                   wait_conn_send.send(conn_handle).unwrap();
+                               })),
+                               None).unwrap();
+            AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+            AgentUtils::close_connection(srv_to_cli_connect_id).unwrap();
+
+            let server_msg = "msg_from_server";
+            assert_eq!(AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod sovrin_agent_close_listener {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_close_listener_works() {
+            TestUtils::cleanup_storage();
+
+            let (wait_conn_send, wait_conn_recv) = channel();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool8", "wallet8", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9708";
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+            let listener_handle = AgentUtils::listen(wallet_handle, endpoint,
+                                                     Some(Box::new(move |_, conn_handle| {
+                                                         wait_conn_send.send(conn_handle).unwrap();
+                                                     })),
+                                                     None).unwrap();
+            AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+            let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+            AgentUtils::close_listener(listener_handle).unwrap();
+
+            let server_msg = "msg_from_server";
+            assert_eq!(AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+}
+
+mod medium_cases {
+    use super::*;
+
+    mod sovrin_agent_close_connection {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_close_connection_works_for_incorrect_conn_handle() {
+            TestUtils::cleanup_storage();
+
+            let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool6", "wallet6", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9707";
+            let _ = AgentUtils::listen(wallet_handle, endpoint, None,
+                                       Some(Box::new(move |_, msg| {
+                                           wait_msg_from_cli_send.send(msg).unwrap();
+                                       }))).unwrap();
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+            let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+
+            assert_eq!(AgentUtils::close_connection(conn_handle + 100).unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            let client_msg = "msg_from_cli_to_srv";
+            AgentUtils::send(conn_handle, client_msg).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod sovrin_agent_close_listener {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_close_listener_works_for_incorrect_handle() {
+            TestUtils::cleanup_storage();
+
+            let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool9", "wallet9", "default").unwrap();
+            let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let endpoint = "tcp://127.0.0.1:9709";
+            AgentUtils::listen(wallet_handle, endpoint, None,
+                                                     Some(Box::new(move |_, msg| {
+                                                         wait_msg_from_cli_send.send(msg).unwrap();
+                                                     }))).unwrap();
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
+            let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
+
+            let incorrect_listener_handle = conn_handle;
+            assert_eq!(AgentUtils::close_listener(incorrect_listener_handle).unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            let client_msg = "msg_from_cli_to_srv";
+            AgentUtils::send(conn_handle, client_msg).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
 
             TestUtils::cleanup_storage();
         }

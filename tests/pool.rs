@@ -129,6 +129,66 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod close {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_close_pool_ledger_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_close_pool_ledger_works";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_close_pool_ledger_works_for_reopen_after_close() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_close_pool_ledger_works";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+            PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod delete {
+        use super::*;
+
+        #[test]
+        fn sovrin_delete_pool_ledger_config_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_remove_pool_ledger_config_works";
+            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
+
+            PoolUtils::delete(pool_name).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_delete_pool_ledger_config_works_for_opened() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_remove_pool_ledger_config_works";
+            PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+
+            assert_eq!(PoolUtils::delete(pool_name).unwrap_err(), ErrorCode::CommonInvalidState);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
@@ -142,7 +202,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "create_pool_ledger_config_works_for_config_json";
-            let config = PoolUtils::create_pool_config(pool_name);
+            let config = PoolUtils::create_default_pool_config(pool_name);
 
             PoolUtils::create_pool_ledger_config(pool_name, None, Some(config)).unwrap();
 
