@@ -27,7 +27,9 @@ use self::libc::c_char;
 /// sender_did: Id of sender Identity stored in secured Wallet.
 /// receiver_did: Id of receiver Identity.
 /// connection_cb: Callback that will be called after establishing of connection or on error.
-/// message_cb: Callback that will be called on receiving of an incomming message.
+///     Will be called exactly once with result of connect operation.
+/// message_cb: Callback that will be called on receiving of an incoming message.
+///     Can be called multiply times: once for each incoming message.
 ///
 /// #Returns
 /// Error code
@@ -97,8 +99,11 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// wallet_handle: wallet handle (created by open_wallet).
 /// endpoint: endpoint to use in starting listener.
 /// listener_cb: Callback that will be called after listening started or on error.
-/// connection_cb: Callback that will be called after establishing of incomming connection.
-/// message_cb: Callback that will be called on receiving of an incomming message.
+///     Will be called exactly once with result of start listen operation.
+/// connection_cb: Callback that will be called after establishing of incoming connection.
+///     Can be called multiply times: once for each incoming connection.
+/// message_cb: Callback that will be called on receiving of an incoming message.
+///     Can be called multiply times: once for each incoming message.
 ///
 /// #Returns
 /// Error code
@@ -171,7 +176,7 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 /// command_handle: command handle to map callback to caller context.
 /// connection_handle: Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.
 /// message: Message to send.
-/// cb: Callback that will be called after message sent or on error.
+/// cb: Callback that will be called after message sent or on error. Will be called exactly once.
 ///
 /// #Returns
 /// err: Error code
@@ -208,7 +213,7 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// connection_handle: Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.
-/// cb: Callback that will be called after connection closed or on error.
+/// cb: Callback that will be called after connection closed or on error. Will be called exactly once.
 ///
 /// #Returns
 /// Error code
@@ -242,7 +247,7 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// listener_handle: Listener handle returned by sovrin_agent_listen call.
-/// cb: Callback that will be called after listener closed or on error.
+/// cb: Callback that will be called after listener closed or on error. Will be called exactly once.
 ///
 /// #Returns
 /// Error code
