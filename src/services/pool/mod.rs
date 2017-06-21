@@ -624,8 +624,8 @@ impl PoolService {
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow().map_err(CommonError::from)?
-            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
             .close(cmd_id)
             .map(|()| cmd_id)
     }

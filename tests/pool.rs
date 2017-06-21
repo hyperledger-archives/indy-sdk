@@ -119,6 +119,20 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_close_pool_ledger_works_for_reopen_after_close() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_close_pool_ledger_works";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+            PoolUtils::open_pool_ledger(pool_name).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 }
 
