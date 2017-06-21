@@ -21,7 +21,7 @@ use std::sync::mpsc::channel;
 pub struct PoolUtils {}
 
 impl PoolUtils {
-    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>, pool_config: Option<String>) -> Result<(), ErrorCode> {
+    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>, pool_config: Option<String>, gen_txn_file_name: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -31,7 +31,7 @@ impl PoolUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
-        PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), nodes);
+        PoolUtils::create_genesis_txn_file(gen_txn_file_name.unwrap_or(format!("{}.txn", pool_name).as_str()), nodes);
         let pool_config = pool_config.unwrap_or(PoolUtils::create_default_pool_config(pool_name));
         let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
@@ -87,7 +87,7 @@ impl PoolUtils {
     }
 
     pub fn create_and_open_pool_ledger_config(pool_name: &str) -> Result<i32, ErrorCode> {
-        PoolUtils::create_pool_ledger_config(pool_name, None, None)?;
+        PoolUtils::create_pool_ledger_config(pool_name, None, None, None)?;
         PoolUtils::open_pool_ledger(pool_name, None)
     }
 
