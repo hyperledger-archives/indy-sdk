@@ -412,7 +412,7 @@ fn ledger_demo_works() {
 
     // 1. Create ledger config from genesis txn file
     PoolUtils::create_genesis_txn_file(pool_name, None);
-    let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
+    let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
     let err = sovrin_create_pool_ledger_config(create_command_handle,
                                                c_pool_name.as_ptr(),
                                                pool_config.as_ptr(),
