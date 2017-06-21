@@ -21,7 +21,7 @@ use std::sync::mpsc::channel;
 pub struct PoolUtils {}
 
 impl PoolUtils {
-    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>) -> Result<(), ErrorCode> {
+    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>, pool_config: Option<String>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -32,7 +32,8 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
         PoolUtils::create_genesis_txn_file(pool_name, nodes);
-        let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
+        let pool_config = pool_config.unwrap_or(PoolUtils::create_default_pool_config(pool_name));
+        let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
         let err = sovrin_create_pool_ledger_config(command_handle,
@@ -54,7 +55,7 @@ impl PoolUtils {
     }
 
     #[cfg(feature = "local_nodes_pool")]
-    pub fn open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+    pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -65,10 +66,11 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_open_pool_ledger_cb(cb);
 
         let pool_name = CString::new(pool_name).unwrap();
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = sovrin_open_pool_ledger(command_handle,
                                           pool_name.as_ptr(),
-                                          null(),
+                                          if config.is_some() { config_str.as_ptr() } else { null() },
                                           cb);
 
         if err != ErrorCode::Success {
