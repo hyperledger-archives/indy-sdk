@@ -4,7 +4,6 @@ extern crate serde_json;
 extern crate zmq;
 
 use self::rust_base58::FromBase58;
-use std::cell::RefCell;
 use std::error::Error;
 use std::thread;
 
@@ -50,7 +49,7 @@ impl Drop for Agent {
 }
 
 pub struct AgentService {
-    agent: RefCell<Agent>,
+    agent: Agent,
 }
 
 impl Agent {
@@ -70,11 +69,10 @@ impl Agent {
 
 impl AgentService {
     pub fn new() -> AgentService {
-        AgentService { agent: RefCell::new(Agent::new()) }
+        AgentService { agent: Agent::new() }
     }
 
     pub fn connect(&self, sender_did: &str, my_sk: &str, my_pk: &str, endpoint: &str, server_key: &str) -> Result<i32, CommonError> {
-        let agent = self.agent.try_borrow_mut()?;
         let conn_handle = SequenceUtils::get_next_id();
         let connect_cmd: AgentWorkerCommand = AgentWorkerCommand::Connect(ConnectCmd {
             did: sender_did.to_string(),
@@ -84,15 +82,14 @@ impl AgentService {
             server_key: server_key.to_string(),
             conn_handle: conn_handle,
         });
-        agent.cmd_socket.send_str(connect_cmd.to_json()
-                                      .map_err(|err|
-                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
-                                      .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send_str(connect_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
         Ok(conn_handle)
     }
 
     pub fn listen(&self, endpoint: &str, pk: &str, sk: &str) -> Result<i32, CommonError> {
-        let agent = self.agent.try_borrow_mut()?;
         let listen_handle = SequenceUtils::get_next_id();
         let listen_cmd = AgentWorkerCommand::Listen(ListenCmd {
             listen_handle: listen_handle,
@@ -100,11 +97,40 @@ impl AgentService {
             pk: pk.to_string(),
             sk: sk.to_string()
         });
-        agent.cmd_socket.send_str(listen_cmd.to_json()
-                                      .map_err(|err|
-                                          CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
-                                      .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send_str(listen_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
         Ok(listen_handle)
+    }
+
+    pub fn send(&self, conn_id: i32, msg: Option<&str>) -> Result<i32, CommonError> {
+        let send_handle = SequenceUtils::get_next_id();
+        let send_cmd = AgentWorkerCommand::Send(SendCmd {
+            cmd_id: send_handle,
+            conn_handle: conn_id,
+            msg: msg.map(str::to_string),
+        });
+        self.agent.cmd_socket.send_str(send_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
+        Ok(send_handle)
+    }
+
+    pub fn close_connection_or_listener(&self, handle: i32, close_listener: bool)
+                                        -> Result<i32, CommonError> {
+        let close_conn_handle = SequenceUtils::get_next_id();
+        let close_cmd = AgentWorkerCommand::Close(CloseCmd {
+            cmd_id: close_conn_handle,
+            handle: handle,
+            close_listener: close_listener,
+        });
+        self.agent.cmd_socket.send_str(close_cmd.to_json()
+                                           .map_err(|err|
+                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
+                                           .as_str(), zmq::DONTWAIT)?;
+        Ok(close_conn_handle)
     }
 }
 
@@ -117,9 +143,11 @@ impl AgentWorker {
                 debug!("AgentWorker::run received cmd {:?}", cmd);
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
+                    AgentWorkerCommand::Close(cmd) => self.close_connection_or_listener(cmd.cmd_id, cmd.handle, cmd.close_listener).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint, cmd.pk, cmd.sk).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
-                    AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg),
+                    AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
+                    AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
                     AgentWorkerCommand::Exit => break 'agent_pool_loop,
                 }
             }
@@ -142,6 +170,88 @@ impl AgentWorker {
         let res = self.try_start_listen(handle, endpoint, pk, sk);
         let cmd = AgentCommand::ListenAck(handle, res.map(|()| (handle)));
         CommandExecutor::instance().send(Command::Agent(cmd))
+    }
+
+    fn send(&mut self, cmd_id: i32, conn_handle: i32, msg: Option<String>)
+            -> Result<(), CommonError> {
+        let res = self.try_send(conn_handle, msg);
+        let cmd = AgentCommand::SendAck(cmd_id, res);
+        CommandExecutor::instance().send(Command::Agent(cmd))
+    }
+
+    fn try_send(&mut self, handle: i32, msg: Option<String>) -> Result<(), CommonError> {
+        let msg = msg.unwrap_or(String::new());
+
+        let remote_agent: Option<&RemoteAgent> =
+            self.agent_connections.iter().find(|ac| ac.conn_handle == handle);
+        let listener_with_identity: Option<(&AgentListener, &String)> =
+            self.find_listener_by_conn_handle(handle);
+
+        if remote_agent.is_some() && listener_with_identity.is_some() {
+            return Err(CommonError::InvalidState("duplication connections".to_string())) //TODO
+        }
+        if let Some(remote_agent) = remote_agent {
+            return remote_agent.socket.send(msg.as_bytes(), zmq::DONTWAIT).map_err(From::from)
+        }
+        if let Some(li) = listener_with_identity {
+            let agent_listener: &AgentListener = li.0;
+            let identity: &String = li.1;
+            return agent_listener.socket
+                .send_str(identity.as_str(), zmq::DONTWAIT | zmq::SNDMORE)
+                .and_then(|()|
+                    agent_listener.socket.send(msg.as_bytes(), zmq::DONTWAIT))
+                .map_err(From::from)
+        }
+        /* if remote_agent.is_none() && listener_with_identity.is_none() */
+        Err(CommonError::InvalidStructure(format!("Connection with id {} not founded", handle)))
+    }
+
+    fn find_listener_by_conn_handle(&self, handle: i32) -> Option<(&AgentListener, &String)> {
+        for listener in &self.agent_listeners {
+            if let Some(&(_, ref identity)) = listener.connections.iter().find(|&&(conn_id, _)| conn_id == handle) {
+                return Some((listener, identity));
+            }
+        }
+        return None;
+    }
+
+    fn close_connection_or_listener(&mut self, cmd_handle: i32, handle: i32, close_listener: bool) -> Result<(), CommonError> {
+        let cmd = if close_listener {
+            AgentCommand::CloseListenerAck(cmd_handle, self.try_close_listener(handle))
+        } else {
+            AgentCommand::CloseConnectionAck(cmd_handle, self.try_close_connection(handle))
+        };
+
+        return CommandExecutor::instance().send(Command::Agent(cmd))
+    }
+
+    fn try_close_connection(&mut self, conn_handle: i32) -> Result<(), CommonError> {
+        /* TODO check duplicates */
+        for i in 0..self.agent_connections.len() {
+            if self.agent_connections[i].conn_handle == conn_handle {
+                self.agent_connections.remove(i);
+                return Ok(())
+            }
+        }
+        for mut agent_listener in &mut self.agent_listeners {
+            for i in 0..agent_listener.connections.len() {
+                if agent_listener.connections[i].0 == conn_handle {
+                    agent_listener.connections.remove(i);
+                    return Ok(())
+                }
+            }
+        }
+        return Err(CommonError::InvalidStructure(format!("Can't close agent connection {} - not found", conn_handle)))
+    }
+
+    fn try_close_listener(&mut self, listener_handle: i32) -> Result<(), CommonError> {
+        for i in 0..self.agent_listeners.len() {
+            if self.agent_listeners[i].listener_handle == listener_handle {
+                self.agent_listeners.remove(i);
+                return Ok(())
+            }
+        }
+        return Err(CommonError::InvalidStructure(format!("Can't close agent listener {} - not found", listener_handle)))
     }
 
     fn try_start_listen(&mut self, handle: i32, endpoint: String, pk: String, sk: String) -> Result<(), CommonError> {
@@ -239,18 +349,15 @@ impl RemoteAgent {
     }
 
     fn handle_response(&self, msg: String) {
-        if msg.eq("DID_ACK") {
-            let send_res: Result<(), CommonError> =
-                CommandExecutor::instance().send(
-                    Command::Agent(
-                        AgentCommand::ConnectAck(self.conn_handle, Ok(self.conn_handle))));
-            if let Err(err) = send_res {
-                error!("RemoteAgent::handle_response got connection ack, but can't send to client {}", err);
-            };
+        // TODO check state
+        let cmd: AgentCommand = if msg.eq("DID_ACK") {
+            AgentCommand::ConnectAck(self.conn_handle, Ok(self.conn_handle))
         } else {
-            //check state, transfer message to client
-            unimplemented!();
-        }
+            AgentCommand::MessageReceived(self.conn_handle, Ok((self.conn_handle, msg)))
+        };
+        if let Err(err) = CommandExecutor::instance().send(Command::Agent(cmd)) {
+            error!("RemoteAgent::handle_response got incoming msg, but can't send to user {}", err);
+        };
     }
 }
 
@@ -270,20 +377,27 @@ impl AgentListener {
         })
     }
 
-    fn handle_request(&mut self, identity: String, msg: String) {
-        if let Some(_) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
-            unimplemented!(); //FIXME handle and return
+    fn handle_request(&mut self, identity: String, msg: String) -> Result<(), CommonError> {
+        if let Some(&(conn_handle, _)) = self.connections.iter().find(|&&(_, ref id)| identity.eq(id.as_str())) {
+            return CommandExecutor::instance().send(Command::Agent(AgentCommand::MessageReceived(
+                conn_handle, Ok((conn_handle, msg)))));
         }
 
-        info!("New connection to agent listener from {} with msg {}", identity, msg);
-        let conn_handle = SequenceUtils::get_next_id();
-        self.connections.push((conn_handle, identity.clone()));
-        let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
-                                                  Ok((self.listener_handle, conn_handle,
-                                                      identity.clone(), msg.clone())));
-        CommandExecutor::instance().send(Command::Agent(cmd)).unwrap();
-        self.socket.send_str(identity.as_str(), zmq::SNDMORE).unwrap();
-        self.socket.send_str("DID_ACK", zmq::DONTWAIT).unwrap();
+        if msg.eq("DID") {
+            info!("New connection to agent listener from {} with msg {}", identity, msg);
+            let conn_handle = SequenceUtils::get_next_id();
+            self.connections.push((conn_handle, identity.clone()));
+            let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
+                                                      Ok((self.listener_handle, conn_handle,
+                                                          identity.clone(), msg.clone())));
+            CommandExecutor::instance().send(Command::Agent(cmd))?;
+            self.socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT)?;
+        } else {
+            info!("Message {} from unknown connection to agent listener from {}", msg, identity);
+            // TODO may be notify: ListenOnConnect(self.listener_handle, Err(incorrect connection))
+            self.socket.send_multipart(&[identity.as_bytes(), "NOT_CONNECTED".as_bytes()], zmq::DONTWAIT)?;
+        }
+        Ok(())
     }
 }
 
@@ -294,6 +408,8 @@ enum AgentWorkerCommand {
     Listen(ListenCmd),
     Response(Response),
     Request(Request),
+    Send(SendCmd),
+    Close(CloseCmd),
     Exit,
 }
 
@@ -320,6 +436,13 @@ struct ListenCmd {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+struct SendCmd {
+    cmd_id: i32,
+    conn_handle: i32,
+    msg: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct Response {
     agent_ind: usize,
     msg: String,
@@ -330,6 +453,13 @@ struct Request {
     listener_ind: usize,
     identity: String,
     msg: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct CloseCmd {
+    cmd_id: i32,
+    handle: i32,
+    close_listener: bool,
 }
 
 fn _create_zmq_socket_pair(address: &str, connect_and_bind: bool) -> Result<(zmq::Socket, zmq::Socket), zmq::Error> {
@@ -380,7 +510,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(agent),
+                agent: agent,
             };
             let conn_handle = agent_service.connect("sd", "sk", "pk", "ep", "serv").unwrap();
             let expected_cmd = ConnectCmd {
@@ -406,7 +536,7 @@ mod tests {
                 }))
             };
             let agent_service = AgentService {
-                agent: RefCell::new(agent),
+                agent: agent,
             };
             let conn_handle = agent_service.listen("endpoint", "pk", "sk").unwrap();
             let expected_cmd = ListenCmd {
@@ -417,6 +547,55 @@ mod tests {
             };
             let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
             assert_eq!(str, AgentWorkerCommand::Listen(expected_cmd).to_json().unwrap());
+        }
+
+        #[test]
+        fn agent_service_send_works() {
+            let (sender, receiver) = channel();
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("test_send", true).unwrap();
+            let agent = Agent {
+                cmd_socket: send_soc,
+                worker: Some(thread::spawn(move || {
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap()
+                }))
+            };
+            let agent_service = AgentService {
+                agent: agent,
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+            let msg = Some("test_msg");
+            let cmd_id = agent_service.send(conn_handle, msg).unwrap();
+            let expected_cmd = SendCmd {
+                cmd_id: cmd_id,
+                conn_handle: conn_handle,
+                msg: msg.map(str::to_string),
+            };
+            let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(str, AgentWorkerCommand::Send(expected_cmd).to_json().unwrap());
+        }
+
+        #[test]
+        fn agent_service_close_connection_or_listener_works() {
+            let (sender, receiver) = channel();
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("test_close_conn", true).unwrap();
+            let agent = Agent {
+                cmd_socket: send_soc,
+                worker: Some(thread::spawn(move || {
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap()
+                }))
+            };
+            let agent_service = AgentService {
+                agent: agent,
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+            let cmd_id = agent_service.close_connection_or_listener(conn_handle, true).unwrap();
+            let expected_cmd = CloseCmd {
+                cmd_id: cmd_id,
+                handle: conn_handle,
+                close_listener: true,
+            };
+            let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(str, AgentWorkerCommand::Close(expected_cmd).to_json().unwrap());
         }
     }
 
@@ -543,6 +722,72 @@ mod tests {
         }
 
         #[test]
+        fn agent_worker_try_close_connection_works_for_not_found() {
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+
+            let res = agent_worker.try_close_connection(conn_handle);
+
+            assert_match!(Err(CommonError::InvalidStructure(_)), res);
+        }
+
+        #[test]
+        fn agent_worker_try_close_connection_works_for_listener() {
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: vec![AgentListener {
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    connections: vec![(conn_handle, "test_identity".to_string())],
+                    listener_handle: SequenceUtils::get_next_id(),
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_close_connection(conn_handle).unwrap();
+        }
+
+        #[test]
+        fn agent_worker_try_close_connection_works_for_connection() {
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: vec![RemoteAgent {
+                    conn_handle: conn_handle,
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    public_key: Vec::new(),
+                    secret_key: Vec::new(),
+                    server_key: Vec::new(),
+                    addr: String::new(),
+                }],
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_close_connection(conn_handle).unwrap();
+        }
+
+        #[test]
+        fn agent_worker_try_close_listener_works() {
+            let listener_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: vec![AgentListener {
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    connections: Vec::new(),
+                    listener_handle: listener_handle,
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_close_listener(listener_handle).unwrap();
+            assert_eq!(agent_worker.agent_listeners.len(), 0);
+        }
+
+        #[test]
         fn agent_worker_try_start_listen_works() {
             let mut agent_worker = AgentWorker {
                 agent_connections: Vec::new(),
@@ -569,6 +814,85 @@ mod tests {
             agent_worker.agent_listeners[0].socket.recv_bytes(zmq::DONTWAIT).unwrap(); //ignore identity
             let act_msg = agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
             assert_eq!(act_msg, msg);
+        }
+
+        #[test]
+        fn agent_worker_try_send_works_for_not_found() {
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+
+            let res = agent_worker.try_send(conn_handle, None);
+
+            assert_match!(Err(CommonError::InvalidStructure(_)), res);
+        }
+
+        #[test]
+        fn agent_worker_try_send_works_for_duplicate() {
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: vec![RemoteAgent {
+                    conn_handle: conn_handle,
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    public_key: Vec::new(),
+                    secret_key: Vec::new(),
+                    server_key: Vec::new(),
+                    addr: String::new(),
+                }],
+                agent_listeners: vec![AgentListener {
+                    socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+                    connections: vec![(conn_handle, String::new())],
+                    listener_handle: SequenceUtils::get_next_id(),
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            let res = agent_worker.try_send(conn_handle, None);
+
+            assert_match!(Err(CommonError::InvalidState(_)), res);
+        }
+
+        #[test]
+        fn agent_worker_try_send_works_for_listener() {
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("aw_poll_cmd", true).unwrap();
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: vec![AgentListener {
+                    socket: send_soc,
+                    connections: vec![(conn_handle, "test_identity".to_string())],
+                    listener_handle: SequenceUtils::get_next_id(),
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_send(conn_handle, Some("test_str".to_string())).unwrap();
+            assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "test_identity");
+            assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "test_str");
+        }
+
+        #[test]
+        fn agent_worker_try_send_works_for_connection() {
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("aw_poll_cmd", true).unwrap();
+            let conn_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: vec![RemoteAgent {
+                    conn_handle: conn_handle,
+                    socket: send_soc,
+                    public_key: Vec::new(),
+                    secret_key: Vec::new(),
+                    server_key: Vec::new(),
+                    addr: String::new(),
+                }],
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_send(conn_handle, Some("test_str".to_string())).unwrap();
+            assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "test_str");
         }
     }
 
