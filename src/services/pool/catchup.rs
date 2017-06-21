@@ -21,7 +21,8 @@ pub struct CatchupHandler {
     pub new_mt_size: usize,
     pub new_mt_vote: usize,
     pub nodes: Vec<RemoteNode>,
-    pub open_cmd_id: i32,
+    pub initiate_cmd_id: i32,
+    pub is_refresh: bool,
     pub pending_catchup: Option<CatchUpProcess>,
     pub pool_id: i32,
 }
@@ -36,7 +37,8 @@ impl Default for CatchupHandler {
             new_mt_size: 0,
             new_mt_vote: 0,
             pending_catchup: None,
-            open_cmd_id: 0,
+            initiate_cmd_id: 0,
+            is_refresh: false,
             pool_id: 0,
         }
     }
@@ -176,9 +178,13 @@ impl CatchupHandler {
     }
 
     pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
-        CommandExecutor::instance().send(
-            Command::Pool(
-                PoolCommand::OpenAck(self.open_cmd_id, status.map(|()|self.pool_id))))
+        let cmd = if self.is_refresh {
+            PoolCommand::RefreshAck(self.initiate_cmd_id, status)
+        } else {
+            PoolCommand::OpenAck(self.initiate_cmd_id, status.map(|()| self.pool_id))
+        };
+        CommandExecutor::instance()
+            .send(Command::Pool(cmd))
             .map_err(|err|
                 PoolError::CommonError(
                     CommonError::InvalidState("Can't send ACK cmd".to_string())))
