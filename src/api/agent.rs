@@ -1,4 +1,3 @@
-#![warn(unused_variables)]
 extern crate libc;
 
 use api::ErrorCode;
