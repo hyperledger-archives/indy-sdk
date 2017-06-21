@@ -133,6 +133,10 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+    }
+
+    mod delete {
+        use super::*;
 
         #[test]
         fn sovrin_delete_pool_ledger_config_works() {
