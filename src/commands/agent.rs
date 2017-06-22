@@ -224,13 +224,13 @@ impl AgentCommandExecutor {
             let res = res.and_then(|(my_info, ddo_resp)| -> Result<(MyConnectInfo, ConnectInfo), SovrinError> {
                 let ddo_resp: serde_json::Value = serde_json::from_str(ddo_resp.as_str()).map_err(|err|
                     CommonError::InvalidStructure(
-                        format!("Can't parse get DDO response json {}", err.description())))?;
+                        format!("Can't parse get DDO response json {}", err.description())))?; // TODO change error type?
                 let ddo_data = ddo_resp["result"]["data"].as_str().ok_or(
                     CommonError::InvalidStructure(
-                        "Can't parse get DDO response - sub-field result.data not found".to_string()))?;
+                        "Can't parse get DDO response - sub-field result.data not found".to_string()))?; // TODO
                 let ddo: DDO = DDO::from_json(ddo_data).map_err(|err|
                     CommonError::InvalidStructure(
-                        format!("Can't parse get DDO response data {}", err.description())))?;
+                        format!("Can't parse get DDO response data {}", err.description())))?; // TODO
                 let conn_info = ConnectInfo {
                     endpoint: format!("tcp://{}", ddo.endpoint.ha),
                     server_key: ddo.endpoint.verkey,
@@ -282,7 +282,8 @@ impl AgentCommandExecutor {
                                            my_conn_info: MyConnectInfo, receiver_did: &str,
                                            connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service, wallet_handle, pool_handle, connect_cb);
-        let ddo_request = match self.ledger_service.build_get_attrib_request(my_conn_info.did.as_str(), receiver_did, "endpoint") {
+        let ddo_request = match self.ledger_service
+            .build_get_attrib_request(my_conn_info.did.as_str(), receiver_did, "endpoint") /* TODO use DDO */ {
             Ok(ddo_request) => ddo_request,
             Err(err) => {
                 return connect_cb(Err(SovrinError::from(err)));
