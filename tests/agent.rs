@@ -15,7 +15,6 @@ use std::thread;
 use sovrin::api::ErrorCode;
 
 #[macro_use]
-#[path = "utils/mod.rs"]
 mod utils;
 
 use utils::agent::AgentUtils;
