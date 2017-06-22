@@ -56,36 +56,41 @@
     
     // 3. Issuer create Claim Definition for Schema
     
-    NSNumber *seqNo = @(1);
-    NSString *schema = [ NSString stringWithFormat:@"{"\
-                        "\"name\":\"gvt\","\
-                        "\"version\":\"1.0\","\
-                        "\"keys\":[\"age\",\"sex\",\"height\",\"name\"],"\
-                        "\"seq_no\":%@"\
-                        "}", seqNo ];
+    NSNumber *schemaSeqNo = @(1);
+    NSString *schema = [ NSString stringWithFormat:@"{"
+                        "\"seqNo\":%@,"
+                        "\"data\":{"
+                            "\"name\":\"gvt\","
+                            "\"version\":\"1.0\","
+                            "\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                        "}", schemaSeqNo ];
     
-    __block NSString *claimJSON = nil;
+    __block NSString *claimDefJSON = nil;
     __block NSString *claimDefUUID = nil;
     
     ret = [SovrinAnoncreds issuerCreateAndStoreClaimDefWithWalletHandle:  walletHandle
                                                              schemaJSON:schema
                                                           signatureType:nil
                                                          createNonRevoc:false
-                                                             completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID1)
+                                                             completion:^(NSError *error, NSString *defJSON, NSString *defUUID1)
            {
                XCTAssertEqual(error.code, Success, "issuerCreateAndStoreClaimDef got error in completion");
-               claimJSON = [ NSString stringWithString: claimDefJSON];
-               claimDefUUID = [ NSString stringWithString: claimDefUUID1];
+               claimDefJSON = [ NSString stringWithString: defJSON];
+               claimDefUUID = [ NSString stringWithString: defUUID1];
                [completionExpectation fulfill];
            }];
     
     XCTAssertEqual( ret.code, Success, @"issuerCreateAndStoreClaimDef() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
+    NSNumber *claimDefSeqNo = @(1);
+    NSMutableDictionary *claimDef = [NSMutableDictionary dictionaryWithDictionary:[NSDictionary fromString:claimDefJSON]];
+    claimDef[@"seqNo"] = claimDefSeqNo;
+    
     // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: [seqNo intValue]]
+    ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: [claimDefSeqNo intValue]]
                                               forHandle:  walletHandle
                                                  andKey:  claimDefUUID
                                              completion: ^(NSError *error)
@@ -116,16 +121,17 @@
     // 6. Prover create Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSString *proverDiD = @"some_prover_did";
+    NSString *proverDiD = @"BzfFCYk";
     NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
-                                 "\"issuer_did\":\"some_issuer_did\","\
-                                 "\"claim_def_seq_no\":%@}", seqNo];
+                                 "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
+                                 "\"claim_def_seq_no\":%@,"
+                                 "\"schema_seq_no\": %@}", claimDefSeqNo, schemaSeqNo ];
     __block NSString *claimReqJSON = nil;
     
     ret = [SovrinAnoncreds proverCreateAndStoreClaimReqWithWalletHandle:walletHandle
                                                               proverDid:proverDiD
                                                          claimOfferJSON:claimOfferJSON
-                                                           claimDefJSON:claimJSON
+                                                           claimDefJSON:[NSDictionary toString:claimDef]
                                                        masterSecretName:masterSecretName
                                                              completion:^(NSError *error, NSString *claimReqJSON1)
            {
@@ -197,7 +203,7 @@
                               \"value\":18\
                               }\
                               }\
-                              }", seqNo ];
+                              }", schemaSeqNo ];
     
     __block NSString *claimsJson = nil;
     
@@ -232,7 +238,7 @@
     
     NSString *schemas_json = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];
     
-    NSString *claimDefsJSON = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, claimJSON];
+    NSString *claimDefsJSON = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, claimDefJSON];
     
     NSString *revocRegsJsons = @"{}";
     
