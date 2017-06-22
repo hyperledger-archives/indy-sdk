@@ -1,9 +1,9 @@
 extern crate time;
 
 use sovrin::api::ErrorCode;
-use sovrin::api::pool::{sovrin_create_pool_ledger_config};
+use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_delete_pool_ledger_config};
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::pool::sovrin_open_pool_ledger;
+use sovrin::api::pool::{sovrin_close_pool_ledger, sovrin_open_pool_ledger, sovrin_refresh_pool_ledger};
 use sovrin::api::ledger::sovrin_submit_request;
 
 use utils::callback::CallbackUtils;
@@ -21,7 +21,7 @@ use std::sync::mpsc::channel;
 pub struct PoolUtils {}
 
 impl PoolUtils {
-    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>) -> Result<(), ErrorCode> {
+    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>, pool_config: Option<String>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -32,7 +32,8 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
         PoolUtils::create_genesis_txn_file(pool_name, nodes);
-        let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
+        let pool_config = pool_config.unwrap_or(PoolUtils::create_default_pool_config(pool_name));
+        let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
         let err = sovrin_create_pool_ledger_config(command_handle,
@@ -53,8 +54,8 @@ impl PoolUtils {
         Ok(())
     }
 
-    #[cfg(feature="local_nodes_pool")]
-    pub fn open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+    #[cfg(feature = "local_nodes_pool")]
+    pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -65,10 +66,11 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_open_pool_ledger_cb(cb);
 
         let pool_name = CString::new(pool_name).unwrap();
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = sovrin_open_pool_ledger(command_handle,
                                           pool_name.as_ptr(),
-                                          null(),
+                                          if config.is_some() { config_str.as_ptr() } else { null() },
                                           cb);
 
         if err != ErrorCode::Success {
@@ -94,7 +96,7 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
         PoolUtils::create_genesis_txn_file(pool_name, None);
-        let pool_config = CString::new(PoolUtils::create_pool_config(pool_name)).unwrap();
+        let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
         let err = sovrin_create_pool_ledger_config(command_handle,
@@ -138,6 +140,56 @@ impl PoolUtils {
         }
 
         Ok(pool_handle)
+    }
+
+    pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (command_handle, cb) = CallbackUtils::closure_to_refresh_pool_ledger_cb(
+            Box::new(move |res| sender.send(res).unwrap()));
+
+        let res = sovrin_refresh_pool_ledger(command_handle, pool_handle, cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        Ok(())
+    }
+
+    pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (command_handle, cb) = CallbackUtils::closure_to_close_pool_ledger_cb(
+            Box::new(move |res| sender.send(res).unwrap()));
+
+        let res = sovrin_close_pool_ledger(command_handle, pool_handle, cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        Ok(())
+    }
+
+    pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_delete_pool_ledger_config_cb(Box::new(
+            move |res| sender.send(res).unwrap()));
+
+        let res = sovrin_delete_pool_ledger_config(cmd_id, CString::new(pool_name).unwrap().as_ptr(), cb);
+        if res != ErrorCode::Success {
+            return Err(res)
+        }
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res)
+        }
+        Ok(())
     }
 
     pub fn send_request(pool_handle: i32, request: &str) -> Result<String, ErrorCode> {
@@ -190,7 +242,7 @@ impl PoolUtils {
         path
     }
 
-    pub fn create_pool_config(pool_name: &str) -> String {
+    pub fn create_default_pool_config(pool_name: &str) -> String {
         let txn_file_path = EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str());
         format!("{{\"genesis_txn\": \"{}\"}}", txn_file_path.to_string_lossy())
     }

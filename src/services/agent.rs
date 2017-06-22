@@ -5,7 +5,7 @@ extern crate zmq;
 
 use self::rust_base58::FromBase58;
 use std::error::Error;
-use std::thread;
+use std::{io, thread};
 
 use commands::{Command, CommandExecutor};
 use commands::agent::AgentCommand;
@@ -261,7 +261,7 @@ impl AgentWorker {
         Ok(())
     }
 
-    fn poll(&self) -> Result<Vec<AgentWorkerCommand>, zmq::Error> {
+    fn poll(&self) -> Result<Vec<AgentWorkerCommand>, CommonError> {
         let mut result = Vec::new();
         let mut poll_items: Vec<zmq::PollItem> = Vec::new();
         poll_items.push(self.cmd_socket.as_poll_item(zmq::POLLIN));
@@ -280,14 +280,17 @@ impl AgentWorker {
         zmq::poll(poll_items.as_mut_slice(), -1).map_err(map_err_trace!("agent poll failed"))?;
 
         if poll_items[0].is_readable() {
-            let msg = self.cmd_socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
+            let msg = self.cmd_socket.recv_string(zmq::DONTWAIT)?.map_err(|inv_bytes|
+                CommonError::InvalidState(format!("Invalid input on agent cmd socket: {:?}", inv_bytes)))?;
             trace!("Input on cmd socket {}", msg);
-            result.push(AgentWorkerCommand::from_json(msg.as_str()).unwrap());
+            result.push(AgentWorkerCommand::from_json(msg.as_str()).map_err(|err|
+                CommonError::InvalidState(format!("Invalid input on agent cmd socket: {}", err.description())))?);
         }
 
         for i in 0..agent_connections_cnt {
             if poll_items[1 + i].is_readable() {
-                let msg = self.agent_connections[i].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
+                let msg = self.agent_connections[i].socket.recv_string(zmq::DONTWAIT)?.map_err(|_|
+                    CommonError::IOError(io::Error::from(io::ErrorKind::InvalidData)))?;
                 trace!("Input on remote agent socket {}: {}", i, msg);
                 result.push(AgentWorkerCommand::Response(Response {
                     agent_ind: i,
@@ -297,14 +300,18 @@ impl AgentWorker {
         }
         for i in 0..agent_listeners_cnt {
             if poll_items[1 + agent_connections_cnt + i].is_readable() {
-                let identity = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
-                let msg = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
-                trace!("Input on agent listener socket {}: identity {} msg {}", i, identity, msg);
-                result.push(AgentWorkerCommand::Request(Request {
-                    listener_ind: i,
-                    identity: identity,
-                    msg: msg,
-                }))
+                let identity = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT)?;
+                let msg = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT)?;
+                if let (Ok(identity), Ok(msg)) = (identity, msg) {
+                    trace!("Input on agent listener socket {}: identity {} msg {}", i, identity, msg);
+                    result.push(AgentWorkerCommand::Request(Request {
+                        listener_ind: i,
+                        identity: identity,
+                        msg: msg,
+                    }))
+                } else {
+                    return Err(CommonError::IOError(io::Error::from(io::ErrorKind::InvalidData)));
+                }
             }
         }
 

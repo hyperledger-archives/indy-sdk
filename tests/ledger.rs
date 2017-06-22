@@ -9,7 +9,6 @@ extern crate lazy_static;
 extern crate log;
 
 #[macro_use]
-#[path = "utils/mod.rs"]
 mod utils;
 
 use sovrin::api::ErrorCode;
@@ -60,7 +59,6 @@ mod high_cases {
 
             let invalid_pool_handle = pool_handle + 1;
             let res = PoolUtils::send_request(invalid_pool_handle, &get_nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             TestUtils::cleanup_storage();
@@ -82,7 +80,6 @@ mod high_cases {
 
             let invalid_pool_handle = pool_handle + 1;
             let res = LedgerUtils::sign_and_submit_request(invalid_pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             TestUtils::cleanup_storage();
@@ -104,29 +101,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = LedgerUtils::sign_and_submit_request(pool_handle, invalid_wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_sign_and_submit_request_works_for_not_found_signer() {
-            TestUtils::cleanup_storage();
-            let pool_name = "sovrin_sign_and_submit_request_works_for_not_found_signer";
-
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
-
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
-
-            let trustee_did = "some_trustee_did";
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
-
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
         }
@@ -141,11 +116,10 @@ mod high_cases {
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
 
-            let trustee_did = "some_trustee_did";
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert!(res.is_err());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
 
             TestUtils::cleanup_storage();
@@ -157,9 +131,9 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "test_submit_tx";
 
-            let res = PoolUtils::create_pool_ledger_config(pool_name, None);
+            let res = PoolUtils::create_pool_ledger_config(pool_name, None, None);
             assert!(res.is_ok());
-            let res = PoolUtils::open_pool_ledger(pool_name);
+            let res = PoolUtils::open_pool_ledger(pool_name, None);
             assert!(res.is_ok());
             let pool_handle = res.unwrap();
 
@@ -186,6 +160,24 @@ mod high_cases {
             };
             let act_reply: Reply<GetNymReplyResult> = serde_json::from_str(resp.unwrap().as_str()).unwrap();
             assert_eq!(act_reply, exp_reply);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_sign_and_submit_request_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_sign_and_submit_request_works";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
@@ -443,7 +435,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_schema_requests_works_for_correct_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name", "version":"1.0", "keys":["name","male"]}"#;
 
             let expected_result = "\"operation\":{\"type\":\"101\",\"data\":\"{\\\"name\\\":\\\"name\\\", \\\"version\\\":\\\"1.0\\\", \\\"keys\\\":[\\\"name\\\",\\\"male\\\"]";
@@ -456,10 +448,10 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_get_schema_requests_works_for_correct_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name","version":"1.0"}"#;
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"type":"107","dest":"some_identifier","data":{"name":"name","version":"1.0"}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}}"#;
 
             let get_schema_request = LedgerUtils::build_get_schema_request(identifier, identifier, data).unwrap();
             assert!(get_schema_request.contains(expected_result));
@@ -533,11 +525,11 @@ mod high_cases {
 
         #[test]
         fn sovrin_build_node_request_works_for_correct_data_json() {
-            let identifier = "some_identifier";
-            let dest = "some_dest";
+            let identifier = "identifier";
+            let dest = "dest";
             let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"type":"0","dest":"some_dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
 
             let node_request = LedgerUtils::build_node_request(identifier, dest, data).unwrap();
             assert!(node_request.contains(expected_result));
@@ -610,12 +602,12 @@ mod high_cases {
 
         #[test]
         fn sovrin_build_claim_def_request_works_for_correct_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let signature_type = "CL";
             let schema_seq_no = 1;
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}}"#;
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"ref":1,"data":"{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}","type":"102","signature_type":"CL""#;
+            let expected_result = r#""identifier":"identifier","operation":{"ref":1,"data":"{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}","type":"102","signature_type":"CL""#;
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(identifier, schema_seq_no, signature_type, data).unwrap();
             assert!(claim_def_request.contains(expected_result));
@@ -623,12 +615,12 @@ mod high_cases {
 
         #[test]
         fn sovrin_build_get_claim_def_request_works() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let _ref = 1;
             let signature_type = "signature_type";
-            let origin = "some_origin";
+            let origin = "origin";
 
-            let expected_result = r#""identifier":"some_identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"some_origin"}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"}"#;
 
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(identifier, _ref, signature_type, origin).unwrap();
             assert!(get_claim_def_request.contains(expected_result));
@@ -695,6 +687,66 @@ mod high_cases {
 
 mod medium_cases {
     use super::*;
+
+    mod requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_sign_and_submit_request_works_for_not_found_signer() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_sign_and_submit_request_works_for_not_found_signer";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+
+            let trustee_did = "trusteedid";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_submit_request_works_for_invalid_json() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_submit_request_works_for_invalid_json";
+
+            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
+            let pool_handle = PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+
+            let request = r#"request"#;
+
+            let res = PoolUtils::send_request(pool_handle, request);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_sign_and_submit_request_works_for_invalid_json() {
+            TestUtils::cleanup_storage();
+            let pool_name = "sovrin_sign_and_submit_request_works_for_invalid_json";
+
+            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
+            let pool_handle = PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let request = r#"request"#;
+
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 
     mod nym_requests {
         use super::*;
@@ -821,6 +873,26 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_nym_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+            let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+
+            let res = LedgerUtils::build_nym_request(identifier, dest, None, None, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_get_nym_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+            let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+
+            let res = LedgerUtils::build_get_nym_request(identifier, dest);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
     }
 
     mod attrib_requests {
@@ -892,6 +964,24 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_attrib_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+
+            let res = LedgerUtils::build_attrib_request(identifier, identifier, None, Some(r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#), None);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_build_get_attrib_request_works_for_invalid_identifier() {
+            let identifier = "invalid_base58_identifier";
+
+            let res = LedgerUtils::build_get_attrib_request(identifier, identifier, "endpoint");
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
     }
 
     mod schemas_requests {
@@ -900,7 +990,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_schema_requests_works_for_missed_field_in_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name"}"#;
 
             let res = LedgerUtils::build_schema_request(identifier, data);
@@ -911,7 +1001,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_schema_requests_works_for_invalid_data_json_format() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name", "keys":"name"}"#;
 
             let res = LedgerUtils::build_schema_request(identifier, data);
@@ -922,7 +1012,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_build_get_schema_requests_works_for_invalid_data_json() {
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let data = r#"{"name":"name"}"#;
 
             let res = LedgerUtils::build_get_schema_request(identifier, identifier, data);
@@ -983,8 +1073,8 @@ mod medium_cases {
 
         #[test]
         fn sovrin_build_node_request_works_for_missed_field_in_data_json() {
-            let identifier = "some_identifier";
-            let dest = "some_dest";
+            let identifier = "identifier";
+            let dest = "dest";
             let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
@@ -994,8 +1084,8 @@ mod medium_cases {
 
         #[test]
         fn sovrin_build_node_request_works_for_wrong_service() {
-            let identifier = "some_identifier";
-            let dest = "some_dest";
+            let identifier = "identifier";
+            let dest = "dest";
             let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
@@ -1063,7 +1153,7 @@ mod medium_cases {
         fn sovrin_build_claim_def_request_works_for_invalid_data_json() {
             TestUtils::cleanup_storage();
 
-            let identifier = "some_identifier";
+            let identifier = "identifier";
             let signature_type = "CL";
             let schema_seq_no = 1;
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"}}}"#;

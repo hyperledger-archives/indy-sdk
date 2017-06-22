@@ -32,6 +32,7 @@ use self::libc::c_char;
 /// CommonInvalidParam5
 /// WalletTypeAlreadyRegistered
 #[no_mangle]
+#[allow(unused_variables)] /* FIXME */
 pub extern fn sovrin_register_wallet_type(xtype: *const c_char,
                                           create: extern fn(name: *const c_char,
                                                             config: *const c_char,
