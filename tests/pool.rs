@@ -14,6 +14,7 @@ mod utils;
 #[cfg(feature = "local_nodes_pool")]
 use sovrin::api::ErrorCode;
 
+use utils::environment::EnvironmentUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 
@@ -41,6 +42,35 @@ mod high_cases {
 
             let res = PoolUtils::create_pool_ledger_config(pool_name, None, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam2);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn create_pool_ledger_config_works_for_config_json() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "create_pool_ledger_config_works_for_config_json";
+            let config = PoolUtils::create_default_pool_config(pool_name);
+
+            PoolUtils::create_pool_ledger_config(pool_name, None, Some(config), None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+
+        #[test]
+        fn create_pool_ledger_config_works_for_specific_config() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "create_pool_ledger_config_works_for_specific_config";
+            let gen_txn_file_name = "specific_filename.txn";
+            PoolUtils::create_pool_ledger_config(pool_name, None,
+                                                 Some(format!(r#"{{"genesis_txn":"{}"}}"#,
+                                                              EnvironmentUtils::tmp_file_path(
+                                                                  gen_txn_file_name)
+                                                                  .to_str().unwrap())),
+                                                 Some(gen_txn_file_name)).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -163,6 +193,20 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_close_pool_ledger_works_for_twice() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_close_pool_ledger_works_twice";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+            assert_eq!(PoolUtils::close(pool_handle).unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn sovrin_close_pool_ledger_works_for_reopen_after_close() {
             TestUtils::cleanup_storage();
 
@@ -211,18 +255,6 @@ mod medium_cases {
 
     mod create {
         use super::*;
-
-        #[test]
-        fn create_pool_ledger_config_works_for_config_json() {
-            TestUtils::cleanup_storage();
-
-            let pool_name = "create_pool_ledger_config_works_for_config_json";
-            let config = PoolUtils::create_default_pool_config(pool_name);
-
-            PoolUtils::create_pool_ledger_config(pool_name, None, Some(config), None).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
 
         #[test]
         fn create_pool_ledger_config_works_for_invalid_config_json() {
