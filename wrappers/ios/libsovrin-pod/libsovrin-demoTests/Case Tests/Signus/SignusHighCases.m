@@ -6,6 +6,7 @@
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
 //
 
+#import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
 #import "TestUtils.h"
@@ -35,7 +36,7 @@
 
 // MARK: - Create my did
 
-- (void)testcreateMyDidWorksForEmptyJson
+- (void)testCreateMyDidWorksForEmptyJson
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"pool1";
@@ -60,9 +61,8 @@
                                                         outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    // TODO: What is the correct length for checks?
-    XCTAssertEqual([myDid length], 16, @"length of myDid != 16"); // 22
-    XCTAssertEqual([myVerKey length], 32, @"length of myVerKey != 32"); // 44
+    XCTAssertEqual([[myDid dataUsingEncoding:NSUTF8StringEncoding] length] , 16, @"length of myDid != 16");
+    XCTAssertEqual([[myVerKey dataUsingEncoding:=NSUTF8StringEncoding] length], 32, @"length of myVerKey != 32");
     
     [TestUtils cleanupStorage];
 }

@@ -25,6 +25,12 @@
                              outMyVerkey:(NSString **)myVerkey
                                  outMyPk:(NSString **)myPk;
 
+- (NSError *)createAndStoreMyDidWithWalletHandle:(SovrinHandle)walletHandle
+                                            seed:(NSString *)seed
+                                        outMyDid:(NSString **)myDid
+                                     outMyVerkey:(NSString **)myVerkey
+                                         outMyPk:(NSString **)myPk;
+
 - (NSError *)storeTheirDidWithWalletHandle:(SovrinHandle)walletHandle
                               identityJson:(NSString *)identityJson;
 

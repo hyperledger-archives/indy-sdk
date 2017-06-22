@@ -20,7 +20,8 @@
 
 - (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)poolName
                                           nodes:(NSString *)nodes
-                                     poolConfig:(NSString *)config;
+                                     poolConfig:(NSString *)config
+                                 genTxnFileName:(NSString *)genTxnFileName;
 
 - (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
                                        poolHandle: (SovrinHandle *) handle;

@@ -39,7 +39,8 @@
     // 1. Create ledger config from genesis txn file
     ret = [[ PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
                                                                     nodes:nil
-                                                               poolConfig:nil];
+                                                               poolConfig:nil
+                                                           genTxnFileName:nil];
 
     // 2. Open pool ledger
     __block SovrinHandle poolHandle = 0;

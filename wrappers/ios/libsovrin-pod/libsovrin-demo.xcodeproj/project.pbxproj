@@ -18,8 +18,11 @@
 		84275F301EFA84C700352D72 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */; };
 		848FF4051EFBBBE3009D2FC9 /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4041EFBBBE3009D2FC9 /* PoolHighCases.m */; };
 		848FF4071EFBBC04009D2FC9 /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4061EFBBC04009D2FC9 /* PoolMediumCases.m */; };
-		848FF4091EFBC383009D2FC9 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF4081EFBC383009D2FC9 /* libsovrin.framework */; };
-		848FF40A1EFBC383009D2FC9 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF4081EFBC383009D2FC9 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		848FF40C1EFBFC10009D2FC9 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; };
+		848FF40D1EFBFC10009D2FC9 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		848FF4101EFC0978009D2FC9 /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF40F1EFC0978009D2FC9 /* AgentHighCases.m */; };
+		848FF4121EFC0987009D2FC9 /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */; };
+		848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4131EFC0D66009D2FC9 /* AgentUtils.m */; };
 		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
 		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
 		84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */; };
@@ -71,7 +74,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				848FF40A1EFBC383009D2FC9 /* libsovrin.framework in Embed Frameworks */,
+				848FF40D1EFBFC10009D2FC9 /* libsovrin.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -99,7 +102,11 @@
 		84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
 		848FF4041EFBBBE3009D2FC9 /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
 		848FF4061EFBBC04009D2FC9 /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
-		848FF4081EFBC383009D2FC9 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		848FF40F1EFC0978009D2FC9 /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
+		848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
+		848FF4131EFC0D66009D2FC9 /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
+		848FF4151EFC0D72009D2FC9 /* AgentUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
 		84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
 		84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
@@ -140,7 +147,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */,
-				848FF4091EFBC383009D2FC9 /* libsovrin.framework in Frameworks */,
+				848FF40C1EFBFC10009D2FC9 /* libsovrin.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,7 +164,7 @@
 		3E2A7F7C1EC36186006194EC = {
 			isa = PBXGroup;
 			children = (
-				848FF4081EFBC383009D2FC9 /* libsovrin.framework */,
+				848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */,
 				3E2A7F871EC36186006194EC /* libsovrin-demo */,
 				3E2A7FA11EC36187006194EC /* libsovrin-demoTests */,
 				3E2A7F861EC36186006194EC /* Products */,
@@ -228,9 +235,11 @@
 			path = Pool;
 			sourceTree = "<group>";
 		};
-		848FF4031EFBBBC0009D2FC9 /* Agent */ = {
+		848FF40E1EFC0967009D2FC9 /* Agent */ = {
 			isa = PBXGroup;
 			children = (
+				848FF40F1EFC0978009D2FC9 /* AgentHighCases.m */,
+				848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */,
 			);
 			path = Agent;
 			sourceTree = "<group>";
@@ -238,7 +247,7 @@
 		84CFCAC41EF3F6FD00F91426 /* Case Tests */ = {
 			isa = PBXGroup;
 			children = (
-				848FF4031EFBBBC0009D2FC9 /* Agent */,
+				848FF40E1EFC0967009D2FC9 /* Agent */,
 				848FF4021EFBBBB4009D2FC9 /* Pool */,
 				84CFCAFF1EF3F7F600F91426 /* Anoncreds */,
 				84CFCAC91EF3F7C500F91426 /* Ledger */,
@@ -275,6 +284,8 @@
 				84CFCAF21EF3F7D300F91426 /* TestUtils.m */,
 				84CFCAF31EF3F7D300F91426 /* WalletUtils.h */,
 				84CFCAF41EF3F7D300F91426 /* WalletUtils.m */,
+				848FF4151EFC0D72009D2FC9 /* AgentUtils.h */,
+				848FF4131EFC0D66009D2FC9 /* AgentUtils.m */,
 			);
 			path = "Test Utils";
 			sourceTree = "<group>";
@@ -521,9 +532,11 @@
 				84CFCAE01EF3F7C500F91426 /* WalletMediumCases.m in Sources */,
 				84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */,
 				84CFCAE41EF3F7CC00F91426 /* AnoncredsDemo.mm in Sources */,
+				848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */,
 				84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */,
 				8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */,
 				84CFCADF1EF3F7C500F91426 /* WalletHighCases.m in Sources */,
+				848FF4121EFC0987009D2FC9 /* AgentMediumCases.m in Sources */,
 				84F0FD3E1EF7F0D80022A01D /* NSArray+JSON.m in Sources */,
 				84CFCAF51EF3F7D300F91426 /* AnoncredsUtils.m in Sources */,
 				84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */,
@@ -541,6 +554,7 @@
 				848FF4051EFBBBE3009D2FC9 /* PoolHighCases.m in Sources */,
 				84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */,
 				84CFCAFA1EF3F7D300F91426 /* TestUtils.m in Sources */,
+				848FF4101EFC0978009D2FC9 /* AgentHighCases.m in Sources */,
 				84CFCB031EF3F83200F91426 /* AnoncredsMediumCases.m in Sources */,
 				84CFCAFB1EF3F7D300F91426 /* WalletUtils.m in Sources */,
 			);

@@ -38,7 +38,7 @@
     return @(timeInSeconds * pow(10.0,9.0) + timeInSeconds * 3.0);
 }
 
-- (void)createGenesisTXNFile:(NSString *)poolName
+- (void)createGenesisTXNFile:(NSString *)fileName
               predefinedData:(NSString *)predefinedData
 {
     NSString *nodeIp = [PoolUtils nodeIp];
@@ -61,7 +61,7 @@
     
     genesisTXNs = (predefinedData) ? predefinedData : genesisTXNs;
     
-    [[NSFileManager defaultManager] createFileAtPath:[NSString stringWithFormat:@"%@/%@.txn", [TestUtils getUserTmpDir], poolName]
+    [[NSFileManager defaultManager] createFileAtPath:[NSString stringWithFormat:@"%@/%@.txn", [TestUtils getUserTmpDir], fileName]
                                             contents:[NSData dataWithBytes:[genesisTXNs UTF8String] length:[genesisTXNs length]]
                                           attributes:nil];
 }
@@ -75,10 +75,12 @@
 - (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)poolName
                                           nodes:(NSString *)nodes
                                      poolConfig:(NSString *)config
+                                 genTxnFileName:(NSString *)genTxnFileName
 
 {
     NSError *ret = nil;
-    [self createGenesisTXNFile:poolName predefinedData: nodes];
+    NSString *fileName = (genTxnFileName) ? genTxnFileName : poolName;
+    [self createGenesisTXNFile:fileName predefinedData: nodes];
     NSString *configStr = (config) ? config : [self createDefaultPoolConfig:poolName];
 
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
