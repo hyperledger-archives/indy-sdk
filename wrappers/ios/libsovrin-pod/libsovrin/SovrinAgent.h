@@ -16,6 +16,7 @@
            messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler;
 
 + (NSError *)agentListen:(SovrinHandle) walletHandle
+                endpoint:(NSString *)endpoint
          listenerHandler:(void (^)(NSError*     error,
                                    SovrinHandle listenerHandle)) listenerCompletion
        connectionHandler:(void (^)(SovrinHandle xlistenerHandle,

@@ -38,6 +38,7 @@
 }
 
 + (NSError*) agentListen:(SovrinHandle) walletHandle
+                endpoint:(NSString *)endpoint
          listenerHandler:(void (^)(NSError* error,
                                    SovrinHandle listenerHandle)) listenerCompletion
        connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
@@ -57,6 +58,7 @@
     
     ret = sovrin_agent_listen(listener_handle,
                               walletHandle,
+                              [endpoint UTF8String],
                               SovrinWrapperCommonAgentListenerCallback,
                               SovrinWrapperCommonAgentListenerConnectionCallback,
                               SovrinWrapperCommonAgentListenerMessageCallback);
