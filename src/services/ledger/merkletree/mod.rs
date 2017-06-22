@@ -202,7 +202,10 @@ impl MerkleTree {
 
 #[cfg(test)]
 mod tests {
+    extern crate rust_base58;
+
     use super::*;
+    use self::rust_base58::FromBase58;
     use self::serde_json;
     use utils::crypto::hash::HASH_OUTPUT_LEN;
 
@@ -338,5 +341,61 @@ mod tests {
         assert_eq!(refs, collected);
 
         assert_eq!(mt.root_hash(), newmt.root_hash());
+    }
+
+    #[test]
+    #[ignore] /* FIXME it's blocker for checking cons proofs in CatchUp */
+    fn consistency_proof_works_for_old4_new8() {
+        let all_str_values = vec![
+            r#"{"data":{"alias":"Node1","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#,
+            r#"{"data":{"alias":"Node2","client_ip":"10.0.0.2","client_port":9704,"node_ip":"10.0.0.2","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#,
+            r#"{"data":{"alias":"Node3","client_ip":"10.0.0.2","client_port":9706,"node_ip":"10.0.0.2","node_port":9705,"services":["VALIDATOR"]},"dest":"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya","identifier":"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF","txnId":"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4","type":"0"}"#,
+            r#"{"data":{"alias":"Node4","client_ip":"10.0.0.2","client_port":9708,"node_ip":"10.0.0.2","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA","identifier":"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx","txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008","type":"0"}"#,
+            r#"{"data":{"alias":"Node5","client_ip":"10.0.0.2","client_port":9710,"node_ip":"10.0.0.2","node_port":9709,"services":["VALIDATOR"]},"dest":"4SWokCJWJc69Tn74VvLS6t2G2ucvXqM9FDMsWJjmsUxe","identifier":"5NekXKJvGrxHvfxbXThySmaG8PmpNarXHCf1CkwTLfrg","txnId":"5abef8bc27d85d53753c5b6ed0cd2e197998c21513a379bfcf44d9c7a73c3a7e","type":"0"}"#,
+            r#"{"data":{"alias":"Node6","client_ip":"10.0.0.2","client_port":9712,"node_ip":"10.0.0.2","node_port":9711,"services":["VALIDATOR"]},"dest":"Cv1Ehj43DDM5ttNBmC6VPpEfwXWwfGktHwjDJsTV5Fz8","identifier":"A2yZJTPHZyqJDELb8E1mhxUqWPEW5vgH2ePLTiTDQayp","txnId":"a23059dc16aaf4513f97ca91f272235e809f8bda8c40f6688b88615a2c318ff8","type":"0"}"#,
+            r#"{"data":{"alias":"Node7","client_ip":"10.0.0.2","client_port":9714,"node_ip":"10.0.0.2","node_port":9713,"services":["VALIDATOR"]},"dest":"BM8dTooz5uykCbYSAAFwKNkYfT4koomBHsSWHTDtkjhW","identifier":"6pYGZXnqXLxLAhrEBhVjyvuhnV2LUgM9iw1gHds8JDqT","txnId":"e5f11aa7ec7091ca6c31a826eec885da7fcaa47611d03fdc3562b48247f179cf","type":"0"}"#,
+            r#"{"data":{"alias":"Node8","client_ip":"10.0.0.2","client_port":9716,"node_ip":"10.0.0.2","node_port":9715,"services":["VALIDATOR"]},"dest":"98VysG35LxrutKTNXvhaztPFHnx5u9kHtT7PnUGqDa8x","identifier":"B4xQBURedpCS3r6v8YxTyz5RYh3Nh5Jt2MxsmtAUr1rH","txnId":"2b01e69f89514be94ebf24bfa270abbe1c5abc72415801da3f0d58e71aaa33a2","type":"0"}"#,
+        ];
+        let all_values: Vec<String> = all_str_values.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
+        let mt_full = MerkleTree::from_vec(all_values.clone()).unwrap();
+        let full_root_hash = mt_full.root_hash();
+        let mut start_values = all_values.clone();
+        let mut mt = MerkleTree::from_vec(start_values.drain(0..4).collect()).unwrap();
+
+        //try to add 5th node
+        let proofs_for_5: Vec<&str> = vec![
+            "9fVeiDkVJ4YrNB1cy9PEeRYXE5BhxapQsGu85WZ8MyiE",
+            "8p6GotiwYFiWgjMvY7KYNYcbz6hCFBJhcD9Sjo1PQANU",
+            "BqHByHYX9gAHye1SoKKiLXLFB7TDntyUoMtZQjMW2w7U",
+            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
+        ];
+        let proofs_for_5: Vec<Vec<u8>> = proofs_for_5.into_iter().map(|x| x.from_base58().unwrap()).collect();
+        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_5).unwrap());
+        //add 5th node
+        mt.append(all_values[5 - 1].clone()).unwrap();
+        //try to add 6th node
+        let proofs_for_6: Vec<&str> = vec![
+            "HhkWitSAXG12Ugn4KFtrUyhbZHi9XrP4jnbLuSthynSu",
+            "BqHByHYX9gAHye1SoKKiLXLFB7TDntyUoMtZQjMW2w7U",
+            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
+        ];
+        let proofs_for_6: Vec<Vec<u8>> = proofs_for_6.into_iter().map(|x| x.from_base58().unwrap()).collect();
+        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_6).unwrap());
+        //add 6th node
+        mt.append(all_values[6 - 1].clone()).unwrap();
+        //try to add 7th node
+        let proofs_for_7: Vec<&str> = vec![
+            "2D1aU5DeP8uPmaisGSpNoF2tNS35YhaRvfk2KPZzY2ue",
+            "5cVBJRrdFraAtDzUhezeifS6W4Gsgo3TdPXs8847p95L",
+            "HhkWitSAXG12Ugn4KFtrUyhbZHi9XrP4jnbLuSthynSu",
+            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
+        ];
+        let proofs_for_7: Vec<Vec<u8>> = proofs_for_7.into_iter().map(|x| x.from_base58().unwrap()).collect();
+        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_7).unwrap());
+        //add 7th node
+        mt.append(all_values[7 - 1].clone()).unwrap();
+        //try to add 8th node, empty proof
+        let proofs_for_8: Vec<Vec<u8>> = Vec::new();
+        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_8).unwrap());
     }
 }
