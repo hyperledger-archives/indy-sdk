@@ -329,7 +329,7 @@ impl RemoteAgent {
                 .map_err(|err| CommonError::InvalidStructure(format!("invalid sec_key {}", err)))?,
             server_key: ver_key.from_base58()
                 .map_err(|err| CommonError::InvalidStructure(format!("invalid server_key {}", err)))?,
-            addr: addr.to_string(),
+            addr: format!("tcp://{}", addr),
             conn_handle: conn_handle,
         })
     }
@@ -370,13 +370,13 @@ impl RemoteAgent {
 
 impl AgentListener {
     fn new(handle: i32, endpoint: String, pk: String, sk: String) -> Result<AgentListener, zmq::Error> {
-        let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER)?;
+        let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER).map_err(map_err_trace!())?;
         //TODO use forked zmq and set cb instead of raw keys
-        sock.set_curve_publickey(zmq::z85_encode(pk.from_base58().unwrap().as_slice()).unwrap().as_str())?;
-        sock.set_curve_secretkey(zmq::z85_encode(sk.from_base58().unwrap().as_slice()).unwrap().as_str())?;
+        sock.set_curve_publickey(zmq::z85_encode(pk.from_base58().unwrap().as_slice()).unwrap().as_str()).map_err(map_err_trace!())?;
+        sock.set_curve_secretkey(zmq::z85_encode(sk.from_base58().unwrap().as_slice()).unwrap().as_str()).map_err(map_err_trace!())?;
         //TODO /cb instead keys
-        sock.set_curve_server(true)?;
-        sock.bind(endpoint.as_str())?;
+        sock.set_curve_server(true).map_err(map_err_trace!())?;
+        sock.bind(format!("tcp://{}", endpoint).as_str()).map_err(map_err_trace!())?;
         Ok(AgentListener {
             connections: Vec::new(),
             listener_handle: handle,
@@ -633,7 +633,7 @@ mod tests {
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
             };
             let cmd = ConnectCmd {
-                endpoint: addr,
+                endpoint: addr[6..].to_string(),
                 public_key: zmq::z85_decode(send_key_pair.public_key.as_str()).unwrap().to_base58(),
                 secret_key: zmq::z85_decode(send_key_pair.secret_key.as_str()).unwrap().to_base58(),
                 did: "".to_string(),
@@ -808,7 +808,7 @@ mod tests {
             let server_keys = zmq::CurveKeyPair::new().unwrap();
             let pk = zmq::z85_decode(server_keys.public_key.as_str()).unwrap().to_base58();
             let sk = zmq::z85_decode(server_keys.secret_key.as_str()).unwrap().to_base58();
-            let endpoint = "tcp://0.0.0.0:9700".to_string();
+            let endpoint = "0.0.0.0:9700".to_string();
             agent_worker.try_start_listen(0, endpoint.clone(), pk.clone(), sk.clone()).unwrap();
             assert_eq!(agent_worker.agent_listeners.len(), 1);
 
@@ -818,7 +818,7 @@ mod tests {
             sock.set_curve_publickey(kp.public_key.as_str()).unwrap();
             sock.set_curve_secretkey(kp.secret_key.as_str()).unwrap();
             sock.set_curve_serverkey(server_keys.public_key.as_str()).unwrap();
-            sock.connect(endpoint.as_str()).unwrap();
+            sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
             sock.send_str(msg, 0).unwrap();
             agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
             agent_worker.agent_listeners[0].socket.recv_bytes(zmq::DONTWAIT).unwrap(); //ignore identity

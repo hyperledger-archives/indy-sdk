@@ -232,7 +232,7 @@ impl AgentCommandExecutor {
                     CommonError::InvalidStructure(
                         format!("Can't parse get DDO response data {}", err.description())))?; // TODO
                 let conn_info = ConnectInfo {
-                    endpoint: format!("tcp://{}", ddo.endpoint.ha),
+                    endpoint: ddo.endpoint.ha,
                     server_key: ddo.endpoint.verkey,
                 };
                 Ok((my_info, conn_info))
