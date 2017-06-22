@@ -37,7 +37,9 @@
     NSError *ret;
     
     // 1. Create ledger config from genesis txn file
-    ret = [[ PoolUtils sharedInstance] createPoolLedgerConfig: poolName];
+    ret = [[ PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
+                                                                    nodes:nil
+                                                               poolConfig:nil];
 
     // 2. Open pool ledger
     __block SovrinHandle poolHandle = 0;
@@ -184,7 +186,7 @@
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 10. Prepare NYM transaction
-    NSNumber *nymReqId = @(1491566332010861);//[[PoolUtils sharedInstance] getRequestId];
+    NSNumber *nymReqId = @(1491566332010861);
     NSString *nymTxnRequest = [NSString stringWithFormat:@"{"\
                                "\"identifier\":\"%@\","\
                                "\"operation\":{"\
