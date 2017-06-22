@@ -18,6 +18,8 @@ use sovrin::api::ErrorCode;
 mod utils;
 
 use utils::agent::AgentUtils;
+use utils::ledger::LedgerUtils;
+use utils::pool::PoolUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
@@ -45,6 +47,34 @@ mod high_cases {
     mod sovrin_agent_connect {
         use super::*;
         use rust_base58::FromBase58;
+
+        #[test]
+        fn sovrin_agent_connect_works_for_remote_data() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_connect_works_for_remote_data").unwrap();
+
+            let endpoint = "tcp://127.0.0.1:9710";
+            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.1", "default").unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.2", "default").unwrap();
+            let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+
+            let listener_nym_json = LedgerUtils::build_nym_request(trustee_did.as_str(), listener_did.as_str(), Some(listener_ver_key.as_str()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(), listener_nym_json.as_str()).unwrap();
+
+            let listener_attrib_json =
+                LedgerUtils::build_attrib_request(listener_did.as_str(), listener_did.as_str(), None,
+                                                  Some(format!("{{\"endpoint\":{{\"ha\":\"{}\", \"verkey\":\"{}\"}}}}", &endpoint[6..], listener_pub_key).as_str()),
+                                                  None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(), listener_attrib_json.as_str()).unwrap();
+
+            AgentUtils::listen(listener_wallet, endpoint, None, None).unwrap();
+
+            AgentUtils::connect(pool_handle, trustee_wallet, trustee_did.as_str(), listener_did.as_str(), None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
 
         #[test]
         fn sovrin_agent_connect_works_for_all_data_in_wallet_present() {
@@ -263,9 +293,9 @@ mod medium_cases {
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "tcp://127.0.0.1:9709";
             AgentUtils::listen(wallet_handle, endpoint, None,
-                                                     Some(Box::new(move |_, msg| {
-                                                         wait_msg_from_cli_send.send(msg).unwrap();
-                                                     }))).unwrap();
+                               Some(Box::new(move |_, msg| {
+                                   wait_msg_from_cli_send.send(msg).unwrap();
+                               }))).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
             let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 

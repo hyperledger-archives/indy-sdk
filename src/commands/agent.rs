@@ -1,5 +1,7 @@
 #![warn(unused_variables)]
 
+extern crate serde_json;
+
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
@@ -131,7 +133,7 @@ impl AgentCommandExecutor {
                 self.connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
             }
             AgentCommand::ResumeConnectProcess(cmd_id, res) => {
-                info!(target: "agent_command_executor", "GetInfoAck command received");
+                info!(target: "agent_command_executor", "ResumeConnectProcess command received");
                 self.resume_connect_process(cmd_id, res);
             }
             AgentCommand::ConnectAck(cmd_id, res) => {
@@ -217,20 +219,27 @@ impl AgentCommandExecutor {
     }
 
     fn resume_connect_process(&self, cmd_id: i32, res: Result<(MyConnectInfo, String), SovrinError>) {
-        if let Some((connect_cb, on_msg)) = self.connect_callbacks.borrow_mut().remove(&cmd_id) {
+        let cbs = self.connect_callbacks.borrow_mut().remove(&cmd_id);
+        if let Some((connect_cb, on_msg)) = cbs {
             let res = res.and_then(|(my_info, ddo_resp)| -> Result<(MyConnectInfo, ConnectInfo), SovrinError> {
-                let ddo_resp = DDO::from_json(ddo_resp.as_str()).map_err(|err|
+                let ddo_resp: serde_json::Value = serde_json::from_str(ddo_resp.as_str()).map_err(|err|
                     CommonError::InvalidStructure(
-                        format!("Can't parse get DDO response {}", err.description())))?;
+                        format!("Can't parse get DDO response json {}", err.description())))?;
+                let ddo_data = ddo_resp["result"]["data"].as_str().ok_or(
+                    CommonError::InvalidStructure(
+                        "Can't parse get DDO response - sub-field result.data not found".to_string()))?;
+                let ddo: DDO = DDO::from_json(ddo_data).map_err(|err|
+                    CommonError::InvalidStructure(
+                        format!("Can't parse get DDO response data {}", err.description())))?;
                 let conn_info = ConnectInfo {
-                    endpoint: ddo_resp.endpoint,
-                    server_key: ddo_resp.verkey,
+                    endpoint: format!("tcp://{}", ddo.endpoint.ha),
+                    server_key: ddo.endpoint.verkey,
                 };
                 Ok((my_info, conn_info))
             });
             match res {
                 Ok((my_info, conn_info)) => self.do_connect(my_info, conn_info, connect_cb, on_msg),
-                Err(err) => connect_cb(Err(err))
+                Err(err) => connect_cb(Err(err).map_err(map_err_trace!()))
             }
         } else {
             error!("Can't handle ResumeConnectProcess cmd - callback not found for {}", cmd_id);
@@ -273,7 +282,7 @@ impl AgentCommandExecutor {
                                            my_conn_info: MyConnectInfo, receiver_did: &str,
                                            connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service, wallet_handle, pool_handle, connect_cb);
-        let ddo_request = match self.ledger_service.build_get_ddo_request(my_conn_info.did.as_str(), receiver_did) {
+        let ddo_request = match self.ledger_service.build_get_attrib_request(my_conn_info.did.as_str(), receiver_did, "endpoint") {
             Ok(ddo_request) => ddo_request,
             Err(err) => {
                 return connect_cb(Err(SovrinError::from(err)));
@@ -433,9 +442,14 @@ pub struct ConnectInfo {
 }
 
 #[derive(Deserialize)]
-struct DDO {
+struct EndpointDDO {
     verkey: String,
-    endpoint: String,
+    ha: String,
+}
+
+#[derive(Deserialize)]
+struct DDO {
+    endpoint: EndpointDDO,
 }
 
 impl<'a> JsonDecodable<'a> for DDO {}
