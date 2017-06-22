@@ -131,11 +131,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "test_submit_tx";
 
-            let res = PoolUtils::create_pool_ledger_config(pool_name, None, None);
-            assert!(res.is_ok());
-            let res = PoolUtils::open_pool_ledger(pool_name, None);
-            assert!(res.is_ok());
-            let pool_handle = res.unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             let request = r#"{
                         "reqId":1491566332010860,
@@ -717,8 +713,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
             let pool_name = "sovrin_submit_request_works_for_invalid_json";
 
-            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
-            let pool_handle = PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             let request = r#"request"#;
 
@@ -734,8 +729,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
             let pool_name = "sovrin_sign_and_submit_request_works_for_invalid_json";
 
-            PoolUtils::create_pool_ledger_config(pool_name, None, None).unwrap();
-            let pool_handle = PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
             let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
