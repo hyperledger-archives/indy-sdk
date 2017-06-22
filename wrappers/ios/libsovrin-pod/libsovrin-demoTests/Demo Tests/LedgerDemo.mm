@@ -194,7 +194,7 @@
                                "\"signature\": null"\
                                "}", theirVerkey, myDid, nymReqId];
     
-    // TODO: 110 Error
+    // TODO: 110 or 304 error Error. some issue with nymTxnRequest
     // 11. Send NYM request with signing
     __block NSString *nymTxnResponse;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
