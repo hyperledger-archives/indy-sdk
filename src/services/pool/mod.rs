@@ -18,6 +18,7 @@ use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
+use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::catchup::CatchupHandler;
@@ -265,16 +266,24 @@ impl PoolWorker {
         Ok(())
     }
 
-    fn init_catchup(&mut self) -> Result<(), PoolError> {
+    fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
         let catchup_handler = CatchupHandler {
             merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
-            open_cmd_id: self.open_cmd_id,
+            initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
+            is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
         self.connect_to_known_nodes(None)?;
         Ok(())
+    }
+
+    fn refresh(&mut self, cmd_id: i32) -> Result<(), PoolError> {
+        match self.handler.flush_requests(Err(PoolError::Terminate)) {
+            Ok(()) => self.init_catchup(Some(cmd_id)),
+            Err(err) => CommandExecutor::instance().send(Command::Pool(PoolCommand::RefreshAck(cmd_id, Err(err)))).map_err(PoolError::from),
+        }
     }
 
     pub fn run(&mut self) -> Result<(), PoolError> {
@@ -288,7 +297,7 @@ impl PoolWorker {
     }
 
     fn _run(&mut self) -> Result<(), PoolError> {
-        self.init_catchup()?; //TODO consider error as PoolOpen error
+        self.init_catchup(None)?; //TODO consider error as PoolOpen error
 
         loop {
             trace!("zmq poll loop >>");
@@ -304,8 +313,15 @@ impl PoolWorker {
     fn process_actions(&mut self, actions: Vec<ZMQLoopAction>) -> Result<(), PoolError> {
         for action in &actions {
             match action {
-                &ZMQLoopAction::Terminate => {
+                &ZMQLoopAction::Terminate(cmd_id) => {
+                    let res = self.handler.flush_requests(Err(PoolError::Terminate));
+                    if cmd_id >= 0 {
+                        CommandExecutor::instance().send(Command::Pool(PoolCommand::CloseAck(cmd_id, res)))?;
+                    }
                     return Err(PoolError::Terminate);
+                }
+                &ZMQLoopAction::Refresh(cmd_id) => {
+                    self.refresh(cmd_id)?;
                 }
                 &ZMQLoopAction::MessageToProcess(ref msg) => {
                     if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
@@ -351,11 +367,14 @@ impl PoolWorker {
             let cmd_s = String::from_utf8(cmd[0].clone())
                 .map_err(|err|
                     CommonError::InvalidState("Invalid command received".to_string()))?;
+            let id = if cmd.len() > 1 { LittleEndian::read_i32(cmd[1].as_slice()) } else { -1 };
             if "exit".eq(cmd_s.as_str()) {
-                actions.push(ZMQLoopAction::Terminate);
+                actions.push(ZMQLoopAction::Terminate(id));
+            } else if "refresh".eq(cmd_s.as_str()) {
+                actions.push(ZMQLoopAction::Refresh(id));
             } else {
                 actions.push(ZMQLoopAction::RequestToSend(RequestToSend {
-                    id: LittleEndian::read_i32(cmd[1].as_slice()),
+                    id: id,
                     request: cmd_s,
                 }));
             }
@@ -418,7 +437,7 @@ impl Pool {
             pool_id: pool_id,
             name: name.to_string(),
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
-                open_cmd_id: cmd_id,
+                initiate_cmd_id: cmd_id,
                 pool_id: pool_id,
                 ..Default::default()
             }),
@@ -440,6 +459,18 @@ impl Pool {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         Ok(self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT)?)
+    }
+
+    pub fn close(&self, cmd_id: i32) -> Result<(), PoolError> {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        Ok(self.cmd_sock.send_multipart(&["exit".as_bytes(), &buf], zmq::DONTWAIT)?)
+    }
+
+    pub fn refresh(&self, cmd_id: i32) -> Result<(), PoolError> {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        Ok(self.cmd_sock.send_multipart(&["refresh".as_bytes(), &buf], zmq::DONTWAIT)?)
     }
 }
 
@@ -583,7 +614,13 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        unimplemented!()
+        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+            if pool.name.eq(name) {
+                return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
+            }
+        }
+        let path = EnvironmentUtils::pool_path(name);
+        fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
     pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
@@ -610,12 +647,20 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn close(&self, handle: i32) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .close(cmd_id)
+            .map(|()| cmd_id)
     }
 
-    pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .refresh(cmd_id)
+            .map(|()| cmd_id)
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
@@ -681,20 +726,109 @@ mod mocks {
 mod tests {
     use super::*;
 
-    #[test]
-    fn pool_service_new_works() {
-        let pool_service = PoolService::new();
-        assert!(true, "No crashes on PoolService::new");
-    }
+    mod pool_service {
+        use super::*;
+        use std::path;
 
-    #[test]
-    fn pool_service_drop_works() {
-        fn drop_test() {
+        #[test]
+        fn pool_service_new_works() {
             let pool_service = PoolService::new();
+            assert!(true, "No crashes on PoolService::new");
         }
 
-        drop_test();
-        assert!(true, "No crashes on PoolService::drop");
+        #[test]
+        fn pool_service_drop_works() {
+            fn drop_test() {
+                let pool_service = PoolService::new();
+            }
+
+            drop_test();
+            assert!(true, "No crashes on PoolService::drop");
+        }
+
+        #[test]
+        fn pool_service_close_works() {
+            let ps = PoolService::new();
+            let pool_id = SequenceUtils::get_next_id();
+            let ctx = zmq::Context::new();
+            let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            recv_soc.bind("inproc://test").unwrap();
+            send_soc.connect("inproc://test").unwrap();
+            ps.pools.borrow_mut().insert(pool_id, Pool {
+                name: String::new(),
+                id: pool_id,
+                worker: None,
+                cmd_sock: send_soc,
+            });
+            let cmd_id = ps.close(pool_id).unwrap();
+            let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
+            assert_eq!(recv.len(), 2);
+            assert_eq!("exit", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+        }
+
+        #[test]
+        fn pool_service_refresh_works() {
+            let ps = PoolService::new();
+            let pool_id = SequenceUtils::get_next_id();
+            let ctx = zmq::Context::new();
+            let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            recv_soc.bind("inproc://test").unwrap();
+            send_soc.connect("inproc://test").unwrap();
+            ps.pools.borrow_mut().insert(pool_id, Pool {
+                name: String::new(),
+                id: pool_id,
+                worker: None,
+                cmd_sock: send_soc,
+            });
+            let cmd_id = ps.refresh(pool_id).unwrap();
+            let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
+            assert_eq!(recv.len(), 2);
+            assert_eq!("refresh", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+        }
+
+        #[test]
+        fn pool_service_delete_works() {
+            let ps = PoolService::new();
+            let pool_name = "pool_service_delete_works";
+            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            fs::create_dir_all(path.as_path()).unwrap();
+            assert!(path.exists());
+            ps.delete(pool_name).unwrap();
+            assert!(!path.exists());
+        }
+
+        #[test]
+        fn pool_service_delete_works_for_opened() {
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let ps = PoolService::new();
+            let pool_name = "pool_service_delete_works";
+            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            let pool_id = SequenceUtils::get_next_id();
+
+            let inproc_sock_name: String = format!("inproc://pool_{}", pool_name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+
+            let pool = Pool {
+                worker: None,
+                name: pool_name.to_string(),
+                cmd_sock: recv_cmd_sock,
+                id: pool_id
+            };
+            ps.pools.borrow_mut().insert(pool_id, pool);
+
+            fs::create_dir_all(path.as_path()).unwrap();
+            assert!(path.exists());
+            let res = ps.delete(pool_name);
+            assert_match!(Err(PoolError::CommonError(CommonError::InvalidState(_))), res);
+            assert!(path.exists());
+        }
     }
 
     #[test]
@@ -785,7 +919,7 @@ mod tests {
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
 
         assert_eq!(actions.len(), 1);
-        assert_eq!(actions[0], ZMQLoopAction::Terminate);
+        assert_eq!(actions[0], ZMQLoopAction::Terminate(-1));
     }
 
     #[test]

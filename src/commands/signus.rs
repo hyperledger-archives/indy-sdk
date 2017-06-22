@@ -326,7 +326,7 @@ impl SignusCommandExecutor {
                 let cb = cbs.remove(&cb_id);
 
                 if cb.is_none() {
-                    error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                    return error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id)
                 }
                 let cb = cb.unwrap();
 
@@ -451,7 +451,7 @@ impl SignusCommandExecutor {
                 let cb = cbs.remove(&cb_id);
 
                 if cb.is_none() {
-                    error!("Can't process Signus::EncryptGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                    return error!("Can't process Signus::EncryptGetNymAck for handle {} - appropriate callback not found!", cb_id)
                 }
                 let cb = cb.unwrap();
 

@@ -1,7 +1,10 @@
+#![warn(unused_variables)] /* FIXME move up */
+
 #[macro_use]
 mod utils;
 
 pub mod agent;
+#[allow(unused_variables)] /* FIXME */
 pub mod anoncreds;
 pub mod ledger;
 pub mod pool;
@@ -71,7 +74,7 @@ impl CommandExecutor {
                 let signus_service = Rc::new(SignusService::new());
                 let ledger_service = Rc::new(LedgerService::new());
 
-                let agent_command_executor = AgentCommandExecutor::new(agent_service.clone(), pool_service.clone(), wallet_service.clone());
+                let agent_command_executor = AgentCommandExecutor::new(agent_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
@@ -119,10 +122,8 @@ impl CommandExecutor {
     }
 
     pub fn send(&self, cmd: Command) -> Result<(), CommonError> {
-        match self.sender.send(cmd) {
-            Ok(val) => Ok(()),
-            Err(ref err) => Err(CommonError::InvalidState(err.description().to_string()))
-        }
+        self.sender.send(cmd).map_err(|err|
+            CommonError::InvalidState(err.description().to_string()))
     }
 }
 
@@ -141,6 +142,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(unused_variables)]
     fn command_executor_can_be_created() {
         let command_executor = CommandExecutor::new();
         assert!(true, "No crashes on CommandExecutor::new");
@@ -148,6 +150,7 @@ mod tests {
 
     #[test]
     fn command_executor_can_be_dropped() {
+        #[allow(unused_variables)]
         fn drop_test() {
             let command_executor = CommandExecutor::new();
         }
@@ -157,6 +160,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unused_variables)]
     fn command_executor_can_get_instance() {
         let ref command_executor: CommandExecutor = *CommandExecutor::instance();
         // Deadlock if another one instance will be requested (try to uncomment the next line)
