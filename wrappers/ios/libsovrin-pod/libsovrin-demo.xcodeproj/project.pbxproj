@@ -13,16 +13,19 @@
 		3E2A7F931EC36186006194EC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F911EC36186006194EC /* Main.storyboard */; };
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
+		7C7243E8873EB75A41166DF8 /* libPods-libsovrin-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */; };
 		8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Validation.m */; };
 		84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */; };
 		84275F301EFA84C700352D72 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */; };
 		848FF4051EFBBBE3009D2FC9 /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4041EFBBBE3009D2FC9 /* PoolHighCases.m */; };
 		848FF4071EFBBC04009D2FC9 /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4061EFBBC04009D2FC9 /* PoolMediumCases.m */; };
-		848FF40C1EFBFC10009D2FC9 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; };
-		848FF40D1EFBFC10009D2FC9 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		848FF4101EFC0978009D2FC9 /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF40F1EFC0978009D2FC9 /* AgentHighCases.m */; };
 		848FF4121EFC0987009D2FC9 /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */; };
 		848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4131EFC0D66009D2FC9 /* AgentUtils.m */; };
+		848FF41A1EFD33B3009D2FC9 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4191EFD33B3009D2FC9 /* Base58Test.m */; };
+		848FF4211EFD46B3009D2FC9 /* NSString+Base58.mm in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */; };
+		848FF4231EFD5439009D2FC9 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; };
+		848FF4241EFD5439009D2FC9 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
 		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
 		84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */; };
@@ -68,13 +71,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		849723E11EFAB9B80058189C /* Embed Frameworks */ = {
+		848FF4251EFD5439009D2FC9 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				848FF40D1EFBFC10009D2FC9 /* libsovrin.framework in Embed Frameworks */,
+				848FF4241EFD5439009D2FC9 /* libsovrin.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -82,6 +85,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
 		070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.release.xcconfig"; sourceTree = "<group>"; };
 		179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F851EC36186006194EC /* libsovrin-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libsovrin-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +100,8 @@
 		3E2A7F991EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3E2A7F9E1EC36187006194EC /* libsovrin-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libsovrin-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7FA41EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.release.xcconfig"; sourceTree = "<group>"; };
+		531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8404D1411EF7D0E900709F1B /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString\U0010+Validation.m"; sourceTree = "<group>"; };
 		8404D1431EF7D0F900709F1B /* NSString+Validation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString\U0010+Validation.h"; sourceTree = "<group>"; };
 		84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
@@ -107,6 +113,9 @@
 		848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
 		848FF4131EFC0D66009D2FC9 /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
 		848FF4151EFC0D72009D2FC9 /* AgentUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
+		848FF4191EFD33B3009D2FC9 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
+		848FF41F1EFD46AB009D2FC9 /* NSString+Base58.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "NSString+Base58.h"; path = "../../../../../../../../../.Trash/NSString+Base58.h"; sourceTree = "<group>"; };
+		848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "NSString+Base58.mm"; path = "../../../../../../../../../.Trash/NSString+Base58.mm"; sourceTree = "<group>"; };
 		84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
 		84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
@@ -147,7 +156,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */,
-				848FF40C1EFBFC10009D2FC9 /* libsovrin.framework in Frameworks */,
+				848FF4231EFD5439009D2FC9 /* libsovrin.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -155,6 +164,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7C7243E8873EB75A41166DF8 /* libPods-libsovrin-demoTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -205,6 +215,8 @@
 		3E2A7FA11EC36187006194EC /* libsovrin-demoTests */ = {
 			isa = PBXGroup;
 			children = (
+				848FF4221EFD4832009D2FC9 /* Base58 */,
+				848FF4191EFD33B3009D2FC9 /* Base58Test.m */,
 				84CFCAC71EF3F78500F91426 /* Utils */,
 				84CFCAC61EF3F72F00F91426 /* Test Utils */,
 				84CFCAC51EF3F71500F91426 /* Demo Tests */,
@@ -242,6 +254,13 @@
 				848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */,
 			);
 			path = Agent;
+			sourceTree = "<group>";
+		};
+		848FF4221EFD4832009D2FC9 /* Base58 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Base58;
 			sourceTree = "<group>";
 		};
 		84CFCAC41EF3F6FD00F91426 /* Case Tests */ = {
@@ -299,6 +318,8 @@
 				8404D1411EF7D0E900709F1B /* NSString+Validation.m */,
 				84F0FD3F1EF7F0E40022A01D /* NSArray+JSON.h */,
 				84F0FD3D1EF7F0D80022A01D /* NSArray+JSON.m */,
+				848FF41F1EFD46AB009D2FC9 /* NSString+Base58.h */,
+				848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -347,6 +368,7 @@
 			isa = PBXGroup;
 			children = (
 				179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */,
+				531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -356,6 +378,8 @@
 			children = (
 				A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */,
 				070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */,
+				04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */,
+				4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -373,7 +397,7 @@
 				3E2A7F831EC36186006194EC /* Resources */,
 				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
 				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
-				849723E11EFAB9B80058189C /* Embed Frameworks */,
+				848FF4251EFD5439009D2FC9 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -388,10 +412,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "libsovrin-demoTests" */;
 			buildPhases = (
+				8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */,
 				3E2A7F9A1EC36187006194EC /* Sources */,
 				3E2A7F9B1EC36187006194EC /* Frameworks */,
 				3E2A7F9C1EC36187006194EC /* Resources */,
 				3ED5BE501EC4985500881380 /* CopyFiles */,
+				58E7D3F16AB63FB03CA9D928 /* [CP] Embed Pods Frameworks */,
+				4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -480,6 +507,51 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
+		4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		58E7D3F16AB63FB03CA9D928 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 		B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -532,6 +604,7 @@
 				84CFCAE01EF3F7C500F91426 /* WalletMediumCases.m in Sources */,
 				84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */,
 				84CFCAE41EF3F7CC00F91426 /* AnoncredsDemo.mm in Sources */,
+				848FF4211EFD46B3009D2FC9 /* NSString+Base58.mm in Sources */,
 				848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */,
 				84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */,
 				8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */,
@@ -541,6 +614,7 @@
 				84CFCAF51EF3F7D300F91426 /* AnoncredsUtils.m in Sources */,
 				84CFCB011EF3F80E00F91426 /* AnoncredsHighCases.m in Sources */,
 				84CFCAE51EF3F7CC00F91426 /* LedgerDemo.mm in Sources */,
+				848FF41A1EFD33B3009D2FC9 /* Base58Test.m in Sources */,
 				84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */,
 				84CFCAE61EF3F7CC00F91426 /* SignusDemo.mm in Sources */,
 				84CFCADD1EF3F7C500F91426 /* SignusHighCases.m in Sources */,
@@ -714,6 +788,7 @@
 		};
 		3E2A7FAB1EC36187006194EC /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
@@ -727,6 +802,7 @@
 		};
 		3E2A7FAC1EC36187006194EC /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				DEVELOPMENT_TEAM = ES8QU3D2A4;

@@ -15,6 +15,7 @@
 #import "SignusUtils.h"
 #import "LedgerUtils.h"
 #import "NSDictionary+JSON.h"
+#import <CoreBitcoin+Categories.h>
 
 @interface SignusHignCases : XCTestCase
 
@@ -61,8 +62,9 @@
                                                         outMyVerkey:&myVerKey
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    XCTAssertEqual([[myDid dataUsingEncoding:NSUTF8StringEncoding] length] , 16, @"length of myDid != 16");
-    XCTAssertEqual([[myVerKey dataUsingEncoding:=NSUTF8StringEncoding] length], 32, @"length of myVerKey != 32");
+    XCTAssertEqual([[myDid dataFromBase58] length] , 16, @"length of myDid != 16");
+    XCTAssertEqual([[myVerKey dataFromBase58] length], 32, @"length of myVerKey != 32");
+    
     
     [TestUtils cleanupStorage];
 }

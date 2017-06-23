@@ -16,7 +16,13 @@ end
 
 target 'libsovrin-demo' do
     project 'libsovrin-demo'
+    pod 'CoreBitcoin', :podspec => 'https://raw.github.com/oleganza/CoreBitcoin/master/CoreBitcoin.podspec'
+
+    target 'libsovrin-demoTests' do
+	inherit! :search_paths
+    end
 end
+
 
 target 'libsovrin' do
     project 'libsovrin'
@@ -36,7 +42,7 @@ post_install do |installer|
       if target.name == 'libzmq'
         target.build_configurations.each do |config|
             config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'ZMQ_BUILD_DRAFT_API=1']
-        end   
+        end
       end
       if target.name == 'libsodium'
         target.build_configurations.each do |config|
@@ -45,4 +51,3 @@ post_install do |installer|
       end
     end
 end
-

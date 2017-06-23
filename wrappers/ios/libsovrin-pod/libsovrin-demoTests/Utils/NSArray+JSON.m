@@ -13,8 +13,6 @@
 
 @implementation NSArray (JSON)
 
-
-
 - (BOOL) contains:(NSDictionary*) dict
 {
     
