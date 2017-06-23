@@ -4,7 +4,7 @@ mod catchup;
 extern crate byteorder;
 extern crate rust_base58;
 extern crate serde_json;
-extern crate zmq;
+extern crate zmq_pw as zmq;
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
@@ -510,13 +510,10 @@ impl RemoteNode {
 
     fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(key_pair.public_key.as_bytes())?;
-        s.set_curve_secretkey(key_pair.secret_key.as_str())?;
-        s.set_curve_publickey(key_pair.public_key.as_str())?;
-        s.set_curve_serverkey(
-            zmq::z85_encode(self.verify_key.as_slice())
-                .map_err(|err| { CommonError::InvalidStructure("Can't encode server key as z85".to_string()) })?
-                .as_str())?;
+        s.set_identity(&key_pair.public_key)?;
+        s.set_curve_secretkey(&key_pair.secret_key)?;
+        s.set_curve_publickey(&key_pair.public_key)?;
+        s.set_curve_serverkey(self.verify_key.as_slice())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(self.zaddr.as_str())?;
         self.zsock = Some(s);
@@ -1080,8 +1077,8 @@ mod tests {
                 dest: (&vk.0 as &[u8]).to_base58(),
             };
             let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
-            s.set_curve_publickey(zmq::z85_encode(pkc.as_slice()).unwrap().as_str()).expect("set public key");
-            s.set_curve_secretkey(zmq::z85_encode(skc.as_slice()).unwrap().as_str()).expect("set secret key");
+            s.set_curve_publickey(pkc.as_slice()).expect("set public key");
+            s.set_curve_secretkey(skc.as_slice()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {

@@ -7,7 +7,7 @@ extern crate log;
 extern crate rust_base58;
 #[macro_use]
 extern crate serde_derive;
-extern crate zmq;
+extern crate zmq_pw as zmq;
 
 use std::sync::mpsc::channel;
 use std::thread;
@@ -90,11 +90,11 @@ mod high_cases {
 
             //FIXME temporary code: replace by sovrin_agent_listen
             thread::spawn(move || {
-                let secret_key = zmq::z85_encode("6wBM7yEYWD7wGd3ZtNQX5r31uWuC8NoZS2Lr6HZvRTY4".from_base58().unwrap().as_slice()).unwrap();
-                let public_key = zmq::z85_encode("2vTqP9QfNdvPr397QaFKtbVUPbhgqmAum2oDVkYsk4p9".from_base58().unwrap().as_slice()).unwrap();
+                let secret_key = "6wBM7yEYWD7wGd3ZtNQX5r31uWuC8NoZS2Lr6HZvRTY4".from_base58().unwrap();
+                let public_key = "2vTqP9QfNdvPr397QaFKtbVUPbhgqmAum2oDVkYsk4p9".from_base58().unwrap();
                 let socket: zmq::Socket = zmq::Context::new().socket(zmq::SocketType::ROUTER).unwrap();
-                socket.set_curve_publickey(public_key.as_str()).unwrap();
-                socket.set_curve_secretkey(secret_key.as_str()).unwrap();
+                socket.set_curve_publickey(public_key.as_slice()).unwrap();
+                socket.set_curve_secretkey(secret_key.as_slice()).unwrap();
                 socket.set_curve_server(true).unwrap();
                 socket.bind(format!("tcp://{}", endpoint).as_str()).unwrap();
                 socket.poll(zmq::POLLIN, -1).unwrap();
