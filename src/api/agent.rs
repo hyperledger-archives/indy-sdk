@@ -184,7 +184,6 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn sovrin_agent_add_identity(command_handle: i32,
                                         listener_handle: i32,
                                         wallet_handle: i32,
