@@ -191,7 +191,22 @@ pub extern fn sovrin_agent_add_identity(command_handle: i32,
                                         did: *const c_char,
                                         add_identity_cb: Option<extern fn(xcommand_handle: i32,
                                                                           err: ErrorCode)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(add_identity_cb, ErrorCode::CommonInvalidParam5);
+
+    let cmd = Command::Agent(AgentCommand::ListenerAddIdentity(
+        listener_handle,
+        wallet_handle,
+        did,
+        Box::new(move |result| {
+            let result = result_to_err_code!(result);
+            add_identity_cb(command_handle, result);
+        }),
+    ));
+
+    let result = CommandExecutor::instance().send(cmd);
+
+    result_to_err_code!(result)
 }
 
 /// Sends message to connected agent.
