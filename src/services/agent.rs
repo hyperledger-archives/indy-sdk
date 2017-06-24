@@ -102,6 +102,10 @@ impl AgentService {
         Ok(listen_handle)
     }
 
+    pub fn add_identity(&self, listener_handle: i32, sk: &str, pk: &str) -> Result<i32, CommonError> {
+        unimplemented!();
+    }
+
     pub fn send(&self, conn_id: i32, msg: Option<&str>) -> Result<i32, CommonError> {
         let send_handle = SequenceUtils::get_next_id();
         let send_cmd = AgentWorkerCommand::Send(SendCmd {

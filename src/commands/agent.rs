@@ -108,6 +108,7 @@ pub struct AgentCommandExecutor {
         Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Listener
     )>>,
+    add_identity_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
     connect_callbacks: RefCell<HashMap<i32, (AgentConnectCB, AgentMessageCB)>>,
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
     close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
@@ -129,6 +130,7 @@ impl AgentCommandExecutor {
             out_connections: RefCell::new(HashMap::new()),
             listeners: RefCell::new(HashMap::new()),
             listen_callbacks: RefCell::new(HashMap::new()),
+            add_identity_callbacks: RefCell::new(HashMap::new()),
             connect_callbacks: RefCell::new(HashMap::new()),
             send_callbacks: RefCell::new(HashMap::new()),
             close_callbacks: RefCell::new(HashMap::new()),
@@ -166,8 +168,8 @@ impl AgentCommandExecutor {
                 self.on_message_received(connection_id, res);
             }
             AgentCommand::ListenerAddIdentity(listener_handle, wallet_handle, did, cb) => {
-                info!(target: "agent_command_executor", "ListenerOnConnect command received");
-                unimplemented!();
+                info!(target: "agent_command_executor", "ListenerAddIdentity command received");
+                self.add_identity(listener_handle, wallet_handle, did, cb);
             }
             AgentCommand::ListenerAddIdentityAck(_, _) => unimplemented!(),
             AgentCommand::Send(connection_id, msg, cb) => {
@@ -384,6 +386,31 @@ impl AgentCommandExecutor {
             cb(res.map_err(From::from));
         } else {
             error!("Can't handle MessageReceived cmd - callback not found for {}", connection_id);
+        }
+    }
+
+    fn add_identity(&self, listener_handle: i32, wallet_handle: i32, did: String,
+                    cb: Box<Fn(Result<(), SovrinError>)>) {
+        let result = self.wallet_service
+            .get(wallet_handle, format!("my_did::{}", did).as_str())
+            .map_err(SovrinError::from)
+            .and_then(|my_did_json|
+                MyDid::from_json(my_did_json.as_str())
+                    .map_err(|_| SovrinError::CommonError(CommonError::InvalidState((format!("Invalid my did json"))))))
+
+            .and_then(|my_did: MyDid|
+                self.agent_service.add_identity(listener_handle, my_did.sk.as_str(), my_did.pk.as_str()).map_err(SovrinError::from))
+
+            .and_then(|cmd_id| {
+                match self.add_identity_callbacks.try_borrow_mut() {
+                    Ok(cbs) => Ok((cbs, cmd_id)),
+                    Err(err) => Err(SovrinError::CommonError(CommonError::InvalidState(err.description().to_string()))),
+                }
+            });
+
+        match result {
+            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
+            Err(err) => cb(Err(err).map_err(map_err_err!())),
         }
     }
 
