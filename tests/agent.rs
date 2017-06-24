@@ -59,6 +59,8 @@ mod high_cases {
             let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.2", "default").unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let sender_did = trustee_did.clone();
+            let sender_wallet = trustee_wallet;
 
             let listener_nym_json = LedgerUtils::build_nym_request(trustee_did.as_str(), listener_did.as_str(), Some(listener_ver_key.as_str()), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(), listener_nym_json.as_str()).unwrap();
@@ -71,7 +73,7 @@ mod high_cases {
 
             AgentUtils::listen(listener_wallet, endpoint, None, None).unwrap();
 
-            AgentUtils::connect(pool_handle, trustee_wallet, trustee_did.as_str(), listener_did.as_str(), None).unwrap();
+            AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
             TestUtils::cleanup_storage();
         }
