@@ -45,7 +45,7 @@ impl AgentUtils {
         Ok(conn_handle)
     }
 
-    pub fn listen(wallet_handle: i32, endpoint: &str,
+    pub fn listen(endpoint: &str,
                   on_connect: Option<Box<Fn(i32, i32) + Send>>,
                   on_msg: Option<Box<Fn(i32, String) + Send>>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
@@ -69,7 +69,7 @@ impl AgentUtils {
         let cb = Box::new(move |err, listener_handle| sender.send((err, listener_handle)).unwrap());
         let (cmd_id, cb) = CallbackUtils::closure_to_agent_listen_cb(cb);
 
-        let res = sovrin_agent_listen(cmd_id, wallet_handle, CString::new(endpoint).unwrap().as_ptr(), cb, on_connect, on_msg);
+        let res = sovrin_agent_listen(cmd_id, CString::new(endpoint).unwrap().as_ptr(), cb, on_connect, on_msg);
 
         if res != ErrorCode::Success {
             return Err(res);

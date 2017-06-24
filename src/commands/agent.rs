@@ -49,7 +49,6 @@ pub enum AgentCommand {
         Result<(), CommonError>,
     ),
     Listen(
-        i32, // wallet handle
         String, // endpoint
         Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
         Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
@@ -73,6 +72,16 @@ pub enum AgentCommand {
     ),
     CloseListenerAck(
         i32, // close cmd handle
+        Result<(), CommonError>,
+    ),
+    ListenerAddIdentity(
+        i32, // listener handle
+        i32, // wallet handle
+        String, // did
+        Box<Fn(Result<(), SovrinError>) + Send>, // add identity cb
+    ),
+    ListenerAddIdentityAck(
+        i32, // cmd handle
         Result<(), CommonError>,
     ),
     Send(
@@ -140,9 +149,9 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ConnectAck command received");
                 self.on_connect_ack(cmd_id, res);
             }
-            AgentCommand::Listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb) => {
+            AgentCommand::Listen(endpoint, listen_cb, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Listen command received");
-                self.listen(wallet_handle, endpoint, listen_cb, connect_cb, message_cb);
+                self.listen(endpoint, listen_cb, connect_cb, message_cb);
             }
             AgentCommand::ListenAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ListenAck command received");
@@ -156,6 +165,11 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
                 self.on_message_received(connection_id, res);
             }
+            AgentCommand::ListenerAddIdentity(listener_handle, wallet_handle, did, cb) => {
+                info!(target: "agent_command_executor", "ListenerOnConnect command received");
+                unimplemented!();
+            }
+            AgentCommand::ListenerAddIdentityAck(_, _) => unimplemented!(),
             AgentCommand::Send(connection_id, msg, cb) => {
                 info!(target: "agent_command_executor", "Send command received");
                 self.send(connection_id, msg, cb)
@@ -312,15 +326,12 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn listen(&self, wallet_handle: i32, endpoint: String,
+    fn listen(&self, endpoint: String,
               listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
               connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
               message_cb: AgentMessageCB) {
-        let my_did_json: String = self.wallet_service.list(wallet_handle, "my_did::").as_ref().unwrap().get(0).as_ref().unwrap().1.clone();
-        let my_did: MyDid = MyDid::from_json(my_did_json.as_str()).map_err(|_| CommonError::InvalidState((format!("Invalid my did json")))).unwrap();
-
         let result = self.agent_service
-            .listen(endpoint.as_str(), my_did.pk.as_str(), my_did.sk.as_str())
+            .listen(endpoint.as_str())
             .and_then(|cmd_id| {
                 match self.listen_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),

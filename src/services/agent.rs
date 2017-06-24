@@ -89,13 +89,11 @@ impl AgentService {
         Ok(conn_handle)
     }
 
-    pub fn listen(&self, endpoint: &str, pk: &str, sk: &str) -> Result<i32, CommonError> {
+    pub fn listen(&self, endpoint: &str) -> Result<i32, CommonError> {
         let listen_handle = SequenceUtils::get_next_id();
         let listen_cmd = AgentWorkerCommand::Listen(ListenCmd {
             listen_handle: listen_handle,
             endpoint: endpoint.to_string(),
-            pk: pk.to_string(),
-            sk: sk.to_string()
         });
         self.agent.cmd_socket.send(listen_cmd.to_json()
                                        .map_err(|err|
@@ -144,7 +142,7 @@ impl AgentWorker {
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
                     AgentWorkerCommand::Close(cmd) => self.close_connection_or_listener(cmd.cmd_id, cmd.handle, cmd.close_listener).unwrap(),
-                    AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint, cmd.pk, cmd.sk).unwrap(),
+                    AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
                     AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
@@ -166,8 +164,8 @@ impl AgentWorker {
         Ok(())
     }
 
-    fn start_listen(&mut self, handle: i32, endpoint: String, pk: String, sk: String) -> Result<(), CommonError> {
-        let res = self.try_start_listen(handle, endpoint, pk, sk);
+    fn start_listen(&mut self, handle: i32, endpoint: String) -> Result<(), CommonError> {
+        let res = self.try_start_listen(handle, endpoint);
         let cmd = AgentCommand::ListenAck(handle, res.map(|()| (handle)));
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
@@ -254,8 +252,8 @@ impl AgentWorker {
         return Err(CommonError::InvalidStructure(format!("Can't close agent listener {} - not found", listener_handle)))
     }
 
-    fn try_start_listen(&mut self, handle: i32, endpoint: String, pk: String, sk: String) -> Result<(), CommonError> {
-        let listener = AgentListener::new(handle, endpoint.clone(), pk, sk).map_err(map_err_trace!("AgentListener::new"))?;
+    fn try_start_listen(&mut self, handle: i32, endpoint: String) -> Result<(), CommonError> {
+        let listener = AgentListener::new(handle, endpoint.clone()).map_err(map_err_trace!("AgentListener::new"))?;
         self.agent_listeners.push(listener);
         info!("Agent listener started at {}", endpoint);
         Ok(())
@@ -369,12 +367,8 @@ impl RemoteAgent {
 }
 
 impl AgentListener {
-    fn new(handle: i32, endpoint: String, pk: String, sk: String) -> Result<AgentListener, zmq::Error> {
+    fn new(handle: i32, endpoint: String) -> Result<AgentListener, zmq::Error> {
         let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER).map_err(map_err_trace!())?;
-        //TODO use forked zmq and set cb instead of raw keys
-        sock.set_curve_publickey(pk.from_base58().unwrap().as_slice()).map_err(map_err_trace!())?;
-        sock.set_curve_secretkey(sk.from_base58().unwrap().as_slice()).map_err(map_err_trace!())?;
-        //TODO /cb instead keys
         sock.set_curve_server(true).map_err(map_err_trace!())?;
         sock.bind(format!("tcp://{}", endpoint).as_str()).map_err(map_err_trace!())?;
         Ok(AgentListener {
@@ -438,8 +432,6 @@ struct ConnectCmd {
 struct ListenCmd {
     listen_handle: i32,
     endpoint: String,
-    pk: String,
-    sk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -546,12 +538,10 @@ mod tests {
             let agent_service = AgentService {
                 agent: agent,
             };
-            let conn_handle = agent_service.listen("endpoint", "pk", "sk").unwrap();
+            let conn_handle = agent_service.listen("endpoint").unwrap();
             let expected_cmd = ListenCmd {
                 listen_handle: conn_handle,
                 endpoint: "endpoint".to_string(),
-                pk: "pk".to_string(),
-                sk: "sk".to_string(),
             };
             let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
             assert_eq!(str, AgentWorkerCommand::Listen(expected_cmd).to_json().unwrap());
@@ -809,7 +799,7 @@ mod tests {
             let pk = server_keys.public_key.to_base58();
             let sk = server_keys.secret_key.to_base58();
             let endpoint = "0.0.0.0:9700".to_string();
-            agent_worker.try_start_listen(0, endpoint.clone(), pk.clone(), sk.clone()).unwrap();
+            agent_worker.try_start_listen(0, endpoint.clone()).unwrap();
             assert_eq!(agent_worker.agent_listeners.len(), 1);
 
             let msg = "msg";

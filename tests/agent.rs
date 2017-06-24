@@ -35,7 +35,7 @@ mod high_cases {
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
         let endpoint = "127.0.0.1:9701";
 
-        AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
+        AgentUtils::listen(endpoint, None, None).unwrap();
 
         SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -71,7 +71,7 @@ mod high_cases {
                                                   None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(), listener_attrib_json.as_str()).unwrap();
 
-            AgentUtils::listen(listener_wallet, endpoint, None, None).unwrap();
+            AgentUtils::listen(endpoint, None, None).unwrap();
 
             AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
@@ -130,7 +130,7 @@ mod high_cases {
             let endpoint = "127.0.0.1:9703";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
+            AgentUtils::listen(endpoint, None, None).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -150,7 +150,7 @@ mod high_cases {
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9704";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
-            AgentUtils::listen(wallet_handle, endpoint,
+            AgentUtils::listen(endpoint,
                                Some(Box::new(move |_, conn_handle| {
                                    wait_conn_send.send(conn_handle).unwrap();
                                })),
@@ -184,7 +184,7 @@ mod high_cases {
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9705";
 
-            let _ = AgentUtils::listen(wallet_handle, endpoint, None, None).unwrap();
+            let _ = AgentUtils::listen(endpoint, None, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -205,7 +205,7 @@ mod high_cases {
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9706";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
-            AgentUtils::listen(wallet_handle, endpoint,
+            AgentUtils::listen(endpoint,
                                Some(Box::new(move |_, conn_handle| {
                                    wait_conn_send.send(conn_handle).unwrap();
                                })),
@@ -234,7 +234,7 @@ mod high_cases {
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9708";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
-            let listener_handle = AgentUtils::listen(wallet_handle, endpoint,
+            let listener_handle = AgentUtils::listen(endpoint,
                                                      Some(Box::new(move |_, conn_handle| {
                                                          wait_conn_send.send(conn_handle).unwrap();
                                                      })),
@@ -266,7 +266,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool6", "wallet6", "default").unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9707";
-            let _ = AgentUtils::listen(wallet_handle, endpoint, None,
+            let _ = AgentUtils::listen(endpoint, None,
                                        Some(Box::new(move |_, msg| {
                                            wait_msg_from_cli_send.send(msg).unwrap();
                                        }))).unwrap();
@@ -294,7 +294,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool9", "wallet9", "default").unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9709";
-            AgentUtils::listen(wallet_handle, endpoint, None,
+            AgentUtils::listen(endpoint, None,
                                Some(Box::new(move |_, msg| {
                                    wait_msg_from_cli_send.send(msg).unwrap();
                                }))).unwrap();
