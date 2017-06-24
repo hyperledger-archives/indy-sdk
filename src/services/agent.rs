@@ -381,6 +381,8 @@ impl RemoteAgent {
             .map_err(map_err_trace!())?;
         self.socket.set_curve_serverkey(self.server_key.as_slice())
             .map_err(map_err_trace!())?;
+        self.socket.set_protocol_version(zmq::make_proto_version(1, 1))
+            .map_err(map_err_trace!())?;
         self.socket.set_linger(0).map_err(map_err_trace!())?; //TODO set correct timeout
         self.socket.connect(self.addr.as_str())
             .map_err(map_err_trace!("RemoteAgent::connect self.socket.connect failed"))?;
@@ -680,9 +682,8 @@ mod tests {
             let recv_key_pair = zmq::CurveKeyPair::new().unwrap();
             let ctx = zmq::Context::new();
             let recv_soc = ctx.socket(zmq::SocketType::ROUTER).unwrap();
-            recv_soc.set_curve_publickey(&recv_key_pair.public_key).unwrap();
-            recv_soc.set_curve_secretkey(&recv_key_pair.secret_key).unwrap();
             recv_soc.set_curve_server(true).unwrap();
+            recv_soc.add_curve_keypair([recv_key_pair.public_key, recv_key_pair.secret_key].concat().as_slice()).unwrap();
             recv_soc.bind("tcp://127.0.0.1:*").unwrap();
             let addr = recv_soc.get_last_endpoint().unwrap().unwrap();
             trace!("addr {}", addr);
