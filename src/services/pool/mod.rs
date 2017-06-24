@@ -490,18 +490,17 @@ impl Drop for Pool {
 
 impl Debug for RemoteNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RemoteNode: {{ public_key: {:?}, verify_key {:?}, zaddr {:?}, zsock is_some {} }}",
-               self.public_key, self.verify_key, self.zaddr, self.zsock.is_some())
+        write!(f, "RemoteNode: {{ public_key {:?}, zaddr {:?}, zsock is_some {} }}",
+               self.public_key, self.zaddr, self.zsock.is_some())
     }
 }
 
 impl RemoteNode {
     fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
-        let public_key = txn.dest.as_str().from_base58()
+        let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key)?,
-            public_key: public_key,
+            public_key: ED25519::vk_to_curve25519(&node_verkey)?,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
@@ -513,7 +512,7 @@ impl RemoteNode {
         s.set_identity(zmq::z85_encode(&key_pair.public_key).unwrap().as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
-        s.set_curve_serverkey(self.verify_key.as_slice())?;
+        s.set_curve_serverkey(self.public_key.as_slice())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(self.zaddr.as_str())?;
         self.zsock = Some(s);
@@ -550,19 +549,6 @@ impl RemoteNode {
                 .map_err(|err|
                     CommonError::InvalidState(format!("Can't serialize message: {}", err.description())))?
                 .as_str())
-    }
-}
-
-impl From<GenTransaction> for RemoteNode {
-    fn from(tx: GenTransaction) -> RemoteNode {
-        let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
-        RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key).expect("dest field in GenTransaction isn't valid"),
-            public_key: public_key,
-            zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
-            zsock: None,
-            name: tx.data.alias,
-        }
     }
 }
 

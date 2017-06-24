@@ -177,7 +177,6 @@ impl PoolConfig {
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,
-    pub verify_key: Vec<u8>,
     pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
 }
