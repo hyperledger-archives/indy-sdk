@@ -2,6 +2,7 @@ use std::sync::mpsc::{channel};
 use std::ffi::{CString};
 
 use sovrin::api::agent::{
+    sovrin_agent_add_identity,
     sovrin_agent_close_connection,
     sovrin_agent_close_listener,
     sovrin_agent_connect,
@@ -82,6 +83,25 @@ impl AgentUtils {
         }
 
         Ok(listener_handle)
+    }
+
+    pub fn add_identity(listener_handle: i32, wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_send_cb(
+            Box::new(move |err_code| sender.send(err_code).unwrap())
+        );
+
+        let res = sovrin_agent_add_identity(cmd_id, listener_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res)
+        }
+
+        Ok(())
     }
 
     pub fn send(conn_handle: i32, msg: &str) -> Result<(), ErrorCode> {
