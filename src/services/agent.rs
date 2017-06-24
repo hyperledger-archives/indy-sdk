@@ -103,7 +103,18 @@ impl AgentService {
     }
 
     pub fn add_identity(&self, listener_handle: i32, sk: &str, pk: &str) -> Result<i32, CommonError> {
-        unimplemented!();
+        let cmd_handle = SequenceUtils::get_next_id();
+        let cmd = AgentWorkerCommand::AddIdentity(AddIdentityCmd {
+            cmd_id: cmd_handle,
+            listen_handle: listener_handle,
+            pk: pk.to_string(),
+            sk: sk.to_string(),
+        });
+        self.agent.cmd_socket.send(cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::AddIdentityCmd {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
+        Ok(cmd_handle)
     }
 
     pub fn send(&self, conn_id: i32, msg: Option<&str>) -> Result<i32, CommonError> {
@@ -147,6 +158,7 @@ impl AgentWorker {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
                     AgentWorkerCommand::Close(cmd) => self.close_connection_or_listener(cmd.cmd_id, cmd.handle, cmd.close_listener).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint).unwrap(),
+                    AgentWorkerCommand::AddIdentity(_) => unimplemented!(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
                     AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
@@ -411,6 +423,7 @@ impl AgentListener {
 enum AgentWorkerCommand {
     Connect(ConnectCmd),
     Listen(ListenCmd),
+    AddIdentity(AddIdentityCmd),
     Response(Response),
     Request(Request),
     Send(SendCmd),
@@ -436,6 +449,14 @@ struct ConnectCmd {
 struct ListenCmd {
     listen_handle: i32,
     endpoint: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct AddIdentityCmd {
+    cmd_id: i32,
+    listen_handle: i32,
+    pk: String,
+    sk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -549,6 +570,32 @@ mod tests {
             };
             let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
             assert_eq!(str, AgentWorkerCommand::Listen(expected_cmd).to_json().unwrap());
+        }
+
+        #[test]
+        fn agent_service_add_identity_works() {
+            let (sender, receiver) = channel();
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("test_connect", true).unwrap();
+            let agent = Agent {
+                cmd_socket: send_soc,
+                worker: Some(thread::spawn(move || {
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap();
+                    recv_soc.recv_string(0).unwrap().unwrap();
+                }))
+            };
+            let agent_service = AgentService {
+                agent: agent,
+            };
+            let listener_handle = SequenceUtils::get_next_id();
+            let cmd_handle = agent_service.add_identity(listener_handle, "sk", "pk").unwrap();
+            let expected_cmd = AddIdentityCmd {
+                cmd_id: cmd_handle,
+                listen_handle: listener_handle,
+                pk: "pk".to_string(),
+                sk: "sk".to_string(),
+            };
+            let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(str, AgentWorkerCommand::AddIdentity(expected_cmd).to_json().unwrap());
         }
 
         #[test]
@@ -800,11 +847,11 @@ mod tests {
             };
 
             let server_keys = zmq::CurveKeyPair::new().unwrap();
-            let pk = server_keys.public_key.to_base58();
-            let sk = server_keys.secret_key.to_base58();
             let endpoint = "0.0.0.0:9700".to_string();
             agent_worker.try_start_listen(0, endpoint.clone()).unwrap();
             assert_eq!(agent_worker.agent_listeners.len(), 1);
+            agent_worker.agent_listeners[0].socket
+                .add_curve_keypair([server_keys.public_key, server_keys.secret_key].concat().as_slice()).unwrap();
 
             let msg = "msg";
             let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
@@ -812,6 +859,7 @@ mod tests {
             sock.set_curve_publickey(&kp.public_key).unwrap();
             sock.set_curve_secretkey(&kp.secret_key).unwrap();
             sock.set_curve_serverkey(&server_keys.public_key).unwrap();
+            sock.set_protocol_version(zmq::make_proto_version(1,1)).unwrap();
             sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
             sock.send(msg, 0).unwrap();
             agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
