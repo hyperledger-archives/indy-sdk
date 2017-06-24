@@ -171,7 +171,10 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ListenerAddIdentity command received");
                 self.add_identity(listener_handle, wallet_handle, did, cb);
             }
-            AgentCommand::ListenerAddIdentityAck(_, _) => unimplemented!(),
+            AgentCommand::ListenerAddIdentityAck(cmd_id, res) => {
+                info!(target: "agent_command_executor", "ListenerAddIdentityAck command received");
+                self.on_add_identity_ack(cmd_id, res);
+            }
             AgentCommand::Send(connection_id, msg, cb) => {
                 info!(target: "agent_command_executor", "Send command received");
                 self.send(connection_id, msg, cb)
@@ -412,6 +415,13 @@ impl AgentCommandExecutor {
             Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
             Err(err) => cb(Err(err).map_err(map_err_err!())),
         }
+    }
+
+    fn on_add_identity_ack(&self, cmd_id: i32, res: Result<(), CommonError>) {
+        match self.add_identity_callbacks.borrow_mut().remove(&cmd_id) {
+            Some(cb) => cb(res.map_err(From::from)),
+            None => error!("Can't handle AddIdentityAck cmd - callback not found for {}", cmd_id),
+        };
     }
 
     fn send(&self, conn_id: i32, msg: Option<String>, cb: Box<Fn(Result<(), SovrinError>)>) {

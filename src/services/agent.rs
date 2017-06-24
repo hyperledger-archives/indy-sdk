@@ -158,7 +158,7 @@ impl AgentWorker {
                     AgentWorkerCommand::Connect(cmd) => self.connect(&cmd).unwrap(),
                     AgentWorkerCommand::Close(cmd) => self.close_connection_or_listener(cmd.cmd_id, cmd.handle, cmd.close_listener).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint).unwrap(),
-                    AgentWorkerCommand::AddIdentity(_) => unimplemented!(),
+                    AgentWorkerCommand::AddIdentity(cmd) => self.add_identity(cmd.cmd_id, cmd.listen_handle, cmd.pk, cmd.sk).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
                     AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
@@ -186,11 +186,30 @@ impl AgentWorker {
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
 
+    fn add_identity(&mut self, handle: i32, listener: i32, pk: String, sk: String) -> Result<(), CommonError> {
+        let res = self.try_add_identity(listener, pk, sk);
+        let cmd = AgentCommand::ListenerAddIdentityAck(handle, res);
+        CommandExecutor::instance().send(Command::Agent(cmd))
+    }
+
     fn send(&mut self, cmd_id: i32, conn_handle: i32, msg: Option<String>)
             -> Result<(), CommonError> {
         let res = self.try_send(conn_handle, msg);
         let cmd = AgentCommand::SendAck(cmd_id, res);
         CommandExecutor::instance().send(Command::Agent(cmd))
+    }
+
+    fn try_add_identity(&mut self, listener_handle: i32, pk: String, sk: String) -> Result<(), CommonError> {
+        for listener in &self.agent_listeners {
+            let listener: &AgentListener = listener;
+            if listener.listener_handle == listener_handle {
+                if let (Ok(pk), Ok(sk)) = (pk.from_base58(), sk.from_base58()) {
+                    listener.socket.add_curve_keypair([pk, sk].concat().as_slice())?;
+                }
+                return Ok(())
+            }
+        }
+        Err(CommonError::InvalidStructure(format!("Listener with id {} not founded", listener_handle)))
     }
 
     fn try_send(&mut self, handle: i32, msg: Option<String>) -> Result<(), CommonError> {
@@ -314,7 +333,7 @@ impl AgentWorker {
         }
         for i in 0..agent_listeners_cnt {
             if poll_items[1 + agent_connections_cnt + i].is_readable() {
-                let identity = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT)?;
+                let identity = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT)?; /* TODO allow non-string identyty? */
                 let msg = self.agent_listeners[i].socket.recv_string(zmq::DONTWAIT)?;
                 if let (Ok(identity), Ok(msg)) = (identity, msg) {
                     trace!("Input on agent listener socket {}: identity {} msg {}", i, identity, msg);
@@ -859,13 +878,117 @@ mod tests {
             sock.set_curve_publickey(&kp.public_key).unwrap();
             sock.set_curve_secretkey(&kp.secret_key).unwrap();
             sock.set_curve_serverkey(&server_keys.public_key).unwrap();
-            sock.set_protocol_version(zmq::make_proto_version(1,1)).unwrap();
+            sock.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
             sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
             sock.send(msg, 0).unwrap();
             agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
             agent_worker.agent_listeners[0].socket.recv_bytes(zmq::DONTWAIT).unwrap(); //ignore identity
             let act_msg = agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
             assert_eq!(act_msg, msg);
+        }
+
+        #[test]
+        fn agent_worker_try_add_identity_works_for_not_found() {
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: Vec::new(),
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+            let listener_handle = SequenceUtils::get_next_id();
+
+            let res = agent_worker.try_add_identity(listener_handle, String::new(), String::new());
+
+            assert_match!(Err(CommonError::InvalidStructure(_)), res);
+        }
+
+        #[test]
+        fn agent_worker_try_add_identity_works() {
+            let server_kp = zmq::CurveKeyPair::new().unwrap();
+            let endpoint = "inproc://agent_worker_try_add_identity_works";
+            let (client_soc, server_soc) = {
+                let ctx = zmq::Context::new();
+                let rs = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+                let ss = ctx.socket(zmq::SocketType::DEALER).unwrap();
+                rs.set_curve_server(true).unwrap();
+                rs.bind(endpoint).unwrap();
+                let client_kp = zmq::CurveKeyPair::new().unwrap();
+                ss.set_identity("test_identity".as_bytes()).unwrap();
+                ss.set_curve_publickey(&client_kp.public_key).unwrap();
+                ss.set_curve_secretkey(&client_kp.secret_key).unwrap();
+                ss.set_curve_serverkey(&server_kp.public_key).unwrap();
+                ss.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
+
+                (ss, rs)
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+            let listener_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: vec![AgentListener {
+                    socket: server_soc,
+                    connections: vec![(conn_handle, "test_identity".to_string())],
+                    listener_handle: listener_handle,
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_add_identity(listener_handle, server_kp.public_key.to_base58(), server_kp.secret_key.to_base58()).unwrap();
+            client_soc.connect(endpoint).unwrap();
+            client_soc.send("test_str", zmq::DONTWAIT).unwrap();
+            agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 100).unwrap();
+            assert_eq!(agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "test_identity");
+            assert_eq!(agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "test_str");
+        }
+
+        #[test]
+        fn agent_worker_try_add_identity_works_for_twice() {
+            let server_kp1 = zmq::CurveKeyPair::new().unwrap();
+            let server_kp2 = zmq::CurveKeyPair::new().unwrap();
+            let endpoint = "inproc://agent_worker_try_add_identity_works";
+            let (client_soc1, client_soc2, server_soc) = {
+                let ctx = zmq::Context::new();
+                let rs = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+                let ss1 = ctx.socket(zmq::SocketType::DEALER).unwrap();
+                let ss2 = ctx.socket(zmq::SocketType::DEALER).unwrap();
+                rs.set_curve_server(true).unwrap();
+                rs.bind(endpoint).unwrap();
+                for &(ref ss, ref server_kp, id) in [(&ss1, &server_kp1, "test_identity1"), (&ss2, &server_kp2, "test_identity2")].iter() {
+                    let client_kp = zmq::CurveKeyPair::new().unwrap();
+                    ss.set_identity(id.as_bytes()).unwrap();
+                    ss.set_curve_publickey(&client_kp.public_key).unwrap();
+                    ss.set_curve_secretkey(&client_kp.secret_key).unwrap();
+                    ss.set_curve_serverkey(&server_kp.public_key).unwrap();
+                    ss.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
+                }
+
+                (ss1, ss2, rs)
+            };
+            let conn_handle = SequenceUtils::get_next_id();
+            let listener_handle = SequenceUtils::get_next_id();
+            let mut agent_worker = AgentWorker {
+                agent_connections: Vec::new(),
+                agent_listeners: vec![AgentListener {
+                    socket: server_soc,
+                    connections: vec![(conn_handle, "test_identity".to_string())],
+                    listener_handle: listener_handle,
+                }],
+                cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+            };
+
+            agent_worker.try_add_identity(listener_handle, server_kp1.public_key.to_base58(), server_kp1.secret_key.to_base58()).unwrap();
+            agent_worker.try_add_identity(listener_handle, server_kp2.public_key.to_base58(), server_kp2.secret_key.to_base58()).unwrap();
+
+            let ref aw_listener_socket = agent_worker.agent_listeners[0].socket;
+
+            for &(ref client_soc, i) in [(client_soc1, 1), (client_soc2, 2)].iter() {
+                let msg = format!("test_str{}", i);
+                let exp_identity = format!("test_identity{}", i);
+                client_soc.connect(endpoint).unwrap();
+                client_soc.send(msg.as_str(), zmq::DONTWAIT).unwrap();
+                aw_listener_socket.poll(zmq::POLLIN, 100).unwrap();
+                assert_eq!(aw_listener_socket.recv_string(zmq::DONTWAIT).unwrap().unwrap(), exp_identity);
+                assert_eq!(aw_listener_socket.recv_string(zmq::DONTWAIT).unwrap().unwrap(), msg);
+            }
         }
 
         #[test]
