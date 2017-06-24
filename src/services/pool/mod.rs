@@ -510,7 +510,7 @@ impl RemoteNode {
 
     fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(&key_pair.public_key)?;
+        s.set_identity(zmq::z85_encode(&key_pair.public_key).unwrap().as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
         s.set_curve_serverkey(self.verify_key.as_slice())?;
