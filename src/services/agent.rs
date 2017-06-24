@@ -42,7 +42,7 @@ struct Agent {
 impl Drop for Agent {
     fn drop(&mut self) {
         trace!("agent drop >>");
-        self.cmd_socket.send_str(AgentWorkerCommand::Exit.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap(); //TODO
+        self.cmd_socket.send(AgentWorkerCommand::Exit.to_json().unwrap().as_str(), zmq::DONTWAIT).unwrap(); //TODO
         self.worker.take().unwrap().join().unwrap();
         trace!("agent drop <<");
     }
@@ -82,10 +82,10 @@ impl AgentService {
             server_key: server_key.to_string(),
             conn_handle: conn_handle,
         });
-        self.agent.cmd_socket.send_str(connect_cmd.to_json()
-                                           .map_err(|err|
-                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
-                                           .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send(connect_cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Connect {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
         Ok(conn_handle)
     }
 
@@ -97,10 +97,10 @@ impl AgentService {
             pk: pk.to_string(),
             sk: sk.to_string()
         });
-        self.agent.cmd_socket.send_str(listen_cmd.to_json()
-                                           .map_err(|err|
-                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
-                                           .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send(listen_cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
         Ok(listen_handle)
     }
 
@@ -111,10 +111,10 @@ impl AgentService {
             conn_handle: conn_id,
             msg: msg.map(str::to_string),
         });
-        self.agent.cmd_socket.send_str(send_cmd.to_json()
-                                           .map_err(|err|
-                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
-                                           .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send(send_cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
         Ok(send_handle)
     }
 
@@ -126,10 +126,10 @@ impl AgentService {
             handle: handle,
             close_listener: close_listener,
         });
-        self.agent.cmd_socket.send_str(close_cmd.to_json()
-                                           .map_err(|err|
-                                               CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
-                                           .as_str(), zmq::DONTWAIT)?;
+        self.agent.cmd_socket.send(close_cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Send {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
         Ok(close_conn_handle)
     }
 }
@@ -197,7 +197,7 @@ impl AgentWorker {
             let agent_listener: &AgentListener = li.0;
             let identity: &String = li.1;
             return agent_listener.socket
-                .send_str(identity.as_str(), zmq::DONTWAIT | zmq::SNDMORE)
+                .send(identity.as_str(), zmq::DONTWAIT | zmq::SNDMORE)
                 .and_then(|()|
                     agent_listener.socket.send(msg.as_bytes(), zmq::DONTWAIT))
                 .map_err(From::from)
@@ -351,7 +351,7 @@ impl RemoteAgent {
         self.socket.set_linger(0).map_err(map_err_trace!())?; //TODO set correct timeout
         self.socket.connect(self.addr.as_str())
             .map_err(map_err_trace!("RemoteAgent::connect self.socket.connect failed"))?;
-        self.socket.send_str("DID", zmq::DONTWAIT).map_err(map_err_trace!())?;
+        self.socket.send("DID", zmq::DONTWAIT).map_err(map_err_trace!())?;
         Ok(())
     }
 
@@ -656,7 +656,7 @@ mod tests {
                 agent_listeners: Vec::new(),
                 cmd_socket: recv_soc,
             };
-            send_soc.send_str(r#"{"cmd": "Exit"}"#, zmq::DONTWAIT).unwrap();
+            send_soc.send(r#"{"cmd": "Exit"}"#, zmq::DONTWAIT).unwrap();
 
             let cmds = agent_worker.poll().unwrap();
 
@@ -679,7 +679,7 @@ mod tests {
                 agent_listeners: Vec::new(),
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
             };
-            send_soc.send_str("msg", zmq::DONTWAIT).unwrap();
+            send_soc.send("msg", zmq::DONTWAIT).unwrap();
 
             let mut cmds = agent_worker.poll().unwrap();
 
@@ -715,7 +715,7 @@ mod tests {
                 agent_connections: Vec::new(),
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
             };
-            send_soc.send_str("msg", zmq::DONTWAIT).unwrap();
+            send_soc.send("msg", zmq::DONTWAIT).unwrap();
 
             let mut cmds = agent_worker.poll().unwrap();
 
@@ -819,7 +819,7 @@ mod tests {
             sock.set_curve_secretkey(&kp.secret_key).unwrap();
             sock.set_curve_serverkey(&server_keys.public_key).unwrap();
             sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
-            sock.send_str(msg, 0).unwrap();
+            sock.send(msg, 0).unwrap();
             agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
             agent_worker.agent_listeners[0].socket.recv_bytes(zmq::DONTWAIT).unwrap(); //ignore identity
             let act_msg = agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
@@ -930,7 +930,7 @@ mod tests {
     fn agent_service_static_create_zmq_socket_pair_works() {
         let msg = "msg";
         let sockets = _create_zmq_socket_pair("test_pair", true).unwrap();
-        sockets.0.send_str(msg, zmq::DONTWAIT).unwrap();
+        sockets.0.send(msg, zmq::DONTWAIT).unwrap();
         assert_eq!(sockets.1.recv_string(zmq::DONTWAIT).unwrap().unwrap(), msg);
     }
 }

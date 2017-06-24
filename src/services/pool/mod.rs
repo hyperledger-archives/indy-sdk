@@ -539,7 +539,7 @@ impl RemoteNode {
         info!("Sending {:?}", str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send_str(str, zmq::DONTWAIT)?;
+            .send(str, zmq::DONTWAIT)?;
         Ok(())
     }
 
@@ -899,7 +899,7 @@ mod tests {
         let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
             pw.poll_zmq().unwrap()
         });
-        send_cmd_sock.send_str("exit", zmq::DONTWAIT).expect("send");
+        send_cmd_sock.send("exit", zmq::DONTWAIT).expect("send");
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
 
         assert_eq!(actions.len(), 1);
