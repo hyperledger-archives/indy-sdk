@@ -10,11 +10,11 @@
 
 @implementation SovrinAgent
 
-+ (NSError*) agentConnect:(SovrinHandle) walletHandle
-                 senderId:(NSString *) senderDid
-               receiverId:(NSString *) receiverDid
-        connectionHandler:(void (^)(NSError* error, SovrinHandle connection)) connectionHandler
-           messageHandler:(void (^)(NSError* error, NSString* message)) messageHandler
++ (NSError *)connectWithWalletHandle:(SovrinHandle)walletHandle
+                            senderId:(NSString *)senderDid
+                          receiverId:(NSString *)receiverDid
+                   connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
+                      messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler
 {
     sovrin_error_t ret;
 
@@ -37,18 +37,18 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentListen:(SovrinHandle) walletHandle
-                endpoint:(NSString *)endpoint
-         listenerHandler:(void (^)(NSError* error,
-                                   SovrinHandle listenerHandle)) listenerCompletion
-       connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
-                                   NSError*     error,
-                                   SovrinHandle connectionHandle,
-                                   NSString*    senderDid,
-                                   NSString*    receiverDid)) connectionCompletion
-          messageHandler:(void (^)(SovrinHandle xconnectionHandle,
-                                   NSError*     error,
-                                   NSString*    message)) messageCompletion
++ (NSError *)listenWithWalletHandle:(SovrinHandle)walletHandle
+                           endpoint:(NSString *)endpoint
+                    listenerHandler:(void (^)(NSError *error,
+                                              SovrinHandle listenerHandle))listenerCompletion
+                  connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
+                                              NSError *error,
+                                              SovrinHandle connectionHandle,
+                                              NSString *senderDid,
+                                              NSString *receiverDid))connectionCompletion
+                     messageHandler:(void (^)(SovrinHandle xconnectionHandle,
+                                              NSError *error,
+                                              NSString *message))messageCompletion
 {
     sovrin_error_t ret;
     
@@ -70,9 +70,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentSend:(SovrinHandle) connectionHandle
-              messsage:(NSString*) message
-            completion:(void (^)(NSError* error)) handler
++ (NSError *)sendWithConnectionHandle:(SovrinHandle)connectionHandle
+                             messsage:(NSString *)message
+                           completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -89,8 +89,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentCloseConnection:(SovrinHandle) connectionHandle
-                       completion:(void (^)(NSError* error)) handler
++ (NSError *)closeConnection:(SovrinHandle)connectionHandle
+                  completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -109,8 +109,8 @@
 
 }
 
-+ (NSError*) agentCloseListener:(SovrinHandle) listenerHandle
-                     completion:(void (^)(NSError* error)) handler
++ (NSError *)closeListener:(SovrinHandle)listenerHandle
+                completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     

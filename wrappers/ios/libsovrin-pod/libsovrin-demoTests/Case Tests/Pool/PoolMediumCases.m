@@ -130,7 +130,7 @@
     ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
                                               config:nil
                                          poolHandler:nil];
-    // TODO: returns 0, not 302
+
     XCTAssertEqual(ret.code, PoolLedgerTerminated, @"PoolUtils::openPoolLedger returned wrong code");
     [TestUtils cleanupStorage];
 }
