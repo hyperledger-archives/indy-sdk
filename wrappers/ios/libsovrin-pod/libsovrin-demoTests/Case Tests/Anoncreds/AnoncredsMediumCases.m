@@ -45,7 +45,11 @@
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
-    NSString *schema = @"{\"name\":\"name\",\"version\":\"1.0\"}";
+    NSString *schema = @"{"
+                        "\"seqNo\":1,"
+                        "\"name\":\"name\","
+                        "\"version\":\"1.0\","
+                        "\"keys\":[]}";
     
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
@@ -67,10 +71,13 @@
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
-    NSString *schema = @"{\"name\":\"name\","\
-                        "\"version\":\"1.0\","\
-                        "\"seq_no\":1,"\
-                        "\"keys\":[]}";
+    NSString *schema = @"{"\
+                        "\"seqNo\":1,"\
+                        "\"data\":{"\
+                            "\"name\":\"name\","\
+                            "\"version\":\"1.0\","\
+                            "\"keys\":[]"\
+                        "}}";
     
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
@@ -389,6 +396,7 @@
             "\"claim_def_seq_no\":10,"\
             "\"revoc_reg_seq_no\":null,"\
             "\"schema_seq_no\":10,"\
+            "\"issuer_did\":\"did\","\
             "\"signature\":{"\
                 "\"primary_claim\":{"\
                     "\"m2\":\"1\","\
@@ -772,13 +780,13 @@
     
     // 2. prover get claims for proof request
     NSString *proofRequest = @"{"
-    "\"nonce\":\"123432421212\","
-    "\"requested_attrs\":{"
-    "\"attr1_uuid\":{"
-    "\"schema_seq_no\":1,"
-    "\"name\":\"name\"}},"
-    "\"requested_predicates\":{}"
-    "}";
+        "\"nonce\":\"123432421212\","
+        "\"requested_attrs\":{"
+            "\"attr1_uuid\":{"
+                "\"schema_seq_no\":1,"
+                "\"name\":\"name\"}},"
+        "\"requested_predicates\":{}"
+        "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
                                                                      proofRequestJson:proofRequest

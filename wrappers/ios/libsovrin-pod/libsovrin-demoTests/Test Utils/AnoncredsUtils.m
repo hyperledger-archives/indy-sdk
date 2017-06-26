@@ -80,11 +80,11 @@
 - (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo
 {
     return [NSString stringWithFormat:@"{"
-            "\"seqNo\":%@"
+            "\"seqNo\":%@,"
             "\"data\":{"
                 "\"name\":\"xyz\","
                 "\"version\":\"1.0\","
-                "\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                "\"keys\":[\"status\",\"period\"]}"
             "}", schemaSeqNo];
 }
 
