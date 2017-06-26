@@ -104,7 +104,7 @@ mod high_cases {
                 let identity = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 let msg = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 info!("Fake agent socket - recv - from {}, msg {}", identity, msg);
-                if msg.eq("DID") {
+                if msg.eq(r#"{"did":{"sender_did":"L1Xk2qCV6uxEEsYhP7B4EP","receiver_did":"L1Xk2qCV6uxEEsYhP7B4EP"}}"#) {
                     info!("Fake agent socket send ACK");
                     socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT).unwrap();
                 }
@@ -154,7 +154,7 @@ mod high_cases {
 
             let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
             let kp = zmq::CurveKeyPair::new().unwrap();
-            sock.set_identity("identity".as_bytes()).unwrap();
+            sock.set_identity(zmq::z85_encode(&kp.public_key).unwrap().as_bytes()).unwrap();
             sock.set_curve_publickey(&kp.public_key).unwrap();
             sock.set_curve_secretkey(&kp.secret_key).unwrap();
             sock.set_curve_serverkey(receiver_pk.from_base58().unwrap().as_slice()).unwrap();

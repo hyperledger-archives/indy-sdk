@@ -211,7 +211,6 @@ impl AgentCommandExecutor {
                 (my_info, None) => self.request_connection_info_from_ledger(pool_handle,
                                                                             wallet_handle,
                                                                             my_info,
-                                                                            receiver_did.as_str(),
                                                                             connect_cb, message_cb),
             },
             Err(err) => connect_cb(Err(err))
@@ -222,7 +221,8 @@ impl AgentCommandExecutor {
                   connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         debug!("AgentCommandExecutor::connect try to service.connect with {:?}", info);
         let result = self.agent_service
-            .connect(my_info.did.as_str(), my_info.secret_key.as_str(), my_info.public_key.as_str(),
+            .connect(my_info.sender_did.as_str(), my_info.receiver_did.as_str(),
+                     my_info.secret_key.as_str(), my_info.public_key.as_str(),
                      info.endpoint.as_str(), info.server_key.as_str())
             .map_err(From::from)
             .and_then(|conn_handle| {
@@ -271,7 +271,8 @@ impl AgentCommandExecutor {
         let my_did: MyDid = MyDid::from_json(&my_did_json)
             .map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
         let my_connect_info = MyConnectInfo {
-            did: sender_did.clone(),
+            sender_did: sender_did.clone(),
+            receiver_did: receiver_did.clone(),
             secret_key: my_did.sk,
             public_key: my_did.pk,
         };
@@ -298,11 +299,13 @@ impl AgentCommandExecutor {
     }
 
     fn request_connection_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32,
-                                           my_conn_info: MyConnectInfo, receiver_did: &str,
+                                           my_conn_info: MyConnectInfo,
                                            connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service, wallet_handle, pool_handle, connect_cb);
         let ddo_request = match self.ledger_service
-            .build_get_attrib_request(my_conn_info.did.as_str(), receiver_did, "endpoint") /* TODO use DDO */ {
+            .build_get_attrib_request(my_conn_info.sender_did.as_str(), /* TODO use DDO request */
+                                      my_conn_info.receiver_did.as_str(),
+                                      "endpoint") {
             Ok(ddo_request) => ddo_request,
             Err(err) => {
                 return connect_cb(Err(SovrinError::from(err)));
@@ -311,7 +314,7 @@ impl AgentCommandExecutor {
         let cmd_id = SequenceUtils::get_next_id();
         self.connect_callbacks.borrow_mut().insert(cmd_id, (connect_cb, message_cb));
         CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
-            pool_handle, wallet_handle, my_conn_info.did.clone(), ddo_request.to_string(),
+            pool_handle, wallet_handle, my_conn_info.sender_did.clone(), ddo_request.to_string(),
             Box::new(move |res: Result<String, SovrinError>| {
                 let res = res.and_then(|ddo_resp| { Ok((my_conn_info.clone(), ddo_resp)) });
                 CommandExecutor::instance().send(Command::Agent(
@@ -478,7 +481,8 @@ impl AgentCommandExecutor {
 
 #[derive(Debug, Clone)]
 pub struct MyConnectInfo {
-    did: String,
+    sender_did: String,
+    receiver_did: String,
     secret_key: String,
     public_key: String,
 }
