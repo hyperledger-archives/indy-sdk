@@ -578,7 +578,7 @@
                                                            did:myDid
                                                      signature:message
                                                    outVerified:&verified];
-    XCTAssertEqual(ret.code, CommonInvalidState, @"SignusUtils::verifyWithWalletHandle() returned wrong code");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::verifyWithWalletHandle() failed");
     XCTAssertTrue(verified);
     
     [TestUtils cleanupStorage];

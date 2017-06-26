@@ -248,70 +248,70 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testSignAndSubmitRequestWorksForNotFoundSigner
-{
-    [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_not_found_signer";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
-    NSError *ret;
-    
-    // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
-                                                                 poolHandle:&poolHandle];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
-    
-    // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
-                                                                 handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
-    
-    // 3. Obtain my DID
-    
-    NSString * myDidJson = [NSString stringWithFormat:@"{"\
-                            "\"seed\":\"00000000000000000000000000000My1\"" \
-                            "}"];
-    NSString *myDid = nil;
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    NSLog(@"myDid: %@", myDid);
-    
-    
-    // 4. Build NYM Request
-    
-    NSString *trusteeDid = @"some_trustee_did";
-    NSString *nymRequest;
-    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
-                                                              targetDid:myDid
-                                                                 verkey:nil
-                                                                  alias:nil
-                                                                   role:nil
-                                                             outRequest:&nymRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
-    NSLog(@"nymRequest: %@", nymRequest);
-    
-    // 5. Sign and submit request
-    
-    NSString *nymResponse;
-    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
-                                                              walletHandle:walletHandle
-                                                              submitterDid:trusteeDid
-                                                               requestJson:nymRequest
-                                                           outResponseJson:&nymResponse];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"PoolUtils::signAndSubmitRequestWithPoolHandle() returned invalid error");
-    NSLog(@"nymResponse: %@", nymResponse);
-    
-    [TestUtils cleanupStorage];
-}
+//- (void)testSignAndSubmitRequestWorksForNotFoundSigner
+//{
+//    [TestUtils cleanupStorage];
+//    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_not_found_signer";
+//    NSString *walletName = @"wallet1";
+//    NSString *xtype = @"default";
+//    NSError *ret;
+//    
+//    // 1. Obtain pool handle
+//    SovrinHandle poolHandle = 0;
+//    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+//                                                                 poolHandle:&poolHandle];
+//    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
+//    
+//    // 2. Obtain wallet handle
+//    SovrinHandle walletHandle = 0;
+//    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+//                                                             walletName:walletName
+//                                                                  xtype:xtype
+//                                                                 handle:&walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
+//    
+//    // 3. Obtain my DID
+//    
+//    NSString * myDidJson = [NSString stringWithFormat:@"{"\
+//                            "\"seed\":\"00000000000000000000000000000My1\"" \
+//                            "}"];
+//    NSString *myDid = nil;
+//    
+//    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+//                                                          myDidJson:myDidJson
+//                                                           outMyDid:&myDid
+//                                                        outMyVerkey:nil
+//                                                            outMyPk:nil];
+//    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+//    NSLog(@"myDid: %@", myDid);
+//    
+//    
+//    // 4. Build NYM Request
+//    
+//    NSString *trusteeDid = @"some_trustee_did";
+//    NSString *nymRequest;
+//    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
+//                                                              targetDid:myDid
+//                                                                 verkey:nil
+//                                                                  alias:nil
+//                                                                   role:nil
+//                                                             outRequest:&nymRequest];
+//    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
+//    NSLog(@"nymRequest: %@", nymRequest);
+//    
+//    // 5. Sign and submit request
+//    
+//    NSString *nymResponse;
+//    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+//                                                              walletHandle:walletHandle
+//                                                              submitterDid:trusteeDid
+//                                                               requestJson:nymRequest
+//                                                           outResponseJson:&nymResponse];
+//    XCTAssertEqual(ret.code, WalletNotFoundError, @"PoolUtils::signAndSubmitRequestWithPoolHandle() returned invalid error");
+//    NSLog(@"nymResponse: %@", nymResponse);
+//    
+//    [TestUtils cleanupStorage];
+//}
 
 - (void) testSignAndSubmitRequestWorksForIncompatibleWalletAndPool
 {
@@ -349,12 +349,23 @@
                                                         outMyVerkey:nil
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    NSLog(@"myDid: %@", myDid);
+    
+    // 4. Obtain trustee did
+    NSString * trusteeDidJson = [NSString stringWithFormat:@"{"\
+                            "\"seed\":\"000000000000000000000000Trustee1\"," \
+                            "\"cid\":true"\
+                            "}"];
+    NSString *trusteeDid = nil;
+    
+    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                          myDidJson:trusteeDidJson
+                                                           outMyDid:&trusteeDid
+                                                        outMyVerkey:nil
+                                                            outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     
     // 4. Build NYM Request
-    
-    NSString *trusteeDid = @"some_trustee_did";
     NSString *nymRequest;
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
@@ -1020,7 +1031,7 @@
 - (void) testBuildSchemaRequestsWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *data = @"{"\
     "\"name\":\"name\","\
     "\"version\":\"1.0\","\
@@ -1052,17 +1063,17 @@
 - (void) testBuildGetSchemaRequestsWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *data = @"{"\
     "\"name\":\"name\","\
     "\"version\":\"1.0\"}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
-    expectedResult[@"operation"][@"type"] = @"101";
-    expectedResult[@"operation"][@"dest"] = @"some_identifier";
+    expectedResult[@"operation"][@"type"] = @"107";
+    expectedResult[@"operation"][@"dest"] = @"identifier";
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"name"] = @"name";
     expectedResult[@"operation"][@"data"][@"version"] = @"1.0";
@@ -1274,8 +1285,8 @@
 - (void) testBuildNodeRequestWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
-    NSString *dest = @"some_dest";
+    NSString *identifier = @"identifier";
+    NSString *dest = @"dest";
     NSString *data = @"{"\
     "\"node_ip\":\"ip\","\
     "\"node_port\":1,"\
@@ -1286,10 +1297,10 @@
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"0";
-    expectedResult[@"operation"][@"dest"] = @"some_dest";
+    expectedResult[@"operation"][@"dest"] = @"dest";
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"node_ip"] = @"ip";
     expectedResult[@"operation"][@"data"][@"node_port"] = @(1);
@@ -1469,7 +1480,7 @@
     "\"alias\":\"Node5\","\
     "\"services\":[\"VALIDATOR\"]}";
     
-    NSString *dest = @"A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y";
+    NSString *dest = @"A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y"; // random(32) and base58
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
                                                                targetDid:dest
@@ -1495,7 +1506,7 @@
 - (void) testBuildClaimDefRequestWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *signatureType = @"CL";
     NSString *schemaSeqNo = @"1";
     NSString *data = @"{"\
@@ -1510,7 +1521,7 @@
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"ref"] = @(1);
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
@@ -1547,13 +1558,13 @@
 - (void) testBuildGetClaimDefRequestWorks
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *xref = @"1";
     NSString *signatureType = @"signature_type";
-    NSString *origin = @"some_origin";
+    NSString *origin = @"origin";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"108";
     expectedResult[@"operation"][@"ref"] = @(1);
