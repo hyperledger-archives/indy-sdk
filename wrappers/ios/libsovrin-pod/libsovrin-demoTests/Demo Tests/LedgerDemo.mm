@@ -187,15 +187,15 @@
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 10. Prepare NYM transaction
-    NSNumber *nymReqId = @(1491566332010850);
+    // removing signature field does not help
+    NSNumber *nymReqId = [[PoolUtils sharedInstance] getRequestId];
     NSString *nymTxnRequest = [NSString stringWithFormat:@"{"\
                                "\"identifier\":\"%@\","\
                                "\"operation\":{"\
                                     "\"dest\":\"%@\","\
                                     "\"type\":\"1\"},"\
-                               "\"reqId\":%@,"\
-                               "\"signature\": null"\
-                               "}", theirVerkey, myDid, nymReqId];
+                               "\"reqId\":%d"\
+                               "}", theirVerkey, myDid, [nymReqId intValue]];
     
     // TODO: 110 or 304 error Error. some issue with nymTxnRequest
     // 11. Send NYM request with signing
@@ -215,15 +215,14 @@
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 12. Prepare and send GET_NYM request
-    NSNumber *getNymRequestId = @(1491566332010862);//[[PoolUtils sharedInstance] getRequestId];
+    NSNumber *getNymRequestId = [[PoolUtils sharedInstance] getRequestId];
     NSString *getNymTxnRequest = [NSString stringWithFormat:@"{"\
-                                  "\"reqId\":%@,"\
-                                  "\"signature\":null,"\
+                                  "\"reqId\":%d,"\
                                   "\"identifier\":\"%@\","\
                                   "\"operation\":{"\
                                     "\"type\":\"105\","\
                                     "\"dest\":\"%@\"}"\
-                                  "}", getNymRequestId , myVerkey, myDid];
+                                  "}", [getNymRequestId intValue] , myVerkey, myDid];
     
     __block NSString *getNymTxnResponseJson;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -239,7 +238,9 @@
     XCTAssertEqual(ret.code, Success, @"submitRequestWithPoolHandle() failed!");
     
     NSDictionary *getNymTxnResponse = [NSDictionary fromString:getNymTxnResponseJson];
-    XCTAssertTrue([getNymTxnResponse[@"result"][@"data"][@"dest"] isEqualToString:myDid], @"wrong dest!");
+    NSString *dataStr = getNymTxnResponse[@"result"][@"data"];
+    NSDictionary *data = [NSDictionary fromString:dataStr];
+    XCTAssertTrue([data[@"dest"] isEqualToString:myDid], @"wrong dest!");
     
     [TestUtils cleanupStorage];
 }

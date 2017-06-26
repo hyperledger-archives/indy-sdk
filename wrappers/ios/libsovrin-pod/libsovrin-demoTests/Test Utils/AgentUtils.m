@@ -36,6 +36,8 @@
 //- (NSError *)sendWithConnectionHandler:(SovrinHandle)connectionHandle
 //                               message:(NSString *)message
 //{
+//    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+//    __block NSError *err;
 //    
 //    
 //}

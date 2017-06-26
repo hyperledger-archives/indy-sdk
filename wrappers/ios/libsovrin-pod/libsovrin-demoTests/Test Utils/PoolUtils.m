@@ -11,6 +11,13 @@
 #import <libsovrin/libsovrin.h>
 #import <XCTest/XCTest.h>
 
+@interface PoolUtils ()
+
+@property (assign) int requestIdOffset;
+
+@end
+
+
 @implementation PoolUtils
 
 + (PoolUtils *)sharedInstance
@@ -20,6 +27,7 @@
 
     dispatch_once(&dispatch_once_block, ^ {
         instance = [PoolUtils new];
+        instance.requestIdOffset = 1;
     });
 
     return instance;
@@ -35,7 +43,7 @@
 - (NSNumber *) getRequestId
 {
     NSTimeInterval timeInSeconds = [[NSDate date] timeIntervalSince1970];
-    return @(timeInSeconds * pow(10.0,9.0) + timeInSeconds * 3.0);
+    return @(timeInSeconds + self.requestIdOffset++);
 }
 
 - (void)createGenesisTXNFile:(NSString *)fileName

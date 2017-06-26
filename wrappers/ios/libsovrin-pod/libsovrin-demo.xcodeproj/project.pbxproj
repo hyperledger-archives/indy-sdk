@@ -17,6 +17,8 @@
 		8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Validation.m */; };
 		84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */; };
 		84275F301EFA84C700352D72 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */; };
+		846CE3501F0113B000B57188 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 846CE34F1F0113B000B57188 /* libsovrin.framework */; };
+		846CE3511F0113B000B57188 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 846CE34F1F0113B000B57188 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		848FF4051EFBBBE3009D2FC9 /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4041EFBBBE3009D2FC9 /* PoolHighCases.m */; };
 		848FF4071EFBBC04009D2FC9 /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4061EFBBC04009D2FC9 /* PoolMediumCases.m */; };
 		848FF4101EFC0978009D2FC9 /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF40F1EFC0978009D2FC9 /* AgentHighCases.m */; };
@@ -24,8 +26,6 @@
 		848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4131EFC0D66009D2FC9 /* AgentUtils.m */; };
 		848FF41A1EFD33B3009D2FC9 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4191EFD33B3009D2FC9 /* Base58Test.m */; };
 		848FF4211EFD46B3009D2FC9 /* NSString+Base58.mm in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */; };
-		848FF4231EFD5439009D2FC9 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; };
-		848FF4241EFD5439009D2FC9 /* libsovrin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
 		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
 		84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */; };
@@ -71,13 +71,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		848FF4251EFD5439009D2FC9 /* Embed Frameworks */ = {
+		846CE34E1F0113A700B57188 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				848FF4241EFD5439009D2FC9 /* libsovrin.framework in Embed Frameworks */,
+				846CE3511F0113B000B57188 /* libsovrin.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -106,9 +106,9 @@
 		8404D1431EF7D0F900709F1B /* NSString+Validation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString\U0010+Validation.h"; sourceTree = "<group>"; };
 		84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
 		84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
+		846CE34F1F0113B000B57188 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		848FF4041EFBBBE3009D2FC9 /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
 		848FF4061EFBBC04009D2FC9 /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
-		848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		848FF40F1EFC0978009D2FC9 /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
 		848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
 		848FF4131EFC0D66009D2FC9 /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
@@ -156,7 +156,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C497AE5EAF63ECF57EB68BD8 /* libPods-libsovrin-demo.a in Frameworks */,
-				848FF4231EFD5439009D2FC9 /* libsovrin.framework in Frameworks */,
+				846CE3501F0113B000B57188 /* libsovrin.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -174,7 +174,7 @@
 		3E2A7F7C1EC36186006194EC = {
 			isa = PBXGroup;
 			children = (
-				848FF40B1EFBFC10009D2FC9 /* libsovrin.framework */,
+				846CE34F1F0113B000B57188 /* libsovrin.framework */,
 				3E2A7F871EC36186006194EC /* libsovrin-demo */,
 				3E2A7FA11EC36187006194EC /* libsovrin-demoTests */,
 				3E2A7F861EC36186006194EC /* Products */,
@@ -397,7 +397,7 @@
 				3E2A7F831EC36186006194EC /* Resources */,
 				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
 				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
-				848FF4251EFD5439009D2FC9 /* Embed Frameworks */,
+				846CE34E1F0113A700B57188 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
