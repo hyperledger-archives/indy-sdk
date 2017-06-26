@@ -17,7 +17,7 @@
 		3E99B99A1EB3C54100B18027 /* SovrinTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E99B9951EB3C54100B18027 /* SovrinTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */; };
-		3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */; };
+		3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */; };
 		3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */; };
 		3ECDB9161EC309D900F13F33 /* NSError+SovrinError.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9141EC309D900F13F33 /* NSError+SovrinError.m */; };

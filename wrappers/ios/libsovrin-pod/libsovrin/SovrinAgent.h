@@ -11,8 +11,8 @@
 
 + (NSError *)connectWithPoolHandle:(SovrinHandle)poolHandle
                       walletHandle:(SovrinHandle)walletHandle
-                          senderId:(NSString *)senderDid
-                        receiverId:(NSString *)receiverDid
+                         senderDId:(NSString *)senderDid
+                       receiverDId:(NSString *)receiverDid
                  connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
                     messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler;
 

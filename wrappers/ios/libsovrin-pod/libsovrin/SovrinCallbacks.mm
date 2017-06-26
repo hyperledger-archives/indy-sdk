@@ -529,11 +529,11 @@ void SovrinWrapperCommonAgentListenerCallback(sovrin_handle_t xcommand_handle,
 {
     void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] dictionaryFor: xcommand_handle];
-    [dict setObject: [NSMutableDictionary new] forKey:connectionsKey];
+    dict[connectionsKey] = [NSMutableDictionary new];
     [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     [[SovrinCallbacks sharedInstance] rememberListenHandle:listener_handle withDictionary:dict];
 
-    void (^completion)(NSError* error,SovrinHandle) = (__bridge void (^)(NSError*,SovrinHandle))block;
+    void (^completion)(NSError* error, SovrinHandle) = (__bridge void (^)(NSError*,SovrinHandle))block;
 
     if(completion)
     {

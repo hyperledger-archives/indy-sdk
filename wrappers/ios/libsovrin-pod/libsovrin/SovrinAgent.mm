@@ -10,24 +10,26 @@
 
 @implementation SovrinAgent
 
-+ (NSError *)connectWithWalletHandle:(SovrinHandle)walletHandle
-                            senderId:(NSString *)senderDid
-                          receiverId:(NSString *)receiverDid
-                   connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
-                      messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler
++ (NSError *)connectWithPoolHandle:(SovrinHandle)poolHandle
+                      walletHandle:(SovrinHandle)walletHandle
+                         senderDId:(NSString *)senderDid
+                       receiverDId:(NSString *)receiverDid
+                 connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
+                    messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler
 {
     sovrin_error_t ret;
 
+    // closure_map_ids?
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) connectionHandler
                                                                   withMessageCallback: (void*) messageHandler];
     
     ret = sovrin_agent_connect(handle,
+                               poolHandle,
                                walletHandle,
                                [senderDid UTF8String],
                                [receiverDid UTF8String],
                                SovrinWrapperCommonAgentOutgoingConnectionCallback,
-                               SovrinWrapperCommonAgentMessageCallback
-                              );
+                               SovrinWrapperCommonAgentMessageCallback);
     
     if( ret != Success )
     {

@@ -10,6 +10,7 @@
 #import <XCTest/XCTest.h>
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
+#import "AgentUtils.h"
 #import "WalletUtils.h"
 #import "SignusUtils.h"
 #import "AnoncredsUtils.h"
@@ -61,6 +62,14 @@
     
     // 3. listen
     NSString *endpoint = @"tcp://127.0.0.1:9701";
+    
+    SovrinHandle listenerHandle = 0;
+    ret = [[AgentUtils sharedInstance] listenWithWalletHandle:walletHandle
+                                                     endpoint:endpoint
+                                           connectionCallback:nil
+                                              messageCallback:nil
+                                            outListenerHandle:&listenerHandle];
+     XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithWalletHandle() failed ");
     
     [TestUtils cleanupStorage];
 }

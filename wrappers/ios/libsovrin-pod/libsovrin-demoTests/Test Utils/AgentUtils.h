@@ -14,12 +14,10 @@
 
 + (AgentUtils *)sharedInstance;
 
-//- (NSError *)listenWithWalletHandle:(SovrinHandle) walletHandle
-//                           endpoint:(NSString *)endpoint
-//                       onConnection:(NSDictionary *)connection
-//                          onMessage:(NSDictionary *)message
-//                  outListenerHandle:(SovrinHandle *)listenerHandle;
-//
-//
+- (NSError *)listenWithWalletHandle:(SovrinHandle) walletHandle
+                           endpoint:(NSString *)endpoint
+                 connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
+                    messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
+                  outListenerHandle:(SovrinHandle *)listenerHandle;
 
 @end
