@@ -4,6 +4,7 @@ extern crate serde_json;
 extern crate zmq_pw as zmq;
 
 use self::rust_base58::FromBase58;
+use std::collections::HashMap;
 use std::error::Error;
 use std::{io, thread};
 
@@ -24,6 +25,7 @@ struct RemoteAgent {
 
 struct AgentListener {
     connections: Vec<(i32 /* connection_handle*/, String /* identity */)>,
+    pending_connections: HashMap<String /* sender DID */, (String, String) /* (sender pk, receiver DID) */>,
     listener_handle: i32,
     socket: zmq::Socket,
 }
@@ -101,6 +103,11 @@ impl AgentService {
                                            CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::Listen {}", err.description())))?
                                        .as_str(), zmq::DONTWAIT)?;
         Ok(listen_handle)
+    }
+
+    #[allow(unused_variables)] /* FIXME */
+    pub fn ack_connect(&self, did: &str, result: bool) {
+        unimplemented!();
     }
 
     pub fn add_identity(&self, listener_handle: i32, sk: &str, pk: &str) -> Result<i32, CommonError> {
@@ -436,6 +443,7 @@ impl AgentListener {
         sock.bind(format!("tcp://{}", endpoint).as_str()).map_err(map_err_trace!())?;
         Ok(AgentListener {
             connections: Vec::new(),
+            pending_connections: HashMap::new(),
             listener_handle: handle,
             socket: sock,
         })
@@ -449,19 +457,26 @@ impl AgentListener {
 
         if let Ok(did_msg) = MsgDID::from_json(msg.as_str()) {
             info!("New connection to agent listener from {} with msg {}", identity, msg);
-            let conn_handle = SequenceUtils::get_next_id();
-            self.connections.push((conn_handle, identity.clone()));
-            let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
-                                                      Ok((self.listener_handle, conn_handle,
-                                                          did_msg.did.sender_did, did_msg.did.receiver_did)));
+            self.pending_connections.insert(did_msg.did.sender_did.clone(), (identity.clone(), did_msg.did.receiver_did));
+            let cmd = AgentCommand::ListenerCheckConnect(did_msg.did.sender_did, identity, -1 /* FIXME pool_handle */, -1 /* FIXME wallet_handle */);
             CommandExecutor::instance().send(Command::Agent(cmd))?;
-            self.socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT)?;
         } else {
             info!("Message {} from unknown connection to agent listener from {}", msg, identity);
             // TODO may be notify: ListenOnConnect(self.listener_handle, Err(incorrect connection))
             self.socket.send_multipart(&[identity.as_bytes(), "NOT_CONNECTED".as_bytes()], zmq::DONTWAIT)?;
         }
         Ok(())
+    }
+
+    fn ack_connect(&mut self, identity: String) -> Result<(), CommonError> {
+        let conn_handle = SequenceUtils::get_next_id();
+        self.connections.push((conn_handle, identity.clone()));
+        let (sender_did, receiver_did) = self.pending_connections.remove(&identity).unwrap();
+        let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
+                                                  Ok((self.listener_handle, conn_handle,
+                                                      sender_did, receiver_did)));
+        CommandExecutor::instance().send(Command::Agent(cmd))?;
+        Ok(self.socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT)?)
     }
 }
 
@@ -837,6 +852,7 @@ mod tests {
             let agent_worker = AgentWorker {
                 agent_listeners: vec!(AgentListener {
                     connections: Vec::new(),
+                    pending_connections: Vec::new(),
                     listener_handle: 0,
                     socket: recv_soc,
                 }),
@@ -881,6 +897,7 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                     connections: vec![(conn_handle, "test_identity".to_string())],
+                    pending_connections: Vec::new(),
                     listener_handle: SequenceUtils::get_next_id(),
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -916,6 +933,7 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                     connections: Vec::new(),
+                    pending_connections: Vec::new(),
                     listener_handle: listener_handle,
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -995,6 +1013,7 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: server_soc,
                     connections: vec![(conn_handle, "test_identity".to_string())],
+                    pending_connections: Vec::new(),
                     listener_handle: listener_handle,
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1038,6 +1057,7 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: server_soc,
                     connections: vec![(conn_handle, "test_identity".to_string())],
+                    pending_connections: Vec::new(),
                     listener_handle: listener_handle,
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1088,6 +1108,7 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                     connections: vec![(conn_handle, String::new())],
+                    pending_connections: Vec::new(),
                     listener_handle: SequenceUtils::get_next_id(),
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1107,6 +1128,7 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: send_soc,
                     connections: vec![(conn_handle, "test_identity".to_string())],
+                    pending_connections: Vec::new(),
                     listener_handle: SequenceUtils::get_next_id(),
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),

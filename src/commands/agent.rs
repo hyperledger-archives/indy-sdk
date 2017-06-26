@@ -58,6 +58,12 @@ pub enum AgentCommand {
         i32, // cmd handle (eq listener handle)
         Result<i32, CommonError> // listener handle or error
     ),
+    ListenerCheckConnect(
+        String, // did
+        String, // pk
+        i32, // pool handle
+        i32, // wallet handle
+    ),
     ListenerOnConnect(
         i32, // listener handle
         Result<(i32, i32, String, String), CommonError>, // (listener handle, new connection handle, sender and receiver did) or error
@@ -158,6 +164,11 @@ impl AgentCommandExecutor {
             AgentCommand::ListenAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ListenAck command received");
                 self.on_listen_ack(cmd_id, res);
+            }
+            AgentCommand::ListenerCheckConnect(did, pk, _ /*pool_handle*/, wallet_handle) => {
+                let td_json = self.wallet_service.get(wallet_handle, format!("their_did:{}", did).as_str()).unwrap();
+                let td: TheirDid = TheirDid::from_json(td_json.as_str()).unwrap();
+                self.agent_service.ack_connect(did.as_str(), td.pk.map_or(false, |actual_pk| actual_pk.eq(&pk)));
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
