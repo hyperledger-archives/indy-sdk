@@ -14,7 +14,7 @@
                          senderDId:(NSString *)senderDid
                        receiverDId:(NSString *)receiverDid
                  connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
-                    messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler;
+                    messageHandler:(void (^)(SovrinHandle connectionHandle, NSError *error, NSString *message))messageHandler;
 
 + (NSError *)listenWithWalletHandle:(SovrinHandle)walletHandle
                            endpoint:(NSString *)endpoint

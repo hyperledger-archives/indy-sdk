@@ -167,6 +167,38 @@
     return err;
 }
 
+- (NSError *)storeTheirDidFromPartsWithWalletHandle:(SovrinHandle)walletHandle
+                                           theirDid:(NSString *)theirDid
+                                            theirPk:(NSString *)theirPk
+                                        theirVerkey:(NSString *)theirVerkey
+                                           endpoint:(NSString *)endpoint
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    NSString *theirIdentityJson = [NSString stringWithFormat:@"{"
+                                   "\"did\":\"%@\","
+                                   "\"pk\":\"%@\","
+                                    "\"verkey\":\"%@\","
+                                   "\"endpoint\":\"\%@\"}", theirDid, theirPk, theirVerkey, endpoint];
+    
+    NSError *ret = [SovrinSignus storeTheirDidWithWalletHandle:walletHandle
+                                                  identityJSON:theirIdentityJson
+                                                    completion:^(NSError *error)
+    {
+        err = error;
+        [completionExpectation fulfill];
+    }];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    return err;
+}
+
 - (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
                                      did:(NSString *)did
                             identityJson:(NSString *)identityJson

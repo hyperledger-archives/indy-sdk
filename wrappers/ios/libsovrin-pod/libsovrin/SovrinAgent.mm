@@ -15,7 +15,7 @@
                          senderDId:(NSString *)senderDid
                        receiverDId:(NSString *)receiverDid
                  connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
-                    messageHandler:(void (^)(NSError *error, NSString *message)) messageHandler
+                    messageHandler:(void (^)(SovrinHandle connectionHandle, NSError *error, NSString *message))messageHandler
 {
     sovrin_error_t ret;
 
@@ -54,9 +54,9 @@
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t listener_handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor:(void*)listenerCompletion
-                                                                        withConnectionCallback:(void*)connectionCompletion
-                                                                            andMessageCallback:(void*)messageCompletion ];
+    sovrin_handle_t listener_handle = [[SovrinCallbacks sharedInstance] createCommandHandleForListenerCallback:(void*)listenerCompletion
+                                                                                        withConnectionCallback:(void*)connectionCompletion
+                                                                                            andMessageCallback:(void*)messageCompletion ];
     
     ret = sovrin_agent_listen(listener_handle,
                               walletHandle,

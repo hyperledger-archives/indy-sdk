@@ -208,11 +208,11 @@ static NSString* connectionsKey        =  @"connections";
 }
 
 
-- (sovrin_handle_t)createCommandHandleFor:(void *)callback
-                   withConnectionCallback:(void *)connectionCallback
-                       andMessageCallback:(void *)messageCallback
+- (sovrin_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
+                                   withConnectionCallback:(void *)connectionCallback
+                                       andMessageCallback:(void *)messageCallback
 {
-    NSValue *cmdVal = [NSValue valueWithPointer:callback];
+    NSValue *cmdVal = [NSValue valueWithPointer:listenerCallback];
     NSValue *conVal = [NSValue valueWithPointer:connectionCallback];
     NSValue *mesVal = [NSValue valueWithPointer:messageCallback];
     

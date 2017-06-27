@@ -34,6 +34,12 @@
 - (NSError *)storeTheirDidWithWalletHandle:(SovrinHandle)walletHandle
                               identityJson:(NSString *)identityJson;
 
+- (NSError *)storeTheirDidFromPartsWithWalletHandle:(SovrinHandle)walletHandle
+                                           theirDid:(NSString *)theirDid
+                                            theirPk:(NSString *)theirPk
+                                        theirVerkey:(NSString *)theirVerkey
+                                           endpoint:(NSString *)endpoint;
+
 - (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
                                      did:(NSString *)did
                             identityJson:(NSString *)identityJson

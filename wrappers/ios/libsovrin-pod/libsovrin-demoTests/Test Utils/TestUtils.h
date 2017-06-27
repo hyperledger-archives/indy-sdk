@@ -7,6 +7,12 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "AnoncredsUtils.h"
+#import "LedgerUtils.h"
+#import "PoolUtils.h"
+#import "SignusUtils.h"
+#import "WalletUtils.h"
+#import "AgentUtils.h"
 
 @interface TestUtils : NSObject
 
