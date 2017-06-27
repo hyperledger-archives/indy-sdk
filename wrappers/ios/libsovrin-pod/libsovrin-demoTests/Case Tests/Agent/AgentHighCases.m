@@ -16,7 +16,7 @@
 #import "SignusUtils.h"
 #import "AnoncredsUtils.h"
 #import "NSDictionary+JSON.h"
-#import "NSString+Checks.h"
+#import "NSString+Validation.h"
 #import "NSArray+JSON.h"
 
 @interface AgentHignCases : XCTestCase

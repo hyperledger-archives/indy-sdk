@@ -10,7 +10,7 @@
 #import <XCTest/XCTest.h>
 #import "TestUtils.h"
 #import "WalletUtils.h"
-#import "NSString+Checks.h"
+#import "NSString+Validation.h"
 #import "NSDictionary+JSON.h"
 
 @interface AnoncredsUtils ()

@@ -1,5 +1,5 @@
 //
-//  NSString+Checks.h
+//  NSString+Validation.h
 //  libsovrin-demo
 //
 //  Created by Anastasia Tarasova on 19.06.17.
@@ -8,7 +8,7 @@
 
 #import <XCTest/XCTest.h>
 
-@interface NSString (Checks)
+@interface NSString (Validation)
 
 - (BOOL)isValid;
 

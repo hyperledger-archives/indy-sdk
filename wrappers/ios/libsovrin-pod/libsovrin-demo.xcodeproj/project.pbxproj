@@ -14,7 +14,7 @@
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
 		7C7243E8873EB75A41166DF8 /* libPods-libsovrin-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */; };
-		8404D1421EF7D0E900709F1B /* NSString+Checks.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Checks.m */; };
+		8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Validation.m */; };
 		84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */; };
 		84275F301EFA84C700352D72 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */; };
 		846CE3501F0113B000B57188 /* libsovrin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 846CE34F1F0113B000B57188 /* libsovrin.framework */; };
@@ -102,8 +102,8 @@
 		3E2A7FA41EC36187006194EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		8404D1411EF7D0E900709F1B /* NSString+Checks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString\U0010+Checks.m"; sourceTree = "<group>"; };
-		8404D1431EF7D0F900709F1B /* NSString+Checks.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString\U0010+Checks.h"; sourceTree = "<group>"; };
+		8404D1411EF7D0E900709F1B /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString\U0010+Validation.m"; sourceTree = "<group>"; };
+		8404D1431EF7D0F900709F1B /* NSString+Validation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString\U0010+Validation.h"; sourceTree = "<group>"; };
 		84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
 		84275F2F1EFA84C700352D72 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
 		846CE34F1F0113B000B57188 /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -314,8 +314,8 @@
 			children = (
 				84CFCAFC1EF3F7D900F91426 /* NSDictionary+JSON.h */,
 				84CFCAFD1EF3F7D900F91426 /* NSDictionary+JSON.m */,
-				8404D1431EF7D0F900709F1B /* NSString+Checks.h */,
-				8404D1411EF7D0E900709F1B /* NSString+Checks.m */,
+				8404D1431EF7D0F900709F1B /* NSString+Validation.h */,
+				8404D1411EF7D0E900709F1B /* NSString+Validation.m */,
 				84F0FD3F1EF7F0E40022A01D /* NSArray+JSON.h */,
 				84F0FD3D1EF7F0D80022A01D /* NSArray+JSON.m */,
 				848FF41F1EFD46AB009D2FC9 /* NSString+Base58.h */,
@@ -607,7 +607,7 @@
 				848FF4211EFD46B3009D2FC9 /* NSString+Base58.mm in Sources */,
 				848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */,
 				84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */,
-				8404D1421EF7D0E900709F1B /* NSString+Checks.m in Sources */,
+				8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */,
 				84CFCADF1EF3F7C500F91426 /* WalletHighCases.m in Sources */,
 				848FF4121EFC0987009D2FC9 /* AgentMediumCases.m in Sources */,
 				84F0FD3E1EF7F0D80022A01D /* NSArray+JSON.m in Sources */,

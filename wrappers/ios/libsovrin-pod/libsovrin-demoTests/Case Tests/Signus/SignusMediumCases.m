@@ -14,7 +14,7 @@
 #import "SignusUtils.h"
 #import "LedgerUtils.h"
 #import "NSDictionary+JSON.h"
-#import "NSString+Checks.h"
+#import "NSString+Validation.h"
 
 @interface SignusMediumCases : XCTestCase
 
