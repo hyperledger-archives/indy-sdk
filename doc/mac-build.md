@@ -1,4 +1,4 @@
-# Setup Indy SDK build environment for MacOS.
+# Setup Indy SDK build environment for MacOS
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install required native libraries and utilities

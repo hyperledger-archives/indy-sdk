@@ -1,4 +1,4 @@
-# Setup Indy SDK build environment for RHEL based distro (Amazon Linux 2017.03).
+# Setup Indy SDK build environment for RHEL based distro (Amazon Linux 2017.03)
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install required native libraries and utilities available in repos:
