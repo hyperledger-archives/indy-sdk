@@ -6,10 +6,10 @@
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
 //
 
-#import "NSString+Validation.h"
+#import "NSString+Checks.h"
 #import <Foundation/Foundation.h>
 
-@implementation NSString (Validation)
+@implementation NSString (Checks)
 
 - (BOOL)isValid
 {
