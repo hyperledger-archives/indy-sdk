@@ -6,3 +6,4 @@
 * [RHEL based distro (Amazon Linux 2017.03)](doc/rhel-build.md)
 * [Windows](doc/windows-build.md)
 * [iOS](doc/ios-build.md)
+* [MacOS](doc/mac-build.md)
