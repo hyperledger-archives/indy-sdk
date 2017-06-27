@@ -469,6 +469,10 @@ impl RemoteAgent {
 impl AgentListener {
     fn new(handle: i32, endpoint: String) -> Result<AgentListener, zmq::Error> {
         let sock = zmq::Context::new().socket(zmq::SocketType::ROUTER).map_err(map_err_trace!())?;
+        //TODO use forked zmq and set cb instead of raw keys
+        sock.set_curve_publickey(zmq::z85_encode(pk.from_base58().unwrap().as_slice()).unwrap().as_str()).map_err(map_err_trace!())?;
+        sock.set_curve_secretkey(zmq::z85_encode(sk.from_base58().unwrap().as_slice()).unwrap().as_str()).map_err(map_err_trace!())?;
+        //TODO /cb instead keys
         sock.set_curve_server(true).map_err(map_err_trace!())?;
         sock.bind(format!("tcp://{}", endpoint).as_str()).map_err(map_err_trace!())?;
         Ok(AgentListener {
@@ -1010,6 +1014,8 @@ mod tests {
             };
 
             let server_keys = zmq::CurveKeyPair::new().unwrap();
+            let pk = zmq::z85_decode(server_keys.public_key.as_str()).unwrap().to_base58();
+            let sk = zmq::z85_decode(server_keys.secret_key.as_str()).unwrap().to_base58();
             let endpoint = "0.0.0.0:9700".to_string();
             agent_worker.try_start_listen(0, endpoint.clone()).unwrap();
             assert_eq!(agent_worker.agent_listeners.len(), 1);
