@@ -1,4 +1,4 @@
-extern crate zmq;
+extern crate zmq_pw as zmq;
 extern crate serde_json;
 
 use std::{error, fmt, io};
