@@ -7,16 +7,21 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "AnoncredsUtils.h"
+#import "LedgerUtils.h"
+#import "PoolUtils.h"
+#import "SignusUtils.h"
+#import "WalletUtils.h"
+#import "AgentUtils.h"
 
 @interface TestUtils : NSObject
 
 + (NSMutableString*) getUserDocumentDir;
 + (NSMutableString*) getUserTmpDir;
 + (NSTimeInterval) defaultTimeout;
-+(NSTimeInterval) shortTimeout;
-+(NSTimeInterval) longTimeout;
++ (NSTimeInterval) shortTimeout;
++ (NSTimeInterval) longTimeout;
 
-
-+(void) cleanupStorage;
++ (void) cleanupStorage;
 
 @end

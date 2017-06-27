@@ -18,11 +18,13 @@
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                            walletName:(NSString *)walletName
-                                xtype:(NSString *)xtype;
+                                xtype:(NSString *)xtype
+                               config:(NSString *)config;
 
 - (NSError *)deleteWalletWithName:(NSString *)walletName;
 
 - (NSError *)openWalletWithName:(NSString *)walletName
+                         config:(NSString *)config
                       outHandle:(SovrinHandle *)handle;
 
 - (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle;

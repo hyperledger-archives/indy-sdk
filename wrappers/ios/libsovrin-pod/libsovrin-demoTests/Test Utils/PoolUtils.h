@@ -16,7 +16,12 @@
 
 - (NSNumber *)getRequestId;
 
-- (NSError*)createPoolLedgerConfig:(NSString *)poolName;
+- (NSString *)createDefaultPoolConfig:(NSString *)poolName;
+
+- (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)poolName
+                                          nodes:(NSString *)nodes
+                                     poolConfig:(NSString *)config
+                                 genTxnFileName:(NSString *)genTxnFileName;
 
 - (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
                                        poolHandle: (SovrinHandle *) handle;
@@ -30,6 +35,12 @@
 - (NSError *)sendRequestWithPoolHandle:(SovrinHandle)poolHandle
                                request:(NSString *)request
                               response:(NSString **)response;
+
+- (NSError *)refreshPoolHandle:(SovrinHandle)poolHandle;
+
+- (NSError *)closeHandle:(SovrinHandle)poolHandle;
+
+- (NSError *)deletePoolWithName:(NSString *)poolName;
 
 + (NSString *) nodeIp;
 

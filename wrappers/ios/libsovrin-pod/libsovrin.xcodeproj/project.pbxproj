@@ -17,7 +17,7 @@
 		3E99B99A1EB3C54100B18027 /* SovrinTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E99B9951EB3C54100B18027 /* SovrinTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */; };
-		3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */; };
+		3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */; };
 		3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */; };
 		3ECDB9161EC309D900F13F33 /* NSError+SovrinError.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9141EC309D900F13F33 /* NSError+SovrinError.m */; };
@@ -28,8 +28,8 @@
 		3ED5BE5C1ECAE1A400881380 /* SovrinLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */; };
 		3ED5BE601ECB362C00881380 /* SovrinSignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ED5BE5E1ECB362C00881380 /* SovrinSignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ED5BE611ECB362C00881380 /* SovrinSignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5F1ECB362C00881380 /* SovrinSignus.mm */; };
+		846CE3521F012B4500B57188 /* SovrinAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 84D476E21EDD8B5900D8583C /* SovrinAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		84D476E11EDD8AA900D8583C /* SovrinAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84D476E01EDD8AA900D8583C /* SovrinAgent.mm */; };
-		84D476E31EDD8B5900D8583C /* SovrinAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 84D476E21EDD8B5900D8583C /* SovrinAgent.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -170,7 +170,7 @@
 				3ED5BE4A1EC4926300881380 /* SovrinErrors.h in Headers */,
 				3E08C0201EB3336A000A73BA /* libsovrin.h in Headers */,
 				3ECDB91B1EC3184700F13F33 /* SovrinAnoncreds.h in Headers */,
-				84D476E31EDD8B5900D8583C /* SovrinAgent.h in Headers */,
+				846CE3521F012B4500B57188 /* SovrinAgent.h in Headers */,
 				3ED5BE5B1ECAE1A300881380 /* SovrinLedger.h in Headers */,
 				3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */,
 				3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */,

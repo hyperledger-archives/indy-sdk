@@ -569,6 +569,7 @@ fn ledger_demo_works() {
             dest: my_did.clone(),
         },
     };
+
     let request = serde_json::to_string(&get_nym_txn).unwrap();
     let req = CString::new(request).unwrap();
     let err = sovrin_submit_request(get_nym_command_handle,
