@@ -22,7 +22,7 @@
    cargo build
    ```
 4. Run integration tests:
-   * Start local nodes pool on `10.0.0.2:9701-9708` with Docker. It can be done with Docker. see `ci/sovrin-pool.dockerfile`
+   * Start local nodes pool on `10.0.0.2:9701-9708` with Docker:
      
      ```
      docker network create --subnet 10.0.0.0/8 pool_network
