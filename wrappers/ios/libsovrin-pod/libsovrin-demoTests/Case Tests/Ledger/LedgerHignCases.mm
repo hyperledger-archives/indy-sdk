@@ -16,11 +16,11 @@
 #import <libsovrin/libsovrin.h>
 #import "NSDictionary+JSON.h"
 
-@interface Ledger : XCTestCase
+@interface LedgerHignCases : XCTestCase
 
 @end
 
-@implementation Ledger
+@implementation LedgerHignCases
 
 - (void)setUp {
     [super setUp];
@@ -61,9 +61,6 @@
                             "\"cid\":true" \
                             "}"];
     NSString *myDid = nil;
-   // NSString *verKey = nil;
-   // NSString *pk = nil;
-    
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
@@ -89,7 +86,7 @@
                                                        response:&getNymResponse];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"PoolUtils::sendRequestWithPoolHandle() returned invalid error");
     NSLog(@"getNymResponse: %@", getNymResponse);
-
+    
     [TestUtils cleanupStorage];
 }
 
@@ -118,9 +115,9 @@
     // 3. Obtain trustee DID
     
     NSString * trusteeDidJson = [NSString stringWithFormat:@"{"\
-                            "\"seed\":\"000000000000000000000000Trustee1\"," \
-                            "\"cid\":true" \
-                            "}"];
+                                 "\"seed\":\"000000000000000000000000Trustee1\"," \
+                                 "\"cid\":true" \
+                                 "}"];
     NSString *trusteeDid = nil;
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:trusteeDidJson
@@ -152,12 +149,12 @@
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
                                                                  verkey:nil
-                                                                   alias:nil
+                                                                  alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
     NSLog(@"nymRequest: %@", nymRequest);
-
+    
     // 6. Send and submit request using invalid pool handle
     
     SovrinHandle invalidPoolHandle = poolHandle + 1;
@@ -251,70 +248,70 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testSignAndSubmitRequestWorksForNotFoundSigner
-{
-    [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_not_found_signer";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
-    NSError *ret;
-    
-    // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
-                                                                 poolHandle:&poolHandle];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
-    
-    // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
-                                                                 handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
-    
-    // 3. Obtain my DID
-    
-    NSString * myDidJson = [NSString stringWithFormat:@"{"\
-                            "\"seed\":\"00000000000000000000000000000My1\"" \
-                            "}"];
-    NSString *myDid = nil;
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    NSLog(@"myDid: %@", myDid);
-    
-    
-    // 4. Build NYM Request
-    
-    NSString *trusteeDid = @"some_trustee_did";
-    NSString *nymRequest;
-    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
-                                                              targetDid:myDid
-                                                                 verkey:nil
-                                                                  alias:nil
-                                                                   role:nil
-                                                             outRequest:&nymRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
-    NSLog(@"nymRequest: %@", nymRequest);
-    
-    // 5. Sign and submit request
-    
-    NSString *nymResponse;
-    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
-                                                              walletHandle:walletHandle
-                                                              submitterDid:trusteeDid
-                                                               requestJson:nymRequest
-                                                            outResponseJson:&nymResponse];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"PoolUtils::signAndSubmitRequestWithPoolHandle() returned invalid error");
-    NSLog(@"nymResponse: %@", nymResponse);
-    
-    [TestUtils cleanupStorage];
-}
+//- (void)testSignAndSubmitRequestWorksForNotFoundSigner
+//{
+//    [TestUtils cleanupStorage];
+//    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_not_found_signer";
+//    NSString *walletName = @"wallet1";
+//    NSString *xtype = @"default";
+//    NSError *ret;
+//    
+//    // 1. Obtain pool handle
+//    SovrinHandle poolHandle = 0;
+//    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+//                                                                 poolHandle:&poolHandle];
+//    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
+//    
+//    // 2. Obtain wallet handle
+//    SovrinHandle walletHandle = 0;
+//    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+//                                                             walletName:walletName
+//                                                                  xtype:xtype
+//                                                                 handle:&walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
+//    
+//    // 3. Obtain my DID
+//    
+//    NSString * myDidJson = [NSString stringWithFormat:@"{"\
+//                            "\"seed\":\"00000000000000000000000000000My1\"" \
+//                            "}"];
+//    NSString *myDid = nil;
+//    
+//    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+//                                                          myDidJson:myDidJson
+//                                                           outMyDid:&myDid
+//                                                        outMyVerkey:nil
+//                                                            outMyPk:nil];
+//    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+//    NSLog(@"myDid: %@", myDid);
+//    
+//    
+//    // 4. Build NYM Request
+//    
+//    NSString *trusteeDid = @"some_trustee_did";
+//    NSString *nymRequest;
+//    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
+//                                                              targetDid:myDid
+//                                                                 verkey:nil
+//                                                                  alias:nil
+//                                                                   role:nil
+//                                                             outRequest:&nymRequest];
+//    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
+//    NSLog(@"nymRequest: %@", nymRequest);
+//    
+//    // 5. Sign and submit request
+//    
+//    NSString *nymResponse;
+//    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+//                                                              walletHandle:walletHandle
+//                                                              submitterDid:trusteeDid
+//                                                               requestJson:nymRequest
+//                                                           outResponseJson:&nymResponse];
+//    XCTAssertEqual(ret.code, WalletNotFoundError, @"PoolUtils::signAndSubmitRequestWithPoolHandle() returned invalid error");
+//    NSLog(@"nymResponse: %@", nymResponse);
+//    
+//    [TestUtils cleanupStorage];
+//}
 
 - (void) testSignAndSubmitRequestWorksForIncompatibleWalletAndPool
 {
@@ -352,12 +349,23 @@
                                                         outMyVerkey:nil
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    NSLog(@"myDid: %@", myDid);
+    
+    // 4. Obtain trustee did
+    NSString * trusteeDidJson = [NSString stringWithFormat:@"{"\
+                            "\"seed\":\"000000000000000000000000Trustee1\"," \
+                            "\"cid\":true"\
+                            "}"];
+    NSString *trusteeDid = nil;
+    
+    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                          myDidJson:trusteeDidJson
+                                                           outMyDid:&trusteeDid
+                                                        outMyVerkey:nil
+                                                            outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     
     // 4. Build NYM Request
-    
-    NSString *trusteeDid = @"some_trustee_did";
     NSString *nymRequest;
     ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
                                                               targetDid:myDid
@@ -383,62 +391,6 @@
     [TestUtils cleanupStorage];
 }
 
-
-
-//// This workaround is from rust test
-//- (void) getTrusteeKeys:(SovrinHandle) walletHandle
-//             trusteeDid:(NSString **)trusteeDid
-//          trusteeVerkey:(NSString **)trusteeVerkey
-//              trusteePk:(NSString **)trusteePk
-//{
-//    NSError *ret = nil;
-//    
-//    //1. Obtain trusteeVerKey
-//    NSString * myDidJson = [NSString stringWithFormat:@"{"\
-//                            "\"seed\":\"000000000000000000000000Trustee1\"" \
-//                            "}"];
-//    NSString *did = nil;
-//    NSString *verKey = nil;
-//    NSString *pk = nil;
-//    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-//                                                          myDidJson:myDidJson
-//                                                           outMyDid:&did
-//                                                        outMyVerkey:&verKey
-//                                                            outMyPk:&pk];
-//    
-//    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDid() failed");
-//    XCTAssertNotNil(did, @"myDid is nil!");
-//    XCTAssertNotNil(verKey, @"myVerKey is nil!");
-//    XCTAssertNotNil(pk, @"myPk is nil!");
-//    
-//    *trusteeDid = did;
-//    *trusteeVerkey = verKey;
-//    *trusteePk = pk;
-//    
-//    //2. Use obtained trusteeVerKey
-//    myDidJson = [NSString stringWithFormat:@"{"\
-//                            "\"did\":\"%@\"," \
-//                            "\"seed\":\"000000000000000000000000Trustee1\"" \
-//                            "}", verKey];
-//   
-//    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-//                                                          myDidJson:myDidJson
-//                                                           outMyDid:&did
-//                                                        outMyVerkey:&verKey
-//                                                            outMyPk:&pk];
-//    
-//    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDid() failed");
-//    XCTAssertNotNil(did, @"myDid is nil!");
-//    XCTAssertNotNil(verKey, @"myVerKey is nil!");
-//    XCTAssertNotNil(pk, @"myPk is nil!");
-//    
-//    *trusteeDid = did;
-//    *trusteeVerkey = verKey;
-//    *trusteePk = pk;
-//
-//}
-
-
 - (void) testSubmitRequestWorks
 {
     [TestUtils cleanupStorage];
@@ -455,8 +407,8 @@
                          "\"reqId\":1491566332010860," \
                          "\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\"," \
                          "\"operation\":{"\
-                         "\"type\":\"105\","\
-                         "\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"},"\
+                            "\"type\":\"105\","\
+                            "\"dest\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\"},"\
                          "\"signature\":\"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV\"" \
                          "}"];
     
@@ -479,7 +431,7 @@
     
     NSString *actualData = actualReply[@"result"][@"data"];
     XCTAssertTrue([actualReply[@"op"] isEqualToString:@"REPLY"], @"Wrong actualReply[op]");
-    XCTAssertEqual(actualReply[@"result"][@"reqId"], @(1491566332010860), @"Wrong actualReply[reqId]");
+    XCTAssertTrue([actualReply[@"result"][@"reqId"] isEqualToValue:@(1491566332010860)], @"Wrong actualReply[reqId]");
     XCTAssertTrue([actualData isEqualToString:dataStr], "Wrong actualReply[result][data]");
     XCTAssertTrue([actualReply[@"result"][@"identifier"] isEqualToString:@"Th7MpTaRZVRYnPiabds81Y"], @"Wrong actualReply[identifier]" );
     
@@ -489,6 +441,35 @@
 // MARK: - NYM Requests
 
 - (void) testBuildNymRequestsWorksForOnlyRequiredFields
+{
+    [TestUtils cleanupStorage];
+    
+    NSString *identifier = @"Th7MpTaRZVRYnPiabds81Y";
+    NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+    NSError *ret;
+    
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:identifier
+                                                              targetDid:dest
+                                                                 verkey:nil
+                                                                  alias:nil
+                                                                   role:nil
+                                                             outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed!");
+    
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+    
+    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
+    expectedResult[@"identifier"] = identifier;
+    expectedResult[@"operation"] = [NSMutableDictionary new];
+    expectedResult[@"operation"][@"type"] = @"1";
+    expectedResult[@"operation"][@"dest"] = dest;
+    
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+    [TestUtils cleanupStorage];
+}
+
+- (void) testBuildNymRequestsWorksWithOptionFields
 {
     [TestUtils cleanupStorage];
     
@@ -528,7 +509,7 @@
     [TestUtils cleanupStorage];
     NSString *identifier = @"Th7MpTaRZVRYnPiabds81Y";
     NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-
+    
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     expectedResult[@"identifier"] = identifier;
     expectedResult[@"operation"] = [NSMutableDictionary new];
@@ -550,7 +531,7 @@
 - (void) testNymRequestWorksWithoutSignature
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_get_nym_request_works";
+    NSString *poolName = @"sovrin_nym_request_works_without_signature";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
@@ -648,7 +629,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     NSLog(@"myDid: %@", myDid);
     
-    // 4. Build NYM Request
+    // 4. Build get NYM Request
     
     NSString *getNymRequest;
     ret = [[LedgerUtils sharedInstance] buildGetNymRequestWithSubmitterDid:myDid
@@ -668,8 +649,7 @@
     
     NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
     
-    XCTAssertTrue([[getNymResponse allKeys] count] > 0, @"getNymResponse is empty");
-    
+    XCTAssertNotNil(getNymResponse[@"result"][@"data"], @"getNymResponse data is empty");
     [TestUtils cleanupStorage];
 }
 
@@ -697,13 +677,13 @@
                                                                   xtype:xtype
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+    
     // 3. Obtain trustee did
     
     NSString *trusteeDidJson = [NSString stringWithFormat:@"{"\
-                            "\"seed\":\"000000000000000000000000Trustee1\"," \
-                            "\"cid\":true"\
-                            "}"];
+                                "\"seed\":\"000000000000000000000000Trustee1\"," \
+                                "\"cid\":true"\
+                                "}"];
     NSString *trusteeDid = nil;
     
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
@@ -713,13 +693,13 @@
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     NSLog(@"trusteeDid: %@", trusteeDid);
-
+    
     // 4. Obtain my did
     NSString* myDid = nil;
     NSString* myVerKey = nil;
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                 "\"seed\":\"00000000000000000000000000000My1\"" \
-                 "}"];
+                           "\"seed\":\"00000000000000000000000000000My1\"" \
+                           "}"];
     
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
@@ -740,7 +720,7 @@
                                                                   alias:nil
                                                                    role:nil
                                                              outRequest:&nymRequest];
-   
+    
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed");
     XCTAssertNotNil(nymRequest, @"nymRequestResult is nil!");
     
@@ -785,9 +765,9 @@
     NSString* identifier = @"Th7MpTaRZVRYnPiabds81Y";
     NSString* dest = @"Th7MpTaRZVRYnPiabds81Y";
     NSString* raw = @"{"\
-                    "\"endpoint\":{"\
-                    "\"ha\":\"127.0.0.1:5555\"}"\
-                    "}";
+    "\"endpoint\":{"\
+    "\"ha\":\"127.0.0.1:5555\"}"\
+    "}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     expectedResult[@"identifier"] = identifier;
@@ -795,9 +775,9 @@
     expectedResult[@"operation"][@"type"] = @"100";
     expectedResult[@"operation"][@"dest"] = dest;
     expectedResult[@"operation"][@"raw"] = @"{"\
-                                            "\"endpoint\":{"\
-                                            "\"ha\":\"127.0.0.1:5555\"}"\
-                                            "}";
+    "\"endpoint\":{"\
+    "\"ha\":\"127.0.0.1:5555\"}"\
+    "}";
     NSString *attribRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildAttribRequestWithSubmitterDid:identifier
                                                                           targetDid:dest
@@ -826,7 +806,7 @@
                                                                                 enc:nil
                                                                          resultJson:&attribRequest];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildAttribRequestWithSubmitterDid() returned wrong error");
-
+    
     [TestUtils cleanupStorage];
 }
 
@@ -846,9 +826,9 @@
     
     NSString *getAttribRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetAttribRequestWithSubmitterDid:identifier
-                                                                                           targetDid:dest
-                                                                                                data:raw
-                                                                                          resultJson:&getAttribRequestJson];
+                                                                             targetDid:dest
+                                                                                  data:raw
+                                                                            resultJson:&getAttribRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAttribRequestWithSubmitterDid() returned wrong error");
     
     NSDictionary *request = [NSDictionary fromString:getAttribRequestJson];
@@ -901,8 +881,8 @@
     
     NSString *attribRequest = nil;
     NSString *raw = @"{"\
-                    "\"endpoint\":{"\
-                    "\"ha\":\"127.0.0.1:5555\"}}";
+    "\"endpoint\":{"\
+    "\"ha\":\"127.0.0.1:5555\"}}";
     ret = [[LedgerUtils sharedInstance] buildAttribRequestWithSubmitterDid:myDid
                                                                  targetDid:myDid
                                                                       hash:nil
@@ -950,9 +930,9 @@
     // 3. Obtain trustee did
     NSString* trusteeDid = nil;
     NSString* trusteeDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000Trustee1\"," \
-                           "\"cid\":true" \
-                           "}"];
+                                "\"seed\":\"000000000000000000000000Trustee1\"," \
+                                "\"cid\":true" \
+                                "}"];
     
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:trusteeDidJson
@@ -962,7 +942,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
-
+    
     // 4. Obtain my did
     NSString* myDid = nil;
     NSString* myVerKey = nil;
@@ -979,7 +959,7 @@
     
     XCTAssertNotNil(myDid, @"myDid is nil!");
     XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
-
+    
     // 5. Build nym request
     
     NSString *nymRequest = nil;
@@ -991,7 +971,7 @@
                                                              outRequest:&nymRequest];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(nymRequest, @"nymRequest is nil!");
-
+    
     // 6. Sign and Submit nym request
     NSString *nymResponse = nil;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
@@ -1000,7 +980,7 @@
                                                                requestJson:nymRequest outResponseJson:&nymResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
     XCTAssertNotNil(nymResponse, @"nymResponse is nil!");
-
+    
     // 7. Build attrib request
     NSString *rawJson = [NSString stringWithFormat:@"{"\
                          "\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}" \
@@ -1051,11 +1031,11 @@
 - (void) testBuildSchemaRequestsWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *data = @"{"\
-                    "\"name\":\"name\","\
-                    "\"version\":\"1.0\","\
-                    "\"keys\":[\"name\",\"male\"]}";
+    "\"name\":\"name\","\
+    "\"version\":\"1.0\","\
+    "\"keys\":[\"name\",\"male\"]}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
@@ -1076,24 +1056,24 @@
     
     NSDictionary *request = [NSDictionary fromString:schemaRequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
-
+    
     [TestUtils cleanupStorage];
 }
 
 - (void) testBuildGetSchemaRequestsWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *data = @"{"\
-                        "\"name\":\"name\","\
-                        "\"version\":\"1.0\"}";
+    "\"name\":\"name\","\
+    "\"version\":\"1.0\"}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
-    expectedResult[@"operation"][@"type"] = @"101";
-    expectedResult[@"operation"][@"dest"] = @"some_identifier";
+    expectedResult[@"operation"][@"type"] = @"107";
+    expectedResult[@"operation"][@"dest"] = @"identifier";
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"name"] = @"name";
     expectedResult[@"operation"][@"data"][@"version"] = @"1.0";
@@ -1152,9 +1132,9 @@
     // 4. Build schema request
     
     NSString *schemaData = @"{"\
-                            "\"name\":\"gvt2\","\
-                            "\"version\":\"2.0\","\
-                            "\"keys\":[\"name\",\"male\"]}";
+    "\"name\":\"gvt2\","\
+    "\"version\":\"2.0\","\
+    "\"keys\":[\"name\",\"male\"]}";
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
                                                                       data:schemaData
@@ -1176,7 +1156,7 @@
 -(void)testSchemaRequestsWorks
 {
     [TestUtils cleanupStorage];
-
+    
     NSString* poolName = @"pool3";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
@@ -1305,8 +1285,8 @@
 - (void) testBuildNodeRequestWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
-    NSString *dest = @"some_dest";
+    NSString *identifier = @"identifier";
+    NSString *dest = @"dest";
     NSString *data = @"{"\
     "\"node_ip\":\"ip\","\
     "\"node_port\":1,"\
@@ -1317,10 +1297,10 @@
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"0";
-    expectedResult[@"operation"][@"dest"] = @"some_dest";
+    expectedResult[@"operation"][@"dest"] = @"dest";
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"node_ip"] = @"ip";
     expectedResult[@"operation"][@"data"][@"node_port"] = @(1);
@@ -1500,7 +1480,7 @@
     "\"alias\":\"Node5\","\
     "\"services\":[\"VALIDATOR\"]}";
     
-    NSString *dest = @"A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y";
+    NSString *dest = @"A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y"; // random(32) and base58
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
                                                                targetDid:dest
@@ -1526,22 +1506,22 @@
 - (void) testBuildClaimDefRequestWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *signatureType = @"CL";
     NSString *schemaSeqNo = @"1";
     NSString *data = @"{"\
-        "\"primary\":{"\
-        "\"n\":\"1\","\
-        "\"s\":\"2\","\
-        "\"rms\":\"3\","\
-        "\"r\":{"\
-            "\"name\":\"1\"},"\
-        "\"rctxt\":\"1\","\
-        "\"z\":\"1\"}}";
+    "\"primary\":{"\
+    "\"n\":\"1\","\
+    "\"s\":\"2\","\
+    "\"rms\":\"3\","\
+    "\"r\":{"\
+    "\"name\":\"1\"},"\
+    "\"rctxt\":\"1\","\
+    "\"z\":\"1\"}}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"ref"] = @(1);
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
@@ -1578,19 +1558,19 @@
 - (void) testBuildGetClaimDefRequestWorks
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
+    NSString *identifier = @"identifier";
     NSString *xref = @"1";
     NSString *signatureType = @"signature_type";
-    NSString *origin = @"some_origin";
+    NSString *origin = @"origin";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    expectedResult[@"identifier"] = @"some_identifier";
+    expectedResult[@"identifier"] = @"identifier";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"108";
     expectedResult[@"operation"][@"ref"] = @(1);
     expectedResult[@"operation"][@"signature_type"] = @"signature_type";
     expectedResult[@"operation"][@"origin"] = @"some_origin";
-  
+    
     NSString *getClaimDefRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:identifier
                                                                                 xref:xref
@@ -1729,19 +1709,17 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequest() failed");
     XCTAssertNotNil(getSchemaResponseJson, @"getSchemaResponseJson is nil!");
     
-    NSDictionary *response = [NSDictionary fromString:getSchemaResponseJson];
+    NSDictionary *getSchemaResponse = [NSDictionary fromString:getSchemaResponseJson];
     
-    NSMutableDictionary *schema = [NSMutableDictionary new];
-    schema[@"name"] = response[@"result"][@"data"][@"name"];
-    schema[@"keys"] = response[@"result"][@"data"][@"keys"];
-    schema[@"version"] = response[@"result"][@"data"][@"version"];
-    schema[@"seq_no"] = response[@"result"][@"seqNo"];
-    NSNumber *seqNo = response[@"result"][@"seqNo"];
+    NSNumber *seqNo = getSchemaResponse[@"result"][@"seqNo"];
+    NSString *schemaJson = [NSDictionary toString:(NSDictionary*)getSchemaResponse[@"result"]];
     
     // 11. Create claim definition
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                            schemaJson:[NSDictionary toString:schema]
+                                                                            schemaJson:schemaJson
+                                                                         signatureType:nil
+                                                                        createNonRevoc:NO
                                                                           claimDefJson:&claimDefJson
                                                                           claimDefUUID:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed");
@@ -1750,8 +1728,8 @@
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
     
     NSMutableDictionary *claimDefData = [NSMutableDictionary new];
-    claimDefData[@"primary"] = claimDef[@"public_key"];
-    claimDefData[@"revocation"] = claimDef[@"public_key_revocation"];
+    claimDefData[@"primary"] = claimDef[@"data"][@"primary"];
+    claimDefData[@"revocation"] = claimDef[@"data"][@"revocation"];
     NSString *claimDefDataJson = [NSDictionary toString:claimDefData];
     
     // 12. Build claim def request
@@ -1778,10 +1756,10 @@
     // 14. Build get claim def request
     // TODO: 103 Error, origin is equal to myDid
     NSString *getClaimDefRequest;
-    NSString *origin = response[@"result"][@"data"][@"origin"];
+    NSString *origin = getSchemaResponse[@"result"][@"data"][@"origin"];
     ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:myDid
-                                                                       xref:[seqNo stringValue]
-                                                              signatureType:claimDef[@"signatyre_Type"]
+                                                                       xref:getSchemaResponse[@"result"][@"seq_no"]
+                                                              signatureType:claimDef[@"signature_type"]
                                                                      origin:origin
                                                                  resultJson:&getClaimDefRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetClaimDefTxnWithSubmitterDid() failed");
@@ -1795,7 +1773,7 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
     XCTAssertNotNil(getClaimDefResponse, @"getClaimDefResponse is nil!");
     
-     [TestUtils cleanupStorage];
+    [TestUtils cleanupStorage];
 }
 
 @end
