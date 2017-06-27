@@ -26,6 +26,7 @@ struct RemoteAgent {
 struct AgentListener {
     connections: Vec<(i32 /* connection_handle*/, String /* identity */)>,
     pending_connections: HashMap<String /* sender DID */, (String, String) /* (sender pk, receiver DID) */>,
+    did_resources: HashMap<String /* DID */, (i32, i32) /* pool_handle, wallet_handle */>,
     listener_handle: i32,
     socket: zmq::Socket,
 }
@@ -105,16 +106,29 @@ impl AgentService {
         Ok(listen_handle)
     }
 
-    #[allow(unused_variables)] /* FIXME */
-    pub fn ack_connect(&self, did: &str, result: bool) {
-        unimplemented!();
+    pub fn on_connect_checked(&self, listener_handle: i32, did: &str, is_ok: bool) -> Result<(), CommonError> {
+        let ack_connect_cmd = AgentWorkerCommand::ConnectCheck(ConnectCheckCmd {
+            listener_handle: listener_handle,
+            did: did.to_string(),
+            result: is_ok,
+        });
+        self.agent.cmd_socket.send(ack_connect_cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::CheckConnect {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
+        Ok(())
     }
 
-    pub fn add_identity(&self, listener_handle: i32, sk: &str, pk: &str) -> Result<i32, CommonError> {
+    pub fn add_identity(&self, listener_handle: i32, did: &str,
+                        pool_handle: i32, wallet_handle: i32,
+                        sk: &str, pk: &str) -> Result<i32, CommonError> {
         let cmd_handle = SequenceUtils::get_next_id();
         let cmd = AgentWorkerCommand::AddIdentity(AddIdentityCmd {
             cmd_id: cmd_handle,
             listen_handle: listener_handle,
+            did: did.to_string(),
+            pool_handle: pool_handle,
+            wallet_handle: wallet_handle,
             pk: pk.to_string(),
             sk: sk.to_string(),
         });
@@ -164,9 +178,10 @@ impl AgentWorker {
                 debug!("AgentWorker::run received cmd {:?}", cmd);
                 match cmd {
                     AgentWorkerCommand::Connect(cmd) => self.connect(cmd).unwrap(),
+                    AgentWorkerCommand::ConnectCheck(cmd) => self.on_connect_checked(cmd.listener_handle, cmd.did, cmd.result).unwrap(),
                     AgentWorkerCommand::Close(cmd) => self.close_connection_or_listener(cmd.cmd_id, cmd.handle, cmd.close_listener).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint).unwrap(),
-                    AgentWorkerCommand::AddIdentity(cmd) => self.add_identity(cmd.cmd_id, cmd.listen_handle, cmd.pk, cmd.sk).unwrap(),
+                    AgentWorkerCommand::AddIdentity(cmd) => self.add_identity(cmd.cmd_id, cmd.listen_handle, cmd.did, cmd.pool_handle, cmd.wallet_handle, cmd.pk, cmd.sk).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
                     AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
@@ -188,14 +203,21 @@ impl AgentWorker {
         Ok(())
     }
 
+    fn on_connect_checked(&mut self, listener_handle: i32, did: String, result: bool) -> Result<(), CommonError> {
+        self.agent_listeners.iter_mut()
+            .find(|listener: &&mut AgentListener| listener.listener_handle == listener_handle)
+            .ok_or(CommonError::InvalidState(format!("Listener with handle {} not found for push client check result {}.", listener_handle, result)))
+            .and_then(|listener: &mut AgentListener| listener.on_connect_checked(did, result))
+    }
+
     fn start_listen(&mut self, handle: i32, endpoint: String) -> Result<(), CommonError> {
         let res = self.try_start_listen(handle, endpoint);
         let cmd = AgentCommand::ListenAck(handle, res.map(|()| (handle)));
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
 
-    fn add_identity(&mut self, handle: i32, listener: i32, pk: String, sk: String) -> Result<(), CommonError> {
-        let res = self.try_add_identity(listener, pk, sk);
+    fn add_identity(&mut self, handle: i32, listener: i32, did: String, pool: i32, wallet: i32, pk: String, sk: String) -> Result<(), CommonError> {
+        let res = self.try_add_identity(listener, did, pool, wallet, pk, sk);
         let cmd = AgentCommand::ListenerAddIdentityAck(handle, res);
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
@@ -207,17 +229,25 @@ impl AgentWorker {
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
 
-    fn try_add_identity(&mut self, listener_handle: i32, pk: String, sk: String) -> Result<(), CommonError> {
-        for listener in &self.agent_listeners {
-            let listener: &AgentListener = listener;
+    fn try_add_identity(&mut self, listener_handle: i32, did: String, pool_handle: i32, wallet_handle: i32, pk: String, sk: String) -> Result<(), CommonError> {
+        let pk = pk.from_base58()
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pk {}", err)))?;
+        let sk = sk.from_base58()
+            .map_err(|err| CommonError::InvalidState(format!("Invalid sk {}", err)))?;
+        for mut listener in &mut self.agent_listeners {
+            let listener: &mut AgentListener = listener;
             if listener.listener_handle == listener_handle {
-                if let (Ok(pk), Ok(sk)) = (pk.from_base58(), sk.from_base58()) {
-                    listener.socket.add_curve_keypair([pk, sk].concat().as_slice())?;
+                if listener.did_resources.contains_key(&did) {
+                    return Err(CommonError::InvalidStructure(
+                        format!("DID {} already added to listener {}", did, listener_handle)));
                 }
-                return Ok(())
+                listener.socket.add_curve_keypair([pk, sk].concat().as_slice())?;
+                listener.did_resources.insert(did, (pool_handle, wallet_handle));
+                return Ok(());
             }
         }
-        Err(CommonError::InvalidStructure(format!("Listener with id {} not founded", listener_handle)))
+        Err(CommonError::InvalidStructure(
+            format!("Listener with id {} not founded", listener_handle)))
     }
 
     fn try_send(&mut self, handle: i32, msg: Option<String>) -> Result<(), CommonError> {
@@ -444,6 +474,7 @@ impl AgentListener {
         Ok(AgentListener {
             connections: Vec::new(),
             pending_connections: HashMap::new(),
+            did_resources: HashMap::new(),
             listener_handle: handle,
             socket: sock,
         })
@@ -457,8 +488,13 @@ impl AgentListener {
 
         if let Ok(did_msg) = MsgDID::from_json(msg.as_str()) {
             info!("New connection to agent listener from {} with msg {}", identity, msg);
-            self.pending_connections.insert(did_msg.did.sender_did.clone(), (identity.clone(), did_msg.did.receiver_did));
-            let cmd = AgentCommand::ListenerCheckConnect(did_msg.did.sender_did, identity, -1 /* FIXME pool_handle */, -1 /* FIXME wallet_handle */);
+            self.pending_connections.insert(did_msg.did.sender_did.clone(),
+                                            (identity.clone(), did_msg.did.receiver_did.clone()));
+            let (pool, wallet) = *self.did_resources
+                .get(&did_msg.did.receiver_did)
+                .unwrap_or(&(-1, -1));
+            let cmd = AgentCommand::ListenerCheckConnect(
+                did_msg.did.sender_did, identity, self.listener_handle, pool, wallet);
             CommandExecutor::instance().send(Command::Agent(cmd))?;
         } else {
             info!("Message {} from unknown connection to agent listener from {}", msg, identity);
@@ -468,15 +504,18 @@ impl AgentListener {
         Ok(())
     }
 
-    fn ack_connect(&mut self, identity: String) -> Result<(), CommonError> {
+    fn on_connect_checked(&mut self, sender_did: String, is_ok: bool) -> Result<(), CommonError> {
         let conn_handle = SequenceUtils::get_next_id();
-        self.connections.push((conn_handle, identity.clone()));
-        let (sender_did, receiver_did) = self.pending_connections.remove(&identity).unwrap();
-        let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
-                                                  Ok((self.listener_handle, conn_handle,
-                                                      sender_did, receiver_did)));
-        CommandExecutor::instance().send(Command::Agent(cmd))?;
-        Ok(self.socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT)?)
+        let (sender_pk, receiver_did) = self.pending_connections.remove(&sender_did).unwrap();
+        if is_ok {
+            self.connections.push((conn_handle, sender_pk.clone()));
+            let cmd = AgentCommand::ListenerOnConnect(self.listener_handle,
+                                                      Ok((self.listener_handle, conn_handle,
+                                                          sender_did.clone(), receiver_did)));
+            CommandExecutor::instance().send(Command::Agent(cmd))?;
+        }
+        let response = if is_ok { "DID_ACK" } else { "DID_NACK" };
+        Ok(self.socket.send_multipart(&[sender_pk.as_bytes(), response.as_bytes()], zmq::DONTWAIT)?)
     }
 }
 
@@ -499,6 +538,7 @@ struct DID {
 #[derive(Serialize, Deserialize, Debug)]
 enum AgentWorkerCommand {
     Connect(ConnectCmd),
+    ConnectCheck(ConnectCheckCmd),
     Listen(ListenCmd),
     AddIdentity(AddIdentityCmd),
     Response(Response),
@@ -524,6 +564,13 @@ struct ConnectCmd {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+struct ConnectCheckCmd {
+    listener_handle: i32,
+    did: String,
+    result: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct ListenCmd {
     listen_handle: i32,
     endpoint: String,
@@ -533,6 +580,9 @@ struct ListenCmd {
 struct AddIdentityCmd {
     cmd_id: i32,
     listen_handle: i32,
+    did: String,
+    pool_handle: i32,
+    wallet_handle: i32,
     pk: String,
     sk: String,
 }
@@ -666,10 +716,15 @@ mod tests {
                 agent: agent,
             };
             let listener_handle = SequenceUtils::get_next_id();
-            let cmd_handle = agent_service.add_identity(listener_handle, "sk", "pk").unwrap();
+            let wallet_handle = SequenceUtils::get_next_id();
+            let pool_handle = SequenceUtils::get_next_id();
+            let cmd_handle = agent_service.add_identity(listener_handle, "did", pool_handle, wallet_handle, "sk", "pk").unwrap();
             let expected_cmd = AddIdentityCmd {
                 cmd_id: cmd_handle,
                 listen_handle: listener_handle,
+                pool_handle: pool_handle,
+                wallet_handle: wallet_handle,
+                did: "did".to_string(),
                 pk: "pk".to_string(),
                 sk: "sk".to_string(),
             };
@@ -852,7 +907,8 @@ mod tests {
             let agent_worker = AgentWorker {
                 agent_listeners: vec!(AgentListener {
                     connections: Vec::new(),
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: 0,
                     socket: recv_soc,
                 }),
@@ -897,7 +953,8 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                     connections: vec![(conn_handle, "test_identity".to_string())],
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: SequenceUtils::get_next_id(),
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -933,7 +990,8 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                     connections: Vec::new(),
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: listener_handle,
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -982,7 +1040,7 @@ mod tests {
             };
             let listener_handle = SequenceUtils::get_next_id();
 
-            let res = agent_worker.try_add_identity(listener_handle, String::new(), String::new());
+            let res = agent_worker.try_add_identity(listener_handle, String::new(), -1, -1, String::new(), String::new());
 
             assert_match!(Err(CommonError::InvalidStructure(_)), res);
         }
@@ -1013,13 +1071,14 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: server_soc,
                     connections: vec![(conn_handle, "test_identity".to_string())],
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: listener_handle,
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
             };
 
-            agent_worker.try_add_identity(listener_handle, server_kp.public_key.to_base58(), server_kp.secret_key.to_base58()).unwrap();
+            agent_worker.try_add_identity(listener_handle, String::new(), -1, -1, server_kp.public_key.to_base58(), server_kp.secret_key.to_base58()).unwrap();
             client_soc.connect(endpoint).unwrap();
             client_soc.send("test_str", zmq::DONTWAIT).unwrap();
             agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 100).unwrap();
@@ -1057,14 +1116,15 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: server_soc,
                     connections: vec![(conn_handle, "test_identity".to_string())],
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: listener_handle,
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
             };
 
-            agent_worker.try_add_identity(listener_handle, server_kp1.public_key.to_base58(), server_kp1.secret_key.to_base58()).unwrap();
-            agent_worker.try_add_identity(listener_handle, server_kp2.public_key.to_base58(), server_kp2.secret_key.to_base58()).unwrap();
+            agent_worker.try_add_identity(listener_handle, "did1".to_string(), -1, -1, server_kp1.public_key.to_base58(), server_kp1.secret_key.to_base58()).unwrap();
+            agent_worker.try_add_identity(listener_handle, "did2".to_string(), -1, -1, server_kp2.public_key.to_base58(), server_kp2.secret_key.to_base58()).unwrap();
 
             let ref aw_listener_socket = agent_worker.agent_listeners[0].socket;
 
@@ -1108,7 +1168,8 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                     connections: vec![(conn_handle, String::new())],
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: SequenceUtils::get_next_id(),
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1128,7 +1189,8 @@ mod tests {
                 agent_listeners: vec![AgentListener {
                     socket: send_soc,
                     connections: vec![(conn_handle, "test_identity".to_string())],
-                    pending_connections: Vec::new(),
+                    pending_connections: HashMap::new(),
+                    did_resources: HashMap::new(),
                     listener_handle: SequenceUtils::get_next_id(),
                 }],
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),

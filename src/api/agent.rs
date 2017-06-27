@@ -173,6 +173,7 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// listener_handle: listener handle (created by sovrin_agent_listen).
+/// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
 ///
 /// add_identity_cb: Callback that will be called after listening started or on error.
@@ -186,15 +187,17 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_agent_add_identity(command_handle: i32,
                                         listener_handle: i32,
+                                        pool_handle: i32,
                                         wallet_handle: i32,
                                         did: *const c_char,
                                         add_identity_cb: Option<extern fn(xcommand_handle: i32,
                                                                           err: ErrorCode)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(add_identity_cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(add_identity_cb, ErrorCode::CommonInvalidParam6);
 
     let cmd = Command::Agent(AgentCommand::ListenerAddIdentity(
         listener_handle,
+        pool_handle,
         wallet_handle,
         did,
         Box::new(move |result| {

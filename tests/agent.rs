@@ -36,7 +36,7 @@ mod high_cases {
         let endpoint = "127.0.0.1:9701";
 
         let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
-        AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+        AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
 
         SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -59,9 +59,10 @@ mod high_cases {
             let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.1", "default").unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.2", "default").unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
-            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, trustee_vk, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let sender_did = trustee_did.clone();
             let sender_wallet = trustee_wallet;
+            let sender_vk = trustee_vk;
 
             let listener_nym_json = LedgerUtils::build_nym_request(trustee_did.as_str(), listener_did.as_str(), Some(listener_ver_key.as_str()), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(), listener_nym_json.as_str()).unwrap();
@@ -73,7 +74,12 @@ mod high_cases {
             LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(), listener_attrib_json.as_str()).unwrap();
 
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
-            AgentUtils::add_identity(listener_handle, listener_wallet, listener_did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, listener_wallet, listener_did.as_str()).unwrap();
+
+            // FIXME move to remote
+            let their_did_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, sender_did, sender_vk);
+            SignusUtils::store_their_did(listener_wallet, their_did_json.as_str()).unwrap();
+            // FIXME
 
             AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
@@ -150,7 +156,7 @@ mod high_cases {
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
             let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
-            AgentUtils::add_identity(listener_handle, receiver_wallet, receiver_did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, receiver_wallet, receiver_did.as_str()).unwrap();
 
             let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
             let kp = zmq::CurveKeyPair::new().unwrap();
@@ -189,7 +195,7 @@ mod high_cases {
                                                      Some(Box::new(move |_, msg| {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
                                                      }))).unwrap();
-            AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
             let cli_to_srv_connect_id = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(),
                                                             Some(Box::new(move |_, msg| {
                                                                 wait_msg_from_srv_send.send(msg).unwrap();
@@ -198,8 +204,10 @@ mod high_cases {
             let client_msg = "msg_from_client";
             let server_msg = "msg_from_server";
 
+            info!("Sending message from client to server");
             AgentUtils::send(cli_to_srv_connect_id, client_msg).unwrap();
             assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
+            info!("Sending message from server to client");
             AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap();
             assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), server_msg);
 
@@ -218,7 +226,7 @@ mod high_cases {
             let endpoint = "127.0.0.1:9705";
 
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
-            AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -244,7 +252,7 @@ mod high_cases {
                                                          wait_conn_send.send(conn_handle).unwrap();
                                                      })),
                                                      None).unwrap();
-            AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
             AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
             let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
@@ -274,7 +282,7 @@ mod high_cases {
                                                          wait_conn_send.send(conn_handle).unwrap();
                                                      })),
                                                      None).unwrap();
-            AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
             AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
             let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
@@ -306,7 +314,7 @@ mod medium_cases {
                                                      Some(Box::new(move |_, msg| {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
                                                      }))).unwrap();
-            AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
             let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
@@ -335,7 +343,7 @@ mod medium_cases {
                                                      Some(Box::new(move |_, msg| {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
                                                      }))).unwrap();
-            AgentUtils::add_identity(listener_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
             let conn_handle = AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 

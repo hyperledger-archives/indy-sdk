@@ -1,11 +1,15 @@
 #![warn(unused_variables)]
 
+extern crate rust_base58;
 extern crate serde_json;
+extern crate zmq_pw as zmq;
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::rc::Rc;
+
+use self::rust_base58::FromBase58;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
@@ -61,6 +65,7 @@ pub enum AgentCommand {
     ListenerCheckConnect(
         String, // did
         String, // pk
+        i32, // listener handle
         i32, // pool handle
         i32, // wallet handle
     ),
@@ -82,6 +87,7 @@ pub enum AgentCommand {
     ),
     ListenerAddIdentity(
         i32, // listener handle
+        i32, // pool handle
         i32, // wallet handle
         String, // did
         Box<Fn(Result<(), SovrinError>) + Send>, // add identity cb
@@ -165,10 +171,19 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ListenAck command received");
                 self.on_listen_ack(cmd_id, res);
             }
-            AgentCommand::ListenerCheckConnect(did, pk, _ /*pool_handle*/, wallet_handle) => {
-                let td_json = self.wallet_service.get(wallet_handle, format!("their_did:{}", did).as_str()).unwrap();
+            AgentCommand::ListenerCheckConnect(did, pk, listener_handle, pool_handle, wallet_handle) => {
+                info!(target: "agent_command_executor", "ListenerCheckConnect command received");
+                trace!("ListenerCheckConnect for did {}, pk {}, listener_handle {}, pool_handle {}, wallet_handle {}", did, pk, listener_handle, pool_handle, wallet_handle);
+                let td_json = self.wallet_service.get(wallet_handle, format!("their_did::{}", did).as_str()).unwrap();
                 let td: TheirDid = TheirDid::from_json(td_json.as_str()).unwrap();
-                self.agent_service.ack_connect(did.as_str(), td.pk.map_or(false, |actual_pk| actual_pk.eq(&pk)));
+                let check_result = td.pk.map_or(false, |actual_pk: String| {
+                    if let Ok(actual_pk_z85) = actual_pk.from_base58().map_err(|_| ()).and_then(|bytes| zmq::z85_encode(bytes.as_slice()).map_err(|_| ())) {
+                        actual_pk_z85.eq(&pk)
+                    } else {
+                        false
+                    }
+                });
+                self.agent_service.on_connect_checked(listener_handle, did.as_str(), check_result).unwrap();
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
@@ -178,9 +193,9 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
                 self.on_message_received(connection_id, res);
             }
-            AgentCommand::ListenerAddIdentity(listener_handle, wallet_handle, did, cb) => {
+            AgentCommand::ListenerAddIdentity(listener_handle, pool_handle, wallet_handle, did, cb) => {
                 info!(target: "agent_command_executor", "ListenerAddIdentity command received");
-                self.add_identity(listener_handle, wallet_handle, did, cb);
+                self.add_identity(listener_handle, pool_handle, wallet_handle, did, cb);
             }
             AgentCommand::ListenerAddIdentityAck(cmd_id, res) => {
                 info!(target: "agent_command_executor", "ListenerAddIdentityAck command received");
@@ -406,7 +421,7 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn add_identity(&self, listener_handle: i32, wallet_handle: i32, did: String,
+    fn add_identity(&self, listener_handle: i32, pool_handle: i32, wallet_handle: i32, did: String,
                     cb: Box<Fn(Result<(), SovrinError>)>) {
         let result = self.wallet_service
             .get(wallet_handle, format!("my_did::{}", did).as_str())
@@ -416,7 +431,7 @@ impl AgentCommandExecutor {
                     .map_err(|_| SovrinError::CommonError(CommonError::InvalidState((format!("Invalid my did json"))))))
 
             .and_then(|my_did: MyDid|
-                self.agent_service.add_identity(listener_handle, my_did.sk.as_str(), my_did.pk.as_str()).map_err(SovrinError::from))
+                self.agent_service.add_identity(listener_handle, did.as_str(), pool_handle, wallet_handle, my_did.sk.as_str(), my_did.pk.as_str()).map_err(SovrinError::from))
 
             .and_then(|cmd_id| {
                 match self.add_identity_callbacks.try_borrow_mut() {
