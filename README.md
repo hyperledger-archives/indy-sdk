@@ -21,6 +21,48 @@
 
 # Windows build
 
+## Get/build dependencies
+
+All prebuilt can be downloaded from
+https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/
+
+### Binary deps
+
+- https://www.npcglib.org/~stathis/downloads/openssl-1.0.2k-vs2017.7z
+- https://download.libsodium.org/libsodium/releases/libsodium-1.0.12-msvc.zip
+
+### Source deps
+
+- http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
+- https://github.com/miracl/milagro-crypto-c/
+- https://github.com/evernym/libzmq-pw
+
+### Build sqlite
+
+Download http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
+
+Create empty static library project and add sqlite.c file and 2 headers from exctraced
+archive. Then just build it.
+
+### Build milagro-crypto-c
+
+Checkout https://github.com/miracl/milagro-crypto-c/ repository.
+- cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -G "Visual Studio 15 2017 Win64" .
+- open AMCL.sln
+- disable custom build steps
+- build it
+
+### Build libzmq-pw
+
+Checkout https://github.com/evernym/libzmq-pw repository.
+- open builds/msvc/vs2017/libzmq.sln
+- switch "draft API" and "libsodium" options on
+- change "output file name" to $(TargetName)-pw
+- build (it may print errors while
+  building tests which can be ignored)
+
+## Build
+
 - Get binary dependencies (libamcl*, openssl, libsodium, libzmq, sqlite3).
 - Put all *.{lib,dll} into one directory and headers into include/ subdirectory.
 - open MSVS development console
@@ -34,6 +76,8 @@
   - set LIBZMQ_INCLUDE_DIR=C:\BIN\x64\include
 - set static flag for libsodium build
   - set SODIUM_STATIC=y
+- set PATH to find .dlls:
+  - set PATH=C:\BIN\x64;%PATH%
 - change dir to sovrin-client and run cargo (you may want to add --release --target x86_64-pc-windows-msvc keys to cargo)
 
 ## openssl-sys workaround
