@@ -61,4 +61,4 @@
       RUST_TEST_THREADS=1 cargo test
       ```
 
-See [amazon.dockerfile](ci/amazon.dockerfile) for example of Amazon Linux based environment creation in Docker.
+See [amazon.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/amazon.dockerfile) for example of Amazon Linux based environment creation in Docker.
