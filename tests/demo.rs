@@ -245,7 +245,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let prover_did = "BzfFCYk";
-    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":{}, "  ":{}}}"#, claim_def_seq_no, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":{}, "schema_seq_no":{}}}"#, claim_def_seq_no, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
