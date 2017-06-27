@@ -35,4 +35,4 @@
      RUST_TEST_THREADS=1 cargo test
      ```
 
-See [ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
+See [ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
