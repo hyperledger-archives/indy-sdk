@@ -328,11 +328,11 @@ impl AgentCommandExecutor {
                                            my_conn_info: MyConnectInfo,
                                            connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {
         check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service, wallet_handle, pool_handle, connect_cb);
-        let ddo_request = match self.ledger_service
+        let attrib_request = match self.ledger_service
             .build_get_attrib_request(my_conn_info.sender_did.as_str(), /* TODO use DDO request */
                                       my_conn_info.receiver_did.as_str(),
                                       "endpoint") {
-            Ok(ddo_request) => ddo_request,
+            Ok(attrib_request) => attrib_request,
             Err(err) => {
                 return connect_cb(Err(SovrinError::from(err)));
             }
@@ -340,7 +340,7 @@ impl AgentCommandExecutor {
         let cmd_id = SequenceUtils::get_next_id();
         self.connect_callbacks.borrow_mut().insert(cmd_id, (connect_cb, message_cb));
         CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
-            pool_handle, wallet_handle, my_conn_info.sender_did.clone(), ddo_request.to_string(),
+            pool_handle, wallet_handle, my_conn_info.sender_did.clone(), attrib_request.to_string(),
             Box::new(move |res: Result<String, SovrinError>| {
                 let res = res.and_then(|attrib_resp| { Ok((my_conn_info.clone(), attrib_resp)) });
                 CommandExecutor::instance().send(Command::Agent(
