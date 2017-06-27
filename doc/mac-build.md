@@ -2,6 +2,7 @@
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 2. Install required native libraries and utilities
+
 ```
 brew install libsodium
 brew install zeromq
