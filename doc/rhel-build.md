@@ -49,14 +49,16 @@
    ```
 1. Run integration tests:
     * Start local nodes pool on `10.0.0.2:9701-9708` with Docker:
+      
       ```
       docker network create --subnet 10.0.0.0/8 pool_network
       docker build -f ci/sovrin-pool.dockerfile -t sovrin_pool .
       docker run -d --ip="10.0.0.2" --net=pool_network sovrin_pool
       ```
     * Run tests
+      
       ```
       RUST_TEST_THREADS=1 cargo test
       ```
 
-See [ci/amazon.dockerfile] for example of Amazon Linux based environment creation in Docker.
+See [amazon.dockerfile](ci/amazon.dockerfile) for example of Amazon Linux based environment creation in Docker.

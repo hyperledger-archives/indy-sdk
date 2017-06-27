@@ -23,14 +23,16 @@
    ```
 4. Run integration tests:
    * Start local nodes pool on `10.0.0.2:9701-9708` with Docker. It can be done with Docker. see `ci/sovrin-pool.dockerfile`
+     
      ```
      docker network create --subnet 10.0.0.0/8 pool_network
      docker build -f ci/sovrin-pool.dockerfile -t sovrin_pool .
      docker run -d --ip="10.0.0.2" --net=pool_network sovrin_pool
      ```
    * Run tests
+     
      ```
      RUST_TEST_THREADS=1 cargo test
      ```
 
-See [ci/ubuntu.dockerfile] for example of Ubuntu based environment creation in Docker.
+See [ubuntu.dockerfile](ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
