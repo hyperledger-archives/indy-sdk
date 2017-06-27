@@ -1,4 +1,4 @@
-# Setup Indy SDK build environment for Windows.
+# Setup Indy SDK build environment for Windows
 
 ## Get/build dependencies
 
@@ -44,7 +44,14 @@ Checkout https://github.com/evernym/libzmq-pw repository.
 
 - Get binary dependencies (libamcl*, openssl, libsodium, libzmq, sqlite3).
 - Put all *.{lib,dll} into one directory and headers into include/ subdirectory.
-- open MSVS development console
+- Configure MSVS environment to privide 64-bit builds by execution of `vcvars64.bat`:
+  
+  ```
+  "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\"vcvars64.bat
+  ```
+  
+  Note that depending on the version of Visual Studio placement of vcvars64.bat can be different. For example, it can be
+  `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat`  
 - execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
   - set SOVRIN_PREBUILT_DEPS_DIR=C:\BIN\x64

@@ -1,4 +1,4 @@
-# Setup of IOS build environment.
+# Setup of IOS build environment
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install toolchains using command:

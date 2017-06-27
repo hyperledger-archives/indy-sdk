@@ -1,4 +1,4 @@
-# Setup Indy SDK build environment for Ubuntu based distro (Ubuntu 16.04).
+# Setup Indy SDK build environment for Ubuntu based distro (Ubuntu 16.04)
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 2. Install required native libraries and utilities:
