@@ -40,7 +40,7 @@
     NSString *data = @"{\"node_ip\":\"ip\","\
                        "\"node_port\":1,"\
                        "\"client_ip\":\"ip\","\
-                       "\client_port\":1}";
+                       "\"client_port\":1}";
     
     NSString *nodeRequest;
     NSError *ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:identifier

@@ -44,7 +44,8 @@
     
     NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                                walletName:@"wallet1"
-                                                                    xtype:@"default"];
+                                                                    xtype:@"default"
+                                                                   config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
     
     [TestUtils cleanupStorage];
@@ -57,7 +58,8 @@
     
     NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                                walletName:@"wallet1"
-                                                                    xtype:@"type"];
+                                                                    xtype:@"type"
+                                                                   config:nil];
     XCTAssertEqual(ret.code, WalletUnknownTypeError, @"WalletUtils:createWalletWithPoolName() returned wrong error");
     
     [TestUtils cleanupStorage];
@@ -70,13 +72,29 @@
     
     NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                                walletName:@"wallet1"
-                                                                    xtype:nil];
+                                                                    xtype:nil
+                                                                   config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
     [TestUtils cleanupStorage];
 }
 
-// MARK: - Delete, Open & Close wallet
+- (void)testCreateWalletWorksForConfig
+{
+    [TestUtils cleanupStorage];
+    NSString *poolName = @"sovrin_create_wallet_works";
+    NSString *config = @"{\"freshness_time\":1000}";
+    
+    NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                               walletName:@"wallet1"
+                                                                    xtype:@"default"
+                                                                   config:config];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
+    
+    [TestUtils cleanupStorage];
+}
+
+// MARK: - Delete wallet
 
 - (void)testDeleteWalletWorks
 {
@@ -85,22 +103,28 @@
     NSString *walletName = @"wallet1";
     NSError *ret;
     
+    // 1. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
-                                                           xtype:nil];
+                                                           xtype:nil
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
+    // 2. Delete wallet
     ret = [[WalletUtils sharedInstance] deleteWalletWithName:walletName];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:deleteWalletWithName failed");
     
+    // 3. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
-                                                           xtype:nil];
+                                                           xtype:nil
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
     [TestUtils cleanupStorage];
 }
 
+// MARK: - Open wallet
 - (void)testOpenWalletWorks
 {
     [TestUtils cleanupStorage];
@@ -108,19 +132,49 @@
     NSString *walletName = @"wallet1";
     NSError *ret;
     
+    // 1. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
-                                                           xtype:nil];
+                                                           xtype:nil
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
+    // 2. Open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                    config:nil
                                                  outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
     
     [TestUtils cleanupStorage];
 }
 
+- (void)testOpenWalletWorksForConfig
+{
+    [TestUtils cleanupStorage];
+    NSString *poolName = @"sovrin_open_wallet_works";
+    NSString *config = @"{\"freshness_time\":1000}";
+    NSString *walletName = @"wallet1";
+    NSError *ret;
+    
+    // 1. Create wallet
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:walletName
+                                                           xtype:nil
+                                                          config:nil];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
+    
+    // 2. Open wallet
+    SovrinHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                    config:config
+                                                 outHandle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
+    
+    [TestUtils cleanupStorage];
+}
+
+// MARK: - Close wallet
 - (void)testCloseWalletWorks
 {
     [TestUtils cleanupStorage];
@@ -131,12 +185,14 @@
     // 1. create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
-                                                           xtype:nil];
+                                                           xtype:nil
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
     // 2. open wallet
     SovrinHandle walletHandle;
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                    config:nil
                                                  outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
     
@@ -146,6 +202,7 @@
     
     // 4. open wallet
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                    config:nil
                                                  outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
     
@@ -159,8 +216,6 @@
     NSString *poolName = @"sovrin_wallet_set_seqno_works";
     NSString *walletName = @"wallet1";
     NSError *ret;
-    
-    // TODO: Too long
     
     // 1. create and open wallet
     SovrinHandle walletHandle = 0;
@@ -178,6 +233,8 @@
     NSString *claimDefUUID;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
                                                                             schemaJson:schema
+                                                                         signatureType:nil
+                                                                        createNonRevoc:NO
                                                                           claimDefJson:nil
                                                                           claimDefUUID:&claimDefUUID];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:issuerCreateClaimDefinifionWithWalletHandle() failed");
