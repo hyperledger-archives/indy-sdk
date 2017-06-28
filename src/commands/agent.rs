@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::rc::Rc;
 
-use self::rust_base58::FromBase58;
+use self::rust_base58::{FromBase58, ToBase58};
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
@@ -18,9 +18,11 @@ use errors::sovrin::SovrinError;
 use errors::common::CommonError;
 use services::agent::AgentService;
 use services::ledger::LedgerService;
+use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::pool::PoolService;
 use services::signus::types::{MyDid, TheirDid};
 use services::wallet::WalletService;
+use utils::crypto::ed25519::ED25519;
 use utils::json::JsonDecodable;
 use utils::sequence::SequenceUtils;
 
@@ -68,6 +70,12 @@ pub enum AgentCommand {
         i32, // listener handle
         i32, // pool handle
         i32, // wallet handle
+    ),
+    ListenerResumeCheckConnect(
+        i32, // listener handle
+        String, // did
+        String, // pk
+        Result<String, SovrinError> // get nym result
     ),
     ListenerOnConnect(
         i32, // listener handle
@@ -173,17 +181,11 @@ impl AgentCommandExecutor {
             }
             AgentCommand::ListenerCheckConnect(did, pk, listener_handle, pool_handle, wallet_handle) => {
                 info!(target: "agent_command_executor", "ListenerCheckConnect command received");
-                trace!("ListenerCheckConnect for did {}, pk {}, listener_handle {}, pool_handle {}, wallet_handle {}", did, pk, listener_handle, pool_handle, wallet_handle);
-                let td_json = self.wallet_service.get(wallet_handle, format!("their_did::{}", did).as_str()).unwrap();
-                let td: TheirDid = TheirDid::from_json(td_json.as_str()).unwrap();
-                let check_result = td.pk.map_or(false, |actual_pk: String| {
-                    if let Ok(actual_pk_z85) = actual_pk.from_base58().map_err(|_| ()).and_then(|bytes| zmq::z85_encode(bytes.as_slice()).map_err(|_| ())) {
-                        actual_pk_z85.eq(&pk)
-                    } else {
-                        false
-                    }
-                });
-                self.agent_service.on_connect_checked(listener_handle, did.as_str(), check_result).unwrap();
+                self.check_connect(did, pk, listener_handle, pool_handle, wallet_handle);
+            }
+            AgentCommand::ListenerResumeCheckConnect(listener_handle, did, pk, res) => {
+                info!(target: "agent_command_executor", "ListenerResumeCheckConnect command received");
+                self.resume_check_connect(listener_handle, did, pk, res);
             }
             AgentCommand::ListenerOnConnect(listener_id, res) => {
                 info!(target: "agent_command_executor", "ListenerOnConnect command received");
@@ -342,7 +344,7 @@ impl AgentCommandExecutor {
         CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
             pool_handle, wallet_handle, my_conn_info.sender_did.clone(), attrib_request.to_string(),
             Box::new(move |res: Result<String, SovrinError>| {
-                let res = res.and_then(|attrib_resp| { Ok((my_conn_info.clone(), attrib_resp)) });
+                let res = res.map(|attrib_resp| { (my_conn_info.clone(), attrib_resp) });
                 CommandExecutor::instance().send(Command::Agent(
                     AgentCommand::ResumeConnectProcess(cmd_id, res))).unwrap();
             })))).unwrap();
@@ -419,6 +421,72 @@ impl AgentCommandExecutor {
         } else {
             error!("Can't handle MessageReceived cmd - callback not found for {}", connection_id);
         }
+    }
+
+    fn check_connect(&self, did: String, pk: String, listener_handle: i32, pool_handle: i32, wallet_handle: i32) {
+        trace!("check_connect >> for did {}, pk {}, listener_handle {}, pool_handle {}, wallet_handle {}", did, pk, listener_handle, pool_handle, wallet_handle);
+        if let Ok(Some(actual_pk)) = self.get_info_for_check_connect(did.clone(), wallet_handle) {
+            self.do_check_connect(listener_handle, did.as_str(), pk.as_str(), Some(actual_pk.as_str()));
+        } else {
+            self.request_check_connect_info_from_ledger(pool_handle, wallet_handle, listener_handle, did.clone(), pk.clone())
+                .unwrap_or_else(|_| self.do_check_connect(listener_handle, did.as_str(), pk.as_str(), None));
+        }
+    }
+
+    fn resume_check_connect(&self, listener_handle: i32, did: String, pk: String, res: Result<String, SovrinError>) {
+        trace!("resume_check_connect >> listener {}, did {}, pk {}, res {:?}", listener_handle, did, pk, res);
+        let res = res.and_then(|get_nym_response| -> Result<String, SovrinError> {
+            let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
+                .map_err(map_err_trace!())
+                .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
+
+            let gen_nym_result_data: GetNymResultData = GetNymResultData::from_json(&get_nym_response.result.data)
+                .map_err(map_err_trace!())
+                .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
+
+            trace!("parsed get_nym_result_data {:?}", gen_nym_result_data);
+
+            let verkey = gen_nym_result_data.verkey.unwrap_or(gen_nym_result_data.dest);
+
+            let verkey = ED25519::vk_to_curve25519(verkey.from_base58().unwrap().as_slice()).unwrap().to_base58();
+
+            Ok(verkey)
+        });
+        self.do_check_connect(listener_handle, did.as_str(), pk.as_str(), res.ok().as_ref().map(String::as_str));
+    }
+
+    fn do_check_connect(&self, listener_handle: i32, did: &str, received_pk: &str, actual_pk: Option<&str>) {
+        let check_result = actual_pk.ok_or(())
+            .and_then(|actual_pk| _base58_to_z85(actual_pk)
+                .map_err(map_err_trace!()).map_err(|_| ()))
+            .map(|pk| pk.eq(&received_pk))
+            .unwrap_or(false);
+
+        self.agent_service.on_connect_checked(listener_handle, did, check_result).unwrap();
+    }
+
+    fn get_info_for_check_connect(&self, did: String, wallet_handle: i32) -> Result<Option<String>, SovrinError> {
+        let td_json = self.wallet_service.get(wallet_handle, format!("their_did::{}", did).as_str())?;
+        let td: TheirDid = TheirDid::from_json(td_json.as_str()).unwrap();
+        Ok(Some(td.pk.unwrap()))
+    }
+
+    fn request_check_connect_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32, listener_handle: i32, did: String, pk: String) -> Result<(), SovrinError> {
+        check_wallet_and_pool_handles_consistency(self.wallet_service.clone(), self.pool_service.clone(), wallet_handle, pool_handle)?;
+        let get_nym_request = match self.ledger_service
+            .build_get_nym_request(did.as_str() /* TODO receiver did */, did.as_str()) {
+            Ok(get_nym_request) => get_nym_request,
+            Err(err) => return Err(SovrinError::from(err))
+        };
+
+        CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SubmitRequest(
+            pool_handle, get_nym_request.to_string(),
+            Box::new(move |res: Result<String, SovrinError>| {
+                CommandExecutor::instance().send(Command::Agent(
+                    AgentCommand::ListenerResumeCheckConnect(listener_handle, did.clone(), pk.clone(), res))).unwrap();
+            })))).unwrap();
+
+        Ok(())
     }
 
     fn add_identity(&self, listener_handle: i32, pool_handle: i32, wallet_handle: i32, did: String,
@@ -503,6 +571,15 @@ impl AgentCommandExecutor {
             None => error!("Can't handle CloseListenerAck cmd - not found callback for {}", cmd_id)
         };
     }
+}
+
+fn _base58_to_z85(str: &str) -> Result<String, CommonError> {
+    str.from_base58()
+        .map_err(|err| CommonError::InvalidStructure(format!("Can't decode base58: {}", err)))
+        .and_then(|bytes: Vec<u8>| {
+            zmq::z85_encode(bytes.as_slice())
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't encode to z85: {}", err)))
+        })
 }
 
 #[derive(Debug, Clone)]
