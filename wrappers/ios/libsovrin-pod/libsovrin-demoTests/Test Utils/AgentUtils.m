@@ -32,12 +32,13 @@
                      messageCallback:(void (^)(SovrinHandle connectHandle, NSString *message))messageCallback
                outConnectionHandle:(SovrinHandle *)outConnectionHandle
 {
-    // connection callback
+    // connection callback. waiting for completion
     XCTestExpectation* connectCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block NSError *connectionErr;
     __block SovrinHandle tempConnectionHandle;
+    
     void (^onConnectCallback)(NSError*, SovrinHandle) = ^(NSError *error, SovrinHandle connectionHandle) {
-        NSLog(@"OnConnectCallback triggered.");
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %ld", error.code);
         tempConnectionHandle = connectionHandle;
         connectionErr = error;
         [connectCompletionExpectation fulfill];
@@ -45,13 +46,9 @@
     
     
     // message callback
-    XCTestExpectation* messageCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"message completion finished"];
-    __block NSError *messageErr;
     void (^onMessageCallback)(SovrinHandle, NSError*, NSString*) = ^(SovrinHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"OnMessageCallback triggered invoced with error code: %ld", error.code);
-        messageErr = error;
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", error.code);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
-        [messageCompletionExpectation fulfill];
     };
     
     NSError *ret = [SovrinAgent connectWithPoolHandle:poolHandle
@@ -68,11 +65,6 @@
     
     // wait for connection callback
     [self waitForExpectations: @[connectCompletionExpectation] timeout:[TestUtils defaultTimeout]];
-    if (connectionErr.code != Success)
-    {
-        NSLog(@"Connection callback returned error code: %ld", connectionErr.code);
-        return connectionErr;
-    }
     
     if (outConnectionHandle) { *outConnectionHandle = tempConnectionHandle;}
 
@@ -86,8 +78,7 @@
 {
     // connection callback
     void (^onConnectCallback)(SovrinHandle, NSError*, SovrinHandle, NSString*, NSString* ) = ^(SovrinHandle xListenerHandle, NSError *error, SovrinHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
-        XCTAssertEqual(error.code, Success, @"onConnectCallback in AgentUtiles");
-        NSLog(@"OnConnectCallback triggered with error code: %ld", (long)error.code);
+        NSLog(@"AgentUtils::listen::New connection %@ on listener {}, err {:?}, sender DID {}, receiver DID {}", connectionHandle, xListenerHandle, (long)error.code, senderDid, receiverDid);
         if (connectionCallback) {connectionCallback(xListenerHandle, connectionHandle);}
     };
     
@@ -106,7 +97,7 @@
     
     // message callback
     void (^onMessageCallback)(SovrinHandle, NSError*, NSString*) = ^(SovrinHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"OnMessageCallback triggered with error code: %ld.", (long)error.code);
+        NSLog(@"AgentUtils::listen::On connection %@ received (with error %ld) agent message (CLI->SRV): %@", xConnectionHandle, (long)error.code), message);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
     
