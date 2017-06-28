@@ -79,11 +79,10 @@
     return connectionErr;
 }
 
-- (NSError *)listenWithWalletHandle:(SovrinHandle) walletHandle
-                           endpoint:(NSString *)endpoint
-                 connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
-                    messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
-                  outListenerHandle:(SovrinHandle *)listenerHandle
+- (NSError *)listenWithEndpoint:(NSString *)endpoint
+             connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
+                messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
+              outListenerHandle:(SovrinHandle *)listenerHandle
 {
     // connection callback
     void (^onConnectCallback)(SovrinHandle, NSError*, SovrinHandle, NSString*, NSString* ) = ^(SovrinHandle xListenerHandle, NSError *error, SovrinHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
@@ -93,10 +92,11 @@
     };
     
     
-    // listener callback
+    // listener callback. We need to obtain listenerHandle, so we wait for completion. Connection and message callnacks can be triggered multiple times later, so we just pass them to register.
     XCTestExpectation* listenerCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block SovrinHandle tempListenerHandle = 0;
     __block NSError *listenerErr;
+    
     void (^onListenerCallback)(NSError*, SovrinHandle) = ^(NSError *error, SovrinHandle xListenerHandle) {
         NSLog(@"OnListenerCallback triggered.");
         listenerErr = error;
@@ -177,4 +177,55 @@
     
     return err;
 }
+
+- (NSError *)closeListener:(SovrinHandle)listenerHandle
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err;
+    
+    NSError *ret = [SovrinAgent closeListener:listenerHandle
+                                   completion:^(NSError *error)
+                    {
+                        err = error;
+                        [completionExpectation fulfill];
+                    }];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    return err;
+}
+
+- (NSError *)addIdentityForListenerHandle:(SovrinHandle)listenerHandle
+                               poolHandle:(SovrinHandle)poolHandle
+                             walletHandle:(SovrinHandle)walletHandle
+                                      did:(NSString *)did
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err;
+    
+    NSError *ret = [SovrinAgent addIdentityForListenerHandle:listenerHandle
+                                                  poolHandle:poolHandle
+                                                walletHandle:walletHandle
+                                                         did:did
+                                                  completion:^(NSError *error)
+                    {
+                        err = error;
+                        [completionExpectation fulfill];
+                    }];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    return err;
+}
+
 @end

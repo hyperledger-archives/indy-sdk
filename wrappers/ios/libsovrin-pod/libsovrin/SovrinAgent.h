@@ -33,6 +33,12 @@
                              messsage:(NSString *)message
                            completion:(void (^)(NSError *error)) handler;
 
++ (NSError *)addIdentityForListenerHandle:(SovrinHandle)listenerHandle
+                               poolHandle:(SovrinHandle)poolHandle
+                             walletHandle:(SovrinHandle)walletHandle
+                                      did:(NSString *)did
+                               completion:(void (^)(NSError *error)) handler;
+
 + (NSError *)closeConnection:(SovrinHandle)connectionHandle
                   completion:(void (^)(NSError *error)) handler;
 

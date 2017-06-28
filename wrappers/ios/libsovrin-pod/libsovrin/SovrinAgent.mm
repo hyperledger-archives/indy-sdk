@@ -72,6 +72,32 @@
     return [NSError errorFromSovrinError: ret];
 }
 
++ (NSError *)addIdentityForListenerHandle:(SovrinHandle)listenerHandle
+                               poolHandle:(SovrinHandle)poolHandle
+                             walletHandle:(SovrinHandle)walletHandle
+                                      did:(NSString *)did
+                               completion:(void (^)(NSError *error)) handler
+{
+    sovrin_error_t ret;
+    
+//    sovrin_handle_t commandHandle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+//    
+//    ret = sovrin_agent
+//    ret = sovrin_agent_listen(listener_handle,
+//                              walletHandle,
+//                              [endpoint UTF8String],
+//                              SovrinWrapperCommonAgentListenerCallback,
+//                              SovrinWrapperCommonAgentListenerConnectionCallback,
+//                              SovrinWrapperCommonAgentListenerMessageCallback);
+//    if( ret != Success )
+//    {
+//        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: commandHandle];
+//    }
+    
+    return [NSError errorFromSovrinError: ret];
+
+}
+
 + (NSError *)sendWithConnectionHandle:(SovrinHandle)connectionHandle
                              messsage:(NSString *)message
                            completion:(void (^)(NSError *error)) handler

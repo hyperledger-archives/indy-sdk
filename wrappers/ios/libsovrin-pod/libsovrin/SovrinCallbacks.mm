@@ -208,13 +208,23 @@ static NSString* connectionsKey        =  @"connections";
 }
 
 
+/**
+ Map passed callbacks to commandHandle.
+
+ @param listenerCallback Callback that will be called after listening started or on error.
+      Will be called exactly once with result of start listen operation.
+ @param connectionCallback  Callback that will be called after establishing of incoming connection.
+    Can be called multiply times: once for each incoming connection.
+ @param messageCallback Callback that will be called on receiving of an incoming message. Can be called multiply times: once for each incoming message.
+ @return commandHandle
+ */
 - (sovrin_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
                                    withConnectionCallback:(void *)connectionCallback
                                        andMessageCallback:(void *)messageCallback
 {
-    NSValue *cmdVal = [NSValue valueWithPointer:listenerCallback];
-    NSValue *conVal = [NSValue valueWithPointer:connectionCallback];
-    NSValue *mesVal = [NSValue valueWithPointer:messageCallback];
+    NSValue *listenerCbVal = [NSValue valueWithPointer:listenerCallback];
+    NSValue *connectionCbVal = [NSValue valueWithPointer:connectionCallback];
+    NSValue *messageCbVal = [NSValue valueWithPointer:messageCallback];
     
     NSNumber *handle = nil;
     
@@ -222,9 +232,10 @@ static NSString* connectionsKey        =  @"connections";
     {
         handle = [NSNumber numberWithInt:self.commandHandleCounter];
         self.commandHandleCounter++;
-        NSMutableDictionary *dict = [ NSMutableDictionary dictionaryWithObjectsAndKeys: cmdVal, commandCallbackKey,
-                                                                                        conVal, connectionCallbackKey,
-                                                                                        mesVal, messageCallbackKey,    nil];
+        NSMutableDictionary *dict = [ NSMutableDictionary dictionaryWithObjectsAndKeys: listenerCbVal, commandCallbackKey,
+                                                                                        connectionCbVal, connectionCallbackKey,
+                                                                                        messageCbVal, messageCallbackKey,    nil];
+        
         [self.commandCompletions setObject:dict forKey:handle];
     }
     return (sovrin_handle_t)[handle integerValue];
@@ -528,8 +539,12 @@ void SovrinWrapperCommonAgentListenerCallback(sovrin_handle_t xcommand_handle,
                                               sovrin_handle_t listener_handle)
 {
     void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    // Dictionary of callbacks for this commandHandle
     NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] dictionaryFor: xcommand_handle];
+    
+    // reset connections dictionary
     dict[connectionsKey] = [NSMutableDictionary new];
+    // delete completions for this command handle
     [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     [[SovrinCallbacks sharedInstance] rememberListenHandle:listener_handle withDictionary:dict];
 
