@@ -293,6 +293,53 @@ mod high_cases {
 mod medium_cases {
     use super::*;
 
+    mod sovrin_agent_add_identity {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
+
+            let endpoint = "127.0.0.1:9712";
+            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", "wallet12.1", "default").unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", "wallet12.2", "default").unwrap();
+            let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let sender_did = trustee_did.clone();
+            let sender_wallet = trustee_wallet;
+
+            let listener_nym_json = LedgerUtils::build_nym_request(trustee_did.as_str(), listener_did.as_str(), Some(listener_ver_key.as_str()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(), listener_nym_json.as_str()).unwrap();
+
+            let listener_attrib_json =
+                LedgerUtils::build_attrib_request(listener_did.as_str(), listener_did.as_str(), None,
+                                                  Some(format!("{{\"endpoint\":{{\"ha\":\"{}\", \"verkey\":\"{}\"}}}}", endpoint, listener_pub_key).as_str()),
+                                                  None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(), listener_attrib_json.as_str()).unwrap();
+
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+            let invalid_pool_handle = listener_handle;
+            AgentUtils::add_identity(listener_handle, invalid_pool_handle, listener_wallet, listener_did.as_str()).unwrap();
+
+            /* TODO
+             * Currently pool_handle and wallet_handle of add_identity will be checked only at required:
+             * when listener will check incoming connection and go to ledger for info.
+             * As result, add_identity will be successful but next connect will fail.
+             * Possible the test should be split into two:
+             * - add_identity_works_for_incompatible_pool_and_wallet
+             *    with immediately check in the library
+             * - connect_works_for_incorrect_connect_request
+             *    actual info in ledger or listener_wallet, wrong public key in sender_wallet
+             */
+
+            assert_eq!(AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap_err(), ErrorCode::CommonInvalidState);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod sovrin_agent_close_connection {
         use super::*;
 

@@ -21,6 +21,7 @@ struct RemoteAgent {
     secret_key: Vec<u8>,
     server_key: Vec<u8>,
     conn_handle: i32,
+    connected: bool,
 }
 
 struct AgentListener {
@@ -420,6 +421,7 @@ impl RemoteAgent {
                 .map_err(|err| CommonError::InvalidStructure(format!("invalid server_key {}", err)))?,
             addr: format!("tcp://{}", addr),
             conn_handle: conn_handle,
+            connected: false,
         })
     }
 
@@ -453,10 +455,15 @@ impl RemoteAgent {
         Ok(())
     }
 
-    fn handle_response(&self, msg: String) {
-        // TODO check state
-        let cmd: AgentCommand = if msg.eq("DID_ACK") {
-            AgentCommand::ConnectAck(self.conn_handle, Ok(self.conn_handle))
+    fn handle_response(&mut self, msg: String) {
+        let cmd: AgentCommand = if !self.connected {
+            let res = if msg.eq("DID_ACK") {
+                self.connected = true;
+                Ok(self.conn_handle)
+            } else {
+                Err(CommonError::InvalidState(format!("Expect DID_ACK, receive {}", msg)))
+            };
+            AgentCommand::ConnectAck(self.conn_handle, res)
         } else {
             AgentCommand::MessageReceived(self.conn_handle, Ok((self.conn_handle, msg)))
         };
@@ -865,6 +872,7 @@ mod tests {
                     secret_key: Vec::new(),
                     server_key: Vec::new(),
                     conn_handle: 0,
+                    connected: false,
                 }),
                 agent_listeners: Vec::new(),
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -974,6 +982,7 @@ mod tests {
                     secret_key: Vec::new(),
                     server_key: Vec::new(),
                     addr: String::new(),
+                    connected: false,
                 }],
                 agent_listeners: Vec::new(),
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1164,6 +1173,7 @@ mod tests {
                     secret_key: Vec::new(),
                     server_key: Vec::new(),
                     addr: String::new(),
+                    connected: false,
                 }],
                 agent_listeners: vec![AgentListener {
                     socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1213,6 +1223,7 @@ mod tests {
                     secret_key: Vec::new(),
                     server_key: Vec::new(),
                     addr: String::new(),
+                    connected: false,
                 }],
                 agent_listeners: Vec::new(),
                 cmd_socket: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
@@ -1238,6 +1249,7 @@ mod tests {
             secret_key: recv_key_pair.secret_key.to_vec(),
             public_key: recv_key_pair.public_key.to_vec(),
             conn_handle: 0,
+            connected: false,
         };
         agent.connect("sd".to_string(), "rd".to_string()).unwrap();
         assert_eq!(recv_soc.recv_string(zmq::DONTWAIT).unwrap().unwrap(), r#"{"did":{"sender_did":"sd","receiver_did":"rd"}}"#);
