@@ -8,7 +8,7 @@
 
 #import <XCTest/XCTest.h>
 
-@interface NSString (Checks)
+@interface NSString (Validation)
 
 - (BOOL)isValid;
 

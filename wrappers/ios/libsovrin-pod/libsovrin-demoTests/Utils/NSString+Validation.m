@@ -9,7 +9,7 @@
 #import "NSString+Validation.h"
 #import <Foundation/Foundation.h>
 
-@implementation NSString (Checks)
+@implementation NSString (Validation)
 
 - (BOOL)isValid
 {
