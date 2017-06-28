@@ -18,7 +18,7 @@ extern "C" {
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
-/// pool_handle: Pool handle (created by open_pool).
+/// pool_handle: Pool handle (created by open_pool_ledger).
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// sender_did: Id of sender Identity stored in secured Wallet.
 /// receiver_did: Id of receiver Identity.
@@ -121,6 +121,7 @@ extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// listener_handle: listener handle (created by sovrin_agent_listen).
+/// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
 ///
 /// add_identity_cb: Callback that will be called after listening started or on error.
@@ -134,6 +135,7 @@ extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
 
 extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
                                           sovrin_handle_t listener_handle,
+                                          sovrin_handle_t pool_handle,
                                           sovrin_handle_t wallet_handle,
                                           const char *    did,
 
