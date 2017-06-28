@@ -2,6 +2,7 @@ use std::sync::mpsc::{channel};
 use std::ffi::{CString};
 
 use sovrin::api::agent::{
+    sovrin_agent_add_identity,
     sovrin_agent_close_connection,
     sovrin_agent_close_listener,
     sovrin_agent_connect,
@@ -45,7 +46,7 @@ impl AgentUtils {
         Ok(conn_handle)
     }
 
-    pub fn listen(wallet_handle: i32, endpoint: &str,
+    pub fn listen(endpoint: &str,
                   on_connect: Option<Box<Fn(i32, i32) + Send>>,
                   on_msg: Option<Box<Fn(i32, String) + Send>>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
@@ -69,7 +70,7 @@ impl AgentUtils {
         let cb = Box::new(move |err, listener_handle| sender.send((err, listener_handle)).unwrap());
         let (cmd_id, cb) = CallbackUtils::closure_to_agent_listen_cb(cb);
 
-        let res = sovrin_agent_listen(cmd_id, wallet_handle, CString::new(endpoint).unwrap().as_ptr(), cb, on_connect, on_msg);
+        let res = sovrin_agent_listen(cmd_id, CString::new(endpoint).unwrap().as_ptr(), cb, on_connect, on_msg);
 
         if res != ErrorCode::Success {
             return Err(res);
@@ -82,6 +83,25 @@ impl AgentUtils {
         }
 
         Ok(listener_handle)
+    }
+
+    pub fn add_identity(listener_handle: i32, pool_handle: i32, wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_send_cb(
+            Box::new(move |err_code| sender.send(err_code).unwrap())
+        );
+
+        let res = sovrin_agent_add_identity(cmd_id, listener_handle, pool_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res)
+        }
+
+        Ok(())
     }
 
     pub fn send(conn_handle: i32, msg: &str) -> Result<(), ErrorCode> {

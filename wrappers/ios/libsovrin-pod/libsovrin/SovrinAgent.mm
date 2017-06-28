@@ -10,24 +10,26 @@
 
 @implementation SovrinAgent
 
-+ (NSError*) agentConnect:(SovrinHandle) walletHandle
-                 senderId:(NSString *) senderDid
-               receiverId:(NSString *) receiverDid
-        connectionHandler:(void (^)(NSError* error, SovrinHandle connection)) connectionHandler
-           messageHandler:(void (^)(NSError* error, NSString* message)) messageHandler
++ (NSError *)connectWithPoolHandle:(SovrinHandle)poolHandle
+                      walletHandle:(SovrinHandle)walletHandle
+                         senderDId:(NSString *)senderDid
+                       receiverDId:(NSString *)receiverDid
+                 connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
+                    messageHandler:(void (^)(SovrinHandle connectionHandle, NSError *error, NSString *message))messageHandler
 {
     sovrin_error_t ret;
 
+    // closure_map_ids?
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) connectionHandler
                                                                   withMessageCallback: (void*) messageHandler];
     
     ret = sovrin_agent_connect(handle,
+                               poolHandle,
                                walletHandle,
                                [senderDid UTF8String],
                                [receiverDid UTF8String],
                                SovrinWrapperCommonAgentOutgoingConnectionCallback,
-                               SovrinWrapperCommonAgentMessageCallback
-                              );
+                               SovrinWrapperCommonAgentMessageCallback);
     
     if( ret != Success )
     {
@@ -37,26 +39,28 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentListen:(SovrinHandle) walletHandle
-         listenerHandler:(void (^)(NSError* error,
-                                   SovrinHandle listenerHandle)) listenerCompletion
-       connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
-                                   NSError*     error,
-                                   SovrinHandle connectionHandle,
-                                   NSString*    senderDid,
-                                   NSString*    receiverDid)) connectionCompletion
-          messageHandler:(void (^)(SovrinHandle xconnectionHandle,
-                                   NSError*     error,
-                                   NSString*    message)) messageCompletion
++ (NSError *)listenWithWalletHandle:(SovrinHandle)walletHandle
+                           endpoint:(NSString *)endpoint
+                    listenerHandler:(void (^)(NSError *error,
+                                              SovrinHandle listenerHandle))listenerCompletion
+                  connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
+                                              NSError *error,
+                                              SovrinHandle connectionHandle,
+                                              NSString *senderDid,
+                                              NSString *receiverDid))connectionCompletion
+                     messageHandler:(void (^)(SovrinHandle xconnectionHandle,
+                                              NSError *error,
+                                              NSString *message))messageCompletion
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t listener_handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor:(void*)listenerCompletion
-                                                                        withConnectionCallback:(void*)connectionCompletion
-                                                                            andMessageCallback:(void*)messageCompletion ];
+    sovrin_handle_t listener_handle = [[SovrinCallbacks sharedInstance] createCommandHandleForListenerCallback:(void*)listenerCompletion
+                                                                                        withConnectionCallback:(void*)connectionCompletion
+                                                                                            andMessageCallback:(void*)messageCompletion ];
     
     ret = sovrin_agent_listen(listener_handle,
                               walletHandle,
+                              [endpoint UTF8String],
                               SovrinWrapperCommonAgentListenerCallback,
                               SovrinWrapperCommonAgentListenerConnectionCallback,
                               SovrinWrapperCommonAgentListenerMessageCallback);
@@ -68,9 +72,9 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentSend:(SovrinHandle) connectionHandle
-              messsage:(NSString*) message
-            completion:(void (^)(NSError* error)) handler
++ (NSError *)sendWithConnectionHandle:(SovrinHandle)connectionHandle
+                             messsage:(NSString *)message
+                           completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -87,8 +91,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError*) agentCloseConnection:(SovrinHandle) connectionHandle
-                       completion:(void (^)(NSError* error)) handler
++ (NSError *)closeConnection:(SovrinHandle)connectionHandle
+                  completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -107,8 +111,8 @@
 
 }
 
-+ (NSError*) agentCloseListener:(SovrinHandle) listenerHandle
-                     completion:(void (^)(NSError* error)) handler
++ (NSError *)closeListener:(SovrinHandle)listenerHandle
+                completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     

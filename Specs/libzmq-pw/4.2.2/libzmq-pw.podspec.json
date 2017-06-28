@@ -1,0 +1,29 @@
+{
+  "name": "libzmq-pw",
+  "version": "4.2.2",
+  "summary": "ZeroMQ fork with PairwiseCurveCP support",
+  "description": "ZeroMQ fork with PairwiseCurveCP support",
+  "homepage": "https://github.com/evernym/libzmq-pw",
+  "license": {
+    "type": "LGPLv3",
+    "file": "COPYING"
+  },
+  "authors": {
+    "Anastasia Tarasova": "anastasiya.tarasova@dsr-company.com"
+  },
+  "platforms": {
+    "ios": "6.0",
+    "osx": "10.7"
+  },
+  "source": {
+    "http": "https://repo.evernym.com/deb/pods-ios/libzmq-pw/4.2.2/libzmq-pw-4.2.2.tar.gz"
+  },
+  "source_files": [
+    "src/*.{h,hpp,c,cc,cpp}",
+    "include/*.h"
+  ],
+  "public_header_files": "include/*.h",
+  "libraries": "stdc++",
+  "requires_arc": false,
+  "prepare_command": "        (\n            ./autogen.sh\n            ./configure --prefix=$PWD\n        ) | tee \"/tmp/$(basename $0).$$.tmp\"\n"
+}
