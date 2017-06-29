@@ -34,6 +34,14 @@ public class SovrinJava {
 			return true;
 		}
 
+		protected static boolean checkCallback(CompletableFuture<? extends SovrinJava.Result> future, int err) {
+
+			ErrorCode errorCode = ErrorCode.valueOf(err);
+			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(SovrinException.fromErrorCode(errorCode, err)); return false; }
+
+			return true;
+		}
+
 		protected static void checkResult(int result) throws SovrinException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(result);
