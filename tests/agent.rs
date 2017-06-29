@@ -166,6 +166,37 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn sovrin_agent_add_identity_works_for_multiply_keys() {
+            TestUtils::cleanup_storage();
+
+            let endpoint = "127.0.0.1:9714";
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet14receiver", "default").unwrap();
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+
+            let (receiver_did1, _, receiver_pk1) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
+            let (receiver_did2, _, receiver_pk2) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
+            for receiver_did in [receiver_did1, receiver_did2].iter() {
+                AgentUtils::add_identity(listener_handle, -1, receiver_wallet, receiver_did.as_str()).unwrap();
+            }
+
+            for receiver_pk in [receiver_pk1, receiver_pk2].iter() {
+                let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
+                let kp = zmq::CurveKeyPair::new().unwrap();
+                sock.set_identity(zmq::z85_encode(&kp.public_key).unwrap().as_bytes()).unwrap();
+                sock.set_curve_publickey(&kp.public_key).unwrap();
+                sock.set_curve_secretkey(&kp.secret_key).unwrap();
+                sock.set_curve_serverkey(receiver_pk.from_base58().unwrap().as_slice()).unwrap();
+                sock.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
+                sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
+                sock.send("test", zmq::DONTWAIT).unwrap();
+                sock.poll(zmq::POLLIN, 100).unwrap();
+                assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
+            }
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod sovrin_agent_rm_identity {
