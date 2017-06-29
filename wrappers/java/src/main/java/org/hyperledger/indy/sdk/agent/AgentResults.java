@@ -30,6 +30,16 @@ public final class AgentResults {
 		AgentSendResult() { }
 	}
 
+	public static class AgentAddIdentityResult extends SovrinJava.Result {
+
+		AgentAddIdentityResult() { }
+	}
+
+	public static class AgentRemoveIdentityResult extends SovrinJava.Result {
+
+		AgentRemoveIdentityResult() { }
+	}
+
 	public static class AgentCloseConnectionResult extends SovrinJava.Result {
 
 		AgentCloseConnectionResult() { }

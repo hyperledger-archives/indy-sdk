@@ -75,8 +75,10 @@ public abstract class LibSovrin {
 
 		// agent.rs
 
-		public int sovrin_agent_connect(int command_handle, int wallet_handle, String sender_did, String receiver_did, Callback connection_cb, Callback message_cb);
-		public int sovrin_agent_listen(int command_handle, int wallet_handle, String endpoint, Callback listener_cb, Callback connection_cb, Callback message_cb);
+		public int sovrin_agent_connect(int command_handle, int pool_handle, int wallet_handle, String sender_did, String receiver_did, Callback connection_cb, Callback message_cb);
+		public int sovrin_agent_listen(int command_handle, String endpoint, Callback listener_cb, Callback connection_cb, Callback message_cb);
+		public int sovrin_agent_add_identity(int command_handle, int listener_handle, int pool_handle, int wallet_handle, String did, Callback add_identity_cb);
+		public int sovrin_agent_remove_identity(int command_handle, int listener_handle, int wallet_handle, String did, Callback rm_identity_cb);
 		public int sovrin_agent_send(int command_handle, int connection_handle, String message, Callback cb);
 		public int sovrin_agent_close_connection(int command_handle, int connection_handle, Callback cb);
 		public int sovrin_agent_close_listener(int command_handle, int listener_handle, Callback cb);
