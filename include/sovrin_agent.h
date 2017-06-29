@@ -98,7 +98,7 @@ extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
                                                                   sovrin_error_t  err,
                                                                   sovrin_handle_t listener_handle),
 
-                                          void     (*connection_cb)(sovrin_handle_t xlistener_handle,
+                                          void   (*connection_cb)(sovrin_handle_t xlistener_handle,
                                                                   sovrin_error_t  err,
                                                                   sovrin_handle_t connection_handle,
                                                                   const char *    sender_did,
@@ -133,15 +133,15 @@ extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 
-extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
-                                          sovrin_handle_t listener_handle,
-                                          sovrin_handle_t pool_handle,
-                                          sovrin_handle_t wallet_handle,
-                                          const char *    did,
+extern sovrin_error_t sovrin_agent_add_identity(sovrin_handle_t command_handle,
+                                                sovrin_handle_t listener_handle,
+                                                sovrin_handle_t pool_handle,
+                                                sovrin_handle_t wallet_handle,
+                                                const char *    did,
 
-                                          void (*add_identity_cb)(sovrin_handle_t xcommand_handle,
-                                                                  sovrin_error_t  err)
-                                          );
+                                                void (*add_identity_cb)(sovrin_handle_t xcommand_handle,
+                                                                        sovrin_error_t  err)
+                                                );
 
 /// Sends message to connected agent.
 ///
