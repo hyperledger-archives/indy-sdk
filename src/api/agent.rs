@@ -175,13 +175,14 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 /// listener_handle: listener handle (created by sovrin_agent_listen).
 /// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
+/// did: DID of identity.
 ///
-/// add_identity_cb: Callback that will be called after listening started or on error.
+/// add_identity_cb: Callback that will be called after identity added or on error.
 ///     Will be called exactly once with result of start listen operation.
 ///
 /// #Returns
 /// Error code
-/// listener_cb:
+/// add_identity_cb:
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 #[no_mangle]
@@ -203,6 +204,54 @@ pub extern fn sovrin_agent_add_identity(command_handle: i32,
         Box::new(move |result| {
             let result = result_to_err_code!(result);
             add_identity_cb(command_handle, result);
+        }),
+    ));
+
+    let result = CommandExecutor::instance().send(cmd);
+
+    result_to_err_code!(result)
+}
+
+/// Remove identity from listener.
+///
+/// Performs wallet lookup to find corresponded receiver Identity information.
+/// Information about receiver Identity must be saved in the wallet with
+/// sovrin_create_and_store_my_did call before this call.
+///
+/// After successfully rm_identity listener will stop to accept incoming connection to removed DID.
+///
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// listener_handle: listener handle (created by sovrin_agent_listen).
+/// wallet_handle: wallet handle (created by open_wallet).
+/// did: DID of identity.
+///
+/// rm_identity_cb: Callback that will be called after identity removed or on error.
+///     Will be called exactly once with result of start listen operation.
+///
+/// #Returns
+/// Error code
+/// rm_identity_cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code
+#[no_mangle]
+pub extern fn sovrin_agent_remove_identity(command_handle: i32,
+                                           listener_handle: i32,
+                                           wallet_handle: i32,
+                                           did: *const c_char,
+                                           rm_identity_cb: Option<extern fn(xcommand_handle: i32,
+                                                                        err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(rm_identity_cb, ErrorCode::CommonInvalidParam5);
+
+    let cmd = Command::Agent(AgentCommand::ListenerRmIdentity(
+        listener_handle,
+        wallet_handle,
+        did,
+        Box::new(move |result| {
+            let result = result_to_err_code!(result);
+            rm_identity_cb(command_handle, result);
         }),
     ));
 
