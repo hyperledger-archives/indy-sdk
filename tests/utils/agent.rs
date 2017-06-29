@@ -7,6 +7,7 @@ use sovrin::api::agent::{
     sovrin_agent_close_listener,
     sovrin_agent_connect,
     sovrin_agent_listen,
+    sovrin_agent_remove_identity,
     sovrin_agent_send,
 };
 use sovrin::api::ErrorCode;
@@ -87,11 +88,30 @@ impl AgentUtils {
 
     pub fn add_identity(listener_handle: i32, pool_handle: i32, wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
-        let (cmd_id, cb) = CallbackUtils::closure_to_agent_send_cb(
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_add_identity_cb(
             Box::new(move |err_code| sender.send(err_code).unwrap())
         );
 
         let res = sovrin_agent_add_identity(cmd_id, listener_handle, pool_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
+        if res != ErrorCode::Success {
+            return Err(res);
+        }
+
+        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if res != ErrorCode::Success {
+            return Err(res)
+        }
+
+        Ok(())
+    }
+
+    pub fn rm_identity(listener_handle: i32, wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let (cmd_id, cb) = CallbackUtils::closure_to_agent_rm_identity_cb(
+            Box::new(move |err_code| sender.send(err_code).unwrap())
+        );
+
+        let res = sovrin_agent_remove_identity(cmd_id, listener_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
         if res != ErrorCode::Success {
             return Err(res);
         }

@@ -123,13 +123,14 @@ extern sovrin_error_t sovrin_agent_listen(sovrin_handle_t command_handle,
 /// listener_handle: listener handle (created by sovrin_agent_listen).
 /// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
+/// did: DID of identity.
 ///
-/// add_identity_cb: Callback that will be called after listening started or on error.
+/// add_identity_cb: Callback that will be called after identity added or on error.
 ///     Will be called exactly once with result of start listen operation.
 ///
 /// #Returns
 /// Error code
-/// listener_cb:
+/// add_identity_cb:
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 
@@ -142,6 +143,40 @@ extern sovrin_error_t sovrin_agent_add_identity(sovrin_handle_t command_handle,
                                                 void (*add_identity_cb)(sovrin_handle_t xcommand_handle,
                                                                         sovrin_error_t  err)
                                                 );
+
+/// Remove identity from listener.
+///
+/// Performs wallet lookup to find corresponded receiver Identity information.
+/// Information about receiver Identity must be saved in the wallet with
+/// sovrin_create_and_store_my_did call before this call.
+///
+/// After successfully rm_identity listener will stop to accept incoming connection to removed DID.
+///
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// listener_handle: listener handle (created by sovrin_agent_listen).
+/// wallet_handle: wallet handle (created by open_wallet).
+/// did: DID of identity.
+///
+/// rm_identity_cb: Callback that will be called after identity removed or on error.
+///     Will be called exactly once with result of start listen operation.
+///
+/// #Returns
+/// Error code
+/// rm_identity_cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code
+
+extern sovrin_error_t sovrin_agent_remove_identity(sovrin_handle_t command_handle,
+                                                   sovrin_handle_t listener_handle,
+                                                   sovrin_handle_t pool_handle,
+                                                   sovrin_handle_t wallet_handle,
+                                                   const char *    did,
+
+                                                   void (*rm_identity_cb)(sovrin_handle_t xcommand_handle,
+                                                                          sovrin_error_t  err)
+                                                   );
 
 /// Sends message to connected agent.
 ///

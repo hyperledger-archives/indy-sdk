@@ -140,6 +140,21 @@ impl AgentService {
         Ok(cmd_handle)
     }
 
+    pub fn rm_identity(&self, listener_handle: i32, did: &str, pk: &str) -> Result<i32, CommonError> {
+        let cmd_handle = SequenceUtils::get_next_id();
+        let cmd = AgentWorkerCommand::RmIdentity(RmIdentityCmd {
+            cmd_id: cmd_handle,
+            listen_handle: listener_handle,
+            did: did.to_string(),
+            pk: pk.to_string(),
+        });
+        self.agent.cmd_socket.send(cmd.to_json()
+                                       .map_err(|err|
+                                           CommonError::InvalidState(format!("Can't serialize AgentWorkerCommand::RmIdentityCmd {}", err.description())))?
+                                       .as_str(), zmq::DONTWAIT)?;
+        Ok(cmd_handle)
+    }
+
     pub fn send(&self, conn_id: i32, msg: Option<&str>) -> Result<i32, CommonError> {
         let send_handle = SequenceUtils::get_next_id();
         let send_cmd = AgentWorkerCommand::Send(SendCmd {
@@ -183,6 +198,7 @@ impl AgentWorker {
                     AgentWorkerCommand::Close(cmd) => self.close_connection_or_listener(cmd.cmd_id, cmd.handle, cmd.close_listener).unwrap(),
                     AgentWorkerCommand::Listen(cmd) => self.start_listen(cmd.listen_handle, cmd.endpoint).unwrap(),
                     AgentWorkerCommand::AddIdentity(cmd) => self.add_identity(cmd.cmd_id, cmd.listen_handle, cmd.did, cmd.pool_handle, cmd.wallet_handle, cmd.pk, cmd.sk).unwrap(),
+                    AgentWorkerCommand::RmIdentity(cmd) => self.rm_identity(cmd.cmd_id, cmd.listen_handle, cmd.did, cmd.pk).unwrap(),
                     AgentWorkerCommand::Response(resp) => self.agent_connections[resp.agent_ind].handle_response(resp.msg),
                     AgentWorkerCommand::Request(req) => self.agent_listeners[req.listener_ind].handle_request(req.identity, req.msg).unwrap(),
                     AgentWorkerCommand::Send(cmd) => self.send(cmd.cmd_id, cmd.conn_handle, cmd.msg).unwrap(),
@@ -223,6 +239,12 @@ impl AgentWorker {
         CommandExecutor::instance().send(Command::Agent(cmd))
     }
 
+    fn rm_identity(&mut self, handle: i32, listener: i32, did: String, pk: String) -> Result<(), CommonError> {
+        let res = self.try_rm_identity(listener, did, pk);
+        let cmd = AgentCommand::ListenerRmIdentityAck(handle, res);
+        CommandExecutor::instance().send(Command::Agent(cmd))
+    }
+
     fn send(&mut self, cmd_id: i32, conn_handle: i32, msg: Option<String>)
             -> Result<(), CommonError> {
         let res = self.try_send(conn_handle, msg);
@@ -244,6 +266,24 @@ impl AgentWorker {
                 }
                 listener.socket.add_curve_keypair([pk, sk].concat().as_slice())?;
                 listener.did_resources.insert(did, (pool_handle, wallet_handle));
+                return Ok(());
+            }
+        }
+        Err(CommonError::InvalidStructure(
+            format!("Listener with id {} not founded", listener_handle)))
+    }
+
+    fn try_rm_identity(&mut self, listener_handle: i32, did: String, pk: String) -> Result<(), CommonError> {
+        let pk = pk.from_base58()
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pk {}", err)))?;
+        for mut listener in &mut self.agent_listeners {
+            let listener: &mut AgentListener = listener;
+            if listener.listener_handle == listener_handle {
+                if listener.did_resources.remove(&did).is_none() {
+                    return Err(CommonError::InvalidStructure(
+                        format!("DID {} missed in listener {}", did, listener_handle)));
+                }
+                listener.socket.remove_curve_keypair(pk.as_slice())?;
                 return Ok(());
             }
         }
@@ -548,6 +588,7 @@ enum AgentWorkerCommand {
     ConnectCheck(ConnectCheckCmd),
     Listen(ListenCmd),
     AddIdentity(AddIdentityCmd),
+    RmIdentity(RmIdentityCmd),
     Response(Response),
     Request(Request),
     Send(SendCmd),
@@ -592,6 +633,14 @@ struct AddIdentityCmd {
     wallet_handle: i32,
     pk: String,
     sk: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct RmIdentityCmd {
+    cmd_id: i32,
+    listen_handle: i32,
+    did: String,
+    pk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -737,6 +786,32 @@ mod tests {
             };
             let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
             assert_eq!(str, AgentWorkerCommand::AddIdentity(expected_cmd).to_json().unwrap());
+        }
+
+        #[test]
+        fn agent_service_rm_identity_works() {
+            let (sender, receiver) = channel();
+            let (send_soc, recv_soc) = _create_zmq_socket_pair("test_connect", true).unwrap();
+            let agent = Agent {
+                cmd_socket: send_soc,
+                worker: Some(thread::spawn(move || {
+                    sender.send(recv_soc.recv_string(0).unwrap().unwrap()).unwrap();
+                    recv_soc.recv_string(0).unwrap().unwrap();
+                }))
+            };
+            let agent_service = AgentService {
+                agent: agent,
+            };
+            let listener_handle = SequenceUtils::get_next_id();
+            let cmd_handle = agent_service.rm_identity(listener_handle, "did", "pk").unwrap();
+            let expected_cmd = RmIdentityCmd {
+                cmd_id: cmd_handle,
+                listen_handle: listener_handle,
+                did: "did".to_string(),
+                pk: "pk".to_string(),
+            };
+            let str = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(str, AgentWorkerCommand::RmIdentity(expected_cmd).to_json().unwrap());
         }
 
         #[test]

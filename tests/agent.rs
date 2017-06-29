@@ -168,6 +168,46 @@ mod high_cases {
         }
     }
 
+    mod sovrin_agent_rm_identity {
+        use super::*;
+        use rust_base58::FromBase58;
+
+        #[test]
+        fn sovrin_agent_rm_identity_works() {
+            TestUtils::cleanup_storage();
+
+            let endpoint = "127.0.0.1:9713";
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet13receiver", "default").unwrap();
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+
+            let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, receiver_wallet, receiver_did.as_str()).unwrap();
+
+            let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
+            let kp = zmq::CurveKeyPair::new().unwrap();
+            sock.set_linger(0).unwrap();
+            sock.set_identity(zmq::z85_encode(&kp.public_key).unwrap().as_bytes()).unwrap();
+            sock.set_curve_publickey(&kp.public_key).unwrap();
+            sock.set_curve_secretkey(&kp.secret_key).unwrap();
+            sock.set_curve_serverkey(receiver_pk.from_base58().unwrap().as_slice()).unwrap();
+            sock.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
+            sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
+            sock.send("test", zmq::DONTWAIT).unwrap();
+            sock.poll(zmq::POLLIN, 1000).unwrap();
+            assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
+            sock.disconnect(format!("tcp://{}", endpoint).as_str()).unwrap();
+
+            AgentUtils::rm_identity(listener_handle, receiver_wallet, receiver_did.as_str()).unwrap();
+            sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
+            sock.send("test", zmq::DONTWAIT).unwrap();
+            sock.poll(zmq::POLLIN, 1000).unwrap();
+            assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap_err(), zmq::Error::EAGAIN);
+            sock.disconnect(format!("tcp://{}", endpoint).as_str()).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod sovrin_agent_send {
         use super::*;
 
