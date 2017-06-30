@@ -148,7 +148,7 @@ impl WalletType for DefaultWalletType {
         Ok(())
     }
 
-    fn delete(&self, name: &str, credentials: Option<&str>) -> Result<(), WalletError> {
+    fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
         // FIXME: parse and implement credentials!!!
         Ok(fs::remove_file(_db_path(name))?)
     }

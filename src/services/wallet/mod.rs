@@ -1,7 +1,12 @@
+extern crate libc;
+
 mod default;
+mod plugged;
 
 use self::default::DefaultWalletType;
+use self::plugged::PluggedWalletType;
 
+use api::ErrorCode;
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
@@ -14,6 +19,8 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use utils::json::{JsonDecodable, JsonEncodable};
 
+use self::libc::c_char;
+
 pub trait Wallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError>;
     fn get(&self, key: &str) -> Result<String, WalletError>;
@@ -24,7 +31,7 @@ pub trait Wallet {
 
 trait WalletType {
     fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
-    fn delete(&self, name: &str, credentials: Option<&str>) -> Result<(), WalletError>;
+    fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
     fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
 }
 
@@ -50,14 +57,14 @@ impl JsonEncodable for WalletDescriptor {}
 impl<'a> JsonDecodable<'a> for WalletDescriptor {}
 
 pub struct WalletService {
-    types: RefCell<HashMap<&'static str, Box<WalletType>>>,
+    types: RefCell<HashMap<String, Box<WalletType>>>,
     wallets: RefCell<HashMap<i32, Box<Wallet>>>
 }
 
 impl WalletService {
     pub fn new() -> WalletService {
-        let mut types: HashMap<&str, Box<WalletType>> = HashMap::new();
-        types.insert("default", Box::new(DefaultWalletType::new()));
+        let mut types: HashMap<String, Box<WalletType>> = HashMap::new();
+        types.insert("default".to_string(), Box::new(DefaultWalletType::new()));
 
         WalletService {
             types: RefCell::new(types),
@@ -65,25 +72,45 @@ impl WalletService {
         }
     }
 
-    pub fn resiter_type(xtype: &str,
-                        create: fn(name: &str,
-                                   config: &str,
-                                   credentials: &str) -> Result<(), WalletError>,
-                        open: fn(name: &str,
-                                 config: &str,
-                                 credentials: &str) -> Result<i32, WalletError>,
-                        set: extern fn(handle: i32,
-                                       key: &str, sub_key: &str,
-                                       value: &str) -> Result<(), WalletError>,
-                        get: extern fn(handle: i32,
-                                       key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
-                        list: extern fn(handle: i32,
-                                        key: &str, sub_key: &str) -> Result<(Vec<(String, String)>, i32), WalletError>,
-                        get_not_expired: extern fn(handle: i32,
-                                                   key: &str, sub_key: &str) -> Result<(String, i32), WalletError>,
-                        close: extern fn(handle: i32) -> Result<(), WalletError>,
-                        delete: extern fn(name: &str) -> Result<(), WalletError>) {
-        unimplemented!();
+    pub fn register_type(&self,
+                         xtype: &str,
+                         create: extern fn(name: *const c_char,
+                                           config: *const c_char,
+                                           credentials: *const c_char) -> ErrorCode,
+                         open: extern fn(name: *const c_char,
+                                         config: *const c_char,
+                                         runtime_config: *const c_char,
+                                         credentials: *const c_char,
+                                         handle: *mut i32) -> ErrorCode,
+                         set: extern fn(handle: i32,
+                                        key: *const c_char,
+                                        value: *const c_char) -> ErrorCode,
+                         get: extern fn(handle: i32,
+                                        key: *const c_char,
+                                        value_ptr: *const *mut c_char) -> ErrorCode,
+                         get_not_expired: extern fn(handle: i32,
+                                                    key: *const c_char,
+                                                    value_ptr: *const *mut c_char) -> ErrorCode,
+                         list: extern fn(handle: i32,
+                                         key_prefix: *const c_char,
+                                         values_json_ptr: *const *mut c_char) -> ErrorCode,
+                         close: extern fn(handle: i32) -> ErrorCode,
+                         delete: extern fn(name: *const c_char,
+                                           config: *const c_char,
+                                           credentials: *const c_char) -> ErrorCode,
+                         free: extern fn(wallet_handle: i32,
+                                         value: *mut c_char) -> ErrorCode) -> Result<(), WalletError> {
+        let mut wallet_types = self.types.borrow_mut();
+
+        if wallet_types.contains_key(xtype) {
+            return Err(WalletError::TypeAlreadyRegistered(xtype.to_string()))
+        }
+
+        wallet_types.insert(xtype.to_string(),
+                            Box::new(
+                                PluggedWalletType::new(create, open, set, get,
+                                                       get_not_expired, list, close, delete, free)));
+        Ok(())
     }
 
     pub fn create(&self, pool_name: &str, xtype: Option<&str>, name: &str, config: Option<&str>,
@@ -138,7 +165,23 @@ impl WalletService {
         }
 
         let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
-        wallet_type.delete(name, credentials)?;
+
+        let config = {
+            let config_path = _wallet_config_path(name);
+
+            if config_path.exists() {
+                let mut config_json = String::new();
+                let mut file = File::open(config_path)?;
+                file.read_to_string(&mut config_json)?;
+                Some(config_json)
+            } else {
+                None
+            }
+        };
+
+        wallet_type.delete(name,
+                           config.as_ref().map(String::as_str),
+                           credentials)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
         Ok(())

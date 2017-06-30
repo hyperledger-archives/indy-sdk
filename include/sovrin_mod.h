@@ -34,6 +34,9 @@ typedef enum
     // Caller passed invalid value as param 9 (null, invalid json and etc..)
     CommonInvalidParam9,
 
+    // Caller passed invalid value as param 10 (null, invalid json and etc..)
+    CommonInvalidParam10,
+
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState,
 

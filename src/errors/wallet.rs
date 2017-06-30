@@ -18,6 +18,7 @@ pub enum WalletError {
     AlreadyExists(String),
     NotFound(String),
     IncorrectPool(String),
+    PluggedWallerError(ErrorCode),
     CommonError(CommonError)
 }
 
@@ -30,6 +31,7 @@ impl fmt::Display for WalletError {
             WalletError::AlreadyExists(ref description) => write!(f, "Wallet with this name already exists: {}", description),
             WalletError::NotFound(ref description) => write!(f, "Wallet not found: {}", description),
             WalletError::IncorrectPool(ref description) => write!(f, "Wallet used with different pool: {}", description),
+            WalletError::PluggedWallerError(err_code) => write!(f, "Plugged wallet error: {}", err_code as i32),
             WalletError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -44,6 +46,7 @@ impl error::Error for WalletError {
             WalletError::AlreadyExists(ref description) => description,
             WalletError::NotFound(ref description) => description,
             WalletError::IncorrectPool(ref description) => description,
+            WalletError::PluggedWallerError(ref err_code) => "Plugged wallet error",
             WalletError::CommonError(ref err) => err.description()
         }
     }
@@ -56,6 +59,7 @@ impl error::Error for WalletError {
             WalletError::AlreadyExists(ref description) => None,
             WalletError::NotFound(ref description) => None,
             WalletError::IncorrectPool(ref description) => None,
+            WalletError::PluggedWallerError(ref err_code) => None,
             WalletError::CommonError(ref err) => Some(err)
         }
     }
@@ -70,6 +74,7 @@ impl ToErrorCode for WalletError {
             WalletError::AlreadyExists(ref description) => ErrorCode::WalletAlreadyExistsError,
             WalletError::NotFound(ref err) => ErrorCode::WalletNotFoundError,
             WalletError::IncorrectPool(ref err) => ErrorCode::WalletIncompatiblePoolError,
+            WalletError::PluggedWallerError(err_code) => err_code,
             WalletError::CommonError(ref err) => err.to_error_code()
         }
     }
