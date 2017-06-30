@@ -62,21 +62,21 @@ impl MerkleTree {
     pub fn consistency_proof(&self,
                              new_root_hash: &Vec<u8>, new_size: usize,
                              proof: &Vec<Vec<u8>>) -> Result<bool, CommonError> {
-        if self.nodes_count == 0 {
+        if self.count == 0 {
             // empty old tree
             return Ok(true);
         }
-        if self.nodes_count == new_size && self.root_hash() == new_root_hash {
+        if self.count == new_size && self.root_hash() == new_root_hash {
             // identical trees
             return Ok(true);
         }
-        if self.nodes_count > new_size {
+        if self.count > new_size {
             // old tree is bigger!
             assert!(false);
             return Ok(false);
         }
 
-        let mut old_node = self.nodes_count - 1;
+        let mut old_node = self.count - 1;
         let mut new_node = new_size - 1;
 
         while old_node % 2 != 0 {
@@ -304,7 +304,7 @@ mod tests {
                                            0x51, 0x28, 0xc5, 0x8f, 0x59, 0x1f, 0x4f, 0x03,
                                            0x25, 0x81, 0xfe, 0xe7, 0xd8, 0x61, 0x99, 0xae,
                                            0xf8, 0xae, 0xac, 0x7b, 0x05, 0x80, 0xbe, 0x0a ],
-                                     2,
+                                     4,
                                      &proofs).unwrap());
     }
 
@@ -344,7 +344,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] /* FIXME it's blocker for checking cons proofs in CatchUp */
     fn consistency_proof_works_for_old4_new8() {
         let all_str_values = vec![
             r#"{"data":{"alias":"Node1","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#,
@@ -370,9 +369,10 @@ mod tests {
             "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
         ];
         let proofs_for_5: Vec<Vec<u8>> = proofs_for_5.into_iter().map(|x| x.from_base58().unwrap()).collect();
-        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_5).unwrap());
         //add 5th node
         mt.append(all_values[5 - 1].clone()).unwrap();
+        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_5).unwrap());
+
         //try to add 6th node
         let proofs_for_6: Vec<&str> = vec![
             "HhkWitSAXG12Ugn4KFtrUyhbZHi9XrP4jnbLuSthynSu",
@@ -380,9 +380,10 @@ mod tests {
             "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
         ];
         let proofs_for_6: Vec<Vec<u8>> = proofs_for_6.into_iter().map(|x| x.from_base58().unwrap()).collect();
-        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_6).unwrap());
         //add 6th node
         mt.append(all_values[6 - 1].clone()).unwrap();
+        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_6).unwrap());
+
         //try to add 7th node
         let proofs_for_7: Vec<&str> = vec![
             "2D1aU5DeP8uPmaisGSpNoF2tNS35YhaRvfk2KPZzY2ue",
@@ -391,11 +392,14 @@ mod tests {
             "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
         ];
         let proofs_for_7: Vec<Vec<u8>> = proofs_for_7.into_iter().map(|x| x.from_base58().unwrap()).collect();
-        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_7).unwrap());
         //add 7th node
         mt.append(all_values[7 - 1].clone()).unwrap();
+        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_7).unwrap());
+
         //try to add 8th node, empty proof
         let proofs_for_8: Vec<Vec<u8>> = Vec::new();
-        assert!(mt.consistency_proof(&full_root_hash, 7, &proofs_for_8).unwrap());
+        //add 7th node
+        mt.append(all_values[8 - 1].clone()).unwrap();
+        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_8).unwrap());
     }
 }
