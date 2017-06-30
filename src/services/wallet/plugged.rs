@@ -42,7 +42,7 @@ struct PluggedWallet {
                                        value_ptr: *const *mut c_char) -> ErrorCode,
     close_handler: extern fn(handle: i32) -> ErrorCode,
     free_handler: extern fn(handle: i32,
-                            value: *mut c_char) -> ErrorCode
+                            value: *const c_char) -> ErrorCode
 }
 
 impl PluggedWallet {
@@ -60,7 +60,7 @@ impl PluggedWallet {
                                               value_ptr: *const *mut c_char) -> ErrorCode,
            close_handler: extern fn(xhandle: i32) -> ErrorCode,
            free_handler: extern fn(xhandle: i32,
-                                   value: *mut c_char) -> ErrorCode) -> PluggedWallet {
+                                   value: *const c_char) -> ErrorCode) -> PluggedWallet {
         PluggedWallet {
             name: name.to_string(),
             pool_name: pool_name.to_string(),
@@ -202,7 +202,7 @@ pub struct PluggedWalletType {
                               config: *const c_char,
                               credentials: *const c_char) -> ErrorCode,
     free_handler: extern fn(xhandle: i32,
-                            value: *mut c_char) -> ErrorCode,
+                            value: *const c_char) -> ErrorCode,
 }
 
 impl PluggedWalletType {
@@ -231,7 +231,7 @@ impl PluggedWalletType {
                                          config: *const c_char,
                                          credentials: *const c_char) -> ErrorCode,
                free_handler: extern fn(xhandle: i32,
-                                       value: *mut c_char) -> ErrorCode) -> PluggedWalletType {
+                                       value: *const c_char) -> ErrorCode) -> PluggedWalletType {
         PluggedWalletType {
             create_handler,
             open_handler,

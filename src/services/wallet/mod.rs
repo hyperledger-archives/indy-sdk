@@ -99,7 +99,7 @@ impl WalletService {
                                            config: *const c_char,
                                            credentials: *const c_char) -> ErrorCode,
                          free: extern fn(wallet_handle: i32,
-                                         value: *mut c_char) -> ErrorCode) -> Result<(), WalletError> {
+                                         value: *const c_char) -> ErrorCode) -> Result<(), WalletError> {
         let mut wallet_types = self.types.borrow_mut();
 
         if wallet_types.contains_key(xtype) {

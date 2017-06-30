@@ -33,7 +33,7 @@ pub enum WalletCommand {
                        extern fn(name: *const c_char,
                                  config: *const c_char,
                                  credentials: *const c_char) -> ErrorCode, // delete
-                       extern fn(wallet_handle: i32, str: *mut c_char) -> ErrorCode, // free
+                       extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode, // free
                        Box<Fn(Result<(), SovrinError>) + Send>),
     Create(String, // pool name
            String, // wallet name
@@ -128,7 +128,7 @@ impl WalletCommandExecutor {
                                        config: *const c_char,
                                        credentials: *const c_char) -> ErrorCode,
                      free: extern fn(wallet_handle: i32,
-                                     value: *mut c_char) -> ErrorCode,
+                                     value: *const c_char) -> ErrorCode,
                      cb: Box<Fn(Result<(), SovrinError>) + Send>) {
         cb(self
             .wallet_service

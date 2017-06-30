@@ -13,24 +13,20 @@ use self::libc::c_char;
 /// It allows library user to provide custom wallet implementation.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
 /// xtype: Wallet type name.
-/// create: create operation handler
-/// create: open operation handler
-/// set: set operation handler
-/// get: get operation handler
-/// close: close operation handler
-/// free: free operation handler
+/// create: WalletType create operation handler
+/// open: WalletType open operation handler
+/// set: Wallet set operation handler
+/// get: Wallet get operation handler
+/// get_not_expired: Wallet get_not_expired operation handler
+/// list: Wallet list operation handler
+/// close: Wallet close operation handler
+/// delete: WalletType delete operation handler
+/// free: Handler that allows to de-allocate strings allocated in caller code
 ///
 /// #Returns
-/// error code
-///
-/// #Errors
-/// CommonInvalidParam1
-/// CommonInvalidParam2
-/// CommonInvalidParam3
-/// CommonInvalidParam4
-/// CommonInvalidParam5
-/// WalletTypeAlreadyRegistered
+/// Error code
 #[no_mangle]
 pub extern fn sovrin_register_wallet_type(command_handle: i32,
                                           xtype: *const c_char,
@@ -59,7 +55,7 @@ pub extern fn sovrin_register_wallet_type(command_handle: i32,
                                                                    config: *const c_char,
                                                                    credentials: *const c_char) -> ErrorCode>,
                                           free: Option<extern fn(wallet_handle: i32,
-                                                                 value: *mut c_char) -> ErrorCode>,
+                                                                 value: *const c_char) -> ErrorCode>,
                                           cb: Option<extern fn(xcommand_handle: i32,
                                                                err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(xtype, ErrorCode::CommonInvalidParam2);
