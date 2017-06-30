@@ -286,6 +286,11 @@ public class Agent extends SovrinJava.API {
 			return this.connectionHandle;
 		}
 
+		public Future<AgentSendResult> agentSend(String message) throws SovrinException {
+
+			return Agent.agentSend(this, message);
+		}
+
 		public Future<AgentCloseConnectionResult> agentCloseConnection() throws SovrinException {
 
 			return Agent.agentCloseConnection(this);
@@ -304,6 +309,16 @@ public class Agent extends SovrinJava.API {
 		public int getListenerHandle() {
 
 			return this.listenerHandle;
+		}
+
+		public Future<AgentAddIdentityResult> agentAddIdentity(Pool pool, Wallet wallet, String did, Callback connectionCb, Callback messageCb) throws SovrinException {
+
+			return Agent.agentAddIdentity(this, pool, wallet, did, connectionCb, messageCb);
+		}
+
+		public Future<AgentRemoveIdentityResult> agentRemoveIdentity(Wallet wallet, String did, Callback connectionCb, Callback messageCb) throws SovrinException {
+
+			return Agent.agentRemoveIdentity(this, wallet, did, connectionCb, messageCb);
 		}
 
 		public Future<AgentCloseListenerResult> agentCloseListener() throws SovrinException {
