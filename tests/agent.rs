@@ -59,10 +59,9 @@ mod high_cases {
             let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.1", "default").unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.2", "default").unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
-            let (trustee_did, trustee_vk, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let sender_did = trustee_did.clone();
             let sender_wallet = trustee_wallet;
-            let sender_vk = trustee_vk;
 
             let listener_nym_json = LedgerUtils::build_nym_request(trustee_did.as_str(), listener_did.as_str(), Some(listener_ver_key.as_str()), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(), listener_nym_json.as_str()).unwrap();
@@ -74,12 +73,7 @@ mod high_cases {
             LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(), listener_attrib_json.as_str()).unwrap();
 
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
-            AgentUtils::add_identity(listener_handle, -1, listener_wallet, listener_did.as_str()).unwrap();
-
-            // FIXME move to remote
-            let their_did_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, sender_did, sender_vk);
-            SignusUtils::store_their_did(listener_wallet, their_did_json.as_str()).unwrap();
-            // FIXME
+            AgentUtils::add_identity(listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
 
             AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
@@ -169,6 +163,77 @@ mod high_cases {
             sock.send("test", zmq::DONTWAIT).unwrap();
             sock.poll(zmq::POLLIN, 100).unwrap();
             assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_agent_add_identity_works_for_multiply_keys() {
+            TestUtils::cleanup_storage();
+
+            let endpoint = "127.0.0.1:9714";
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet14receiver", "default").unwrap();
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+
+            let (receiver_did1, _, receiver_pk1) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
+            let (receiver_did2, _, receiver_pk2) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
+            for receiver_did in [receiver_did1, receiver_did2].iter() {
+                AgentUtils::add_identity(listener_handle, -1, receiver_wallet, receiver_did.as_str()).unwrap();
+            }
+
+            for receiver_pk in [receiver_pk1, receiver_pk2].iter() {
+                let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
+                let kp = zmq::CurveKeyPair::new().unwrap();
+                sock.set_identity(zmq::z85_encode(&kp.public_key).unwrap().as_bytes()).unwrap();
+                sock.set_curve_publickey(&kp.public_key).unwrap();
+                sock.set_curve_secretkey(&kp.secret_key).unwrap();
+                sock.set_curve_serverkey(receiver_pk.from_base58().unwrap().as_slice()).unwrap();
+                sock.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
+                sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
+                sock.send("test", zmq::DONTWAIT).unwrap();
+                sock.poll(zmq::POLLIN, 100).unwrap();
+                assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
+            }
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod sovrin_agent_rm_identity {
+        use super::*;
+        use rust_base58::FromBase58;
+
+        #[test]
+        fn sovrin_agent_rm_identity_works() {
+            TestUtils::cleanup_storage();
+
+            let endpoint = "127.0.0.1:9713";
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet13receiver", "default").unwrap();
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+
+            let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
+            AgentUtils::add_identity(listener_handle, -1, receiver_wallet, receiver_did.as_str()).unwrap();
+
+            let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
+            let kp = zmq::CurveKeyPair::new().unwrap();
+            sock.set_linger(0).unwrap();
+            sock.set_identity(zmq::z85_encode(&kp.public_key).unwrap().as_bytes()).unwrap();
+            sock.set_curve_publickey(&kp.public_key).unwrap();
+            sock.set_curve_secretkey(&kp.secret_key).unwrap();
+            sock.set_curve_serverkey(receiver_pk.from_base58().unwrap().as_slice()).unwrap();
+            sock.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
+            sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
+            sock.send("test", zmq::DONTWAIT).unwrap();
+            sock.poll(zmq::POLLIN, 1000).unwrap();
+            assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
+            sock.disconnect(format!("tcp://{}", endpoint).as_str()).unwrap();
+
+            AgentUtils::rm_identity(listener_handle, receiver_wallet, receiver_did.as_str()).unwrap();
+            sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
+            sock.send("test", zmq::DONTWAIT).unwrap();
+            sock.poll(zmq::POLLIN, 1000).unwrap();
+            assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap_err(), zmq::Error::EAGAIN);
+            sock.disconnect(format!("tcp://{}", endpoint).as_str()).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -298,6 +363,53 @@ mod high_cases {
 
 mod medium_cases {
     use super::*;
+
+    mod sovrin_agent_add_identity {
+        use super::*;
+
+        #[test]
+        fn sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
+
+            let endpoint = "127.0.0.1:9712";
+            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", "wallet12.1", "default").unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", "wallet12.2", "default").unwrap();
+            let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let sender_did = trustee_did.clone();
+            let sender_wallet = trustee_wallet;
+
+            let listener_nym_json = LedgerUtils::build_nym_request(trustee_did.as_str(), listener_did.as_str(), Some(listener_ver_key.as_str()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(), listener_nym_json.as_str()).unwrap();
+
+            let listener_attrib_json =
+                LedgerUtils::build_attrib_request(listener_did.as_str(), listener_did.as_str(), None,
+                                                  Some(format!("{{\"endpoint\":{{\"ha\":\"{}\", \"verkey\":\"{}\"}}}}", endpoint, listener_pub_key).as_str()),
+                                                  None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(), listener_attrib_json.as_str()).unwrap();
+
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+            let invalid_pool_handle = listener_handle;
+            AgentUtils::add_identity(listener_handle, invalid_pool_handle, listener_wallet, listener_did.as_str()).unwrap();
+
+            /* TODO
+             * Currently pool_handle and wallet_handle of add_identity will be checked only at required:
+             * when listener will check incoming connection and go to ledger for info.
+             * As result, add_identity will be successful but next connect will fail.
+             * Possible the test should be split into two:
+             * - add_identity_works_for_incompatible_pool_and_wallet
+             *    with immediately check in the library
+             * - connect_works_for_incorrect_connect_request
+             *    actual info in ledger or listener_wallet, wrong public key in sender_wallet
+             */
+
+            assert_eq!(AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap_err(), ErrorCode::CommonInvalidState);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 
     mod sovrin_agent_close_connection {
         use super::*;
