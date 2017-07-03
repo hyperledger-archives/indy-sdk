@@ -286,19 +286,19 @@ impl AgentCommandExecutor {
     fn resume_connect_process(&self, cmd_id: i32, res: Result<(MyConnectInfo, String), SovrinError>) {
         let cbs = self.connect_callbacks.borrow_mut().remove(&cmd_id);
         if let Some((connect_cb, on_msg)) = cbs {
-            let res = res.and_then(|(my_info, ddo_resp)| -> Result<(MyConnectInfo, ConnectInfo), SovrinError> {
-                let ddo_resp: serde_json::Value = serde_json::from_str(ddo_resp.as_str()).map_err(|err|
+            let res = res.and_then(|(my_info, attrib_resp_json)| -> Result<(MyConnectInfo, ConnectInfo), SovrinError> {
+                let attrib_resp: serde_json::Value = serde_json::from_str(attrib_resp_json.as_str()).map_err(|err|
                     CommonError::InvalidStructure(
-                        format!("Can't parse get DDO response json {}", err.description())))?; // TODO change error type?
-                let ddo_data = ddo_resp["result"]["data"].as_str().ok_or(
+                        format!("Can't parse get ATTRIB response json {}", err.description())))?; // TODO change error type?
+                let attrib_data_json = attrib_resp["result"]["data"].as_str().ok_or(
                     CommonError::InvalidStructure(
-                        "Can't parse get DDO response - sub-field result.data not found".to_string()))?; // TODO
-                let ddo: DDO = DDO::from_json(ddo_data).map_err(|err|
+                        format!("Can't parse get ATTRIB response - sub-field result.data not found: {}", attrib_resp_json)))?; // TODO
+                let attrib_data: AttribData = AttribData::from_json(attrib_data_json).map_err(|err|
                     CommonError::InvalidStructure(
-                        format!("Can't parse get DDO response data {}", err.description())))?; // TODO
+                        format!("Can't parse get ATTRIB response data {}", err.description())))?; // TODO
                 let conn_info = ConnectInfo {
-                    endpoint: ddo.endpoint.ha,
-                    server_key: ddo.endpoint.verkey,
+                    endpoint: attrib_data.endpoint.ha,
+                    server_key: attrib_data.endpoint.verkey,
                 };
                 Ok((my_info, conn_info))
             });
@@ -638,14 +638,14 @@ pub struct ConnectInfo {
 }
 
 #[derive(Deserialize)]
-struct EndpointDDO {
+struct Endpoint {
     verkey: String,
     ha: String,
 }
 
 #[derive(Deserialize)]
-struct DDO {
-    endpoint: EndpointDDO,
+struct AttribData {
+    endpoint: Endpoint,
 }
 
-impl<'a> JsonDecodable<'a> for DDO {}
+impl<'a> JsonDecodable<'a> for AttribData {}

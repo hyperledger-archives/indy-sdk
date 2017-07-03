@@ -8,9 +8,9 @@ workspace 'libsovrin.xcworkspace'
 
 def appPods
     pod 'libsodium',"~> 1.0.12"
-    pod 'libzmq',"~> 4.2.3"
+    #pod 'libzmq-pw',"~> 4.2.2"
     pod 'OpenSSL'
-    pod 'milagro'
+    #pod 'milagro'
     pod 'libsovrin-core'
 end
 

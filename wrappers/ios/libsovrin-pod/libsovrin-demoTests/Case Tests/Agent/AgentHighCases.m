@@ -61,19 +61,25 @@
                                                                     outMyPk:&pubKey];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed ");
     
+    // WARNING: You may need to change port to 9702, because 9701 is already used in pool. Here and in other similar places too.
     // 3. listen
     NSString *endpoint = @"tcp://127.0.0.1:9701";
     
     SovrinHandle listenerHandle = 0;
-    ret = [[AgentUtils sharedInstance] listenWithWalletHandle:walletHandle
-                                                     endpoint:endpoint
-                                           connectionCallback:nil
-                                              messageCallback:nil
-                                            outListenerHandle:&listenerHandle];
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+                                       connectionCallback:nil
+                                          messageCallback:nil
+                                        outListenerHandle:&listenerHandle];
      XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithWalletHandle() failed ");
     
-    // 4. Store their did from parts
+    // 4. Add identity
+    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                         poolHandle:-1
+                                                       walletHandle:walletHandle
+                                                                did:did];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed ");
     
+    // 5. Store their did from parts
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
                                                                        theirPk:pubKey
@@ -81,7 +87,7 @@
                                                                       endpoint:nil];
      XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed ");
     
-    // 5. Connect
+    // 6. Connect
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
                                                    senderDid:did
@@ -98,7 +104,7 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_agent_connect_works_for_remote_data";
-    NSString *xtype;
+    NSString *xtype = @"default";
     NSError *ret;
     
     // 1. create and open pool ledger config
@@ -187,11 +193,10 @@
     XCTAssertTrue([litenerAttribResponse isValid], @"invalid litenerAttribResponse: %@",litenerAttribResponse);
     
     // 10. listen
-    ret = [[AgentUtils sharedInstance] listenWithWalletHandle:listenerWalletHandle
-                                                     endpoint:endpoint
-                                           connectionCallback:nil
-                                              messageCallback:nil
-                                            outListenerHandle:nil];
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+                                       connectionCallback:nil
+                                          messageCallback:nil
+                                        outListenerHandle:nil];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithWalletHandle() failed");
     
     // 11. connect
@@ -241,7 +246,14 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
     // In Rust there is some temporary code which will be replaced with sovrin_agent_listen
+    // 4. listen
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+                                       connectionCallback:nil
+                                          messageCallback:nil
+                                        outListenerHandle:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::listenWithEndpoint() failed");
     
+    // 5. connect
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
                                                    senderDid:did
@@ -324,7 +336,7 @@
                                         outListenerHandle:&listenerHandle];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithEndpoint() failed");
     
-    // 3. Create and store my did
+    // 3. Create and store receiver's did
     NSString *receiverDid;
     NSString *receiverPk;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:receiverWallet
@@ -341,7 +353,138 @@
                                                                 did:receiverDid];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
     
-    // TODO: There is some zmq involved.
+    // TODO: There is some zmq for sockets involved for clean test.
+    SovrinHandle connectionHandle = 0;
+    ret = [[AgentUtils sharedInstance] connectWithPoolHandle:-1
+                                                walletHandle:receiverWallet
+                                                   senderDid:receiverDid
+                                                 receiverDid:receiverDid
+                                             messageCallback:nil
+                                         outConnectionHandle:&connectionHandle];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed");
+    
+    
+    [TestUtils cleanupStorage];
+}
+
+- (void)testAgentAddIdentityWorksForMultipleKeys
+{
+    [TestUtils cleanupStorage];
+    NSError *ret;
+    NSString *endpoint = @"127.0.0.1:9711";
+    
+    // 1. Create and open receiver's wallet
+    SovrinHandle receiverWallet = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
+                                                             walletName:@"wallet14receiver"
+                                                                  xtype:@"default"
+                                                                 handle:&receiverWallet];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for receiverWallet");
+    
+    // 2. listen
+    SovrinHandle listenerHandle = 0;
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+                                       connectionCallback:nil
+                                          messageCallback:nil
+                                        outListenerHandle:&listenerHandle];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithEndpoint() failed");
+    
+    // 3. Create and store receiver DID 1
+    NSString *receiverDid1;
+    NSString *receiverPk1;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:receiverWallet
+                                                                       seed:nil
+                                                                   outMyDid:&receiverDid1
+                                                                outMyVerkey:nil
+                                                                    outMyPk:&receiverPk1];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for receiverDid 1");
+    
+    // 4. Create and store receiver DID 2
+    NSString *receiverDid2;
+    NSString *receiverPk2;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:receiverWallet
+                                                                       seed:nil
+                                                                   outMyDid:&receiverDid2
+                                                                outMyVerkey:nil
+                                                                    outMyPk:&receiverPk2];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for receiverDid 2");
+    
+    // TODO: In Rust there is socket code.
+    
+    // 5. Add identities
+    NSMutableArray *receiverDids = [NSMutableArray new];
+    [receiverDids addObject:receiverDid1];
+    [receiverDids addObject:receiverDid2];
+    
+    for (NSString *did in receiverDids)
+    {
+        ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                             poolHandle:-1
+                                                           walletHandle:receiverWallet
+                                                                    did:did];
+        XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed for DID: %@", did);
+    }
+    
+    // 6. Connect with DID 1
+    ret = [[AgentUtils sharedInstance] connectWithPoolHandle:-1
+                                                walletHandle:receiverWallet
+                                                   senderDid:receiverDid1
+                                                 receiverDid:receiverDid1
+                                             messageCallback:nil
+                                         outConnectionHandle:nil];
+     XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed for DID 1");
+    
+     // 6. Connect with DID 2
+    ret = [[AgentUtils sharedInstance] connectWithPoolHandle:-1
+                                                walletHandle:receiverWallet
+                                                   senderDid:receiverDid2
+                                                 receiverDid:receiverDid2
+                                             messageCallback:nil
+                                         outConnectionHandle:nil];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed for DID 2");
+    
+    [TestUtils cleanupStorage];
+}
+
+// MARK: - Remove identity
+
+-(void)testAgentRemoveIdentityWorks
+{
+    [TestUtils cleanupStorage];
+    NSString *endpoint = @"127.0.0.1:9713";
+    NSError *ret;
+    
+    // 1. Obtain receiver's wallet handle
+    SovrinHandle receiverWalletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
+                                                             walletName:@"wallet13receiver"
+                                                                  xtype:@"default"
+                                                                 handle:&receiverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
+    
+    // 2. Listen
+    SovrinHandle listenerHandle = 0;
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+                                       connectionCallback:nil messageCallback:nil outListenerHandle:&listenerHandle];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithEndpoint() failed");
+    
+    // 3. Create and store receiver's DID
+    NSString *receiverDid;
+    NSString *receiverPk;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:receiverWalletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&receiverDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:&receiverPk];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for receiverDid 2");
+    
+    // 4. Add identity
+    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                         poolHandle:-1
+                                                       walletHandle:receiverWalletHandle
+                                                                did:receiverDid];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for receiverDid 2");
+    
     
     
     [TestUtils cleanupStorage];
@@ -558,8 +701,7 @@
         [connectionExpectation fulfill];
     };
 
-    ret = [[AgentUtils sharedInstance] listenWithWalletHandle:walletHandle
-                                                     endpoint:endpoint
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
                                            connectionCallback:connectionCallback
                                               messageCallback:nil
                                             outListenerHandle:nil];

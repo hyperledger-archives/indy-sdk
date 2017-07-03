@@ -29,6 +29,139 @@
     [super tearDown];
 }
 
+// MARK: - Add identity
+- (void)testAgentAddIdentityWorksForIncomingConnectionRequireLedgerRequestButPoolHandleIsInvalid
+{
+    [TestUtils cleanupStorage];
+    NSError *ret;
+    NSString *endpoint = @"127.0.0.1:9712";
+    NSString *xtype = @"default";
+    NSString *poolName = @"sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid";
+    
+    // 1. Obtain pool handle
+    SovrinHandle poolHandle = 0;
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+                                                                 poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
+    
+    // 2. Obtain listener's wallet
+    SovrinHandle listenerWalletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                             walletName:@"wallet12.1"
+                                                                  xtype:xtype
+                                                                 handle:&listenerWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenWalletWithPoolName() failed");
+    
+    // 3. Obtain trustee's wallet
+    SovrinHandle trusteeWalletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                             walletName:@"wallet12.2"
+                                                                  xtype:xtype
+                                                                 handle:&trusteeWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenWalletWithPoolName() failed");
+    
+    // 4. Create and store listener's did
+    NSString *listenerDid;
+    NSString *listenerVerKey;
+    NSString *listenerPubKey;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&listenerDid
+                                                                outMyVerkey:&listenerVerKey
+                                                                    outMyPk:&listenerPubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    
+    // 5. create trustee did
+    
+    NSString *trusteeDid;
+    NSString *trusteeDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":true}";
+    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:trusteeWalletHandle
+                                                          myDidJson:trusteeDidJson
+                                                           outMyDid:&trusteeDid
+                                                        outMyVerkey:nil
+                                                            outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    
+    // 6. Build nym request for listener
+    NSString *listenerNymRequest;
+    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
+                                                              targetDid:listenerDid
+                                                                 verkey:listenerVerKey
+                                                                  alias:nil
+                                                                   role:nil
+                                                             outRequest:&listenerNymRequest];
+     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed");
+    
+    // 7. Sign and submit listener's nym request
+    NSString *listenerNymResponse;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:trusteeWalletHandle
+                                                              submitterDid:trusteeDid
+                                                               requestJson:listenerNymRequest
+                                                           outResponseJson:&listenerNymResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed for listenerNymRequest");
+    
+    // 8. Build listener attribute request
+    NSString *rawJson =[NSString stringWithFormat:@"{\"endpoint\":{\"ha\":\"%@\", \"verkey\":\"%@\"}}", endpoint, listenerPubKey];
+    NSString *listenerAttributeRequest;
+    ret = [[LedgerUtils sharedInstance] buildAttribRequestWithSubmitterDid:listenerDid
+                                                                                                targetDid:listenerDid
+                                                                                                     hash:nil
+                                                                                                      raw:rawJson
+                                                                                                      enc:nil
+                                                                resultJson:&listenerAttributeRequest];
+     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAttribRequestWithSubmitterDid() failed");
+    
+    // 9. Sign and submit listener's attribute request
+    NSString *listenerAttributeResponse;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:listenerWalletHandle
+                                                              submitterDid:listenerDid
+                                                               requestJson:listenerAttributeRequest
+                                                           outResponseJson:&listenerAttributeResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAttribRequestWithSubmitterDid() failed for listenerAttributeResponse");
+    
+    // 10. listen
+    SovrinHandle listenerHandle = 0;
+    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+                                       connectionCallback:nil
+                                          messageCallback:nil
+                                        outListenerHandle:&listenerHandle];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::listenWithEndpoint()");
+    
+    // 11. Add identity
+    SovrinHandle invalidPoolHandle = listenerHandle;
+    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                         poolHandle:invalidPoolHandle
+                                                       walletHandle:listenerWalletHandle
+                                                                did:listenerDid];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::addIdentityForListenerHandle() failed for listenerDid");
+    
+    /* TODO
+     * Currently pool_handle and wallet_handle of add_identity will be checked only at required:
+     * when listener will check incoming connection and go to ledger for info.
+     * As result, add_identity will be successful but next connect will fail.
+     * Possible the test should be split into two:
+     * - add_identity_works_for_incompatible_pool_and_wallet
+     *    with immediately check in the library
+     * - connect_works_for_incorrect_connect_request
+     *    actual info in ledger or listener_wallet, wrong public key in sender_wallet
+     */
+    
+    // 12. Connect
+    NSString *senderDid = [NSString stringWithString:trusteeDid];
+    SovrinHandle senderWalletHandle = trusteeWalletHandle;
+    
+    ret = [[AgentUtils sharedInstance] connectWithPoolHandle:poolHandle
+                                                walletHandle:senderWalletHandle
+                                                   senderDid:senderDid
+                                                 receiverDid:listenerDid
+                                             messageCallback:nil
+                                         outConnectionHandle:nil];
+    XCTAssertEqual(ret.code, CommonInvalidState, @"AgentUtils::connectWithPoolHandle() returned wrong code");
+    [TestUtils cleanupStorage];
+}
+
 // MARK: - Close connection
 
 - (void)testAgentCloseConnectionWorksForIncorrectConnectionHandle
@@ -116,6 +249,7 @@
 }
 
 // MARK: - Close listener
+
 - (void)testAgentCloseListenerWorksForIncorrectHandle
 {
     [TestUtils cleanupStorage];
