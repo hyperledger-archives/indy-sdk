@@ -1,6 +1,6 @@
 {
   "name": "libzmq-pw",
-  "version": "4.2.4",
+  "version": "4.2.5",
   "summary": "ZeroMQ fork with PairwiseCurveCP support",
   "description": "ZeroMQ fork with PairwiseCurveCP support",
   "homepage": "https://github.com/evernym/libzmq-pw",
@@ -16,7 +16,7 @@
     "osx": "10.7"
   },
   "source": {
-    "http": "http://192.168.52.90/libzmq-pw-4.2.4.tar.gz"
+    "http": "http://192.168.52.90/libzmq-pw.tar.gz"
   },
   "source_files": [
     "src/*.{h,hpp,c,cc,cpp}",
