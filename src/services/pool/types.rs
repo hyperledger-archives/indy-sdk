@@ -40,6 +40,8 @@ pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
     pub ledgerId: u8,
+    pub ppSeqNo: Option<String>,
+    pub viewNo: Option<String>,
 }
 
 #[allow(non_snake_case)]
