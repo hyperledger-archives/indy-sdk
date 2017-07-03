@@ -60,6 +60,7 @@ impl error::Error for SovrinError {
 
 impl ToErrorCode for SovrinError {
     fn to_error_code(&self) -> ErrorCode {
+        error!("Casting error to ErrorCode: {}", self);
         match *self {
             SovrinError::AnoncredsError(ref err) => err.to_error_code(),
             SovrinError::CommonError(ref err) => err.to_error_code(),
