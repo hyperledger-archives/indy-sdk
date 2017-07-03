@@ -16,7 +16,7 @@
     "osx": "10.7"
   },
   "source": {
-    "http": "http://127.0.0.1/libzmq-pw-4.2.4.tar.gz"
+    "http": "http://192.168.52.90/libzmq-pw-4.2.4.tar.gz"
   },
   "source_files": [
     "src/*.{h,hpp,c,cc,cpp}",
