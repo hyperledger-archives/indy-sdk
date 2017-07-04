@@ -184,7 +184,7 @@ pub struct PrimaryClaim {
     pub m2: String,
     pub a: String,
     pub e: String,
-    pub v_prime: String
+    pub v: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]

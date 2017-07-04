@@ -146,17 +146,19 @@ impl<'a> JsonDecodable<'a> for ClaimOffer {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimRequestJson {
-    pub claim_request: ClaimRequest,
+    pub blinded_ms: ClaimRequest,
     pub issuer_did: String,
-    pub claim_def_seq_no: i32
+    pub claim_def_seq_no: i32,
+    pub schema_seq_no: i32
 }
 
 impl ClaimRequestJson {
-    pub fn new(claim_request: ClaimRequest, issuer_did: String, claim_def_seq_no: i32) -> ClaimRequestJson {
+    pub fn new(blinded_ms: ClaimRequest, issuer_did: String, claim_def_seq_no: i32, schema_seq_no: i32) -> ClaimRequestJson {
         ClaimRequestJson {
-            claim_request: claim_request,
+            blinded_ms: blinded_ms,
             issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no
+            claim_def_seq_no: claim_def_seq_no,
+            schema_seq_no: schema_seq_no
         }
     }
 }
@@ -664,16 +666,16 @@ pub struct PrimaryClaim {
     pub m2: BigNumber,
     pub a: BigNumber,
     pub e: BigNumber,
-    pub v_prime: BigNumber
+    pub v: BigNumber
 }
 
 impl PrimaryClaim {
-    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v_prime: BigNumber) -> PrimaryClaim {
+    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v: BigNumber) -> PrimaryClaim {
         PrimaryClaim {
             m2: m2,
             a: a,
             e: e,
-            v_prime: v_prime
+            v: v
         }
     }
 }
@@ -918,15 +920,20 @@ impl<'a> JsonDecodable<'a> for ProofClaimsJson {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequestJson {
     pub nonce: BigNumber,
+    pub name: String,
+    pub version: String,
+    #[serde(rename = "verifiableAttributes")]
     pub requested_attrs: HashMap<String, AttributeInfo>,
     pub requested_predicates: HashMap<String, Predicate>
 }
 
 impl ProofRequestJson {
-    pub fn new(nonce: BigNumber, requested_attr: HashMap<String, AttributeInfo>,
+    pub fn new(nonce: BigNumber, name: String, version: String, requested_attr: HashMap<String, AttributeInfo>,
                requested_predicate: HashMap<String, Predicate>) -> ProofRequestJson {
         ProofRequestJson {
             nonce: nonce,
+            name: name,
+            version: version,
             requested_attrs: requested_attr,
             requested_predicates: requested_predicate
         }

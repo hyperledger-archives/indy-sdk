@@ -12,7 +12,8 @@ use services::ledger::constants::{
     CLAIM_DEF,
     GET_CLAIM_DEF,
     STEWARD,
-    TRUSTEE
+    TRUSTEE,
+    GET_TXN
 };
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -365,6 +366,24 @@ impl GetDdoOperation {
 }
 
 impl JsonEncodable for GetDdoOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetTxnOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: i32
+}
+
+impl GetTxnOperation {
+    pub fn new(data: i32) -> GetTxnOperation {
+        GetTxnOperation {
+            _type: GET_TXN.to_string(),
+            data: data
+        }
+    }
+}
+
+impl JsonEncodable for GetTxnOperation {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Reply<T> {

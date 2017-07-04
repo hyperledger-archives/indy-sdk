@@ -273,7 +273,7 @@ mod high_cases {
         fn issuer_create_claim_works() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = r#"{"claim_request":{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1}"#;
+            let claim_req = r#"{"blinded_ms":{"blinded_ms":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1,"schema_seq_no":1}"#;
 
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
 
@@ -282,14 +282,14 @@ mod high_cases {
             assert!(claim_json.signature.primary_claim.a.len() > 0);
             assert!(claim_json.signature.primary_claim.m2.len() > 0);
             assert!(claim_json.signature.primary_claim.e.len() > 0);
-            assert!(claim_json.signature.primary_claim.v_prime.len() > 0);
+            assert!(claim_json.signature.primary_claim.v.len() > 0);
         }
 
         #[test]
         fn issuer_create_claim_works_for_claim_does_not_correspond_to_claim_req() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = r#"{"claim_request"{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"78642009183061519681642949186511883517561213024253007693605674585288964920641017651779407190325620073544451273313223865970730324882004218654708785143702626337327148875137393101464687794953218753005927492179012286511197396945795208681795313939767499444933139277315113356530041684437761038663276793040349557294620223093906897574215436647703667891052762523022326049857738264833807472302707972331207200720216038057270470116611478516211732505056236404960175670287081433670657644042478872537481050085523491110773623684416797190117083084618649667528194409150615774512701755156055570554349550169869411668543258825800016015079","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1}"#;
+            let claim_req = r#"{"blinded_ms"{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"78642009183061519681642949186511883517561213024253007693605674585288964920641017651779407190325620073544451273313223865970730324882004218654708785143702626337327148875137393101464687794953218753005927492179012286511197396945795208681795313939767499444933139277315113356530041684437761038663276793040349557294620223093906897574215436647703667891052762523022326049857738264833807472302707972331207200720216038057270470116611478516211732505056236404960175670287081433670657644042478872537481050085523491110773623684416797190117083084618649667528194409150615774512701755156055570554349550169869411668543258825800016015079","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1,"schema_seq_no":1}"#;
 
             let claim_json = AnoncredsUtils::get_xyz_claim_json();
 
@@ -301,7 +301,7 @@ mod high_cases {
         fn issuer_create_claim_works_for_for_invalid_wallet_handle() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = r#"{"claim_request":{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1}"#;
+            let claim_req = r#"{"blinded_ms":{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1,"schema_seq_no":1}"#;
 
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
 
@@ -414,7 +414,9 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -434,7 +436,9 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
                                 "requested_predicates":{}
                                }"#;
 
@@ -454,7 +458,9 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18}}
                               }"#;
 
@@ -474,7 +480,9 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
                               }"#;
 
@@ -494,14 +502,16 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                        "requested_attrs":{
-                            "attr1_uuid":{"schema_seq_no":1, "name":"name"},
-                            "attr2_uuid":{"schema_seq_no":1, "name":"sex"}
-                        },
-                        "requested_predicates":{
-                            "predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18},
-                            "predicate2_uuid":{"attr_name":"height","p_type":"GE","value":160}
-                        }}"#;
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{
+                                    "attr1_uuid":{"schema_seq_no":1, "name":"name"},
+                                    "attr2_uuid":{"schema_seq_no":1, "name":"sex"}
+                                },
+                                "requested_predicates":{
+                                    "predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18},
+                                    "predicate2_uuid":{"attr_name":"height","p_type":"GE","value":160}
+                                }}"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
@@ -528,9 +538,11 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                        "requested_attrs":{},
-                        "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
-                        }"#;
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{},
+                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
+                                }"#;
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = AnoncredsUtils::prover_get_claims_for_proof_req(invalid_wallet_handle, &proof_req);
@@ -547,7 +559,9 @@ mod high_cases {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18}}
                               }"#;
 
@@ -588,7 +602,9 @@ mod high_cases {
             let claim_uuid = claims[0].clone().claim_uuid;
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -617,9 +633,11 @@ mod high_cases {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                        "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                        "requested_predicates":{}
-                        }"#;
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_predicates":{}
+                                }"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
             let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
@@ -658,7 +676,9 @@ mod high_cases {
 
             let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                    "name":"proof_req_1",
+                                    "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -684,7 +704,9 @@ mod high_cases {
 
             let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"sex"}}}},
+                                    "name":"proof_req_1",
+                                    "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"sex"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"height","p_type":"GE","value":180}}}}
                                 }}"#);
 
@@ -710,7 +732,9 @@ mod high_cases {
 
             let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                    "name":"proof_req_1",
+                                    "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -891,7 +915,7 @@ mod medium_cases {
         fn issuer_create_claim_works_for_for_invalid_claim_req_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = r#"{"claim_request"{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"","ur":null},"claim_def_seq_no":1}"#;
+            let claim_req = r#"{"blinded_ms"{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"","ur":null},"claim_def_seq_no":1,"schema_seq_no":1}"#;
 
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
 
@@ -903,7 +927,7 @@ mod medium_cases {
         fn issuer_create_claim_works_for_for_invalid_claim_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = r#"{"claim_request":{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1}"#;
+            let claim_req = r#"{"blinded_ms":{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":1,"schema_seq_no":1}"#;
 
             let claim_json = r#"{
                                "sex":"male",
@@ -929,7 +953,7 @@ mod medium_cases {
                                 "revoc_reg_seq_no":null,
                                 "schema_seq_no":10,
                                 "issuer_did":"did",
-                                "signature":{"primary_claim":{"m2":"1","a":"1","e":"2","v_prime":"3"},"non_revocation_claim":null}}"#;
+                                "signature":{"primary_claim":{"m2":"1","a":"1","e":"2","v":"3"},"non_revocation_claim":null}}"#;
 
             let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
@@ -976,7 +1000,9 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{},
                                 "requested_predicates":{}
                               }"#;
 
@@ -993,6 +1019,8 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
                                 "requested_predicates":{}
                               }"#;
 
@@ -1005,7 +1033,9 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":2, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":2, "name":"name"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -1025,7 +1055,9 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age"}}
                               }"#;
 
@@ -1038,7 +1070,9 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"LE","value":58}}
                               }"#;
 
@@ -1055,7 +1089,9 @@ mod medium_cases {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -1090,7 +1126,9 @@ mod medium_cases {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                              }"#;
 
@@ -1125,7 +1163,9 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                              }"#;
 
@@ -1160,7 +1200,9 @@ mod medium_cases {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                              }"#;
 
@@ -1200,7 +1242,9 @@ mod medium_cases {
 
             let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -1225,7 +1269,9 @@ mod medium_cases {
 
             let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -1250,7 +1296,9 @@ mod medium_cases {
 
             let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -1314,7 +1362,9 @@ mod demos {
         // 7. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{}}
                                 }}"#, schema_seq_no);
 
@@ -1346,7 +1396,9 @@ mod demos {
         // 9. Verifier verify proof
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no);
 
@@ -1422,7 +1474,9 @@ mod demos {
         // 10. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
                                                        "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no, schema_seq_no);
@@ -1595,7 +1649,9 @@ mod demos {
         // 17. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
                                                        "attr2_uuid":{{"schema_seq_no":{},"name":"status"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}},
                                                             "predicate2_uuid":{{"attr_name":"period","p_type":"GE","value":5}}}}
@@ -1786,7 +1842,9 @@ mod demos {
         //15. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}},
                                                             "predicate2_uuid":{{"attr_name":"period","p_type":"GE","value":5}}}}
                                 }}"#, gvt_schema_seq_no);
