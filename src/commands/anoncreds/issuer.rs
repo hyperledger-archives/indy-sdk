@@ -115,10 +115,10 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
 
-        let claim_def_id = schema.seq_no.to_string() + "_" + issuer_did;
+        let claim_def_id = issuer_did.to_string() + ":" + &schema.seq_no.to_string();
 
         let (claim_definition, claim_definition_private) =
-            self.anoncreds_service.issuer.generate_claim_definition(schema, signature_type, create_non_revoc)?;
+            self.anoncreds_service.issuer.generate_claim_definition(issuer_did, schema, signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_json(&claim_definition)
             .map_err(map_err_trace!())
@@ -202,9 +202,10 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_req_json: {}", err.to_string())))?;
 
-        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &claim_req_json.claim_def_seq_no))?;
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
-        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_uuid))?;
+        let claim_def_id = claim_req_json.issuer_did.clone() + ":" + &claim_req_json.schema_seq_no.to_string();
+
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_id))?;
+        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_id))?;
 
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
@@ -259,7 +260,7 @@ impl IssuerCommandExecutor {
             self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid), &revocation_registry_json)?;
         }
 
-        let claim_json = ClaimJson::new(attributes, claim_req_json.claim_def_seq_no, revoc_reg_seq_no, claims, claim_def.schema_seq_no, claim_req_json.issuer_did);
+        let claim_json = ClaimJson::new(attributes, revoc_reg_seq_no, claims, claim_def.schema_seq_no, claim_req_json.issuer_did);
 
         let claim_json = ClaimJson::to_json(&claim_json)
             .map_err(map_err_trace!())

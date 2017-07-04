@@ -45,7 +45,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimDefinition(

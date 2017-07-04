@@ -36,18 +36,11 @@ static mut WALLET_HANDLE: i32 = 0;
 static mut CLAIM_DEF_JSON: &'static str = "";
 
 impl AnoncredsUtils {
-    pub fn create_claim_definition_and_set_link(wallet_handle: i32, schema: &str, claim_def_seq_no: i32) -> Result<String, ErrorCode> {
-        let (mut claim_def_json, claim_def_uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false)?;
-        claim_def_json = claim_def_json.replace(r#""seqNo":null"#, &format!(r#""seqNo":{}"#, claim_def_seq_no));//Need for tests
-        WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &claim_def_uuid, claim_def_seq_no)?;
-        Ok(claim_def_json)
-    }
-
-    pub fn issuer_create_claim_definition(wallet_handle: i32, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<(String, String), ErrorCode> {
+    pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_def_json, claim_def_uuid| {
-            sender.send((err, claim_def_json, claim_def_uuid)).unwrap();
+        let cb = Box::new(move |err, claim_def_json| {
+            sender.send((err, claim_def_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
@@ -58,6 +51,7 @@ impl AnoncredsUtils {
         let err =
             sovrin_issuer_create_and_store_claim_def(command_handle,
                                                      wallet_handle,
+                                                     issuer_did.as_ptr(),
                                                      schema.as_ptr(),
                                                      if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
                                                      create_non_revoc,
@@ -67,13 +61,13 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claim_def_json, claim_def_uuid) = receiver.recv().unwrap();
+        let (err, claim_def_json) = receiver.recv().unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok((claim_def_json, claim_def_uuid))
+        Ok(claim_def_json)
     }
 
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_name: &str) -> Result<(), ErrorCode> {
@@ -512,7 +506,7 @@ impl AnoncredsUtils {
                 //2. Create GVT ClaimDefinition
                 let schema = AnoncredsUtils::get_gvt_schema_json(COMMON_SCHEMA_SEQ_NO);
                 //TODO Fix it.....Convert String to &'static str
-                let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(WALLET_HANDLE, &schema, COMMON_CLAIM_DEF_SEQ_NO).unwrap();
+                let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE, "NcYxiDXkpYi6ov5FcYDi1e", &schema, None, false).unwrap();
                 let res = mem::transmute(&claim_def_json as &str);
                 mem::forget(claim_def_json);
                 CLAIM_DEF_JSON = res;

@@ -654,7 +654,7 @@ mod high_cases {
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
 
-            let (claim_def_json, _) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e",
                                                                                      &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
             info!("claim_def_json {:}", claim_def_json);
 

@@ -40,9 +40,10 @@ mod high_cases {
         fn issuer_create_and_store_claim_def_works() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
+            let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
             let schema = AnoncredsUtils::get_gvt_schema_json(1);
 
-            let (claim_def_json, _) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false).unwrap();
+            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, issuer_did, &schema, None, false).unwrap();
 
             let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
 
@@ -58,10 +59,11 @@ mod high_cases {
         fn issuer_create_and_store_claim_def_works_for_invalid_wallet() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
+            let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
             let schema = AnoncredsUtils::get_gvt_schema_json(1);
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle, &schema, None, false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle, &issuer_did, &schema, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -768,7 +770,7 @@ mod medium_cases {
 
             let schema = r#"{"seqNo":1, "name":"name","version":"1.0", "keys":[]}"#;
 
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e", &schema, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -778,7 +780,7 @@ mod medium_cases {
 
             let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","keys":[]}}"#;
 
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, "NcYxiDXkpYi6ov5FcYDi1e", None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -788,7 +790,7 @@ mod medium_cases {
 
             let schema = AnoncredsUtils::get_gvt_schema_json(1);
 
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, Some("some_type"), false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, "NcYxiDXkpYi6ov5FcYDi1e", Some("some_type"), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1334,7 +1336,7 @@ mod demos {
         let claim_def_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
 
-        let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(wallet_handle, &schema, claim_def_seq_no).unwrap();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &issuer_did, &schema, None, false).unwrap();
 
         //3. Prover create Master Secret
         let master_secret_name = "prover_master_secret";
@@ -1433,7 +1435,7 @@ mod demos {
         let claim_def_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
 
-        let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(issuer_wallet_handle, &schema, claim_def_seq_no).unwrap();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &schema, None, false).unwrap();
 
         //4. Prover create Master Secret
         let master_secret_name = "prover_master_secret";
@@ -1561,7 +1563,7 @@ mod demos {
         let gvt_claim_def_seq_no = 1;
         let gvt_schema = AnoncredsUtils::get_gvt_schema_json(gvt_schema_seq_no);
 
-        let gvt_claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(issuer_gvt_wallet_handle, &gvt_schema, gvt_claim_def_seq_no).unwrap();
+        let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_gvt_wallet_handle, &issuer1_did, &gvt_schema, None, false).unwrap();
 
         schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
         claim_defs.insert(gvt_claim_def_seq_no, gvt_claim_def_json.clone());
@@ -1572,7 +1574,7 @@ mod demos {
         let xyz_claim_def_seq_no = 2;
         let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
 
-        let xyz_claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(issuer_xyz_wallet_handle, &xyz_schema, xyz_claim_def_seq_no).unwrap();
+        let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_xyz_wallet_handle, &issuer2_did, &xyz_schema, None, false).unwrap();
 
         schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
         claim_defs.insert(xyz_claim_def_seq_no, xyz_claim_def_json.clone());
@@ -1759,7 +1761,7 @@ mod demos {
         let gvt_claim_def_seq_no = 1;
         let gvt_schema = AnoncredsUtils::get_gvt_schema_json(gvt_schema_seq_no);
 
-        let gvt_claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(issuer_wallet_handle, &gvt_schema, gvt_claim_def_seq_no).unwrap();
+        let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &gvt_schema, None, false).unwrap();
 
         schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
         claim_defs.insert(gvt_claim_def_seq_no, gvt_claim_def_json.clone());
@@ -1769,7 +1771,7 @@ mod demos {
         let xyz_claim_def_seq_no = 2;
         let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
 
-        let xyz_claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(issuer_wallet_handle, &xyz_schema, xyz_claim_def_seq_no).unwrap();
+        let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &xyz_schema, None, false).unwrap();
 
         schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
         claim_defs.insert(xyz_claim_def_seq_no, xyz_claim_def_json.clone());

@@ -79,8 +79,8 @@ fn anoncreds_demo_works() {
     let (prover_create_proof_sender, prover_create_proof_receiver) = channel();
     let (verifier_verify_proof_sender, verifier_verify_proof_receiver) = channel();
 
-    let issuer_create_claim_definition_cb = Box::new(move |err, claim_def_json, claim_def_uuid| {
-        issuer_create_claim_definition_sender.send((err, claim_def_json, claim_def_uuid)).unwrap();
+    let issuer_create_claim_definition_cb = Box::new(move |err, claim_def_json| {
+        issuer_create_claim_definition_sender.send((err, claim_def_json)).unwrap();
     });
     let create_wallet_cb = Box::new(move |err| {
         create_wallet_sender.send(err).unwrap();
@@ -167,7 +167,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let schema_seq_no = 1;
-    let issuer_did = "some_issuer_did";
+    let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
     let schema = format!(r#"{{
                             "seqNo":{},
                             "data":{{
@@ -233,7 +233,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let prover_did = "BzfFCYk";
-    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":{}, "schema_seq_no":{}}}"#, claim_def_seq_no, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":{}}}"#, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
