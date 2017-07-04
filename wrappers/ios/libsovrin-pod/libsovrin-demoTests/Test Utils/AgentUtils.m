@@ -71,14 +71,20 @@
     return connectionErr;
 }
 
-- (NSError *)listenWithEndpoint:(NSString *)endpoint
+__strong void (^onListenerCallback)(NSError*, SovrinHandle) = nil;
+__strong void (^onMessageCallback)(SovrinHandle, NSError*, NSString*) = nil;
+__strong void (^onConnectCallback)(SovrinHandle, NSError*, SovrinHandle, NSString*, NSString* ) = nil;
+
+- (NSError *)listenForEndpoint:(NSString *)endpoint
              connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
                 messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
               outListenerHandle:(SovrinHandle *)listenerHandle
 {
+    
+    #if 0
     // connection callback
     void (^onConnectCallback)(SovrinHandle, NSError*, SovrinHandle, NSString*, NSString* ) = ^(SovrinHandle xListenerHandle, NSError *error, SovrinHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
-        NSLog(@"AgentUtils::listen::New connection %@ on listener {}, err {:?}, sender DID {}, receiver DID {}", connectionHandle, xListenerHandle, (long)error.code, senderDid, receiverDid);
+        NSLog(@"AgentUtils::listen::New connection %d on listener %d, err %ld, sender DID %@, receiver DID: %@", (int)connectionHandle, (int)xListenerHandle, (long)error.code, senderDid, receiverDid);
         if (connectionCallback) {connectionCallback(xListenerHandle, connectionHandle);}
     };
     
@@ -87,7 +93,7 @@
     XCTestExpectation* listenerCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block SovrinHandle tempListenerHandle = 0;
     __block NSError *listenerErr;
-    
+
     void (^onListenerCallback)(NSError*, SovrinHandle) = ^(NSError *error, SovrinHandle xListenerHandle) {
         NSLog(@"OnListenerCallback triggered.");
         listenerErr = error;
@@ -97,16 +103,39 @@
     
     // message callback
     void (^onMessageCallback)(SovrinHandle, NSError*, NSString*) = ^(SovrinHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"AgentUtils::listen::On connection %@ received (with error %ld) agent message (CLI->SRV): %@", xConnectionHandle, (long)error.code), message);
+        NSLog(@"AgentUtils::listen::On connection %d received (with error %ld) agent message (CLI->SRV): %@", (int)xConnectionHandle, (long)error.code, message);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
+#endif
     
+    // listener callback. We need to obtain listenerHandle, so we wait for completion. Connection and message callnacks can be triggered multiple times later, so we just pass them to register.
+    XCTestExpectation* listenerCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
+    __block SovrinHandle tempListenerHandle = 0;
+    __block NSError *listenerErr;
+    
+    onConnectCallback = ^(SovrinHandle xListenerHandle, NSError *error, SovrinHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
+        NSLog(@"AgentUtils::listen::New connection %d on listener %d, err %ld, sender DID %@, receiver DID: %@", (int)connectionHandle, (int)xListenerHandle, (long)error.code, senderDid, receiverDid);
+        if (connectionCallback) {connectionCallback(xListenerHandle, connectionHandle);}
+    };
+
+    onListenerCallback = ^(NSError *error, SovrinHandle xListenerHandle) {
+        NSLog(@"OnListenerCallback triggered.");
+        listenerErr = error;
+        tempListenerHandle = xListenerHandle;
+        [listenerCompletionExpectation fulfill];
+    };
+    
+    // message callback
+   onMessageCallback = ^(SovrinHandle xConnectionHandle, NSError *error, NSString *message) {
+        NSLog(@"AgentUtils::listen::On connection %d received (with error %ld) agent message (CLI->SRV): %@", (int)xConnectionHandle, (long)error.code, message);
+        if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
+    };
+
     // listen
-    NSError *ret = [SovrinAgent listenWithWalletHandle:walletHandle
-                                              endpoint:endpoint
-                                       listenerHandler:onListenerCallback
-                                     connectionHandler:onConnectCallback
-                                        messageHandler:onMessageCallback];
+    NSError *ret = [SovrinAgent listenForEndpoint:endpoint
+                                  listenerHandler:onListenerCallback
+                                connectionHandler:onConnectCallback
+                                   messageHandler:onMessageCallback];
     if (ret.code != Success)
     {
         NSLog(@"SovrinAgent::listenWithWalletHandle failed with code: %ld", ret.code);

@@ -15,7 +15,7 @@
 #import "AgentUtils.h"
 
 #import "NSDictionary+JSON.h"
-#import "NSString+Validation.h"
+#import "NSString+Validation.h"
 #import "NSArray+JSON.h"
 
 @interface TestUtils : NSObject

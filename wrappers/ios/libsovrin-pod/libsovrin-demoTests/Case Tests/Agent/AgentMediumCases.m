@@ -64,7 +64,7 @@
     NSString *listenerDid;
     NSString *listenerVerKey;
     NSString *listenerPubKey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
@@ -123,7 +123,7 @@
     
     // 10. listen
     SovrinHandle listenerHandle = 0;
-    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+    ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                        connectionCallback:nil
                                           messageCallback:nil
                                         outListenerHandle:&listenerHandle];
@@ -195,7 +195,7 @@
     
     SovrinHandle listenerHandler = 0;
     __block NSString* messageFromClient;
-    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+    ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                        connectionCallback:nil
                                           messageCallback:^(SovrinHandle connectionHandle, NSString *message)
     {
@@ -256,7 +256,8 @@
     NSError *ret;
     
     // 1.Create and open wallet
-    SovrinHandle walletHandle = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool9"
+    SovrinHandle walletHandle;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool9"
                                                                                    walletName:@"wallet9"
                                                                                         xtype:@"default"
                                                                                        handle:&walletHandle];
@@ -280,7 +281,7 @@
     
     SovrinHandle listenerHandler = 0;
     __block NSString* messageFromClient;
-    ret = [[AgentUtils sharedInstance] listenWithEndpoint:endpoint
+    ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                        connectionCallback:nil
                                           messageCallback:^(SovrinHandle connectionHandle, NSString *message)
            {

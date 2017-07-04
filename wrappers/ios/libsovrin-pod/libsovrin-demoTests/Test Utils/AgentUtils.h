@@ -21,7 +21,7 @@
                    messageCallback:(void (^)(SovrinHandle connectHandle, NSString *message))messageCallback
                outConnectionHandle:(SovrinHandle *)outConnectionHandle;
 
-- (NSError *)listenWithEndpoint:(NSString *)endpoint
+- (NSError *)listenForEndpoint:(NSString *)endpoint
              connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
                 messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
               outListenerHandle:(SovrinHandle *)listenerHandle;

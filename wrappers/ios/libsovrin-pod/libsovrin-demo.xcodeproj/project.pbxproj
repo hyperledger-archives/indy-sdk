@@ -25,7 +25,6 @@
 		848FF4121EFC0987009D2FC9 /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4111EFC0987009D2FC9 /* AgentMediumCases.m */; };
 		848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4131EFC0D66009D2FC9 /* AgentUtils.m */; };
 		848FF41A1EFD33B3009D2FC9 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4191EFD33B3009D2FC9 /* Base58Test.m */; };
-		848FF4211EFD46B3009D2FC9 /* NSString+Base58.mm in Sources */ = {isa = PBXBuildFile; fileRef = 848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */; };
 		84CFCAD71EF3F7C500F91426 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */; };
 		84CFCAD81EF3F7C500F91426 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */; };
 		84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */; };
@@ -114,8 +113,6 @@
 		848FF4131EFC0D66009D2FC9 /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
 		848FF4151EFC0D72009D2FC9 /* AgentUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
 		848FF4191EFD33B3009D2FC9 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
-		848FF41F1EFD46AB009D2FC9 /* NSString+Base58.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "NSString+Base58.h"; path = "../../../../../../../../../.Trash/NSString+Base58.h"; sourceTree = "<group>"; };
-		848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "NSString+Base58.mm"; path = "../../../../../../../../../.Trash/NSString+Base58.mm"; sourceTree = "<group>"; };
 		84CFCACA1EF3F7C500F91426 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		84CFCACB1EF3F7C500F91426 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
 		84CFCACC1EF3F7C500F91426 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
@@ -318,8 +315,6 @@
 				8404D1411EF7D0E900709F1B /* NSString+Validation.m */,
 				84F0FD3F1EF7F0E40022A01D /* NSArray+JSON.h */,
 				84F0FD3D1EF7F0D80022A01D /* NSArray+JSON.m */,
-				848FF41F1EFD46AB009D2FC9 /* NSString+Base58.h */,
-				848FF4201EFD46B3009D2FC9 /* NSString+Base58.mm */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -604,7 +599,6 @@
 				84CFCAE01EF3F7C500F91426 /* WalletMediumCases.m in Sources */,
 				84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */,
 				84CFCAE41EF3F7CC00F91426 /* AnoncredsDemo.mm in Sources */,
-				848FF4211EFD46B3009D2FC9 /* NSString+Base58.mm in Sources */,
 				848FF4141EFC0D66009D2FC9 /* AgentUtils.m in Sources */,
 				84CFCAF81EF3F7D300F91426 /* PoolUtils.m in Sources */,
 				8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */,

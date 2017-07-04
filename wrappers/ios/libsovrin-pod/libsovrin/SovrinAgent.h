@@ -16,18 +16,17 @@
                  connectionHandler:(void (^)(NSError *error, SovrinHandle connection)) connectionHandler
                     messageHandler:(void (^)(SovrinHandle connectionHandle, NSError *error, NSString *message))messageHandler;
 
-+ (NSError *)listenWithWalletHandle:(SovrinHandle)walletHandle
-                           endpoint:(NSString *)endpoint
-                    listenerHandler:(void (^)(NSError *error,
-                                              SovrinHandle listenerHandle))listenerCompletion
-                  connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
-                                              NSError *error,
-                                              SovrinHandle connectionHandle,
-                                              NSString *senderDid,
-                                              NSString *receiverDid))connectionCompletion
-                     messageHandler:(void (^)(SovrinHandle xconnectionHandle,
-                                              NSError *error,
-                                              NSString *message))messageCompletion;
++ (NSError *)listenForEndpoint:(NSString *)endpoint
+               listenerHandler:(void (^)(NSError *error,
+                                         SovrinHandle listenerHandle))listenerCompletion
+             connectionHandler:(void (^)(SovrinHandle xlistenerHandle,
+                                         NSError *error,
+                                         SovrinHandle connectionHandle,
+                                         NSString *senderDid,
+                                         NSString *receiverDid))connectionCompletion
+                messageHandler:(void (^)(SovrinHandle xconnectionHandle,
+                                         NSError *error,
+                                         NSString *message))messageCompletion;
 
 + (NSError *)sendWithConnectionHandle:(SovrinHandle)connectionHandle
                              messsage:(NSString *)message

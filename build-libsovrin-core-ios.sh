@@ -3,7 +3,7 @@
 export PKG_CONFIG_ALLOW_CROSS=1
 export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
 export EVERNYM_REPO_KEY=~/Documents/EvernymRepo
-export LIBSOVRIN_POD_VERSION=0.0.2
+export LIBSOVRIN_POD_VERSION=0.0.3
 export POD_FILE_NAME=libsovrin-core-ios.tar.gz
 
 echo "\nBuild IOS POD started..."
@@ -44,5 +44,5 @@ ls -l /var/repositories/deb/pods-ios/libsovrin-core/$LIBSOVRIN_POD_VERSION
 EOF
 
 echo "Cleanup temporary directory: $WORK_DIR"
-rm -rf "$WORK_DIR"
+#rm -rf "$WORK_DIR"
 
