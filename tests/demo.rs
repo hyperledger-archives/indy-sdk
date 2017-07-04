@@ -167,6 +167,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let schema_seq_no = 1;
+    let issuer_did = "some_issuer_did";
     let schema = format!(r#"{{
                             "seqNo":{},
                             "data":{{
@@ -180,29 +181,15 @@ fn anoncreds_demo_works() {
     let err =
         sovrin_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
                                                  wallet_handle,
+                                                 CString::new(issuer_did.clone()).unwrap().as_ptr(),
                                                  CString::new(schema.clone()).unwrap().as_ptr(),
                                                  null(),
                                                  false,
                                                  create_claim_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, mut claim_def_json, claim_def_uuid) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-    info!("claim_def_json {:?}", claim_def_json);
-    assert_eq!(ErrorCode::Success, err);
-
-    let claim_def_seq_no = 1;
-    claim_def_json = claim_def_json.replace(r#""seqNo":null"#, &format!(r#""seqNo":{}"#, claim_def_seq_no));//Need for tests
-
-    // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
-    let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle,
-                                                 wallet_handle,
-                                                 CString::new(claim_def_uuid).unwrap().as_ptr(),
-                                                 claim_def_seq_no,
-                                                 wallet_set_seq_no_for_value_callback);
-
-    assert_eq!(ErrorCode::Success, err);
-    let err = wallet_set_seq_no_for_value_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("claim_def_json {:?}", claim_def_json);
     assert_eq!(ErrorCode::Success, err);
 
     let master_secret_name = "master_secret";

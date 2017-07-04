@@ -27,10 +27,11 @@ use std::cell::RefCell;
 pub enum IssuerCommand {
     CreateAndStoreClaimDefinition(
         i32, // wallet handle
+        String, // issuer did
         String, // schema json
         Option<String>, // signature type
         bool,
-        Box<Fn(Result<(String, String), SovrinError>) + Send>),
+        Box<Fn(Result<String, SovrinError>) + Send>),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
         i32, // claim def seq no
@@ -70,9 +71,9 @@ impl IssuerCommandExecutor {
 
     pub fn execute(&self, command: IssuerCommand) {
         match command {
-            IssuerCommand::CreateAndStoreClaimDefinition(wallet_handle, schema_json, signature_type, create_non_revoc, cb) => {
+            IssuerCommand::CreateAndStoreClaimDefinition(wallet_handle, issuer_did, schema_json, signature_type, create_non_revoc, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreClaim command received");
-                self.create_and_store_claim_definition(wallet_handle, &schema_json,
+                self.create_and_store_claim_definition(wallet_handle, &issuer_did, &schema_json,
                                                        signature_type.as_ref().map(String::as_str), create_non_revoc, cb);
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, claim_def_seq_no, max_claim_num, cb) => {
@@ -94,23 +95,27 @@ impl IssuerCommandExecutor {
 
     fn create_and_store_claim_definition(&self,
                                          wallet_handle: i32,
+                                         issuer_did: &str,
                                          schema_json: &str,
                                          signature_type: Option<&str>,
                                          create_non_revoc: bool,
-                                         cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
-        let result = self._create_claim_definition(wallet_handle, schema_json,
-                                                   signature_type, create_non_revoc);
+                                         cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        let result = self._create_and_store_claim_definition(wallet_handle, issuer_did, schema_json,
+                                                             signature_type, create_non_revoc);
         cb(result)
     }
 
-    fn _create_claim_definition(&self,
-                                wallet_handle: i32,
-                                schema_json: &str,
-                                signature_type: Option<&str>,
-                                create_non_revoc: bool) -> Result<(String, String), SovrinError> {
+    fn _create_and_store_claim_definition(&self,
+                                          wallet_handle: i32,
+                                          issuer_did: &str,
+                                          schema_json: &str,
+                                          signature_type: Option<&str>,
+                                          create_non_revoc: bool) -> Result<String, SovrinError> {
         let schema = Schema::from_json(schema_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
+
+        let claim_def_id = schema.seq_no.to_string() + "_" + issuer_did;
 
         let (claim_definition, claim_definition_private) =
             self.anoncreds_service.issuer.generate_claim_definition(schema, signature_type, create_non_revoc)?;
@@ -123,12 +128,10 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition private json: {}", err.to_string())))?;
 
-        let uuid = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &claim_def_id), &claim_definition_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &claim_def_id), &claim_definition_private_json)?;
 
-        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &uuid), &claim_definition_json)?;
-        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &uuid), &claim_definition_private_json)?;
-
-        Ok((claim_definition_json, uuid))
+        Ok(claim_definition_json)
     }
 
     fn create_and_store_revocation_registry(&self,

@@ -35,28 +35,29 @@ use self::libc::c_char;
 #[no_mangle]
 pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
                                                        wallet_handle: i32,
+                                                       issuer_did: *const c_char,
                                                        schema_json: *const c_char,
                                                        signature_type: *const c_char,
                                                        create_non_revoc: bool,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            claim_def_json: *const c_char,
-                                                                            claim_def_uuid: *const c_char
+                                                                            claim_def_json: *const c_char
                                                        )>) -> ErrorCode {
-    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimDefinition(
             wallet_handle,
+            issuer_did,
             schema_json,
             signature_type,
             create_non_revoc,
             Box::new(move |result| {
-                let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, claim_def_json) = result_to_err_code_1!(result, String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
-                let claim_def_uuid = CStringUtils::string_to_cstring(claim_def_uuid);
-                cb(command_handle, err, claim_def_json.as_ptr(), claim_def_uuid.as_ptr())
+                cb(command_handle, err, claim_def_json.as_ptr())
             })
         ))));
 
