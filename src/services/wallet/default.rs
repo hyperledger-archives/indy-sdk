@@ -126,6 +126,10 @@ impl Wallet for DefaultWallet {
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
     }
+
+    fn get_name(&self) -> String {
+       self.name.clone()
+    }
 }
 
 pub struct DefaultWalletType {}

@@ -27,6 +27,7 @@ pub trait Wallet {
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError>;
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError>;
     fn get_pool_name(&self) -> String;
+    fn get_name(&self) -> String;
 }
 
 trait WalletType {
@@ -199,6 +200,12 @@ impl WalletService {
         if !wallet_types.contains_key(descriptor.xtype.as_str()) {
             return Err(WalletError::UnknownType(descriptor.xtype));
         }
+        let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
+
+        let mut wallets = self.wallets.borrow_mut();
+        if wallets.values().any(|ref wallet| wallet.get_name() == name) {
+            return Err(WalletError::AlreadyOpened(name.to_string()));
+        }
 
         let config = {
             let config_path = _wallet_config_path(name);
@@ -213,9 +220,6 @@ impl WalletService {
             }
         };
 
-        // FIXME: Check for already opened walled!!!
-
-        let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
         let wallet = wallet_type.open(name,
                                       descriptor.pool_name.as_str(),
                                       config.as_ref().map(String::as_str),
@@ -223,7 +227,7 @@ impl WalletService {
                                       credentials)?;
 
         let wallet_handle = SequenceUtils::get_next_id();
-        self.wallets.borrow_mut().insert(wallet_handle, wallet);
+        wallets.insert(wallet_handle, wallet);
         Ok(wallet_handle)
     }
 

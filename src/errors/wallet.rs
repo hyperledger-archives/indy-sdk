@@ -19,6 +19,7 @@ pub enum WalletError {
     NotFound(String),
     IncorrectPool(String),
     PluggedWallerError(ErrorCode),
+    AlreadyOpened(String),
     CommonError(CommonError)
 }
 
@@ -32,6 +33,7 @@ impl fmt::Display for WalletError {
             WalletError::NotFound(ref description) => write!(f, "Wallet not found: {}", description),
             WalletError::IncorrectPool(ref description) => write!(f, "Wallet used with different pool: {}", description),
             WalletError::PluggedWallerError(err_code) => write!(f, "Plugged wallet error: {}", err_code as i32),
+            WalletError::AlreadyOpened(ref description) => write!(f, "Wallet already opened: {}", description),
             WalletError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -47,6 +49,7 @@ impl error::Error for WalletError {
             WalletError::NotFound(ref description) => description,
             WalletError::IncorrectPool(ref description) => description,
             WalletError::PluggedWallerError(ref err_code) => "Plugged wallet error",
+            WalletError::AlreadyOpened(ref description) => description,
             WalletError::CommonError(ref err) => err.description()
         }
     }
@@ -60,6 +63,7 @@ impl error::Error for WalletError {
             WalletError::NotFound(ref description) => None,
             WalletError::IncorrectPool(ref description) => None,
             WalletError::PluggedWallerError(ref err_code) => None,
+            WalletError::AlreadyOpened(ref description) => None,
             WalletError::CommonError(ref err) => Some(err)
         }
     }
@@ -75,6 +79,7 @@ impl ToErrorCode for WalletError {
             WalletError::NotFound(ref err) => ErrorCode::WalletNotFoundError,
             WalletError::IncorrectPool(ref err) => ErrorCode::WalletIncompatiblePoolError,
             WalletError::PluggedWallerError(err_code) => err_code,
+            WalletError::AlreadyOpened(ref err) => ErrorCode::WalletAlreadyOpenedError,
             WalletError::CommonError(ref err) => err.to_error_code()
         }
     }

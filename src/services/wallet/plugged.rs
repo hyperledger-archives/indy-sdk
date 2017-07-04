@@ -127,8 +127,8 @@ impl Wallet for PluggedWallet {
         let mut values_json_ptr: *const c_char = ptr::null_mut();
 
         let err = (self.list_handler)(self.handle,
-                                     key_prefix.as_ptr(),
-                                     &mut values_json_ptr);
+                                      key_prefix.as_ptr(),
+                                      &mut values_json_ptr);
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
@@ -180,6 +180,10 @@ impl Wallet for PluggedWallet {
 
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -358,189 +362,192 @@ impl From<Utf8Error> for WalletError {
     }
 }
 
-//
-//#[cfg(test)]
-//mod tests {
-//    use super::*;
-//    use errors::wallet::WalletError;
-//    use utils::test::TestUtils;
-//
-//    use std::time::{Duration};
-//    use std::thread;
-//
-//    #[test]
-//    fn type_new_works() {
-//        PluggedWalletType::new();
-//    }
-//
-//    #[test]
-//    fn type_create_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn type_create_works_for_twice() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//
-//        let res = wallet_type.create("wallet1", None, None);
-//        assert_match!(Err(WalletError::AlreadyExists(_)), res);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn type_delete_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//        wallet_type.delete("wallet1", None).unwrap();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn type_open_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//        wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn wallet_set_get_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//
-//        wallet.set("key1", "value1").unwrap();
-//        let value = wallet.get("key1").unwrap();
-//        assert_eq!("value1", value);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn wallet_set_get_works_for_reopen() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//
-//        {
-//            let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//            wallet.set("key1", "value1").unwrap();
-//        }
-//
-//        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//        let value = wallet.get("key1").unwrap();
-//        assert_eq!("value1", value);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn wallet_get_works_for_unknown() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//
-//        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//        let value = wallet.get("key1");
-//        assert_match!(Err(WalletError::NotFound(_)), value);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn wallet_set_get_works_for_update() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//
-//        wallet.set("key1", "value1").unwrap();
-//        let value = wallet.get("key1").unwrap();
-//        assert_eq!("value1", value);
-//
-//        wallet.set("key1", "value2").unwrap();
-//        let value = wallet.get("key1").unwrap();
-//        assert_eq!("value2", value);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn wallet_set_get_not_expired_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//        let wallet = wallet_type.open("wallet1", "pool1", None, Some("{\"freshness_time\": 1}"), None).unwrap();
-//        wallet.set("key1", "value1").unwrap();
-//
-//        // Wait until value expires
-//        thread::sleep(Duration::new(2, 0));
-//
-//        let value = wallet.get_not_expired("key1");
-//        assert_match!(Err(WalletError::NotFound(_)), value);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn wallet_list_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let wallet_type = PluggedWalletType::new();
-//        wallet_type.create("wallet1", None, None).unwrap();
-//        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-//
-//        wallet.set("key1::subkey1", "value1").unwrap();
-//        wallet.set("key1::subkey2", "value2").unwrap();
-//
-//        let mut key_values = wallet.list("key1::").unwrap();
-//        assert_eq!(2, key_values.len());
-//
-//        let (key, value) = key_values.pop().unwrap();
-//        assert_eq!("key1::subkey2", key);
-//        assert_eq!("value2", value);
-//
-//        let (key, value) = key_values.pop().unwrap();
-//        assert_eq!("key1::subkey1", key);
-//        assert_eq!("value1", value);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//
-//    #[test]
-//    fn default_wallet_get_pool_name_works() {
-//        TestUtils::cleanup_sovrin_home();
-//
-//        let pool_name = "pool1";
-//        let wallet_name = "wallet1";
-//        let default_wallet_type = PluggedWalletType::new();
-//        default_wallet_type.create(wallet_name, None, None).unwrap();
-//        let wallet = default_wallet_type.open(wallet_name, pool_name, None, None, None).unwrap();
-//
-//        assert_eq!(wallet.get_pool_name(), pool_name);
-//
-//        TestUtils::cleanup_sovrin_home();
-//    }
-//}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use errors::wallet::WalletError;
+    use utils::test::TestUtils;
+
+    use std::time::{Duration};
+    use std::thread;
+
+
+
+    #[test]
+    fn type_new_works() {
+        //PluggedWalletType::new();
+    }
+
+    //
+    //    #[test]
+    //    fn type_create_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn type_create_works_for_twice() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //
+    //        let res = wallet_type.create("wallet1", None, None);
+    //        assert_match!(Err(WalletError::AlreadyExists(_)), res);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn type_delete_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //        wallet_type.delete("wallet1", None).unwrap();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn type_open_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //        wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn wallet_set_get_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //
+    //        wallet.set("key1", "value1").unwrap();
+    //        let value = wallet.get("key1").unwrap();
+    //        assert_eq!("value1", value);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn wallet_set_get_works_for_reopen() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //
+    //        {
+    //            let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //            wallet.set("key1", "value1").unwrap();
+    //        }
+    //
+    //        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //        let value = wallet.get("key1").unwrap();
+    //        assert_eq!("value1", value);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn wallet_get_works_for_unknown() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //
+    //        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //        let value = wallet.get("key1");
+    //        assert_match!(Err(WalletError::NotFound(_)), value);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn wallet_set_get_works_for_update() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //
+    //        wallet.set("key1", "value1").unwrap();
+    //        let value = wallet.get("key1").unwrap();
+    //        assert_eq!("value1", value);
+    //
+    //        wallet.set("key1", "value2").unwrap();
+    //        let value = wallet.get("key1").unwrap();
+    //        assert_eq!("value2", value);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn wallet_set_get_not_expired_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //        let wallet = wallet_type.open("wallet1", "pool1", None, Some("{\"freshness_time\": 1}"), None).unwrap();
+    //        wallet.set("key1", "value1").unwrap();
+    //
+    //        // Wait until value expires
+    //        thread::sleep(Duration::new(2, 0));
+    //
+    //        let value = wallet.get_not_expired("key1");
+    //        assert_match!(Err(WalletError::NotFound(_)), value);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn wallet_list_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let wallet_type = PluggedWalletType::new();
+    //        wallet_type.create("wallet1", None, None).unwrap();
+    //        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+    //
+    //        wallet.set("key1::subkey1", "value1").unwrap();
+    //        wallet.set("key1::subkey2", "value2").unwrap();
+    //
+    //        let mut key_values = wallet.list("key1::").unwrap();
+    //        assert_eq!(2, key_values.len());
+    //
+    //        let (key, value) = key_values.pop().unwrap();
+    //        assert_eq!("key1::subkey2", key);
+    //        assert_eq!("value2", value);
+    //
+    //        let (key, value) = key_values.pop().unwrap();
+    //        assert_eq!("key1::subkey1", key);
+    //        assert_eq!("value1", value);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+    //
+    //    #[test]
+    //    fn default_wallet_get_pool_name_works() {
+    //        TestUtils::cleanup_sovrin_home();
+    //
+    //        let pool_name = "pool1";
+    //        let wallet_name = "wallet1";
+    //        let default_wallet_type = PluggedWalletType::new();
+    //        default_wallet_type.create(wallet_name, None, None).unwrap();
+    //        let wallet = default_wallet_type.open(wallet_name, pool_name, None, None, None).unwrap();
+    //
+    //        assert_eq!(wallet.get_pool_name(), pool_name);
+    //
+    //        TestUtils::cleanup_sovrin_home();
+    //    }
+}

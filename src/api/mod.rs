@@ -81,6 +81,9 @@ pub enum ErrorCode
     // Trying to use wallet with pool that has different name
     WalletIncompatiblePoolError,
 
+    // Trying to open wallet that was opened already
+    WalletAlreadyOpenedError,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
