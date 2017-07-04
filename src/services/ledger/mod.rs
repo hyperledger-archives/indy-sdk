@@ -20,7 +20,8 @@ use self::types::{
     GetDdoOperation,
     NodeOperation,
     NodeOperationData,
-    Role
+    Role,
+    GetTxnOperation
 };
 use errors::common::CommonError;
 use utils::json::{JsonEncodable, JsonDecodable};
@@ -207,6 +208,20 @@ impl LedgerService {
                                    operation);
         let request_json = Request::to_json(&request)
             .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {}", err.to_string())))?;
+        Ok(request_json)
+    }
+
+    pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+
+        let req_id = LedgerService::get_req_id();
+
+        let operation = GetTxnOperation::new(data);
+        let request = Request::new(req_id,
+                                   identifier.to_string(),
+                                   operation);
+        let request_json = Request::to_json(&request)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get txn request json: {}", err.to_string())))?;
         Ok(request_json)
     }
 
@@ -405,5 +420,18 @@ mod tests {
 
         let node_request = ledger_service.build_node_request(identifier, dest, data);
         assert!(node_request.is_err());
+    }
+
+    #[test]
+    fn build_get_txn_request_works() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"106","data":1}"#;
+
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, 1);
+        assert!(get_txn_request.is_ok());
+        let get_txn_request = get_txn_request.unwrap();
+        assert!(get_txn_request.contains(expected_result));
     }
 }

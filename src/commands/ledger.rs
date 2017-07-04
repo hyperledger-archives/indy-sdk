@@ -84,6 +84,10 @@ pub enum LedgerCommand {
         String, // submitter did
         String, // target_did
         String, // data
+        Box<Fn(Result<String, SovrinError>) + Send>),
+    BuildGetTxnRequest(
+        String, // submitter did
+        i32, // data
         Box<Fn(Result<String, SovrinError>) + Send>)
 }
 
@@ -176,6 +180,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
                 self.build_node_key_request(&submitter_did, &target_did, &data, cb);
+            }
+            LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
+                self.build_get_txn_request(&submitter_did, data, cb);
             }
         };
     }
@@ -330,6 +338,15 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.build_node_request(submitter_did,
                                                   target_did,
                                                   data
+        ).map_err(|err| SovrinError::CommonError(err)))
+    }
+
+    fn build_get_txn_request(&self,
+                             submitter_did: &str,
+                             data: i32,
+                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+        cb(self.ledger_service.build_get_txn_request(submitter_did,
+                                                     data
         ).map_err(|err| SovrinError::CommonError(err)))
     }
 }

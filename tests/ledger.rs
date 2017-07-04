@@ -679,6 +679,92 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod get_txn_requests {
+        use super::*;
+
+        #[test]
+        fn sovrin_build_get_txn_request() {
+            let identifier = "identifier";
+            let data = 1;
+
+            let expected_result = r#""identifier":"identifier","operation":{"type":"106","data":1}"#;
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(identifier, data).unwrap();
+            assert!(get_txn_request.contains(expected_result));
+        }
+
+        #[test]
+        #[ignore]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_get_txn_request_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_get_txn_request_works";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let schema_data = "{\"name\":\"gvt2\",\
+                                \"version\":\"2.0\",\
+                                \"keys\": [\"name\", \"male\"]}";
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+
+            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
+            let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
+
+            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, get_schema_response.result.seq_no.unwrap()).unwrap();
+
+            PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[ignore]
+        #[cfg(feature = "local_nodes_pool")]
+        fn sovrin_get_txn_request_works_for_invalid_seq_no() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_get_txn_request_works_for_invalid_seq_no";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let schema_data = "{\"name\":\"gvt2\",\
+                                \"version\":\"2.0\",\
+                                \"keys\": [\"name\", \"male\"]}";
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+
+            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
+            let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
+
+            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
+
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, get_schema_response.result.seq_no.unwrap() + 1).unwrap();
+
+            PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
