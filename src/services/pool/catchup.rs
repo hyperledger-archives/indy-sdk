@@ -160,11 +160,11 @@ impl CatchupHandler {
                     process.merkle_tree.append(
                         new_gen_tx
                     )?;
-                    assert!(process.merkle_tree
-                        .consistency_proof(&self.new_mt_root, self.new_mt_size,
-                                           &first_resp.consProof.iter().map(|x| x.from_base58().unwrap()).collect())
-                        .unwrap());
                 }
+                assert!(process.merkle_tree
+                    .consistency_proof(&self.new_mt_root, self.new_mt_size,
+                                       &first_resp.consProof.iter().map(|x| x.from_base58().unwrap()).collect())
+                    .unwrap());
             }
             trace!("updated mt hash {}, tree {:?}", process.merkle_tree.root_hash().as_slice().to_base58(), process.merkle_tree);
             if &process.merkle_tree.count() == &self.new_mt_size {
