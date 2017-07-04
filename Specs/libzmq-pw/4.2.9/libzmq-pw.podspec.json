@@ -20,11 +20,11 @@
   },
   "source_files": [
     "src/*.{h,hpp,c,cc,cpp}",
-    "include/*.h"
+    "include/*.h",
+    "cmake-make/*.hpp"
   ],
   "public_header_files": [
-    "include/*.h",
-    "cmake-make/*.h"
+    "include/*.h"
   ],
   "libraries": "stdc++",
   "requires_arc": false,
