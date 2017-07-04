@@ -71,31 +71,31 @@ impl WalletCommandExecutor {
         match command {
             WalletCommand::RegisterWalletType(xtype, create, open, set, get,
                                               get_not_expired, list, close, delete, free, cb) => {
-                info! (target: "wallet_command_executor", "RegisterWalletType command received");
+                info!(target: "wallet_command_executor", "RegisterWalletType command received");
                 self.register_type(&xtype, create, open, set,
                                    get, get_not_expired, list, close, delete, free, cb);
             }
             WalletCommand::Create(pool_name, name, xtype, config, credentials, cb) => {
-                info! (target: "wallet_command_executor", "Create command received");
+                info!(target: "wallet_command_executor", "Create command received");
                 self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
                             config.as_ref().map(String::as_str),
                             credentials.as_ref().map(String::as_str), cb);
             }
             WalletCommand::Open(name, runtime_config, credentials, cb) => {
-                info! (target: "wallet_command_executor", "Open command received");
+                info!(target: "wallet_command_executor", "Open command received");
                 self.open(&name, runtime_config.as_ref().map(String::as_str),
                           credentials.as_ref().map(String::as_str), cb);
             }
             WalletCommand::Close(handle, cb) => {
-                info! (target: "wallet_command_executor", "Close command received");
+                info!(target: "wallet_command_executor", "Close command received");
                 self.close(handle, cb);
             }
             WalletCommand::Delete(name, credentials, cb) => {
-                info! (target: "wallet_command_executor", "Delete command received");
+                info!(target: "wallet_command_executor", "Delete command received");
                 self.delete(&name, credentials.as_ref().map(String::as_str), cb);
             }
             WalletCommand::SetSeqNoForValue(handle, key, seq_no, cb) => {
-                info! (target: "wallet_command_executor", "SetSeqNoForValue command received");
+                info!(target: "wallet_command_executor", "SetSeqNoForValue command received");
                 self.set_seq_no_for_value(handle, &key, seq_no, cb);
             }
         };
