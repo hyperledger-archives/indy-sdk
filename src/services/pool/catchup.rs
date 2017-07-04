@@ -10,7 +10,7 @@ use super::{
     MerkleTree,
     RemoteNode,
 };
-use super::rust_base58::ToBase58;
+use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 use utils::json::JsonEncodable;
 
@@ -19,6 +19,7 @@ pub struct CatchupHandler {
     pub ledger_status_same: usize,
     pub merkle_tree: MerkleTree,
     pub new_mt_size: usize,
+    pub new_mt_root: Vec<u8>,
     pub new_mt_vote: usize,
     pub nodes: Vec<RemoteNode>,
     pub initiate_cmd_id: i32,
@@ -36,6 +37,7 @@ impl Default for CatchupHandler {
             nodes: Vec::new(),
             new_mt_size: 0,
             new_mt_vote: 0,
+            new_mt_root: Vec::new(),
             pending_catchup: None,
             initiate_cmd_id: 0,
             is_refresh: false,
@@ -77,6 +79,7 @@ impl CatchupHandler {
                     && cons_proof.seqNoEnd > self.merkle_tree.count() {
                     self.new_mt_size = cmp::max(cons_proof.seqNoEnd, self.new_mt_size);
                     self.new_mt_vote += 1;
+                    self.new_mt_root = cons_proof.newMerkleRoot.from_base58().unwrap();
                     debug!("merkle tree expected size now {}", self.new_mt_size);
                 }
                 if self.new_mt_vote == self.f + 1 {
@@ -157,10 +160,18 @@ impl CatchupHandler {
                     process.merkle_tree.append(
                         new_gen_tx
                     )?;
+                    assert!(process.merkle_tree
+                        .consistency_proof(&self.new_mt_root, self.new_mt_size,
+                                           &first_resp.consProof.iter().map(|x| x.from_base58().unwrap()).collect())
+                        .unwrap());
                 }
             }
             trace!("updated mt hash {}, tree {:?}", process.merkle_tree.root_hash().as_slice().to_base58(), process.merkle_tree);
             if &process.merkle_tree.count() == &self.new_mt_size {
+                if process.merkle_tree.root_hash().ne(&self.new_mt_root) {
+                    return Err(PoolError::CommonError(CommonError::InvalidState(
+                        "CatchUp failed: all transactions added, proofs checked, but root hash differ with target".to_string())));
+                }
                 //TODO check also root hash?
                 true
             } else {
