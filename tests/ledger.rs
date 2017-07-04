@@ -166,24 +166,18 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_sign_and_submit_request_works_asas() {
+        fn sovrin_sign_and_submit_request_works() {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_sign_and_submit_request_works";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
 
-            let (did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
 
-            let request = format!(r#"{{
-                        "reqId":1491566332010860,
-                         "identifier":"{}",
-                         "operation":{{
-                            "type":"106"
-                         }}}}"#, did);
-
-            let resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &request).unwrap();
-            println!("{:?}", resp);
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             TestUtils::cleanup_storage();
         }
