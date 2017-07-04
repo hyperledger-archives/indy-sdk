@@ -7,6 +7,8 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import <libsovrin/libsovrin.h>
+#import "WalletUtils.h"
+#import "SignusUtils.h"
 
 @interface SignusDemo : XCTestCase
 
@@ -26,7 +28,7 @@
     [super tearDown];
 }
 
-- (void)testSignus
+- (void)testSignusDemo
 {
     [TestUtils cleanupStorage];
 
@@ -35,104 +37,56 @@
     NSString *theirWalletName = @"their_wallet";
     NSString *xtype = @"default";
     NSError *ret = nil;
-
-    __block SovrinHandle myWalletHandle;
-    __block SovrinHandle theirWalletHandle;
+    XCTestExpectation* completionExpectation = nil;
     
+    SovrinHandle myWalletHandle = 0;
+    SovrinHandle theirWalletHandle = 0;
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
-    //1. Create My Wallet
+    //1. Create and open my wallet
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:  poolName
+                                                             walletName:  myWalletName
+                                                                  xtype:  xtype
+                                                                 handle: &myWalletHandle];
     
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
 
-    ret = [[SovrinWallet sharedInstance] createWallet:  poolName
-                                                 name:  myWalletName
-                                                xType:  xtype
-                                               config:  nil
-                                          credentials:  nil
-                                           completion: ^(NSError* error)
-    {
-        XCTAssertEqual(error.code, Success, "createWallet got error in completion");
-        [completionExpectation fulfill];        
-    }];
+    //2. Create and open Their Wallet
 
-    NSAssert( ret.code == Success, @"createWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:  poolName
+                                                             walletName:  theirWalletName
+                                                                  xtype:  xtype
+                                                                 handle: &theirWalletHandle];
+    
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
 
-     //2. Create Their Wallet
-
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[SovrinWallet sharedInstance] createWallet:  poolName
-                                                 name:  theirWalletName
-                                                xType:  xtype
-                                               config:  nil
-                                          credentials:  nil
-                                           completion: ^(NSError* error)
-    {
-        XCTAssertEqual(error.code, Success, "createWallet got error in completion");
-        [completionExpectation fulfill];
-    }];
-    
-    NSAssert( ret.code == Success, @"createWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
-    //3. Open My Wallet. Gets My wallet handle
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[SovrinWallet sharedInstance] openWallet: myWalletName
-                                      runtimeConfig: nil
-                                        credentials: nil
-                                         completion: ^(NSError* error, SovrinHandle walletHandle)
-
-    {
-        XCTAssertEqual(error.code, Success, "openWallet got error in completion");
-        myWalletHandle = walletHandle;
-        [completionExpectation fulfill];
-    }];
-    
-    NSAssert( ret.code == Success, @"openWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-
-    //4. Open Their Wallet. Gets Their wallet handle
-    
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[SovrinWallet sharedInstance] openWallet: theirWalletName
-                                      runtimeConfig: nil
-                                        credentials: nil
-                                         completion: ^(NSError* error, SovrinHandle walletHandle)
-           
-    {
-        XCTAssertEqual(error.code, Success, "openWallet got error in completion");
-        theirWalletHandle = walletHandle;
-        [completionExpectation fulfill];
-    }];
-    
-    NSAssert( ret.code == Success, @"openWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
-    // 5. Create My DID
+    // 3. Create My DID
     
     NSString *myDidJson = @"{}";
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [SovrinSignus createAndStoreMyDid:  myWalletHandle
-                                    didJSON:  myDidJson
-                                 completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
+    __block NSString *myDid = nil;
+    __block NSString *myVerkey = nil;
+    __block NSString *myPk = nil;
+    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:  myWalletHandle
+                                                    didJSON:  myDidJson
+                                                 completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
     {
         XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
         NSLog(@"myDid:");
         NSLog(@"did = %@", did);
         NSLog(@"verkey = %@", verkey);
         NSLog(@"pk = %@", pk);
+        myDid = did;
+        myVerkey = verkey;
+        myPk = pk;
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
-    // 6. Create Their DID
+    // 4. Create Their DID
 
     NSString *theirDidJson = @"{}";
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -141,9 +95,9 @@
     __block NSString *theirVerkey = nil;
     __block NSString *theirPk = nil;
     
-    ret = [SovrinSignus createAndStoreMyDid:  theirWalletHandle
-                                    didJSON:  theirDidJson
-                                 completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
+    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:  theirWalletHandle
+                                                    didJSON:  theirDidJson
+                                                 completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
     {
         XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
         NSLog(@"theirDid:");
@@ -156,10 +110,10 @@
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
 
-    // 7. Store Their DID
+    // 5. Store Their DID
     
     NSString* theirIdentityJson = [NSString stringWithFormat: @"{\"did\":\"%@\",\
                                                                  \"pk\":\"%@\",\
@@ -168,26 +122,32 @@
 
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinSignus storeTheirDid: myWalletHandle identityJSON: theirIdentityJson completion:^(NSError *error)
+    ret = [SovrinSignus storeTheirDidWithWalletHandle: myWalletHandle identityJSON: theirIdentityJson completion:^(NSError *error)
     {
         XCTAssertEqual(error.code, Success, "storeTheirDid() got error in completion");
         [completionExpectation fulfill];
     }];
     
-    NSAssert( ret.code == Success, @"createAndStoreMyDid() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
-    // 8. Their Sign message
+    // 6. Their Sign message
     
-    NSString* message = @"test message";
+    NSString* message = @"{"\
+                         "  \"reqId\":1495034346617224651,"
+                         "  \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\","
+                         "  \"operation\":{"
+                         "        \"type\":\"1\","
+                         "        \"dest\":\"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB\"}"
+                         "}";
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSString *theirSignature = nil;
     
-    ret = [SovrinSignus sign:  theirWalletHandle
-                         did:  theirDid
-                         msg:  message
-                  completion: ^(NSError *error, NSString *signature)
+    ret = [SovrinSignus signWithWalletHandle:  theirWalletHandle
+                                         did:  theirDid
+                                         msg:  message
+                                  completion: ^(NSError *error, NSString *signature)
     {
         XCTAssertEqual(error.code, Success, "sign() got error in completion");
         NSLog(@"signature: %@", signature);
@@ -195,29 +155,30 @@
         [completionExpectation fulfill];
     }];
 
-    NSAssert( ret.code == Success, @"sign() failed!");
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
-    // 9. I Verify message
+    // 7. I Verify message
     SovrinHandle poolHandle = 1;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [SovrinSignus verifySignature:  myWalletHandle
-                                   pool:  poolHandle
-                                    did:  theirDid
-                                    msg:  message
-                              signature:  theirSignature
-                             completion: ^(NSError *error, BOOL valid)
+
+    ret = [SovrinSignus verifySignatureWithWalletHandle:  myWalletHandle
+                                             poolHandle:  poolHandle
+                                                    did:  theirDid
+                                              signature:  theirSignature
+                                             completion: ^(NSError *error, BOOL valid)
     {
         XCTAssertEqual(error.code, Success, "verifySignature() got error in completion");
         XCTAssertEqual(YES, valid, "verifySignature() signature is not valid");
         [completionExpectation fulfill];
     }];
 
-    NSAssert( ret.code == Success, @"verifySignature() failed!");
+    // TODO: There is some error inside closure at rust level
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
     
+    [TestUtils cleanupStorage];
 }
 
 @end

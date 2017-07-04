@@ -1,12 +1,13 @@
 extern crate serde_json;
+extern crate hex;
 
+use self::hex::ToHex;
 use self::serde_json::Value;
 
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 use utils::crypto::hash::Hash;
-use utils::crypto::base58::Base58;
 
-pub fn serialize_signature(v: Value) -> Result<String, CryptoError> {
+pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
     match v {
         Value::Bool(value) => Ok(value.to_string()),
         Value::Number(value) => Ok(value.to_string()),
@@ -29,9 +30,8 @@ pub fn serialize_signature(v: Value) -> Result<String, CryptoError> {
                 let mut value = map[key].clone();
                 if key == "raw" {
                     let mut ctx = Hash::new_context()?;
-                    ctx.update(&value.as_str().ok_or(CryptoError::BackendError("Cannot update hash context".to_string()))?.as_bytes())?;
-                    let vector = Base58::encode(&ctx.finish2()?.to_vec());
-                    value = Value::String(vector);
+                    ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
+                    value = Value::String(ctx.finish2()?.as_ref().to_hex());
                 }
                 result = result + key + ":" + &serialize_signature(value)?;
                 if index < length - 1 {
@@ -90,7 +90,7 @@ mod tests {
                     }"#;
         let msg: Value = serde_json::from_str(data).unwrap();
 
-        let result = "age:43|name:John Doe|operation:dest:54|hash:cool hash|raw:31L9oDUaMfZu3t3eCWuoG6PbWigVMqHqrWuS8Ly9oH4t|phones:1234567,2345678,age:1|rust:5,3";
+        let result = "age:43|name:John Doe|operation:dest:54|hash:cool hash|raw:1dcd0759ce38f57049344a6b3c5fc18144fca1724713090c2ceeffa788c02711|phones:1234567,2345678,age:1|rust:5,3";
 
         assert_eq!(serialize_signature(msg).unwrap(), result)
     }

@@ -1,6 +1,6 @@
 use std::cmp;
 use utils::crypto::hash::{Digest, Hash};
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
 
 pub use services::ledger::merkletree::proof::{
     Proof,
@@ -46,7 +46,7 @@ impl Tree {
     }
 
     /// Create a new leaf
-    pub fn new_leaf(value: TreeLeafData) -> Result<Tree, CryptoError> {
+    pub fn new_leaf(value: TreeLeafData) -> Result<Tree, CommonError> {
 
         let hash = Hash::hash_leaf(&value)?;
         Ok(Tree::new(hash, value))

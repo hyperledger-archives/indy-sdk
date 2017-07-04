@@ -148,7 +148,6 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// pool_handle: pool handle.
     /// did: DID that signed the message
-    /// msg: message
     /// signature: a signature to be verified
     /// cb: Callback that takes command result as parameter.
     ///
@@ -166,9 +165,8 @@ extern "C" {
                                                   sovrin_handle_t pool_handle,
                                                   
                                                   const char *    did,
-                                                  const char *    msg,
-                                                  const char *    signature,
-                                                  
+                                                  const char *    signed_msg,
+
                                                   void           (*cb)(sovrin_handle_t xcommand_handle,
                                                                        sovrin_error_t  err,
                                                                        sovrin_bool_t   valid )

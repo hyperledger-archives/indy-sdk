@@ -24,16 +24,16 @@
     return instance;
 }
 
-- (NSError*) createWallet:(NSString*) poolName
-                     name:(NSString*) name
-                    xType:(NSString*) type
-                   config:(NSString*) config
-              credentials:(NSString*) credentials
-               completion:(void (^)(NSError* error)) handler
+- (NSError *)createWalletWithPoolName:(NSString *)poolName
+                                 name:(NSString *)name
+                                xType:(NSString *)type
+                               config:(NSString *)config
+                          credentials:(NSString *)credentials
+                           completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_create_wallet(handle,
                                [poolName UTF8String],
@@ -45,20 +45,20 @@
                               );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*)   openWallet:(NSString*) name
-            runtimeConfig:(NSString*) config
-              credentials:(NSString*) credentials
-               completion:(void (^)(NSError* error, SovrinHandle walletHandle )) handler
+- (NSError *)openWalletWithName:(NSString *)name
+                  runtimeConfig:(NSString *)config
+                    credentials:(NSString *)credentials
+                     completion:(void (^)(NSError *error, SovrinHandle walletHandle )) handler
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_open_wallet( handle,
                               [name UTF8String],
@@ -69,18 +69,18 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*)   closeWallet:(SovrinHandle) walletHandle
-                completion:(void (^)(NSError* error )) handler
+- (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle
+                        completion:(void (^)(NSError *error ))handler
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_close_wallet( handle,
                                walletHandle,
@@ -89,19 +89,19 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*)   deleteWallet:(NSString*) walletName
-                credentials:(NSString*) credentials
-                 completion:(void (^)(NSError* error )) handler
+- (NSError *)deleteWalletWithName:(NSString *)walletName
+                      credentials:(NSString *)credentials
+                       completion:(void (^)(NSError *error ))handler
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_delete_wallet( handle,
                                 [walletName UTF8String],
@@ -111,20 +111,20 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];
 }
 
-- (NSError*) walletSetSeqNo:(NSNumber*) seqNo
-                  forHandle:(SovrinHandle) walletHandle
-                     andKey:(NSString*) key
-                 completion:(void (^)(NSError* error )) handler
+- (NSError *)walletSetSeqNo:(NSNumber *)seqNo
+                  forHandle:(SovrinHandle)walletHandle
+                     andKey:(NSString *)key
+                 completion:(void (^)(NSError *error ))handler
 {
     sovrin_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] add: (void*) handler];
+    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_wallet_set_seq_no_for_value( handle,
                                               walletHandle,
@@ -135,7 +135,7 @@
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] remove: handle];
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromSovrinError: ret];

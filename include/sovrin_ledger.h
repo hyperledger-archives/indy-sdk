@@ -16,6 +16,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
+    /// pool_handle: pool handle (created by open_pool_ledger).
     /// wallet_handle: wallet handle (created by open_wallet).
     /// submitter_did: Id of Identity stored in secured Wallet.
     /// request_json: Request data json.
@@ -31,6 +32,7 @@ extern "C" {
     /// Crypto*
     
     extern sovrin_error_t sovrin_sign_and_submit_request(sovrin_handle_t command_handle,
+                                                         sovrin_handle_t pool_handle,
                                                          sovrin_handle_t wallet_handle,
                                                          const char *    submitter_did,
                                                          const char *    request_json,
@@ -96,8 +98,7 @@ extern "C" {
     /// submitter_did: Id of Identity stored in secured Wallet.
     /// target_did: Id of Identity stored in secured Wallet.
     /// verkey: verification key
-    /// xref: id of a NYM record
-    /// data: alias
+    /// alias
     /// role: Role of a user NYM record
     /// cb: Callback that takes command result as parameter.
     ///
@@ -111,8 +112,7 @@ extern "C" {
                                                    const char *    submitter_did,
                                                    const char *    target_did,
                                                    const char *    verkey,
-                                                   const char *    xref,
-                                                   const char *    data,
+                                                   const char *    alias,
                                                    const char *    role,
                                                    
                                                    void           (*cb)(sovrin_handle_t xcommand_handle,
@@ -225,6 +225,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
+    /// dest: Id of Identity stored in secured Wallet.
     /// data: name, version
     /// cb: Callback that takes command result as parameter.
     ///
@@ -236,8 +237,9 @@ extern "C" {
     
     extern sovrin_error_t sovrin_build_get_schema_request(sovrin_handle_t command_handle,
                                                           const char *    submitter_did,
+                                                          const char *    dest,
                                                           const char *    data,
-                                                      
+
                                                           void           (*cb)(sovrin_handle_t xcommand_handle,
                                                                                sovrin_error_t  err,
                                                                                const char*     request_json)
@@ -249,6 +251,7 @@ extern "C" {
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
     /// xref: Seq. number of schema
+    /// signature_type
     /// data: components of a key in json: N, R, S, Z
     /// cb: Callback that takes command result as parameter.
     ///
@@ -261,8 +264,9 @@ extern "C" {
     extern sovrin_error_t sovrin_build_claim_def_txn(sovrin_handle_t command_handle,
                                                      const char *    submitter_did,
                                                      const char *    xref,
+                                                     const char *    signature_type,
                                                      const char *    data,
-                                                          
+
                                                      void           (*cb)(sovrin_handle_t xcommand_handle,
                                                                           sovrin_error_t  err,
                                                                           const char*     request_json)
@@ -274,6 +278,8 @@ extern "C" {
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
     /// xref: Seq. number of schema
+    /// signature_type: signature type (only CL supported now)
+    /// origin: issuer did
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -281,15 +287,17 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    
-    extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
-                                                         const char *    submitter_did,
-                                                         const char *    xref,
-                                                     
-                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                              sovrin_error_t  err,
-                                                                              const char*     request_json)
-                                                        );
+
+     extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
+                                                          const char *    submitter_did,
+                                                          const char *    xref,
+                                                          const char *    signature_type,
+                                                          const char *    origin,
+                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
+                                                                               sovrin_error_t  err,
+                                                                               const char*     request_json)
+                                                          );
+
 
     /// Builds a NODE request.
     ///
@@ -311,6 +319,31 @@ extern "C" {
                                                     const char *    target_did,
                                                     const char *    data,
                                                          
+                                                    void           (*cb)(sovrin_handle_t xcommand_handle,
+                                                                         sovrin_error_t  err,
+                                                                         const char*     request_json)
+                                                   );
+
+    /// Builds a NODE request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// target_did: Id of Identity stored in secured Wallet.
+    /// data: id of a target NYM record
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+
+
+    extern sovrin_error_t sovrin_build_get_txn_request(sovrin_handle_t command_handle,
+                                                    const char *    submitter_did,
+                                                    i32    data,
+
                                                     void           (*cb)(sovrin_handle_t xcommand_handle,
                                                                          sovrin_error_t  err,
                                                                          const char*     request_json)

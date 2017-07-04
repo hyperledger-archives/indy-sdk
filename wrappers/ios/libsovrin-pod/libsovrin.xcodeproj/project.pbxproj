@@ -7,7 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0498459B28BFFB90F99DF5AB /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */; };
 		3E08C0201EB3336A000A73BA /* libsovrin.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E08C01E1EB3336A000A73BA /* libsovrin.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3E0FCFDA1EE6E1E700E26EEE /* libPods-libsovrin-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E0FCFD81EE6E1E700E26EEE /* libPods-libsovrin-demo.a */; };
+		3E0FCFDB1EE6E1E700E26EEE /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */; };
 		3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */; };
 		3E99B9981EB3C54100B18027 /* SovrinPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E99B9931EB3C54100B18027 /* SovrinPool.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3E99B9991EB3C54100B18027 /* SovrinPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3E99B9941EB3C54100B18027 /* SovrinPool.mm */; };
@@ -25,18 +28,21 @@
 		3ED5BE5C1ECAE1A400881380 /* SovrinLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */; };
 		3ED5BE601ECB362C00881380 /* SovrinSignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ED5BE5E1ECB362C00881380 /* SovrinSignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ED5BE611ECB362C00881380 /* SovrinSignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5F1ECB362C00881380 /* SovrinSignus.mm */; };
-		F3B63B83711C6E97FA6A9A70 /* libPods-libsovrin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D72613F6793D249B57CD3849 /* libPods-libsovrin.a */; };
+		84D476E11EDD8AA900D8583C /* SovrinAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84D476E01EDD8AA900D8583C /* SovrinAgent.mm */; };
+		84D476E31EDD8B5900D8583C /* SovrinAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 84D476E21EDD8B5900D8583C /* SovrinAgent.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		29BD28F5EB59605F9F083E09 /* Pods-libsovrin.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.debug.xcconfig"; sourceTree = "<group>"; };
+		3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E08C01B1EB3336A000A73BA /* libsovrin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = libsovrin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E08C01E1EB3336A000A73BA /* libsovrin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libsovrin.h; sourceTree = "<group>"; };
 		3E08C01F1EB3336A000A73BA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		3E8809E21EB88A4C00E0AA5F /* libsovrin.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsovrin.a; path = "../../sovrin-client-rust/target/universal/debug/libsovrin.a"; sourceTree = "<group>"; };
+		3E0FCFD81EE6E1E700E26EEE /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libsovrin-demo.a"; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-fpqoyzkovibgszalhhmmnlcetkfp/Build/Products/Debug-iphoneos/libPods-libsovrin-demo.a"; sourceTree = "<group>"; };
+		3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libsovrin.a"; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-fpqoyzkovibgszalhhmmnlcetkfp/Build/Products/Debug-iphoneos/libPods-libsovrin.a"; sourceTree = "<group>"; };
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
 		3E99B9931EB3C54100B18027 /* SovrinPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinPool.h; sourceTree = "<group>"; };
-		3E99B9941EB3C54100B18027 /* SovrinPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinPool.mm; sourceTree = "<group>"; };
+		3E99B9941EB3C54100B18027 /* SovrinPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = SovrinPool.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		3E99B9951EB3C54100B18027 /* SovrinTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinTypes.h; sourceTree = "<group>"; };
 		3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinWallet.h; sourceTree = "<group>"; };
 		3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinWallet.mm; sourceTree = "<group>"; };
@@ -45,14 +51,15 @@
 		3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+SovrinError.h"; sourceTree = "<group>"; };
 		3ECDB9141EC309D900F13F33 /* NSError+SovrinError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+SovrinError.m"; sourceTree = "<group>"; };
 		3ECDB9191EC3184700F13F33 /* SovrinAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinAnoncreds.h; sourceTree = "<group>"; };
-		3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinAnoncreds.mm; sourceTree = "<group>"; };
+		3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = SovrinAnoncreds.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		3ED5BE491EC491BE00881380 /* SovrinErrors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SovrinErrors.h; sourceTree = "<group>"; };
 		3ED5BE591ECAE1A300881380 /* SovrinLedger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinLedger.h; sourceTree = "<group>"; };
-		3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinLedger.mm; sourceTree = "<group>"; };
+		3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = SovrinLedger.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		3ED5BE5E1ECB362C00881380 /* SovrinSignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinSignus.h; sourceTree = "<group>"; };
 		3ED5BE5F1ECB362C00881380 /* SovrinSignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinSignus.mm; sourceTree = "<group>"; };
 		4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.release.xcconfig"; sourceTree = "<group>"; };
-		D72613F6793D249B57CD3849 /* libPods-libsovrin.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		84D476E01EDD8AA900D8583C /* SovrinAgent.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = SovrinAgent.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		84D476E21EDD8B5900D8583C /* SovrinAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinAgent.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,8 +67,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3E0FCFDA1EE6E1E700E26EEE /* libPods-libsovrin-demo.a in Frameworks */,
+				3E0FCFDB1EE6E1E700E26EEE /* libPods-libsovrin.a in Frameworks */,
 				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
-				F3B63B83711C6E97FA6A9A70 /* libPods-libsovrin.a in Frameworks */,
+				0498459B28BFFB90F99DF5AB /* libPods-libsovrin.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,9 +80,10 @@
 		2C11A2035B94F34DF5CCDB2A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				3E0FCFD81EE6E1E700E26EEE /* libPods-libsovrin-demo.a */,
+				3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */,
 				3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */,
-				3E8809E21EB88A4C00E0AA5F /* libsovrin.a */,
-				D72613F6793D249B57CD3849 /* libPods-libsovrin.a */,
+				3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -122,6 +132,8 @@
 				3ED5BE491EC491BE00881380 /* SovrinErrors.h */,
 				3ED5BE591ECAE1A300881380 /* SovrinLedger.h */,
 				3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */,
+				84D476E21EDD8B5900D8583C /* SovrinAgent.h */,
+				84D476E01EDD8AA900D8583C /* SovrinAgent.mm */,
 			);
 			name = src;
 			sourceTree = "<group>";
@@ -158,6 +170,7 @@
 				3ED5BE4A1EC4926300881380 /* SovrinErrors.h in Headers */,
 				3E08C0201EB3336A000A73BA /* libsovrin.h in Headers */,
 				3ECDB91B1EC3184700F13F33 /* SovrinAnoncreds.h in Headers */,
+				84D476E31EDD8B5900D8583C /* SovrinAgent.h in Headers */,
 				3ED5BE5B1ECAE1A300881380 /* SovrinLedger.h in Headers */,
 				3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */,
 				3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */,
@@ -270,6 +283,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84D476E11EDD8AA900D8583C /* SovrinAgent.mm in Sources */,
 				3E99B9991EB3C54100B18027 /* SovrinPool.mm in Sources */,
 				3ECDB9161EC309D900F13F33 /* NSError+SovrinError.m in Sources */,
 				3ECDB91C1EC3184700F13F33 /* SovrinAnoncreds.mm in Sources */,
@@ -325,7 +339,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -371,7 +385,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

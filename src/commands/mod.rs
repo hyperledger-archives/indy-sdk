@@ -1,12 +1,17 @@
+#![warn(unused_variables)] /* FIXME move up */
+
 #[macro_use]
 mod utils;
 
+pub mod agent;
+#[allow(unused_variables)] /* FIXME */
 pub mod anoncreds;
 pub mod ledger;
 pub mod pool;
 pub mod signus;
 pub mod wallet;
 
+use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
@@ -15,10 +20,12 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 
 use errors::common::CommonError;
 
+use services::agent::AgentService;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
+use services::ledger::LedgerService;
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
@@ -28,6 +35,7 @@ use std::sync::{Mutex, MutexGuard};
 
 pub enum Command {
     Exit,
+    Agent(AgentCommand),
     Anoncreds(AnoncredsCommand),
     Ledger(LedgerCommand),
     Pool(PoolCommand),
@@ -51,6 +59,7 @@ impl CommandExecutor {
     }
 
     fn new() -> CommandExecutor {
+        ::utils::logger::LoggerUtils::init();
         let (sender, receiver) = channel();
 
         CommandExecutor {
@@ -58,19 +67,26 @@ impl CommandExecutor {
             worker: Some(thread::spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
+                let agent_service = Rc::new(AgentService::new());
                 let anoncreds_service = Rc::new(AnoncredsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
                 let signus_service = Rc::new(SignusService::new());
+                let ledger_service = Rc::new(LedgerService::new());
 
+                let agent_command_executor = AgentCommandExecutor::new(agent_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone(), signus_service.clone());
+                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
+                        Ok(Command::Agent(cmd)) => {
+                            info!(target: "command_executor", "AgentCommand command received");
+                            agent_command_executor.execute(cmd);
+                        }
                         Ok(Command::Anoncreds(cmd)) => {
                             info!(target: "command_executor", "AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
@@ -106,10 +122,8 @@ impl CommandExecutor {
     }
 
     pub fn send(&self, cmd: Command) -> Result<(), CommonError> {
-        match self.sender.send(cmd) {
-            Ok(val) => Ok(()),
-            Err(ref err) => Err(CommonError::InvalidState(err.description().to_string()))
-        }
+        self.sender.send(cmd).map_err(|err|
+            CommonError::InvalidState(err.description().to_string()))
     }
 }
 
@@ -128,6 +142,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(unused_variables)]
     fn command_executor_can_be_created() {
         let command_executor = CommandExecutor::new();
         assert!(true, "No crashes on CommandExecutor::new");
@@ -135,6 +150,7 @@ mod tests {
 
     #[test]
     fn command_executor_can_be_dropped() {
+        #[allow(unused_variables)]
         fn drop_test() {
             let command_executor = CommandExecutor::new();
         }
@@ -144,6 +160,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unused_variables)]
     fn command_executor_can_get_instance() {
         let ref command_executor: CommandExecutor = *CommandExecutor::instance();
         // Deadlock if another one instance will be requested (try to uncomment the next line)

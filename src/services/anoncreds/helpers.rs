@@ -1,8 +1,8 @@
 extern crate rand;
-extern crate milagro_crypto;
 extern crate openssl;
 
-use errors::crypto::CryptoError;
+use errors::common::CommonError;
+
 use services::anoncreds::constants::LARGE_MVECT;
 use utils::crypto::bn::BigNumber;
 use utils::crypto::pair::GroupOrderElement;
@@ -11,7 +11,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 
 #[cfg(not(test))]
-pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
+pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CommonError> {
     let random = n
         .rand_range()?
         .sqr(None)?
@@ -20,11 +20,11 @@ pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
 }
 
 #[cfg(test)]
-pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CryptoError> {
+pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CommonError> {
     Ok(BigNumber::from_dec("64684820421150545443421261645532741305438158267230326415141505826951816460650437611148133267480407958360035501128469885271549378871140475869904030424615175830170939416512594291641188403335834762737251794282186335118831803135149622404791467775422384378569231649224208728902565541796896860352464500717052768431523703881746487372385032277847026560711719065512366600220045978358915680277126661923892187090579302197390903902744925313826817940566429968987709582805451008234648959429651259809188953915675063700676546393568304468609062443048457324721450190021552656280473128156273976008799243162970386898307404395608179975243")?)
 }
 
-pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CryptoError> {
+pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, CommonError> {
     let significant_bits = max(a.num_bits()?, b.num_bits()?);
     let mut result = BigNumber::new()?;
     for i in 0..significant_bits {
@@ -36,7 +36,7 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Cry
 }
 
 pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
-    let mut result: Vec<u8> = vec![0; 28];
+    let mut result: Vec<u8> = vec![0; 60];
     for i in (0..4).rev() {
         let shift = i * 8;
         let b = (x >> shift) as u8;
@@ -45,7 +45,7 @@ pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
     result
 }
 
-pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError> {
+pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CommonError> {
     nums.sort();
 
     let mut hashed_array: Vec<u8> = BigNumber::hash_array(&nums)?;
@@ -55,7 +55,7 @@ pub fn get_hash_as_int(nums: &mut Vec<Vec<u8>>) -> Result<BigNumber, CryptoError
 }
 
 pub fn get_mtilde(unrevealed_attrs: &Vec<String>)
-                  -> Result<HashMap<String, BigNumber>, CryptoError> {
+                  -> Result<HashMap<String, BigNumber>, CommonError> {
     let mut mtilde: HashMap<String, BigNumber> = HashMap::new();
 
     for attr in unrevealed_attrs.iter() {
@@ -68,7 +68,7 @@ fn largest_square_less_than(delta: i32) -> i32 {
     (delta as f64).sqrt().floor() as i32
 }
 
-pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CryptoError> {
+pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CommonError> {
     let u1 = largest_square_less_than(delta);
     let u2 = largest_square_less_than(delta - u1.pow(2));
     let u3 = largest_square_less_than(delta - u1.pow(2) - u2.pow(2));
@@ -83,20 +83,20 @@ pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CryptoErro
 
         Ok(res)
     } else {
-        Err(CryptoError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
+        Err(CommonError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
     }
 }
 
 pub trait BytesView {
-    fn to_bytes(&self) -> Result<Vec<u8>, CryptoError>;
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError>;
 }
 
 pub trait AppendByteArray {
-    fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CryptoError>;
+    fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CommonError>;
 }
 
 impl AppendByteArray for Vec<Vec<u8>> {
-    fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CryptoError> {
+    fn append_vec<T: BytesView>(&mut self, other: &Vec<T>) -> Result<(), CommonError> {
         for el in other.iter() {
             self.push(el.to_bytes()?);
         }
@@ -105,7 +105,7 @@ impl AppendByteArray for Vec<Vec<u8>> {
 }
 
 pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>)
-                                              -> Result<HashMap<K, BigNumber>, CryptoError> {
+                                              -> Result<HashMap<K, BigNumber>, CommonError> {
     let mut res: HashMap<K, BigNumber> = HashMap::new();
     for (k, v) in other {
         res.insert(k.clone(), v.clone()?);
@@ -113,11 +113,11 @@ pub fn clone_bignum_map<K: Clone + Eq + Hash>(other: &HashMap<K, BigNumber>)
     Ok(res)
 }
 
-pub fn group_element_to_bignum(el: &GroupOrderElement) -> Result<BigNumber, CryptoError> {
+pub fn group_element_to_bignum(el: &GroupOrderElement) -> Result<BigNumber, CommonError> {
     Ok(BigNumber::from_bytes(&el.to_bytes()?)?)
 }
 
-pub fn bignum_to_group_element(num: &BigNumber) -> Result<GroupOrderElement, CryptoError> {
+pub fn bignum_to_group_element(num: &BigNumber) -> Result<GroupOrderElement, CommonError> {
     Ok(GroupOrderElement::from_bytes(&num.to_bytes()?)?)
 }
 
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn transform_u32_to_array_of_u8_works() {
         let int = 1958376517;
-        let answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 186, 116, 69];
+        let answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 186, 116, 69];
         assert_eq!(transform_u32_to_array_of_u8(int), answer)
     }
 }
