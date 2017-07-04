@@ -22,13 +22,13 @@ pub enum WalletCommand {
                                  value: *const c_char) -> ErrorCode, // set
                        extern fn(handle: i32,
                                  key: *const c_char,
-                                 value_ptr: *const *mut c_char) -> ErrorCode, // get
+                                 value_ptr: *mut *const c_char) -> ErrorCode, // get
                        extern fn(handle: i32,
                                  key: *const c_char,
-                                 value_ptr: *const *mut c_char) -> ErrorCode, // get_not_expired
+                                 value_ptr: *mut *const c_char) -> ErrorCode, // get_not_expired
                        extern fn(handle: i32,
                                  key_prefix: *const c_char,
-                                 values_json_ptr: *const *mut c_char) -> ErrorCode, // list
+                                 values_json_ptr: *mut *const c_char) -> ErrorCode, // list
                        extern fn(handle: i32) -> ErrorCode, // close
                        extern fn(name: *const c_char,
                                  config: *const c_char,
@@ -116,13 +116,13 @@ impl WalletCommandExecutor {
                                     value: *const c_char) -> ErrorCode,
                      get: extern fn(handle: i32,
                                     key: *const c_char,
-                                    value_ptr: *const *mut c_char) -> ErrorCode,
+                                    value_ptr: *mut *const c_char) -> ErrorCode,
                      get_not_expired: extern fn(handle: i32,
                                                 key: *const c_char,
-                                                value_ptr: *const *mut c_char) -> ErrorCode,
+                                                value_ptr: *mut *const c_char) -> ErrorCode,
                      list: extern fn(handle: i32,
                                      key_prefix: *const c_char,
-                                     values_json_ptr: *const *mut c_char) -> ErrorCode,
+                                     values_json_ptr: *mut *const c_char) -> ErrorCode,
                      close: extern fn(handle: i32) -> ErrorCode,
                      delete: extern fn(name: *const c_char,
                                        config: *const c_char,

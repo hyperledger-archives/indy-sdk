@@ -36,10 +36,13 @@ struct PluggedWallet {
                            value: *const c_char) -> ErrorCode,
     get_handler: extern fn(handle: i32,
                            key: *const c_char,
-                           value_ptr: *const *mut c_char) -> ErrorCode,
+                           value_ptr: *mut *const c_char) -> ErrorCode,
     get_not_expired_handler: extern fn(handle: i32,
                                        key: *const c_char,
-                                       value_ptr: *const *mut c_char) -> ErrorCode,
+                                       value_ptr: *mut *const c_char) -> ErrorCode,
+    list_handler: extern fn(handle: i32,
+                            key_prefix: *const c_char,
+                            values_json_ptr: *mut *const c_char) -> ErrorCode,
     close_handler: extern fn(handle: i32) -> ErrorCode,
     free_handler: extern fn(handle: i32,
                             value: *const c_char) -> ErrorCode
@@ -54,10 +57,13 @@ impl PluggedWallet {
                                   value: *const c_char) -> ErrorCode,
            get_handler: extern fn(xhandle: i32,
                                   key: *const c_char,
-                                  value_ptr: *const *mut c_char) -> ErrorCode,
+                                  value_ptr: *mut *const c_char) -> ErrorCode,
            get_not_expired_handler: extern fn(xhandle: i32,
                                               key: *const c_char,
-                                              value_ptr: *const *mut c_char) -> ErrorCode,
+                                              value_ptr: *mut *const c_char) -> ErrorCode,
+           list_handler: extern fn(xhandle: i32,
+                                   key_prefix: *const c_char,
+                                   values_json_ptr: *mut *const c_char) -> ErrorCode,
            close_handler: extern fn(xhandle: i32) -> ErrorCode,
            free_handler: extern fn(xhandle: i32,
                                    value: *const c_char) -> ErrorCode) -> PluggedWallet {
@@ -67,6 +73,7 @@ impl PluggedWallet {
             handle,
             set_handler,
             get_handler,
+            list_handler,
             get_not_expired_handler,
             close_handler,
             free_handler
@@ -92,11 +99,11 @@ impl Wallet for PluggedWallet {
 
     fn get(&self, key: &str) -> Result<String, WalletError> {
         let key = CString::new(key)?;
-        let value_ptr: *mut c_char = ptr::null_mut();
+        let mut value_ptr: *const c_char = ptr::null_mut();
 
         let err = (self.get_handler)(self.handle,
                                      key.as_ptr(),
-                                     &value_ptr);
+                                     &mut value_ptr);
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
@@ -117,11 +124,11 @@ impl Wallet for PluggedWallet {
 
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
         let key_prefix = CString::new(key_prefix)?;
-        let values_json_ptr: *mut c_char = ptr::null_mut();
+        let mut values_json_ptr: *const c_char = ptr::null_mut();
 
-        let err = (self.get_handler)(self.handle,
+        let err = (self.list_handler)(self.handle,
                                      key_prefix.as_ptr(),
-                                     &values_json_ptr);
+                                     &mut values_json_ptr);
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
@@ -148,11 +155,11 @@ impl Wallet for PluggedWallet {
 
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
         let key = CString::new(key)?;
-        let value_ptr: *mut c_char = ptr::null_mut();
+        let mut value_ptr: *const c_char = ptr::null_mut();
 
         let err = (self.get_not_expired_handler)(self.handle,
                                                  key.as_ptr(),
-                                                 &value_ptr);
+                                                 &mut value_ptr);
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
@@ -190,13 +197,13 @@ pub struct PluggedWalletType {
                            value: *const c_char) -> ErrorCode,
     get_handler: extern fn(handle: i32,
                            key: *const c_char,
-                           value_ptr: *const *mut c_char) -> ErrorCode,
+                           value_ptr: *mut *const c_char) -> ErrorCode,
     get_not_expired_handler: extern fn(handle: i32,
                                        key: *const c_char,
-                                       value_ptr: *const *mut c_char) -> ErrorCode,
+                                       value_ptr: *mut *const c_char) -> ErrorCode,
     list_handler: extern fn(handle: i32,
                             key_prefix: *const c_char,
-                            values_json_ptr: *const *mut c_char) -> ErrorCode,
+                            values_json_ptr: *mut *const c_char) -> ErrorCode,
     close_handler: extern fn(handle: i32) -> ErrorCode,
     delete_handler: extern fn(name: *const c_char,
                               config: *const c_char,
@@ -219,13 +226,13 @@ impl PluggedWalletType {
                                       value: *const c_char) -> ErrorCode,
                get_handler: extern fn(handle: i32,
                                       key: *const c_char,
-                                      value_ptr: *const *mut c_char) -> ErrorCode,
+                                      value_ptr: *mut *const c_char) -> ErrorCode,
                get_not_expired_handler: extern fn(handle: i32,
                                                   key: *const c_char,
-                                                  value_ptr: *const *mut c_char) -> ErrorCode,
+                                                  value_ptr: *mut *const c_char) -> ErrorCode,
                list_handler: extern fn(handle: i32,
                                        key_prefix: *const c_char,
-                                       values_json_ptr: *const *mut c_char) -> ErrorCode,
+                                       values_json_ptr: *mut *const c_char) -> ErrorCode,
                close_handler: extern fn(handle: i32) -> ErrorCode,
                delete_handler: extern fn(name: *const c_char,
                                          config: *const c_char,
@@ -332,6 +339,7 @@ impl WalletType for PluggedWalletType {
                 self.set_handler,
                 self.get_handler,
                 self.get_not_expired_handler,
+                self.list_handler,
                 self.close_handler,
                 self.free_handler)))
     }
