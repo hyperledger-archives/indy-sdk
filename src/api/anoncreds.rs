@@ -663,9 +663,9 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 ///             "requested_predicate_2_uuid": [claim_proof3_uuid],
 ///         }
 ///         "claim_proofs": {
-///             "claim_proof1_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof2_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof3_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no]
+///             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
 ///         },
 ///         "aggregated_proof": <aggregated_proof>
 ///     }
@@ -742,9 +742,9 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 ///             "requested_predicate_2_uuid": [claim_proof3_uuid],
 ///         }
 ///         "claim_proofs": {
-///             "claim_proof1_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof2_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof3_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no]
+///             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
 ///         },
 ///         "aggregated_proof": <aggregated_proof>
 ///     }

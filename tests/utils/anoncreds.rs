@@ -414,9 +414,9 @@ impl AnoncredsUtils {
                  }}"#, schema_seq_no)
     }
 
-    pub fn get_claim_offer(issuer_did: &str, claim_def_seq_no: i32, schema_seq_no: i32) -> String {
-        format!(r#"{{"issuer_did":"{}","claim_def_seq_no":{},"schema_seq_no":{} }}"#,
-                issuer_did, claim_def_seq_no, schema_seq_no)
+    pub fn get_claim_offer(issuer_did: &str, schema_seq_no: i32) -> String {
+        format!(r#"{{"issuer_did":"{}","schema_seq_no":{} }}"#,
+                issuer_did, schema_seq_no)
     }
 
     pub fn get_gvt_claim_json() -> String {
@@ -513,9 +513,9 @@ impl AnoncredsUtils {
                 CLAIM_DEF_JSON = res;
 
                 //3. Store three claim offers
-                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", COMMON_CLAIM_DEF_SEQ_NO, COMMON_SCHEMA_SEQ_NO);
-                let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2, 2);
-                let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 3, 2);
+                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", COMMON_SCHEMA_SEQ_NO);
+                let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2);
+                let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 2);
 
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_1).unwrap();
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_2).unwrap();

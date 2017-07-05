@@ -75,7 +75,7 @@ mod high_cases {
         fn prover_store_claim_offer_works() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
         }
@@ -94,7 +94,7 @@ mod high_cases {
         fn prover_store_claim_offer_works_for_invalid_wallet() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = AnoncredsUtils::prover_store_claim_offer(invalid_wallet_handle, &claim_offer_json);
@@ -123,8 +123,8 @@ mod high_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), claim_def_seq_no: 1, schema_seq_no: 1 }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), claim_def_seq_no: 2, schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), schema_seq_no: 1 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), schema_seq_no: 2 }));
         }
 
         #[test]
@@ -135,7 +135,7 @@ mod high_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), claim_def_seq_no: 2, schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), schema_seq_no: 2 }));
         }
 
         #[test]
@@ -146,8 +146,8 @@ mod high_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), claim_def_seq_no: 2, schema_seq_no: 2 }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW".to_string(), claim_def_seq_no: 3, schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW".to_string(), schema_seq_no: 2 }));
         }
 
         #[test]
@@ -158,7 +158,7 @@ mod high_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), claim_def_seq_no: 1, schema_seq_no: 1 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), schema_seq_no: 1 }));
         }
 
         #[test]
@@ -209,8 +209,8 @@ mod high_cases {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
             let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
-            let claim_def_seq_no = 1;
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, claim_def_seq_no, 1);
+            let schema_seq_no = 1;
+            let claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, schema_seq_no);
 
             let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                                    "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
@@ -219,7 +219,7 @@ mod high_cases {
                                                                                    COMMON_MASTER_SECRET).unwrap();
             let claim_req: ClaimRequestJson = serde_json::from_str(&claim_req_json).unwrap();
 
-            assert_eq!(claim_req.claim_def_seq_no, claim_def_seq_no);
+            assert_eq!(claim_req.schema_seq_no, schema_seq_no);
             assert_eq!(claim_req.issuer_did, issuer_did);
             assert!(claim_req.blinded_ms.u.len() > 0);
         }
@@ -228,7 +228,7 @@ mod high_cases {
         fn prover_create_and_store_claim_req_works_for_invalid_wallet() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = AnoncredsUtils::prover_create_and_store_claim_req(invalid_wallet_handle,
@@ -243,7 +243,7 @@ mod high_cases {
         fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_claim_def_seq_no() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
@@ -257,7 +257,7 @@ mod high_cases {
         fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_schema_seq_no() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 2);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2);
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
@@ -320,7 +320,7 @@ mod high_cases {
         fn prover_store_claim_works() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                               "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
@@ -338,7 +338,7 @@ mod high_cases {
         fn prover_store_claim_works_for_invalid_wallet_handle() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                               "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
@@ -827,9 +827,9 @@ mod medium_cases {
             let wallet_handle_1 = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
             let wallet_handle_2 = WalletUtils::create_and_open_wallet("pool1", "wallet2", "default").unwrap();
 
-            let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
-            let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2, 2);
-            let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 3, 2);
+            let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
+            let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2);
+            let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 2);
 
             AnoncredsUtils::prover_store_claim_offer(wallet_handle_1, &claim_offer_json_1).unwrap();
             AnoncredsUtils::prover_store_claim_offer(wallet_handle_2, &claim_offer_json_2).unwrap();
@@ -839,7 +839,7 @@ mod medium_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), claim_def_seq_no: 2, schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(), schema_seq_no: 2 }));
         }
     }
 
@@ -877,7 +877,7 @@ mod medium_cases {
         fn prover_create_and_store_claim_req_works_for_invalid_claim_def() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
             let claim_def = r#"{
                         "schema_seq_no":1,
                         "signature_type":"CL",
@@ -899,7 +899,7 @@ mod medium_cases {
         fn prover_create_and_store_claim_req_works_for_invalid_master_secret() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
@@ -965,7 +965,7 @@ mod medium_cases {
         fn prover_store_claim_works_for_invalid_claim_json() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
             AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                               "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                                                               &claim_offer_json,
@@ -1333,7 +1333,6 @@ mod demos {
         //2. Issuer create claim definition
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
         let schema_seq_no = 1;
-        let claim_def_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
 
         let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &issuer_did, &schema, None, false).unwrap();
@@ -1345,7 +1344,7 @@ mod demos {
 
         //4. Prover create Claim Request
         let prover_did = "BzfFCYk";
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, claim_def_seq_no, schema_seq_no);
+        let claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, schema_seq_no);
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                           prover_did,
                                                                           &claim_offer_json,
@@ -1432,7 +1431,6 @@ mod demos {
         //3. Issuer create claim definition
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
         let schema_seq_no = 1;
-        let claim_def_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
 
         let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &schema, None, false).unwrap();
@@ -1443,7 +1441,7 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, claim_def_seq_no, schema_seq_no);
+        let claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, schema_seq_no);
 
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
@@ -1485,7 +1483,7 @@ mod demos {
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
         let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
+        info!("claims_json: {}", &claims_json);
         let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
         assert_eq!(1, claims_for_attr_1.len());
         let claim = claims_for_attr_1[0].clone();
@@ -1556,28 +1554,26 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
 
         let mut schemas: HashMap<i32, String> = HashMap::new();
-        let mut claim_defs: HashMap<i32, String> = HashMap::new();
+        let mut claim_defs: HashMap<String, String> = HashMap::new();
 
         //4. Issuer1 create claim definition by gvt schema
         let gvt_schema_seq_no = 1;
-        let gvt_claim_def_seq_no = 1;
         let gvt_schema = AnoncredsUtils::get_gvt_schema_json(gvt_schema_seq_no);
 
         let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_gvt_wallet_handle, &issuer1_did, &gvt_schema, None, false).unwrap();
 
         schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
-        claim_defs.insert(gvt_claim_def_seq_no, gvt_claim_def_json.clone());
+        claim_defs.insert(issuer1_did.to_string(), gvt_claim_def_json.clone());
 
 
         //5. Issuer1 create claim definition by xyz schema
         let xyz_schema_seq_no = 2;
-        let xyz_claim_def_seq_no = 2;
         let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
 
         let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_xyz_wallet_handle, &issuer2_did, &xyz_schema, None, false).unwrap();
 
         schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
-        claim_defs.insert(xyz_claim_def_seq_no, xyz_claim_def_json.clone());
+        claim_defs.insert(issuer2_did.to_string(), xyz_claim_def_json.clone());
 
         //6. Prover create Master Secret for Issuer1
         let master_secret_name_1 = "prover_master_secret_issuer_1";
@@ -1590,12 +1586,12 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name_2).unwrap();
 
         //8. Prover store Claim Offer received from Issuer1
-        let issuer1_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer1_did, gvt_claim_def_seq_no, gvt_schema_seq_no);
+        let issuer1_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer1_did, gvt_schema_seq_no);
 
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer1_claim_offer_json).unwrap();
 
         //9. Prover store Claim Offer received from Issuer2
-        let issuer2_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer2_did, xyz_claim_def_seq_no, xyz_schema_seq_no);
+        let issuer2_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer2_did, xyz_schema_seq_no);
 
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer2_claim_offer_json).unwrap();
 
@@ -1614,7 +1610,7 @@ mod demos {
         let claim_offer_2_json = serde_json::to_string(&claim_offer_2).unwrap();
 
         //11. Prover create Claim Request for gvt claim offer
-        let claim_offer = if claim_offer_1.claim_def_seq_no == gvt_claim_def_seq_no { claim_offer_1_json.clone() } else { claim_offer_2_json.clone() };
+        let claim_offer = if claim_offer_1.issuer_did == issuer1_did { claim_offer_1_json.clone() } else { claim_offer_2_json.clone() };
 
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               prover_did,
@@ -1632,7 +1628,7 @@ mod demos {
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json).unwrap();
 
         //14. Prover create Claim Request for xyz claim offer
-        let claim_offer = if claim_offer_2.claim_def_seq_no == xyz_claim_def_seq_no { claim_offer_2_json.clone() } else { claim_offer_1_json.clone() };
+        let claim_offer = if claim_offer_2.issuer_did == issuer2_did { claim_offer_2_json.clone() } else { claim_offer_1_json.clone() };
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               prover_did,
                                                                               &claim_offer,
@@ -1702,9 +1698,9 @@ mod demos {
 
         let claim_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#,
                                       unique_claims[0].claim_uuid,
-                                      claim_defs.get(&unique_claims[0].claim_def_seq_no).unwrap(),
+                                      claim_defs.get(&unique_claims[0].issuer_did).unwrap(),
                                       unique_claims[1].claim_uuid,
-                                      claim_defs.get(&unique_claims[1].claim_def_seq_no).unwrap());
+                                      claim_defs.get(&unique_claims[1].issuer_did).unwrap());
         let revoc_regs_jsons = "{}";
 
 
@@ -1754,27 +1750,27 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
 
         let mut schemas: HashMap<i32, String> = HashMap::new();
-        let mut claim_defs: HashMap<i32, String> = HashMap::new();
+        let mut claim_defs: HashMap<String, String> = HashMap::new();
 
         //3. Issuer create claim definition by gvt schema
         let gvt_schema_seq_no = 1;
-        let gvt_claim_def_seq_no = 1;
+        let claim_def_id = issuer_did.to_string() + ":" + &gvt_schema_seq_no.to_string();
         let gvt_schema = AnoncredsUtils::get_gvt_schema_json(gvt_schema_seq_no);
 
         let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &gvt_schema, None, false).unwrap();
 
         schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
-        claim_defs.insert(gvt_claim_def_seq_no, gvt_claim_def_json.clone());
+        claim_defs.insert(claim_def_id, gvt_claim_def_json.clone());
 
         //4. Issuer create claim definition by xyz schema
         let xyz_schema_seq_no = 2;
-        let xyz_claim_def_seq_no = 2;
+        let claim_def_id = issuer_did.to_string() + ":" + &xyz_schema_seq_no.to_string();
         let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
 
         let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &xyz_schema, None, false).unwrap();
 
         schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
-        claim_defs.insert(xyz_claim_def_seq_no, xyz_claim_def_json.clone());
+        claim_defs.insert(claim_def_id, xyz_claim_def_json.clone());
 
         //5. Prover create Master Secret for Issuer1
         let master_secret_name = "prover_master_secret_issuer";
@@ -1782,12 +1778,12 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
 
         //6. Prover store GVT Claim Offer received from Issuer
-        let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, gvt_claim_def_seq_no, gvt_schema_seq_no);
+        let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, gvt_schema_seq_no);
 
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer_claim_offer_json).unwrap();
 
         //7. Prover store XYZ Claim Offer received from Issuer
-        let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, xyz_claim_def_seq_no, xyz_schema_seq_no);
+        let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, xyz_schema_seq_no);
 
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer_claim_offer_json).unwrap();
 
@@ -1806,7 +1802,7 @@ mod demos {
         let claim_offer_2_json = serde_json::to_string(&claim_offer_2).unwrap();
 
         //9. Prover create Claim Request for gvt claim offer
-        let claim_offer = if claim_offer_1.claim_def_seq_no == gvt_claim_def_seq_no { claim_offer_1_json.clone() } else { claim_offer_2_json.clone() };
+        let claim_offer = if claim_offer_1.schema_seq_no == gvt_schema_seq_no { claim_offer_1_json.clone() } else { claim_offer_2_json.clone() };
 
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               prover_did,
@@ -1825,7 +1821,7 @@ mod demos {
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json).unwrap();
 
         //12. Prover create Claim Request for xyz claim offer
-        let claim_offer = if claim_offer_2.claim_def_seq_no == xyz_claim_def_seq_no { claim_offer_2_json.clone() } else { claim_offer_1_json.clone() };
+        let claim_offer = if claim_offer_2.schema_seq_no == xyz_schema_seq_no { claim_offer_2_json.clone() } else { claim_offer_1_json.clone() };
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               prover_did,
                                                                               &claim_offer,
@@ -1890,12 +1886,14 @@ mod demos {
                                    unique_claims[1].claim_uuid,
                                    schemas.get(&unique_claims[1].schema_seq_no).unwrap());
 
+        let claim_def_id1 = unique_claims[0].issuer_did.to_string() + ":" + &unique_claims[0].schema_seq_no.to_string();
+        let claim_def_id2 = unique_claims[1].issuer_did.to_string() + ":" + &unique_claims[1].schema_seq_no.to_string();
 
         let claim_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#,
                                       unique_claims[0].claim_uuid,
-                                      claim_defs.get(&unique_claims[0].claim_def_seq_no).unwrap(),
+                                      claim_defs.get(&claim_def_id1).unwrap(),
                                       unique_claims[1].claim_uuid,
-                                      claim_defs.get(&unique_claims[1].claim_def_seq_no).unwrap());
+                                      claim_defs.get(&claim_def_id2).unwrap());
         let revoc_regs_jsons = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
