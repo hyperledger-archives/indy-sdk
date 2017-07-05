@@ -34,7 +34,8 @@ pub enum IssuerCommand {
         Box<Fn(Result<String, SovrinError>) + Send>),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
-        i32, // claim def seq no
+        String, // issuer did
+        i32, // schema seq no
         i32, // max claim num
         Box<Fn(Result<(String, String), SovrinError>) + Send>),
     CreateClaim(
@@ -76,9 +77,9 @@ impl IssuerCommandExecutor {
                 self.create_and_store_claim_definition(wallet_handle, &issuer_did, &schema_json,
                                                        signature_type.as_ref().map(String::as_str), create_non_revoc, cb);
             }
-            IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, claim_def_seq_no, max_claim_num, cb) => {
+            IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, schema_seq_no, max_claim_num, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
-                self.create_and_store_revocation_registry(wallet_handle, claim_def_seq_no, max_claim_num, cb);
+                self.create_and_store_revocation_registry(wallet_handle, &issuer_did, schema_seq_no, max_claim_num, cb);
             }
             IssuerCommand::CreateClaim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "CreateClaim command received");
@@ -136,19 +137,22 @@ impl IssuerCommandExecutor {
 
     fn create_and_store_revocation_registry(&self,
                                             wallet_handle: i32,
-                                            claim_def_seq_no: i32,
+                                            issuer_did: &str,
+                                            schema_seq_no: i32,
                                             max_claim_num: i32,
                                             cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
-        let result = self._create_and_store_revocation_registry(wallet_handle, claim_def_seq_no, max_claim_num);
+        let result = self._create_and_store_revocation_registry(wallet_handle, issuer_did, schema_seq_no, max_claim_num);
         cb(result)
     }
 
     fn _create_and_store_revocation_registry(&self,
                                              wallet_handle: i32,
-                                             claim_def_seq_no: i32,
+                                             issuer_did: &str,
+                                             schema_seq_no: i32,
                                              max_claim_num: i32) -> Result<(String, String), SovrinError> {
-        let claim_def_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &claim_def_seq_no))?;
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_uuid))?;
+
+        let claim_def_id = issuer_did.to_string() + ":" + &schema_seq_no.to_string();
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_id))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition json: {}", err.to_string())))?;
@@ -157,7 +161,7 @@ impl IssuerCommandExecutor {
             .ok_or(SovrinError::AnoncredsError(AnoncredsError::NotIssuedError("Revocation Public Key for this claim definition".to_string())))?;
 
         let (revocation_registry, revocation_registry_private) =
-            self.anoncreds_service.issuer.issue_accumulator(&pk_r, max_claim_num, claim_def_seq_no)?;
+            self.anoncreds_service.issuer.issue_accumulator(&pk_r, max_claim_num, issuer_did, schema_seq_no)?;
 
         let uuid = Uuid::new_v4().to_string();
 

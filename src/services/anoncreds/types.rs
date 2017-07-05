@@ -960,18 +960,20 @@ impl<'a> JsonDecodable<'a> for ProofJson {}
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistry {
-    pub claim_def_seq_no: i32,
+    pub issuer_did: String,
+    pub schema_seq_no: i32,
     pub accumulator: Accumulator,
     pub acc_pk: AccumulatorPublicKey
 }
 
 impl RevocationRegistry {
     pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey,
-               claim_def_seq_no: i32) -> RevocationRegistry {
+               issuer_did: String, schema_seq_no: i32) -> RevocationRegistry {
         RevocationRegistry {
+            issuer_did: issuer_did,
             accumulator: accumulator,
             acc_pk: acc_pk,
-            claim_def_seq_no: claim_def_seq_no
+            schema_seq_no: schema_seq_no
         }
     }
 }

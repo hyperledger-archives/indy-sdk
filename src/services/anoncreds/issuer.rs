@@ -159,9 +159,11 @@ impl Issuer {
         Ok(result)
     }
 
-    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
+    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, issuer_did: &str, schema_seq_no: i32)
                              -> Result<(RevocationRegistry, RevocationRegistryPrivate), AnoncredsError> {
-        info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> start", claim_def_seq_no);
+        info!(target: "anoncreds_service",
+        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> start",
+        issuer_did, schema_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let mut g_dash: HashMap<i32, PointG2> = HashMap::new();
@@ -189,10 +191,12 @@ impl Issuer {
         let acc_pk = AccumulatorPublicKey::new(z);
         let acc_sk = AccumulatorSecretKey::new(gamma);
 
-        let revocation_registry = RevocationRegistry::new(acc, acc_pk, claim_def_seq_no);
+        let revocation_registry = RevocationRegistry::new(acc, acc_pk, issuer_did.to_string(), schema_seq_no);
         let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g, g_dash);
 
-        info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> done", claim_def_seq_no);
+        info!(target: "anoncreds_service",
+        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> done",
+        issuer_did, schema_seq_no);
         Ok((revocation_registry, revocation_registry_private))
     }
 
@@ -325,7 +329,9 @@ impl Issuer {
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
-            return Err(AnoncredsError::AccumulatorIsFull(format!("{}", revocation_registry.borrow().claim_def_seq_no)))
+            return Err(AnoncredsError::AccumulatorIsFull(
+                format!("issuer_did: {} schema_seq_no: {}", revocation_registry.borrow().issuer_did, revocation_registry.borrow().schema_seq_no))
+            )
         }
 
         let i = match seq_number {

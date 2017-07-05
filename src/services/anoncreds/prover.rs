@@ -1605,7 +1605,8 @@ pub mod mocks {
 
     pub fn get_revocation_registry() -> RevocationRegistry {
         RevocationRegistry {
-            claim_def_seq_no: 1,
+            issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(),
+            schema_seq_no: 1,
             accumulator: mocks::get_accumulator(),
             acc_pk: verifier::mocks::get_accum_publick_key()
         }

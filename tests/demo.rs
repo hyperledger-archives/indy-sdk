@@ -40,8 +40,7 @@ use sovrin::api::pool::{
 };
 use sovrin::api::wallet::{
     sovrin_create_wallet,
-    sovrin_open_wallet,
-    sovrin_wallet_set_seq_no_for_value
+    sovrin_open_wallet
 };
 use sovrin::api::signus::{
     sovrin_create_and_store_my_did,
@@ -67,7 +66,6 @@ fn anoncreds_demo_works() {
     let (create_wallet_sender, create_wallet_receiver) = channel();
     let (open_wallet_sender, open_wallet_receiver) = channel();
     let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
-    let (wallet_set_seq_no_for_value_sender, wallet_set_seq_no_for_value_receiver) = channel();
     // TODO: uncomment this for revocation part
     //let (wallet_set_seq_no_for_value_sender2, wallet_set_seq_no_for_value_receiver2) = channel();
     //let (issuer_create_and_store_revoc_reg_sender, issuer_create_and_store_revoc_reg_receiver) = channel();
@@ -87,9 +85,6 @@ fn anoncreds_demo_works() {
     });
     let open_wallet_cb = Box::new(move |err, handle| {
         open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let wallet_set_seq_no_for_value_cb = Box::new(move |err| {
-        wallet_set_seq_no_for_value_sender.send(err).unwrap();
     });
     // TODO: uncomment this for revocation part
     //    let wallet_set_seq_no_for_value_cb2 = Box::new(move |err| {
@@ -123,7 +118,6 @@ fn anoncreds_demo_works() {
     let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
     let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
-    let (wallet_set_seq_no_for_value_command_handle, wallet_set_seq_no_for_value_callback) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb);
     // TODO: uncomment this for revocation part
     //    let (wallet_set_seq_no_for_value_command_handle2, wallet_set_seq_no_for_value_callback2) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb2);
     //    let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
