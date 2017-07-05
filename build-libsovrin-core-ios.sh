@@ -44,5 +44,5 @@ ls -l /var/repositories/deb/pods-ios/libsovrin-core/$LIBSOVRIN_POD_VERSION
 EOF
 
 echo "Cleanup temporary directory: $WORK_DIR"
-#rm -rf "$WORK_DIR"
+rm -rf "$WORK_DIR"
 

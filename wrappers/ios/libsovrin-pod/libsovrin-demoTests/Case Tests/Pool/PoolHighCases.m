@@ -182,7 +182,7 @@
 - (void)testOpenPoolLedgerWorksForThreeNodes
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"open_pool_ledger_works_for_two_nodes";
+    NSString *poolName = @"open_pool_ledger_works_for_three_nodes";
     
     // 1. Create pool ledger config
     NSString *nodeIp = [PoolUtils nodeIp];
@@ -314,7 +314,7 @@
 {
     
     // 1. create and open pool ledger config
-    NSString *poolName = @"sovrin_remove_pool_ledger_config_works";
+    NSString *poolName = @"sovrin_remove_pool_ledger_config_works_for_opened";
     SovrinHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                           poolHandle:&poolHandle];
@@ -323,7 +323,14 @@
     // 2. delete
     ret = [[PoolUtils sharedInstance] deletePoolWithName:poolName];
     XCTAssertEqual(ret.code, CommonInvalidState, @"PoolUtils::deletePoolWithName() returned wrong code!");
+    
     [TestUtils cleanupStorage];
+}
+
+- (void)testBunch
+{
+     [self testDeletePoolLedgerConfigWorksForOpened];
+    [self testSovrinDeletePoolLedgerConfigWorks];
 
 }
 
