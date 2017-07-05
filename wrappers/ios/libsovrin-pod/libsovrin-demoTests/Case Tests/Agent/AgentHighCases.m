@@ -334,7 +334,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *endpoint = @"127.0.0.1:9711";
+    NSString *endpoint = @"127.0.0.1:9811";
     
     // 1. Create and open receiver's wallet
     SovrinHandle receiverWallet = 0;
