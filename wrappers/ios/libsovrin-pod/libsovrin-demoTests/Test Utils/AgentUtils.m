@@ -71,14 +71,12 @@
         NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %d", error.code);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
-   // self.connectionCallbacks[@(tempConnectionHandle)] = [NSValue valueWithPointer:[onMessageCallback pointerValue]];
     
     NSError *ret = [SovrinAgent connectWithPoolHandle:poolHandle
                                          walletHandle:walletHandle
                                             senderDId:senderDid
                                           receiverDId:receiverDid
                                     connectionHandler:onConnectCallback
-                                      // messageHandler:onMessageCallback];
                                        messageHandler:(void (^)(SovrinHandle, NSError*, NSString*))weakSelf.connectionCallbacks[@(tempConnectionHandle)]];
 
     if (ret.code != Success)
