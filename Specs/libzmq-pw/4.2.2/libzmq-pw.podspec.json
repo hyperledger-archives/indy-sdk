@@ -22,12 +22,12 @@
   "source_files": [
     "src/*.{h,hpp,c,cc,cpp}",
     "include/*.h",
-    "cmake-make/*.hpp"
+    "cmake_build/*.hpp"
   ],
   "public_header_files": [
     "include/*.h"
   ],
   "libraries": "stdc++",
   "requires_arc": false,
-  "prepare_command": "mkdir cmake-make && cd cmake-make && cmake .. | tee \"/tmp/$(basename $0).$$.tmp\"\n"
+  "prepare_command": "mkdir cmake_build && cd cmake_build && cmake .. | tee \"/tmp/$(basename $0).$$.tmp\"\n"
 }
