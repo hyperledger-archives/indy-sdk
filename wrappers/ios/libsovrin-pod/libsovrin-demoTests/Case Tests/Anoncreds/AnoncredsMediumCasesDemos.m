@@ -72,7 +72,7 @@
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
                                                                             seqNo:claimDefSeqNo
                                                                       schemaSeqNo:schemaSeqNo];
-    NSString *claimRequest;
+    NSString *claimRequest;
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
                                                                                  proverDid:proverDid
                                                                             claimOfferJson:claimOfferJson

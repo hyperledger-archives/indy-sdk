@@ -5,7 +5,7 @@ PODS:
   - ISO8601DateFormatter (0.8)
   - libsodium (1.0.12)
   - libsovrin-core (0.0.3)
-  - libzmq-pw (4.2.6)
+  - libzmq-pw (4.2.9)
   - milagro (3.0.1)
   - OpenSSL (1.0.210)
   - OpenSSL-Universal (1.0.1.16)
@@ -14,7 +14,7 @@ DEPENDENCIES:
   - CoreBitcoin (from `https://raw.github.com/oleganza/CoreBitcoin/master/CoreBitcoin.podspec`)
   - libsodium (= 1.0.12)
   - libsovrin-core (= 0.0.3)
-  - libzmq-pw (= 4.2.6)
+  - libzmq-pw (= 4.2.9)
   - milagro (= 3.0.1)
   - OpenSSL
 
@@ -27,11 +27,11 @@ SPEC CHECKSUMS:
   ISO8601DateFormatter: 4551b6ce4f83185425f583b0b3feb3c7b59b942c
   libsodium: 9a8faa5ef2fa0d2d57bd7f7d79bf8fb7c1a9f0ea
   libsovrin-core: 83bceed474ee39e46c69eac29e3ad4340094f301
-  libzmq-pw: 0c51df0c4288226ddff924c178aba008310b6fb4
+  libzmq-pw: a044220a415ae2e52c54cad00dd2e656dee4e188
   milagro: ff8fc3ab311dae14903118d811eaa8a51f28b7d8
   OpenSSL: 246ffb948e9d56466727fd318134af35f5aa764e
   OpenSSL-Universal: 85ef63bf81d0741b03c8719cd29685c37c59518d
 
-PODFILE CHECKSUM: fc8e086d72e41a383d2abff19bdfa7b8e7a71280
+PODFILE CHECKSUM: d6596489947b095110cc40cd533aeb35cd6df5e1
 
 COCOAPODS: 1.2.1
