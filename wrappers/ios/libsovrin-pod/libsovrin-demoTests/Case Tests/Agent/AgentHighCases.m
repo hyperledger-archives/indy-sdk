@@ -492,7 +492,7 @@
 -(void)testAgentRemoveIdentityWorks
 {
     [TestUtils cleanupStorage];
-    NSString *endpoint = @"127.0.0.1:9713";
+    NSString *endpoint = @"127.0.0.1:9813";
     NSError *ret;
     
     // 1. Obtain receiver's wallet handle
@@ -670,7 +670,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. listen
-    NSString *endpoint = @"127.0.0.1:9705";
+    NSString *endpoint = @"127.0.0.1:9805";
     SovrinHandle listenerHandle = 0;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                            connectionCallback:nil

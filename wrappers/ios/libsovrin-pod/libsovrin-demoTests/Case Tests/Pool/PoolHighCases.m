@@ -327,11 +327,4 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testBunch
-{
-     [self testDeletePoolLedgerConfigWorksForOpened];
-    [self testSovrinDeletePoolLedgerConfigWorks];
-
-}
-
 @end
