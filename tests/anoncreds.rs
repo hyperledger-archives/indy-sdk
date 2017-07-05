@@ -240,10 +240,10 @@ mod high_cases {
         }
 
         #[test]
-        fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_claim_def_seq_no() {
+        fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_issuer_did() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e3", 1);
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
