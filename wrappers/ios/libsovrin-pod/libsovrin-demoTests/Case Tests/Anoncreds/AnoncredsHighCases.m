@@ -461,7 +461,7 @@
     NSDictionary *claimRequest = [NSDictionary fromString:claimRequestJson];
     XCTAssertTrue([claimRequest[@"claim_def_seq_no"] isEqualToNumber:claimDefSeqNo], @"claimRequest[claim_def_seq_no] != claimDefSeqNo");
     XCTAssertTrue([claimRequest[@"issuer_did"] isEqualToString:issuerDid], @"[claimRequest[@\"issuer_did\"] != issuerDid");
-    XCTAssertTrue([claimRequest[@"claim_request"][@"u"] length] > 0, @"claimRequest[@\"claim_request\"][@\"u\"] length <= 0");
+    XCTAssertTrue([claimRequest[@"blinded_ms"][@"u"] length] > 0, @"claimRequest[@\"claim_request\"][@\"u\"] length <= 0");
 }
 
 - (void)testProverCreateAndStoreClaimReqWorksForInvalidWallet
