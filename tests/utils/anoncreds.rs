@@ -465,7 +465,6 @@ impl AnoncredsUtils {
                 "ur":null
             },
             "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e",
-            "claim_def_seq_no":1,
             "schema_seq_no":1
         }"#.to_string()
     }
