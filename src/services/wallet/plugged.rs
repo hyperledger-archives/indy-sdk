@@ -640,6 +640,7 @@ mod tests {
         wallet.set("key1::subkey2", "value2").unwrap();
 
         let mut key_values = wallet.list("key1::").unwrap();
+        key_values.sort();
         assert_eq!(2, key_values.len());
 
         let (key, value) = key_values.pop().unwrap();
