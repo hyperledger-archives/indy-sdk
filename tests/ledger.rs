@@ -724,7 +724,9 @@ mod high_cases {
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, get_schema_response.result.seq_no.unwrap()).unwrap();
 
-            PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
+            let get_txn_response = PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
+            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_txn_response).unwrap();
+            assert!(get_schema_response.result.data.is_some());
 
             TestUtils::cleanup_storage();
         }
@@ -760,8 +762,10 @@ mod high_cases {
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, get_schema_response.result.seq_no.unwrap() + 1).unwrap();
 
-            PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
-
+            let get_txn_response = PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
+            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_txn_response).unwrap();
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            
             TestUtils::cleanup_storage();
         }
     }
