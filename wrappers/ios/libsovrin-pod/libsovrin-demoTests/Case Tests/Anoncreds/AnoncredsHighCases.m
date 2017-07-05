@@ -1115,20 +1115,13 @@
     
     // 2. get claims for proof request
     
-    NSString *proofRequest = @"{"\
-            "\"nonce\":\"123432421212\","\
-            "\"requested_attrs\":{"\
-                "\"attr1_uuid\":{"\
-                    "\"schema_seq_no\":1,"\
-                    "\"name\":\"name\"}"\
-                "},"\
-            "\"requested_predicates\":{"\
-                "\"predicate1_uuid\":{"\
-                    "\"attr_name\":\"age\","\
-                    "\"p_type\":\"GE\","\
-                    "\"value\":18}"\
-            "}"\
-        "}";
+    NSString *proofRequest = @"{"
+        "\"nonce\":\"123432421212\","
+        "\"name\":\"proof_req_1\","
+        "\"version\":\"0.1\","
+        "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
+        "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
+    "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
                                                                      proofRequestJson:proofRequest
@@ -1192,16 +1185,14 @@
     NSArray *claimsArr = (NSArray *)claims;
     NSDictionary *claimUUID = claimsArr[0];
     
-    NSString *proofRequest = @"{"\
-                "\"nonce\":\"123432421212\","\
-                "\"requested_attrs\":{"\
-                    "\"attr1_uuid\":{"\
-                    "\"schema_seq_no\":1,"\
-                    "\"name\":\"some_attr\"}"\
-                "},"\
-                "\"requested_predicates\":{}"\
-                "}";
-    
+    NSString *proofRequest = @"{"
+        "\"nonce\":\"123432421212\","
+        "\"name\":\"proof_req_1\","
+        "\"version\":\"0.1\","
+        "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"some_attr\"}},"
+        "\"requested_predicates\":{}"
+    "}";
+
     NSString *requestedClaimsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
                                      "\"requested_attrs\":{"\
@@ -1239,14 +1230,13 @@
     XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
     
     // 2. get claims for proof request
-    NSString *proofRequest = @"{"\
-            "\"nonce\":\"123432421212\","\
-            "\"requested_attrs\":{"\
-                "\"attr1_uuid\":{"\
-                    "\"schema_seq_no\":1,"\
-                    "\"name\":\"name\"}},"\
-            "\"requested_predicates\":{}"\
-            "}";
+    NSString *proofRequest = @"{"
+    "\"nonce\":\"123432421212\","
+    "\"name\":\"proof_req_1\","
+    "\"version\":\"0.1\","
+    "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
+    "\"requested_predicates\":{}"
+    "}";
     
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
