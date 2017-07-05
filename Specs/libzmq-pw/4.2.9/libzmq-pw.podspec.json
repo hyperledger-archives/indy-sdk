@@ -16,7 +16,8 @@
     "osx": "10.7"
   },
   "source": {
-    "http": "http://192.168.52.90/libzmq-pw.tar.gz"
+    "git": "https://github.com/evernym/libzmq-pw",
+    "tag": "v4.2.2pw"
   },
   "source_files": [
     "src/*.{h,hpp,c,cc,cpp}",
