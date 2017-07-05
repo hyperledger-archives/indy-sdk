@@ -215,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn type_create_works() {
+    fn default_wallet_type_create_works() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -225,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn type_create_works_for_twice() {
+    fn default_wallet_type_create_works_for_twice() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -238,7 +238,7 @@ mod tests {
     }
 
     #[test]
-    fn type_delete_works() {
+    fn default_wallet_type_delete_works() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn type_open_works() {
+    fn default_wallet_type_open_works() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_set_get_works() {
+    fn default_wallet_set_get_works() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_set_get_works_for_reopen() {
+    fn default_wallet_set_get_works_for_reopen() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_get_works_for_unknown() {
+    fn default_wallet_get_works_for_unknown() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_set_get_works_for_update() {
+    fn default_wallet_set_get_works_for_update() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -328,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_set_get_not_expired_works() {
+    fn default_wallet_set_get_not_expired_works() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -346,7 +346,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_list_works() {
+    fn default_wallet_list_works() {
         TestUtils::cleanup_sovrin_home();
 
         let wallet_type = DefaultWalletType::new();
@@ -374,13 +374,24 @@ mod tests {
     fn default_wallet_get_pool_name_works() {
         TestUtils::cleanup_sovrin_home();
 
-        let pool_name = "pool1";
-        let wallet_name = "wallet1";
         let default_wallet_type = DefaultWalletType::new();
-        default_wallet_type.create(wallet_name, None, None).unwrap();
-        let wallet = default_wallet_type.open(wallet_name, pool_name, None, None, None).unwrap();
+        default_wallet_type.create("wallet1", None, None).unwrap();
+        let wallet = default_wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
-        assert_eq!(wallet.get_pool_name(), pool_name);
+        assert_eq!(wallet.get_pool_name(), "pool1");
+
+        TestUtils::cleanup_sovrin_home();
+    }
+
+    #[test]
+    fn default_wallet_get_name_works() {
+        TestUtils::cleanup_sovrin_home();
+
+        let default_wallet_type = DefaultWalletType::new();
+        default_wallet_type.create("wallet1", None, None).unwrap();
+        let wallet = default_wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+
+        assert_eq!(wallet.get_name(), "wallet1");
 
         TestUtils::cleanup_sovrin_home();
     }

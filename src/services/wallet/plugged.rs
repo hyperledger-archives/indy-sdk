@@ -675,4 +675,27 @@ mod tests {
 
         InmemWallet::cleanup();
     }
+
+    #[test]
+    fn plugged_wallet_get_name_works() {
+        InmemWallet::cleanup();
+
+        let wallet_type = PluggedWalletType::new(
+            InmemWallet::create,
+            InmemWallet::open,
+            InmemWallet::set,
+            InmemWallet::get,
+            InmemWallet::get_not_expied,
+            InmemWallet::list,
+            InmemWallet::close,
+            InmemWallet::delete,
+            InmemWallet::free
+        );
+        wallet_type.create("wallet1", None, None).unwrap();
+
+        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        assert_eq!(wallet.get_name(), "wallet1");
+
+        InmemWallet::cleanup();
+    }
 }
