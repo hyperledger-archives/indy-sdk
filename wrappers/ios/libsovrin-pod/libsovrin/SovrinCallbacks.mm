@@ -498,11 +498,11 @@ void SovrinWrapperCommonAgentMessageCallback(sovrin_handle_t xconnection_handle,
         void* block = [[SovrinCallbacks sharedInstance] connectCompletionFor: xconnection_handle];
         if(block)
         {
-            void (^completion)(NSError*, NSString*) = (__bridge void (^)(NSError*, NSString*))block;
+            void (^completion)(SovrinHandle, NSError*, NSString*) = (__bridge void (^)(SovrinHandle, NSError*, NSString*))block;
             if(completion)
             {
                 NSError *error = [NSError errorFromSovrinError: err ];
-                completion(error, messageArg);
+                completion(xconnection_handle, error, messageArg);
             }
         }
     });

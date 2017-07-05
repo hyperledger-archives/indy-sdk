@@ -10,6 +10,13 @@
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
 
+
+@interface AgentUtils ()
+
+@property (atomic, strong) NSMutableDictionary* connectionCallbacks;
+
+@end
+
 @implementation AgentUtils
 
 + (AgentUtils *)sharedInstance
@@ -19,11 +26,19 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [AgentUtils new];
+        instance.connectionCallbacks = [NSMutableDictionary new];
     });
     
     return instance;
 }
 
+- (void)addMessageCallbackForConnection:(SovrinHandle)connectionHandle
+{
+    if (self.connectionCallbacks[@(connectionHandle)] == nil)
+    {
+        self.connectionCallbacks[@(connectionHandle)] = [NSArray new];
+    }
+}
 
 - (NSError *)connectWithPoolHandle:(SovrinHandle)poolHandle
                       walletHandle:(SovrinHandle)walletHandle
@@ -38,7 +53,7 @@
     __block SovrinHandle tempConnectionHandle;
     
     void (^onConnectCallback)(NSError*, SovrinHandle) = ^(NSError *error, SovrinHandle connectionHandle) {
-        NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %ld", error.code);
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %d", error.code);
         tempConnectionHandle = connectionHandle;
         connectionErr = error;
         [connectCompletionExpectation fulfill];
@@ -47,16 +62,24 @@
     
     // message callback
     void (^onMessageCallback)(SovrinHandle, NSError*, NSString*) = ^(SovrinHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", error.code);
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
     
+    __weak typeof(self)weakSelf = self;
+    weakSelf.connectionCallbacks[@(tempConnectionHandle)] = ^(SovrinHandle xConnectionHandle, NSError *error, NSString *message) {
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %d", error.code);
+        if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
+    };
+   // self.connectionCallbacks[@(tempConnectionHandle)] = [NSValue valueWithPointer:[onMessageCallback pointerValue]];
+    
     NSError *ret = [SovrinAgent connectWithPoolHandle:poolHandle
                                          walletHandle:walletHandle
-                                   senderDId:senderDid
-                                 receiverDId:receiverDid
-                           connectionHandler:onConnectCallback
-                              messageHandler:onMessageCallback];
+                                            senderDId:senderDid
+                                          receiverDId:receiverDid
+                                    connectionHandler:onConnectCallback
+                                      // messageHandler:onMessageCallback];
+                                       messageHandler:(void (^)(SovrinHandle, NSError*, NSString*))weakSelf.connectionCallbacks[@(tempConnectionHandle)]];
 
     if (ret.code != Success)
     {

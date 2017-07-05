@@ -238,7 +238,7 @@
     NSString *clientMessage = @"msg_from_cli_to_srv";
     ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:connectionHandle
                                                          message:clientMessage];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::sendWithConnectionHandler() returned wrong code");
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::sendWithConnectionHandler() failed");
     
     // 9. wait for message callback
     [self waitForExpectations: @[messageExpectation] timeout:[TestUtils defaultTimeout]];
@@ -258,9 +258,9 @@
     // 1.Create and open wallet
     SovrinHandle walletHandle;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool9"
-                                                                                   walletName:@"wallet9"
-                                                                                        xtype:@"default"
-                                                                                       handle:&walletHandle];
+                                                             walletName:@"wallet9"
+                                                                  xtype:@"default"
+                                                                 handle:&walletHandle];
      XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. obtain did
@@ -319,13 +319,13 @@
     // 7. close listener
     SovrinHandle incorrectListenerHandle = connectionHandle; // + 1;
     ret = [[AgentUtils sharedInstance] closeListener:incorrectListenerHandle];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::closeListener() failed");
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::closeListener() returned wrong code");
     
     // 8. send
     NSString *clientMessage = @"msg_from_cli_to_srv";
     ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:connectionHandle
                                                          message:clientMessage];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::sendWithConnectionHandler() returned wrong code");
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::sendWithConnectionHandler() failed");
     
     // 9. wait for message callback
     [self waitForExpectations: @[messageExpectation] timeout:[TestUtils defaultTimeout]];

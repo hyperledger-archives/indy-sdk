@@ -22,9 +22,9 @@
                outConnectionHandle:(SovrinHandle *)outConnectionHandle;
 
 - (NSError *)listenForEndpoint:(NSString *)endpoint
-             connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
-                messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
-              outListenerHandle:(SovrinHandle *)listenerHandle;
+            connectionCallback:( void (^)(SovrinHandle listenerHandle, SovrinHandle connectionHandle))connectionCallback
+               messageCallback:(void (^)(SovrinHandle connectionHandle, NSString *message))messageCallback
+             outListenerHandle:(SovrinHandle *)listenerHandle;
 
 - (NSError *)sendWithConnectionHandler:(SovrinHandle)connectionHandle
                                message:(NSString *)message;

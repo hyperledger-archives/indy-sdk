@@ -568,10 +568,12 @@
     
     // 4. listen
     // connection callback
+    XCTestExpectation* listenerConnectionCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block SovrinHandle serverToClientConnectId = 0;
-    void (^connectionCallback)(SovrinHandle, SovrinHandle) = ^(SovrinHandle xConnectionHandle, SovrinHandle xListenerHandle) {
+    void (^connectionCallback)(SovrinHandle, SovrinHandle) = ^(SovrinHandle xListenerHandle, SovrinHandle xConnectionHandle) {
         serverToClientConnectId = xConnectionHandle;
-        NSLog(@"connectionCallback triggered.");
+        NSLog(@"AgentHighCases::testAgentSendWorksForAllDataInWalletPresent:: listener's connectionCallback triggered.");
+        [listenerConnectionCompletionExpectation fulfill];
     };
     
     XCTestExpectation* messageFromClientCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
@@ -579,7 +581,7 @@
     // message from client callback
     void (^messageFromClientCallback)(SovrinHandle, NSString *) = ^(SovrinHandle xConnectionHandle, NSString * message) {
         clientMessage = message;
-        NSLog(@"messageFromClientCallback triggered with message: %@", message);
+        NSLog(@"AgentHighCases::testAgentSendWorksForAllDataInWalletPresent::messageFromClientCallback triggered with message: %@", message);
         [messageFromClientCompletionExpectation fulfill];
     };
     
@@ -592,7 +594,7 @@
     
     // 5. Add identity
     ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
-                                                         poolHandle:-1
+                                                         poolHandle:0
                                                        walletHandle:walletHandle
                                                                 did:did];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
@@ -617,13 +619,15 @@
                                          outConnectionHandle:&clientToServerConnectId];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed");
     
+    [self waitForExpectations:@[listenerConnectionCompletionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     NSString *refClientMessage = @"msg_from_client";
     NSString *refServerMessage = @"msg_from_server";
     
     // 7. Send client message
     ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:clientToServerConnectId
                                                          message:refClientMessage];
-    XCTAssertEqual(ret.code, Success, @"AgentUtils::sendWithConnectionHandler() failed");
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::sendWithConnectionHandler() failed for client message");
     
     [self waitForExpectations: @[messageFromClientCompletionExpectation] timeout:[TestUtils defaultTimeout]];
     XCTAssertTrue([clientMessage isEqualToString:refClientMessage], @"wrong clientMessage");
@@ -631,7 +635,7 @@
     // 8. Send server message
     ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:serverToClientConnectId
                                                          message:refServerMessage];
-    XCTAssertEqual(ret.code, Success, @"AgentUtils::sendWithConnectionHandler() failed");
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::sendWithConnectionHandler() failed for server message");
     
     [self waitForExpectations: @[messageFromServerCompletionExpectation] timeout:[TestUtils defaultTimeout]];
     XCTAssertTrue([serverMessage isEqualToString:refServerMessage], @"wrong serverMessage");
@@ -667,13 +671,21 @@
     
     // 3. listen
     NSString *endpoint = @"127.0.0.1:9705";
+    SovrinHandle listenerHandle = 0;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                            connectionCallback:nil
                                               messageCallback:nil
-                                            outListenerHandle:nil];
+                                            outListenerHandle:&listenerHandle];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithWalletHandle() failed");
     
-    // 4. store their did from parts
+    // 4 Add identity
+    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                         poolHandle:-1
+                                                       walletHandle:walletHandle
+                                                                did:did];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
+    
+    // 5. store their did from parts
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
                                                                        theirPk:pubKey
@@ -681,7 +693,7 @@
                                                                       endpoint:endpoint];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
-    // 5. connect
+    // 6. connect
     SovrinHandle connectionHandle = 0;
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
@@ -691,11 +703,11 @@
                                          outConnectionHandle:&connectionHandle];
      XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed");
     
-    // 6. close connection
+    // 7. close connection
     ret = [[AgentUtils sharedInstance] closeConnection:connectionHandle];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::closeConnection() failed");
     
-    // 7. try to send message
+    // 8. try to send message
     ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:connectionHandle
                                                          message:@""];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::sendWithConnectionHandler() returned wrong error code");
@@ -742,19 +754,27 @@
     XCTestExpectation* connectionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"connection completion finished"];
 
     __block SovrinHandle serverToClientConnectId = 0;
-    void (^connectionCallback)(SovrinHandle, SovrinHandle) = ^(SovrinHandle xConnectionHandle, SovrinHandle xListenerHandle) {
+    void (^connectionCallback)(SovrinHandle, SovrinHandle) = ^(SovrinHandle xListenerHandle, SovrinHandle xConnectionHandle) {
         serverToClientConnectId = xConnectionHandle;
         NSLog(@"connectionCallback triggered.");
         [connectionExpectation fulfill];
     };
 
+    SovrinHandle listenerHandle = 0;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                            connectionCallback:connectionCallback
                                               messageCallback:nil
-                                            outListenerHandle:nil];
+                                            outListenerHandle:&listenerHandle];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::listenWithWalletHandle() failed");
     
-    // 5. connect
+    // 5. Add Identity
+    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                         poolHandle:-1
+                                                       walletHandle:walletHandle
+                                                                did:did];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
+    
+    // 6. connect
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
                                                    senderDid:did
@@ -762,13 +782,14 @@
                                              messageCallback:nil
                                          outConnectionHandle:nil];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed");
+    
     [self waitForExpectations: @[connectionExpectation] timeout:[TestUtils defaultTimeout]];
     
-    // 6. close connection
+    // 7. close connection
     ret = [[AgentUtils sharedInstance] closeConnection:serverToClientConnectId];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::closeConnection() failed");
     
-    // 7. send
+    // 8. send
     NSString *serverMessage = @"msg_from_server";
     ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:serverToClientConnectId
                                                          message:serverMessage];
