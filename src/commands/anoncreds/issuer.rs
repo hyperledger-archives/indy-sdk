@@ -47,7 +47,6 @@ pub enum IssuerCommand {
         Box<Fn(Result<(String, String), SovrinError>) + Send>),
     RevokeClaim(
         i32, // wallet handle
-        i32, // claim def seq no
         i32, // revoc reg seq no
         i32, // user revoc index
         Box<Fn(Result<String, SovrinError>) + Send>),
@@ -86,10 +85,10 @@ impl IssuerCommandExecutor {
                 self.create_claim(wallet_handle, &claim_req_json, &claim_json,
                                   revoc_reg_seq_no, user_revoc_index, cb);
             }
-            IssuerCommand::RevokeClaim(wallet_handle, claim_def_seq_no, revoc_reg_seq_no,
+            IssuerCommand::RevokeClaim(wallet_handle, revoc_reg_seq_no,
                                        user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "RevokeClaim command received");
-                self.revoke_claim(wallet_handle, claim_def_seq_no, revoc_reg_seq_no, user_revoc_index, cb);
+                self.revoke_claim(wallet_handle, revoc_reg_seq_no, user_revoc_index, cb);
             }
         };
     }
@@ -275,17 +274,15 @@ impl IssuerCommandExecutor {
 
     fn revoke_claim(&self,
                     wallet_handle: i32,
-                    claim_def_seq_no: i32,
                     revoc_reg_seq_no: i32,
                     user_revoc_index: i32,
                     cb: Box<Fn(Result<String, SovrinError>) + Send>) {
-        let result = self._revoke_claim(wallet_handle, claim_def_seq_no, revoc_reg_seq_no, user_revoc_index);
+        let result = self._revoke_claim(wallet_handle, revoc_reg_seq_no, user_revoc_index);
         cb(result)
     }
 
     fn _revoke_claim(&self,
                      wallet_handle: i32,
-                     claim_def_seq_no: i32,
                      revoc_reg_seq_no: i32,
                      user_revoc_index: i32) -> Result<String, SovrinError> {
         let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &revoc_reg_seq_no))?;

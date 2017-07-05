@@ -202,7 +202,6 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transactions to the Ledger
-/// claim_def_seq_no: seq no of a claim definition transaction in Ledger
 /// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
@@ -217,7 +216,6 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
 #[no_mangle]
 pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
                                          wallet_handle: i32,
-                                         claim_def_seq_no: i32,
                                          revoc_reg_seq_no: i32,
                                          user_revoc_index: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -230,7 +228,6 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
             AnoncredsCommand::Issuer(
                 IssuerCommand::RevokeClaim(
                     wallet_handle,
-                    claim_def_seq_no,
                     revoc_reg_seq_no,
                     user_revoc_index,
                     Box::new(move |result| {
