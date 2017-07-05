@@ -194,7 +194,8 @@ fn anoncreds_demo_works() {
     //
     //    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
     //                                                       wallet_handle,
-    //                                                       claim_def_seq_no,
+    //                                                       issuer_did,
+    //                                                       schema_seq_no,
     //                                                       max_claim_num,
     //                                                       issuer_create_and_store_revoc_reg_callback);
     //    assert_eq!(ErrorCode::Success, err);
