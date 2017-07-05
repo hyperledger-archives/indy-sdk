@@ -210,7 +210,7 @@ mod tests {
     use std::thread;
 
     #[test]
-    fn type_new_works() {
+    fn default_wallet_type_new_works() {
         DefaultWalletType::new();
     }
 
@@ -243,7 +243,7 @@ mod tests {
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
-        wallet_type.delete("wallet1", None).unwrap();
+        wallet_type.delete("wallet1", None, None).unwrap();
         wallet_type.create("wallet1", None, None).unwrap();
 
         TestUtils::cleanup_sovrin_home();

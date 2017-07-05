@@ -27,11 +27,13 @@ impl Default for InmemWalletRuntimeConfig {
     }
 }
 
+#[derive(Debug)]
 struct InmemWalletContext {
     name: String,
     freshness_time: i64
 }
 
+#[derive(Debug)]
 struct InmemWalletRecord {
     key: String,
     value: String,
@@ -62,7 +64,6 @@ impl InmemWallet {
             // Invalid state as "already exists" case must be checked on service layer
             return ErrorCode::CommonInvalidState;
         }
-
         wallets.insert(name.clone(), HashMap::new());
         ErrorCode::Success
     }
@@ -72,6 +73,7 @@ impl InmemWallet {
                            runtime_config: *const c_char,
                            credentials: *const c_char,
                            handle: *mut i32) -> ErrorCode {
+
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
         check_useful_opt_c_str!(config, ErrorCode::CommonInvalidStructure);
         check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidStructure);
@@ -84,8 +86,7 @@ impl InmemWallet {
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
-        if wallets.contains_key(&name) {
-            // Invalid state as "already opened" case must be checked on service layer
+        if !wallets.contains_key(&name) {
             return ErrorCode::CommonInvalidState;
         }
 
@@ -195,13 +196,13 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    extern "C" fn list(xhandle: i32,
-                       key_prefix: *const c_char,
-                       values_json_ptr: *mut *const c_char) -> ErrorCode {
+    pub extern "C" fn list(xhandle: i32,
+                           key_prefix: *const c_char,
+                           values_json_ptr: *mut *const c_char) -> ErrorCode {
         unimplemented!()
     }
 
-    extern "C" fn close(xhandle: i32) -> ErrorCode {
+    pub extern "C" fn close(xhandle: i32) -> ErrorCode {
         let mut handles = INMEM_WALLET_HANDLES.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
@@ -212,9 +213,32 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    extern "C" fn free(xhandle: i32,
-                               value: *mut c_char) -> ErrorCode {
-        unsafe { CString::from_raw(value); }
+    pub extern "C" fn delete(name: *const c_char,
+                             config: *const c_char,
+                             credentials: *const c_char) -> ErrorCode {
+        check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
+
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        wallets.remove(&name);
         ErrorCode::Success
+    }
+
+    pub extern "C" fn free(xhandle: i32,
+                           value: *const c_char) -> ErrorCode {
+        unsafe { CString::from_raw(value as *mut c_char); }
+        ErrorCode::Success
+    }
+
+    pub fn cleanup() {
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+        wallets.clear();
+
+        let mut handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        handles.clear();
     }
 }
