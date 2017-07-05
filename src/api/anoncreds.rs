@@ -125,11 +125,11 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// claim_req_json: a claim request with a blinded secret
 ///     from the user (returned by prover_create_and_store_claim_req).
-///     Also contains claim_def_seq_no and issuer_did
+///     Also contains schema_seq_no and issuer_did
 ///     Example:
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
-///      "claim_def_seq_no" : <claim_def_seq_no>,
+///      "schema_seq_no" : <schema_seq_no>,
 ///      "issuer_did" : <issuer_did>
 ///     }
 /// claim_json: a claim containing attribute values for each of requested attribute names.
@@ -144,12 +144,11 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///
 /// #Returns
 /// Revocation registry update json with a newly issued claim
-/// Claim json containing issued claim, and claim_def_seq_no and revoc_reg_seq_no
+/// Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
 /// used for issuance
 ///     {
 ///         "claim": <see claim_json above>,
 ///         "signature": <signature>,
-///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no", string,
 ///         "issuer_did", string,
 ///         "schema_seq_no", string,
