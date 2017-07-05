@@ -32,12 +32,12 @@ use self::libc::c_char;
 /// Crypto*
 #[no_mangle]
 pub extern fn sovrin_sign_and_submit_request(command_handle: i32,
-                                      pool_handle: i32,
-                                      wallet_handle: i32,
-                                      submitter_did: *const c_char,
-                                      request_json: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                           request_result_json: *const c_char)>) -> ErrorCode {
+                                             pool_handle: i32,
+                                             wallet_handle: i32,
+                                             submitter_did: *const c_char,
+                                             request_json: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  request_result_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -508,6 +508,42 @@ pub extern fn sovrin_build_node_request(command_handle: i32,
         .send(Command::Ledger(LedgerCommand::BuildNodeRequest(
             submitter_did,
             target_did,
+            data,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Builds a GET_TXN request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Id of Identity stored in secured Wallet.
+/// data: seq_no of transaction in ledger
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn sovrin_build_get_txn_request(command_handle: i32,
+                                           submitter_did: *const c_char,
+                                           data: i32,
+                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetTxnRequest(
+            submitter_did,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());

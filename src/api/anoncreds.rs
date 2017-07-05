@@ -145,7 +145,9 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///         "claim": <see claim_json above>,
 ///         "signature": <signature>,
 ///         "claim_def_seq_no": string,
-///         "revoc_reg_seq_no", string
+///         "revoc_reg_seq_no", string,
+///         "issuer_did", string,
+///         "schema_seq_no", string,
 ///     }
 ///
 /// #Errors
@@ -449,6 +451,7 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 ///         "schema_seq_no": string,
 ///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no", string
+///         "issuer_did", string
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -541,6 +544,8 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// proof_request_json: proof request json
 ///     {
+///         "name": string,
+///         "version": string,
 ///         "nonce": string,
 ///         "requested_attr1_uuid": <attr_info>,
 ///         "requested_attr2_uuid": <attr_info>,

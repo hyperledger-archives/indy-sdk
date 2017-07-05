@@ -141,7 +141,7 @@ impl Prover {
 
     pub fn _init_primary_claim(claim: &RefCell<ClaimJson>, v_prime: &BigNumber) -> Result<(), CommonError> {
         let ref mut primary_claim = claim.borrow_mut().signature.primary_claim;
-        primary_claim.v_prime = v_prime.add(&primary_claim.v_prime)?;
+        primary_claim.v = v_prime.add(&primary_claim.v)?;
         Ok(())
     }
 
@@ -196,7 +196,10 @@ impl Prover {
         for (uuid, attribute_info) in requested_attrs {
             let claims_for_attribute: Vec<ClaimInfo> =
                 claims.iter().cloned()
-                    .filter(|claim| claim.attrs.contains_key(&attribute_info.name) && claim.schema_seq_no == attribute_info.schema_seq_no)
+                    .filter(|claim|
+                        claim.attrs.contains_key(&attribute_info.name) &&
+                            if attribute_info.schema_seq_no.is_some() { claim.schema_seq_no == attribute_info.schema_seq_no.unwrap() } else { true } &&
+                            if attribute_info.claim_def_seq_no.is_some() { claim.claim_def_seq_no == attribute_info.claim_def_seq_no.unwrap() } else { true })
                     .collect();
 
             found_attributes.insert(uuid, claims_for_attribute);
@@ -207,7 +210,9 @@ impl Prover {
 
             for claim in claims.iter() {
                 if let Some(attribute_value) = claim.attrs.get(&predicate.attr_name) {
-                    if Prover::_attribute_satisfy_predicate(&predicate, attribute_value)? {
+                    if Prover::_attribute_satisfy_predicate(&predicate, attribute_value)? &&
+                        if predicate.schema_seq_no.is_some() { claim.schema_seq_no == predicate.schema_seq_no.unwrap() } else { true } &&
+                        if predicate.claim_def_seq_no.is_some() { claim.claim_def_seq_no == predicate.claim_def_seq_no.unwrap() } else { true } {
                         claims_for_predicate.push(claim.clone());
                     }
                 }
@@ -232,11 +237,11 @@ impl Prover {
     }
 
     fn _prepare_proof_claims(proof_req: &ProofRequestJson,
-                                 schemas: &HashMap<String, Schema>,
-                                 claim_defs: &HashMap<String, ClaimDefinition>,
-                                 revoc_regs: &HashMap<String, RevocationRegistry>,
-                                 requested_claims: &RequestedClaimsJson,
-                                 claims: HashMap<String, ClaimJson>) -> Result<HashMap<String, ProofClaims>, CommonError> {
+                             schemas: &HashMap<String, Schema>,
+                             claim_defs: &HashMap<String, ClaimDefinition>,
+                             revoc_regs: &HashMap<String, RevocationRegistry>,
+                             requested_claims: &RequestedClaimsJson,
+                             claims: HashMap<String, ClaimJson>) -> Result<HashMap<String, ProofClaims>, CommonError> {
         let mut proof_claims: HashMap<String, ProofClaims> = HashMap::new();
 
         for (claim_uuid, claim) in claims {
@@ -411,6 +416,8 @@ impl Prover {
 
             let claim_proof = ClaimProof::new(proof,
                                               proof_claim.claim_json.claim_def_seq_no,
+                                              proof_claim.claim_json.schema_seq_no,
+                                              proof_claim.claim_json.issuer_did.clone(),
                                               proof_claim.claim_json.revoc_reg_seq_no);
 
             proofs.insert(proof_claim_uuid.clone(), claim_proof);
@@ -528,7 +535,7 @@ impl Prover {
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
-        let vprime = c1.v_prime.sub(
+        let vprime = c1.v.sub(
             &c1.e.mul(&r, Some(&mut ctx))?
         )?;
 
@@ -889,15 +896,15 @@ mod tests {
         let claim_json = RefCell::new(mocks::get_gvt_claims_json());
         let v_prime = BigNumber::from_dec("21337277489659209697972694275961549241988800625063594810959897509238282352238626810206496164796042921922944861660722790127270481494898810301213699637204250648485409496039792926329367175253071514098050800946366413356551955763141949136004248502185266508852158851178744042138131595587172830689293368213380666221485155781604582222397593802865783047420570234359112294991344669207835283314629238445531337778860979843672592610159700225195191155581629856994556889434019851156913688584355226534153997989337803825600096764199505457938355614863559831818213663754528231270325956208966779676675180767488950507044412716354924086945804065215387295334083509").unwrap();
 
-        let old_value = claim_json.borrow().signature.primary_claim.v_prime.clone().unwrap();
+        let old_value = claim_json.borrow().signature.primary_claim.v.clone().unwrap();
 
         let res = Prover::_init_primary_claim(&claim_json, &v_prime);
         assert!(res.is_ok());
 
-        assert_ne!(old_value, claim_json.borrow().signature.primary_claim.v_prime);
+        assert_ne!(old_value, claim_json.borrow().signature.primary_claim.v);
 
         let new_v = BigNumber::from_dec("6477858587997811893327035319417510316563341854132851390093281262022504586945336581881563055213337677056181844572991952555932751996898440671581814053127951224635658321050035511444973918938951286397608407154945420576869136257515796028414378962335588462012678546940230947218473631620847322671867296043124087586400291121388864996880108619720604815227218240238018894734106036749434566128263766145147938204864471079326020636108875736950439614174893113941785014290729562585035442317715573694490415783867707489645644928275501455034338736759260129329435713263029873859553709178436828106858314991461880152652981178848566237411834715936997680351679484278048175488999620056712097674305032686536393318931401622256070852825807510445941751166073917118721482407482663237596774153152864341413225983416965337899803365905987145336353882936").unwrap();
-        assert_eq!(new_v, claim_json.borrow().signature.primary_claim.v_prime);
+        assert_eq!(new_v, claim_json.borrow().signature.primary_claim.v);
     }
 
     #[test]
@@ -1076,7 +1083,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_same_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new( "name".to_string(), Some(1), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1103,7 +1110,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_other_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(2, "name".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(),Some(3), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1127,7 +1134,7 @@ mod find_claims_tests {
     fn find_claims_works_for_predicate_satisfy() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
+        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
 
         let claims = vec![
             mocks::get_gvt_claim_info(),
@@ -1153,7 +1160,7 @@ mod find_claims_tests {
     fn find_claims_works_for_does_not_satisfy_predicate() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 38));
+        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 38, None, None));
 
         let claims = vec![
             mocks::get_gvt_claim_info(),
@@ -1174,8 +1181,8 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_multiply_revealed_attrs() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
-        requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
+        requested_attrs.insert("2".to_string(), AttributeInfo::new("status".to_string(), Some(2), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1210,8 +1217,8 @@ mod find_claims_tests {
     fn find_claims_works_for_multiply_satisfy_predicates() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
-        requested_predicates.insert("2".to_string(), Predicate::new("period".to_string(), PredicateType::GE, 8));
+        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
+        requested_predicates.insert("2".to_string(), Predicate::new("period".to_string(), PredicateType::GE, 8, None, None));
 
         let claims = vec![
             mocks::get_gvt_claim_info(),
@@ -1243,12 +1250,12 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_multiply_attrs_and_satisfy_predicates() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
-        requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
+        requested_attrs.insert("2".to_string(), AttributeInfo::new("status".to_string(), Some(2), None));
 
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
-        requested_predicates.insert("2".to_string(), Predicate::new("period".to_string(), PredicateType::GE, 8));
+        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
+        requested_predicates.insert("2".to_string(), Predicate::new("period".to_string(), PredicateType::GE, 8, None, None));
 
         let claims = vec![
             mocks::get_gvt_claim_info(),
@@ -1279,7 +1286,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_several_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1306,7 +1313,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_no_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "test".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("test".to_string(), Some(1), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1331,7 +1338,7 @@ pub mod mocks {
     use super::*;
     use services::anoncreds::issuer;
     use services::anoncreds::verifier;
-    use services::anoncreds::types::{ClaimDefinitionData,Witness};
+    use services::anoncreds::types::{ClaimDefinitionData, Witness};
     use std::iter::FromIterator;
     use services::anoncreds::types::SignatureTypes;
 
@@ -1361,11 +1368,11 @@ pub mod mocks {
     }
 
     pub fn get_gvt_predicate() -> Predicate {
-        Predicate::new("age".to_string(), PredicateType::GE, 18)
+        Predicate::new("age".to_string(), PredicateType::GE, 18, None, None)
     }
 
     pub fn get_xyz_predicate() -> Predicate {
-        Predicate::new("period".to_string(), PredicateType::GE, 8)
+        Predicate::new("period".to_string(), PredicateType::GE, 8, None, None)
     }
 
     pub fn get_gvt_primary_claim() -> PrimaryClaim {
@@ -1558,25 +1565,27 @@ pub mod mocks {
 
     pub fn get_proof_req_json() -> ProofRequestJson {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new(1, "name".to_string()));
-        requested_attrs.insert("2".to_string(), AttributeInfo::new(2, "status".to_string()));
-        requested_attrs.insert("3".to_string(), AttributeInfo::new(1, "sex".to_string()));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
+        requested_attrs.insert("2".to_string(), AttributeInfo::new("status".to_string(), Some(2), None));
+        requested_attrs.insert("3".to_string(), AttributeInfo::new("sex".to_string(), Some(1), None));
 
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18));
-        requested_predicates.insert("2".to_string(), Predicate::new("height".to_string(), PredicateType::GE, 180));
+        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
+        requested_predicates.insert("2".to_string(), Predicate::new("height".to_string(), PredicateType::GE, 180, None, None));
 
         let nonce = BigNumber::from_dec("123432421212").unwrap();
 
         ProofRequestJson {
             nonce: nonce,
+            name: "name".to_string(),
+            version: "version".to_string(),
             requested_attrs: requested_attrs,
             requested_predicates: requested_predicates
         }
     }
 
     pub fn get_gvt_claim_definition() -> ClaimDefinition {
-        let claim_def_data = ClaimDefinitionData ::new(issuer::mocks::get_pk(), None);
+        let claim_def_data = ClaimDefinitionData::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
             schema_seq_no: 1,
             claim_def_seq_no: None,
@@ -1586,7 +1595,7 @@ pub mod mocks {
     }
 
     pub fn get_xyz_claim_definition() -> ClaimDefinition {
-        let claim_def_data = ClaimDefinitionData ::new(issuer::mocks::get_pk(), None);
+        let claim_def_data = ClaimDefinitionData::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
             schema_seq_no: 2,
             claim_def_seq_no: None,

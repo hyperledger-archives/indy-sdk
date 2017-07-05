@@ -270,12 +270,7 @@ impl Issuer {
 
         info!(target: "anoncreds_service", "Issuer issue primary claim -> done");
 
-        Ok(PrimaryClaim {
-            m2: context_attribute.clone()?,
-            a: a,
-            e: e,
-            v_prime: v_prime_prime
-        })
+        Ok(PrimaryClaim::new(context_attribute.clone()?, a, e, v_prime_prime))
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,

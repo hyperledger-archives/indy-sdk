@@ -295,7 +295,7 @@ impl ProverCommandExecutor {
                                     &revocation_claim_init_data_json)?;
         }
 
-        let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.claim_def_seq_no);
+        let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.claim_def_seq_no, claim_offer.schema_seq_no);
         let claim_request_json = ClaimRequestJson::to_json(&claim_request)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_request: {}", err.to_string())))?;

@@ -152,7 +152,7 @@ pub struct ClaimInfo {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimRequestJson {
-    pub claim_request: ClaimRequest,
+    pub blinded_ms: ClaimRequest,
     pub issuer_did: String,
     pub claim_def_seq_no: i32
 }
@@ -170,7 +170,10 @@ pub struct ClaimJson {
     pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    pub signature: ClaimSignature
+    #[serde(rename = "claims_signature")]
+    pub signature: ClaimSignature,
+    #[serde(rename = "identifier")]
+    pub issuer_did: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -184,7 +187,7 @@ pub struct PrimaryClaim {
     pub m2: String,
     pub a: String,
     pub e: String,
-    pub v_prime: String
+    pub v: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
