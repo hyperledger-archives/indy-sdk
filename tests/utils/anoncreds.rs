@@ -47,6 +47,7 @@ impl AnoncredsUtils {
 
         let schema = CString::new(schema).unwrap();
         let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let issuer_did = CString::new(issuer_did).unwrap();
 
         let err =
             sovrin_issuer_create_and_store_claim_def(command_handle,
