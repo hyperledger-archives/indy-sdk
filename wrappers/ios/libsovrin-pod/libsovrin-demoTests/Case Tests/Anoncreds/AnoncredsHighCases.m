@@ -899,7 +899,6 @@
 
 - (void)testProverGetClaimsForProofReqWorksForRevealedAttr
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -909,15 +908,16 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claims
-    NSString *proofRequest = @"{"\
-        "\"nonce\":\"123432421212\","\
-        "\"requested_attrs\":{"\
-            "\"attr1_uuid\":{"\
-                "\"schema_seq_no\":1,"\
-                "\"name\":\"name\""\
-            "}"\
-        "},"\
-        "\"requested_predicates\":{}"\
+    NSString *proofRequest = @"{"
+        "\"nonce\":\"123432421212\","
+        "\"name\":\"proof_req_1\","
+        "\"version\":\"0.1\","\
+        "\"verifiableAttributes\":{"
+            "\"attr1_uuid\":{"
+                "\"schema_seq_no\":1, \"name\":\"name\""
+            "}"
+        "},"
+        "\"requested_predicates\":{}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -930,8 +930,6 @@
     XCTAssertEqual([[claims[@"attrs"] allValues] count], 1, @"attrs length != 1");
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 0, @"predicates length != 0");
     XCTAssertEqual([claims[@"attrs"][@"attr1_uuid"] count], 1, @"attr1_uuid length != 1");
-    
-     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForNotFoundAttribute
@@ -946,15 +944,16 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claims
-    NSString *proofRequest = @"{"\
-        "\"nonce\":\"123432421212\","\
-        "\"requested_attrs\":{"\
-            "\"attr1_uuid\":{"\
-            "\"schema_seq_no\":1,"\
-            "\"name\":\"some_attr\""\
-            "}"\
-        "},"\
-        "\"requested_predicates\":{}"\
+    NSString *proofRequest = @"{"
+        "\"nonce\":\"123432421212\","
+        "\"name\":\"proof_req_1\","
+        "\"version\":\"0.1\","\
+        "\"verifiableAttributes\":{"
+            "\"attr1_uuid\":{"
+                "\"schema_seq_no\":1, \"name\":\"some_attr\""
+            "}"
+        "},"
+        "\"requested_predicates\":{}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -973,7 +972,6 @@
 
 - (void)testProverGetClaimsForProofReqWorksForSatisfyPredicate
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -983,14 +981,12 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claims
-    NSString *proofRequest = @"{"\
-    "\"nonce\":\"123432421212\","\
-    "\"requested_attrs\":{},"\
-    "\"requested_predicates\":{"\
-        "\"predicate1_uuid\":{"\
-            "\"attr_name\":\"age\","\
-            "\"p_type\":\"GE\","\
-            "\"value\":18}}"\
+    NSString *proofRequest = @"{"
+            "\"nonce\":\"123432421212\","
+            "\"name\":\"proof_req_1\","
+            "\"version\":\"0.1\","\
+            "\"verifiableAttributes\":{},"
+            "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -1003,13 +999,10 @@
     XCTAssertEqual([[claims[@"attrs"] allValues] count], 0, @"attrs length != 1");
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 1, @"predicates length != 0");
     XCTAssertEqual([claims[@"predicates"][@"predicate1_uuid"] count], 1, @"predicate1_uuid length != 1");
-    
-     
 }
 
-- (void)testProverGetClaimsForProofReqWorksForMultiplyAttributeAndPredicates
+- (void)testProverGetClaimsForProofReqWorksForNotSatisfyPredicate
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -1019,25 +1012,12 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claims
-    NSString *proofRequest = @"{"\
-        "\"nonce\":\"123432421212\","\
-        "\"requested_attrs\":{"\
-            "\"attr1_uuid\":{"\
-                "\"schema_seq_no\":1,"\
-                "\"name\":\"name\"},"\
-            "\"attr2_uuid\":{"\
-                "\"schema_seq_no\":1,"\
-                "\"name\":\"sex\"}},"\
-        "\"requested_predicates\":{"\
-            "\"predicate1_uuid\":{"\
-                "\"attr_name\":\"age\","\
-                "\"p_type\":\"GE\","\
-                "\"value\":18},"\
-            "\"predicate2_uuid\":{"\
-                "\"attr_name\":\"height\","\
-                "\"p_type\":\"GE\","\
-                "\"value\":160}"\
-            "}"\
+    NSString *proofRequest = @"{"
+    "\"nonce\":\"123432421212\","
+    "\"name\":\"proof_req_1\","
+    "\"version\":\"0.1\","\
+    "\"verifiableAttributes\":{},"
+    "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -1046,7 +1026,43 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
     
     // 3. check claims
-    // TODO: Figure out right checks
+    NSDictionary *claims = [NSDictionary fromString:claimsJson];
+    XCTAssertEqual([[claims[@"attrs"] allValues] count], 0, @"attrs length != 1");
+    XCTAssertEqual([[claims[@"predicates"] allValues] count], 1, @"predicates length != 0");
+    XCTAssertEqual([claims[@"predicates"][@"predicate1_uuid"] count], 0, @"predicate1_uuid length != 0");
+}
+
+
+- (void)testProverGetClaimsForProofReqWorksForMultiplyAttributeAndPredicates
+{
+    NSError *ret;
+    SovrinHandle walletHandle = 0;
+    
+    // 1. get wallet handle
+    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
+                                                                    claimDefJson:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
+    
+    // 2. get claims
+    NSString *proofRequest = @"{"
+    "\"nonce\":\"123432421212\","
+    "\"name\":\"proof_req_1\","
+    "\"version\":\"0.1\","
+    "\"verifiableAttributes\":{"
+        "\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"},"
+        "\"attr2_uuid\":{\"schema_seq_no\":1, \"name\":\"sex\"}"
+    "},"
+    "\"requested_predicates\":{"
+        "\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"
+        "\"predicate2_uuid\":{\"attr_name\":\"height\",\"p_type\":\"GE\",\"value\":160}"
+    "}}";
+    NSString *claimsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
+                                                                     proofRequestJson:proofRequest
+                                                                        outClaimsJson:&claimsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
+    
+    // 3. check claims
     NSDictionary *claims = [NSDictionary fromString:claimsJson];
     XCTAssertEqual([[claims[@"attrs"] allValues] count], 2, @"attrs length != 2");
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 2, @"predicates length != 2");
@@ -1054,8 +1070,6 @@
     XCTAssertEqual([claims[@"attrs"][@"attr2_uuid"] count], 1, @"attr2_uuid length != 1");
     XCTAssertEqual([claims[@"predicates"][@"predicate1_uuid"] count], 1, @"predicate1_uuid length != 1");
     XCTAssertEqual([claims[@"predicates"][@"predicate2_uuid"] count], 1, @"predicate2_uuid length != 1");
-    
-     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForInvalidWalletHandle
@@ -1070,16 +1084,13 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claims
-    NSString *proofRequest = @"{"\
-            "\"nonce\":\"123432421212\","\
-            "\"requested_attrs\":{},"\
-            "\"requested_predicates\":{"\
-                "\"predicate1_uuid\":{"\
-                    "\"attr_name\":\"age\","\
-                    "\"p_type\":\"GE\","\
-                    "\"value\":58}"\
-            "}"\
-        "}";
+    NSString *proofRequest = @"{"
+        "\"nonce\":\"123432421212\","
+        "\"name\":\"proof_req_1\","
+        "\"version\":\"0.1\","
+        "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
+        "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
+    "}";
     SovrinHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:invalidWalletHandle
                                                                      proofRequestJson:proofRequest outClaimsJson:nil];
