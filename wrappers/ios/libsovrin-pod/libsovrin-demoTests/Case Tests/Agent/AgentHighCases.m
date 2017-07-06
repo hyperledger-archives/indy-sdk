@@ -526,6 +526,11 @@
                                                                 did:receiverDid];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for receiverDid 2");
     
+    // 5. remove identity
+    ret = [[AgentUtils sharedInstance] removeIdentity:receiverDid
+                                       listenerHandle:listenerHandle
+                                         walletHandle:receiverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::removeIdentity() failed");
     
     
     [TestUtils cleanupStorage];

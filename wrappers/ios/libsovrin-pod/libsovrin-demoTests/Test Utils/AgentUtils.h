@@ -38,4 +38,8 @@
                              walletHandle:(SovrinHandle)walletHandle
                                       did:(NSString *)did;
 
+- (NSError *)removeIdentity:(NSString *) did
+             listenerHandle:(SovrinHandle)listenerHandle
+               walletHandle:(SovrinHandle)walletHandle;
+
 @end
