@@ -68,11 +68,11 @@
     
     return [NSError errorFromSovrinError: ret];}
 
-+ (NSError *)addIdentityForListenerHandle:(SovrinHandle)listenerHandle
-                               poolHandle:(SovrinHandle)poolHandle
-                             walletHandle:(SovrinHandle)walletHandle
-                                      did:(NSString *)did
-                               completion:(void (^)(NSError *error)) handler
++ (NSError *)addIdentity:(NSString *)did
+       forListenerHandle:(SovrinHandle)listenerHandle
+              poolHandle:(SovrinHandle)poolHandle
+            walletHandle:(SovrinHandle)walletHandle
+              completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -91,6 +91,28 @@
     
     return [NSError errorFromSovrinError: ret];
 
+}
+
++ (NSError *)removeIdentity:(NSString *)did
+          forListenerHandle:(SovrinHandle)listenerHandle
+               walletHandle:(SovrinHandle)walletHandle
+                 completion:(void (^)(NSError *error)) handler
+{
+    sovrin_error_t ret;
+    
+    sovrin_handle_t commandHandle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    
+    ret = sovrin_agent_remove_identity(commandHandle,
+                                       listenerHandle,
+                                       walletHandle,
+                                       [did UTF8String],
+                                       SovrinWrapperCommon2PCallback);
+    if( ret != Success )
+    {
+        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: commandHandle];
+    }
+    
+    return [NSError errorFromSovrinError: ret];
 }
 
 + (NSError *)sendWithConnectionHandle:(SovrinHandle)connectionHandle

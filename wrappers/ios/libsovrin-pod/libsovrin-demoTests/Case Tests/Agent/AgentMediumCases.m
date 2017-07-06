@@ -34,7 +34,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *endpoint = @"127.0.0.1:9712";
+    NSString *endpoint = @"127.0.0.1:9812";
     NSString *xtype = @"default";
     NSString *poolName = @"sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid";
     
@@ -189,7 +189,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. listen
-    NSString *endpoint = @"127.0.0.1:9707";
+    NSString *endpoint = @"127.0.0.1:9807";
     
     XCTestExpectation* messageExpectation = [[ XCTestExpectation alloc] initWithDescription: @"message completion finished"];
     
@@ -275,7 +275,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. listen
-    NSString *endpoint = @"127.0.0.1:9709";
+    NSString *endpoint = @"127.0.0.1:9809";
     
     XCTestExpectation* messageExpectation = [[ XCTestExpectation alloc] initWithDescription: @"message completion finished"];
     

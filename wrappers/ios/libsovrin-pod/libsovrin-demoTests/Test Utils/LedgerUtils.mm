@@ -147,10 +147,6 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    //NSString* hashStr = (hash) ? hash : @"";
-    //NSString* rawStr = (raw) ? raw : @"";
-   // NSString* encStr = (enc) ? enc : @"";
-    
     ret = [SovrinLedger buildAttribRequestWithSubmitterDid:submitterDid
                                                  targetDID:targetDid
                                                       hash:hash

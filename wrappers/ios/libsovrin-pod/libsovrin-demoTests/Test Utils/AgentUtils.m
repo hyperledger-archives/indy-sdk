@@ -249,11 +249,11 @@ __strong void (^onConnectCallback)(SovrinHandle, NSError*, SovrinHandle, NSStrin
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err;
     
-    NSError *ret = [SovrinAgent addIdentityForListenerHandle:listenerHandle
-                                                  poolHandle:poolHandle
-                                                walletHandle:walletHandle
-                                                         did:did
-                                                  completion:^(NSError *error)
+    NSError *ret = [SovrinAgent addIdentity:did
+                          forListenerHandle:listenerHandle
+                                 poolHandle:poolHandle
+                               walletHandle:walletHandle
+                                 completion:^(NSError *error)
                     {
                         err = error;
                         [completionExpectation fulfill];
@@ -268,5 +268,32 @@ __strong void (^onConnectCallback)(SovrinHandle, NSError*, SovrinHandle, NSStrin
     
     return err;
 }
+
+- (NSError *)removeIdentity:(NSString *) did
+             listenerHandle:(SovrinHandle)listenerHandle
+               walletHandle:(SovrinHandle)walletHandle
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err;
+    
+    NSError *ret = [SovrinAgent removeIdentity:did
+                             forListenerHandle:listenerHandle
+                                  walletHandle:walletHandle
+                                    completion:^(NSError *error)
+                    {
+                        err = error;
+                        [completionExpectation fulfill];
+                    }];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    return err;
+}
+
 
 @end
