@@ -1,6 +1,5 @@
 use std::cmp;
-use std::collections::{BinaryHeap};
-use std::error::Error;
+use std::collections::BinaryHeap;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
@@ -14,12 +13,18 @@ use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 use utils::json::JsonEncodable;
 
+enum CatchupStepResult {
+    Finished,
+    Continue,
+    FailedAtNode(usize),
+}
+
 pub struct CatchupHandler {
     pub f: usize,
     pub ledger_status_same: usize,
     pub merkle_tree: MerkleTree,
-    pub new_mt_size: usize,
-    pub new_mt_root: Vec<u8>,
+    pub target_mt_size: usize,
+    pub target_mt_root: Vec<u8>,
     pub new_mt_vote: usize,
     pub nodes: Vec<RemoteNode>,
     pub initiate_cmd_id: i32,
@@ -35,9 +40,9 @@ impl Default for CatchupHandler {
             ledger_status_same: 0,
             merkle_tree: MerkleTree::from_vec(Vec::new()).unwrap(),
             nodes: Vec::new(),
-            new_mt_size: 0,
+            target_mt_size: 0,
             new_mt_vote: 0,
-            new_mt_root: Vec::new(),
+            target_mt_root: Vec::new(),
             pending_catchup: None,
             initiate_cmd_id: 0,
             is_refresh: false,
@@ -77,17 +82,17 @@ impl CatchupHandler {
                 trace!("{:?}", cons_proof);
                 if cons_proof.seqNoStart == self.merkle_tree.count()
                     && cons_proof.seqNoEnd > self.merkle_tree.count() {
-                    self.new_mt_size = cmp::max(cons_proof.seqNoEnd, self.new_mt_size);
+                    self.target_mt_size = cmp::max(cons_proof.seqNoEnd, self.target_mt_size);
                     self.new_mt_vote += 1;
-                    self.new_mt_root = cons_proof.newMerkleRoot.from_base58().unwrap();
-                    debug!("merkle tree expected size now {}", self.new_mt_size);
+                    self.target_mt_root = cons_proof.newMerkleRoot.from_base58().unwrap();
+                    debug!("merkle tree expected size now {}", self.target_mt_size);
                 }
                 if self.new_mt_vote == self.f + 1 {
                     self.start_catchup()?;
                 }
             }
             Message::CatchupRep(catchup) => {
-                if let Some(new_mt) = self.process_catchup_rep(catchup)? {
+                if let Some(new_mt) = self.process_catchup_rep(catchup, src_ind)? {
                     return Ok(Some(new_mt));
                 }
             }
@@ -105,13 +110,14 @@ impl CatchupHandler {
                 CommonError::InvalidState(
                     "CatchUp already started for the pool".to_string())));
         }
-        let node_cnt = self.nodes.len();
-        if self.merkle_tree.count() != node_cnt {
+        if self.merkle_tree.count() != self.nodes.len() {
             return Err(PoolError::CommonError(
                 CommonError::InvalidState(
                     "Merkle tree doesn't equal nodes count".to_string())));
         }
-        let cnt_to_catchup = self.new_mt_size - self.merkle_tree.count();
+
+        let node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+        let cnt_to_catchup = self.target_mt_size - self.merkle_tree.count();
         if cnt_to_catchup <= 0 {
             return Err(PoolError::CommonError(CommonError::InvalidState(
                 "Nothing to CatchUp, but started".to_string())));
@@ -127,9 +133,12 @@ impl CatchupHandler {
             ledgerId: 0,
             seqNoStart: node_cnt + 1,
             seqNoEnd: node_cnt + 1 + portion - 1,
-            catchupTill: self.new_mt_size,
+            catchupTill: self.target_mt_size,
         };
         for node in &self.nodes {
+            if node.is_blacklisted {
+                continue;
+            }
             node.send_msg(&Message::CatchupReq(catchup_req.clone()))?;
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
@@ -138,53 +147,71 @@ impl CatchupHandler {
         Ok(())
     }
 
-    pub fn process_catchup_rep(&mut self, catchup: CatchupRep) -> Result<Option<MerkleTree>, PoolError> {
+    pub fn process_catchup_rep(&mut self, catchup: CatchupRep, node_idx: usize) -> Result<Option<MerkleTree>, PoolError> {
         trace!("append {:?}", catchup);
-        let catchup_finished = {
-            let mut process = self.pending_catchup.as_mut()
-                .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
-            process.pending_reps.push(catchup);
-            while !process.pending_reps.is_empty()
-                && process.pending_reps.peek().unwrap().min_tx() - 1 == process.merkle_tree.count() {
-                let mut first_resp = process.pending_reps.pop().unwrap();
-                while !first_resp.txns.is_empty() {
-                    let key = first_resp.min_tx().to_string();
-                    let new_gen_tx = first_resp.txns
-                        .remove(&key)
-                        .unwrap()
-                        .to_json()
-                        .map_err(|err|
-                            CommonError::InvalidState(
-                                format!("Can't serialize gen-tx json: {}", err.description())))?;
-                    trace!("append to tree {}", new_gen_tx);
-                    process.merkle_tree.append(
-                        new_gen_tx
-                    )?;
-                }
-                assert!(process.merkle_tree
-                    .consistency_proof(&self.new_mt_root, self.new_mt_size,
-                                       &first_resp.consProof.iter().map(|x| x.from_base58().unwrap()).collect())
-                    .unwrap());
+        let catchup_finished = self.catchup_step(catchup, node_idx)?;
+        match catchup_finished {
+            CatchupStepResult::Finished => return Ok(Some(self.finish_catchup()?)),
+            CatchupStepResult::Continue => { /* nothing to do */ }
+            CatchupStepResult::FailedAtNode(failed_node_idx) => {
+                warn!("Fail to continue catch-up by response from node with idx {}. Node will be blacklisted and catchup will be restarted", failed_node_idx);
+                self.nodes[failed_node_idx].is_blacklisted = true;
+                self.pending_catchup = None;
+                self.start_catchup()?
             }
-            trace!("updated mt hash {}, tree {:?}", process.merkle_tree.root_hash().as_slice().to_base58(), process.merkle_tree);
-            if &process.merkle_tree.count() == &self.new_mt_size {
-                if process.merkle_tree.root_hash().ne(&self.new_mt_root) {
-                    return Err(PoolError::CommonError(CommonError::InvalidState(
-                        "CatchUp failed: all transactions added, proofs checked, but root hash differ with target".to_string())));
-                }
-                //TODO check also root hash?
-                true
-            } else {
-                false
-            }
-        };
-        if catchup_finished {
-            return Ok(Some(self.finish_catchup()?));
         }
         Ok(None)
     }
 
-    pub fn finish_catchup(&mut self) -> Result<MerkleTree, PoolError> {
+    fn catchup_step(&mut self, catchup: CatchupRep, node_idx: usize) -> Result<CatchupStepResult, PoolError> {
+        let mut process = self.pending_catchup.as_mut()
+            .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
+        process.pending_reps.push((catchup, node_idx));
+        while !process.pending_reps.is_empty()
+            && process.pending_reps.peek().unwrap().0.min_tx() - 1 == process.merkle_tree.count() {
+            let (mut first_resp, node_idx) = process.pending_reps.pop().unwrap();
+            let mut temp_mt = process.merkle_tree.clone();
+            while !first_resp.txns.is_empty() {
+                let key = first_resp.min_tx().to_string();
+                if let Ok(new_gen_tx) = first_resp.txns.remove(&key).unwrap().to_json() {
+                    trace!("append to tree {}", new_gen_tx);
+                    temp_mt.append(new_gen_tx)?;
+                } else {
+                    return Ok(CatchupStepResult::FailedAtNode(node_idx));
+                }
+            }
+
+            if CatchupHandler::check_cons_proofs(&temp_mt, &first_resp.consProof, &self.target_mt_root, self.target_mt_size).is_err() {
+                return Ok(CatchupStepResult::FailedAtNode(node_idx));
+            }
+
+            process.merkle_tree = temp_mt;
+        }
+        trace!("updated mt hash {}, tree {:?}", process.merkle_tree.root_hash().as_slice().to_base58(), process.merkle_tree);
+        if &process.merkle_tree.count() == &self.target_mt_size {
+            if process.merkle_tree.root_hash().ne(&self.target_mt_root) {
+                return Err(PoolError::CommonError(CommonError::InvalidState(
+                    "CatchUp failed: all transactions added, proofs checked, but root hash differ with target".to_string())));
+            }
+            return Ok(CatchupStepResult::Finished);
+        } else {
+            return Ok(CatchupStepResult::Continue);
+        }
+    }
+
+    fn check_cons_proofs(mt: &MerkleTree, cons_proofs: &Vec<String>, target_mt_root: &Vec<u8>, target_mt_size: usize) -> Result<(), CommonError> {
+        let mut bytes_proofs: Vec<Vec<u8>> = Vec::new();
+        for cons_proof in cons_proofs {
+            let cons_proof: &String = cons_proof;
+            bytes_proofs.push(cons_proof.from_base58().map_err(|err|
+                CommonError::InvalidStructure(
+                    format!("Can't decode node consistency proof: {}", err)))?)
+        }
+        assert!(mt.consistency_proof(target_mt_root, target_mt_size, &bytes_proofs)?);
+        Ok(())
+    }
+
+    fn finish_catchup(&mut self) -> Result<MerkleTree, PoolError> {
         Ok(self.pending_catchup.take().
             ok_or(CommonError::InvalidState("Try to finish non-existing CatchUp".to_string()))?
             .merkle_tree)
