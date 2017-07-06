@@ -12,25 +12,13 @@ try {
 
     // 1. TEST
     stage('Test') {
-        def tests = [:]
-
-        tests['ubuntu-test'] = {
-            node('ubuntu') {
-                stage('Ubuntu Test') {
-                    testUbuntu()
-                }
-            }
-        }
-
-        tests['redhat-test'] = {
+        parallel 'redhat-test': {
             node('ubuntu') {
                 stage('RedHat Test') {
                     testRedHat()
                 }
             }
         }
-
-        parallel(tests)
     }
 
     if (!publishBranch) {
