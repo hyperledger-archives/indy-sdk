@@ -1392,6 +1392,8 @@
     [TestUtils cleanupStorage];
 }
 
+// Warning: Remove if 0 when you need to run this test. It breaks pool after run.
+#if 0
 - (void) testSubmitNodeRequestWorksForNewSteward
 {
     [TestUtils cleanupStorage];
@@ -1501,6 +1503,7 @@
     // TODO: 304 - LedgerInvalidTransaction
     [TestUtils cleanupStorage];
 }
+#endif
 
 // MARK: - Claim def requests
 - (void) testBuildClaimDefRequestWorksForCorrectDataJson
@@ -1754,11 +1757,10 @@
     XCTAssertNotNil(claimDefResponse, @"claimDefResponse is nil!");
     
     // 14. Build get claim def request
-    // TODO: 103 Error, origin is equal to myDid
     NSString *getClaimDefRequest;
     NSString *origin = getSchemaResponse[@"result"][@"data"][@"origin"];
     ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:myDid
-                                                                       xref:getSchemaResponse[@"result"][@"seq_no"]
+                                                                       xref:getSchemaResponse[@"result"][@"seqNo"]
                                                               signatureType:claimDef[@"signature_type"]
                                                                      origin:origin
                                                                  resultJson:&getClaimDefRequest];

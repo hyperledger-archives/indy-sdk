@@ -41,7 +41,8 @@
                                                                     nodes:nil
                                                                poolConfig:nil
                                                            genTxnFileName:nil];
-
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
+    
     // 2. Open pool ledger
     __block SovrinHandle poolHandle = 0;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
