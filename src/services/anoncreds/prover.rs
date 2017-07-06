@@ -1549,17 +1549,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, None, 1, "NcYxiDXkpYi6ov5FcYDi1e".to_string())
+        ClaimInfo::new("1".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, None, 2, "NcYxiDXkpYi6ov5FcYDi1e".to_string())
+        ClaimInfo::new("2".to_string(), attrs, None, 2, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, None, 1, "NcYxiDXkpYi6ov5FcYDi1e".to_string())
+        ClaimInfo::new("3".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1587,7 +1587,7 @@ pub mod mocks {
         let claim_def_data = ClaimDefinitionData::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
             schema_seq_no: 1,
-            issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(),
+            issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             signature_type: SignatureTypes::CL,
             data: claim_def_data
         }
@@ -1597,7 +1597,7 @@ pub mod mocks {
         let claim_def_data = ClaimDefinitionData::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
             schema_seq_no: 2,
-            issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(),
+            issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             signature_type: SignatureTypes::CL,
             data: claim_def_data
         }
@@ -1605,7 +1605,7 @@ pub mod mocks {
 
     pub fn get_revocation_registry() -> RevocationRegistry {
         RevocationRegistry {
-            issuer_did: "NcYxiDXkpYi6ov5FcYDi1e".to_string(),
+            issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             schema_seq_no: 1,
             accumulator: mocks::get_accumulator(),
             acc_pk: verifier::mocks::get_accum_publick_key()

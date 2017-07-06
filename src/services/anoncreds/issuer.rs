@@ -480,7 +480,7 @@ mod tests {
     #[test]
     fn generate_keys_works() {
         let issuer = Issuer::new();
-        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition("NcYxiDXkpYi6ov5FcYDi1e", mocks::get_gvt_schema(), None, false).unwrap();
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(mocks::ISSUER_DID, mocks::get_gvt_schema(), None, false).unwrap();
         assert_eq!(claim_definition, mocks::get_claim_definition());
         assert_eq!(claim_definition_private, mocks::get_claim_definition_private());
     }
@@ -498,7 +498,7 @@ mod tests {
         let signature_type = None;
         let create_non_revoc = false;
 
-        let result = issuer.generate_claim_definition("NcYxiDXkpYi6ov5FcYDi1e", schema, signature_type, create_non_revoc);
+        let result = issuer.generate_claim_definition(mocks::ISSUER_DID, schema, signature_type, create_non_revoc);
         assert!(result.is_ok());
 
         let (claim_definition, claim_definition_private) = result.unwrap();
@@ -515,7 +515,7 @@ mod tests {
         let signature_type = None;
         let create_non_revoc = true;
 
-        let result = issuer.generate_claim_definition("NcYxiDXkpYi6ov5FcYDi1e", schema, signature_type, create_non_revoc);
+        let result = issuer.generate_claim_definition(mocks::ISSUER_DID, schema, signature_type, create_non_revoc);
         assert!(result.is_ok());
 
         let (claim_definition, claim_definition_private) = result.unwrap();
@@ -533,7 +533,7 @@ mod tests {
         let signature_type = None;
         let create_non_revoc = false;
 
-        let result = issuer.generate_claim_definition("NcYxiDXkpYi6ov5FcYDi1e", schema, signature_type, create_non_revoc);
+        let result = issuer.generate_claim_definition(mocks::ISSUER_DID, schema, signature_type, create_non_revoc);
         assert!(result.is_err());
     }
 
@@ -571,6 +571,8 @@ pub mod mocks {
     use super::*;
     use services::anoncreds::types::SchemaData;
 
+    pub const ISSUER_DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
+
     pub fn get_claim_definition() -> ClaimDefinition {
         let mut r: HashMap<String, BigNumber> = HashMap::new();
         r.insert("sex".to_string(), BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap());
@@ -586,7 +588,7 @@ pub mod mocks {
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap()
         );
         let claim_def_data = ClaimDefinitionData::new(public_key, None);
-        ClaimDefinition::new(1, "NcYxiDXkpYi6ov5FcYDi1e".to_string(), SignatureTypes::CL, claim_def_data)
+        ClaimDefinition::new(1, ISSUER_DID.to_string(), SignatureTypes::CL, claim_def_data)
     }
 
     pub fn get_claim_definition_private() -> ClaimDefinitionPrivate {
