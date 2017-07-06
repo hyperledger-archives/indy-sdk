@@ -64,13 +64,10 @@ lazy_static! {
 pub struct InmemWallet {}
 
 impl InmemWallet {
-    #[allow(unused_variables)]
     pub extern "C" fn create(name: *const c_char,
-                             config: *const c_char,
-                             credentials: *const c_char) -> ErrorCode {
+                             _: *const c_char,
+                             _: *const c_char) -> ErrorCode {
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
-        check_useful_opt_c_str!(config, ErrorCode::CommonInvalidStructure);
-        check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidStructure);
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
@@ -85,11 +82,10 @@ impl InmemWallet {
     pub extern "C" fn open(name: *const c_char,
                            _: *const c_char,
                            runtime_config: *const c_char,
-                           credentials: *const c_char,
+                           _: *const c_char,
                            handle: *mut i32) -> ErrorCode {
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
         check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidStructure);
-        check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidStructure);
 
         let runtime_config = match runtime_config {
             Some(config) => InmemWalletRuntimeConfig::from_json(config.as_str()).unwrap(), // FIXME: parse error!!!
@@ -258,10 +254,9 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    #[allow(unused_variables)]
     pub extern "C" fn delete(name: *const c_char,
-                             config: *const c_char,
-                             credentials: *const c_char) -> ErrorCode {
+                             _: *const c_char,
+                             _: *const c_char) -> ErrorCode {
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
@@ -274,8 +269,7 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    #[allow(unused_variables)]
-    pub extern "C" fn free(xhandle: i32,
+    pub extern "C" fn free(_: i32,
                            value: *const c_char) -> ErrorCode {
         unsafe { CString::from_raw(value as *mut c_char); }
         ErrorCode::Success
