@@ -70,13 +70,13 @@ impl PluggedWallet {
         PluggedWallet {
             name: name.to_string(),
             pool_name: pool_name.to_string(),
-            handle,
-            set_handler,
-            get_handler,
-            list_handler,
-            get_not_expired_handler,
-            close_handler,
-            free_handler
+            handle: handle,
+            set_handler: set_handler,
+            get_handler: get_handler,
+            list_handler: list_handler,
+            get_not_expired_handler: get_not_expired_handler,
+            close_handler: close_handler,
+            free_handler: free_handler
         }
     }
 }
@@ -244,15 +244,15 @@ impl PluggedWalletType {
                free_handler: extern fn(xhandle: i32,
                                        value: *const c_char) -> ErrorCode) -> PluggedWalletType {
         PluggedWalletType {
-            create_handler,
-            open_handler,
-            set_handler,
-            get_handler,
-            get_not_expired_handler,
-            list_handler,
-            close_handler,
-            delete_handler,
-            free_handler
+            create_handler: create_handler,
+            open_handler: open_handler,
+            set_handler: set_handler,
+            get_handler: get_handler,
+            get_not_expired_handler: get_not_expired_handler,
+            list_handler: list_handler,
+            close_handler: close_handler,
+            delete_handler: delete_handler,
+            free_handler: free_handler
         }
     }
 }

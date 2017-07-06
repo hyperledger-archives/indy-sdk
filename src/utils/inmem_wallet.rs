@@ -82,14 +82,12 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    #[allow(unused_variables)]
     pub extern "C" fn open(name: *const c_char,
-                           config: *const c_char,
+                           _: *const c_char,
                            runtime_config: *const c_char,
                            credentials: *const c_char,
                            handle: *mut i32) -> ErrorCode {
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
-        check_useful_opt_c_str!(config, ErrorCode::CommonInvalidStructure);
         check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidStructure);
         check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidStructure);
 
@@ -138,8 +136,8 @@ impl InmemWallet {
         let wallet = wallets.get_mut(&wallet_context.name).unwrap();
 
         wallet.insert(key.clone(), InmemWalletRecord {
-            key,
-            value,
+            key: key,
+            value: value,
             time_created: time::get_time()
         });
         ErrorCode::Success
