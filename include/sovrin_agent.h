@@ -170,7 +170,6 @@ extern sovrin_error_t sovrin_agent_add_identity(sovrin_handle_t command_handle,
 
 extern sovrin_error_t sovrin_agent_remove_identity(sovrin_handle_t command_handle,
                                                    sovrin_handle_t listener_handle,
-                                                   sovrin_handle_t pool_handle,
                                                    sovrin_handle_t wallet_handle,
                                                    const char *    did,
 
