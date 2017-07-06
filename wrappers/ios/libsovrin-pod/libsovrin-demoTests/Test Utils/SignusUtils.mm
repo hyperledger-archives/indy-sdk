@@ -175,11 +175,11 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
+    // WARNING: PublicKey is removed from Rust API, hovewer it is not a final decision.
     NSString *theirIdentityJson = [NSString stringWithFormat:@"{"
                                    "\"did\":\"%@\","
-                                   "\"pk\":\"%@\","
-                                    "\"verkey\":\"%@\","
-                                   "\"endpoint\":\"\%@\"}", theirDid, theirPk, theirVerkey, endpoint];
+                                   "\"verkey\":\"%@\","
+                                   "\"endpoint\":\"\%@\"}", theirDid, theirVerkey, endpoint];
     
     NSError *ret = [SovrinSignus storeTheirDidWithWalletHandle:walletHandle
                                                   identityJSON:theirIdentityJson
