@@ -243,7 +243,7 @@ mod high_cases {
         fn sovrin_delete_pool_ledger_config_works_for_opened() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_remove_pool_ledger_config_works";
+            let pool_name = "sovrin_remove_pool_ledger_config_works_for_opened";
             PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             assert_eq!(PoolUtils::delete(pool_name).unwrap_err(), ErrorCode::CommonInvalidState);

@@ -12,7 +12,7 @@
 #import "WalletUtils.h"
 #import "AnoncredsUtils.h"
 #import "NSDictionary+JSON.h"
-#import "NSString+Validation.h"
+#import "NSString+Validation.h"
 #import "NSArray+JSON.h"
 
 @interface AnoncredsMediumCases : XCTestCase
