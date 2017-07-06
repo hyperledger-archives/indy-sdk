@@ -16,6 +16,7 @@ try {
             node('ubuntu') {
                 stage('Ubuntu Test') {
                     testUbuntu()
+                    testRedHat()
                 }
             }
         }
@@ -51,44 +52,38 @@ try {
     }
 }
 
-def testUbuntu() {
-    def poolInst
-    def network_name = "pool_network"
-    try {
-        echo 'Ubuntu Test: Checkout csm'
-        checkout scm
+def createPool() {
+    echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
+    sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
-        echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
-        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+    echo 'Ubuntu Test: Build docker image for nodes pool'
+    def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+    echo 'Ubuntu Test: Run nodes pool'
+    poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+}
 
-        echo 'Ubuntu Test: Build docker image for nodes pool'
-        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
-        echo 'Ubuntu Test: Run nodes pool'
-        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+def runTests(testEnv){
+    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+        echo 'Ubuntu Test: Test'
 
-        echo 'Ubuntu Test: Build docker image'
-        def testEnv = dockerHelpers.build(name)
+        sh 'cargo update'
 
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo 'Ubuntu Test: Test'
-
-            sh 'cargo update'
-
-            try {
-                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
-                /* TODO FIXME restore after xunit will be fixed
-                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
-                 */
-            }
-            finally {
-                /* TODO FIXME restore after xunit will be fixed
-                junit 'test-results.xml'
-                */
-            }
+        try {
+            sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+            /* TODO FIXME restore after xunit will be fixed
+            sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+             */
+        }
+        finally {
+            /* TODO FIXME restore after xunit will be fixed
+            junit 'test-results.xml'
+            */
         }
     }
-    finally {
-        echo 'Ubuntu Test: Cleanup'
+}
+
+def stopPool(network_name, env){
+    echo '${env} Test: Cleanup'
         try {
             sh "docker network inspect ${network_name}"
         } catch (ignore) {
@@ -99,15 +94,52 @@ def testUbuntu() {
                 poolInst.stop()
             }
         } catch (err) {
-            echo "Ubuntu Tests: error while stop pool ${err}"
+            echo "${env} Tests: error while stop pool ${err}"
         }
         try {
-            echo "Ubuntu Test: remove pool network ${network_name}"
+            echo "{env} Test: remove pool network ${network_name}"
             sh "docker network rm ${network_name}"
         } catch (err) {
-            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
+            echo "{env} Test: error while delete ${network_name} - ${err}"
         }
-        step([$class: 'WsCleanup'])
+    step([$class: 'WsCleanup'])
+}
+
+def testUbuntu() {
+    def poolInst
+    def network_name = "pool_network"
+    try {
+        echo 'Ubuntu Test: Checkout csm'
+        checkout scm
+
+        createPool()
+
+        echo 'Ubuntu Test: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/ubuntu.dockerfile ci')
+
+        runTests(testEnv)
+    }
+    finally {
+        stopPool(network_name, 'Ubuntu')
+    }
+}
+
+def testRedHat() {
+    def poolInst
+    def network_name = "pool_network"
+    try {
+        echo 'RedHat Test: Checkout csm'
+            checkout scm
+
+            createPool()
+
+            echo 'RedHat Test: Build docker image'
+            def testEnv = dockerHelpers.build(name, 'ci/amazon.dockerfile ci')
+
+            runTests(testEnv)
+    }
+    finally {
+        stopPool(network_name, 'RedHat')
     }
 }
 
