@@ -24,15 +24,6 @@ RUN cd /tmp && \
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-RUN cd /tmp && \
-    wget https://github.com/zeromq/libzmq/releases/download/v4.2.2/zeromq-4.2.2.tar.gz && \
-    tar xfz zeromq-4.2.2.tar.gz && rm zeromq-4.2.2.tar.gz && \
-    cd /tmp/zeromq-4.2.2 && \
-    ./configure && \
-    make && \
-    make install && \
-    rm -rf /tmp/zeromq-4.2.2
-
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 

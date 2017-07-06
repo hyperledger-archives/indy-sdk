@@ -16,6 +16,10 @@ try {
             node('ubuntu') {
                 stage('Ubuntu Test') {
                     testUbuntu()
+                }
+            }
+            node('ubuntu') {
+                stage('RedHat Test') {
                     testRedHat()
                 }
             }
