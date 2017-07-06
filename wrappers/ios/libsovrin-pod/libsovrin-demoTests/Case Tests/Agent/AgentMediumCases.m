@@ -189,7 +189,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. listen
-    NSString *endpoint = @"127.0.0.1:9707";
+    NSString *endpoint = @"127.0.0.1:9807";
     
     XCTestExpectation* messageExpectation = [[ XCTestExpectation alloc] initWithDescription: @"message completion finished"];
     

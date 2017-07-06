@@ -61,7 +61,7 @@
                                                                     outMyPk:&pubKey];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed ");
     
-    // WARNING: You may need to change port to 9702, because 9701 is already used in pool. Here and in other similar places too.
+    // WARNING: You may need to change port to 9802, because 9801 is already used in pool. Here and in other similar places too.
     // 3. listen
     NSString *endpoint = @"127.0.0.1:9801";
     
@@ -172,7 +172,7 @@
     XCTAssertTrue([listenerNymResponse isValid], @"invalid listenerNymResponse: %@",listenerNymResponse);
     
     // 8. Sign and submit listener attribute request
-    NSString *endpoint = @"127.0.0.1:9710";
+    NSString *endpoint = @"127.0.0.1:9810";
     NSString *rawJson = [NSString stringWithFormat:@"{\"endpoint\":{\"ha\":\"%@\", \"verkey\":\"%@\"}}", endpoint, listenerPubKey];
     NSString *listenerAttribRequest;
     ret = [[LedgerUtils sharedInstance] buildAttribRequestWithSubmitterDid:listenerDid
@@ -310,7 +310,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. Store their did from parts
-    NSString *endpoint = @"127.0.0.1:9703";
+    NSString *endpoint = @"127.0.0.1:9803";
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
                                                                        theirPk:pubKey
@@ -745,7 +745,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. store their did from parts
-    NSString *endpoint = @"127.0.0.1:9706";
+    NSString *endpoint = @"127.0.0.1:9806";
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
                                                                        theirPk:pubKey
@@ -829,7 +829,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. store their did from parts
-    NSString *endpoint = @"127.0.0.1:9708";
+    NSString *endpoint = @"127.0.0.1:9808";
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
                                                                        theirPk:pubKey
