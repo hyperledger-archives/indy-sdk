@@ -365,4 +365,32 @@
     return err;
 }
 
+- (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSNumber *)data
+                                     resultJson:(NSString**)resultJson
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+    NSError *ret;
+    
+    ret = [SovrinLedger buildGetTxnRequestWithSubmitterDid:submitterDid
+                                                      data:data
+                                                completion:^(NSError* error, NSString* request)
+           {
+               err = error;
+               result = request;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson) { *resultJson = result;}
+    return err;
+}
 @end

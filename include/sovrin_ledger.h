@@ -341,7 +341,7 @@ extern "C" {
 
     extern sovrin_error_t sovrin_build_get_txn_request(sovrin_handle_t command_handle,
                                                         const char *    submitter_did,
-                                                        i32    data,
+                                                        sovrin_i32_t    data,
 
                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
                                                                              sovrin_error_t  err,
