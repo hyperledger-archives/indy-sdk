@@ -392,6 +392,10 @@ impl AnoncredsUtils {
         Ok(valid)
     }
 
+    pub fn get_claim_def_id(issuer_did: &str, schema_seq_no: i32) -> String {
+        issuer_did.to_string() + ":" + &schema_seq_no.to_string()
+    }
+
     pub fn get_gvt_schema_json(schema_seq_no: i32) -> String {
         format!(r#"{{
                     "seqNo":{},

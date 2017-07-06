@@ -19,6 +19,7 @@ use services::anoncreds::types::{
     RevocationRegistryPrivate,
     Schema
 };
+use services::anoncreds::helpers::get_claim_def_id;
 use std::rc::Rc;
 use std::collections::HashMap;
 use utils::json::{JsonDecodable, JsonEncodable};
@@ -115,10 +116,8 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
 
-        let claim_def_id = issuer_did.to_string() + ":" + &schema.seq_no.to_string();
-
         let (claim_definition, claim_definition_private) =
-            self.anoncreds_service.issuer.generate_claim_definition(issuer_did, schema, signature_type, create_non_revoc)?;
+            self.anoncreds_service.issuer.generate_claim_definition(issuer_did, schema.clone(), signature_type, create_non_revoc)?;
 
         let claim_definition_json = ClaimDefinition::to_json(&claim_definition)
             .map_err(map_err_trace!())
@@ -128,8 +127,8 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition private json: {}", err.to_string())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &claim_def_id), &claim_definition_json)?;
-        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &claim_def_id), &claim_definition_private_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &get_claim_def_id(issuer_did, schema.seq_no)), &claim_definition_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &get_claim_def_id(issuer_did, schema.seq_no)), &claim_definition_private_json)?;
 
         Ok(claim_definition_json)
     }
@@ -150,8 +149,7 @@ impl IssuerCommandExecutor {
                                              schema_seq_no: i32,
                                              max_claim_num: i32) -> Result<(String, String), SovrinError> {
 
-        let claim_def_id = issuer_did.to_string() + ":" + &schema_seq_no.to_string();
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_id))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_claim_def_id(issuer_did, schema_seq_no)))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition json: {}", err.to_string())))?;
@@ -205,10 +203,8 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_req_json: {}", err.to_string())))?;
 
-        let claim_def_id = claim_req_json.issuer_did.clone() + ":" + &claim_req_json.schema_seq_no.to_string();
-
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &claim_def_id))?;
-        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &claim_def_id))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_claim_def_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
+        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &get_claim_def_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
 
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
