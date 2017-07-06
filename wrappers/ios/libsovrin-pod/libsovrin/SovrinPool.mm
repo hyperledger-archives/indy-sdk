@@ -6,9 +6,9 @@
 
 @implementation SovrinPool
 
-+ (NSError *)createPoolLedgerConfigWithName:(NSString *)name
-                                 poolConfig:(NSString *)config
-                                 completion:(void (^)(NSError *error)) handler
++ (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)name
+                                     poolConfig:(NSString *)config
+                                     completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -48,15 +48,15 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError *)refreshPoolWithHandle:(SovrinHandle)SovrinHandle
-                        completion:(void (^)(NSError *error)) handler
++ (NSError *)refreshPoolLedgerWithHandle:(SovrinHandle)poolHandle
+                              completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
     sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = sovrin_refresh_pool_ledger(handle,
-                                     (sovrin_handle_t) SovrinHandle,
+                                     (sovrin_handle_t) poolHandle,
                                      SovrinWrapperCommon2PCallback
                                     );
     if( ret != Success )
@@ -67,8 +67,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError *)closePoolWithHandle:(SovrinHandle)SovrinHandle
-                      completion:(void (^)(NSError *error)) handler
++ (NSError *)closePoolLedgerWithHandle:(SovrinHandle)SovrinHandle
+                            completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     
@@ -86,8 +86,8 @@
     return [NSError errorFromSovrinError: ret];
 }
 
-+ (NSError *)deletePoolWithName:(NSString *)name
-                     completion:(void (^)(NSError *error)) handler
++ (NSError *)deletePoolLedgerConfigWithName:(NSString *)name
+                                 completion:(void (^)(NSError *error)) handler
 {
     sovrin_error_t ret;
     

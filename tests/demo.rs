@@ -9,7 +9,6 @@ extern crate lazy_static;
 extern crate log;
 
 #[macro_use]
-#[path = "utils/mod.rs"]
 mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
@@ -413,7 +412,7 @@ fn ledger_demo_works() {
     let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
 
     // 1. Create ledger config from genesis txn file
-    PoolUtils::create_genesis_txn_file(pool_name, None);
+    PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
     let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
     let err = sovrin_create_pool_ledger_config(create_command_handle,
                                                c_pool_name.as_ptr(),
@@ -572,6 +571,7 @@ fn ledger_demo_works() {
             dest: my_did.clone(),
         },
     };
+
     let request = serde_json::to_string(&get_nym_txn).unwrap();
     let req = CString::new(request).unwrap();
     let err = sovrin_submit_request(get_nym_command_handle,
