@@ -878,4 +878,21 @@
     [TestUtils cleanupStorage];
 }
 
+
+- (void)testSequence
+{
+    [self testAgentAddIdentityWorks];
+    [self testAgentAddIdentityWorksForMultipleKeys];
+    [self testAgentCloseConnectionWorksForIncomingConnection];
+    [self testAgentCloseConnectionWorksForOngoing];
+    [self testAgentCloseListenerWorks];
+    [self testAgentConnectWorksForAllDataInWalletPresent];
+    [self testAgentConnectWorksForRemoteData];
+    [self testAgentListenWorksForAllDataInWalletPresent];
+    [self testAgentListerWorksWithSovrinAgentConnect];
+    [self testAgentRemoveIdentityWorks];
+    [self testAgentSendWorksForAllDataInWalletPresent];
+    
+}
+
 @end

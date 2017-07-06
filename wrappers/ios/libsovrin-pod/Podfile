@@ -1,5 +1,5 @@
 source 'https://github.com/CocoaPods/Specs.git'
-source 'https://github.com/jovfer/indy-sdk.git'
+source 'https://github.com/hyperledger/indy-sdk.git'
 platform :ios, '10.2'
 
 workspace 'libsovrin.xcworkspace'
@@ -11,7 +11,7 @@ def appPods
     pod 'libzmq-pw',"4.2.2"
     pod 'OpenSSL'
     pod 'milagro', "3.0.1"
-    pod 'libsovrin-core', "0.0.3"
+    pod 'libsovrin-core', "0.1.1"
 end
 
 target 'libsovrin-demo' do

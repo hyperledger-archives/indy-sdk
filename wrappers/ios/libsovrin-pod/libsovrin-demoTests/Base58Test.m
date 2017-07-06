@@ -16,6 +16,7 @@
 #import "NSDictionary+JSON.h"
 #import <CoreBitcoin+Categories.h>
 
+
 @interface Base58Test : XCTestCase
 
 @end
