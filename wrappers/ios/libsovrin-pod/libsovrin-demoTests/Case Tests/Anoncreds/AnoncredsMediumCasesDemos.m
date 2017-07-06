@@ -909,7 +909,9 @@
     
     NSString *proofReqJson =[ NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
-                             " \"requested_attrs\":"\
+                             " \"name\":\"proof_req_1\","
+                             " \"version\":\"0.1\","
+                             " \"verifiableAttributes\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
                              "                          \"schema_seq_no\":%ld,\"name\":\"name\""\
