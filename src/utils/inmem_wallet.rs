@@ -64,6 +64,7 @@ lazy_static! {
 pub struct InmemWallet {}
 
 impl InmemWallet {
+    #[allow(unused_variables)]
     pub extern "C" fn create(name: *const c_char,
                              config: *const c_char,
                              credentials: *const c_char) -> ErrorCode {
@@ -81,6 +82,7 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
+    #[allow(unused_variables)]
     pub extern "C" fn open(name: *const c_char,
                            config: *const c_char,
                            runtime_config: *const c_char,
@@ -258,6 +260,7 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
+    #[allow(unused_variables)]
     pub extern "C" fn delete(name: *const c_char,
                              config: *const c_char,
                              credentials: *const c_char) -> ErrorCode {
@@ -273,6 +276,7 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
+    #[allow(unused_variables)]
     pub extern "C" fn free(xhandle: i32,
                            value: *const c_char) -> ErrorCode {
         unsafe { CString::from_raw(value as *mut c_char); }

@@ -1,5 +1,8 @@
 extern crate sovrin;
 
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use sovrin::api as api;
+
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]

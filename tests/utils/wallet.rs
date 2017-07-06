@@ -1,5 +1,6 @@
 use sovrin::api::ErrorCode;
 use sovrin::api::wallet::{
+    sovrin_register_wallet_type,
     sovrin_create_wallet,
     sovrin_open_wallet,
     sovrin_wallet_set_seq_no_for_value,
@@ -8,6 +9,7 @@ use sovrin::api::wallet::{
 };
 
 use utils::callback::CallbackUtils;
+use utils::inmem_wallet::InmemWallet;
 use utils::timeout::TimeoutUtils;
 
 use std::ffi::CString;
@@ -18,6 +20,45 @@ pub struct WalletUtils {}
 
 
 impl WalletUtils {
+    pub fn register_wallet_type(xtype: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err| {
+            sender.send(err).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_register_wallet_type_cb(cb);
+
+        let xtype = CString::new(xtype).unwrap();
+
+        let err = sovrin_register_wallet_type(
+            command_handle,
+            xtype.as_ptr(),
+            Some(InmemWallet::create),
+            Some(InmemWallet::open),
+            Some(InmemWallet::set),
+            Some(InmemWallet::get),
+            Some(InmemWallet::get_not_expied),
+            Some(InmemWallet::list),
+            Some(InmemWallet::close),
+            Some(InmemWallet::delete),
+            Some(InmemWallet::free),
+            cb
+        );
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(())
+    }
+
     pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 

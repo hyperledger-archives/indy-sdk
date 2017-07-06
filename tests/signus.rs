@@ -1,5 +1,8 @@
 extern crate sovrin;
 
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use sovrin::api as api;
+
 extern crate rust_base58;
 #[macro_use]
 extern crate serde_derive;
