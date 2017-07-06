@@ -2,4 +2,6 @@ cargo-registry
 target
 Cargo.lock
 .idea
+.DS_Store
+Podfile.lock
 

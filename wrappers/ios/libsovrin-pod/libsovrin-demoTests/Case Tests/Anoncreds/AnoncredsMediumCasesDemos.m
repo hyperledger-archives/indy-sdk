@@ -12,7 +12,7 @@
 #import "WalletUtils.h"
 #import "AnoncredsUtils.h"
 #import "NSDictionary+JSON.h"
-#import "NSString+Validation.h"
+#import "NSString+Validation.h"
 #import "NSArray+JSON.h"
 
 @interface AnoncredsMediumCasesDemos : XCTestCase
@@ -72,7 +72,7 @@
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
                                                                             seqNo:claimDefSeqNo
                                                                       schemaSeqNo:schemaSeqNo];
-    NSString *claimRequest;
+    NSString *claimRequest;
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
                                                                                  proverDid:proverDid
                                                                             claimOfferJson:claimOfferJson
