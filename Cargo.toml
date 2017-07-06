@@ -1,6 +1,6 @@
 [package]
 name = "sovrin-client"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -51,7 +51,7 @@ serde_json = "1.0"
 serde_derive = "1.0"
 sodiumoxide = {version = "0.0.14", optional = true}
 time = "0.1.36"
-zmq = "0.8.1"
+zmq-pw = "0.9.5"
 lazy_static = "0.2"
 byteorder = "1.0.0"
 [dependencies.uuid]

@@ -75,9 +75,9 @@ extern void SovrinWrapperCommonAgentListenerMessageCallback(sovrin_handle_t xcon
 - (sovrin_handle_t) createCommandHandleFor:(void *)callback
                       withConnectionHandle:(sovrin_handle_t)connectionHandle;
 
-- (sovrin_handle_t) createCommandHandleFor:(void *)callback
-                    withConnectionCallback:(void *)connectionCallback
-                        andMessageCallback:(void *)messageCallback;
+- (sovrin_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
+                                   withConnectionCallback:(void *)connectionCallback
+                                       andMessageCallback:(void *)messageCallback;
 
 - (void)            deleteCommandHandleFor:(sovrin_handle_t) handle;
 - (void)            forgetListenHandle:(sovrin_handle_t) listenHandle;

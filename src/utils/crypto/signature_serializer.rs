@@ -94,4 +94,14 @@ mod tests {
 
         assert_eq!(serialize_signature(msg).unwrap(), result)
     }
+
+    #[test]
+    #[ignore] /* FIXME implement ignoring signature field as in python code */
+    fn signature_serialize_works_with_null() {
+        let data = r#"{"signature": null}"#;
+        let v: serde_json::Value = serde_json::from_str(data).unwrap();
+        let serialized = serialize_signature(v).unwrap();
+        println!("{:?}", serialized);
+        assert_eq!(serialized, "");
+    }
 }
