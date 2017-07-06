@@ -879,20 +879,19 @@
 }
 
 
-- (void)testSequence
+- (void)testAllAgentHighCasesTests
 {
+    [self testAgentListerWorksWithSovrinAgentConnect];
+    [self testAgentConnectWorksForRemoteData];
+    [self testAgentConnectWorksForAllDataInWalletPresent];
+    [self testAgentListenWorksForAllDataInWalletPresent];
     [self testAgentAddIdentityWorks];
     [self testAgentAddIdentityWorksForMultipleKeys];
-    [self testAgentCloseConnectionWorksForIncomingConnection];
-    [self testAgentCloseConnectionWorksForOngoing];
-    [self testAgentCloseListenerWorks];
-    [self testAgentConnectWorksForAllDataInWalletPresent];
-    [self testAgentConnectWorksForRemoteData];
-    [self testAgentListenWorksForAllDataInWalletPresent];
-    [self testAgentListerWorksWithSovrinAgentConnect];
     [self testAgentRemoveIdentityWorks];
     [self testAgentSendWorksForAllDataInWalletPresent];
-    
+    [self testAgentCloseConnectionWorksForOngoing];
+    [self testAgentCloseConnectionWorksForIncomingConnection];
+    [self testAgentCloseListenerWorks];
 }
 
 @end

@@ -1500,7 +1500,6 @@
                                                            outResponseJson:&nodeResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
-    // TODO: 304 - LedgerInvalidTransaction
     [TestUtils cleanupStorage];
 }
 #endif

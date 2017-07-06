@@ -10,7 +10,7 @@ def appPods
     pod 'libsodium',"1.0.12"
     pod 'libzmq-pw',"4.2.2"
     pod 'OpenSSL'
-    pod 'milagro', "3.0.1"
+    pod 'milagro', "3.0.0"
     pod 'libsovrin-core', "0.1.1"
 end
 
