@@ -1411,7 +1411,6 @@
                                                    schemasJson:schemasJson
                                                  claimDefsJson:claimDefsJson
                                                  revocRegsJson:revocRegsJsons outValid:&isValid];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof failed");
     XCTAssertFalse(isValid, @"isValid is true! Should be false.");
     
      
