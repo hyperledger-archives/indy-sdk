@@ -883,7 +883,6 @@
     [TestUtils cleanupStorage];
 }
 
-
 - (void)testAllAgentHighCasesTests
 {
     [self testAgentListerWorksWithSovrinAgentConnect];

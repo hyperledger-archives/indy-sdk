@@ -207,13 +207,24 @@
 
 // MARK: - Close wallet
 
+// WARNING: createAndOpenWallet method is a workaround to ensure that we try to close non existing walletHandle. In Rust test only closeWalletWithHandle:1 is used
 - (void)testCloseWalletWorksForInvalidHandle
 {
     [TestUtils cleanupStorage];
-    SovrinHandle walletHandle = 1;
     
-    NSError *ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"WalletUtils:closeWalletWithHandle() returned wrong code");
+    SovrinHandle walletHandle = 0;
+    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"poolName"
+                                                                      walletName:@"walletName"
+                                                                           xtype:@"default"
+                                                                          handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+    
+    [TestUtils cleanupStorage];
+
+    //SovrinHandle walletHandle = 1;
+    
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle + 1];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"WalletUtils:closeWalletWithHandle() returned wrong code for walletHandle: %d", walletHandle);
     
     [TestUtils cleanupStorage];
 }

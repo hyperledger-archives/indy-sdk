@@ -45,6 +45,9 @@
                   Identifier = "AgentHignCases/testSequence">
                </Test>
                <Test
+                  Identifier = "LedgerHignCases/testClaimDefRequestsWorks">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test
@@ -92,7 +95,7 @@
          <EnvironmentVariable
             key = "RUST_LOG"
             value = "trace"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
