@@ -6,17 +6,15 @@ RUN \
     yum clean all \
     && yum upgrade -y \
     && yum groupinstall -y "Development Tools" \
+    && yum install -y epel-release \
+    && yum-config-manager --enable epel \
     && yum install -y \
            wget \
            cmake \
            pkgconfig \
            openssl-devel \
-           sqlite-devel
-
-RUN \
-    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
-    && rpm -Uvh epel-release-latest-7*.rpm \
-    && yum install -y libsodium-devel
+           sqlite-devel \
+           libsodium-devel
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
