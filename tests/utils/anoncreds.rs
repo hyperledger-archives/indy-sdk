@@ -506,7 +506,7 @@ impl AnoncredsUtils {
                 TestUtils::cleanup_storage();
 
                 //1. Create and Open wallet
-                WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", "common_wallet", "default").unwrap();
+                WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
                 //2. Create GVT ClaimDefinition
                 let schema = AnoncredsUtils::get_gvt_schema_json(COMMON_SCHEMA_SEQ_NO);

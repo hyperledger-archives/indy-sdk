@@ -800,8 +800,8 @@ mod medium_cases {
         fn prover_get_claim_offers_works_for_different_wallets() {
             AnoncredsUtils::init_common_wallet();
 
-            let wallet_handle_1 = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
-            let wallet_handle_2 = WalletUtils::create_and_open_wallet("pool1", "wallet2", "default").unwrap();
+            let wallet_handle_1 = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+            let wallet_handle_2 = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 1, 1);
             let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2, 2);
@@ -1280,7 +1280,7 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Create wallet, get wallet handle
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         //2. Issuer create claim definition
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -1366,16 +1366,11 @@ mod demos {
     fn anoncreds_works_for_single_issuer_single_prover() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
-        let issuer_wallet_name = "issuer_wallet";
-        let prover_wallet_name = "prover_wallet";
-        let xtype = "default";
-
         //1. Create Issuer wallet, get wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, issuer_wallet_name, xtype).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         //2. Create Prover wallet, get wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         //3. Issuer create claim definition
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -1486,20 +1481,14 @@ mod demos {
         let issuer2_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
         let prover_did = "BzfFCYk";
 
-        let pool_name = "pool1";
-        let issuer1_wallet_name = "issuer1_wallet";
-        let issuer2_wallet_name = "issuer2_wallet";
-        let prover_wallet_name = "prover_wallet";
-        let xtype = "default";
-
         //1. Issuer1 create wallet, get wallet handles
-        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, issuer1_wallet_name, xtype).unwrap();
+        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         //2. Issuer2 create wallet, get wallet handles
-        let issuer_xyz_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, issuer2_wallet_name, xtype).unwrap();
+        let issuer_xyz_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         //3. Prover create wallet, get wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         let mut schemas: HashMap<i32, String> = HashMap::new();
         let mut claim_defs: HashMap<i32, String> = HashMap::new();
@@ -1686,16 +1675,11 @@ mod demos {
         let issuer_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
         let prover_did = "BzfFCYk";
 
-        let pool_name = "pool1";
-        let issuer_wallet_name = "issuer_wallet";
-        let prover_wallet_name = "prover_wallet";
-        let xtype = "default";
-
         //1. Issuer create wallet, get wallet handles
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, issuer_wallet_name, xtype).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         //2. Prover create wallet, get wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
         let mut schemas: HashMap<i32, String> = HashMap::new();
         let mut claim_defs: HashMap<i32, String> = HashMap::new();

@@ -23,6 +23,19 @@ use sovrin::api::ErrorCode;
 mod high_cases {
     use super::*;
 
+    mod register_wallet_type {
+        use super::*;
+
+        #[test]
+        fn sovrin_register_wallet_type_works() {
+            TestUtils::cleanup_storage();
+
+            WalletUtils::register_wallet_type("inmem").unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod create_wallet {
         use super::*;
 
@@ -156,11 +169,7 @@ mod high_cases {
         fn sovrin_wallet_set_seqno_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_wallet_set_seqno_works";
-            let wallet_name = "wallet1";
-            let xtype = "default";
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works", None).unwrap();
 
             let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
@@ -258,7 +267,7 @@ mod medium_cases {
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
 
             WalletUtils::open_wallet(wallet_name, None).unwrap();
-            let res =  WalletUtils::open_wallet(wallet_name, None);
+            let res = WalletUtils::open_wallet(wallet_name, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -313,7 +322,7 @@ mod medium_cases {
         fn sovrin_close_wallet_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_close_wallet_works_for_closed_wallet", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_close_wallet_works_for_closed_wallet", None).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             let res = WalletUtils::close_wallet(wallet_handle);
@@ -330,7 +339,7 @@ mod medium_cases {
         fn sovrin_wallet_set_seqno_works_for_not_exists_key() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_not_exists_key", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_not_exists_key", None).unwrap();
 
             //TODO may be we must return WalletNotFound in case if key not exists in wallet
             WalletUtils::wallet_set_seq_no_for_value(wallet_handle, "key", 1).unwrap();
@@ -342,7 +351,7 @@ mod medium_cases {
         fn sovrin_wallet_set_seqno_works_for_invalid_wallet() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_invalid_wallet", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_invalid_wallet", None).unwrap();
 
 
             let invalid_wallet_handle = wallet_handle + 1;

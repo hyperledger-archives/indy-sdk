@@ -11,16 +11,30 @@ use sovrin::api::wallet::{
 use utils::callback::CallbackUtils;
 use utils::inmem_wallet::InmemWallet;
 use utils::timeout::TimeoutUtils;
+use utils::sequence::SequenceUtils;
 
+use std::collections::HashSet;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::mpsc::channel;
+use std::sync::Mutex;
 
 pub struct WalletUtils {}
 
 
 impl WalletUtils {
     pub fn register_wallet_type(xtype: &str) -> Result<(), ErrorCode> {
+        lazy_static! {
+            static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
+        }
+
+        let mut wallets = REGISERED_WALLETS.lock().unwrap();
+
+        if wallets.contains(xtype) {
+            // as registering of plugged wallet with
+            return Ok(())
+        }
+
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -29,11 +43,11 @@ impl WalletUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_register_wallet_type_cb(cb);
 
-        let xtype = CString::new(xtype).unwrap();
+        let xxtype = CString::new(xtype).unwrap();
 
         let err = sovrin_register_wallet_type(
             command_handle,
-            xtype.as_ptr(),
+            xxtype.as_ptr(),
             Some(InmemWallet::create),
             Some(InmemWallet::open),
             Some(InmemWallet::set),
@@ -56,6 +70,7 @@ impl WalletUtils {
             return Err(err);
         }
 
+        wallets.insert(xtype.to_string());
         Ok(())
     }
 
@@ -127,7 +142,7 @@ impl WalletUtils {
         Ok(wallet_handle)
     }
 
-    pub fn create_and_open_wallet(pool_name: &str, wallet_name: &str, xtype: &str) -> Result<i32, ErrorCode> {
+    pub fn create_and_open_wallet(pool_name: &str, xtype: Option<&str>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
         let (open_sender, open_receiver) = channel();
 
@@ -142,8 +157,11 @@ impl WalletUtils {
         let (open_command_handle, open_cb) = CallbackUtils::closure_to_open_wallet_cb(open_cb);
 
         let pool_name = CString::new(pool_name).unwrap();
-        let wallet_name = CString::new(wallet_name).unwrap();
-        let xtype = CString::new(xtype).unwrap();
+        let wallet_name = CString::new(format!("default-wallet-name-{}", SequenceUtils::get_next_id())).unwrap();
+        let xtype = match xtype {
+            Some(xtype) => CString::new(xtype).unwrap(),
+            None => CString::new("defaukt").unwrap()
+        };
 
         let err =
             sovrin_create_wallet(command_handle,

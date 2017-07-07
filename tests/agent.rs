@@ -34,7 +34,7 @@ mod high_cases {
     #[test]
     fn sovrin_agent_listen_works_with_sovrin_agent_connect() {
         TestUtils::cleanup_storage();
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool3", "wallet1", "default").unwrap();
+        let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
         let endpoint = "127.0.0.1:9701";
 
@@ -59,8 +59,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_connect_works_for_remote_data").unwrap();
 
             let endpoint = "127.0.0.1:9710";
-            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.1", "default").unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", "wallet10.2", "default").unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let sender_did = trustee_did.clone();
@@ -87,7 +87,7 @@ mod high_cases {
         fn sovrin_agent_connect_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet2", "default").expect("create wallet");
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).expect("create wallet");
 
             let seed: Option<String> = Some("sovrin_agent_connect_works_for_a".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
@@ -127,7 +127,7 @@ mod high_cases {
         fn sovrin_agent_listen_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool2", "wallet3", "default").expect("create wallet");
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool2", None).expect("create wallet");
 
             let seed: Option<String> = Some("sovrin_agent_listen_works_for_al".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
@@ -149,7 +149,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let endpoint = "127.0.0.1:9711";
-            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet11receiver", "default").unwrap();
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
             let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
@@ -175,7 +175,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let endpoint = "127.0.0.1:9714";
-            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet14receiver", "default").unwrap();
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
             let (receiver_did1, _, receiver_pk1) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
@@ -211,7 +211,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let endpoint = "127.0.0.1:9713";
-            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", "wallet13receiver", "default").unwrap();
+            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
             let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
@@ -252,7 +252,7 @@ mod high_cases {
             let (wait_conn_send, wait_conn_recv) = channel();
             let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", "wallet5", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9704";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
@@ -289,7 +289,7 @@ mod high_cases {
         #[test]
         fn sovrin_agent_close_connection_works_for_outgoing() {
             TestUtils::cleanup_storage();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool3", "wallet6", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9705";
 
@@ -311,7 +311,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", "wallet7", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9706";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
@@ -341,7 +341,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool8", "wallet8", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool8", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9708";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
@@ -377,8 +377,8 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
 
             let endpoint = "127.0.0.1:9712";
-            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", "wallet12.1", "default").unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", "wallet12.2", "default").unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let sender_did = trustee_did.clone();
@@ -422,7 +422,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool6", "wallet9", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool6", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9707";
             let listener_handle = AgentUtils::listen(endpoint, None,
@@ -451,7 +451,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool9", "wallet10", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool9", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             let endpoint = "127.0.0.1:9709";
             let listener_handle = AgentUtils::listen(endpoint, None,

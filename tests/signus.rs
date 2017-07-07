@@ -36,7 +36,7 @@ mod high_cases {
         fn sovrin_create_my_did_works_for_empty_json() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
@@ -50,7 +50,7 @@ mod high_cases {
         fn sovrin_create_my_did_works_with_seed() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
 
@@ -64,7 +64,7 @@ mod high_cases {
         fn sovrin_create_my_did_works_as_cid() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","cid":true}"#).unwrap();
 
@@ -79,7 +79,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let did = "8wZcEriaNLNKtteJvx7f8i".to_string();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle,
                                                                     &format!(r#"{{"did":"{}","seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#, did)).unwrap();
@@ -94,7 +94,7 @@ mod high_cases {
         fn sovrin_create_my_did_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::create_my_did(invalid_wallet_handle, "{}");
@@ -111,7 +111,7 @@ mod high_cases {
         fn sovrin_replace_keys_works() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
@@ -124,7 +124,7 @@ mod high_cases {
         fn sovrin_replace_keys_works_for_invalid_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let res = SignusUtils::replace_keys(wallet_handle, "invalid_base58_string", "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -136,7 +136,7 @@ mod high_cases {
         fn sovrin_replace_keys_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
@@ -155,7 +155,7 @@ mod high_cases {
         fn sovrin_store_their_did_works() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i"}"#;
             SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
@@ -167,7 +167,7 @@ mod high_cases {
         fn sovrin_store_their_did_works_for_invalid_json() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"field":"value"}"#;
             let res = SignusUtils::store_their_did(wallet_handle, identity_json);
@@ -180,7 +180,7 @@ mod high_cases {
         fn sovrin_store_their_did_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i"}"#;
             let invalid_wallet_handle = wallet_handle + 1;
@@ -194,7 +194,7 @@ mod high_cases {
         fn sovrin_store_their_did_works_with_verkey() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i", "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"}"#;
             SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
@@ -210,7 +210,7 @@ mod high_cases {
         fn sovrin_sign_works() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1"}"#).unwrap();
 
@@ -236,7 +236,7 @@ mod high_cases {
         fn sovrin_sign_works_for_unknow_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let message = r#"{"reqId":1495034346617224651}"#;
 
@@ -250,7 +250,7 @@ mod high_cases {
         fn sovrin_sign_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
 
@@ -273,7 +273,7 @@ mod high_cases {
             let pool_name = "sovrin_verify_works_for_verkey_cached_in_wallet";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1"}"#).unwrap();
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
@@ -304,7 +304,7 @@ mod high_cases {
             let pool_name = "sovrin_verify_works_for_get_verkey_from_ledger";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
@@ -360,7 +360,7 @@ mod high_cases {
             let pool_name = "sovrin_verify_works_for_invalid_wallet_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let message = r#"{
                 "reqId":1496822211362017764,
@@ -380,7 +380,7 @@ mod high_cases {
             let pool_name = "sovrin_verify_works_for_invalid_pool_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let message = r#"{
                 "reqId":1496822211362017764,
@@ -406,7 +406,7 @@ mod medium_cases {
         fn sovrin_create_my_did_works_for_invalid_crypto_type() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let res = SignusUtils::create_my_did(wallet_handle, r#"{"crypto_type":"type"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::SignusUnknownCryptoError);
@@ -418,7 +418,7 @@ mod medium_cases {
         fn sovrin_create_my_did_works_for_invalid_seed() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let res = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"seed"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -430,7 +430,7 @@ mod medium_cases {
         fn sovrin_create_my_did_works_for_invalid_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let res = SignusUtils::create_my_did(wallet_handle, r#"{"did":"invalid_base58_did"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -442,7 +442,7 @@ mod medium_cases {
         fn sovrin_create_my_did_works_for_invalid_json() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let res = SignusUtils::create_my_did(wallet_handle, r#"{"seed":123}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -458,7 +458,7 @@ mod medium_cases {
         fn sovrin_replace_keys_works_for_not_exists_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             //TODO may be we must return WalletNotFound in case if key not exists in wallet
             SignusUtils::replace_keys(wallet_handle, "8wZcEriaNLNKtteJvx7f8i", "{}").unwrap();
@@ -474,7 +474,7 @@ mod medium_cases {
         fn sovrin_store_their_did_works_for_invalid_crypto_type() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i", "crypto_type":"type"}"#;
 
@@ -488,7 +488,7 @@ mod medium_cases {
         fn sovrin_store_their_did_works_for_invalid_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"did":"invalid_base58_string"}"#;
 
@@ -502,7 +502,7 @@ mod medium_cases {
         fn sovrin_store_their_did_works_for_invalid_verkey() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let identity_json = r#"{"did":"did", "verkey":"verkey"}"#;
 
@@ -520,7 +520,7 @@ mod medium_cases {
         fn sovrin_sign_works_for_invalid_message() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
 
@@ -542,7 +542,7 @@ mod medium_cases {
             let pool_name = "sovrin_verify_works_for_invalid_message";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1"}"#).unwrap();
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
@@ -563,7 +563,7 @@ mod medium_cases {
             let pool_name = "sovrin_verify_works_for_message_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1"}"#).unwrap();
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
@@ -588,7 +588,7 @@ mod medium_cases {
             let pool_name = "sovrin_verify_works_for_get_nym_from_ledger_with_incompatible_wallet";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet("other_pool_name", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("other_pool_name", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
 
@@ -611,7 +611,7 @@ mod medium_cases {
             let pool_name = "sovrin_verify_works_for_get_unknow_nym_from_ledger";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"0000000000000000000000000000Fake"}"#).unwrap();
 
@@ -634,7 +634,7 @@ mod medium_cases {
             let pool_name = "sovrin_verify_works_for_unknown_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
