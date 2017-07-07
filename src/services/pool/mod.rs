@@ -263,6 +263,9 @@ impl PoolWorker {
             self.handler.nodes_mut().push(rn);
         }
         self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+        if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
+            handler.reset_nodes_votes();
+        }
         Ok(())
     }
 
@@ -504,6 +507,7 @@ impl RemoteNode {
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
+            is_blacklisted: false,
         })
     }
 
@@ -1005,7 +1009,7 @@ mod tests {
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);
-        ch.new_mt_size = 2;
+        ch.target_mt_size = 2;
 
         ch.start_catchup().unwrap();
 
