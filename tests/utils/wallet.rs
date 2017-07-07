@@ -143,7 +143,7 @@ impl WalletUtils {
         Ok(wallet_handle)
     }
 
-    pub fn wallet_set_seq_no_for_value(wallet_handle: i32, claim_def_uuid: &str, claim_def_seq_no: i32) -> Result<(), ErrorCode> {
+    pub fn wallet_set_seq_no_for_value(wallet_handle: i32, value: &str, seq_no: i32) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
 
@@ -153,13 +153,13 @@ impl WalletUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(cb);
 
-        let claim_def_uuid = CString::new(claim_def_uuid).unwrap();
+        let value = CString::new(value).unwrap();
 
         let err =
             sovrin_wallet_set_seq_no_for_value(command_handle,
                                                wallet_handle,
-                                               claim_def_uuid.as_ptr(),
-                                               claim_def_seq_no,
+                                               value.as_ptr(),
+                                               seq_no,
                                                cb);
 
         if err != ErrorCode::Success {
