@@ -402,7 +402,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -424,7 +424,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
                                 "requested_predicates":{}
                                }"#;
 
@@ -446,7 +446,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{},
+                                "requested_attrs":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18}}
                               }"#;
 
@@ -468,7 +468,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{},
+                                "requested_attrs":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
                               }"#;
 
@@ -490,7 +490,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{
+                                "requested_attrs":{
                                     "attr1_uuid":{"schema_seq_no":1, "name":"name"},
                                     "attr2_uuid":{"schema_seq_no":1, "name":"sex"}
                                 },
@@ -526,7 +526,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{},
+                                "requested_attrs":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
                                 }"#;
 
@@ -547,7 +547,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18}}
                               }"#;
 
@@ -590,7 +590,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -621,7 +621,7 @@ mod high_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                                 }"#;
 
@@ -664,7 +664,7 @@ mod high_cases {
                                    "nonce":"123432421212",
                                     "name":"proof_req_1",
                                     "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -692,7 +692,7 @@ mod high_cases {
                                    "nonce":"123432421212",
                                     "name":"proof_req_1",
                                     "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"sex"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"sex"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"height","p_type":"GE","value":180}}}}
                                 }}"#);
 
@@ -720,7 +720,7 @@ mod high_cases {
                                    "nonce":"123432421212",
                                     "name":"proof_req_1",
                                     "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -938,8 +938,8 @@ mod medium_cases {
                                 "issuer_did":"{}",
                                 "revoc_reg_seq_no":null,
                                 "schema_seq_no":10,
-                                "identifier":"did",
-                                "claims_signature":{{"primary_claim":{{"m2":"1","a":"1","e":"2","v":"3"}},"non_revocation_claim":null}}}}"#, ISSUER_DID);
+                                "issuer_did":"did",
+                                "signature":{{"primary_claim":{{"m2":"1","a":"1","e":"2","v":"3"}},"non_revocation_claim":null}}}}"#, ISSUER_DID);
 
             let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
@@ -988,7 +988,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{},
+                                "requested_attrs":{},
                                 "requested_predicates":{}
                               }"#;
 
@@ -1021,7 +1021,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":2, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":2, "name":"name"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -1043,7 +1043,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{},
+                                "requested_attrs":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age"}}
                               }"#;
 
@@ -1058,7 +1058,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{},
+                                "requested_attrs":{},
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"LE","value":58}}
                               }"#;
 
@@ -1077,7 +1077,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                               }"#;
 
@@ -1114,7 +1114,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                              }"#;
 
@@ -1151,7 +1151,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                              }"#;
 
@@ -1188,7 +1188,7 @@ mod medium_cases {
             let proof_req = r#"{"nonce":"123432421212",
                                 "name":"proof_req_1",
                                 "version":"0.1",
-                                "verifiableAttributes":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
+                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
                                 "requested_predicates":{}
                              }"#;
 
@@ -1230,7 +1230,7 @@ mod medium_cases {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -1257,7 +1257,7 @@ mod medium_cases {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -1284,7 +1284,7 @@ mod medium_cases {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#);
 
@@ -1348,7 +1348,7 @@ mod demos {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{}}
                                 }}"#, schema_seq_no);
 
@@ -1382,7 +1382,7 @@ mod demos {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no);
 
@@ -1458,7 +1458,7 @@ mod demos {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
                                                        "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no, schema_seq_no);
@@ -1630,7 +1630,7 @@ mod demos {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
                                                        "attr2_uuid":{{"schema_seq_no":{},"name":"status"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}},
                                                             "predicate2_uuid":{{"attr_name":"period","p_type":"GE","value":5}}}}
@@ -1821,7 +1821,7 @@ mod demos {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}},
                                                             "predicate2_uuid":{{"attr_name":"period","p_type":"GE","value":5}}}}
                                 }}"#, gvt_schema_seq_no);

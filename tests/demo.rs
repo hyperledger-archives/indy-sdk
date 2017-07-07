@@ -281,7 +281,7 @@ fn anoncreds_demo_works() {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "verifiableAttributes":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no);
 

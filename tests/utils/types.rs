@@ -168,9 +168,7 @@ pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    #[serde(rename = "claims_signature")]
     pub signature: ClaimSignature,
-    #[serde(rename = "identifier")]
     pub issuer_did: String
 }
 
