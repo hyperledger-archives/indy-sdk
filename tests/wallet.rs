@@ -14,6 +14,7 @@ extern crate log;
 #[macro_use]
 mod utils;
 
+use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
@@ -29,10 +30,12 @@ mod high_cases {
         #[test]
         fn sovrin_register_wallet_type_works() {
             TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
 
             WalletUtils::register_wallet_type("inmem").unwrap();
 
             TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
     }
 
@@ -55,6 +58,7 @@ mod high_cases {
         #[test]
         fn sovrin_create_wallet_works_for_plugged() {
             TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
 
             let pool_name = "sovrin_create_wallet_works";
             let wallet_name = "sovrin_create_wallet_works";
@@ -64,6 +68,7 @@ mod high_cases {
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
 
             TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
 
         #[test]
@@ -127,6 +132,7 @@ mod high_cases {
         #[test]
         fn sovrin_delete_wallet_works_for_plugged() {
             TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
 
             let pool_name = "sovrin_delete_wallet_works_for_plugged";
             let wallet_name = "sovrin_delete_wallet_works_for_plugged";
@@ -138,6 +144,7 @@ mod high_cases {
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
 
             TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
     }
 
@@ -155,6 +162,23 @@ mod high_cases {
             WalletUtils::open_wallet(wallet_name, None).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_open_wallet_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let pool_name = "sovrin_open_wallet_works_for_plugged";
+            let wallet_name = "sovrin_open_wallet_works_for_plugged";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+            WalletUtils::open_wallet(wallet_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
 
         #[test]
@@ -190,6 +214,26 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn sovrin_close_wallet_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let pool_name = "sovrin_close_wallet_works_for_plugged";
+            let wallet_name = "sovrin_close_wallet_works_for_plugged";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::open_wallet(wallet_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+        }
     }
 
     mod set_seqno_wallet {
@@ -206,6 +250,22 @@ mod high_cases {
             WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &did, 1).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_wallet_set_seqno_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_plugged", Some("inmem")).unwrap();
+
+            let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &did, 1).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
     }
 }
