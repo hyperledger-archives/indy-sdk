@@ -12,6 +12,7 @@
 @implementation SovrinAnoncreds
 
 + (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(SovrinHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
@@ -23,11 +24,11 @@
     
     ret = sovrin_issuer_create_and_store_claim_def(handle,
                                                    walletHandle,
+                                                   [issuerDid UTF8String],
                                                    [schema UTF8String],
                                                    [signatureType UTF8String],
                                                    (sovrin_bool_t) createNonRevoc,
-                                                   SovrinWrapperCommon4PCallback
-                                                  );
+                                                   SovrinWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -37,6 +38,7 @@
 }
 
 + (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(SovrinHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                             claimDefSeqNo:(NSNumber *)seqNo
                                               maxClaimNum:(NSNumber *)maxClaimNum
                                                completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler
@@ -47,10 +49,10 @@
     
     ret = sovrin_issuer_create_and_store_revoc_reg(handle,
                                                    walletHandle,
+                                                   [issuerDid UTF8String],
                                                    [seqNo intValue],
                                                    [maxClaimNum intValue],
-                                                   SovrinWrapperCommon4PCallback
-                                                  );
+                                                   SovrinWrapperCommon4PCallback);
     if( ret != Success )
     {
         [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -88,7 +90,6 @@
 }
 
 + (NSError *)issuerRevokeClaimWithWalletHandle:(SovrinHandle)walletHandle
-                                 claimDefSeqNo:(NSNumber *)claimSeqNo
                                  revocRegSeqNo:(NSNumber *)revocSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler
@@ -99,7 +100,6 @@
     
     ret = sovrin_issuer_revoke_claim(handle,
                                      walletHandle,
-                                     [claimSeqNo intValue],
                                      [revocSeqNo intValue],
                                      [revocIndex intValue],
                                      SovrinWrapperCommon3PSCallback

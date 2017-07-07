@@ -103,7 +103,7 @@
                               "\"nonce\":\"123432421212\","
                               "\"name\":\"proof_req_1\","
                               "\"version\":\"0.1\","
-                              "\"verifiableAttributes\":{"
+                              "\"requested_attrs\":{"
                                 "\"attr1_uuid\":{"
                                     "\"schema_seq_no\":%@,"
                                     "\"name\":\"name\"}},"
@@ -287,7 +287,7 @@
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"verifiableAttributes\":"\
+                             " \"requested_attrs\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
                              "                          \"schema_seq_no\":%@,\"name\":\"name\""\
@@ -572,7 +572,7 @@
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"verifiableAttributes\":"\
+                             " \"requested_attrs\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
                              "                          \"schema_seq_no\":%d,\"name\":\"name\""\
@@ -917,7 +917,7 @@
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","
                              " \"version\":\"0.1\","
-                             " \"verifiableAttributes\":"\
+                             " \"requested_attrs\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
                              "                          \"schema_seq_no\":%ld,\"name\":\"name\""\

@@ -324,13 +324,13 @@ extern "C" {
                                                                          const char*     request_json)
                                                    );
 
-
-    /// Builds a GET_TXN request.
+    /// Builds a NODE request.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
-    /// data: seq_no of transaction in ledger
+    /// target_did: Id of Identity stored in secured Wallet.
+    /// data: id of a target NYM record
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -340,13 +340,13 @@ extern "C" {
     /// Common*
 
     extern sovrin_error_t sovrin_build_get_txn_request(sovrin_handle_t command_handle,
-                                                        const char *    submitter_did,
-                                                        sovrin_i32_t    data,
+                                                    const char *    submitter_did,
+                                                    sovrin_i32_t    data,
 
-                                                        void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                             sovrin_error_t  err,
-                                                                             const char*     request_json)
-                                                       );
+                                                    void           (*cb)(sovrin_handle_t xcommand_handle,
+                                                                         sovrin_error_t  err,
+                                                                         const char*     request_json)
+                                                   );
     
 #ifdef __cplusplus
 }

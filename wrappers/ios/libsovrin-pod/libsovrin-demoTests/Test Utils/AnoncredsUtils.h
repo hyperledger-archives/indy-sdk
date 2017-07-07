@@ -13,10 +13,13 @@
 
 + (NSString *)commonMasterSecretName;
 
++ (SovrinHandle)walletHandle;
++ (NSString *)claimDefJson;
++ (NSString *)issuerDid;
+
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                          seqNo:(NSNumber *)claimDefSeqNo
                     schemaSeqNo:(NSNumber *)schemaSeqNo;
 
 - (NSString *)getGvtClaimJson;
@@ -70,6 +73,7 @@
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON;
 
 - (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle)walletHandle
+                                               issuerDid:(NSString *)issuerDid
                                               schemaJson:(NSString *)schemaJson
                                            signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc

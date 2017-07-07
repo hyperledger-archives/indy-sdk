@@ -37,11 +37,28 @@
     return instance;
 }
 
+// MARK: - Default static values
 + (NSString *)commonMasterSecretName
 {
     return @"common_master_secret_name";
 }
 
++ (SovrinHandle)walletHandle
+{
+    return 0;
+}
+
++ (NSString *)claimDefJson
+{
+    return @"";
+}
+
++ (NSString *)issuerDid
+{
+    return @"NcYxiDXkpYi6ov5FcYDi1e";
+}
+
+// MARK: - Json configurators
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo
 {
     return [NSString stringWithFormat:@"{"
@@ -54,15 +71,12 @@
 }
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                          seqNo:(NSNumber *)claimDefSeqNo
                     schemaSeqNo:(NSNumber *)schemaSeqNo
 {
     return [NSString stringWithFormat:@"{"\
             "\"issuer_did\":\"%@\"," \
-            "\"claim_def_seq_no\":%d," \
             "\"schema_seq_no\":%d" \
             "}", issuerDid,
-                [claimDefSeqNo intValue],
                 [schemaSeqNo intValue]
             ];
 }
@@ -171,6 +185,7 @@
 }
 
 - (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle)walletHandle
+                                               issuerDid:(NSString *)issuerDid
                                               schemaJson:(NSString *)schemaJson
                                            signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc
@@ -183,6 +198,7 @@
     XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDefWithWalletHandle:walletHandle
+                                                                        issuerDid:issuerDid
                                                                        schemaJSON:schemaJson
                                                                     signatureType:signatureType
                                                                    createNonRevoc:createNonRevoc
@@ -210,6 +226,7 @@
 
 
 - (NSError *) createClaimDefinitionAndSetLink:(SovrinHandle)walletHandle
+                                    issuerDid:(NSString *)issuerDid
                                        schema:(NSString *)schema
                                         seqNo:(NSNumber *)claimDefSeqNo
                                       outJson:(NSString **)outJson
@@ -219,6 +236,7 @@
     NSError *ret;
     
     ret = [self issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                  issuerDid:issuerDid
                                                  schemaJson:schema
                                               signatureType:nil
                                              createNonRevoc:NO

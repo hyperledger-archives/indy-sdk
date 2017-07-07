@@ -10,12 +10,14 @@
 @interface SovrinAnoncreds : NSObject
 
 + (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(SovrinHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
                                                completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler;
 
 + (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(SovrinHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                             claimDefSeqNo:(NSNumber *)seqNo
                                               maxClaimNum:(NSNumber *)maxClaimNum
                                                completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler;
@@ -28,7 +30,6 @@
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler;
 
 + (NSError *)issuerRevokeClaimWithWalletHandle:(SovrinHandle)walletHandle
-                                 claimDefSeqNo:(NSNumber *)claimSeqNo
                                  revocRegSeqNo:(NSNumber *)revocSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler;

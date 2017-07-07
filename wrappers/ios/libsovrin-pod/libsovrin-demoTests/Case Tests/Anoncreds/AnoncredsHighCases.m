@@ -49,6 +49,7 @@
     NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                                             issuerDid:[AnoncredsUtils issuerDid]
                                                                             schemaJson:schema
                                                                          signatureType:nil
                                                                         createNonRevoc:NO
@@ -82,6 +83,7 @@
     NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
     SovrinHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:invalidWalletHandle
+                                                                             issuerDid:[AnoncredsUtils issuerDid]
                                                                             schemaJson:schema
                                                                          signatureType:nil
                                                                         createNonRevoc:NO
@@ -94,7 +96,6 @@
 
 - (void)testProverStoreClaimOfferWorks
 {
-    
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -104,16 +105,13 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claim offer json
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                                            seqNo:@(1)
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
                                                                        schemaSeqNo:@(1)];
     
     // 3. Store claim offer
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:walletHandle
                                                   claimOfferJson:claimOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimOffer failed");
-    
-     
 }
 
 - (void)testProverStoreClaimOfferWorksForInvalidJson
@@ -128,7 +126,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claim offer json
-    NSString *claimOfferJson = @"{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
+    NSString *claimOfferJson = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}",[AnoncredsUtils issuerDid]];
     
     // 3. Store claim offer
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:walletHandle
@@ -140,7 +138,6 @@
 
 - (void)testProverStoreClaimOfferWorksForInvalidWallet
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -150,8 +147,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claim offer json
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                                            seqNo:@(1)
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     
     // 3. Store claim offer
@@ -159,14 +155,12 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:invalidWalletHandle
                                                   claimOfferJson:claimOfferJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimOffer failed");
-    
-     
 }
 
 // MARK: - Prover get claim offers
+
 - (void)testProverGetClaimOffersWorksForEmptyFilter
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -187,12 +181,10 @@
     NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
     NSArray *array = (NSArray *)offers;
     XCTAssertEqual([array count], 3, @"wrong length of claim offers");
-     
 }
 
 - (void)testProverGetClaimOffersWorksForFilterByIssuer
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -202,7 +194,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claim offers
-    NSString *filter = @"{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
+    NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}",[AnoncredsUtils issuerDid]];
     NSString *claimOffersJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
                                                      filterJson:filter
@@ -216,64 +208,27 @@
     XCTAssertEqual([array count], 2, @"wrong length of claim offers");
     
     NSMutableDictionary *offer1 = [NSMutableDictionary new];
-    offer1[@"issuer_did"] = @"NcYxiDXkpYi6ov5FcYDi1e";
-    offer1[@"claim_def_seq_no"] = @(1);
+    offer1[@"issuer_did"] = [AnoncredsUtils issuerDid];
     offer1[@"schema_seq_no"] = @(1);
     
     NSMutableDictionary *offer2 = [NSMutableDictionary new];
-    offer2[@"issuer_did"] = @"NcYxiDXkpYi6ov5FcYDi1e";
-    offer2[@"claim_def_seq_no"] = @(2);
+    offer2[@"issuer_did"] = [AnoncredsUtils issuerDid];
     offer2[@"schema_seq_no"] = @(2);
     
     XCTAssertTrue([array contains:offer1], @"offers doesn't contain offer1");
     XCTAssertTrue([array contains:offer2], @"offers doesn't contain offer2");
-    
-     
-}
-
-- (void)testProverGetClaimOffersWorksForFilterByClaimDef
-{
-    NSError *ret;
-    SovrinHandle walletHandle = 0;
-    
-    // 1. get wallet handle
-    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    
-    // 2. get claim offers
-    NSString *filter = @"{\"claim_def_seq_no\":2}";
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
-                                                     filterJson:filter
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed");
-    XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
-
-    // 3. Check offers
-    NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
-    NSArray *array = (NSArray *)offers;
-    XCTAssertEqual([array count], 1, @"wrong length of claim offers");
-    
-    NSMutableDictionary *offer1 = [NSMutableDictionary new];
-    offer1[@"issuer_did"] = @"NcYxiDXkpYi6ov5FcYDi1e";
-    offer1[@"claim_def_seq_no"] = @(2);
-    offer1[@"schema_seq_no"] = @(2);
-    
-    XCTAssertTrue([array contains:offer1], @"offers doesn't contain offer1");
 }
 
 - (void)testProverGetClaimOffersWorksForFilterBySchema
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
-    
+
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    
+
     // 2. get claim offers
     NSString *filter = @"{\"schema_seq_no\":2}";
     NSString *claimOffersJson;
@@ -282,25 +237,23 @@
                                              outClaimOffersJSON:&claimOffersJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed");
     XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
-    
+
     // 3. Check offers
     NSDictionary *offersDict = [NSDictionary fromString:claimOffersJson];
     NSArray *offers = (NSArray *)offersDict;
     XCTAssertEqual([offers count], 2, @"wrong length of claim offers");
-    
+
     NSMutableDictionary *offer1 = [NSMutableDictionary new];
-    offer1[@"issuer_did"] = @"NcYxiDXkpYi6ov5FcYDi1e";
-    offer1[@"claim_def_seq_no"] = @(2);
+    offer1[@"issuer_did"] = [AnoncredsUtils issuerDid];
     offer1[@"schema_seq_no"] = @(2);
-    
+
     NSMutableDictionary *offer2 = [NSMutableDictionary new];
     offer2[@"issuer_did"] = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-    offer2[@"claim_def_seq_no"] = @(3);
     offer2[@"schema_seq_no"] = @(2);
-    
+
     XCTAssertTrue([offers contains:offer1], @"offers doesn't contain offer1");
     XCTAssertTrue([offers contains:offer2], @"offers doesn't contain offer2");
-     
+
 }
 
 - (void)testProverGetClaimOffersWorksForFilterByIssuerAndSchema
@@ -315,7 +268,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claim offers
-    NSString *filter = @"{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"schema_seq_no\":1}";
+    NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\",\"schema_seq_no\":1}", [AnoncredsUtils issuerDid]];
     NSString *claimOffersJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
                                                      filterJson:filter
@@ -329,8 +282,7 @@
     XCTAssertEqual([offers count], 1, @"wrong length of claim offers");
     
     NSMutableDictionary *offer1 = [NSMutableDictionary new];
-    offer1[@"issuer_did"] = @"NcYxiDXkpYi6ov5FcYDi1e";
-    offer1[@"claim_def_seq_no"] = @(1);
+    offer1[@"issuer_did"] = [AnoncredsUtils issuerDid];
     offer1[@"schema_seq_no"] = @(1);
     
     XCTAssertTrue([offers contains:offer1], @"offers doesn't contain offer1");
@@ -339,7 +291,6 @@
 
 - (void)testProverGetClaimOffersWorksForNoResults
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -349,7 +300,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long)ret.code);
     
     // 2. get claim offers
-    NSString *filter = @"{\"claim_def_seq_no\":4}";
+    NSString *filter = @"{\"schema_seq_no\":4}";
     NSString *claimOffersJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
                                                      filterJson:filter
@@ -361,12 +312,10 @@
     NSDictionary *offersJson = [NSDictionary fromString:claimOffersJson];
     NSArray *offers = (NSArray *)offersJson;
     XCTAssertEqual([offers count], 0, @"wrong length of claim offers");
-     
 }
 
 - (void)testProverGetClaimOffersWorksForinvalidWalletHandle
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -383,7 +332,6 @@
                                                      filterJson:filter
                                              outClaimOffersJSON:&claimOffersJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimOffers returned not WalletInvalidHandle code:%ld", (long)ret.code);
-     
 }
 
 // MARK: - Prover create master secret
@@ -439,10 +387,9 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long)ret.code);
     
     // 2. get claim offer
-    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e";
+    NSString *issuerDid = [AnoncredsUtils issuerDid];
     NSNumber *claimDefSeqNo = @(1);
     NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                        seqNo:claimDefSeqNo
                                                                   schemaSeqNo:@(1)];
     
     // 3. get claim request
@@ -459,7 +406,6 @@
     
     // 4. check claim request
     NSDictionary *claimRequest = [NSDictionary fromString:claimRequestJson];
-    XCTAssertTrue([claimRequest[@"claim_def_seq_no"] isEqualToNumber:claimDefSeqNo], @"claimRequest[claim_def_seq_no] != claimDefSeqNo");
     XCTAssertTrue([claimRequest[@"issuer_did"] isEqualToString:issuerDid], @"[claimRequest[@\"issuer_did\"] != issuerDid");
     XCTAssertTrue([claimRequest[@"blinded_ms"][@"u"] length] > 0, @"claimRequest[@\"claim_request\"][@\"u\"] length <= 0");
 }
@@ -477,9 +423,8 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. get claim offer
-    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e";
+    NSString *issuerDid = [AnoncredsUtils issuerDid];
     NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                        seqNo:@(1)
                                                                   schemaSeqNo:@(1)];
     
     // 3. create and store claim requets
@@ -496,43 +441,8 @@
      
 }
 
-// TODO: This test is ignored in rust
-//- (void)testProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondOfferDiffrentClaimDefSeqNo
-//{
-//     
-//    NSError *ret;
-//    SovrinHandle walletHandle = 0;
-//    NSString *claimDef;
-//    
-//    // 1. get wallet handle
-//    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-//                                                                    claimDefJson:&claimDef];
-//    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-//    XCTAssertTrue([claimDef isValid], @"invalid claimDef: %@", claimDef);
-//    
-//    // 2. get claim offer
-//    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e";
-//    NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-//                                                                        seqNo:@(2)
-//                                                                  schemaSeqNo:@(1)];
-//
-//    // 3. create and store claim requets
-//    NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-//    NSString *claimRequestJson;
-//    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
-//                                                              proverDid:proverDid
-//                                                         claimOfferJson:claimOffer
-//                                                           claimDefJson:claimDef
-//                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
-//                                                        outClaimReqJson:&claimRequestJson];
-//    // TODO: Returns 0, not 110
-//    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong error code");
-//     
-//}
-
-- (void)testProverCreateAndStoreClaimreqWorksForClaimDefDoesNotCorrespondOfferDiffrentSchemaSeqNo
+- (void)testProverCreateAndStoreClaimreqWorksForClaimDefDoesNotCorrespondOfferDiffrentIssuerDid
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDef;
@@ -545,9 +455,37 @@
     
     
     // 2. get claim offer
-    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e";
+    NSString *issuerDid = @"NcYxiDXkpYi6ov5FcYDi1e3";
     NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                        seqNo:@(1)
+                                                                  schemaSeqNo:@(1)];
+    
+    // 3. create and store claim requets
+    NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+    NSString *claimRequestJson;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+                                                              proverDid:proverDid
+                                                         claimOfferJson:claimOffer
+                                                           claimDefJson:claimDef
+                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]outClaimReqJson:&claimRequestJson];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
+}
+
+- (void)testProverCreateAndStoreClaimreqWorksForClaimDefDoesNotCorrespondOfferDiffrentSchemaSeqNo
+{
+    NSError *ret;
+    SovrinHandle walletHandle = 0;
+    NSString *claimDef;
+    
+    // 1. get wallet handle
+    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
+                                                                    claimDefJson:&claimDef];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
+    XCTAssertTrue([claimDef isValid], @"invalid claimDef: %@", claimDef);
+    
+    
+    // 2. get claim offer
+    NSString *issuerDid = [AnoncredsUtils issuerDid];
+    NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
                                                                   schemaSeqNo:@(2)];
     
     // 3. create and store claim requets
@@ -559,10 +497,10 @@
                                                            claimDefJson:claimDef
                                                        masterSecretName:[AnoncredsUtils commonMasterSecretName]outClaimReqJson:&claimRequestJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
-     
 }
 
 // MARK: - Issuer create claim
+
 - (void)testIssuerCreateClaimWorks
 {
      
@@ -575,14 +513,14 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create claim
-    NSString *claimRequest = @"{"\
-                "\"blinded_ms\":{"\
-                    "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
-                    "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
-                    "\"ur\":null},"\
-                "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-                "\"claim_def_seq_no\":1,"\
-                "\"schema_seq_no\":1}";
+    NSString *claimRequest = [NSString stringWithFormat: @"{"\
+                              "\"blinded_ms\":{"\
+                              "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
+                              "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
+                              "\"ur\":null},"\
+                              "\"issuer_did\":\"%@\","\
+                              "\"schema_seq_no\":1}", [AnoncredsUtils issuerDid]];
+    
     NSString *claimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
                                                                 claimReqJson:claimRequest
@@ -612,14 +550,14 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create claim
-    NSString *claimRequest = @"{"\
-    "\"blinded_ms\":{"\
-        "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
-        "\"u\":\"78642009183061519681642949186511883517561213024253007693605674585288964920641017651779407190325620073544451273313223865970730324882004218654708785143702626337327148875137393101464687794953218753005927492179012286511197396945795208681795313939767499444933139277315113356530041684437761038663276793040349557294620223093906897574215436647703667891052762523022326049857738264833807472302707972331207200720216038057270470116611478516211732505056236404960175670287081433670657644042478872537481050085523491110773623684416797190117083084618649667528194409150615774512701755156055570554349550169869411668543258825800016015079\","\
-        "\"ur\":null},"\
-    "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-    "\"claim_def_seq_no\":1,"\
-    "\"schema_seq_no\":1}";
+    NSString *claimRequest = [NSString stringWithFormat: @"{"\
+                              "\"blinded_ms\":{"\
+                              "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
+                              "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
+                              "\"ur\":null},"\
+                              "\"issuer_did\":\"%@\","\
+                              "\"schema_seq_no\":1}", [AnoncredsUtils issuerDid]];
+
     NSString *claimJson = [[AnoncredsUtils sharedInstance] getXyzClaimJson];
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
                                                                 claimReqJson:claimRequest
@@ -627,8 +565,6 @@
                                                                 outClaimJson:&claimJson
                                                        outRevocRegUpdateJSON:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong code");
-
-     
 }
 
 - (void)testIssuerCreateClaimWorksForInvalidWalletHandle
@@ -642,16 +578,16 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create claim
-    NSString *claimRequest = @"{"\
-    "\"blinded_ms\":{"\
-    "   \"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
-        "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
-        "\"ur\":null},"\
-    "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-    "\"claim_def_seq_no\":1,"\
-    "\"schema_seq_no\":1}";
+    NSString *claimRequest = [NSString stringWithFormat: @"{"\
+                              "\"blinded_ms\":{"\
+                              "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
+                              "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
+                              "\"ur\":null},"\
+                              "\"issuer_did\":\"%@\","\
+                              "\"schema_seq_no\":1}", [AnoncredsUtils issuerDid]];
     
     NSString *claimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
+    
     SovrinHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:invalidWalletHandle
                                                                 claimReqJson:claimRequest
@@ -678,8 +614,7 @@
     XCTAssertTrue([claimDefJson isValid], @"claimDefJson is wrong:%@", claimDefJson);
     
     // 2. get claim offer json
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                                            seqNo:@(1)
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     // 3. get claim request
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -709,8 +644,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
-    
-     
 }
 
 - (void)testProverStoreClaimWorksForInvalidWalletHandle
@@ -727,8 +660,7 @@
     XCTAssertTrue([claimDefJson isValid], @"claimDefJson is wrong:%@", claimDefJson);
     
     // 2. get claim offer json
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                                            seqNo:@(1)
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     
     // 3. get claim request
@@ -760,15 +692,12 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:invalidWalletHandle
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
-
-     
 }
 
 // MARK: - Prover get claims
 
 - (void)testProverGetClaimsWorksForEmptyFilter
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -789,13 +718,10 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
-    
-     
 }
 
-- (void)testProverGetClaimsWorksForFilterByClaimDefSeqNo
+- (void)testProverGetClaimsWorksForFilterByIssuerDid
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -806,8 +732,9 @@
 
     // 2. get claims
     NSString *claimsJson;
+    NSString *filter = [NSString stringWithFormat:@"\"isuer_did\":%@", [AnoncredsUtils issuerDid]];
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:@"{\"claim_def_seq_no\":1}"
+                                                               filterJson:filter
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
     XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
@@ -816,13 +743,10 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
-    
-     
 }
 
 - (void)testProverGetClaimsWorksForFilterByClaimDefSeqNoAndSchemaSeqNo
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -833,8 +757,9 @@
     
     // 2. get claims
     NSString *claimsJson;
+    NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":%@, \"schema_seq_no\":1}",[AnoncredsUtils issuerDid]];
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:@"{\"claim_def_seq_no\":1, \"schema_seq_no\":1}"
+                                                               filterJson:filter
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
     XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
@@ -843,13 +768,10 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
-    
-     
 }
 
 - (void)testProverGetClaimsWorksForEmptyResult
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -861,7 +783,7 @@
     // 2. get claims
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:@"{\"claim_def_seq_no\":10}"
+                                                               filterJson:@"{\"schema_seq_no\":10}"
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
     XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
@@ -870,13 +792,10 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 0, @"claims count != 0");
-    
-     
 }
 
 - (void)testProverGetClaimsWorksForInvalidWalletHandle
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -892,7 +811,6 @@
                                                                filterJson:@"{}"
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForWalletHandle returned wrong code");
-     
 }
 
 // MARK: - Prover get claims for proof request
@@ -912,7 +830,7 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","\
-        "\"verifiableAttributes\":{"
+        "\"requested_attrs\":{"
             "\"attr1_uuid\":{"
                 "\"schema_seq_no\":1, \"name\":\"name\""
             "}"
@@ -934,7 +852,6 @@
 
 - (void)testProverGetClaimsForProofReqWorksForNotFoundAttribute
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     
@@ -948,7 +865,7 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","\
-        "\"verifiableAttributes\":{"
+        "\"requested_attrs\":{"
             "\"attr1_uuid\":{"
                 "\"schema_seq_no\":1, \"name\":\"some_attr\""
             "}"
@@ -966,8 +883,6 @@
     XCTAssertEqual([[claims[@"attrs"] allValues] count], 1, @"attrs length != 1");
     XCTAssertEqual([[claims[@"predicates"] allValues] count], 0, @"predicates length != 0");
     XCTAssertEqual([claims[@"attrs"][@"attr1_uuid"] count], 0, @"attr1_uuid length != 1");
-    
-     
 }
 
 - (void)testProverGetClaimsForProofReqWorksForSatisfyPredicate
@@ -985,7 +900,7 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","\
-            "\"verifiableAttributes\":{},"
+            "\"requested_attrs\":{},"
             "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
     "}";
     NSString *claimsJson;
@@ -1016,7 +931,7 @@
     "\"nonce\":\"123432421212\","
     "\"name\":\"proof_req_1\","
     "\"version\":\"0.1\","\
-    "\"verifiableAttributes\":{},"
+    "\"requested_attrs\":{},"
     "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}"
     "}";
     NSString *claimsJson;
@@ -1048,7 +963,7 @@
     "\"nonce\":\"123432421212\","
     "\"name\":\"proof_req_1\","
     "\"version\":\"0.1\","
-    "\"verifiableAttributes\":{"
+    "\"requested_attrs\":{"
         "\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"},"
         "\"attr2_uuid\":{\"schema_seq_no\":1, \"name\":\"sex\"}"
     "},"
@@ -1088,7 +1003,7 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","
-        "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
+        "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
         "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
     "}";
     SovrinHandle invalidWalletHandle = walletHandle + 1;
@@ -1102,7 +1017,6 @@
 
 - (void)testProverCreateProofWorks
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1119,7 +1033,7 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","
-        "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
+        "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
         "\"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
     "}";
     NSString *claimsJson;
@@ -1156,12 +1070,10 @@
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProofWithWalletHandle failed");
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
-     
 }
 
 - (void)testProverCreateProofWorksForUsingNotSatisfyClaim
 {
-     
     NSError *ret;
     SovrinHandle walletHandle = 0;
     NSString *claimDefJson;
@@ -1189,7 +1101,7 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","
-        "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"some_attr\"}},"
+        "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"some_attr\"}},"
         "\"requested_predicates\":{}"
     "}";
 
@@ -1213,7 +1125,6 @@
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateProofWithWalletHandle returned wrong code");
-     
 }
 
 - (void)testProverCreateProofWorksForInvalidWalletHandle
@@ -1234,7 +1145,7 @@
     "\"nonce\":\"123432421212\","
     "\"name\":\"proof_req_1\","
     "\"version\":\"0.1\","
-    "\"verifiableAttributes\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
+    "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},"
     "\"requested_predicates\":{}"
     "}";
     
@@ -1271,7 +1182,6 @@
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateProofWithWalletHandle returned wrong code");
-     
 }
 
 // MARK: - Verifier verify proof
@@ -1293,7 +1203,7 @@
             "\"nonce\":\"123432421212\","\
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"verifiableAttributes\":{"\
+            "\"requested_attrs\":{"\
                 "\"attr1_uuid\":{"\
                     "\"schema_seq_no\":1,"\
                     "\"name\":\"name\"}},"\
@@ -1342,7 +1252,7 @@
         "\"nonce\":\"123432421212\","\
         "\"name\":\"proof_req_1\","\
         "\"version\":\"0.1\","\
-        "\"verifiableAttributes\":{"\
+        "\"requested_attrs\":{"\
             "\"attr1_uuid\":{"\
                 "\"schema_seq_no\":1,"\
                 "\"name\":\"sex\"}},"\
