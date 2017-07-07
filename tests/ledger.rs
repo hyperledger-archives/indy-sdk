@@ -695,7 +695,7 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //Delete it ufter merge https://github.com/hyperledger/indy-node/pull/210
+        #[ignore] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works() {
             TestUtils::cleanup_storage();
@@ -732,7 +732,7 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //Delete it ufter merge https://github.com/hyperledger/indy-node/pull/210
+        #[ignore] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
