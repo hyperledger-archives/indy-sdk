@@ -199,7 +199,7 @@ impl Prover {
                     .filter(|claim|
                         claim.attrs.contains_key(&attribute_info.name) &&
                             if attribute_info.schema_seq_no.is_some() { claim.schema_seq_no == attribute_info.schema_seq_no.unwrap() } else { true } &&
-                            if attribute_info.claim_def_seq_no.is_some() { claim.claim_def_seq_no == attribute_info.claim_def_seq_no.unwrap() } else { true })
+                            if attribute_info.issuer_did.is_some() { claim.issuer_did == attribute_info.issuer_did.clone().unwrap() } else { true })
                     .collect();
 
             found_attributes.insert(uuid, claims_for_attribute);
@@ -212,7 +212,7 @@ impl Prover {
                 if let Some(attribute_value) = claim.attrs.get(&predicate.attr_name) {
                     if Prover::_attribute_satisfy_predicate(&predicate, attribute_value)? &&
                         if predicate.schema_seq_no.is_some() { claim.schema_seq_no == predicate.schema_seq_no.unwrap() } else { true } &&
-                        if predicate.claim_def_seq_no.is_some() { claim.claim_def_seq_no == predicate.claim_def_seq_no.unwrap() } else { true } {
+                        if predicate.issuer_did.is_some() { claim.issuer_did == predicate.issuer_did.clone().unwrap() } else { true } {
                         claims_for_predicate.push(claim.clone());
                     }
                 }
@@ -415,7 +415,6 @@ impl Prover {
             };
 
             let claim_proof = ClaimProof::new(proof,
-                                              proof_claim.claim_json.claim_def_seq_no,
                                               proof_claim.claim_json.schema_seq_no,
                                               proof_claim.claim_json.issuer_did.clone(),
                                               proof_claim.claim_json.revoc_reg_seq_no);
@@ -1550,17 +1549,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, 1, None, 1, "did".to_string())
+        ClaimInfo::new("1".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, 2, None, 2, "did".to_string())
+        ClaimInfo::new("2".to_string(), attrs, None, 2, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, 2, None, 1, "did".to_string())
+        ClaimInfo::new("3".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1588,7 +1587,7 @@ pub mod mocks {
         let claim_def_data = ClaimDefinitionData::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
             schema_seq_no: 1,
-            claim_def_seq_no: None,
+            issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             signature_type: SignatureTypes::CL,
             data: claim_def_data
         }
@@ -1598,7 +1597,7 @@ pub mod mocks {
         let claim_def_data = ClaimDefinitionData::new(issuer::mocks::get_pk(), None);
         ClaimDefinition {
             schema_seq_no: 2,
-            claim_def_seq_no: None,
+            issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             signature_type: SignatureTypes::CL,
             data: claim_def_data
         }
@@ -1606,7 +1605,8 @@ pub mod mocks {
 
     pub fn get_revocation_registry() -> RevocationRegistry {
         RevocationRegistry {
-            claim_def_seq_no: 1,
+            issuer_did: issuer::mocks::ISSUER_DID.to_string(),
+            schema_seq_no: 1,
             accumulator: mocks::get_accumulator(),
             acc_pk: verifier::mocks::get_accum_publick_key()
         }
@@ -1634,7 +1634,6 @@ pub mod mocks {
     pub fn get_gvt_claims_json() -> ClaimJson {
         ClaimJson {
             claim: issuer::mocks::get_gvt_attributes(),
-            claim_def_seq_no: 1,
             revoc_reg_seq_no: None,
             schema_seq_no: 1,
             signature: mocks::get_gvt_claims_object(),
@@ -1645,7 +1644,6 @@ pub mod mocks {
     pub fn get_xyz_claims_json() -> ClaimJson {
         ClaimJson {
             claim: issuer::mocks::get_xyz_attributes(),
-            claim_def_seq_no: 2,
             revoc_reg_seq_no: None,
             schema_seq_no: 2,
             signature: mocks::get_xyz_claims_object(),
