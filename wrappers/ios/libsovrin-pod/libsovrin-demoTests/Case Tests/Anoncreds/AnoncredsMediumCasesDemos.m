@@ -101,7 +101,9 @@
     // 7. Prover gets Claims for Proof Request
     NSString *proofReqJson = [NSString stringWithFormat:@"{"
                               "\"nonce\":\"123432421212\","
-                              "\"requested_attrs\":{"
+                              "\"name\":\"proof_req_1\","
+                              "\"version\":\"0.1\","
+                              "\"verifiableAttributes\":{"
                                 "\"attr1_uuid\":{"
                                     "\"schema_seq_no\":%@,"
                                     "\"name\":\"name\"}},"
@@ -283,7 +285,9 @@
     // 10. Prover gets Claims for Proof Request
     NSString *proofReqJson =[ NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
-                             " \"requested_attrs\":"\
+                             " \"name\":\"proof_req_1\","\
+                             " \"version\":\"0.1\","\
+                             " \"verifiableAttributes\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
                              "                          \"schema_seq_no\":%@,\"name\":\"name\""\
@@ -566,7 +570,9 @@
     
     NSString *proofReqJson =[ NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
-                             " \"requested_attrs\":"\
+                             " \"name\":\"proof_req_1\","\
+                             " \"version\":\"0.1\","\
+                             " \"verifiableAttributes\":"\
                              "             {\"attr1_uuid\":"\
                              "                        {"\
                              "                          \"schema_seq_no\":%d,\"name\":\"name\""\

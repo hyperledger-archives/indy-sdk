@@ -39,6 +39,12 @@
             </BuildableReference>
             <SkippedTests>
                <Test
+                  Identifier = "AgentHignCases/testAllAgentHighCasesTests">
+               </Test>
+               <Test
+                  Identifier = "AgentHignCases/testSequence">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test

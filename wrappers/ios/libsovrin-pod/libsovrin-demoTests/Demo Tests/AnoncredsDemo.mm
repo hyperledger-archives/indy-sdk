@@ -68,7 +68,7 @@
     __block NSString *claimDefJSON = nil;
     __block NSString *claimDefUUID = nil;
     
-    ret = [SovrinAnoncreds issuerCreateAndStoreClaimDefWithWalletHandle:  walletHandle
+    ret = [SovrinAnoncreds issuerCreateAndStoreClaimDefWithWalletHandle:walletHandle
                                                              schemaJSON:schema
                                                           signatureType:nil
                                                          createNonRevoc:false
@@ -188,22 +188,24 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString* proofReqJSON = [NSString stringWithFormat: @"\
-                              {\
-                              \"nonce\":\"123432421212\",\
-                              \"requested_attrs\":{\
-                              \"attr1_uuid\":{\
-                              \"schema_seq_no\":%@,\
-                              \"name\":\"name\"\
-                              }\
+                              {"
+                              "\"nonce\":\"123432421212\","
+                              "\"name\":\"proof_req_1\","
+                              "\"version\":\"0.1\","
+                              "\"verifiableAttributes\":{\
+                                    \"attr1_uuid\":{\
+                                        \"schema_seq_no\":%@,\
+                                        \"name\":\"name\"\
+                                    }\
                               },\
                               \"requested_predicates\":{\
-                              \"predicate1_uuid\":{\
-                              \"attr_name\":\"age\",\
-                              \"p_type\":\"GE\",\
-                              \"value\":18\
+                                    \"predicate1_uuid\":{\
+                                        \"attr_name\":\"age\",\
+                                        \"p_type\":\"GE\",\
+                                        \"value\":18\
+                                    }\
                               }\
-                              }\
-                              }", schemaSeqNo ];
+                            }", schemaSeqNo ];
     
     __block NSString *claimsJson = nil;
     

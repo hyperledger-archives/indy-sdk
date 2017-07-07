@@ -396,7 +396,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *endpoint = @"127.0.0.1:9811";
+    NSString *endpoint = @"127.0.0.1:9814";
     
     // 1. Create and open receiver's wallet
     SovrinHandle receiverWallet = 0;
@@ -897,6 +897,12 @@
     [self testAgentCloseConnectionWorksForOngoing];
     [self testAgentCloseConnectionWorksForIncomingConnection];
     [self testAgentCloseListenerWorks];
+}
+
+- (void)testSequence
+{
+    [self testAgentAddIdentityWorks];
+    [self testAgentAddIdentityWorksForMultipleKeys];
 }
 
 @end
