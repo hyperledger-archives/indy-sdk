@@ -6,7 +6,7 @@
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
 //
 
-#import "NSString+Validation.h"
+#import "NSString+Validation.h"
 #import <Foundation/Foundation.h>
 
 @implementation NSString (Validation)
