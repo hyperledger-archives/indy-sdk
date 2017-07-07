@@ -181,7 +181,8 @@ impl CatchupHandler {
                 }
             }
 
-            if CatchupHandler::check_cons_proofs(&temp_mt, &first_resp.consProof, &self.target_mt_root, self.target_mt_size).is_err() {
+            if CatchupHandler::check_cons_proofs(&temp_mt, &first_resp.consProof, &self.target_mt_root, self.target_mt_size)
+                .map_err(map_err_err!()).is_err() {
                 return Ok(CatchupStepResult::FailedAtNode(node_idx));
             }
 
@@ -207,7 +208,9 @@ impl CatchupHandler {
                 CommonError::InvalidStructure(
                     format!("Can't decode node consistency proof: {}", err)))?)
         }
-        assert!(mt.consistency_proof(target_mt_root, target_mt_size, &bytes_proofs)?);
+        if !mt.consistency_proof(target_mt_root, target_mt_size, &bytes_proofs)? {
+            return Err(CommonError::InvalidStructure("Consistency proof verification failed".to_string()));
+        }
         Ok(())
     }
 
