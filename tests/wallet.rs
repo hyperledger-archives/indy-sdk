@@ -257,8 +257,10 @@ mod high_cases {
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
 
+            let xtype = "inmem";
+
             WalletUtils::register_wallet_type(xtype).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_plugged", Some("inmem")).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_plugged", Some(xtype)).unwrap();
 
             let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
