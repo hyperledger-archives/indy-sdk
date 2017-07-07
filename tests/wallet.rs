@@ -1,5 +1,8 @@
 extern crate sovrin;
 
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use sovrin::api as api;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -11,6 +14,7 @@ extern crate log;
 #[macro_use]
 mod utils;
 
+use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
@@ -20,6 +24,21 @@ use sovrin::api::ErrorCode;
 mod high_cases {
     use super::*;
 
+    mod register_wallet_type {
+        use super::*;
+
+        #[test]
+        fn sovrin_register_wallet_type_works() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            WalletUtils::register_wallet_type("inmem").unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+        }
+    }
+
     mod create_wallet {
         use super::*;
 
@@ -28,7 +47,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_create_wallet_works";
             let xtype = "default";
 
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
@@ -37,11 +56,27 @@ mod high_cases {
         }
 
         #[test]
+        fn sovrin_create_wallet_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let pool_name = "sovrin_create_wallet_works";
+            let wallet_name = "sovrin_create_wallet_works";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type("inmem").unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+        }
+
+        #[test]
         fn sovrin_create_wallet_works_for_unknown_type() {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works_for_unknown_type";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_create_wallet_works_for_unknown_type";
             let xtype = "type";
 
             let res = WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None);
@@ -55,7 +90,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works_for_empty_type";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_create_wallet_works_for_empty_type";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
 
@@ -67,7 +102,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_create_wallet_works";
             let xtype = "default";
             let config = r#"{"freshness_time":1000}"#;
 
@@ -85,13 +120,31 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_delete_wallet_works";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_delete_wallet_works";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
             WalletUtils::delete_wallet(wallet_name).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_delete_wallet_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let pool_name = "sovrin_delete_wallet_works_for_plugged";
+            let wallet_name = "sovrin_delete_wallet_works_for_plugged";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+            WalletUtils::delete_wallet(wallet_name).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
     }
 
@@ -103,7 +156,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_open_wallet_works";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_open_wallet_works";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
             WalletUtils::open_wallet(wallet_name, None).unwrap();
@@ -112,11 +165,28 @@ mod high_cases {
         }
 
         #[test]
+        fn sovrin_open_wallet_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let pool_name = "sovrin_open_wallet_works_for_plugged";
+            let wallet_name = "sovrin_open_wallet_works_for_plugged";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+            WalletUtils::open_wallet(wallet_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+        }
+
+        #[test]
         fn sovrin_open_wallet_works_for_config() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_open_wallet_works";
-            let wallet_name = "wallet1";
+            let pool_name = "sovrin_open_wallet_works_for_config";
+            let wallet_name = "sovrin_open_wallet_works_for_config";
             let config = r#"{"freshness_time":1000}"#;
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
@@ -134,7 +204,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_close_wallet_works";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_close_wallet_works";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
 
@@ -143,6 +213,26 @@ mod high_cases {
             WalletUtils::open_wallet(wallet_name, None).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_close_wallet_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let pool_name = "sovrin_close_wallet_works_for_plugged";
+            let wallet_name = "sovrin_close_wallet_works_for_plugged";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::open_wallet(wallet_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
     }
 
@@ -153,17 +243,31 @@ mod high_cases {
         fn sovrin_wallet_set_seqno_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_wallet_set_seqno_works";
-            let wallet_name = "wallet1";
-            let xtype = "default";
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, xtype).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works", None).unwrap();
 
             let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &did, 1).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_wallet_set_seqno_works_for_plugged() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_plugged", Some(xtype)).unwrap();
+
+            let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &did, 1).unwrap();
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
         }
     }
 }
@@ -179,7 +283,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works_for_duplicate_name";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_create_wallet_works_for_duplicate_name";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
             let res = WalletUtils::create_wallet(pool_name, wallet_name, None, None);
@@ -192,7 +296,7 @@ mod medium_cases {
         fn sovrin_create_wallet_works_for_empty_name() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool";
+            let pool_name = "sovrin_create_wallet_works_for_empty_name";
             let wallet_name = "";
 
             let res = WalletUtils::create_wallet(pool_name, wallet_name, None, None);
@@ -209,7 +313,7 @@ mod medium_cases {
         fn sovrin_delete_wallet_works_for_invalid_wallet_name() {
             TestUtils::cleanup_storage();
 
-            let res = WalletUtils::delete_wallet("wallet1");
+            let res = WalletUtils::delete_wallet("sovrin_delete_wallet_works_for_invalid_wallet_name");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -220,7 +324,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_delete_wallet_works_for_deleted_wallet";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_delete_wallet_works_for_deleted_wallet";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
             WalletUtils::delete_wallet(wallet_name).unwrap();
@@ -238,7 +342,7 @@ mod medium_cases {
         fn sovrin_open_wallet_works_for_not_created_wallet() {
             TestUtils::cleanup_storage();
 
-            let res = WalletUtils::open_wallet("wallet1", None);
+            let res = WalletUtils::open_wallet("sovrin_open_wallet_works_for_not_created_wallet", None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -250,12 +354,12 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works";
-            let wallet_name = "wallet1";
+            let wallet_name = "sovrin_open_wallet_works_for_twice";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
 
             WalletUtils::open_wallet(wallet_name, None).unwrap();
-            let res =  WalletUtils::open_wallet(wallet_name, None);
+            let res = WalletUtils::open_wallet(wallet_name, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -265,9 +369,9 @@ mod medium_cases {
         fn sovrin_open_wallet_works_for_two_wallets() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_create_wallet_works";
-            let wallet_name_1 = "wallet1";
-            let wallet_name_2 = "wallet2";
+            let pool_name = "sovrin_open_wallet_works_for_two_wallets";
+            let wallet_name_1 = "sovrin_open_wallet_works_for_two_wallets1";
+            let wallet_name_2 = "sovrin_open_wallet_works_for_two_wallets2";
 
             WalletUtils::create_wallet(pool_name, wallet_name_1, None, None).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name_2, None, None).unwrap();
@@ -281,8 +385,8 @@ mod medium_cases {
         fn sovrin_open_wallet_works_for_invalid_config() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_open_wallet_works";
-            let wallet_name = "wallet1";
+            let pool_name = "sovrin_open_wallet_works_for_invalid_config";
+            let wallet_name = "sovrin_open_wallet_works_for_invalid_config";
             let config = r#"{"field":"value"}"#;
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
@@ -310,7 +414,7 @@ mod medium_cases {
         fn sovrin_close_wallet_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_close_wallet_works_for_closed_wallet", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_close_wallet_works_for_twice", None).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             let res = WalletUtils::close_wallet(wallet_handle);
@@ -327,7 +431,7 @@ mod medium_cases {
         fn sovrin_wallet_set_seqno_works_for_not_exists_key() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_not_exists_key", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_not_exists_key", None).unwrap();
 
             //TODO may be we must return WalletNotFound in case if key not exists in wallet
             WalletUtils::wallet_set_seq_no_for_value(wallet_handle, "key", 1).unwrap();
@@ -339,7 +443,7 @@ mod medium_cases {
         fn sovrin_wallet_set_seqno_works_for_invalid_wallet() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_invalid_wallet", "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("sovrin_wallet_set_seqno_works_for_invalid_wallet", None).unwrap();
 
 
             let invalid_wallet_handle = wallet_handle + 1;

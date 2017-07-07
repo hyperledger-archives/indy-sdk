@@ -10,49 +10,55 @@ extern "C" {
     /// It allows library user to provide custom wallet implementation.
     ///
     /// #Params
+    /// command_handle: Command handle to map callback to caller context.
     /// xtype: Wallet type name.
-    /// create: create operation handler
-    /// create: open operation handler
-    /// set: set operation handler
-    /// get: get operation handler
-    /// close: close operation handler
-    /// free: free operation handler
+    /// create: WalletType create operation handler
+    /// open: WalletType open operation handler
+    /// set: Wallet set operation handler
+    /// get: Wallet get operation handler
+    /// get_not_expired: Wallet get_not_expired operation handler
+    /// list: Wallet list operation handler
+    /// close: Wallet close operation handler
+    /// delete: WalletType delete operation handler
+    /// free: Handler that allows to de-allocate strings allocated in caller code
     ///
     /// #Returns
-    /// error code
-    ///
-    /// #Errors
-    /// CommonInvalidParam1
-    /// CommonInvalidParam2
-    /// CommonInvalidParam3
-    /// CommonInvalidParam4
-    /// CommonInvalidParam5
-    /// WalletTypeAlreadyRegistered
+    /// Error code
     
 
-    extern sovrin_error_t sovrin_register_wallet_type(const char* xtype,
+    extern sovrin_error_t sovrin_register_wallet_type(sovrin_handle_t  command_handle
+                                                      const char* xtype,
                                                       sovrin_error_t (*createFn)(const char* name,
                                                                                  const char* config,
                                                                                  const char* credentials),
                                                       
                                                       sovrin_error_t (*openFn)(const char* name,
                                                                                const char* config,
+                                                                               const char* runtime_config,
                                                                                const char* credentials,
                                                                                sovrin_handle_t* handle),
                                                       
                                                       sovrin_error_t (*setFn)(sovrin_handle_t handle,
                                                                               const char* key,
-                                                                              const char* sub_key,
                                                                               const char* value),
                                                       
                                                       sovrin_error_t (*getFn)(sovrin_handle_t handle,
                                                                               const char* key,
-                                                                              const char* sub_key,
-                                                                              const char* value_ptr,
-                                                                              const char* value_life_time),
-                                                      
+                                                                              const char *const *value_ptr),
+
+                                                      sovrin_error_t (*getNotExiredFn)(sovrin_handle_t handle,
+                                                                              const char* key,
+                                                                              const char *const *value_ptr),
+
+                                                      sovrin_error_t (*listFn)(sovrin_handle_t handle,
+                                                                              const char* key,
+                                                                              const char *const *values_json_ptr),
+
                                                       sovrin_error_t (*closeFn)(sovrin_handle_t handle),
-                                                      sovrin_error_t (*deleteFn)(const char* name),
+                                                      sovrin_error_t (*deleteFn)(const char* name,
+                                                                                 const char* config,
+                                                                                 const char* credentials),
+
                                                       sovrin_error_t (*freeFn)(sovrin_handle_t handle, const char* str)
                                                       );
 
