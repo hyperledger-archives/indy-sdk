@@ -160,7 +160,7 @@ impl WalletUtils {
         let wallet_name = CString::new(format!("default-wallet-name-{}", SequenceUtils::get_next_id())).unwrap();
         let xtype = match xtype {
             Some(xtype) => CString::new(xtype).unwrap(),
-            None => CString::new("defaukt").unwrap()
+            None => CString::new("default").unwrap()
         };
 
         let err =
