@@ -695,7 +695,7 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
+        #[ignore] //Delete it ufter merge https://github.com/hyperledger/indy-node/pull/210
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works() {
             TestUtils::cleanup_storage();
@@ -732,7 +732,7 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
+        #[ignore] //Delete it ufter merge https://github.com/hyperledger/indy-node/pull/210
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
