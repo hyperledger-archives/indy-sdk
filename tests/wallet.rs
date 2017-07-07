@@ -235,7 +235,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_create_wallet_works_for_empty_name";
-            let wallet_name = "sovrin_create_wallet_works_for_empty_name";
+            let wallet_name = "";
 
             let res = WalletUtils::create_wallet(pool_name, wallet_name, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
