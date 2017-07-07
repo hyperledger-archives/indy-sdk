@@ -1,13 +1,36 @@
 ﻿using System;
 using System.Threading.Tasks;
+using static Indy.Sdk.Dotnet.Wrapper.LibSovrin;
 
-namespace Indy.Sdk.Dotnet.Wrapper.Wallet
+namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
-    /// Async wrapper class for Wallet functions.
+    /// Wrapper class for Wallet functions.
     /// </summary>
-    public sealed class WalletWrapper : AsyncWrapperBase
+    public sealed class Wallet : AsyncWrapperBase
     {
+        private static ResultWithHandleDelegate OpenWalletResultCallback { get; }
+
+        public IntPtr Handle { get; }
+
+        private Wallet(IntPtr handle)
+        {
+            Handle = handle;
+        }
+
+        static Wallet()
+        {
+            OpenWalletResultCallback = (xCommandHandle, err, handle) =>
+            {
+                var taskCompletionSource = GetTaskCompletionSourceForCommand<Wallet>(xCommandHandle);
+
+                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                    return;
+
+                taskCompletionSource.SetResult(new Wallet(handle));
+            };
+
+        }
         public static Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
         {
             var commandHandle = GetNextCommandHandle();
@@ -27,24 +50,25 @@ namespace Indy.Sdk.Dotnet.Wrapper.Wallet
             return taskCompletionSource.Task;
         }
 
-        public static Task<IntPtr> OpenWalletAsync(string name, string runtimeConfig, string credentials)
+        public static Task<Wallet> OpenWalletAsync(string name, string runtimeConfig, string credentials)
         {
             var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<IntPtr>(commandHandle);
+            var taskCompletionSource = CreateTaskCompletionSourceForCommand<Wallet>(commandHandle);
 
             var result = LibSovrin.sovrin_open_wallet(
                 commandHandle,
                 name,
                 runtimeConfig,
                 credentials,
-                ResultWithHandleCallback);
+                OpenWalletResultCallback
+                );
 
             CheckResult(result);
 
             return taskCompletionSource.Task;
         }
 
-        public static Task CloseWalletAsync(IntPtr handle)
+        private static Task CloseWalletAsync(IntPtr handle)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
@@ -76,7 +100,7 @@ namespace Indy.Sdk.Dotnet.Wrapper.Wallet
             return taskCompletionSource.Task;
         }
 
-        public static Task WalletSetSeqNoForValueAsync(IntPtr walletHandle, string walletKey)
+        private static Task WalletSetSeqNoForValueAsync(IntPtr walletHandle, string walletKey)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
@@ -91,6 +115,16 @@ namespace Indy.Sdk.Dotnet.Wrapper.Wallet
             CheckResult(result);
 
             return taskCompletionSource.Task;
+        }
+
+        public Task CloseAsync()
+        {
+            return CloseWalletAsync(this.Handle);
+        }
+
+        public Task SetSeqNoForValueAsync(string walletKey)
+        {
+            return WalletSetSeqNoForValueAsync(this.Handle, walletKey);
         }
     }
 }    

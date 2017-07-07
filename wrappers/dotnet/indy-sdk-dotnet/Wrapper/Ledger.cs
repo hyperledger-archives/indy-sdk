@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,14 +9,14 @@ using static Indy.Sdk.Dotnet.Wrapper.LibSovrin;
 namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
-    /// Async wrapper for ledger functions.
+    /// Wrapper class for ledger functions.
     /// </summary>
-    public sealed class LedgerWrapper : AsyncWrapperBase
+    public sealed class Ledger : AsyncWrapperBase
     {
         private static SubmitRequestResultDelegate SubmitRequestResultCallback { get; }
         private static BuildRequestResultDelegate BuildRequestResultCallback { get; }
 
-        static LedgerWrapper()
+        static Ledger()
         {
             SubmitRequestResultCallback = (xCommandHandle, err, responseJson) => 
             {
@@ -39,15 +40,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
 
-        public static Task<string> SignAndSubmitRequestAsync(IntPtr poolHandle, IntPtr walletHandle, string submitterDid, string requstJson)
+        public static Task<string> SignAndSubmitRequestAsync(Pool pool, Wallet wallet, string submitterDid, string requstJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var result = LibSovrin.sovrin_sign_and_submit_request(
                 commandHandle,
-                poolHandle,
-                walletHandle,
+                pool.Handle,
+                wallet.Handle,
                 submitterDid,
                 requstJson,                
                 SubmitRequestResultCallback
@@ -58,14 +59,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> SubmitRequestAsync(IntPtr poolHandle, string requstJson)
+        public static Task<string> SubmitRequestAsync(Pool pool, string requstJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var result = LibSovrin.sovrin_submit_request(
                 commandHandle,
-                poolHandle,
+                pool.Handle,
                 requstJson,
                 SubmitRequestResultCallback);
 

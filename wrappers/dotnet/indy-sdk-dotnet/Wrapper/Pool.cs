@@ -3,13 +3,34 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.Wrapper.LibSovrin;
 
-namespace Indy.Sdk.Dotnet.Wrapper.Pool
+namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
-    /// Async wrapper for Pool functions.
+    /// Wrapper class for pool functions.
     /// </summary>
-    public sealed class PoolWrapper : AsyncWrapperBase
+    public sealed class Pool : AsyncWrapperBase
     {       
+        private static ResultWithHandleDelegate OpenPoolLedgerResultCallback { get;  }
+
+        public IntPtr Handle { get; }
+
+        private Pool(IntPtr handle)
+        {
+            Handle = handle;
+        }
+
+        static Pool()
+        {
+            OpenPoolLedgerResultCallback = (xCommandHandle, err, handle) =>
+            {
+                var taskCompletionSource = GetTaskCompletionSourceForCommand<Pool>(xCommandHandle);
+
+                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                    return;
+                
+                taskCompletionSource.SetResult(new Pool(handle));
+            };
+        }
         
         public static Task CreatePoolLedgerConfigAsync(string configName, string config)
         {
@@ -44,16 +65,16 @@ namespace Indy.Sdk.Dotnet.Wrapper.Pool
             return taskCompletionSource.Task;
         }
 
-        public static Task<IntPtr> OpenPoolLedgerAsync(string configName, string config)
+        public static Task<Pool> OpenPoolLedgerAsync(string configName, string config)
         {
             var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<IntPtr>(commandHandle);
+            var taskCompletionSource = CreateTaskCompletionSourceForCommand<Pool>(commandHandle);
 
             var result = LibSovrin.sovrin_open_pool_ledger(
                 commandHandle,
                 configName,
                 config,
-                ResultWithHandleCallback
+                OpenPoolLedgerResultCallback
                 );
 
             CheckResult(result);
@@ -61,7 +82,7 @@ namespace Indy.Sdk.Dotnet.Wrapper.Pool
             return taskCompletionSource.Task;
         }
 
-        public static Task RefreshPoolLedgerAsync(IntPtr poolHandle)
+        private static Task RefreshPoolLedgerConfigAsync(IntPtr poolHandle)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
@@ -77,7 +98,7 @@ namespace Indy.Sdk.Dotnet.Wrapper.Pool
             return taskCompletionSource.Task;
         }
 
-        public static Task ClosePoolLedgerAsync(IntPtr poolHandle)
+        private static Task ClosePoolLedgerAsync(IntPtr poolHandle)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
@@ -91,6 +112,16 @@ namespace Indy.Sdk.Dotnet.Wrapper.Pool
             CheckResult(result);
             
             return taskCompletionSource.Task;
+        }
+
+        public Task RefreshAsync()
+        {
+            return RefreshPoolLedgerConfigAsync(this.Handle);
+        }
+
+        public Task CloseAsync()
+        {
+            return ClosePoolLedgerAsync(this.Handle);
         }
     }
 }

@@ -18,7 +18,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
         protected static Dictionary<IntPtr, object> TaskCompletionSources { get; }
         protected static ResultOnlyDelegate ResultOnlyCallback { get; }
-        protected static ResultWithHandleDelegate ResultWithHandleCallback { get; }
 
         static AsyncWrapperBase()
         {
@@ -32,16 +31,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
                     return;
 
                 taskCompletionSource.SetResult(true);
-            };
-
-            ResultWithHandleCallback = (xCommandHandle, err, handle) => 
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<IntPtr>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                taskCompletionSource.SetResult(handle);
             };
         }
         

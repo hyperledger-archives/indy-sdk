@@ -7,7 +7,10 @@ using static Indy.Sdk.Dotnet.Wrapper.LibSovrin;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
-    public sealed class SignusWrapper : AsyncWrapperBase
+    /// <summary>
+    /// Wrapper class for signus functions.
+    /// </summary>
+    public sealed class Signus : AsyncWrapperBase
     {
         private static CreateAndStoreMyDidResultDelegate CreateAndStoreMyDidResultCallback { get; }
         private static ReplaceKeysResultDelegate ReplaceKeysResultCallback { get; }
@@ -16,7 +19,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         private static EncryptResultDelegate EncryptResultCallback { get; }
         private static DecryptResultDelegate DecryptResultCallback { get; }
 
-        static SignusWrapper()
+        static Signus()
         {
             CreateAndStoreMyDidResultCallback = (xCommandHandle, err, did, verKey, pk) =>
             {
@@ -86,14 +89,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
         }
 
-        public static Task<CreateAndStoreMyDidResult> CreateAndStoreMyDidAsync(IntPtr walletHandle, string didJson)
+
+        public static Task<CreateAndStoreMyDidResult> CreateAndStoreMyDidAsync(Wallet wallet, string didJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<CreateAndStoreMyDidResult>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_create_and_store_my_did(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 didJson,
                 CreateAndStoreMyDidResultCallback);
 
@@ -102,7 +106,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<ReplaceKeysResult> ReplaceKeysAsync(IntPtr walletHandle, string did, string identityJson)
+        public static Task<ReplaceKeysResult> ReplaceKeysAsync(Wallet wallet, string did, string identityJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<ReplaceKeysResult>(commandHandle);
@@ -110,7 +114,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             var commandResult = LibSovrin.sovrin_replace_keys(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 did,
                 identityJson,
                 ReplaceKeysResultCallback);
@@ -120,14 +124,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task StoreTheirDidAsync(IntPtr walletHandle, string identityJson)
+        public static Task StoreTheirDidAsync(Wallet wallet, string identityJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
             
             var commandResult = LibSovrin.sovrin_store_their_did(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 identityJson,
                 ResultOnlyCallback);
 
@@ -136,14 +140,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> SignAsync(IntPtr walletHandle, string did, string msg)
+        public static Task<string> SignAsync(Wallet wallet, string did, string msg)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
             
             var commandResult = LibSovrin.sovrin_sign(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 did,
                 msg,
                 SignResultCallback
@@ -154,14 +158,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<bool> VerifySignatureAsync(IntPtr walletHandle, IntPtr poolHandle, string did, string signedMsg)
+        public static Task<bool> VerifySignatureAsync(Wallet wallet, IntPtr poolHandle, string did, string signedMsg)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
             
             var commandResult = LibSovrin.sovrin_verify_signature(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 poolHandle,
                 did,
                 signedMsg,
@@ -173,14 +177,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<EncryptResult> EncryptAsync(IntPtr walletHandle, string did, string msg)
+        public static Task<EncryptResult> EncryptAsync(Wallet wallet, string did, string msg)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<EncryptResult>(commandHandle);
             
             var commandResult = LibSovrin.sovrin_encrypt(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 did,
                 msg,
                 EncryptResultCallback);
@@ -190,7 +194,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> DecryptAsync(IntPtr walletHandle, string did, string encryptedMsg)
+        public static Task<string> DecryptAsync(Wallet wallet, string did, string encryptedMsg)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
@@ -198,7 +202,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             var commandResult = LibSovrin.sovrin_decrypt(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 did,
                 encryptedMsg,
                 DecryptResultCallback

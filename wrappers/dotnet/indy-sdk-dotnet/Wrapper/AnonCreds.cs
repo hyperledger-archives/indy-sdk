@@ -8,9 +8,9 @@ using static Indy.Sdk.Dotnet.Wrapper.LibSovrin;
 namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
-    /// Async wrapper for anoncreds functions.
+    /// Wrapper class for anoncreds functions.
     /// </summary>
-    public sealed class AnonCredsWrapper : AsyncWrapperBase
+    public sealed class AnonCreds : AsyncWrapperBase
     {
         private static IssuerCreateAndStoreClaimDefResultDelegate IssuerCreateAndStoreClaimDefResultCallback { get; }
         private static IssuerCreateAndStoreClaimRevocRegResultDelegate IssuerCreateAndStoreClaimRevocRegResultCallback { get; }
@@ -23,7 +23,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         private static ProverCreateProofResultDelegate ProverCreateProofResultCallback { get; }
         private static VerifierVerifyProofResultDelegate VerifierVerifyProofResultCallback { get; }
 
-        static AnonCredsWrapper()
+        static AnonCreds()
         {
             IssuerCreateAndStoreClaimDefResultCallback = (xCommandHandle, err, claimDefJson, claimDefUuid) =>
             {
@@ -134,14 +134,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
 
-        public static Task<IssuerCreateAndStoreClaimDefResult> IssuerCreateAndStoreClaimDefAsync(IntPtr walletHandle, string schemaJson, string signatureType, bool createNonRevoc)
+        public static Task<IssuerCreateAndStoreClaimDefResult> IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string schemaJson, string signatureType, bool createNonRevoc)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<IssuerCreateAndStoreClaimDefResult>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_issuer_create_and_store_claim_def(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 schemaJson,
                 signatureType,
                 createNonRevoc,
@@ -153,14 +153,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<IssuerCreateAndStoreRevocRegResult> IssuerCreateAndStoreRevocRegAsync(IntPtr walletHandle, int claimDefSeqNo, int maxClaimNum)
+        public static Task<IssuerCreateAndStoreRevocRegResult> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, int claimDefSeqNo, int maxClaimNum)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<IssuerCreateAndStoreRevocRegResult>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_issuer_create_and_store_revoc_reg(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 claimDefSeqNo,
                 maxClaimNum,
                 IssuerCreateAndStoreClaimRevocRegResultCallback
@@ -171,14 +171,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(IntPtr walletHandle, string claimReqJson, string claimJson, int revocRegSeqNo, int userRevocIndex)
+        public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int revocRegSeqNo, int userRevocIndex)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<IssuerCreateClaimResult>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_issuer_create_claim(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 claimReqJson,
                 claimJson,
                 revocRegSeqNo,
@@ -191,14 +191,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> IssuerRevokeClaimAsync(IntPtr walletHandle, int claimDefSeqNo, int revocRegSeqNo, int userRevocIndex)
+        public static Task<string> IssuerRevokeClaimAsync(Wallet wallet, int claimDefSeqNo, int revocRegSeqNo, int userRevocIndex)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_issuer_revoke_claim(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 claimDefSeqNo,
                 revocRegSeqNo,
                 userRevocIndex,
@@ -210,14 +210,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task ProverStoreClaimOfferAsync(IntPtr walletHandle, string claimOfferJson)
+        public static Task ProverStoreClaimOfferAsync(Wallet wallet, string claimOfferJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_store_claim_offer(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 claimOfferJson,
                 ResultOnlyCallback
                 );
@@ -227,14 +227,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> ProverGetClaimOffersAsync(IntPtr walletHandle, string filterJson)
+        public static Task<string> ProverGetClaimOffersAsync(Wallet wallet, string filterJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_get_claim_offers(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 filterJson,
                 ProverGetClaimOffersResultCallback
                 );
@@ -244,14 +244,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task ProverCreateMasterSecretAsync(IntPtr walletHandle, string masterSecretName)
+        public static Task ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretName)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_create_master_secret(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 masterSecretName,
                 ResultOnlyCallback
                 );
@@ -261,14 +261,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> ProverCreateAndStoreClaimReqAsync(IntPtr walletHandle, string proverDid, string claimOfferJson, string claimDefJson, string masterSecretName)
+        public static Task<string> ProverCreateAndStoreClaimReqAsync(Wallet wallet, string proverDid, string claimOfferJson, string claimDefJson, string masterSecretName)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_create_and_store_claim_req(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 proverDid,
                 claimOfferJson,
                 claimDefJson,
@@ -281,14 +281,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task ProverStoreClaimAsync(IntPtr walletHandle, string claimsJson)
+        public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_store_claim(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 claimsJson,
                 ResultOnlyCallback
                 );
@@ -298,14 +298,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> ProverGetClaimsAsync(IntPtr walletHandle, string filterJson)
+        public static Task<string> ProverGetClaimsAsync(Wallet wallet, string filterJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_get_claims(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 filterJson,
                 ProverGetClaimsResultCallback
                 );
@@ -315,14 +315,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> ProverGetClaimsForProofReqAsync(IntPtr walletHandle, string proofRequestJson)
+        public static Task<string> ProverGetClaimsForProofReqAsync(Wallet wallet, string proofRequestJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_get_claims_for_proof_req(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 proofRequestJson,
                 ProverGetClaimsForProofResultCallback
                 );
@@ -332,14 +332,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<string> ProverCreateProofAsync(IntPtr walletHandle, string proofReqJson, string requestedClaimsJson, string schemasJson, string masterSecretName, string claimDefsJson, string revocRegsJson)
+        public static Task<string> ProverCreateProofAsync(Wallet wallet, string proofReqJson, string requestedClaimsJson, string schemasJson, string masterSecretName, string claimDefsJson, string revocRegsJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_prover_create_proof(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 proofReqJson,
                 requestedClaimsJson,
                 schemasJson,
@@ -353,14 +353,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        public static Task<bool> VerifierVerifyProofAsync(IntPtr walletHandle, string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
+        public static Task<bool> VerifierVerifyProofAsync(Wallet wallet, string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
         {
             var commandHandle = GetNextCommandHandle();
             var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
 
             var commandResult = LibSovrin.sovrin_verifier_verify_proof(
                 commandHandle,
-                walletHandle,
+                wallet.Handle,
                 proofRequestJson,
                 proofJson,
                 schemasJson,
