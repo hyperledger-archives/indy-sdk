@@ -145,7 +145,7 @@ public class Pool extends SovrinJava.API {
 
 		int handle = pool.getPoolHandle();
 
-		int result = LibSovrin.api.sovrin_refresh_pool_ledger(
+		int result = LibSovrin.api.sovrin_close_pool_ledger(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
 				cb);
