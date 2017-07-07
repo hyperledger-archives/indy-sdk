@@ -12,8 +12,18 @@ RUN \
            cmake \
            pkgconfig \
            openssl-devel \
-           sqlite-devel \
-           libsodium-devel
+           sqlite-devel
+
+RUN cd /tmp && \
+    curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.12 && \
+    ./configure && \
+    make && \
+    make install && \
+    rm -rf /tmp/libsodium-1.0.12
+
+ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
