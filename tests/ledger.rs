@@ -765,7 +765,7 @@ mod high_cases {
             let get_txn_response = PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_txn_response).unwrap();
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-            
+
             TestUtils::cleanup_storage();
         }
     }
