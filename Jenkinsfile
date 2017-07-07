@@ -12,13 +12,26 @@ try {
 
     // 1. TEST
     stage('Test') {
-        parallel 'redhat-test': {
+
+        def tests = [:]
+
+        tests['ubuntu-test'] = {
+            node('ubuntu') {
+                stage('Ubuntu Test') {
+                    testUbuntu()
+                }
+            }
+        }
+
+        tests['redhat-test'] = {
             node('ubuntu') {
                 stage('RedHat Test') {
                     testRedHat()
                 }
             }
         }
+
+        parallel(tests)
     }
 
     if (!publishBranch) {
@@ -51,38 +64,44 @@ try {
     }
 }
 
-def createPool() {
-    echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
-    sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+def testUbuntu() {
+    def poolInst
+    def network_name = "pool_network"
+    try {
+        echo 'Ubuntu Test: Checkout csm'
+        checkout scm
 
-    echo 'Ubuntu Test: Build docker image for nodes pool'
-    def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
-    echo 'Ubuntu Test: Run nodes pool'
-    poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
-}
+        echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
-def runTests(testEnv){
-    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-        echo 'Ubuntu Test: Test'
+        echo 'Ubuntu Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        echo 'Ubuntu Test: Run nodes pool'
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
-        sh 'cargo update'
+        echo 'Ubuntu Test: Build docker image'
+        def testEnv = dockerHelpers.build(name)
 
-        try {
-            sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
-            /* TODO FIXME restore after xunit will be fixed
-            sh 'RUST_TEST_THREADS=1 cargo test-xunit'
-             */
-        }
-        finally {
-            /* TODO FIXME restore after xunit will be fixed
-            junit 'test-results.xml'
-            */
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+           echo 'Ubuntu Test: Test'
+
+           sh 'cargo update'
+
+           try {
+               sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+               /* TODO FIXME restore after xunit will be fixed
+               sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                */
+           }
+           finally {
+               /* TODO FIXME restore after xunit will be fixed
+               junit 'test-results.xml'
+               */
+           }
         }
     }
-}
-
-def stopPool(network_name, env){
-    echo '${env} Test: Cleanup'
+    finally {
+        echo 'Ubuntu Test: Cleanup'
         try {
             sh "docker network inspect ${network_name}"
         } catch (ignore) {
@@ -93,33 +112,15 @@ def stopPool(network_name, env){
                 poolInst.stop()
             }
         } catch (err) {
-            echo "${env} Tests: error while stop pool ${err}"
+            echo "Ubuntu Tests: error while stop pool ${err}"
         }
         try {
-            echo "{env} Test: remove pool network ${network_name}"
+            echo "Ubuntu Test: remove pool network ${network_name}"
             sh "docker network rm ${network_name}"
         } catch (err) {
-            echo "{env} Test: error while delete ${network_name} - ${err}"
+            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
         }
-    step([$class: 'WsCleanup'])
-}
-
-def testUbuntu() {
-    def poolInst
-    def network_name = "pool_network"
-    try {
-        echo 'Ubuntu Test: Checkout csm'
-        checkout scm
-
-        createPool()
-
-        echo 'Ubuntu Test: Build docker image'
-        def testEnv = dockerHelpers.build(name, 'ci/ubuntu.dockerfile ci')
-
-        runTests(testEnv)
-    }
-    finally {
-        stopPool(network_name, 'Ubuntu')
+        step([$class: 'WsCleanup'])
     }
 }
 
@@ -128,17 +129,58 @@ def testRedHat() {
     def network_name = "pool_network"
     try {
         echo 'RedHat Test: Checkout csm'
-            checkout scm
+        checkout scm
 
-            createPool()
+        echo "RedHat Test: Create docker network (${network_name}) for nodes pool and test image"
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
-            echo 'RedHat Test: Build docker image'
-            def testEnv = dockerHelpers.build(name, 'ci/amazon.dockerfile ci')
+        echo 'RedHat Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        echo 'RedHat Test: Run nodes pool'
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
-            runTests(testEnv)
+        echo 'RedHat Test: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/amazon.dockerfile ci')
+
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo 'RedHat Test: Test'
+
+            sh 'cargo update'
+
+            try {
+                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                /* TODO FIXME restore after xunit will be fixed
+                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                 */
+            }
+            finally {
+                /* TODO FIXME restore after xunit will be fixed
+                junit 'test-results.xml'
+                */
+            }
+        }
     }
     finally {
-        stopPool(network_name, 'RedHat')
+        echo 'RedHat Test: Cleanup'
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (ignore) {
+        }
+        try {
+            if (poolInst) {
+                echo 'RedHat Test: stop pool'
+                poolInst.stop()
+            }
+        } catch (err) {
+            echo "RedHat Tests: error while stop pool ${err}"
+        }
+        try {
+            echo "RedHat Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (err) {
+            echo "RedHat Test: error while delete ${network_name} - ${err}"
+        }
+        step([$class: 'WsCleanup'])
     }
 }
 
