@@ -16,14 +16,18 @@
     "osx": "10.7"
   },
   "source": {
-    "http": "https://repo.evernym.com/deb/pods-ios/libzmq-pw/4.2.2/libzmq-pw-4.2.2.tar.gz"
+    "git": "https://github.com/evernym/libzmq-pw",
+    "tag": "v4.2.2pw"
   },
   "source_files": [
     "src/*.{h,hpp,c,cc,cpp}",
+    "include/*.h",
+    "cmake_build/*.hpp"
+  ],
+  "public_header_files": [
     "include/*.h"
   ],
-  "public_header_files": "include/*.h",
   "libraries": "stdc++",
   "requires_arc": false,
-  "prepare_command": "        (\n            ./autogen.sh\n            ./configure --prefix=$PWD\n        ) | tee \"/tmp/$(basename $0).$$.tmp\"\n"
+  "prepare_command": "mkdir cmake_build && cd cmake_build && cmake .. | tee \"/tmp/$(basename $0).$$.tmp\"\n"
 }

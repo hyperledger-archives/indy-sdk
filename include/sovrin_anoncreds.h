@@ -7,19 +7,20 @@ extern "C" {
     
     extern sovrin_error_t sovrin_issuer_create_and_store_claim_def(sovrin_handle_t command_handle,
                                                                    sovrin_handle_t wallet_handle,
+                                                                   const char *    issuer_did,
                                                                    const char *    schema_json,
                                                                    const char *    signature_type,
                                                                    sovrin_bool_t   create_non_revoc,
                                                                    
                                                                    void           (*cb)(sovrin_handle_t xcommand_handle,
                                                                                         sovrin_error_t  err,
-                                                                                        const char*     clain_def_json,
-                                                                                        const char*     claim_def_uuid)
+                                                                                        const char*     clain_def_json)
                                                                    );
     
     extern sovrin_error_t sovrin_issuer_create_and_store_revoc_reg(sovrin_handle_t command_handle,
                                                                    sovrin_handle_t wallet_handle,
-                                                                   sovrin_i32_t    claim_def_seq_no,
+                                                                   const char *    issuer_did,
+                                                                   sovrin_i32_t    schema_seq_no,
                                                                    sovrin_i32_t    max_claim_num,
                                                                    
                                                                    void           (*cb)(sovrin_handle_t xcommand_handle,
@@ -44,7 +45,6 @@ extern "C" {
     
     extern sovrin_error_t sovrin_issuer_revoke_claim(sovrin_handle_t command_handle,
                                                      sovrin_handle_t wallet_handle,
-                                                     sovrin_i32_t    claim_def_seq_no,
                                                      sovrin_i32_t    revoc_reg_seq_no,
                                                      sovrin_i32_t    user_revoc_index,
                                                      
