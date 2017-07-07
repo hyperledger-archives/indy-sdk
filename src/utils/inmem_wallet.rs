@@ -101,7 +101,7 @@ impl InmemWallet {
         let mut handles = INMEM_WALLET_HANDLES.lock().unwrap();
         let xhandle = SequenceUtils::get_next_id();
         handles.insert(xhandle, InmemWalletContext {
-            name,
+            name: name,
             freshness_time: runtime_config.freshness_time
         });
 
