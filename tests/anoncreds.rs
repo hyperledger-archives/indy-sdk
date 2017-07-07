@@ -938,7 +938,6 @@ mod medium_cases {
                                 "issuer_did":"{}",
                                 "revoc_reg_seq_no":null,
                                 "schema_seq_no":10,
-                                "issuer_did":"did",
                                 "signature":{{"primary_claim":{{"m2":"1","a":"1","e":"2","v":"3"}},"non_revocation_claim":null}}}}"#, ISSUER_DID);
 
             let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json);
