@@ -1,5 +1,5 @@
 use std::cmp;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap};
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
@@ -19,6 +19,13 @@ enum CatchupStepResult {
     FailedAtNode(usize),
 }
 
+enum CatchupProgress {
+    ShouldBeStarted,
+    NotNeeded,
+    Finished(MerkleTree),
+    InProgress,
+}
+
 pub struct CatchupHandler {
     pub f: usize,
     pub ledger_status_same: usize,
@@ -31,6 +38,7 @@ pub struct CatchupHandler {
     pub is_refresh: bool,
     pub pending_catchup: Option<CatchUpProcess>,
     pub pool_id: i32,
+    pub nodes_votes: Vec<Option<(String, usize)>>,
 }
 
 impl Default for CatchupHandler {
@@ -47,13 +55,14 @@ impl Default for CatchupHandler {
             initiate_cmd_id: 0,
             is_refresh: false,
             pool_id: 0,
+            nodes_votes: Vec::new(),
         }
     }
 }
 
 impl CatchupHandler {
     pub fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
-        match msg {
+        let catchup_status: CatchupProgress = match msg {
             Message::Pong => {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
@@ -66,41 +75,75 @@ impl CatchupHandler {
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;
+                CatchupProgress::InProgress
             }
             Message::LedgerStatus(ledger_status) => {
-                if self.merkle_tree.root_hash().as_slice().to_base58().ne(ledger_status.merkleRoot.as_str()) {
-                    return Err(PoolError::CommonError(
-                        CommonError::InvalidState(
-                            "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
-                }
-                self.ledger_status_same += 1;
-                if self.ledger_status_same == self.f + 1 {
-                    return Ok(Some(self.merkle_tree.clone()));
-                }
+                self.nodes_votes[src_ind] = Some((ledger_status.merkleRoot, ledger_status.txnSeqNo));
+                self.check_nodes_responses_on_status()?
             }
             Message::ConsistencyProof(cons_proof) => {
-                trace!("{:?}", cons_proof);
-                if cons_proof.seqNoStart == self.merkle_tree.count()
-                    && cons_proof.seqNoEnd > self.merkle_tree.count() {
-                    self.target_mt_size = cmp::max(cons_proof.seqNoEnd, self.target_mt_size);
-                    self.new_mt_vote += 1;
-                    self.target_mt_root = cons_proof.newMerkleRoot.from_base58().unwrap();
-                    debug!("merkle tree expected size now {}", self.target_mt_size);
-                }
-                if self.new_mt_vote == self.f + 1 {
-                    self.start_catchup()?;
-                }
+                self.nodes_votes[src_ind] = Some((cons_proof.newMerkleRoot, cons_proof.seqNoEnd));
+                self.check_nodes_responses_on_status()?
             }
             Message::CatchupRep(catchup) => {
-                if let Some(new_mt) = self.process_catchup_rep(catchup, src_ind)? {
-                    return Ok(Some(new_mt));
-                }
+                self.process_catchup_rep(catchup, src_ind)?
             }
             _ => {
                 warn!("unhandled msg {:?}", msg);
+                CatchupProgress::InProgress
             }
         };
+
+        match catchup_status {
+            CatchupProgress::Finished(mt) => return Ok(Some(mt)),
+            CatchupProgress::NotNeeded => return Ok(Some(self.merkle_tree.clone())),
+            CatchupProgress::ShouldBeStarted => self.start_catchup()?,
+            CatchupProgress::InProgress => { /* nothing to do */ }
+        }
         Ok(None)
+    }
+
+    fn check_nodes_responses_on_status(&mut self) -> Result<CatchupProgress, PoolError> {
+        if self.pending_catchup.is_some() {
+            return Ok(CatchupProgress::InProgress)
+        }
+        let mut votes: HashMap<(String, usize), usize> = HashMap::new();
+        for node_vote in &self.nodes_votes {
+            if let &Some(ref node_vote) = node_vote {
+                let cnt = *votes.get(&node_vote).unwrap_or(&0) + 1;
+                votes.insert((node_vote.0.clone(), node_vote.1), cnt);
+            }
+        }
+        if let Some((most_popular_vote, votes_cnt)) = votes.iter().max_by_key(|entry| entry.1) {
+            if *votes_cnt == self.nodes.len() - self.f /* TODO N-f consensus */ {
+                let &(ref target_mt_root, target_mt_size) = most_popular_vote;
+                let cur_mt_size = self.merkle_tree.count();
+                let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
+                if target_mt_size == cur_mt_size {
+                    if cur_mt_hash.eq(target_mt_root) {
+                        return Ok(CatchupProgress::NotNeeded);
+                    } else {
+                        return Err(PoolError::CommonError(CommonError::InvalidState(
+                            "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+                    }
+                } else if target_mt_size > cur_mt_size {
+                    self.target_mt_size = target_mt_size;
+                    self.target_mt_root = target_mt_root.from_base58().map_err(|_|
+                        CommonError::InvalidStructure(
+                            "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
+                    return Ok(CatchupProgress::ShouldBeStarted);
+                } else {
+                    return Err(PoolError::CommonError(CommonError::InvalidState(
+                        "Local merkle tree greater than mt from ledger".to_string())));
+                }
+            }
+        }
+        Ok(CatchupProgress::InProgress)
+    }
+
+    pub fn reset_nodes_votes(&mut self) {
+        self.nodes_votes.clear();
+        self.nodes_votes.resize(self.nodes.len(), None);
     }
 
     pub fn start_catchup(&mut self) -> Result<(), PoolError> {
@@ -147,20 +190,21 @@ impl CatchupHandler {
         Ok(())
     }
 
-    pub fn process_catchup_rep(&mut self, catchup: CatchupRep, node_idx: usize) -> Result<Option<MerkleTree>, PoolError> {
+    fn process_catchup_rep(&mut self, catchup: CatchupRep, node_idx: usize) -> Result<CatchupProgress, PoolError> {
         trace!("append {:?}", catchup);
         let catchup_finished = self.catchup_step(catchup, node_idx)?;
         match catchup_finished {
-            CatchupStepResult::Finished => return Ok(Some(self.finish_catchup()?)),
+            CatchupStepResult::Finished => return Ok(CatchupProgress::Finished(self.finish_catchup()?)),
             CatchupStepResult::Continue => { /* nothing to do */ }
             CatchupStepResult::FailedAtNode(failed_node_idx) => {
                 warn!("Fail to continue catch-up by response from node with idx {}. Node will be blacklisted and catchup will be restarted", failed_node_idx);
                 self.nodes[failed_node_idx].is_blacklisted = true;
                 self.pending_catchup = None;
+                // TODO may be send ledger status again and re-obtain target MerkleTree params
                 self.start_catchup()?
             }
         }
-        Ok(None)
+        Ok(CatchupProgress::InProgress)
     }
 
     fn catchup_step(&mut self, catchup: CatchupRep, node_idx: usize) -> Result<CatchupStepResult, PoolError> {

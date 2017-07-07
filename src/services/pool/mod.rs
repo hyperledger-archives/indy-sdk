@@ -263,6 +263,9 @@ impl PoolWorker {
             self.handler.nodes_mut().push(rn);
         }
         self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+        if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
+            handler.reset_nodes_votes();
+        }
         Ok(())
     }
 
