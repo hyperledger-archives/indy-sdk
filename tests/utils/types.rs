@@ -5,8 +5,8 @@ use std::cell::RefCell;
 pub struct ClaimDefinition {
     #[serde(rename = "ref")]
     pub schema_seq_no: i32,
-    #[serde(rename = "seqNo")]
-    pub claim_def_seq_no: Option<i32>,
+    #[serde(rename = "origin")]
+    pub issuer_did: String,
     pub signature_type: String,
     pub data: ClaimDefinitionData
 }
@@ -132,7 +132,6 @@ pub struct SchemaData {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub claim_def_seq_no: i32,
     pub schema_seq_no: i32
 }
 
@@ -145,16 +144,16 @@ pub struct ProofClaimsJson {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct ClaimInfo {
     pub claim_uuid: String,
-    pub claim_def_seq_no: i32,
+    pub issuer_did: String,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimRequestJson {
-    pub claim_request: ClaimRequest,
+    pub blinded_ms: ClaimRequest,
     pub issuer_did: String,
-    pub claim_def_seq_no: i32
+    pub schema_seq_no: i32
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -167,10 +166,10 @@ pub struct ClaimRequest {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
-    pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    pub signature: ClaimSignature
+    pub signature: ClaimSignature,
+    pub issuer_did: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -184,7 +183,7 @@ pub struct PrimaryClaim {
     pub m2: String,
     pub a: String,
     pub e: String,
-    pub v_prime: String
+    pub v: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
