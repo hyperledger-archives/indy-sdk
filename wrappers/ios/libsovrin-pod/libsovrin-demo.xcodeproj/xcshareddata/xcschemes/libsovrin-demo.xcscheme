@@ -37,6 +37,17 @@
                BlueprintName = "libsovrin-demoTests"
                ReferencedContainer = "container:libsovrin-demo.xcodeproj">
             </BuildableReference>
+            <SkippedTests>
+               <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorks">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorksForInvalidSeqNo">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testSubmitNodeRequestWorksForNewSteward">
+               </Test>
+            </SkippedTests>
          </TestableReference>
       </Testables>
       <MacroExpansion>
