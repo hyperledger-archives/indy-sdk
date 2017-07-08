@@ -13,7 +13,8 @@ namespace Indy.Sdk.Dotnet
         {
             try
             {
-                Ledger.CreateConfigAsync("11347-04.txn", "{\"genesis_txn\":\"11347-04.txn\"}").Wait();
+
+                Ledger.CreatePoolConfigAsync("11347-04.txn", "{\"genesis_txn\":\"11347-04.txn\"}").Wait();
             }
             catch (AggregateException e)
             {
