@@ -15,7 +15,7 @@ sed \
 	-e "s|@commit@|$commit|g" \
 	-e "s|@version@|$version.$commit|g" \
 	indy-sdk.spec.in >indy-sdk.spec
-echo 555
+
 spectool -g -R indy-sdk.spec || exit 3
 echo 666
 rpmbuild -ba indy-sdk.spec || exit 4
