@@ -15,6 +15,6 @@ rmdir /var/repository/repos/rpm
 mkdir /var/repository/repos/rpm/
 cd /var/repository/repos/rpm/
 put $WORK_DIR/$POD_FILE_NAME
-put -r -r /usr/src/rpm/
+put -r /usr/src/rpm/
 ls -l /var/repository/repos/rpm/
 EOF
