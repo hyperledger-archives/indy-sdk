@@ -91,13 +91,36 @@ namespace Indy.Sdk.Dotnet.Api
         }
 
         /// <summary>
+        /// Signs and submits a message to the ledger.
+        /// </summary>
+        /// <param name="wallet">The wallet containing the submitter DID.</param>
+        /// <param name="submitterDid">The submitter DID.</param>
+        /// <param name="request">The request to sign and send.</param>
+        /// <returns>An aysnchronous Task that returns the submit result.</returns>
+        public Task<string> SignAndSubmitRequestAsync(Wallet wallet, string submitterDid, LedgerRequest request)
+        {
+            return Wrapper.Ledger.SignAndSubmitRequestAsync(PoolWrapper, wallet.WalletWrapper, submitterDid, request.Json);
+        }
+
+
+        /// <summary>
         /// Submits a pre-signed message to the ledger.
         /// </summary>
-        /// <param name="requstJson">The request JSON to sign and send.</param>
+        /// <param name="request">The request to sign and send.</param>
         /// <returns>An aysnchronous Task that returns the submit result.</returns>
-        public Task<string> SubmitRequestAsync(string requstJson)
+        public Task<string> SubmitRequestAsync(SignedLedgerRequest request)
         {
-            return Wrapper.Ledger.SubmitRequestAsync(PoolWrapper, requstJson);
+            return Wrapper.Ledger.SubmitRequestAsync(PoolWrapper, request.Json);
+        }
+
+        /// <summary>
+        /// Submits a pre-signed message to the ledger.
+        /// </summary>
+        /// <param name="requestJson">The request to sign and send.</param>
+        /// <returns>An aysnchronous Task that returns the submit result.</returns>
+        public Task<string> SubmitRequestAsync(string requestJson)
+        {
+            return Wrapper.Ledger.SubmitRequestAsync(PoolWrapper, requestJson);
         }
 
         /// <summary>
@@ -110,7 +133,7 @@ namespace Indy.Sdk.Dotnet.Api
         {
             return Wrapper.Ledger.BuildGetDdoRequestAsync(submitterDid, targetDid);
         }
-
+        
         /// <summary>
         /// Builds a request to store a NYM
         /// </summary>
@@ -124,5 +147,7 @@ namespace Indy.Sdk.Dotnet.Api
         {
             return Wrapper.Ledger.BuildNymRequestAsync(submitterDid, targetDid, verKey, alias, role);
         }
+
+        //TODO: Add other ledger build commands.
     }
 }

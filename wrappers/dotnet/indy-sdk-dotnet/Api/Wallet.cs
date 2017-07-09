@@ -104,5 +104,22 @@ namespace Indy.Sdk.Dotnet.Api
             return Signus.SignAsync(WalletWrapper, did, msg);
         }
 
+        /// <summary>
+        /// Signs the provided message with the specified DID.
+        /// </summary>
+        /// <param name="did">The DID to sign the message with.</param>
+        /// <param name="request">The message to sign.</param>
+        /// <returns>An asynchronous Task that returns the signed message.</returns>
+        public async Task<SignedLedgerRequest> SignAsync(string did, LedgerRequest request)
+        {
+            var result = await Signus.SignAsync(WalletWrapper, did, request.Json);
+            return new SignedLedgerRequest(result);
+        }
+
+
+        //TODO: Add other signus commands
+        //TODO: Add other anoncreds commands
+        //TODO: Create convenience classes that will construct JSON
+        //TODO: Create base classes for messages to submit to wallet or ledger that differentiate signed vs unsigned messages.
     }
 }
