@@ -1,7 +1,6 @@
 FROM amazonlinux:2017.03
 
 ARG uid=1000
-RUN mkdir -p /usr/src/rpm/SOURCES/
 
 RUN \
     yum clean all \
@@ -31,7 +30,6 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
     && ./install.sh
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
-
 
 RUN useradd -ms /bin/bash -u $uid sovrin
 USER sovrin
