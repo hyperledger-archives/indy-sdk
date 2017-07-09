@@ -2,9 +2,11 @@
 
 commit=$1
 
-echo commit
+echo $commit
 version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | tr -d '" ')
 echo 000
+echo $version
+
 [ -z $version ] && exit 1
 echo 111
 [ -z $commit ] && exit 2
