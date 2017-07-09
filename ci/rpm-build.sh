@@ -8,12 +8,8 @@ echo $version
 
 [ -z $version ] && exit 1
 [ -z $commit ] && exit 2
-echo 222
-mkdir -p /usr/src/rpm/SOURCES/
-echo 333
-cd ci
 
-echo 444
+cd ci
 
 sed \
 	-e "s|@commit@|$commit|g" \
