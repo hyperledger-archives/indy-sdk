@@ -1,6 +1,6 @@
 FROM amazonlinux:2017.03
 
-ARG uid=1000
+ARG uid=0
 
 RUN \
     yum clean all \
@@ -31,7 +31,8 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
-RUN useradd -g 0 -u $uid sovrin
+RUN useradd -m -G root -u $uid sovrin
+RUN groups sovrin
 USER sovrin
 
 WORKDIR /home/sovrin
