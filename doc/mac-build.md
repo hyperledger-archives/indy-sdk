@@ -22,7 +22,7 @@
    ```
 1. Checkout and build the library:
    ```
-   git checkout https://github.com/hyperledger/indy-sdk.git
+   git clone https://github.com/hyperledger/indy-sdk.git
    cd ./indy-sdk
    cargo build
    ```
