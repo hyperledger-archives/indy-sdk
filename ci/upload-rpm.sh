@@ -8,6 +8,6 @@ key="$1"
 
 echo "Uploading...."
 
-cat <<EOF | sftp $key repo@35.166.202.228
+cat <<EOF | sftp -i $key repo.evernym.com
 ls -l /var/repository/repos
 EOF
