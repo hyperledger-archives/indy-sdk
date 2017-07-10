@@ -31,7 +31,4 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
-RUN useradd -ms /bin/bash -g 0 -u $uid sovrin
-USER sovrin
-
 WORKDIR /home/sovrin
