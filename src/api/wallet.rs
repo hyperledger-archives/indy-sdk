@@ -13,45 +13,82 @@ use self::libc::c_char;
 /// It allows library user to provide custom wallet implementation.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
 /// xtype: Wallet type name.
-/// create: create operation handler
-/// create: open operation handler
-/// set: set operation handler
-/// get: get operation handler
-/// close: close operation handler
-/// free: free operation handler
+/// create: WalletType create operation handler
+/// open: WalletType open operation handler
+/// set: Wallet set operation handler
+/// get: Wallet get operation handler
+/// get_not_expired: Wallet get_not_expired operation handler
+/// list: Wallet list operation handler
+/// close: Wallet close operation handler
+/// delete: WalletType delete operation handler
+/// free: Handler that allows to de-allocate strings allocated in caller code
 ///
 /// #Returns
-/// error code
-///
-/// #Errors
-/// CommonInvalidParam1
-/// CommonInvalidParam2
-/// CommonInvalidParam3
-/// CommonInvalidParam4
-/// CommonInvalidParam5
-/// WalletTypeAlreadyRegistered
+/// Error code
 #[no_mangle]
-#[allow(unused_variables)] /* FIXME */
-pub extern fn sovrin_register_wallet_type(xtype: *const c_char,
-                                          create: extern fn(name: *const c_char,
-                                                            config: *const c_char,
-                                                            credentials: *const c_char) -> ErrorCode,
-                                          open: extern fn(name: *const c_char,
-                                                          config: *const c_char,
-                                                          credentials: *const c_char,
-                                                          handle: *const *mut i32) -> ErrorCode,
-                                          set: extern fn(handle: i32,
-                                                         key: *const c_char, sub_key: *const c_char,
-                                                         value: *const c_char) -> ErrorCode,
-                                          get: extern fn(handle: i32,
-                                                         key: *const c_char, sub_key: *const c_char,
-                                                         value_ptr: *const *mut c_char,
-                                                         value_life_time: *const *mut i32) -> ErrorCode,
-                                          close: extern fn(handle: i32) -> ErrorCode,
-                                          delete: extern fn(name: *const c_char) -> ErrorCode,
-                                          free: extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode) -> ErrorCode {
-    unimplemented!();
+pub extern fn sovrin_register_wallet_type(command_handle: i32,
+                                          xtype: *const c_char,
+                                          create: Option<extern fn(name: *const c_char,
+                                                                   config: *const c_char,
+                                                                   credentials: *const c_char) -> ErrorCode>,
+                                          open: Option<extern fn(name: *const c_char,
+                                                                 config: *const c_char,
+                                                                 runtime_config: *const c_char,
+                                                                 credentials: *const c_char,
+                                                                 handle: *mut i32) -> ErrorCode>,
+                                          set: Option<extern fn(handle: i32,
+                                                                key: *const c_char,
+                                                                value: *const c_char) -> ErrorCode>,
+                                          get: Option<extern fn(handle: i32,
+                                                                key: *const c_char,
+                                                                value_ptr: *mut *const c_char) -> ErrorCode>,
+                                          get_not_expired: Option<extern fn(handle: i32,
+                                                                            key: *const c_char,
+                                                                            value_ptr: *mut *const c_char) -> ErrorCode>,
+                                          list: Option<extern fn(handle: i32,
+                                                                 key_prefix: *const c_char,
+                                                                 values_json_ptr: *mut *const c_char) -> ErrorCode>,
+                                          close: Option<extern fn(handle: i32) -> ErrorCode>,
+                                          delete: Option<extern fn(name: *const c_char,
+                                                                   config: *const c_char,
+                                                                   credentials: *const c_char) -> ErrorCode>,
+                                          free: Option<extern fn(wallet_handle: i32,
+                                                                 value: *const c_char) -> ErrorCode>,
+                                          cb: Option<extern fn(xcommand_handle: i32,
+                                                               err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(xtype, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(create, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(open, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(set, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(get, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(get_not_expired, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(list, ErrorCode::CommonInvalidParam8);
+    check_useful_c_callback!(close, ErrorCode::CommonInvalidParam9);
+    check_useful_c_callback!(delete, ErrorCode::CommonInvalidParam10);
+    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam12);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::RegisterWalletType(
+            xtype,
+            create,
+            open,
+            set,
+            get,
+            get_not_expired,
+            list,
+            close,
+            delete,
+            free,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Creates a new secure wallet with the given unique name.
