@@ -19,6 +19,4 @@ sed \
 	indy-sdk.spec.in >indy-sdk.spec
 
 spectool -g -R indy-sdk.spec || exit 3
-echo 666
 rpmbuild -ba indy-sdk.spec || exit 4
-echo 777
