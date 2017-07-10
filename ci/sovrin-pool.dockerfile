@@ -26,7 +26,7 @@ RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.lis
 RUN useradd -ms /bin/bash -u $uid sovrin
 
 RUN apt-get update -y && apt-get install -y \
-    sovrin-node
+    sovrin-node=0.4.7
 
 RUN echo '[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
