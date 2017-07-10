@@ -168,6 +168,26 @@ impl CallbackUtils {
         (command_handle, Some(create_claim_definition_callback))
     }
 
+    pub fn closure_to_register_wallet_type_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                  Option<extern fn(command_handle: i32,
+                                                                                                   err: ErrorCode)>) {
+        lazy_static! {
+            static ref REFISTER_WALLET_TYPE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn register_wallet_type_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = REFISTER_WALLET_TYPE_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = REFISTER_WALLET_TYPE_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(register_wallet_type_callback))
+    }
+
     pub fn closure_to_create_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                   Option<extern fn(command_handle: i32,
                                                                                                    err: ErrorCode)>) {

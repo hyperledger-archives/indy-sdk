@@ -1,5 +1,8 @@
 extern crate sovrin;
 
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use sovrin::api as api;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -129,7 +132,7 @@ fn anoncreds_demo_works() {
     let (verifier_verify_proof_handle, verifier_verify_proof_callback) = CallbackUtils::closure_to_verifier_verify_proof_cb(verifier_verify_proof_cb);
 
     let pool_name = "pool1";
-    let wallet_name = "issuer_wallet";
+    let wallet_name = "issuer_wallet1";
     let xtype = "default";
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
@@ -353,8 +356,8 @@ fn anoncreds_demo_works() {
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
+    let my_wallet_name = "my_wallet2";
+    let their_wallet_name = "their_wallet3";
     let wallet_type = "default";
     let pool_name = "ledger_demo_works";
     let c_pool_name = CString::new(pool_name).unwrap();
@@ -664,8 +667,8 @@ fn signus_demo_works() {
     let (verify_command_handle, verify_callback) = CallbackUtils::closure_to_verify_signature_cb(verify_cb);
 
     let pool_name = "pool1";
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
+    let my_wallet_name = "my_wallet4";
+    let their_wallet_name = "their_wallet5";
     let xtype = "default";
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
