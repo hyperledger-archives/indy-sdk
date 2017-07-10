@@ -14,6 +14,7 @@ rm /var/repository/repos/rpm/*
 rmdir /var/repository/repos/rpm
 mkdir /var/repository/repos/rpm/
 cd /var/repository/repos/rpm/
-put -r /usr/src/rpm/
+put -r /usr/src/rpm/RPMS/
+put -r /usr/src/rpm/SRPMS/
 ls -l /var/repository/repos/rpm/
 EOF
