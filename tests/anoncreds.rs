@@ -1349,106 +1349,102 @@ mod demos {
             .spawn().expect("failed to execute process");
         thread::sleep(time::Duration::from_millis(3000));
 
-        if let Ok(mut stream) = TcpStream::connect("127.0.0.1:1234") {
-            info!(target: "anoncreds_tests", "Connected to the server!");
+        let mut stream = TcpStream::connect("127.0.0.1:1234").unwrap();
 
-            stream.write(r#"{"type":"get_claim_def"}"#.as_bytes());
-            let mut buf = vec![0; 10240];
-            stream.read(&mut buf).unwrap();
-            buf.retain(|&element| element != 0);
+        stream.write(r#"{"type":"get_claim_def"}"#.as_bytes());
+        let mut buf = vec![0; 10240];
+        stream.read(&mut buf).unwrap();
+        buf.retain(|&element| element != 0);
 
-            let claim_def_data: ClaimDefinitionData = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        let claim_def_data: ClaimDefinitionData = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
 
-            let claim_def = ClaimDefinition {
-                issuer_did: ISSUER_DID.to_string(),
-                signature_type: "CL".to_string(),
-                schema_seq_no: schema_seq_no,
-                data: claim_def_data
-            };
+        let claim_def = ClaimDefinition {
+            issuer_did: ISSUER_DID.to_string(),
+            signature_type: "CL".to_string(),
+            schema_seq_no: schema_seq_no,
+            data: claim_def_data
+        };
 
-            let claim_def_json = serde_json::to_string(&claim_def).unwrap();
+        let claim_def_json = serde_json::to_string(&claim_def).unwrap();
 
-            //5. Prover create Claim Request
-            let prover_did = "BzfFCYk";
-            let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                              prover_did,
-                                                                              &claim_offer_json,
-                                                                              &claim_def_json,
-                                                                              master_secret_name).unwrap();
+        //5. Prover create Claim Request
+        let prover_did = "BzfFCYk";
+        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
+                                                                          prover_did,
+                                                                          &claim_offer_json,
+                                                                          &claim_def_json,
+                                                                          master_secret_name).unwrap();
 
-            stream.write(format!(r#"{{"type":"issue_claim", "data": {}}}"#, claim_req).as_bytes());
-            let mut buf = vec![0; 10240];
-            stream.read(&mut buf).unwrap();
-            stream.write(r#"{"type":"close"}"#.as_bytes());
-            buf.retain(|&element| element != 0);
+        stream.write(format!(r#"{{"type":"issue_claim", "data": {}}}"#, claim_req).as_bytes());
+        let mut buf = vec![0; 10240];
+        stream.read(&mut buf).unwrap();
+        stream.write(r#"{"type":"close"}"#.as_bytes());
+        buf.retain(|&element| element != 0);
 
-            let mut claim_json: ClaimJson = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
-            claim_json.schema_seq_no = Some(schema_seq_no);
-            claim_json.issuer_did = Some(ISSUER_DID.to_string());
+        let mut claim_json: ClaimJson = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        claim_json.schema_seq_no = Some(schema_seq_no);
+        claim_json.issuer_did = Some(ISSUER_DID.to_string());
 
-            // 6. Prover store received Claim
-            AnoncredsUtils::prover_store_claim(prover_wallet_handle, &serde_json::to_string(&claim_json).unwrap()).unwrap();
+        // 6. Prover store received Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &serde_json::to_string(&claim_json).unwrap()).unwrap();
 
-            // 7. Prover gets Claims for Proof Request
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
-                                                       "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#, schema_seq_no, schema_seq_no);
+        // 7. Prover gets Claims for Proof Request
+        let proof_req_json = format!(r#"{{
+                               "nonce":"123432421212",
+                               "name":"proof_req_1",
+                               "version":"0.1",
+                               "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
+                                                   "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
+                               "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
+                            }}"#, schema_seq_no, schema_seq_no);
 
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-            info!("claims_json: {}", &claims_json);
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-            assert_eq!(1, claims_for_attr_1.len());
-            let claim = claims_for_attr_1[0].clone();
+        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+        info!("claims_json: {}", &claims_json);
+        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+        assert_eq!(1, claims_for_attr_1.len());
+        let claim = claims_for_attr_1[0].clone();
 
-            // 8. Prover create Proof
-            let self_attested_value = "value";
-            let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{"self1":"{}"}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true],
-                                                              "attr2_uuid":["{}", false]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid, claim.claim_uuid);
+        // 8. Prover create Proof
+        let self_attested_value = "value";
+        let requested_claims_json = format!(r#"{{
+                                      "self_attested_attributes":{{"self1":"{}"}},
+                                      "requested_attrs":{{"attr1_uuid":["{}",true],
+                                                          "attr2_uuid":["{}", false]}},
+                                      "requested_predicates":{{"predicate1_uuid":"{}"}}
+                                    }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid, claim.claim_uuid);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-            let revoc_regs_jsons = "{}";
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+        let revoc_regs_jsons = "{}";
 
-            let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
-                                                                 &proof_req_json,
-                                                                 &requested_claims_json,
-                                                                 &schemas_json,
-                                                                 &master_secret_name,
-                                                                 &claim_defs_json,
-                                                                 &revoc_regs_jsons).unwrap();
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_claims_json,
+                                                             &schemas_json,
+                                                             &master_secret_name,
+                                                             &claim_defs_json,
+                                                             &revoc_regs_jsons).unwrap();
 
-            let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
+        let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
 
-            let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
-            assert_eq!(value, "Alex");
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
+        assert_eq!(value, "Alex");
 
-            proof.requested_proof.unrevealed_attrs.get("attr2_uuid").unwrap();
+        proof.requested_proof.unrevealed_attrs.get("attr2_uuid").unwrap();
 
-            let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
-            assert_eq!(value, self_attested_value);
+        let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
+        assert_eq!(value, self_attested_value);
 
-            // 9. Verifier verify proof
-            let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
-                                                              &proof_json,
-                                                              &schemas_json,
-                                                              &claim_defs_json,
-                                                              &revoc_regs_jsons).unwrap();
-            assert!(valid);
+        // 9. Verifier verify proof
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &claim_defs_json,
+                                                          &revoc_regs_jsons).unwrap();
+        assert!(valid);
 
-            TestUtils::cleanup_storage();
-        } else {
-            info!(target: "anoncreds_tests", "Couldn't connect to server...");
-        }
+        TestUtils::cleanup_storage();
     }
 
     #[test]
