@@ -698,7 +698,7 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
+        #[ignore] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works() {
             TestUtils::cleanup_storage();
@@ -735,7 +735,7 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
+        #[ignore] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
@@ -768,7 +768,7 @@ mod high_cases {
             let get_txn_response = PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_txn_response).unwrap();
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-            
+
             TestUtils::cleanup_storage();
         }
     }
