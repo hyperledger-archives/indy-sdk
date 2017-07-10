@@ -19,3 +19,16 @@ pub mod test;
 #[path = "../../src/utils/timeout.rs"]
 pub mod timeout;
 pub mod agent;
+
+#[path = "../../src/utils/sequence.rs"]
+pub mod sequence;
+
+#[path = "../../src/utils/json.rs"]
+pub mod json;
+
+#[macro_use]
+#[path = "../../src/utils/cstring.rs"]
+pub mod cstring;
+
+#[path = "../../src/utils/inmem_wallet.rs"]
+pub mod inmem_wallet;
