@@ -31,7 +31,7 @@ RUN apt-get update -y && apt-get install -y \
     python3-ledger=0.3.48 \
     python3-plenum=0.4.19 \
     python3-sovrin-common=0.3.17 \
-    sovrin-node=0.4.12
+    sovrin-node=0.4.13
 
 RUN echo '[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
