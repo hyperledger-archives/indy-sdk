@@ -8,7 +8,7 @@ License: Apache License 2.0
 Group: System Environment/Libraries
 Source: https://github.com/hyperledger/indy-sdk/archive/%{commit}.tar.gz
 URL: https://github.com/hyperledger/indy-sdk/
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot: /home/sovrin/rpm/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: sqlite openssl libsodium
 BuildRequires: sqlite-devel openssl-devel libsodium-devel
 
