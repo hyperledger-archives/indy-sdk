@@ -118,8 +118,8 @@
 }
 
 - (NSError *)walletSetSeqNo:(NSNumber *)seqNo
-                  forHandle:(SovrinHandle)walletHandle
-                     andKey:(NSString *)key
+                   forValue:(NSString *)value
+               walletHandle:(SovrinHandle)walletHandle
                  completion:(void (^)(NSError *error ))handler
 {
     sovrin_error_t ret;
@@ -128,7 +128,7 @@
     
     ret = sovrin_wallet_set_seq_no_for_value( handle,
                                               walletHandle,
-                                              [key UTF8String],
+                                              [value UTF8String],
                                               [seqNo intValue],
                                               SovrinWrapperCommon2PCallback
                                             );

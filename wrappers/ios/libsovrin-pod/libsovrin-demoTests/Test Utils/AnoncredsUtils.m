@@ -16,7 +16,7 @@
 @interface AnoncredsUtils ()
 
 @property (assign) BOOL isCommonWalletCreated;
-@property (assign) SovrinHandle singletoneWalletHandle;
+@property (assign) SovrinHandle walletHandle;
 @property (strong) NSString* singletoneClaimdefJson;
 
 @end
@@ -32,6 +32,7 @@
     dispatch_once(&dispatch_once_block, ^{
         instance = [AnoncredsUtils new];
         instance.isCommonWalletCreated = false;
+        instance.walletHandle = 0;
     });
     
     return instance;
@@ -144,6 +145,12 @@
     "}";
 }
 
+- (NSString *)getClaimDefIdForIssuerDid:(NSString *)issuerDid
+                            schemaSeqNo:(NSNumber *)schemaSeqNo
+{
+    return [NSString stringWithFormat:@"%@:%@",issuerDid, [schemaSeqNo stringValue]];
+}
+
 // MARK: issuer claim
 - (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
                                   claimReqJson:(NSString *)claimReqJson
@@ -189,12 +196,10 @@
                                               schemaJson:(NSString *)schemaJson
                                            signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc
-                                            claimDefJson:(NSString **)claimDefJson
-                                            claimDefUUID:(NSString **)claimDefUUID;
+                                            claimDefJson:(NSString **)claimDefJson;
 {
     __block NSError *err = nil;
     __block NSString *outClaimDefJson = nil;
-    __block NSString *outClaimDefUUID = nil;
     XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDefWithWalletHandle:walletHandle
@@ -202,11 +207,10 @@
                                                                        schemaJSON:schemaJson
                                                                     signatureType:signatureType
                                                                    createNonRevoc:createNonRevoc
-                                                                       completion:^(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)
+                                                                       completion:^(NSError *error, NSString *claimDefJSON)
                     {
                         err = error;
                         outClaimDefJson = claimDefJSON;
-                        outClaimDefUUID = claimDefUUID;
                         
                         [completionExpectation fulfill];
                     }];
@@ -219,42 +223,8 @@
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if ( claimDefJson ) { *claimDefJson = outClaimDefJson; }
-    if ( claimDefUUID ) { *claimDefUUID = outClaimDefUUID; }
     
     return err;
-}
-
-
-- (NSError *) createClaimDefinitionAndSetLink:(SovrinHandle)walletHandle
-                                    issuerDid:(NSString *)issuerDid
-                                       schema:(NSString *)schema
-                                        seqNo:(NSNumber *)claimDefSeqNo
-                                      outJson:(NSString **)outJson
-{
-    NSString *json = nil;
-    NSString *uuid;
-    NSError *ret;
-    
-    ret = [self issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                  issuerDid:issuerDid
-                                                 schemaJson:schema
-                                              signatureType:nil
-                                             createNonRevoc:NO
-                                               claimDefJson:&json
-                                               claimDefUUID:&uuid];
-    // need for tests
-    NSMutableDictionary *claimDef = [NSMutableDictionary dictionaryWithDictionary:[NSDictionary fromString:json]];
-    claimDef[@"seqNo"] = claimDefSeqNo;
-    if( ret.code != Success )
-    {
-        return ret;
-    }
-    
-    ret = [[WalletUtils sharedInstance] walletSetSeqNoForValue:walletHandle
-                                                  claimDefUUID:uuid
-                                                 claimDefSeqNo:claimDefSeqNo];
-    if (outJson){*outJson = [NSDictionary toString:claimDef];}
-    return ret;
 }
 
 - (NSArray *)getUniqueClaimsFrom:(NSDictionary *)proofClaims
@@ -571,7 +541,7 @@
     {
         if (walletHandle)
         {
-            *walletHandle = _singletoneWalletHandle;
+            *walletHandle = self.walletHandle;
         }
         if (claimDefJson)
         {
@@ -590,6 +560,7 @@
     NSError *ret;
     
     // 1. Create and open wallet
+    self.walletHandle = 0;
     SovrinHandle tempWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"common_wallet"
@@ -602,23 +573,23 @@
     NSNumber *seqNo = @(1);
     NSString *schema = [self getGvtSchemaJson:seqNo];
     NSString *tempClaimDefJson;
-    ret = [self createClaimDefinitionAndSetLink:tempWalletHandle
-                                         schema:schema
-                                          seqNo:seqNo
-                                        outJson:&tempClaimDefJson];
-    XCTAssertEqual(ret.code, Success, @"createClaimDefinitionAndSetLink failed");
+    ret = [self issuerCreateClaimDefinifionWithWalletHandle:tempWalletHandle
+                                                  issuerDid:[AnoncredsUtils issuerDid]
+                                                 schemaJson:schema
+                                              signatureType:nil
+                                             createNonRevoc:false
+                                               claimDefJson:&tempClaimDefJson];
+    XCTAssertEqual(ret.code, Success, @"issuerCreateClaimDefinifionWithWalletHandle failed");
+    
     if (ret.code != Success) {return ret;}
     XCTAssertTrue([tempClaimDefJson isValid], @"invalid tempClaimDefJson: %@", tempClaimDefJson);
     
     //3. Store three claim offers
-    NSString *claimOfferJson1 = [self getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                  seqNo:@(1)
+    NSString *claimOfferJson1 = [self getClaimOfferJson:[AnoncredsUtils issuerDid]
                                             schemaSeqNo:@(1)];
-    NSString *claimOfferJson2 = [self getClaimOfferJson:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                  seqNo:@(2)
+    NSString *claimOfferJson2 = [self getClaimOfferJson:[AnoncredsUtils issuerDid]
                                             schemaSeqNo:@(2)];
     NSString *claimOfferJson3 = [self getClaimOfferJson:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-                                                  seqNo:@(3)
                                             schemaSeqNo:@(2)];
     
     ret = [self proverStoreClaimOffer:tempWalletHandle claimOfferJson:claimOfferJson1];
@@ -666,9 +637,9 @@
                                       claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, Success, @"proverStoreClaimWithWalletHandle failed");
     
-    if (walletHandle){ *walletHandle = tempWalletHandle; }
-    if (claimDefJson){ *claimDefJson = tempClaimDefJson; }
-    _singletoneWalletHandle = tempWalletHandle;
+    if (walletHandle){ *walletHandle = tempWalletHandle;}
+    if (claimDefJson){ *claimDefJson = tempClaimDefJson;}
+    self.walletHandle = tempWalletHandle;
     _singletoneClaimdefJson = tempClaimDefJson;
     
     self.isCommonWalletCreated = true;

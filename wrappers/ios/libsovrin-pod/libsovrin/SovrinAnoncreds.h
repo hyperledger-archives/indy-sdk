@@ -14,7 +14,7 @@
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
-                                               completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler;
+                                               completion:(void (^)(NSError *error, NSString *claimDefJSON)) handler;
 
 + (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(SovrinHandle)walletHandle
                                                 issuerDid:(NSString *)issuerDid

@@ -16,7 +16,7 @@
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
-                                               completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler
+                                               completion:(void (^)(NSError *error, NSString *claimDefJSON)) handler
 {
     sovrin_error_t ret;
     

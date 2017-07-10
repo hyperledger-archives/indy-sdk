@@ -1718,11 +1718,11 @@
     // 11. Create claim definition
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                            schemaJson:schemaJson
+                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                            schemaJson:getSchemaResponseJson
                                                                          signatureType:nil
-                                                                        createNonRevoc:NO
-                                                                          claimDefJson:&claimDefJson
-                                                                          claimDefUUID:nil];
+                                                                        createNonRevoc:false
+                                                                          claimDefJson:&claimDefJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed");
     XCTAssertNotNil(claimDefJson, @"claimDefJson is nil!");
     

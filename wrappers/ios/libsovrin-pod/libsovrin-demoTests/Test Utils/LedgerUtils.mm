@@ -74,15 +74,11 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    NSString *verkeyStr = (verkey) ? verkey : @"";
-    NSString *aliasStr = (alias) ? alias : @"";
-    NSString *roleStr = (role) ? role : @"";
-    
     ret = [SovrinLedger buildNymRequestWithSubmitterDid:submitterDid
                                               targetDID:targetDid
-                                                 verkey:verkeyStr
-                                                   alias:alias
-                                                   role:roleStr
+                                                 verkey:verkey
+                                                  alias:alias
+                                                   role:role
                                              completion:^(NSError *error, NSString *json)
            {
                err = error;

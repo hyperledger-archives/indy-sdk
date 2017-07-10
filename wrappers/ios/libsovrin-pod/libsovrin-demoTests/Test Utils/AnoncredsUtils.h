@@ -28,11 +28,8 @@
 
 - (NSString *)getGvtClaimDef;
 - (NSString *)getGvtClaimRequest;
-
-- (NSError *) createClaimDefinitionAndSetLink:(SovrinHandle)walletHandle
-                                       schema:(NSString *)schema
-                                        seqNo:(NSNumber *)claimDefSeqNo
-                                      outJson:(NSString **)outJson;
+- (NSString *)getClaimDefIdForIssuerDid:(NSString *)issuerDid
+                            schemaSeqNo:(NSNumber *)schemaSeqNo;
 
 
 /**
@@ -77,8 +74,7 @@
                                               schemaJson:(NSString *)schemaJson
                                            signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc
-                                            claimDefJson:(NSString **)claimDefJson
-                                            claimDefUUID:(NSString **)claimDefUUID;
+                                            claimDefJson:(NSString **)claimDefJson;
 
 - (NSError *) proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle
                                     claimsJson:(NSString *)str;
