@@ -29,10 +29,8 @@
 
 - (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle;
 
-
-
-- (NSError *)walletSetSeqNoForValue:(SovrinHandle)walletHandle
-                       claimDefUUID:(NSString *)uuid
-                      claimDefSeqNo:(NSNumber *)seqNo;
+-(NSError*) walletSetSeqNo:(NSNumber *)seqNo
+                  forValue:(NSString *)value
+              walletHandle:(SovrinHandle) walletHandle;
 
 @end

@@ -396,7 +396,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *endpoint = @"127.0.0.1:9811";
+    NSString *endpoint = @"127.0.0.1:9814";
     
     // 1. Create and open receiver's wallet
     SovrinHandle receiverWallet = 0;
@@ -881,6 +881,27 @@
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::sendWithConnectionHandler() returned wrong error code.");
     
     [TestUtils cleanupStorage];
+}
+
+- (void)testAllAgentHighCasesTests
+{
+    [self testAgentListerWorksWithSovrinAgentConnect];
+    [self testAgentConnectWorksForRemoteData];
+    [self testAgentConnectWorksForAllDataInWalletPresent];
+    [self testAgentListenWorksForAllDataInWalletPresent];
+    [self testAgentAddIdentityWorks];
+    [self testAgentAddIdentityWorksForMultipleKeys];
+    [self testAgentRemoveIdentityWorks];
+    [self testAgentSendWorksForAllDataInWalletPresent];
+    [self testAgentCloseConnectionWorksForOngoing];
+    [self testAgentCloseConnectionWorksForIncomingConnection];
+    [self testAgentCloseListenerWorks];
+}
+
+- (void)testSequence
+{
+    [self testAgentAddIdentityWorks];
+    [self testAgentAddIdentityWorksForMultipleKeys];
 }
 
 @end

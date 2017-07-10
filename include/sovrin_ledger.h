@@ -339,7 +339,6 @@ extern "C" {
     /// #Errors
     /// Common*
 
-
     extern sovrin_error_t sovrin_build_get_txn_request(sovrin_handle_t command_handle,
                                                     const char *    submitter_did,
                                                     sovrin_i32_t    data,

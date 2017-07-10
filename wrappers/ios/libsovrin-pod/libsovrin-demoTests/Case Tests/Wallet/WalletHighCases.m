@@ -225,25 +225,20 @@
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName() failed");
     
-    // 2. Get claimDefUUID
-    NSNumber *schemaSeqNo = @(1);
-    NSNumber *claimDefSeqNo = @(1);
-    
-    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:schemaSeqNo];
-    NSString *claimDefUUID;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                            schemaJson:schema
-                                                                         signatureType:nil
-                                                                        createNonRevoc:NO
-                                                                          claimDefJson:nil
-                                                                          claimDefUUID:&claimDefUUID];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:issuerCreateClaimDefinifionWithWalletHandle() failed");
+    // 2. Create my did
+    NSString *did;
+    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                          myDidJson:@"{}"
+                                                           outMyDid:&did
+                                                        outMyVerkey:nil
+                                                            outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils:createMyDidWithWalletHandle() failed");
     
     // 3. Wallet set seq no for no value
-    ret = [[WalletUtils sharedInstance] walletSetSeqNoForValue:walletHandle
-                                                  claimDefUUID:claimDefUUID
-                                                 claimDefSeqNo:claimDefSeqNo];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:walletSetSeqNoForValue() failed");
+    ret = [[WalletUtils sharedInstance] walletSetSeqNo:@(1)
+                                              forValue:did
+                                          walletHandle:walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:walletSetSeqNo() failed");
     
     [TestUtils cleanupStorage];
 }
