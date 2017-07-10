@@ -46,6 +46,13 @@ try {
         }
     }
 
+    // 3. PUBLISH RPMS TO repo.evernym.com
+    stage('Publish RPM Files') {
+        node('ubuntu') {
+            publishRpmFiles()
+        }
+    }
+
 } catch (e) {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
@@ -211,6 +218,36 @@ def publishToCargo() {
     }
     finally {
         echo 'Publish to cargo: Cleanup'
+        step([$class: 'WsCleanup'])
+    }
+}
+
+def publishRpmFiles() {
+    try {
+        echo 'Publish Rpm files: Checkout csm'
+        checkout scm
+
+        echo 'Publish Rpm: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/amazon.dockerfile ci')
+
+        testEnv.inside('-u 0:0') {
+
+            commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+            sh 'chmod -R 777 ci'
+
+            def spec_path = pwd() + "/ci/indy-sdk.spec"
+            sh "chown root.root $spec_path"
+
+            sh "./ci/rpm-build.sh $commit"
+
+            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                sh "./ci/upload-rpm.sh $evernym_repo_key"
+            }
+        }
+    }
+    finally {
+        echo 'Publish RPM: Cleanup'
         step([$class: 'WsCleanup'])
     }
 }
