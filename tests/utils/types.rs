@@ -167,9 +167,9 @@ pub struct ClaimRequest {
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
     pub revoc_reg_seq_no: Option<i32>,
-    pub schema_seq_no: i32,
+    pub schema_seq_no: Option<i32>,
     pub signature: ClaimSignature,
-    pub issuer_did: String
+    pub issuer_did: Option<String>
 }
 
 #[derive(Debug, Deserialize, Serialize)]

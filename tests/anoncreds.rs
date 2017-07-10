@@ -1377,12 +1377,22 @@ mod demos {
             let answer = String::from_utf8(buf).unwrap();
             println!("answer: {:?}", answer);
             stream.write(r#"{"type":"close"}"#.as_bytes());
+            let mut new_answer: ClaimJson = serde_json::from_str(&answer).unwrap();
+            new_answer.schema_seq_no = Some(schema_seq_no);
+            new_answer.issuer_did = Some(ISSUER_DID.to_string());
+            println!("new_answer: {:?}", &serde_json::to_string(&new_answer).unwrap());
 
 
+            //5. Issuer create Claim
+            let claim_json = AnoncredsUtils::get_gvt_claim_json();
+            let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+                                                                       &claim_req,
+                                                                       &claim_json).unwrap();
+            println!("xclaim_json: {:?}", xclaim_json);
 
 
             // 9. Prover store received Claim
-            AnoncredsUtils::prover_store_claim(prover_wallet_handle, &answer).unwrap();
+            AnoncredsUtils::prover_store_claim(prover_wallet_handle, &serde_json::to_string(&new_answer).unwrap()).unwrap();
 
             // 10. Prover gets Claims for Proof Request
             let proof_req_json = format!(r#"{{
