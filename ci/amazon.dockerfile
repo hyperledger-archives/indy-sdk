@@ -1,6 +1,6 @@
 FROM amazonlinux:2017.03
 
-ARG uid=0
+ARG uid=1000
 
 RUN \
     yum clean all \
