@@ -74,7 +74,6 @@
                                                                         createNonRevoc:false
                                                                           claimDefJson:&claimDefJSON];
     XCTAssertEqual( ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreClaimDef() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     NSNumber *claimDefSeqNo = @(1);
     NSMutableDictionary *claimDef = [NSMutableDictionary dictionaryWithDictionary:[NSDictionary fromString:claimDefJSON]];

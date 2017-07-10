@@ -404,8 +404,6 @@
     //4. Issuer1 create claim definition by gvt schema
     
     NSNumber* gvtSchemaSeqNo = @1;
-    NSNumber* gvtClaimDefSeqNo = @1;
-    
     NSString* gvtSchema = [[ AnoncredsUtils sharedInstance] getGvtSchemaJson: gvtSchemaSeqNo];
     NSString* gvtClaimDefJson = nil;
     
@@ -427,23 +425,22 @@
     NSString* xyzClaimDefJson = nil;
     NSString* xyzSchema = [[AnoncredsUtils sharedInstance] getXyzSchemaJson: xyzSchemaSeqNo];
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:issuerXyzWalletHandle
-                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                             issuerDid:issuer2Did
                                                                             schemaJson:xyzSchema
                                                                          signatureType:nil
                                                                         createNonRevoc:false
-                                                                          claimDefJson:&gvtClaimDefJson];
+                                                                          claimDefJson:&xyzClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createClaimDefinitionAndSetLink() failed");
     NSLog(@"xyzClaimDefJson: %@", xyzClaimDefJson);
     
     schemas[[xyzSchemaSeqNo stringValue]] = xyzSchema;
-    //claimDefs[[xyzClaimDefSeqNo stringValue]] = xyzClaimDefJson;
+    claimDefs[issuer2Did] = xyzClaimDefJson;
     
     //6. Prover create Master Secret for Issuer1
     
     NSString* masterSecretName1 = @"prover_master_secret_issuer_1";
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:proverWalletHandle
                                                    masterSecretName:masterSecretName1];
-    
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
     
     //7. Prover create Master Secret for Issuer2
@@ -451,7 +448,6 @@
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:proverWalletHandle
                                                    masterSecretName:masterSecretName2];
-    
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 2");
     
     //8. Prover store Claim Offer received from Issuer1
@@ -460,7 +456,6 @@
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuer1ClaimOfferJson];
-    
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimOffer() failed for issuer 1");
     
     //9. Prover store Claim Offer received from Issuer2
@@ -470,7 +465,6 @@
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuer2ClaimOfferJson];
-    
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:: proverStoreClaimOffer() failed for issuer 2");
     
     //10. Prover get Claim Offers
@@ -502,10 +496,10 @@
     XCTAssertTrue(claimOffer1Json, @"claimOffer1Json == nil");
     XCTAssertTrue(claimOffer2Json, @"claimOffer2Json == nil");
     
-    NSNumber* nd1 = claimOffer1[@"issuer_did"];
-    NSNumber* nd2 = claimOffer2[@"issuer_did"];
+    NSString* claimOffer1_issuerDid = claimOffer1[@"issuer_did"];
+    NSString* claimOffer2_issuerDid = claimOffer2[@"issuer_did"];
     
-    NSString* claimOffer = [nd1 isEqual: gvtClaimDefSeqNo] ? claimOffer1Json : claimOffer2Json;
+    NSString* claimOffer = [claimOffer1_issuerDid isEqual: [AnoncredsUtils issuerDid]] ? claimOffer1Json : claimOffer2Json;
     
     //11. Prover create Claim Request for gvt claim offer
     
@@ -537,7 +531,7 @@
     
     //14. Prover create Claim Request for xyz claim offer
     
-    claimOffer = [nd2 isEqual: issuer2Did] ? claimOffer2Json : claimOffer1Json;
+    claimOffer = [claimOffer2_issuerDid isEqual: issuer2Did] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq;
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq: proverWalletHandle
                                                               proverDid: proverDid
@@ -649,6 +643,12 @@
     XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_1_UUID = nil");
     XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_2_UUID = nil");
     
+    // get issuer dids
+    NSString *unique_claim_1_issuer_did = uniqueClaim1[@"issuer_did"];
+    NSString *unique_claim_2_issuer_did = uniqueClaim2[@"issuer_did"];
+    XCTAssertNotNil(unique_claim_1_issuer_did, @"unique_claim_1_issuer_did = nil");
+    XCTAssertNotNil(unique_claim_2_issuer_did, @"unique_claim_2_issuer_did = nil");
+    
     // get schema indexes from claims
     NSInteger unique_claim_1_schema_index = [uniqueClaim1[@"schema_seq_no"] integerValue];
     NSInteger unique_claim_2_schema_index = [uniqueClaim2[@"schema_seq_no"] integerValue];
@@ -670,15 +670,9 @@
     
     // Configure claimDefsJson
     
-    // get schema indexes from claims
-    NSInteger claimDefIndexForUniqueClaim1 = [uniqueClaim1[@"claim_def_seq_no"] integerValue];
-    NSInteger claimDefIndexForUniqueClaim2 = [uniqueClaim2[@"claim_def_seq_no"] integerValue];
-    XCTAssertNotNil(unique_claim_1_UUID, @"claimDefIndexForUniqueClaim1 = nil");
-    XCTAssertNotNil(unique_claim_1_UUID, @"claimDefIndexForUniqueClaim2 = nil");
-    
     // get claim defines
-    NSString *claimDefForUniqueClaim1 = claimDefs[[NSString stringWithFormat:@"%ld", (long)claimDefIndexForUniqueClaim1]];
-    NSString *claimDefForUniqueClaim2 = claimDefs[[NSString stringWithFormat:@"%ld", (long)claimDefIndexForUniqueClaim2]];
+    NSString *claimDefForUniqueClaim1 = claimDefs[unique_claim_1_issuer_did];
+    NSString *claimDefForUniqueClaim2 = claimDefs[unique_claim_2_issuer_did];
     XCTAssertNotNil(claimDefForUniqueClaim1, @"claimDefForUniqueClaim1 = nil");
     XCTAssertNotNil(claimDefForUniqueClaim2, @"claimDefForUniqueClaim2 = nil");
     
