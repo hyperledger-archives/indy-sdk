@@ -31,4 +31,9 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
-WORKDIR /home/sovrin
+RUN useradd -ms /bin/bash -u $uid sovrin
+USER sovrin
+
+RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
+
+WORKDIR /home/sorvin
