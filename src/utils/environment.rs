@@ -4,15 +4,15 @@ use std::path::PathBuf;
 pub struct EnvironmentUtils {}
 
 impl EnvironmentUtils {
-    pub fn sovrin_home_path() -> PathBuf {
+    pub fn indy_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
-        let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/sovrin"));
-        path.push(if cfg!(target_os = "ios") { "Documents/.sovrin" } else { ".sovrin" });
+        let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
+        path.push(if cfg!(target_os = "ios") { "Documents/.indy" } else { ".indy" });
         path
     }
 
     pub fn wallet_home_path() -> PathBuf {
-        let mut path = EnvironmentUtils::sovrin_home_path();
+        let mut path = EnvironmentUtils::indy_home_path();
         path.push("wallet");
         path
     }
@@ -24,7 +24,7 @@ impl EnvironmentUtils {
     }
 
     pub fn pool_home_path() -> PathBuf {
-        let mut path = EnvironmentUtils::sovrin_home_path();
+        let mut path = EnvironmentUtils::indy_home_path();
         path.push("pool");
         path
     }
@@ -37,7 +37,7 @@ impl EnvironmentUtils {
 
     pub fn tmp_path() -> PathBuf {
         let mut path = env::temp_dir();
-        path.push("sovrin");
+        path.push("indy");
         path
     }
 
@@ -53,12 +53,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sovrin_home_path_works() {
-        let path = EnvironmentUtils::sovrin_home_path();
+    fn indy_home_path_works() {
+        let path = EnvironmentUtils::indy_home_path();
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains(".indy"));
     }
 
     #[test]
@@ -67,7 +67,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains(".indy"));
         assert!(path.to_string_lossy().contains("wallet"));
     }
 
@@ -77,7 +77,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains(".indy"));
         assert!(path.to_string_lossy().contains("wallet1"));
     }
 
@@ -87,7 +87,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains(".indy"));
         assert!(path.to_string_lossy().contains("pool"));
     }
 
@@ -97,7 +97,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".sovrin"));
+        assert!(path.to_string_lossy().contains(".indy"));
         assert!(path.to_string_lossy().contains("pool1"));
     }
 
@@ -107,7 +107,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains("sovrin"));
+        assert!(path.to_string_lossy().contains("indy"));
     }
 
     #[test]
@@ -116,7 +116,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains("sovrin"));
+        assert!(path.to_string_lossy().contains("indy"));
         assert!(path.to_string_lossy().contains("test.txt"));
     }
 }

@@ -1,7 +1,7 @@
-extern crate sovrin;
+extern crate indy;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use sovrin::api as api;
+use indy::api as api;
 
 extern crate rust_base58;
 #[macro_use]
@@ -21,7 +21,7 @@ use utils::test::TestUtils;
 use utils::pool::PoolUtils;
 use utils::ledger::LedgerUtils;
 
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use std::{thread, time};
 
@@ -33,7 +33,7 @@ mod high_cases {
         use rust_base58::FromBase58;
 
         #[test]
-        fn sovrin_create_my_did_works_for_empty_json() {
+        fn indy_create_my_did_works_for_empty_json() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -47,7 +47,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_with_seed() {
+        fn indy_create_my_did_works_with_seed() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -61,7 +61,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_as_cid() {
+        fn indy_create_my_did_works_as_cid() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -75,7 +75,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_with_passed_did() {
+        fn indy_create_my_did_works_with_passed_did() {
             TestUtils::cleanup_storage();
             let did = "8wZcEriaNLNKtteJvx7f8i".to_string();
 
@@ -91,7 +91,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_for_invalid_wallet_handle() {
+        fn indy_create_my_did_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -108,7 +108,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn sovrin_replace_keys_works() {
+        fn indy_replace_keys_works() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -121,7 +121,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_replace_keys_works_for_invalid_did() {
+        fn indy_replace_keys_works_for_invalid_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -133,7 +133,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_replace_keys_works_for_invalid_handle() {
+        fn indy_replace_keys_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -152,7 +152,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn sovrin_store_their_did_works() {
+        fn indy_store_their_did_works() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -164,7 +164,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_store_their_did_works_for_invalid_json() {
+        fn indy_store_their_did_works_for_invalid_json() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -177,7 +177,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_store_their_did_works_for_invalid_handle() {
+        fn indy_store_their_did_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -191,7 +191,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_store_their_did_works_with_verkey() {
+        fn indy_store_their_did_works_with_verkey() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -207,7 +207,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn sovrin_sign_works() {
+        fn indy_sign_works() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -233,7 +233,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_sign_works_for_unknow_did() {
+        fn indy_sign_works_for_unknow_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -247,7 +247,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_sign_works_for_invalid_wallet_handle() {
+        fn indy_sign_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -268,9 +268,9 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn sovrin_verify_works_for_verkey_cached_in_wallet() {
+        fn indy_verify_works_for_verkey_cached_in_wallet() {
             TestUtils::cleanup_storage();
-            let pool_name = "sovrin_verify_works_for_verkey_cached_in_wallet";
+            let pool_name = "indy_verify_works_for_verkey_cached_in_wallet";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -298,10 +298,10 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_get_verkey_from_ledger() {
+        fn indy_verify_works_for_get_verkey_from_ledger() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_verify_works_for_get_verkey_from_ledger";
+            let pool_name = "indy_verify_works_for_get_verkey_from_ledger";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -325,10 +325,10 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_expired_nym() {
+        fn indy_verify_works_for_expired_nym() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_verify_works_for_expired_nym";
+            let pool_name = "indy_verify_works_for_expired_nym";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             WalletUtils::create_wallet(pool_name, "wallet1", None, None).unwrap();
@@ -355,9 +355,9 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_invalid_wallet_handle() {
+        fn indy_verify_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
-            let pool_name = "sovrin_verify_works_for_invalid_wallet_handle";
+            let pool_name = "indy_verify_works_for_invalid_wallet_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -375,9 +375,9 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_invalid_pool_handle() {
+        fn indy_verify_works_for_invalid_pool_handle() {
             TestUtils::cleanup_storage();
-            let pool_name = "sovrin_verify_works_for_invalid_pool_handle";
+            let pool_name = "indy_verify_works_for_invalid_pool_handle";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -403,7 +403,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn sovrin_create_my_did_works_for_invalid_crypto_type() {
+        fn indy_create_my_did_works_for_invalid_crypto_type() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -415,7 +415,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_for_invalid_seed() {
+        fn indy_create_my_did_works_for_invalid_seed() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -427,7 +427,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_for_invalid_did() {
+        fn indy_create_my_did_works_for_invalid_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -439,7 +439,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_create_my_did_works_for_invalid_json() {
+        fn indy_create_my_did_works_for_invalid_json() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -455,7 +455,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn sovrin_replace_keys_works_for_not_exists_did() {
+        fn indy_replace_keys_works_for_not_exists_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -471,7 +471,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn sovrin_store_their_did_works_for_invalid_crypto_type() {
+        fn indy_store_their_did_works_for_invalid_crypto_type() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -485,7 +485,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_store_their_did_works_for_invalid_did() {
+        fn indy_store_their_did_works_for_invalid_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -499,7 +499,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_store_their_did_works_for_invalid_verkey() {
+        fn indy_store_their_did_works_for_invalid_verkey() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -517,7 +517,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn sovrin_sign_works_for_invalid_message() {
+        fn indy_sign_works_for_invalid_message() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -537,9 +537,9 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn sovrin_verify_works_for_invalid_message() {
+        fn indy_verify_works_for_invalid_message() {
             TestUtils::cleanup_storage();
-            let pool_name = "sovrin_verify_works_for_invalid_message";
+            let pool_name = "indy_verify_works_for_invalid_message";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -558,9 +558,9 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_message_without_signature() {
+        fn indy_verify_works_for_message_without_signature() {
             TestUtils::cleanup_storage();
-            let pool_name = "sovrin_verify_works_for_message_without_signature";
+            let pool_name = "indy_verify_works_for_message_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -582,10 +582,10 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_get_nym_from_ledger_with_incompatible_wallet() {
+        fn indy_verify_works_for_get_nym_from_ledger_with_incompatible_wallet() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_verify_works_for_get_nym_from_ledger_with_incompatible_wallet";
+            let pool_name = "indy_verify_works_for_get_nym_from_ledger_with_incompatible_wallet";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet("other_pool_name", None).unwrap();
@@ -605,10 +605,10 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_get_unknow_nym_from_ledger() {
+        fn indy_verify_works_for_get_unknow_nym_from_ledger() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_verify_works_for_get_unknow_nym_from_ledger";
+            let pool_name = "indy_verify_works_for_get_unknow_nym_from_ledger";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -628,10 +628,10 @@ mod medium_cases {
         }
 
         #[test]
-        fn sovrin_verify_works_for_unknown_nym() {
+        fn indy_verify_works_for_unknown_nym() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_verify_works_for_unknown_did";
+            let pool_name = "indy_verify_works_for_unknown_did";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();

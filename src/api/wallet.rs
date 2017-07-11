@@ -28,7 +28,7 @@ use self::libc::c_char;
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn sovrin_register_wallet_type(command_handle: i32,
+pub extern fn indy_register_wallet_type(command_handle: i32,
                                           xtype: *const c_char,
                                           create: Option<extern fn(name: *const c_char,
                                                                    config: *const c_char,
@@ -97,7 +97,7 @@ pub extern fn sovrin_register_wallet_type(command_handle: i32,
 /// pool_name: Name of the pool that corresponds to this wallet.
 /// name: Name of the wallet.
 /// xtype(optional): Type of the wallet. Defaults to 'default'.
-///                  Custom types can be registered with sovrin_register_wallet_type call.
+///                  Custom types can be registered with indy_register_wallet_type call.
 /// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
 ///                    if NULL, then default config will be used.
 /// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
@@ -110,7 +110,7 @@ pub extern fn sovrin_register_wallet_type(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_create_wallet(command_handle: i32,
+pub extern fn indy_create_wallet(command_handle: i32,
                                    pool_name: *const c_char,
                                    name: *const c_char,
                                    xtype: *const c_char,
@@ -142,7 +142,7 @@ pub extern fn sovrin_create_wallet(command_handle: i32,
 
 /// Opens the wallet with specific name.
 ///
-/// Wallet with corresponded name must be previously created with sovrin_create_wallet method.
+/// Wallet with corresponded name must be previously created with indy_create_wallet method.
 /// It is impossible to open wallet with the same name more than once.
 ///
 /// #Params
@@ -162,7 +162,7 @@ pub extern fn sovrin_create_wallet(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_open_wallet(command_handle: i32,
+pub extern fn indy_open_wallet(command_handle: i32,
                                  name: *const c_char,
                                  runtime_config: *const c_char,
                                  credentials: *const c_char,
@@ -190,7 +190,7 @@ pub extern fn sovrin_open_wallet(command_handle: i32,
 /// Closes opened wallet and frees allocated resources.
 ///
 /// #Params
-/// handle: wallet handle returned by sovrin_open_wallet.
+/// handle: wallet handle returned by indy_open_wallet.
 ///
 /// #Returns
 /// Error code
@@ -199,7 +199,7 @@ pub extern fn sovrin_open_wallet(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_close_wallet(command_handle: i32,
+pub extern fn indy_close_wallet(command_handle: i32,
                                   handle: i32,
                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
@@ -230,7 +230,7 @@ pub extern fn sovrin_close_wallet(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_delete_wallet(command_handle: i32,
+pub extern fn indy_delete_wallet(command_handle: i32,
                                    name: *const c_char,
                                    credentials: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
@@ -268,7 +268,7 @@ pub extern fn sovrin_delete_wallet(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_wallet_set_seq_no_for_value(command_handle: i32,
+pub extern fn indy_wallet_set_seq_no_for_value(command_handle: i32,
                                                  wallet_handle: i32,
                                                  wallet_key: *const c_char,
                                                  seq_no: i32,

@@ -54,7 +54,7 @@ Checkout https://github.com/evernym/libzmq-pw repository.
   `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat`  
 - execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
-  - set SOVRIN_PREBUILT_DEPS_DIR=C:\BIN\x64
+  - set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64
   - set SODIUM_LIB_DIR=C:\BIN\x64
   - set OPENSSL_INCLUDE_DIR=C:\BIN\x64\include
   - set OPENSSL_LIB_DIR=C:\BIN\x64
@@ -64,7 +64,7 @@ Checkout https://github.com/evernym/libzmq-pw repository.
   - set SODIUM_STATIC=y
 - set PATH to find .dlls:
   - set PATH=C:\BIN\x64;%PATH%
-- change dir to sovrin-client and run cargo (you may want to add --release --target x86_64-pc-windows-msvc keys to cargo)
+- change dir to indy-client and run cargo (you may want to add --release --target x86_64-pc-windows-msvc keys to cargo)
 
 ## openssl-sys workaround
 
