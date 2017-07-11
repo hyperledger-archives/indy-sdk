@@ -32,4 +32,4 @@ USER indy
 
 RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
-WORKDIR /home/sorvin
+WORKDIR /home/sovrin
