@@ -1,6 +1,6 @@
 //
 //  AppDelegate.h
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Kirill Neznamov on 10/05/2017.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.

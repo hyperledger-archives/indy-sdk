@@ -1,6 +1,6 @@
 //
 //  SignusUtils.h
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 02.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -14,40 +14,40 @@
 
 + (SignusUtils *)sharedInstance;
 
-- (NSError *)signWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                          theirDid:(NSString *)theirDid
                           message:(NSString *)message
                      outSignature:(NSString **)signature;
 
-- (NSError *)createMyDidWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
                                 outMyDid:(NSString **)myDid
                              outMyVerkey:(NSString **)myVerkey
                                  outMyPk:(NSString **)myPk;
 
-- (NSError *)createAndStoreMyDidWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)createAndStoreMyDidWithWalletHandle:(IndyHandle)walletHandle
                                             seed:(NSString *)seed
                                         outMyDid:(NSString **)myDid
                                      outMyVerkey:(NSString **)myVerkey
                                          outMyPk:(NSString **)myPk;
 
-- (NSError *)storeTheirDidWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
                               identityJson:(NSString *)identityJson;
 
-- (NSError *)storeTheirDidFromPartsWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)storeTheirDidFromPartsWithWalletHandle:(IndyHandle)walletHandle
                                            theirDid:(NSString *)theirDid
                                             theirPk:(NSString *)theirPk
                                         theirVerkey:(NSString *)theirVerkey
                                            endpoint:(NSString *)endpoint;
 
-- (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
                                      did:(NSString *)did
                             identityJson:(NSString *)identityJson
                              outMyVerKey:(NSString **)myVerKey
                                  outMyPk:(NSString **)myPk;
 
-- (NSError *)verifyWithWalletHandle:(SovrinHandle)walletHandle
-                         poolHandle:(SovrinHandle)poolHandle
+- (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
+                         poolHandle:(IndyHandle)poolHandle
                                 did:(NSString *)did
                           signature:(NSString *)signature
                         outVerified:(BOOL *)verified;

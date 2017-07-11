@@ -1,108 +1,108 @@
 #import <Foundation/Foundation.h>
 #import "IndyCallbacks.h"
 #import "IndyPool.h"
-#import "sovrin_core.h"
+#import "indy_core.h"
 #import "NSError+IndyError.h"
 
-@implementation SovrinPool
+@implementation IndyPool
 
 + (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)name
                                      poolConfig:(NSString *)config
                                      completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_create_pool_ledger_config(handle,
+    ret = indy_create_pool_ledger_config(handle,
                                            [name UTF8String],
                                            [config UTF8String],
-                                           SovrinWrapperCommon2PCallback
+                                           IndyWrapperCommon2PCallback
                                           );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
 + (NSError *)openPoolLedgerWithName:(NSString *)name
                          poolConfig:(NSString *)config
-                         completion:(void (^)(NSError *error, SovrinHandle handle)) handler
+                         completion:(void (^)(NSError *error, IndyHandle handle)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_open_pool_ledger(handle,
+    ret = indy_open_pool_ledger(handle,
                                   [name UTF8String],
                                   [config UTF8String],
-                                  SovrinWrapperCommon3PHCallback
+                                  IndyWrapperCommon3PHCallback
                                  );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)refreshPoolLedgerWithHandle:(SovrinHandle)poolHandle
++ (NSError *)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
                               completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_refresh_pool_ledger(handle,
-                                     (sovrin_handle_t) poolHandle,
-                                     SovrinWrapperCommon2PCallback
+    ret = indy_refresh_pool_ledger(handle,
+                                     (indy_handle_t) poolHandle,
+                                     IndyWrapperCommon2PCallback
                                     );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)closePoolLedgerWithHandle:(SovrinHandle)SovrinHandle
++ (NSError *)closePoolLedgerWithHandle:(IndyHandle)IndyHandle
                             completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_close_pool_ledger(handle,
-                                   (sovrin_handle_t) SovrinHandle,
-                                   SovrinWrapperCommon2PCallback
+    ret = indy_close_pool_ledger(handle,
+                                   (indy_handle_t) IndyHandle,
+                                   IndyWrapperCommon2PCallback
                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
 + (NSError *)deletePoolLedgerConfigWithName:(NSString *)name
                                  completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_delete_pool_ledger_config(handle,
+    ret = indy_delete_pool_ledger_config(handle,
                                            [name UTF8String],
-                                           SovrinWrapperCommon2PCallback
+                                           IndyWrapperCommon2PCallback
                                           );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
 @end

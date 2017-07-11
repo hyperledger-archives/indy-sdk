@@ -1,6 +1,6 @@
 //
 //  SignusUtils.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 02.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -24,7 +24,7 @@
     
     return instance;
 }
-- (NSError *)signWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                          theirDid:(NSString *)theirDid
                           message:(NSString *)message
                      outSignature:(NSString **)signature
@@ -35,7 +35,7 @@
     NSError *ret;
 
     
-    ret = [SovrinSignus signWithWalletHandle:walletHandle
+    ret = [IndySignus signWithWalletHandle:walletHandle
                                          did:theirDid
                                          msg:message
                                   completion:^(NSError *error, NSString *blockSignature)
@@ -58,7 +58,7 @@
 }
 
 
-- (NSError *)createMyDidWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
                                 outMyDid:(NSString **)myDid
                              outMyVerkey:(NSString **)myVerkey
@@ -72,7 +72,7 @@
     __block NSString *pk = nil;
     NSError *ret;
 
-    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [IndySignus createAndStoreMyDidWithWalletHandle:walletHandle
                                                     didJSON:myDidJson
                                                  completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
     {
@@ -98,7 +98,7 @@
     return err;
 }
 
-- (NSError *)createAndStoreMyDidWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)createAndStoreMyDidWithWalletHandle:(IndyHandle)walletHandle
                                             seed:(NSString *)seed
                                         outMyDid:(NSString **)myDid
                                      outMyVerkey:(NSString **)myVerkey
@@ -114,7 +114,7 @@
     
     NSString *myDidJson = (seed) ? [NSString stringWithFormat:@"{\"seed\":\"%@\"}", seed] : @"{}";
     
-    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [IndySignus createAndStoreMyDidWithWalletHandle:walletHandle
                                                     didJSON:myDidJson
                                                  completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
            {
@@ -141,7 +141,7 @@
 }
 
 
-- (NSError *)storeTheirDidWithWalletHandle: (SovrinHandle) walletHandle
+- (NSError *)storeTheirDidWithWalletHandle: (IndyHandle) walletHandle
                               identityJson: (NSString *)identityJson
 {
     
@@ -149,7 +149,7 @@
     __block NSError *err = nil;
     NSError *ret;
     
-    ret = [SovrinSignus storeTheirDidWithWalletHandle:walletHandle
+    ret = [IndySignus storeTheirDidWithWalletHandle:walletHandle
                                          identityJSON:identityJson
                                            completion:^(NSError *error)
     {
@@ -167,7 +167,7 @@
     return err;
 }
 
-- (NSError *)storeTheirDidFromPartsWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)storeTheirDidFromPartsWithWalletHandle:(IndyHandle)walletHandle
                                            theirDid:(NSString *)theirDid
                                             theirPk:(NSString *)theirPk
                                         theirVerkey:(NSString *)theirVerkey
@@ -181,7 +181,7 @@
                                    "\"verkey\":\"%@\","
                                    "\"endpoint\":\"\%@\"}", theirDid, theirVerkey, endpoint];
     
-    NSError *ret = [SovrinSignus storeTheirDidWithWalletHandle:walletHandle
+    NSError *ret = [IndySignus storeTheirDidWithWalletHandle:walletHandle
                                                   identityJSON:theirIdentityJson
                                                     completion:^(NSError *error)
     {
@@ -199,7 +199,7 @@
     return err;
 }
 
-- (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
                                      did:(NSString *)did
                             identityJson:(NSString *)identityJson
                              outMyVerKey:(NSString **)myVerKey
@@ -212,7 +212,7 @@
     __block NSString *pk;
     NSError *ret;
     
-    ret = [SovrinSignus replaceKeysWithWalletHandle:walletHandle
+    ret = [IndySignus replaceKeysWithWalletHandle:walletHandle
                                                 did:did
                                        identityJSON:identityJson
                                          completion: ^(NSError *error, NSString *blockVerkey, NSString *blockPk)
@@ -236,8 +236,8 @@
     return err;
 }
 
-- (NSError *)verifyWithWalletHandle:(SovrinHandle)walletHandle
-                         poolHandle:(SovrinHandle)poolHandle
+- (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
+                         poolHandle:(IndyHandle)poolHandle
                                 did:(NSString *)did
                           signature:(NSString *)signature
                         outVerified:(BOOL *)verified
@@ -247,7 +247,7 @@
     __block BOOL outVerified;
     NSError *ret;
     
-    ret = [SovrinSignus verifySignatureWithWalletHandle:walletHandle
+    ret = [IndySignus verifySignatureWithWalletHandle:walletHandle
                                              poolHandle:poolHandle
                                                     did:did
                                               signature:signature

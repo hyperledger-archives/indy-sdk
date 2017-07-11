@@ -1,70 +1,70 @@
 //
-//  SovrinAnoncreds.h
-//  libsovrin
+//  IndyAnoncreds.h
+//  libindy
 //
 
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 
-@interface SovrinAnoncreds : NSObject
+@interface IndyAnoncreds : NSObject
 
-+ (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(IndyHandle)walletHandle
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
                                                completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler;
 
-+ (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(IndyHandle)walletHandle
                                             claimDefSeqNo:(NSNumber *)seqNo
                                               maxClaimNum:(NSNumber *)maxClaimNum
                                                completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler;
 
-+ (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJSON:(NSString *)reqJSON
                                      claimJSON:(NSString *)claimJSON
                                  revocRegSeqNo:(NSNumber *)seqNo       // TODO: check how to deal with option<>
                                 userRevocIndex:(NSNumber *)revocIndex  // TODO: check how to deal with option<>
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler;
 
-+ (NSError *)issuerRevokeClaimWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
                                  claimDefSeqNo:(NSNumber *)claimSeqNo
                                  revocRegSeqNo:(NSNumber *)revocSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler;
 
-+ (NSError *)proverStoreClaimOfferWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverStoreClaimOfferWithWalletHandle:(IndyHandle)walletHandle
                                     claimOfferJSON:(NSString *)json
                                         completion:(void (^)(NSError *error)) handler;
 
-+ (NSError *)proverGetClaimOffersWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverGetClaimOffersWithWalletHandle:(IndyHandle)walletHandle
                                        filterJSON:(NSString *)json
                                        completion:(void (^)(NSError *error, NSString *claimOffersJSON)) handler;
 
-+ (NSError *)proverCreateMasterSecretWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverCreateMasterSecretWithWalletHandle:(IndyHandle)walletHandle
                                      masterSecretName:(NSString *)name
                                            completion:(void (^)(NSError *error)) handler;
 
-+ (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(IndyHandle)walletHandle
                                                 proverDid:(NSString *)prover
                                            claimOfferJSON:(NSString *)offerJson
                                              claimDefJSON:(NSString *)claimJson
                                          masterSecretName:(NSString *)name
                                                completion:(void (^)(NSError *error, NSString *claimReqJSON)) handler;
 
-+ (NSError *)proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
                                    claimsJSON:(NSString *)claimsJson
                                    completion:(void (^)(NSError *error)) handler;
 
-+ (NSError *)proverGetClaimsWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverGetClaimsWithWalletHandle:(IndyHandle)walletHandle
                                   filterJSON:(NSString *)json
                                   completion:(void (^)(NSError *error, NSString *claimsJSON)) handler;
 
-+ (NSError *)proverGetClaimsForProofReqWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
                                            proofReqJSON:(NSString *)json
                                              completion:(void (^)(NSError *error, NSString *claimsJSON)) handler;
 
-+ (NSError *)proverCreateProofWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverCreateProofWithWalletHandle:(IndyHandle)walletHandle
                                   proofReqJSON:(NSString *)reqJSON
                            requestedClaimsJSON:(NSString *)claimsJSON
                                    schemasJSON:(NSString *)schemasJSON

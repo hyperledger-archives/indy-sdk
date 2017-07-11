@@ -1,6 +1,6 @@
 //
 //  SignusMediumCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 14.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -43,7 +43,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -69,7 +69,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -95,7 +95,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -121,7 +121,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -149,7 +149,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -178,7 +178,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -201,7 +201,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -224,7 +224,7 @@
     NSString *poolName = @"pool1";
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -248,7 +248,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -282,10 +282,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_invalid_message";
+    NSString *poolName = @"indy_verify_works_for_invalid_message";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -293,7 +293,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -337,10 +337,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_message_without_signature";
+    NSString *poolName = @"indy_verify_works_for_message_without_signature";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -348,7 +348,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -394,10 +394,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_get_nym_from_ledger_with_incompatible_wallet";
+    NSString *poolName = @"indy_verify_works_for_get_nym_from_ledger_with_incompatible_wallet";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -405,7 +405,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"other_pool_name"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -449,10 +449,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_get_unknow_nym_from_ledger";
+    NSString *poolName = @"indy_verify_works_for_get_unknow_nym_from_ledger";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -460,7 +460,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -500,14 +500,14 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testSovrinVerifyWorksForUnknownNym
+- (void)testIndyVerifyWorksForUnknownNym
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_unknown_nym";
+    NSString *poolName = @"indy_verify_works_for_unknown_nym";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -515,7 +515,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"

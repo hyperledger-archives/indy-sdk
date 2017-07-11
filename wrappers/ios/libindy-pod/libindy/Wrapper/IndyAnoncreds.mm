@@ -1,276 +1,276 @@
 //
-//  SovrinAnoncreds.m
-//  libsovrin
+//  IndyAnoncreds.m
+//  libindy
 //
 
 #import "IndyAnoncreds.h"
 #import "IndyCallbacks.h"
-#import "sovrin_core.h"
+#import "indy_core.h"
 #import "NSError+IndyError.h"
 #import "IndyTypes.h"
 
-@implementation SovrinAnoncreds
+@implementation IndyAnoncreds
 
-+ (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(IndyHandle)walletHandle
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
                                                completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_issuer_create_and_store_claim_def(handle,
+    ret = indy_issuer_create_and_store_claim_def(handle,
                                                    walletHandle,
                                                    [schema UTF8String],
                                                    [signatureType UTF8String],
-                                                   (sovrin_bool_t) createNonRevoc,
-                                                   SovrinWrapperCommon4PCallback
+                                                   (indy_bool_t) createNonRevoc,
+                                                   IndyWrapperCommon4PCallback
                                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(IndyHandle)walletHandle
                                             claimDefSeqNo:(NSNumber *)seqNo
                                               maxClaimNum:(NSNumber *)maxClaimNum
                                                completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_issuer_create_and_store_revoc_reg(handle,
+    ret = indy_issuer_create_and_store_revoc_reg(handle,
                                                    walletHandle,
                                                    [seqNo intValue],
                                                    [maxClaimNum intValue],
-                                                   SovrinWrapperCommon4PCallback
+                                                   IndyWrapperCommon4PCallback
                                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJSON:(NSString *)reqJSON
                                      claimJSON:(NSString *)claimJSON
                                  revocRegSeqNo:(NSNumber *)seqNo       // TODO: check how to deal with option<>
                                 userRevocIndex:(NSNumber *)revocIndex  // TODO: check how to deal with option<>
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_issuer_create_claim(handle,
+    ret = indy_issuer_create_claim(handle,
                                      walletHandle,
                                      [reqJSON UTF8String],
                                      [claimJSON UTF8String],
                                      seqNo ? [seqNo intValue] : -1,
                                      revocIndex ? [revocIndex intValue] : -1,
-                                     SovrinWrapperCommon4PCallback
+                                     IndyWrapperCommon4PCallback
                                     );
 
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)issuerRevokeClaimWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
                                  claimDefSeqNo:(NSNumber *)claimSeqNo
                                  revocRegSeqNo:(NSNumber *)revocSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_issuer_revoke_claim(handle,
+    ret = indy_issuer_revoke_claim(handle,
                                      walletHandle,
                                      [claimSeqNo intValue],
                                      [revocSeqNo intValue],
                                      [revocIndex intValue],
-                                     SovrinWrapperCommon3PSCallback
+                                     IndyWrapperCommon3PSCallback
                                     );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverStoreClaimOfferWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverStoreClaimOfferWithWalletHandle:(IndyHandle)walletHandle
                                     claimOfferJSON:(NSString *)json
                                         completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_store_claim_offer(handle,
+    ret = indy_prover_store_claim_offer(handle,
                                           walletHandle,
                                           [json UTF8String],
-                                          SovrinWrapperCommon2PCallback
+                                          IndyWrapperCommon2PCallback
                                          );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverGetClaimOffersWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverGetClaimOffersWithWalletHandle:(IndyHandle)walletHandle
                                        filterJSON:(NSString *)json
                                        completion:(void (^)(NSError *error, NSString *claimOffersJSON)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_get_claim_offers(handle,
+    ret = indy_prover_get_claim_offers(handle,
                                          walletHandle,
                                          [json UTF8String],
-                                         SovrinWrapperCommon3PSCallback
+                                         IndyWrapperCommon3PSCallback
                                         );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverCreateMasterSecretWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverCreateMasterSecretWithWalletHandle:(IndyHandle)walletHandle
                                      masterSecretName:(NSString *)name
                                            completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_create_master_secret(handle,
+    ret = indy_prover_create_master_secret(handle,
                                              walletHandle,
                                              [name UTF8String],
-                                             SovrinWrapperCommon2PCallback
+                                             IndyWrapperCommon2PCallback
                                             );
 
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(IndyHandle)walletHandle
                                                 proverDid:(NSString *)prover
                                            claimOfferJSON:(NSString *)offerJson
                                              claimDefJSON:(NSString *)claimJson
                                          masterSecretName:(NSString *)name
                                                completion:(void (^)(NSError *error, NSString *claimReqJSON)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
-    ret = sovrin_prover_create_and_store_claim_req(handle,
+    ret = indy_prover_create_and_store_claim_req(handle,
                                                    walletHandle,
                                                    [prover UTF8String],
                                                    [offerJson UTF8String],
                                                    [claimJson UTF8String],
                                                    [name UTF8String],
-                                                   SovrinWrapperCommon3PSCallback
+                                                   IndyWrapperCommon3PSCallback
                                                   );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
                                    claimsJSON:(NSString *)claimsJson
                                    completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_store_claim(handle,
+    ret = indy_prover_store_claim(handle,
                                     walletHandle,
                                     [claimsJson UTF8String],
-                                    SovrinWrapperCommon2PCallback
+                                    IndyWrapperCommon2PCallback
                                    );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverGetClaimsWithWalletHandle:(SovrinHandle) walletHandle
++ (NSError *)proverGetClaimsWithWalletHandle:(IndyHandle) walletHandle
                                   filterJSON:(NSString *)json
                                   completion:(void (^)(NSError *error, NSString *claimsJSON)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_get_claims(handle,
+    ret = indy_prover_get_claims(handle,
                                    walletHandle,
                                    [json UTF8String],
-                                   SovrinWrapperCommon3PSCallback
+                                   IndyWrapperCommon3PSCallback
                                   );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverGetClaimsForProofReqWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
                                            proofReqJSON:(NSString *)json
                                              completion:(void (^)(NSError *error, NSString *claimsJSON)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_get_claims_for_proof_req(handle,
+    ret = indy_prover_get_claims_for_proof_req(handle,
                                                  walletHandle,
                                                  [json UTF8String],
-                                                 SovrinWrapperCommon3PSCallback
+                                                 IndyWrapperCommon3PSCallback
                                                 );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)proverCreateProofWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)proverCreateProofWithWalletHandle:(IndyHandle)walletHandle
                                   proofReqJSON:(NSString *)reqJSON
                            requestedClaimsJSON:(NSString *)claimsJSON
                                    schemasJSON:(NSString *)schemasJSON
@@ -279,11 +279,11 @@
                                  revocRegsJSON:(NSString *)revocJSON
                                     completion:(void (^)(NSError *error, NSString *proofJSON)) handler;
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_prover_create_proof(handle,
+    ret = indy_prover_create_proof(handle,
                                      walletHandle,
                                      [reqJSON UTF8String],
                                      [claimsJSON UTF8String],
@@ -291,14 +291,14 @@
                                      [name UTF8String],
                                      [claimDefsJSON UTF8String],
                                      [revocJSON UTF8String],
-                                     SovrinWrapperCommon3PSCallback
+                                     IndyWrapperCommon3PSCallback
                                     );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
 + (NSError *)verifierVerifyProofWithWalletHandle:(NSString *)proofReqJSON
@@ -308,24 +308,24 @@
                                    revocRegsJSON:(NSString *)revocJSON
                                       completion:(void (^)(NSError *error, BOOL valid)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
-    ret = sovrin_verifier_verify_proof(handle,
+    ret = indy_verifier_verify_proof(handle,
                                        [proofReqJSON UTF8String],
                                        [proofJSON UTF8String],
                                        [schemasJSON UTF8String],
                                        [claimDefsJSON UTF8String],
                                        [revocJSON UTF8String],
-                                       SovrinWrapperCommon3PBCallback
+                                       IndyWrapperCommon3PBCallback
                                       );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 
 }
 

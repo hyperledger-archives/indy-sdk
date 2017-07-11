@@ -1,6 +1,6 @@
 //
 //  WalletUtils.h
-//  libsovrin-demo
+//  libindy-demo
 //
 
 #import <Foundation/Foundation.h>
@@ -14,7 +14,7 @@
 - (NSError *)createAndOpenWalletWithPoolName:(NSString *)poolName
                                   walletName:(NSString *)walletName
                                        xtype:(NSString *)xtype
-                                      handle:(SovrinHandle *)handle;
+                                      handle:(IndyHandle *)handle;
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                            walletName:(NSString *)walletName
@@ -25,13 +25,13 @@
 
 - (NSError *)openWalletWithName:(NSString *)walletName
                          config:(NSString *)config
-                      outHandle:(SovrinHandle *)handle;
+                      outHandle:(IndyHandle *)handle;
 
-- (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle;
+- (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle;
 
 
 
-- (NSError *)walletSetSeqNoForValue:(SovrinHandle)walletHandle
+- (NSError *)walletSetSeqNoForValue:(IndyHandle)walletHandle
                        claimDefUUID:(NSString *)uuid
                       claimDefSeqNo:(NSNumber *)seqNo;
 

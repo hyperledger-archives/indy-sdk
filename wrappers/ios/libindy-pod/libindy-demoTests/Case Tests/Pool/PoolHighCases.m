@@ -1,6 +1,6 @@
  //
 //  PoolHighCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 22.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -94,7 +94,7 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
     
     // 2. Open pool ledger
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
                                               config:nil
                                          poolHandler:&poolHandle];
@@ -118,7 +118,7 @@
 //    XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
 //    
 //    // 2. Open pool ledger
-//    SovrinHandle poolHandle = 0;
+//    IndyHandle poolHandle = 0;
 //    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
 //                                              config:config
 //                                         poolHandler:&poolHandle];
@@ -139,7 +139,7 @@
                                                                    genTxnFileName:nil];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
     
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
                                               config:nil
                                          poolHandler:&poolHandle];
@@ -171,7 +171,7 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
 
     // 2. Open pool ledger
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
                                               config:nil
                                          poolHandler:&poolHandle];
@@ -198,7 +198,7 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
     
     // 2. Open pool ledger
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
                                               config:nil
                                          poolHandler:&poolHandle];
@@ -208,11 +208,11 @@
 
 // MARK - Refresh
 
-- (void)testSovrinRefreshPoolLedgerWorks
+- (void)testIndyRefreshPoolLedgerWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_refresh_pool_ledger_works";
-    SovrinHandle poolHandle = 0;
+    NSString *poolName = @"indy_refresh_pool_ledger_works";
+    IndyHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                           poolHandle:&poolHandle];
     
@@ -231,8 +231,8 @@
     [TestUtils cleanupStorage];
     
     // 1. create and open pool ledger config
-    NSString *poolName = @"sovrin_refresh_pool_ledger_works";
-    SovrinHandle poolHandle = 0;
+    NSString *poolName = @"indy_refresh_pool_ledger_works";
+    IndyHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                           poolHandle:&poolHandle];
     
@@ -250,8 +250,8 @@
     [TestUtils cleanupStorage];
     
     // 1. create and open pool ledger config
-    NSString *poolName = @"sovrin_refresh_pool_ledger_works";
-    SovrinHandle poolHandle = 0;
+    NSString *poolName = @"indy_refresh_pool_ledger_works";
+    IndyHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                           poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed!");
@@ -272,8 +272,8 @@
     [TestUtils cleanupStorage];
     
     // 1. create and open pool ledger config
-    NSString *poolName = @"sovrin_close_pool_ledger_works";
-    SovrinHandle poolHandle = 0;
+    NSString *poolName = @"indy_close_pool_ledger_works";
+    IndyHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                           poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed!");
@@ -292,12 +292,12 @@
 
 // MARK: - Delete
 
-- (void)testSovrinDeletePoolLedgerConfigWorks
+- (void)testIndyDeletePoolLedgerConfigWorks
 {
     [TestUtils cleanupStorage];
     
     // 1. create and open pool ledger config
-    NSString *poolName = @"sovrin_remove_pool_ledger_config_works";
+    NSString *poolName = @"indy_remove_pool_ledger_config_works";
     NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
                                                                             nodes:nil
                                                                        poolConfig:nil
@@ -314,8 +314,8 @@
 {
     
     // 1. create and open pool ledger config
-    NSString *poolName = @"sovrin_remove_pool_ledger_config_works_for_opened";
-    SovrinHandle poolHandle = 0;
+    NSString *poolName = @"indy_remove_pool_ledger_config_works_for_opened";
+    IndyHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                           poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed!");

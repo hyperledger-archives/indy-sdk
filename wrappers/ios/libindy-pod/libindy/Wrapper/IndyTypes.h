@@ -1,6 +1,6 @@
 //
-//  SovrinTypes.h
-//  libsovrin
+//  IndyTypes.h
+//  libindy
 //
 
-typedef SInt32 SovrinHandle;
+typedef SInt32 IndyHandle;

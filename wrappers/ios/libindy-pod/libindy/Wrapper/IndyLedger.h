@@ -1,21 +1,21 @@
 //
-//  SovrinLedger.h
-//  libsovrin
+//  IndyLedger.h
+//  libindy
 //
 
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 
-@interface SovrinLedger : NSObject
+@interface IndyLedger : NSObject
 
-+ (NSError *)signAndSubmitRequestWithWalletHandle:(SovrinHandle)walletHandle
-                                       poolHandle:(SovrinHandle)poolHandle
++ (NSError *)signAndSubmitRequestWithWalletHandle:(IndyHandle)walletHandle
+                                       poolHandle:(IndyHandle)poolHandle
                                      submitterDID:(NSString *)submitterDid
                                       requestJSON:(NSString *)request
                                        completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
 
-+ (NSError *)submitRequestWithPoolHandle:(SovrinHandle)poolHandle
++ (NSError *)submitRequestWithPoolHandle:(IndyHandle)poolHandle
                              requestJSON:(NSString *)request
                               completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
 

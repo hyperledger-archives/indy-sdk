@@ -1,6 +1,6 @@
 //
 //  NSDictionary+JSON.h
-//  libsovrin-demo
+//  libindy-demo
 //
 
 

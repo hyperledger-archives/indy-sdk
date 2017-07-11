@@ -1,182 +1,182 @@
 //
-//  SovrinSignus.m
-//  libsovrin
+//  IndySignus.m
+//  libindy
 //
 
 #import "IndySignus.h"
 #import "IndyCallbacks.h"
-#import "sovrin_core.h"
+#import "indy_core.h"
 #import "NSError+IndyError.h"
 
-@implementation SovrinSignus
+@implementation IndySignus
 
-+ (NSError *)createAndStoreMyDidWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)createAndStoreMyDidWithWalletHandle:(IndyHandle)walletHandle
                                          didJSON:(NSString *)didJson
                                       completion:(void (^)(NSError *error, NSString *did, NSString *verkey, NSString *pk)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_create_and_store_my_did( handle,
+    ret = indy_create_and_store_my_did( handle,
                                           walletHandle,
                                           [didJson UTF8String],
-                                          SovrinWrapperCommon5PCallback );
+                                          IndyWrapperCommon5PCallback );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
     
 }
 
-+ (NSError *)replaceKeysWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
                                      did:(NSString *)did
                             identityJSON:(NSString *)json
                               completion:(void (^)(NSError *error, NSString *verkey, NSString *pk)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_replace_keys( handle,
+    ret = indy_replace_keys( handle,
                                walletHandle,
                                [did UTF8String],
                                [json UTF8String],
-                               SovrinWrapperCommon4PCallback
+                               IndyWrapperCommon4PCallback
                               );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)storeTheirDidWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
                               identityJSON:(NSString *)json
                                 completion:(void (^)(NSError *error)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_store_their_did( handle,
+    ret = indy_store_their_did( handle,
                                   walletHandle,
                                   [json UTF8String],
-                                  SovrinWrapperCommon2PCallback
+                                  IndyWrapperCommon2PCallback
                                 );
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)signWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                               did:(NSString *)did
                               msg:(NSString *)msg
                        completion:(void (^)(NSError *error, NSString *signature)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_sign( handle,
+    ret = indy_sign( handle,
                        walletHandle,
                        [did UTF8String],
                        [msg UTF8String],
-                       SovrinWrapperCommon3PSCallback
+                       IndyWrapperCommon3PSCallback
                      );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)verifySignatureWithWalletHandle:(SovrinHandle)walletHandle
-                                  poolHandle:(SovrinHandle)poolHandle
++ (NSError *)verifySignatureWithWalletHandle:(IndyHandle)walletHandle
+                                  poolHandle:(IndyHandle)poolHandle
                                          did:(NSString *)did
                                    signature:(NSString *)signature
                                   completion:(void (^)(NSError *error, BOOL valid)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_verify_signature(handle,
+    ret = indy_verify_signature(handle,
                                   walletHandle,
                                   poolHandle,
                                   [did UTF8String],
                                   [signature UTF8String],
-                                  SovrinWrapperCommon3PBCallback);
+                                  IndyWrapperCommon3PBCallback);
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)encryptWithWalletHandle:(SovrinHandle)walletHandle
-                                pool:(SovrinHandle)poolHandle
++ (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
+                                pool:(IndyHandle)poolHandle
                                myDid:(NSString *)myDid
                                  did:(NSString *)did
                                  msg:(NSString *)msg
                           completion:(void (^)(NSError *error, NSString *encryptedMsg, NSString *nonce)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_encrypt( handle,
+    ret = indy_encrypt( handle,
                           walletHandle,
                           poolHandle,
                           [myDid UTF8String],
                           [did UTF8String],
                           [msg UTF8String],
-                          SovrinWrapperCommon4PCallback
+                          IndyWrapperCommon4PCallback
                         );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)decryptWithWalletHandle:(SovrinHandle)walletHandle
++ (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
                                myDid:(NSString *)myDid
                                  did:(NSString *)did
                         encryptedMsg:(NSString *)msg
                                nonce:(NSString *)nonce
                           completion:(void (^)(NSError *error, NSString *decryptedMsg)) handler
 {
-    sovrin_error_t ret;
+    indy_error_t ret;
     
-    sovrin_handle_t handle = [[SovrinCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = sovrin_decrypt( handle,
+    ret = indy_decrypt( handle,
                           walletHandle,
                           [myDid UTF8String],
                           [did UTF8String],
                           [msg UTF8String],
                           [nonce UTF8String],
-                          SovrinWrapperCommon3PSCallback
+                          IndyWrapperCommon3PSCallback
                         );
     
     if( ret != Success )
     {
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
-    return [NSError errorFromSovrinError: ret];
+    return [NSError errorFromIndyError: ret];
 }
 
 @end

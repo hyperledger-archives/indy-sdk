@@ -1,13 +1,13 @@
 //
-//  SovrinPool.h
-//  libsovrin
+//  IndyPool.h
+//  libindy
 //
 
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 
-@interface SovrinPool : NSObject
+@interface IndyPool : NSObject
 
 + (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)name
                                      poolConfig:(NSString *)config
@@ -15,12 +15,12 @@
 
 + (NSError *)openPoolLedgerWithName:(NSString *)name
                          poolConfig:(NSString *)config
-                         completion:(void (^)(NSError *error, SovrinHandle handle)) handler;
+                         completion:(void (^)(NSError *error, IndyHandle handle)) handler;
 
-+ (NSError *)refreshPoolLedgerWithHandle:(SovrinHandle)poolHandle
++ (NSError *)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
                               completion:(void (^)(NSError *error)) handler;
 
-+ (NSError *)closePoolLedgerWithHandle:(SovrinHandle)SovrinHandle
++ (NSError *)closePoolLedgerWithHandle:(IndyHandle)IndyHandle
                             completion:(void (^)(NSError *error)) handler;
 
 + (NSError *)deletePoolLedgerConfigWithName:(NSString *)name

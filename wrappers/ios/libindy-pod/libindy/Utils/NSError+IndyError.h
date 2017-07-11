@@ -1,13 +1,13 @@
 //
-//  NSError+SovrinError.h
-//  libsovrin
+//  NSError+IndyError.h
+//  libindy
 //
 
 #import <Foundation/Foundation.h>
-#import "sovrin_core.h"
+#import "indy_core.h"
 
-@interface NSError (SovrinError)
+@interface NSError (IndyError)
 
-+ (NSError*) errorFromSovrinError:(sovrin_error_t) error;
++ (NSError*) errorFromIndyError:(indy_error_t) error;
 
 @end

@@ -1,6 +1,6 @@
 //
 //  LedgerUtils.h
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 05.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -15,8 +15,8 @@
 
 + (LedgerUtils *)sharedInstance;
 
-- (NSError *)signAndSubmitRequestWithPoolHandle:(SovrinHandle)poolHandle
-                                   walletHandle:(SovrinHandle)walletHandle
+- (NSError *)signAndSubmitRequestWithPoolHandle:(IndyHandle)poolHandle
+                                   walletHandle:(IndyHandle)walletHandle
                                    submitterDid:(NSString *)submitterDid
                                     requestJson:(NSString *)requestJson
                                 outResponseJson:(NSString**)responseJson;

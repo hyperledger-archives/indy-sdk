@@ -1,6 +1,6 @@
 //
 //  AnoncredsMediumCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 16.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -40,7 +40,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -66,7 +66,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -94,7 +94,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -118,7 +118,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -139,7 +139,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -161,14 +161,14 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. obtain wallet handles
-    SovrinHandle walletHandle1 = 0;
+    IndyHandle walletHandle1 = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
                                                                  handle:&walletHandle1];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName failed");
     
-    SovrinHandle walletHandle2 = 0;
+    IndyHandle walletHandle2 = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet2"
                                                                   xtype:@"default"
@@ -224,7 +224,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -246,7 +246,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:&claimDefJson];
@@ -269,7 +269,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -300,7 +300,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:&claimDefJson];
@@ -328,7 +328,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -351,7 +351,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -381,7 +381,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -415,7 +415,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:&claimDefJson];
@@ -456,7 +456,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -475,7 +475,7 @@
     NSError *ret;
     
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -504,7 +504,7 @@
 - (void)testProverGetClaimsForProofreqWorksForInvalidProofReq
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -525,7 +525,7 @@
 - (void)testProverGetClaimsForProofReqWorksForRevealedAttrWithOtherSchemaSeqNo
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -558,7 +558,7 @@
 - (void)testGetClaimsForProofReqWorksForInvalidPredicate
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -582,7 +582,7 @@
 - (void)testProverGetClaimsForProofReqWorksForInvaliPredicateType
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
@@ -608,7 +608,7 @@
 - (void)testProverCreateProofWorksForInvalidMasterSecret
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:&claimDefJson];
@@ -661,7 +661,7 @@
 - (void)testProverCreateProofWorksForInvalidSchemasJson
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:&claimDefJson];
@@ -716,7 +716,7 @@
 - (void)testProverCreateProofWorksforInvalidClaimDefsJson
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:&claimDefJson];
@@ -771,7 +771,7 @@
 - (void)testProverCreateProofWorksForInvalidRequestedClaimsJson
 {
     // 1. init commmon wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     NSString *claimDefJson;
     NSError *ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                              claimDefJson:&claimDefJson];

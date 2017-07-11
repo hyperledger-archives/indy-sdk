@@ -1,4 +1,4 @@
-typedef NS_ENUM(NSInteger, SovrinErrorCode)
+typedef NS_ENUM(NSInteger, IndyErrorCode)
 {
     Success = 0,
     

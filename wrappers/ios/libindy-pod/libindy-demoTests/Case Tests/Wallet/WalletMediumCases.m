@@ -1,6 +1,6 @@
 //
 //  WalletMediumCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 14.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -39,7 +39,7 @@
 - (void)testCreateWalletWorksForDublicateName
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works_for_duplicate_name";
+    NSString *poolName = @"indy_create_wallet_works_for_duplicate_name";
     NSString *walletName = @"wallet1";
     NSError *ret;
     
@@ -73,7 +73,7 @@
 - (void)testDeleteWalletWorksForDeletedWallet
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_delete_wallet_works_for_deleted_wallet";
+    NSString *poolName = @"indy_delete_wallet_works_for_deleted_wallet";
     NSString *walletName = @"wallet1";
     NSError *ret;
     
@@ -114,7 +114,7 @@
 //- (void)testOpenWalletWorksForTwice
 //{
 //    [TestUtils cleanupStorage];
-//    NSString *poolName = @"sovrin_create_wallet_works";
+//    NSString *poolName = @"indy_create_wallet_works";
 //    NSString *walletName = @"wallet1";
 //    NSError *ret;
 //    
@@ -145,7 +145,7 @@
 - (void)testOpenWalletWorksForTwoWallets
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works";
+    NSString *poolName = @"indy_create_wallet_works";
     NSString *walletName1 = @"wallet1";
     NSString *walletName2 = @"wallet2";
     NSError *ret;
@@ -182,7 +182,7 @@
 - (void)testOpenWalletWorksForInvalidConfig
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works";
+    NSString *poolName = @"indy_create_wallet_works";
     NSString *walletName = @"wallet1";
     NSString *config = @"{\"field\":\"value\"}";
     NSError *ret;
@@ -210,7 +210,7 @@
 - (void)testCloseWalletWorksForInvalidHandle
 {
     [TestUtils cleanupStorage];
-    SovrinHandle walletHandle = 1;
+    IndyHandle walletHandle = 1;
     
     NSError *ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"WalletUtils:closeWalletWithHandle() returned wrong code");
@@ -221,13 +221,13 @@
 - (void)testCloseWalletWorksForTwice
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_close_wallet_works_for_closed_wallet";
+    NSString *poolName = @"indy_close_wallet_works_for_closed_wallet";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. create and open wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -250,13 +250,13 @@
 - (void)testWalletSetSeqNoWorksForNotExistsKey
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_wallet_set_seqno_works_for_not_exists_key";
+    NSString *poolName = @"indy_wallet_set_seqno_works_for_not_exists_key";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. create and open wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -277,12 +277,12 @@
 - (void)testWalletSetSeqNoWorksForInvalidWallet
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_wallet_set_seqno_works_for_not_exists_key";
+    NSString *poolName = @"indy_wallet_set_seqno_works_for_not_exists_key";
     NSString *walletName = @"wallet1";
     NSError *ret;
     
     // 1. create and open wallet
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:@"default"
@@ -292,7 +292,7 @@
     // 2. set seqNo
     NSNumber *seqNo = @(1);
     NSString *someKey = @"key";
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[WalletUtils sharedInstance] walletSetSeqNoForValue:invalidWalletHandle
                                                   claimDefUUID:someKey
                                                  claimDefSeqNo:seqNo];

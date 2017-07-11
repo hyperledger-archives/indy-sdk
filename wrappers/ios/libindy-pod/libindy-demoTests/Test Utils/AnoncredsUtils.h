@@ -1,6 +1,6 @@
 //
 //  AnoncredsUtils.h
-//  libsovrin-demo
+//  libindy-demo
 //
 
 #import <Foundation/Foundation.h>
@@ -26,7 +26,7 @@
 - (NSString *)getGvtClaimDef;
 - (NSString *)getGvtClaimRequest;
 
-- (NSError *) createClaimDefinitionAndSetLink:(SovrinHandle)walletHandle
+- (NSError *) createClaimDefinitionAndSetLink:(IndyHandle)walletHandle
                                        schema:(NSString *)schema
                                         seqNo:(NSNumber *)claimDefSeqNo
                                       outJson:(NSString **)outJson;
@@ -46,48 +46,48 @@
 - (NSArray *)getUniqueClaimsFrom:(NSDictionary *)proofClaims;
 
 
-- (NSError *)proverCreateMasterSecret:(SovrinHandle)walletHandle
+- (NSError *)proverCreateMasterSecret:(IndyHandle)walletHandle
                      masterSecretName:(NSString *)name;
 
-- (NSError *)proverStoreClaimOffer:(SovrinHandle)walletHandle
+- (NSError *)proverStoreClaimOffer:(IndyHandle)walletHandle
                     claimOfferJson:(NSString *)str;
 
-- (NSError *)proverGetClaimOffers:(SovrinHandle)walletHandle
+- (NSError *)proverGetClaimOffers:(IndyHandle)walletHandle
                        filterJson:(NSString *)filterJson
                outClaimOffersJSON:(NSString **)outJson;
 
-- (NSError *)proverCreateAndStoreClaimReq:(SovrinHandle)walletHandle
+- (NSError *)proverCreateAndStoreClaimReq:(IndyHandle)walletHandle
                                 proverDid:(NSString *)pd
                            claimOfferJson:(NSString *)coj
                              claimDefJson:(NSString *)cdj
                          masterSecretName:(NSString *)name
                           outClaimReqJson:(NSString **)outJson;
 
-- (NSError *)issuerCreateClaimWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJson:(NSString *)claimReqJson
                                      claimJson:(NSString *)claimJson
                                   outClaimJson:(NSString **)xClaimJson
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON;
 
-- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(IndyHandle)walletHandle
                                               schemaJson:(NSString *)schemaJson
                                            signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc
                                             claimDefJson:(NSString **)claimDefJson
                                             claimDefUUID:(NSString **)claimDefUUID;
 
-- (NSError *) proverStoreClaimWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *) proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
                                     claimsJson:(NSString *)str;
 
-- (NSError *)proverGetClaimsForProofReqWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
                                        proofRequestJson:(NSString *)str
                                           outClaimsJson:(NSString **)outClaimsJson;
 
-- (NSError *)proverGetClaimsForWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)proverGetClaimsForWalletHandle:(IndyHandle)walletHandle
                                  filterJson:(NSString *)filterJson
                               outClaimsJson:(NSString **)claimsJson;
 
-- (NSError *)proverCreateProofWithWalletHandle:(SovrinHandle)walletHandle
+- (NSError *)proverCreateProofWithWalletHandle:(IndyHandle)walletHandle
                                   proofReqJson:(NSString *)proofReqJson
                            requestedClaimsJson:(NSString *)requestedClaimsJson
                                    schemasJson:(NSString *)schemasJson
@@ -103,7 +103,7 @@
                    revocRegsJson:(NSString *)revocRegsJson
                         outValid:(BOOL *)isValid;
 
-- (NSError *)initializeCommonWalletAndReturnHandle:(SovrinHandle *)walletHandle
+- (NSError *)initializeCommonWalletAndReturnHandle:(IndyHandle *)walletHandle
                                       claimDefJson:(NSString **)claimDefJson;
 
 @end

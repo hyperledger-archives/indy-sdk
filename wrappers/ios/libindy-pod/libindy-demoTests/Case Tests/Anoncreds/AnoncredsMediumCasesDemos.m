@@ -1,6 +1,6 @@
 //
 //  AnoncredsMediumCasesDemos.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 21.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -41,7 +41,7 @@
     
     //1. Create wallet, get wallet handle
     NSError *ret;
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -175,8 +175,8 @@
     NSString* issuerWalletName = @"issuer_wallet";
     NSString* proverWalletName = @"prover_wallet";
     NSString* xtype = @"default";
-    SovrinHandle issuerWalletHandle = 0;
-    SovrinHandle proverWalletHandle = 0;
+    IndyHandle issuerWalletHandle = 0;
+    IndyHandle proverWalletHandle = 0;
     NSError *ret = nil;
     
     //1. Create Issuer wallet, get wallet handle
@@ -369,7 +369,7 @@
     
     //1. Issuer1 create wallet, get wallet handles
     
-    SovrinHandle issuerGvtWalletHandle = 0;
+    IndyHandle issuerGvtWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:issuer1WalletName
                                                                   xtype:xtype
@@ -378,7 +378,7 @@
     
     //2. Issuer2 create wallet, get wallet handles
     
-    SovrinHandle issuerXyzWalletHandle = 0;
+    IndyHandle issuerXyzWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:issuer2WalletName
                                                                   xtype:xtype
@@ -387,7 +387,7 @@
     
     //3. Prover create wallet, get wallet handles
     
-    SovrinHandle proverWalletHandle = 0;
+    IndyHandle proverWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
                                                              walletName:proverWalletName
                                                                   xtype:xtype
@@ -728,7 +728,7 @@
     
     //1. Issuer create wallet, get wallet handles
     
-    SovrinHandle issuerWalletHandle = 0;
+    IndyHandle issuerWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
                                                              walletName: issuerWalletName
                                                                   xtype: xtype
@@ -737,7 +737,7 @@
     
     //2. Prover create wallet, get wallet handles
     
-    SovrinHandle proverWalletHandle = 0;
+    IndyHandle proverWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
                                                              walletName: proverWalletName
                                                                   xtype: xtype

@@ -1,6 +1,6 @@
 //
 //  Ledger.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 02.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -35,19 +35,19 @@
 - (void) testSendRequestWorksForInvalidPoolHandle
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_request_works_for_invalid_pool_handle";
+    NSString *poolName = @"indy_send_request_works_for_invalid_pool_handle";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -79,7 +79,7 @@
     
     // 5. Send request using invalid pool handle
     
-    SovrinHandle invalidPoolHandle = poolHandle + 1;
+    IndyHandle invalidPoolHandle = poolHandle + 1;
     NSString *getNymResponse;
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:invalidPoolHandle
                                                         request:getNymRequest
@@ -93,19 +93,19 @@
 - (void) testSignAndSubmitRequestWorksForInvalidPoolHandle
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_invalid_pool_handle";
+    NSString *poolName = @"indy_sign_and_submit_request_works_for_invalid_pool_handle";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -157,7 +157,7 @@
     
     // 6. Send and submit request using invalid pool handle
     
-    SovrinHandle invalidPoolHandle = poolHandle + 1;
+    IndyHandle invalidPoolHandle = poolHandle + 1;
     NSString *nymResponse;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:invalidPoolHandle
                                                               walletHandle:walletHandle
@@ -172,19 +172,19 @@
 -(void) testSignAndSubmitRequestWorksForInvalidWalletHandle
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_invalid_wallet_handle";
+    NSString *poolName = @"indy_sign_and_submit_request_works_for_invalid_wallet_handle";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -236,7 +236,7 @@
     
     // 6. Send and submit request using invalid wallet handle
     
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     NSString *nymResponse;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:invalidWalletHandle
@@ -251,19 +251,19 @@
 //- (void)testSignAndSubmitRequestWorksForNotFoundSigner
 //{
 //    [TestUtils cleanupStorage];
-//    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_not_found_signer";
+//    NSString *poolName = @"indy_sign_and_submit_request_works_for_not_found_signer";
 //    NSString *walletName = @"wallet1";
 //    NSString *xtype = @"default";
 //    NSError *ret;
 //    
 //    // 1. Obtain pool handle
-//    SovrinHandle poolHandle = 0;
+//    IndyHandle poolHandle = 0;
 //    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
 //                                                                 poolHandle:&poolHandle];
 //    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
 //    
 //    // 2. Obtain wallet handle
-//    SovrinHandle walletHandle = 0;
+//    IndyHandle walletHandle = 0;
 //    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
 //                                                             walletName:walletName
 //                                                                  xtype:xtype
@@ -323,13 +323,13 @@
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName1
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName2
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -398,7 +398,7 @@
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     
@@ -531,19 +531,19 @@
 - (void) testNymRequestWorksWithoutSignature
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_nym_request_works_without_signature";
+    NSString *poolName = @"indy_nym_request_works_without_signature";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -594,19 +594,19 @@
 - (void) testSendGetNymRequestWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_get_nym_request_works";
+    NSString *poolName = @"indy_send_get_nym_request_works";
     NSString *walletName = @"wallet1";
     NSString *xtype = @"default";
     NSError *ret;
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -658,20 +658,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_nym_requests_works";
+    NSString* poolName = @"indy_nym_requests_works";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -841,20 +841,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_attrib_request_works_without_signature";
+    NSString* poolName = @"indy_attrib_request_works_without_signature";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -907,20 +907,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_attrib_requests_works";
+    NSString* poolName = @"indy_attrib_requests_works";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -1093,20 +1093,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_schema_request_works_without_signature";
+    NSString* poolName = @"indy_schema_request_works_without_signature";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -1163,14 +1163,14 @@
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -1328,20 +1328,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_send_node_request_works_without_signature";
+    NSString* poolName = @"indy_send_node_request_works_without_signature";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -1397,20 +1397,20 @@
 - (void) testSubmitNodeRequestWorksForNewSteward
 {
     [TestUtils cleanupStorage];
-    NSString* poolName = @"sovrin_submit_node_request_works_for_new_steward";
+    NSString* poolName = @"indy_submit_node_request_works_for_new_steward";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -1594,20 +1594,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_claim_def_requests_works";
+    NSString* poolName = @"indy_claim_def_requests_works";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype

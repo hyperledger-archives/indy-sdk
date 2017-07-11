@@ -1,6 +1,6 @@
 //
 //  PoolUtils.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Kirill Neznamov on 15/05/2017.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -95,7 +95,7 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *ret2 = nil;
 
-    ret = [SovrinPool createPoolLedgerConfigWithPoolName:poolName
+    ret = [IndyPool createPoolLedgerConfigWithPoolName:poolName
                                               poolConfig:configStr
                                               completion:^ (NSError *error)
            {
@@ -115,16 +115,16 @@
 
 - (NSError *)openPoolLedger:(NSString*)poolName
                      config:(NSString*)config
-                poolHandler:(SovrinHandle*)handle
+                poolHandler:(IndyHandle*)handle
 {
     NSError *ret = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block SovrinHandle poolHandle = 0;
+    __block IndyHandle poolHandle = 0;
     
-    ret = [SovrinPool openPoolLedgerWithName:poolName
+    ret = [IndyPool openPoolLedgerWithName:poolName
                                   poolConfig:config
-                                  completion:^(NSError *error, SovrinHandle handle)
+                                  completion:^(NSError *error, IndyHandle handle)
            {
                err = error;
                poolHandle = handle;
@@ -144,7 +144,7 @@
 
 
 - (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
-                                       poolHandle: (SovrinHandle *) handle
+                                       poolHandle: (IndyHandle *) handle
 {
     NSError *ret = nil;
     
@@ -158,7 +158,7 @@
     __block NSError *closureError = nil;
     
     // 3. Create pool ledger config
-    ret = [SovrinPool createPoolLedgerConfigWithPoolName:poolName
+    ret = [IndyPool createPoolLedgerConfigWithPoolName:poolName
                                               poolConfig:poolConfig
                                               completion:^ (NSError *error)
            {
@@ -182,11 +182,11 @@
     // 4. Open Pool ledger config
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block SovrinHandle poolHandle = 0;
+    __block IndyHandle poolHandle = 0;
     
-    ret = [SovrinPool openPoolLedgerWithName:poolName
+    ret = [IndyPool openPoolLedgerWithName:poolName
                                   poolConfig:nil
-                                  completion:^(NSError* error, SovrinHandle handle)
+                                  completion:^(NSError* error, IndyHandle handle)
            {
                closureError = error;
                poolHandle = handle;
@@ -204,7 +204,7 @@
     return closureError;
 }
 
-- (NSError *)sendRequestWithPoolHandle:(SovrinHandle)poolHandle
+- (NSError *)sendRequestWithPoolHandle:(IndyHandle)poolHandle
                                request:(NSString *)request
                               response:(NSString **)response
 {
@@ -216,7 +216,7 @@
     __block NSString* outResponse = nil;
     
     
-    ret = [SovrinLedger submitRequestWithPoolHandle:poolHandle
+    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
                                         requestJSON:request
                                          completion:^(NSError* error, NSString* result)
     {
@@ -236,13 +236,13 @@
     return err;
 }
 
-- (NSError *)refreshPoolHandle:(SovrinHandle)poolHandle
+- (NSError *)refreshPoolHandle:(IndyHandle)poolHandle
 {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     
     
-    NSError * ret = [SovrinPool refreshPoolLedgerWithHandle:poolHandle
+    NSError * ret = [IndyPool refreshPoolLedgerWithHandle:poolHandle
                                                  completion:^(NSError* error)
                      {
                          err = error;
@@ -259,13 +259,13 @@
     return err;
 }
 
-- (NSError *)closeHandle:(SovrinHandle)poolHandle
+- (NSError *)closeHandle:(IndyHandle)poolHandle
 {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     
     
-    NSError * ret = [SovrinPool closePoolLedgerWithHandle:poolHandle
+    NSError * ret = [IndyPool closePoolLedgerWithHandle:poolHandle
                                                completion:^(NSError* error)
                      {
                          err = error;
@@ -288,7 +288,7 @@
     __block NSError *err = nil;
     
     
-    NSError * ret = [SovrinPool deletePoolLedgerConfigWithName:poolName
+    NSError * ret = [IndyPool deletePoolLedgerConfigWithName:poolName
                                                     completion:^(NSError* error)
                      {
                          err = error;

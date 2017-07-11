@@ -1,6 +1,6 @@
 //
 //  PoolMediumCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 22.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.

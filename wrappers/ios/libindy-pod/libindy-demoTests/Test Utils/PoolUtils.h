@@ -1,6 +1,6 @@
 //
 //  PoolUtils.h
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Kirill Neznamov on 15/05/2017.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -24,21 +24,21 @@
                                  genTxnFileName:(NSString *)genTxnFileName;
 
 - (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
-                                       poolHandle: (SovrinHandle *) handle;
+                                       poolHandle: (IndyHandle *) handle;
 
 - (NSString *)createPoolConfig:(NSString *)poolName;
 
 - (NSError *)openPoolLedger:(NSString*)poolName
                      config:(NSString*)config
-                poolHandler:(SovrinHandle*)handle;
+                poolHandler:(IndyHandle*)handle;
 
-- (NSError *)sendRequestWithPoolHandle:(SovrinHandle)poolHandle
+- (NSError *)sendRequestWithPoolHandle:(IndyHandle)poolHandle
                                request:(NSString *)request
                               response:(NSString **)response;
 
-- (NSError *)refreshPoolHandle:(SovrinHandle)poolHandle;
+- (NSError *)refreshPoolHandle:(IndyHandle)poolHandle;
 
-- (NSError *)closeHandle:(SovrinHandle)poolHandle;
+- (NSError *)closeHandle:(IndyHandle)poolHandle;
 
 - (NSError *)deletePoolWithName:(NSString *)poolName;
 

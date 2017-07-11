@@ -1,9 +1,9 @@
 //
-//  SovrinCallbacks.m
-//  libsovrin
+//  IndyCallbacks.m
+//  libindy
 //
 
-#include "sovrin_core.h"
+#include "indy_core.h"
 #import "IndyCallbacks.h"
 #import "NSError+IndyError.h"
 #import "IndyTypes.h"
@@ -15,10 +15,10 @@ static NSString* connectionHandleKey   =  @"connectionHandle";
 static NSString* connectionsKey        =  @"connections";
 
 
-@interface SovrinCallbacks ()
+@interface IndyCallbacks ()
 
 @property (strong, readwrite) NSMutableDictionary *commandCompletions;
-@property                     sovrin_i32_t         commandHandleCounter;
+@property                     indy_i32_t         commandHandleCounter;
 @property (strong, readwrite) NSMutableDictionary *agentConnectCompletions;
 @property (strong, readwrite) NSMutableDictionary *agentListenCompletions;
 @property (strong, readwrite) NSMutableDictionary *listenerForConnection;      // used to determine listener handle for corresponded connection handle
@@ -26,9 +26,9 @@ static NSString* connectionsKey        =  @"connections";
 
 @end
 
-@implementation SovrinCallbacks
+@implementation IndyCallbacks
 
-- (SovrinCallbacks *)init
+- (IndyCallbacks *)init
 {
     self = [super init];
     if (self)
@@ -43,7 +43,7 @@ static NSString* connectionsKey        =  @"connections";
     return self;
 }
 
-- (void) addConnection:(sovrin_handle_t) connection  forListener:(sovrin_handle_t) listener
+- (void) addConnection:(indy_handle_t) connection  forListener:(indy_handle_t) listener
 {
     NSNumber *nl = [NSNumber numberWithInt: listener];
     NSNumber *nc = [NSNumber numberWithInt: connection];
@@ -63,7 +63,7 @@ static NSString* connectionsKey        =  @"connections";
 }
 
 
-- (void) addListener:(sovrin_handle_t) listener forConnection:(sovrin_handle_t) connection
+- (void) addListener:(indy_handle_t) listener forConnection:(indy_handle_t) connection
 {
     NSNumber *nl = [NSNumber numberWithInt: listener];
     NSNumber *nc = [NSNumber numberWithInt: connection];
@@ -74,7 +74,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (NSNumber*) listenerForConnection:(sovrin_handle_t) connection
+- (NSNumber*) listenerForConnection:(indy_handle_t) connection
 {
     NSNumber *ret = nil;
     @synchronized(self.globalLock)
@@ -84,7 +84,7 @@ static NSString* connectionsKey        =  @"connections";
     return ret;
 }
 
-- (void) removeListenerForConnection:(sovrin_handle_t) connection
+- (void) removeListenerForConnection:(indy_handle_t) connection
 {
     NSNumber *nc = [NSNumber numberWithInt: connection];
     @synchronized(self.globalLock)
@@ -96,7 +96,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (void) rememberListenHandle:(sovrin_handle_t) listenHandle withDictionary:(NSMutableDictionary*) callbacks
+- (void) rememberListenHandle:(indy_handle_t) listenHandle withDictionary:(NSMutableDictionary*) callbacks
 {
     NSNumber *key = [NSNumber numberWithInt:listenHandle];
     
@@ -106,7 +106,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
--(void) forgetListenHandle:(sovrin_handle_t) listenHandle
+-(void) forgetListenHandle:(indy_handle_t) listenHandle
 {
     NSNumber *key = [NSNumber numberWithInt:listenHandle];
     @synchronized(self.globalLock)
@@ -127,7 +127,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (NSMutableDictionary*)listenCompletionsFor:(sovrin_handle_t)handle
+- (NSMutableDictionary*)listenCompletionsFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
     NSMutableDictionary *val = nil;
@@ -138,7 +138,7 @@ static NSString* connectionsKey        =  @"connections";
     return val;
 }
 
-- (void) rememberConnectHandle:(sovrin_handle_t) connectionHandle withCallback:(void*) callback
+- (void) rememberConnectHandle:(indy_handle_t) connectionHandle withCallback:(void*) callback
 {
     NSValue *val = [NSValue valueWithPointer:callback];
     NSNumber *key = [NSNumber numberWithInt:connectionHandle];
@@ -149,7 +149,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
--(void) forgetConnectHandle:(sovrin_handle_t) connectionHandle
+-(void) forgetConnectHandle:(indy_handle_t) connectionHandle
 {
     NSNumber *key = [NSNumber numberWithInt:connectionHandle];
     @synchronized(self.globalLock)
@@ -161,7 +161,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (void *)connectCompletionFor:(sovrin_handle_t)handle
+- (void *)connectCompletionFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
     NSValue *val = nil;
@@ -173,7 +173,7 @@ static NSString* connectionsKey        =  @"connections";
 }
 
 
-- (sovrin_handle_t)createCommandHandleFor:(void *)callback
+- (indy_handle_t)createCommandHandleFor:(void *)callback
 {
     NSValue *cmdVal = [NSValue valueWithPointer:callback];
     NSNumber *handle = nil;
@@ -185,11 +185,11 @@ static NSString* connectionsKey        =  @"connections";
         NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithObjectsAndKeys: cmdVal, commandCallbackKey, nil];
         [self.commandCompletions setObject:dict forKey:handle];
     }
-    return (sovrin_handle_t)[handle integerValue];
+    return (indy_handle_t)[handle integerValue];
 }
 
-- (sovrin_handle_t)createCommandHandleFor:(void *)callback
-                     withConnectionHandle:(sovrin_handle_t)connectionHandle
+- (indy_handle_t)createCommandHandleFor:(void *)callback
+                     withConnectionHandle:(indy_handle_t)connectionHandle
 {
     NSValue  *cmdVal = [NSValue valueWithPointer:callback];
     NSNumber *conVal = [NSNumber numberWithInt:connectionHandle];
@@ -204,7 +204,7 @@ static NSString* connectionsKey        =  @"connections";
                                                                                         conVal, connectionHandleKey, nil];
         [self.commandCompletions setObject:dict forKey:handle];
     }
-    return (sovrin_handle_t)[handle integerValue];
+    return (indy_handle_t)[handle integerValue];
 }
 
 
@@ -218,7 +218,7 @@ static NSString* connectionsKey        =  @"connections";
  @param messageCallback Callback that will be called on receiving of an incoming message. Can be called multiply times: once for each incoming message.
  @return commandHandle
  */
-- (sovrin_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
+- (indy_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
                                    withConnectionCallback:(void *)connectionCallback
                                        andMessageCallback:(void *)messageCallback
 {
@@ -238,10 +238,10 @@ static NSString* connectionsKey        =  @"connections";
         
         [self.commandCompletions setObject:dict forKey:handle];
     }
-    return (sovrin_handle_t)[handle integerValue];
+    return (indy_handle_t)[handle integerValue];
 }
 
-- (sovrin_handle_t)createCommandHandleFor:(void *)callback
+- (indy_handle_t)createCommandHandleFor:(void *)callback
                        withMessageCallback:(void *)messageCallback
 {
     NSValue *cmdVal = [NSValue valueWithPointer:callback];
@@ -257,11 +257,11 @@ static NSString* connectionsKey        =  @"connections";
                                                                                         mesVal, messageCallbackKey,    nil];
         [self.commandCompletions setObject:dict forKey:handle];
     }
-    return (sovrin_handle_t)[handle integerValue];
+    return (indy_handle_t)[handle integerValue];
 }
 
 
-- (void)deleteCommandHandleFor:(sovrin_handle_t)handle
+- (void)deleteCommandHandleFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
     @synchronized(self.globalLock)
@@ -273,7 +273,7 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (void *)commandCompletionFor:(sovrin_handle_t)handle
+- (void *)commandCompletionFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
     NSValue *val = nil;
@@ -285,7 +285,7 @@ static NSString* connectionsKey        =  @"connections";
     return val ? [val pointerValue] : NULL;
 }
 
-- (NSMutableDictionary*) dictionaryFor:(sovrin_handle_t)handle
+- (NSMutableDictionary*) dictionaryFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
     NSMutableDictionary *dict = nil;
@@ -296,13 +296,13 @@ static NSString* connectionsKey        =  @"connections";
     return dict;
 }
 
-+ (SovrinCallbacks *)sharedInstance
++ (IndyCallbacks *)sharedInstance
 {
-    static SovrinCallbacks *instance = nil;
+    static IndyCallbacks *instance = nil;
     static dispatch_once_t dispatch_once_block;
 
     dispatch_once(&dispatch_once_block, ^ {
-        instance = [SovrinCallbacks new];
+        instance = [IndyCallbacks new];
     });
 
     return instance;
@@ -311,11 +311,11 @@ static NSString* connectionsKey        =  @"connections";
 @end
 
 
-void SovrinWrapperCommon2PCallback(sovrin_handle_t xcommand_handle,
-                                   sovrin_error_t err)
+void IndyWrapperCommon2PCallback(indy_handle_t xcommand_handle,
+                                   indy_error_t err)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
     void (^completion)(NSError*) = (__bridge void (^)(NSError*))block;
     
@@ -323,37 +323,37 @@ void SovrinWrapperCommon2PCallback(sovrin_handle_t xcommand_handle,
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            NSError *error = [ NSError errorFromSovrinError: err ];
+            NSError *error = [ NSError errorFromIndyError: err ];
             completion(error);
         });
     }
 }
 
-void SovrinWrapperCommon3PHCallback(sovrin_handle_t xcommand_handle,
-                                    sovrin_error_t err,
-                                    sovrin_handle_t pool_handle)
+void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
+                                    indy_error_t err,
+                                    indy_handle_t pool_handle)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, SovrinHandle) = (__bridge void (^)(NSError*, SovrinHandle))block;
+    void (^completion)(NSError*, IndyHandle) = (__bridge void (^)(NSError*, IndyHandle))block;
     
     if (completion)
     {
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-                           NSError *error = [ NSError errorFromSovrinError: err ];
-                           completion(error, (SovrinHandle) pool_handle);
+                           NSError *error = [ NSError errorFromIndyError: err ];
+                           completion(error, (IndyHandle) pool_handle);
                        });
     }
 }
 
-void SovrinWrapperCommon3PSCallback(sovrin_handle_t xcommand_handle,
-                                    sovrin_error_t err,
+void IndyWrapperCommon3PSCallback(indy_handle_t xcommand_handle,
+                                    indy_error_t err,
                                     const char* arg1)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
     void (^completion)(NSError*, NSString *) = (__bridge void (^)(NSError*, NSString *arg1 ))block;
     NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
@@ -362,18 +362,18 @@ void SovrinWrapperCommon3PSCallback(sovrin_handle_t xcommand_handle,
     {
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-                           NSError *error = [ NSError errorFromSovrinError: err ];
+                           NSError *error = [ NSError errorFromIndyError: err ];
                            completion(error, sarg1);
                        });
     }
 }
 
-void SovrinWrapperCommon3PBCallback(sovrin_handle_t xcommand_handle,
-                                    sovrin_error_t err,
-                                    sovrin_bool_t arg1)
+void IndyWrapperCommon3PBCallback(indy_handle_t xcommand_handle,
+                                    indy_error_t err,
+                                    indy_bool_t arg1)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
     void (^completion)(NSError*, BOOL ) = (__bridge void (^)(NSError*, BOOL arg1 ))block;
     
@@ -381,19 +381,19 @@ void SovrinWrapperCommon3PBCallback(sovrin_handle_t xcommand_handle,
     {
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-                           NSError *error = [ NSError errorFromSovrinError: err ];
+                           NSError *error = [ NSError errorFromIndyError: err ];
                            completion(error, (BOOL) arg1);
                        });
     }
 }
 
-void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle,
-                                   sovrin_error_t err,
+void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
+                                   indy_error_t err,
                                    const char* arg1,
                                    const char *arg2)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
     void (^completion)(NSError*, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, NSString* arg1, NSString *arg2))block;
     
@@ -404,20 +404,20 @@ void SovrinWrapperCommon4PCallback(sovrin_handle_t xcommand_handle,
     {
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-                           NSError *error = [ NSError errorFromSovrinError: err ];
+                           NSError *error = [ NSError errorFromIndyError: err ];
                            completion(error, sarg1, sarg2);
                        });
     }
 }
 
-void SovrinWrapperCommon5PCallback(sovrin_handle_t xcommand_handle,
-                                   sovrin_error_t err,
+void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
+                                   indy_error_t err,
                                    const char* arg1,
                                    const char *arg2,
                                    const char *arg3)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
     void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (__bridge void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
     
@@ -429,22 +429,22 @@ void SovrinWrapperCommon5PCallback(sovrin_handle_t xcommand_handle,
     {
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-                           NSError *error = [ NSError errorFromSovrinError: err ];
+                           NSError *error = [ NSError errorFromIndyError: err ];
                            completion(error, sarg1, sarg2, sarg3);
                        });
     }
 }
 
-void SovrinWrapperCommon5PSCallback(sovrin_handle_t xcommand_handle,
-                                    sovrin_error_t err,
-                                    sovrin_handle_t connection_handle,
+void IndyWrapperCommon5PSCallback(indy_handle_t xcommand_handle,
+                                    indy_error_t err,
+                                    indy_handle_t connection_handle,
                                     const char* arg1,
                                     const char *arg2)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, SovrinHandle, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, SovrinHandle, NSString* arg1, NSString *arg2))block;
+    void (^completion)(NSError*, IndyHandle, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, IndyHandle, NSString* arg1, NSString *arg2))block;
     
     NSString* sarg1 = [NSString stringWithUTF8String: arg1];
     NSString* sarg2 = [NSString stringWithUTF8String: arg2];
@@ -453,116 +453,116 @@ void SovrinWrapperCommon5PSCallback(sovrin_handle_t xcommand_handle,
     {
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-                           NSError *error = [ NSError errorFromSovrinError: err ];
-                           completion(error, (SovrinHandle) connection_handle, sarg1, sarg2);
+                           NSError *error = [ NSError errorFromIndyError: err ];
+                           completion(error, (IndyHandle) connection_handle, sarg1, sarg2);
                        });
     }
 }
 
-void SovrinWrapperCommonAgentOutgoingConnectionCallback(sovrin_handle_t xcommand_handle,
-                                                        sovrin_error_t  err,
-                                                        sovrin_handle_t connection_handle)
+void IndyWrapperCommonAgentOutgoingConnectionCallback(indy_handle_t xcommand_handle,
+                                                        indy_error_t  err,
+                                                        indy_handle_t connection_handle)
 {
-    NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] dictionaryFor: xcommand_handle];
+    NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] dictionaryFor: xcommand_handle];
     if(dict && [dict objectForKey: commandCallbackKey])
     {
         void * commandBlock = [[dict objectForKey: commandCallbackKey] pointerValue];
         void * messageBlock = [[dict objectForKey: messageCallbackKey] pointerValue];
-        [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
         
-        void (^completion)(NSError*, SovrinHandle) = (__bridge void (^)(NSError*, SovrinHandle))commandBlock;
+        void (^completion)(NSError*, IndyHandle) = (__bridge void (^)(NSError*, IndyHandle))commandBlock;
 
         if(err == Success)
         {
-            [[SovrinCallbacks sharedInstance] rememberConnectHandle: connection_handle withCallback: messageBlock];
+            [[IndyCallbacks sharedInstance] rememberConnectHandle: connection_handle withCallback: messageBlock];
         }
 
         if (completion)
         {
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                               NSError *error = [NSError errorFromSovrinError: err ];
-                               completion(error, (SovrinHandle) connection_handle);
+                               NSError *error = [NSError errorFromIndyError: err ];
+                               completion(error, (IndyHandle) connection_handle);
             });
         }
     }
 }
 
-void SovrinWrapperCommonAgentMessageCallback(sovrin_handle_t xconnection_handle,
-                                             sovrin_error_t  err,
+void IndyWrapperCommonAgentMessageCallback(indy_handle_t xconnection_handle,
+                                             indy_error_t  err,
                                              const char *    message)
 {
     NSString *messageArg = [NSString stringWithUTF8String: message];
     dispatch_async(dispatch_get_main_queue(), ^
     {
-        void* block = [[SovrinCallbacks sharedInstance] connectCompletionFor: xconnection_handle];
+        void* block = [[IndyCallbacks sharedInstance] connectCompletionFor: xconnection_handle];
         if(block)
         {
-            void (^completion)(SovrinHandle, NSError*, NSString*) = (__bridge void (^)(SovrinHandle, NSError*, NSString*))block;
+            void (^completion)(IndyHandle, NSError*, NSString*) = (__bridge void (^)(IndyHandle, NSError*, NSString*))block;
             if(completion)
             {
-                NSError *error = [NSError errorFromSovrinError: err ];
+                NSError *error = [NSError errorFromIndyError: err ];
                 completion(xconnection_handle, error, messageArg);
             }
         }
     });
 }
 
-void SovrinWrapperCloseConnectionCallback(sovrin_handle_t xcommand_handle,
-                                          sovrin_error_t err)
+void IndyWrapperCloseConnectionCallback(indy_handle_t xcommand_handle,
+                                          indy_error_t err)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     void (^completion)(NSError*) = (__bridge void (^)(NSError*))block;
 
-    NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] dictionaryFor: xcommand_handle];
+    NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] dictionaryFor: xcommand_handle];
 
     if(dict && [dict objectForKey: connectionHandleKey])
     {
         NSNumber *connectionHandle = [dict objectForKey: connectionHandleKey];
-        [[SovrinCallbacks sharedInstance] forgetConnectHandle: [connectionHandle intValue]];
-        [[SovrinCallbacks sharedInstance] removeListenerForConnection: [connectionHandle intValue]];
+        [[IndyCallbacks sharedInstance] forgetConnectHandle: [connectionHandle intValue]];
+        [[IndyCallbacks sharedInstance] removeListenerForConnection: [connectionHandle intValue]];
     }
     
     if (completion)
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            NSError *error = [ NSError errorFromSovrinError: err ];
+            NSError *error = [ NSError errorFromIndyError: err ];
             completion(error);
         });
     }
 }
 
-void SovrinWrapperCommonAgentListenerCallback(sovrin_handle_t xcommand_handle,
-                                              sovrin_error_t  err,
-                                              sovrin_handle_t listener_handle)
+void IndyWrapperCommonAgentListenerCallback(indy_handle_t xcommand_handle,
+                                              indy_error_t  err,
+                                              indy_handle_t listener_handle)
 {
-    void * block = [[SovrinCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     // Dictionary of callbacks for this commandHandle
-    NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] dictionaryFor: xcommand_handle];
+    NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] dictionaryFor: xcommand_handle];
     
     // reset connections dictionary
     dict[connectionsKey] = [NSMutableDictionary new];
     // delete completions for this command handle
-    [[SovrinCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
-    [[SovrinCallbacks sharedInstance] rememberListenHandle:listener_handle withDictionary:dict];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] rememberListenHandle:listener_handle withDictionary:dict];
 
-    void (^completion)(NSError* error, SovrinHandle) = (__bridge void (^)(NSError*,SovrinHandle))block;
+    void (^completion)(NSError* error, IndyHandle) = (__bridge void (^)(NSError*,IndyHandle))block;
 
     if(completion)
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            NSError *error = [ NSError errorFromSovrinError: err ];
-            completion(error, (SovrinHandle) listener_handle);
+            NSError *error = [ NSError errorFromIndyError: err ];
+            completion(error, (IndyHandle) listener_handle);
         });
     }
 }
 
-void SovrinWrapperCommonAgentListenerConnectionCallback(sovrin_handle_t xlistener_handle,
-                                                        sovrin_error_t  err,
-                                                        sovrin_handle_t connection_handle,
+void IndyWrapperCommonAgentListenerConnectionCallback(indy_handle_t xlistener_handle,
+                                                        indy_error_t  err,
+                                                        indy_handle_t connection_handle,
                                                         const char *    sender_did,
                                                         const char *    receiver_did)
 {
@@ -571,10 +571,10 @@ void SovrinWrapperCommonAgentListenerConnectionCallback(sovrin_handle_t xlistene
 
     dispatch_async(dispatch_get_main_queue(), ^
     {
-        [[SovrinCallbacks sharedInstance] addListener:xlistener_handle forConnection:connection_handle];
-        [[SovrinCallbacks sharedInstance] addConnection:connection_handle forListener:xlistener_handle];
+        [[IndyCallbacks sharedInstance] addListener:xlistener_handle forConnection:connection_handle];
+        [[IndyCallbacks sharedInstance] addConnection:connection_handle forListener:xlistener_handle];
         
-        NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] listenCompletionsFor: xlistener_handle];
+        NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] listenCompletionsFor: xlistener_handle];
 
         if(dict && [dict objectForKey: connectionCallbackKey])
         {
@@ -582,12 +582,12 @@ void SovrinWrapperCommonAgentListenerConnectionCallback(sovrin_handle_t xlistene
             if(val)
             {
                 void* block = [val pointerValue];
-                void (^completion)(SovrinHandle,NSError*,SovrinHandle,NSString*,NSString*) = (__bridge void (^)(SovrinHandle,NSError*,SovrinHandle,NSString*,NSString*))block;
+                void (^completion)(IndyHandle,NSError*,IndyHandle,NSString*,NSString*) = (__bridge void (^)(IndyHandle,NSError*,IndyHandle,NSString*,NSString*))block;
                 if(completion)
                 {
-                    NSError *error = [ NSError errorFromSovrinError: err ];
+                    NSError *error = [ NSError errorFromIndyError: err ];
   
-                    completion((SovrinHandle)xlistener_handle, error, (SovrinHandle) connection_handle, sarg1, sarg2);
+                    completion((IndyHandle)xlistener_handle, error, (IndyHandle) connection_handle, sarg1, sarg2);
                 }
             }
         }
@@ -595,16 +595,16 @@ void SovrinWrapperCommonAgentListenerConnectionCallback(sovrin_handle_t xlistene
     });
 }
 
-void SovrinWrapperCommonAgentListenerMessageCallback(sovrin_handle_t xconnection_handle,
-                                                     sovrin_error_t  err,
+void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnection_handle,
+                                                     indy_error_t  err,
                                                      const char *    message)
 {
     NSString* sarg = [NSString stringWithUTF8String: message];
     
     dispatch_async(dispatch_get_main_queue(), ^
     {
-        NSNumber* listenerHandle = [[SovrinCallbacks sharedInstance] listenerForConnection: xconnection_handle];
-        NSMutableDictionary *dict = [[SovrinCallbacks sharedInstance] listenCompletionsFor: [listenerHandle intValue]];
+        NSNumber* listenerHandle = [[IndyCallbacks sharedInstance] listenerForConnection: xconnection_handle];
+        NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] listenCompletionsFor: [listenerHandle intValue]];
 
         if(listenerHandle && dict && [dict objectForKey: messageCallbackKey] )
         {
@@ -613,11 +613,11 @@ void SovrinWrapperCommonAgentListenerMessageCallback(sovrin_handle_t xconnection
             if(val)
             {
                 void* block = [val pointerValue];
-                void (^completion)(SovrinHandle,NSError*,NSString*) = (__bridge void (^)(SovrinHandle,NSError*,NSString*))block;
+                void (^completion)(IndyHandle,NSError*,NSString*) = (__bridge void (^)(IndyHandle,NSError*,NSString*))block;
                 if(completion)
                 {
-                    NSError *error = [ NSError errorFromSovrinError: err ];
-                    completion((SovrinHandle)xconnection_handle, error, sarg);
+                    NSError *error = [ NSError errorFromIndyError: err ];
+                    completion((IndyHandle)xconnection_handle, error, sarg);
                 }
                 
             }

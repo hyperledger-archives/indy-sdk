@@ -1,6 +1,6 @@
 //
 //  SignusDemo.m
-//  libsovrin-demo
+//  libindy-demo
 //
 
 #import <XCTest/XCTest.h>
@@ -39,8 +39,8 @@
     NSError *ret = nil;
     XCTestExpectation* completionExpectation = nil;
     
-    SovrinHandle myWalletHandle = 0;
-    SovrinHandle theirWalletHandle = 0;
+    IndyHandle myWalletHandle = 0;
+    IndyHandle theirWalletHandle = 0;
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create and open my wallet
@@ -68,7 +68,7 @@
     __block NSString *myDid = nil;
     __block NSString *myVerkey = nil;
     __block NSString *myPk = nil;
-    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:  myWalletHandle
+    ret = [IndySignus createAndStoreMyDidWithWalletHandle:  myWalletHandle
                                                     didJSON:  myDidJson
                                                  completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
     {
@@ -95,7 +95,7 @@
     __block NSString *theirVerkey = nil;
     __block NSString *theirPk = nil;
     
-    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:  theirWalletHandle
+    ret = [IndySignus createAndStoreMyDidWithWalletHandle:  theirWalletHandle
                                                     didJSON:  theirDidJson
                                                  completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
     {
@@ -122,7 +122,7 @@
 
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinSignus storeTheirDidWithWalletHandle: myWalletHandle identityJSON: theirIdentityJson completion:^(NSError *error)
+    ret = [IndySignus storeTheirDidWithWalletHandle: myWalletHandle identityJSON: theirIdentityJson completion:^(NSError *error)
     {
         XCTAssertEqual(error.code, Success, "storeTheirDid() got error in completion");
         [completionExpectation fulfill];
@@ -144,7 +144,7 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSString *theirSignature = nil;
     
-    ret = [SovrinSignus signWithWalletHandle:  theirWalletHandle
+    ret = [IndySignus signWithWalletHandle:  theirWalletHandle
                                          did:  theirDid
                                          msg:  message
                                   completion: ^(NSError *error, NSString *signature)
@@ -159,11 +159,11 @@
     XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
     // 7. I Verify message
-    SovrinHandle poolHandle = 1;
+    IndyHandle poolHandle = 1;
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [SovrinSignus verifySignatureWithWalletHandle:  myWalletHandle
+    ret = [IndySignus verifySignatureWithWalletHandle:  myWalletHandle
                                              poolHandle:  poolHandle
                                                     did:  theirDid
                                               signature:  theirSignature

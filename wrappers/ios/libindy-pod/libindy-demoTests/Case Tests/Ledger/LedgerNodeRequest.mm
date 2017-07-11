@@ -1,6 +1,6 @@
 //
 //  LedgerNodeRequest.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 14.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -76,20 +76,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_send_node_request_works_for_wrong_role";
+    NSString* poolName = @"indy_send_node_request_works_for_wrong_role";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -145,20 +145,20 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_submit_node_request_works_for_already_has_node";
+    NSString* poolName = @"indy_submit_node_request_works_for_already_has_node";
     NSString* walletName = @"wallet1";
     NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype

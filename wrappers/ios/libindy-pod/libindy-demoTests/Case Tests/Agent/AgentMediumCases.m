@@ -1,6 +1,6 @@
 //
 //  AgentMediumCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 22.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -36,16 +36,16 @@
     NSError *ret;
     NSString *endpoint = @"127.0.0.1:9812";
     NSString *xtype = @"default";
-    NSString *poolName = @"sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid";
+    NSString *poolName = @"indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid";
     
     // 1. Obtain pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
     
     // 2. Obtain listener's wallet
-    SovrinHandle listenerWalletHandle = 0;
+    IndyHandle listenerWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet12.1"
                                                                   xtype:xtype
@@ -53,7 +53,7 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenWalletWithPoolName() failed");
     
     // 3. Obtain trustee's wallet
-    SovrinHandle trusteeWalletHandle = 0;
+    IndyHandle trusteeWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet12.2"
                                                                   xtype:xtype
@@ -122,7 +122,7 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAttribRequestWithSubmitterDid() failed for listenerAttributeResponse");
     
     // 10. listen
-    SovrinHandle listenerHandle = 0;
+    IndyHandle listenerHandle = 0;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                        connectionCallback:nil
                                           messageCallback:nil
@@ -130,7 +130,7 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::listenWithEndpoint()");
     
     // 11. Add identity
-    SovrinHandle invalidPoolHandle = listenerHandle;
+    IndyHandle invalidPoolHandle = listenerHandle;
     ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
                                                          poolHandle:invalidPoolHandle
                                                        walletHandle:listenerWalletHandle
@@ -150,7 +150,7 @@
     
     // 12. Connect
     NSString *senderDid = [NSString stringWithString:trusteeDid];
-    SovrinHandle senderWalletHandle = trusteeWalletHandle;
+    IndyHandle senderWalletHandle = trusteeWalletHandle;
     
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:poolHandle
                                                 walletHandle:senderWalletHandle
@@ -170,7 +170,7 @@
     NSError *ret;
     
     // 1. create and open wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool6"
                                                              walletName:@"wallet6"
                                                                   xtype:@"default"
@@ -193,11 +193,11 @@
     
     XCTestExpectation* messageExpectation = [[ XCTestExpectation alloc] initWithDescription: @"message completion finished"];
     
-    SovrinHandle listenerHandler = 0;
+    IndyHandle listenerHandler = 0;
     __block NSString* messageFromClient;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                        connectionCallback:nil
-                                          messageCallback:^(SovrinHandle connectionHandle, NSString *message)
+                                          messageCallback:^(IndyHandle connectionHandle, NSString *message)
     {
         messageFromClient = message;
         [messageExpectation fulfill];
@@ -221,7 +221,7 @@
     XCTAssertEqual(ret.code, Success, @"AgentUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
     // 6. Connect
-    SovrinHandle connectionHandle = 0;
+    IndyHandle connectionHandle = 0;
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
                                                    senderDid:did
@@ -256,7 +256,7 @@
     NSError *ret;
     
     // 1.Create and open wallet
-    SovrinHandle walletHandle;
+    IndyHandle walletHandle;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool9"
                                                              walletName:@"wallet9"
                                                                   xtype:@"default"
@@ -279,11 +279,11 @@
     
     XCTestExpectation* messageExpectation = [[ XCTestExpectation alloc] initWithDescription: @"message completion finished"];
     
-    SovrinHandle listenerHandler = 0;
+    IndyHandle listenerHandler = 0;
     __block NSString* messageFromClient;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
                                        connectionCallback:nil
-                                          messageCallback:^(SovrinHandle connectionHandle, NSString *message)
+                                          messageCallback:^(IndyHandle connectionHandle, NSString *message)
            {
                messageFromClient = message;
                [messageExpectation fulfill];
@@ -307,7 +307,7 @@
     XCTAssertEqual(ret.code, Success, @"AgentUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
     // 6. Connect
-    SovrinHandle connectionHandle = 0;
+    IndyHandle connectionHandle = 0;
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
                                                    senderDid:did
@@ -317,7 +317,7 @@
     XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed");
     
     // 7. close listener
-    SovrinHandle incorrectListenerHandle = connectionHandle; // + 1;
+    IndyHandle incorrectListenerHandle = connectionHandle; // + 1;
     ret = [[AgentUtils sharedInstance] closeListener:incorrectListenerHandle];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::closeListener() returned wrong code");
     

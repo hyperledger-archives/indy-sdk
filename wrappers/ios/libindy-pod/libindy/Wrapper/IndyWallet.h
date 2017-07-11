@@ -1,12 +1,12 @@
 //
-//  SovrinWallet.h
-//  libsovrin
+//  IndyWallet.h
+//  libindy
 //
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 
-@protocol SovrinWalletImplementation <NSObject>
+@protocol IndyWalletImplementation <NSObject>
 
 @required
 - (NSError *)createWithName:(NSString *)name
@@ -15,35 +15,35 @@
 @required
 - (NSError *)openWithName:(NSString *)name
                withConfig:(NSString *)config
-                andHandle:(SovrinHandle *)handle;
+                andHandle:(IndyHandle *)handle;
 @required
 - (NSError *)setValue:(NSString *)value  // can value be of any type???
                forKey:(NSString *)key
             andSubKey:(NSString *)subkey
-           withHandle:(SovrinHandle)handle;
+           withHandle:(IndyHandle)handle;
 
 @required
 - (NSError *)getValue:(NSString **)value // can value be of any type???
                forKey:(NSString *)key
             andSubKey:(NSString *)subkey
-           withHandle:(SovrinHandle)handle;
+           withHandle:(IndyHandle)handle;
 
 @required
-- (NSError *)close:(SovrinHandle)handle;
+- (NSError *)close:(IndyHandle)handle;
 
 @required
 - (NSError *)deleteWithName:(NSString *)name;
 
 @end
 
-@interface SovrinWallet : NSObject
+@interface IndyWallet : NSObject
 
 /*
 - (NSError*) registerWalletType:(NSString*) type
-             withImplementation:(id<SovrinWalletImplementation>) implementation;
+             withImplementation:(id<IndyWalletImplementation>) implementation;
 */
 
-+ (SovrinWallet *)sharedInstance;
++ (IndyWallet *)sharedInstance;
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                                  name:(NSString *)name
@@ -55,9 +55,9 @@
 - (NSError *)openWalletWithName:(NSString *)name
                   runtimeConfig:(NSString *)config
                     credentials:(NSString *)credentials
-                     completion:(void (^)(NSError *error, SovrinHandle walletHandle )) handler;
+                     completion:(void (^)(NSError *error, IndyHandle walletHandle )) handler;
 
-- (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle
+- (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle
                         completion:(void (^)(NSError *error ))handler;
 
 - (NSError *)deleteWalletWithName:(NSString *)walletName
@@ -65,7 +65,7 @@
                        completion:(void (^)(NSError *error ))handler;
 
 - (NSError *)walletSetSeqNo:(NSNumber *)seqNo
-                  forHandle:(SovrinHandle)walletHandle
+                  forHandle:(IndyHandle)walletHandle
                      andKey:(NSString *)key
                  completion:(void (^)(NSError *error ))handler;
 

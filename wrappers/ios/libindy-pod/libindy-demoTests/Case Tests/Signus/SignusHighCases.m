@@ -1,6 +1,6 @@
 //
 //  SignusHighCases.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Anastasia Tarasova on 14.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -46,7 +46,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -78,7 +78,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -110,7 +110,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -143,7 +143,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -178,7 +178,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -186,7 +186,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     
     // 2. create my did with invalid wallet handle
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:invalidWalletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:nil
@@ -207,7 +207,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -241,7 +241,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -267,7 +267,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:walletName
                                                                   xtype:xtype
@@ -284,7 +284,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() returned wrong error code");
     
     // 3. Replace keys with invalid wallet handle
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[SignusUtils sharedInstance] replaceKeysWithWalletHandle:invalidWalletHandle
                                                                 did:myDid
                                                        identityJson:@"{}"
@@ -301,7 +301,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -322,7 +322,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -343,7 +343,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -352,7 +352,7 @@
     
     // 2. Store their did
     NSString *identityJson = @"{\"did\":\"8wZcEriaNLNKtteJvx7f8i\"}";
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:invalidWalletHandle
                                                          identityJson:identityJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils:storeTheirDid returned wrong error");
@@ -365,7 +365,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -389,7 +389,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -437,7 +437,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -464,7 +464,7 @@
     NSError *ret = nil;
     
     // 1. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -486,7 +486,7 @@
     "\"reqId\":1495034346617224651}";
     
     NSString *signatureJson;
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[SignusUtils sharedInstance] signWithWalletHandle:invalidWalletHandle
                                                     theirDid:myDid
                                                      message:message
@@ -502,10 +502,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_verkey_cached_in_wallet";
+    NSString *poolName = @"indy_verify_works_for_verkey_cached_in_wallet";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -513,7 +513,7 @@
 
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -566,10 +566,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_get_verkey_from_ledger";
+    NSString *poolName = @"indy_verify_works_for_get_verkey_from_ledger";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -577,7 +577,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -652,11 +652,11 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_expired_nym";
+    NSString *poolName = @"indy_verify_works_for_expired_nym";
     NSString *walletName = @"wallet1";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -671,7 +671,7 @@
     
     // 3. Open wallet
     NSString *config = @"{\"freshness_time\":1}";
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
                                                     config:config
                                                  outHandle:&walletHandle];
@@ -747,10 +747,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_invalid_wallet_handle";
+    NSString *poolName = @"indy_verify_works_for_invalid_wallet_handle";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -758,7 +758,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -778,7 +778,7 @@
     
     // 4. Verify
     BOOL verified = NO;
-    SovrinHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:invalidWalletHandle
                                                     poolHandle:poolHandle
                                                            did:@"did"
@@ -793,10 +793,10 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"sovrin_verify_works_for_invalid_pool_handle";
+    NSString *poolName = @"indy_verify_works_for_invalid_pool_handle";
     
     // 1. Create and open pool ledger config, get pool handle
-    SovrinHandle poolHandle = 0;
+    IndyHandle poolHandle = 0;
     
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
                                                                  poolHandle:&poolHandle];
@@ -804,7 +804,7 @@
     
     
     // 2. Create and open wallet, get wallet handle
-    SovrinHandle walletHandle = 0;
+    IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                              walletName:@"wallet1"
                                                                   xtype:@"default"
@@ -823,7 +823,7 @@
     
     // 4. Verify
     BOOL verified = NO;
-    SovrinHandle invalidPoolHandle = poolHandle + 1;
+    IndyHandle invalidPoolHandle = poolHandle + 1;
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:walletHandle
                                                     poolHandle:invalidPoolHandle
                                                            did:@"did"

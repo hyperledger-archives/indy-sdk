@@ -1,6 +1,6 @@
 //
 //  LedgerDemo.m
-//  libsovrin-demo
+//  libindy-demo
 //
 
 
@@ -44,11 +44,11 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
     
     // 2. Open pool ledger
-    __block SovrinHandle poolHandle = 0;
+    __block IndyHandle poolHandle = 0;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [SovrinPool openPoolLedgerWithName:poolName
+    ret = [IndyPool openPoolLedgerWithName:poolName
                                   poolConfig:nil
-                                  completion:^(NSError *error, SovrinHandle h)
+                                  completion:^(NSError *error, IndyHandle h)
             {
                 XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
                 poolHandle = h;
@@ -59,7 +59,7 @@
     
     // 3. Create my wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:poolName
+    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:poolName
                                                              name:myWalletName
                                                             xType:walletType
                                                            config:nil
@@ -73,12 +73,12 @@
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 4. Open My Wallet. Gets My wallet handle
-    __block SovrinHandle myWalletHandle = 0;
+    __block IndyHandle myWalletHandle = 0;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[SovrinWallet sharedInstance] openWalletWithName:myWalletName
+    ret = [[IndyWallet sharedInstance] openWalletWithName:myWalletName
                                               runtimeConfig:nil
                                                 credentials:nil
-                                                 completion:^(NSError *error, SovrinHandle h)
+                                                 completion:^(NSError *error, IndyHandle h)
             {
                 XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
                 myWalletHandle = h;
@@ -89,7 +89,7 @@
     
     // 5. Create their wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:poolName
+    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:poolName
                                                              name:theirWalletName
                                                             xType:walletType
                                                            config:nil
@@ -103,12 +103,12 @@
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 6. Open Their Wallet. Gets Their wallet handle
-    __block SovrinHandle theirWalletHandle = 0;
+    __block IndyHandle theirWalletHandle = 0;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[SovrinWallet sharedInstance] openWalletWithName:theirWalletName
+    ret = [[IndyWallet sharedInstance] openWalletWithName:theirWalletName
                                               runtimeConfig:nil
                                                 credentials:nil
-                                                 completion:^(NSError *error, SovrinHandle h)
+                                                 completion:^(NSError *error, IndyHandle h)
            {
                XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
                theirWalletHandle = h;
@@ -124,7 +124,7 @@
     __block NSString *myDid = nil;
     __block NSString *myVerkey = nil;
     __block NSString *myPk = nil;
-    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:  myWalletHandle
+    ret = [IndySignus createAndStoreMyDidWithWalletHandle:  myWalletHandle
                                                     didJSON:  myDidJson
                                                  completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
            {
@@ -150,7 +150,7 @@
     __block NSString *theirVerkey = nil;
     __block NSString *theirPk = nil;
     
-    ret = [SovrinSignus createAndStoreMyDidWithWalletHandle:  theirWalletHandle
+    ret = [IndySignus createAndStoreMyDidWithWalletHandle:  theirWalletHandle
                                                     didJSON:  theirDidJson
                                                  completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
            {
@@ -176,7 +176,7 @@
                                    }", theirDid, theirPk, theirVerkey];
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [SovrinSignus storeTheirDidWithWalletHandle: myWalletHandle
+    ret = [IndySignus storeTheirDidWithWalletHandle: myWalletHandle
                                          identityJSON: theirIdentityJson
                                            completion:^(NSError *error)
            {
@@ -202,7 +202,7 @@
     // 11. Send NYM request with signing
     __block NSString *nymTxnResponse;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [SovrinLedger signAndSubmitRequestWithWalletHandle:theirWalletHandle
+    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:theirWalletHandle
                                                   poolHandle:poolHandle
                                                 submitterDID:theirDid
                                                  requestJSON:nymTxnRequest
@@ -227,7 +227,7 @@
     
     __block NSString *getNymTxnResponseJson;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [SovrinLedger submitRequestWithPoolHandle:poolHandle
+    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
                                         requestJSON:getNymTxnRequest
                                          completion:^(NSError *error, NSString *requestResult)
            {

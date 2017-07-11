@@ -1,6 +1,6 @@
 //
 //  WalletUtils.m
-//  libsovrin-demo
+//  libindy-demo
 //
 
 #import "WalletUtils.h"
@@ -24,14 +24,14 @@
 -(NSError*) createAndOpenWalletWithPoolName:(NSString*) poolName
                                  walletName:(NSString*) walletName
                                       xtype:(NSString*) xtype
-                                     handle:(SovrinHandle*) handle
+                                     handle:(IndyHandle*) handle
 {
     __block NSError *err = nil;
     NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:  poolName
+    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
                                                              name:  walletName
                                                             xType:  xtype
                                                            config:  nil
@@ -55,12 +55,12 @@
     }
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block SovrinHandle walletHandle = 0;
+    __block IndyHandle walletHandle = 0;
     
-    ret = [[SovrinWallet sharedInstance] openWalletWithName:walletName
+    ret = [[IndyWallet sharedInstance] openWalletWithName:walletName
                                               runtimeConfig:nil
                                                 credentials:nil
-                                                 completion:^(NSError *error, SovrinHandle h)
+                                                 completion:^(NSError *error, IndyHandle h)
            {
                err = error;
                walletHandle = h;
@@ -89,7 +89,7 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:  poolName
+    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
                                                              name:  walletName
                                                             xType:  xtype
                                                            config:  config
@@ -109,7 +109,7 @@
     return err;
 }
 
--(NSError*) walletSetSeqNoForValue:(SovrinHandle) walletHandle
+-(NSError*) walletSetSeqNoForValue:(IndyHandle) walletHandle
                       claimDefUUID:(NSString*) uuid
                      claimDefSeqNo:(NSNumber*) seqNo
 {
@@ -118,7 +118,7 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] walletSetSeqNo:  seqNo
+    ret = [[IndyWallet sharedInstance] walletSetSeqNo:  seqNo
                                               forHandle:  walletHandle
                                                  andKey:  uuid
                                              completion: ^(NSError *error)
@@ -143,7 +143,7 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] deleteWalletWithName:walletName
+    ret = [[IndyWallet sharedInstance] deleteWalletWithName:walletName
                                                   credentials:nil
                                                    completion:^(NSError *error)
            {
@@ -163,18 +163,18 @@
 
 - (NSError *)openWalletWithName:(NSString *)walletName
                          config:(NSString *)config
-                      outHandle:(SovrinHandle *)handle
+                      outHandle:(IndyHandle *)handle
 {
     __block NSError *err;
-    __block SovrinHandle outHandle = 0;
+    __block IndyHandle outHandle = 0;
     NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] openWalletWithName:walletName
+    ret = [[IndyWallet sharedInstance] openWalletWithName:walletName
                                               runtimeConfig:config
                                                 credentials:nil
-                                                 completion:^(NSError *error, SovrinHandle h)
+                                                 completion:^(NSError *error, IndyHandle h)
            {
                err = error;
                outHandle = h;
@@ -192,14 +192,14 @@
     return err;
 }
 
-- (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle
+- (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle
 {
     __block NSError *err;
     NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[SovrinWallet sharedInstance] closeWalletWithHandle:walletHandle
+    ret = [[IndyWallet sharedInstance] closeWalletWithHandle:walletHandle
                                                     completion:^(NSError *error)
            {
                err = error;

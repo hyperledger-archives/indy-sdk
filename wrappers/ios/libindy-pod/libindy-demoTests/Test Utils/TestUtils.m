@@ -1,6 +1,6 @@
 //
 //  TestUtlis.m
-//  libsovrin-demo
+//  libindy-demo
 //
 //  Created by Kirill Neznamov on 11/05/2017.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
@@ -26,7 +26,7 @@
 +(void) cleanupStorage
 {
     NSMutableString *path = [TestUtils getUserDocumentDir];
-    [path appendString:@"/.sovrin"];
+    [path appendString:@"/.indy"];
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 

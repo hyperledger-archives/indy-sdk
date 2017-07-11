@@ -1,17 +1,17 @@
 //
-//  NSError+SovrinError.m
-//  libsovrin
+//  NSError+IndyError.m
+//  libindy
 //
 
 #import "NSError+IndyError.h"
 
-static NSString *const SovrinErrorDomain = @"SovrinErrorDomain";
+static NSString *const IndyErrorDomain = @"IndyErrorDomain";
 
-@implementation NSError (SovrinError)
+@implementation NSError (IndyError)
 
-+ (NSError*) errorFromSovrinError:(sovrin_error_t) error
++ (NSError*) errorFromIndyError:(indy_error_t) error
 {
-    return [NSError errorWithDomain:SovrinErrorDomain code: error userInfo:nil];
+    return [NSError errorWithDomain:IndyErrorDomain code: error userInfo:nil];
 }
 
 @end
