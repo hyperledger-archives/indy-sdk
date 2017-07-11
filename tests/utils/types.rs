@@ -141,6 +141,31 @@ pub struct ProofClaimsJson {
     pub predicates: HashMap<String, Vec<ClaimInfo>>
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProofRequestJson {
+    pub nonce: String,
+    pub name: String,
+    pub version: String,
+    pub requested_attrs: HashMap<String, AttributeInfo>,
+    pub requested_predicates: HashMap<String, Predicate>
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub struct Predicate {
+    pub attr_name: String,
+    pub p_type: String,
+    pub value: i32,
+    pub schema_seq_no: Option<i32>,
+    pub issuer_did: Option<String>
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AttributeInfo {
+    pub name: String,
+    pub schema_seq_no: Option<i32>,
+    pub issuer_did: Option<String>
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct ClaimInfo {
     pub claim_uuid: String,

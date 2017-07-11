@@ -25,7 +25,8 @@ use utils::types::{
     ClaimRequestJson,
     ClaimInfo,
     ClaimJson,
-    ProofJson
+    ProofJson,
+    ProofRequestJson
 };
 
 use sovrin::api::ErrorCode;
@@ -1443,6 +1444,122 @@ mod demos {
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons).unwrap();
         assert!(valid);
+
+        TestUtils::cleanup_storage();
+    }
+
+    #[test]
+    fn interoperability_test_pysovrin_is_verifier() {
+        TestUtils::cleanup_storage();
+
+        let pool_name = "pool1";
+        let issuer_wallet_name = "issuer_wallet";
+        let prover_wallet_name = "prover_wallet";
+        let xtype = "default";
+
+        //1. Create Issuer wallet, get wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, issuer_wallet_name, xtype).unwrap();
+
+        //2. Create Prover wallet, get wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
+
+        //3. Issuer create claim definition
+        let schema_seq_no = 1;
+        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema, None, false).unwrap();
+
+        let mut command = Command::new("python3")
+            .arg("../anoncreds-fork/anoncreds/test/test_interoperability_with_libsovrin_pysovrin_is_verifier.py")
+            .spawn().expect("failed to execute process");
+        thread::sleep(time::Duration::from_millis(3000));
+
+        let mut stream = TcpStream::connect("127.0.0.1:1234").unwrap();
+
+        stream.write(format!(r#"{{"type":"receive_claim_def", "data": {}}}"#, claim_def_json).as_bytes());
+
+        //4. Prover create Master Secret
+        let master_secret_name = "prover_master_secret";
+
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
+
+        //5. Prover store Claim Offer received from Issuer
+        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
+
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
+
+        //6. Prover get Claim Offers
+        let filter_json = format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID);
+
+        let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
+
+        let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
+        assert!(claim_offers.len() == 1);
+        let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
+
+        //7. Prover create Claim Request
+        let prover_did = "BzfFCYk";
+        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
+                                                                          prover_did,
+                                                                          &claim_offer_json,
+                                                                          &claim_def_json,
+                                                                          master_secret_name).unwrap();
+
+        //8. Issuer create Claim
+        let claim_json = AnoncredsUtils::get_gvt_claim_json();
+        let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+                                                                   &claim_req,
+                                                                   &claim_json).unwrap();
+
+        // 9. Prover store received Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json).unwrap();
+
+        stream.write(r#"{"type":"get_proof_request"}"#.as_bytes());
+        let mut buf = vec![0; 10240];
+        stream.read(&mut buf).unwrap();
+        buf.retain(|&element| element != 0);
+
+        let proof_req_json = String::from_utf8(buf).unwrap();
+        println!("proof_req_json: {:?}", proof_req_json);
+
+
+
+        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+        info!("claims_json: {}", &claims_json);
+        let claims_for_attr = claims.attrs.get("attr_uuid").unwrap();
+        assert_eq!(1, claims_for_attr.len());
+        let claim = claims_for_attr[0].clone();
+
+        // 11. Prover create Proof
+        let self_attested_value = "value";
+        let requested_claims_json = format!(r#"{{
+                                          "self_attested_attributes":{{"self1":"{}"}},
+                                          "requested_attrs":{{"attr_uuid":["{}",true]}},
+                                          "requested_predicates":{{"predicate_uuid":"{}"}}
+                                        }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid);
+
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+        let revoc_regs_jsons = "{}";
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_claims_json,
+                                                             &schemas_json,
+                                                             &master_secret_name,
+                                                             &claim_defs_json,
+                                                             &revoc_regs_jsons).unwrap();
+        println!("proof_json: {:?}", proof_json);
+
+        stream.write(format!(r#"{{"type":"check_proof", "data": {}}}"#, proof_json).as_bytes());
+        let mut buf = vec![0; 102400];
+        stream.read(&mut buf).unwrap();
+        stream.write(r#"{"type":"close"}"#.as_bytes());
+        buf.retain(|&element| element != 0);
+
+        let valid = String::from_utf8(buf).unwrap();
+        println!("valid: {:?}", valid);
 
         TestUtils::cleanup_storage();
     }
