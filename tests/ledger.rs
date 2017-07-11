@@ -714,10 +714,9 @@ mod high_cases {
 
             let mut keys: HashSet<String> = HashSet::new();
             keys.insert("name".to_string());
-            keys.insert("male".to_string());
 
             let schema_data = SchemaData {
-                name: "get_txn_schema".to_string(),
+                name: "gvt3".to_string(),
                 version: "3.0".to_string(),
                 keys: keys
             };
@@ -726,7 +725,7 @@ mod high_cases {
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
 
-            let get_schema_data = "{\"name\":\"get_txn_schema\",\"version\":\"3.0\"}";
+            let get_schema_data = "{\"name\":\"gvt3\",\"version\":\"3.0\"}";
             let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
             let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
 
@@ -758,11 +757,10 @@ mod high_cases {
 
             let mut keys: HashSet<String> = HashSet::new();
             keys.insert("name".to_string());
-            keys.insert("male".to_string());
 
             let schema_data = SchemaData {
-                name: "gvt2".to_string(),
-                version: "version".to_string(),
+                name: "gvt3".to_string(),
+                version: "3.0".to_string(),
                 keys: keys
             };
             let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
