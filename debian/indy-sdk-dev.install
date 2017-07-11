@@ -1,0 +1,2 @@
+include/*.h usr/include/indy/
+target/release/libindy.a usr/lib/

@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk;
 
-public class SovrinConstants {
+public class IndyConstants {
 
 	public static final String ROLE_TRUSTEE = "TRUSTEE";
 	public static final String ROLE_STEWARD = "STEWARD";

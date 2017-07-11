@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.signus;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters.CreateAndStoreMyDidJSONParameter;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
@@ -22,7 +22,7 @@ import com.sun.jna.Callback;
 /**
  * signus.rs API
  */
-public class Signus extends SovrinJava.API {
+public class Signus extends IndyJava.API {
 
 	private Signus() {
 
@@ -34,7 +34,7 @@ public class Signus extends SovrinJava.API {
 
 	public static Future<CreateAndStoreMyDidResult> createAndStoreMyDid(
 			Wallet wallet,
-			CreateAndStoreMyDidJSONParameter didJson) throws SovrinException {
+			CreateAndStoreMyDidJSONParameter didJson) throws IndyException {
 
 		final CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<> ();
 
@@ -52,7 +52,7 @@ public class Signus extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_create_and_store_my_did(
+		int result = LibIndy.api.indy_create_and_store_my_did(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				didJson == null ? null : didJson.toJson(),
@@ -66,7 +66,7 @@ public class Signus extends SovrinJava.API {
 	public static Future<ReplaceKeysResult> replaceKeys(
 			Wallet wallet,
 			String did,
-			String identityJson) throws SovrinException {
+			String identityJson) throws IndyException {
 
 		final CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<> ();
 
@@ -84,7 +84,7 @@ public class Signus extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_replace_keys(
+		int result = LibIndy.api.indy_replace_keys(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				did,
@@ -98,7 +98,7 @@ public class Signus extends SovrinJava.API {
 
 	public static Future<StoreTheirDidResult> storeTheirDid(
 			Wallet wallet,
-			String identityJson) throws SovrinException {
+			String identityJson) throws IndyException {
 
 		final CompletableFuture<StoreTheirDidResult> future = new CompletableFuture<> ();
 
@@ -116,7 +116,7 @@ public class Signus extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_store_their_did(
+		int result = LibIndy.api.indy_store_their_did(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				identityJson,
@@ -130,7 +130,7 @@ public class Signus extends SovrinJava.API {
 	public static Future<SignResult> sign(
 			Wallet wallet,
 			String did,
-			String msg) throws SovrinException {
+			String msg) throws IndyException {
 
 		final CompletableFuture<SignResult> future = new CompletableFuture<> ();
 
@@ -148,7 +148,7 @@ public class Signus extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_sign(
+		int result = LibIndy.api.indy_sign(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				did,
@@ -164,7 +164,7 @@ public class Signus extends SovrinJava.API {
 			Wallet wallet,
 			Pool pool,
 			String did,
-			String signedMsg) throws SovrinException {
+			String signedMsg) throws IndyException {
 
 		final CompletableFuture<VerifySignatureResult> future = new CompletableFuture<> ();
 
@@ -183,7 +183,7 @@ public class Signus extends SovrinJava.API {
 		int walletHandle = wallet.getWalletHandle();
 		int poolHandle = pool.getPoolHandle();
 
-		int result = LibSovrin.api.sovrin_verify_signature(
+		int result = LibIndy.api.indy_verify_signature(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				poolHandle,
@@ -199,7 +199,7 @@ public class Signus extends SovrinJava.API {
 	public static Future<EncryptResult> encrypt(
 			Wallet wallet,
 			String did,
-			String msg) throws SovrinException {
+			String msg) throws IndyException {
 
 		final CompletableFuture<EncryptResult> future = new CompletableFuture<> ();
 
@@ -217,7 +217,7 @@ public class Signus extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_encrypt(
+		int result = LibIndy.api.indy_encrypt(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				did,
@@ -232,7 +232,7 @@ public class Signus extends SovrinJava.API {
 	public static Future<DecryptResult> decrypt(
 			Wallet wallet,
 			String did,
-			String encryptedMsg) throws SovrinException {
+			String encryptedMsg) throws IndyException {
 
 		final CompletableFuture<DecryptResult> future = new CompletableFuture<> ();
 
@@ -250,7 +250,7 @@ public class Signus extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_decrypt(
+		int result = LibIndy.api.indy_decrypt(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				did,

@@ -1,7 +1,7 @@
 extern crate serde_json;
 
 use errors::common::CommonError;
-use errors::sovrin::SovrinError;
+use errors::indy::IndyError;
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
@@ -24,7 +24,7 @@ pub enum VerifierCommand {
         String, // schemas json
         String, // claim defs jsons
         String, // revoc regs json
-        Box<Fn(Result<bool, SovrinError>) + Send>)
+        Box<Fn(Result<bool, IndyError>) + Send>)
 }
 
 pub struct VerifierCommandExecutor {
@@ -62,7 +62,7 @@ impl VerifierCommandExecutor {
                     schemas_json: &str,
                     claim_defs_jsons: &str,
                     revoc_regs_json: &str,
-                    cb: Box<Fn(Result<bool, SovrinError>) + Send>) {
+                    cb: Box<Fn(Result<bool, IndyError>) + Send>) {
         let result = self._verify_proof(proof_request_json, proof_json, schemas_json, claim_defs_jsons, revoc_regs_json);
         cb(result)
     }
@@ -72,7 +72,7 @@ impl VerifierCommandExecutor {
                      proof_json: &str,
                      schemas_json: &str,
                      claim_defs_jsons: &str,
-                     revoc_regs_json: &str) -> Result<bool, SovrinError> {
+                     revoc_regs_json: &str) -> Result<bool, IndyError> {
         let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_request_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_request_json: {}", err.to_string())))?;
@@ -135,12 +135,12 @@ impl VerifierCommandExecutor {
                 .collect::<HashSet<Predicate>>();
 
         if requested_attrs != received_attrs {
-            return Err(SovrinError::CommonError(CommonError::InvalidStructure(
+            return Err(IndyError::CommonError(CommonError::InvalidStructure(
                 format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs))))
         }
 
         if requested_predicates != received_predicates {
-            return Err(SovrinError::CommonError(CommonError::InvalidStructure(
+            return Err(IndyError::CommonError(CommonError::InvalidStructure(
                 format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))))
         }
 

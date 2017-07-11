@@ -1,11 +1,11 @@
-use sovrin::api::ErrorCode;
-use sovrin::api::wallet::{
-    sovrin_register_wallet_type,
-    sovrin_create_wallet,
-    sovrin_open_wallet,
-    sovrin_wallet_set_seq_no_for_value,
-    sovrin_delete_wallet,
-    sovrin_close_wallet
+use indy::api::ErrorCode;
+use indy::api::wallet::{
+    indy_register_wallet_type,
+    indy_create_wallet,
+    indy_open_wallet,
+    indy_wallet_set_seq_no_for_value,
+    indy_delete_wallet,
+    indy_close_wallet
 };
 
 use utils::callback::CallbackUtils;
@@ -45,7 +45,7 @@ impl WalletUtils {
 
         let xxtype = CString::new(xtype).unwrap();
 
-        let err = sovrin_register_wallet_type(
+        let err = indy_register_wallet_type(
             command_handle,
             xxtype.as_ptr(),
             Some(InmemWallet::create),
@@ -89,7 +89,7 @@ impl WalletUtils {
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
-            sovrin_create_wallet(command_handle,
+            indy_create_wallet(command_handle,
                                  pool_name.as_ptr(),
                                  wallet_name.as_ptr(),
                                  if xtype.is_some() { xtype_str.as_ptr() } else { null() },
@@ -123,7 +123,7 @@ impl WalletUtils {
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
-            sovrin_open_wallet(command_handle,
+            indy_open_wallet(command_handle,
                                wallet_name.as_ptr(),
                                if config.is_some() { config_str.as_ptr() } else { null() },
                                null(),
@@ -164,7 +164,7 @@ impl WalletUtils {
         };
 
         let err =
-            sovrin_create_wallet(command_handle,
+            indy_create_wallet(command_handle,
                                  pool_name.as_ptr(),
                                  wallet_name.as_ptr(),
                                  xtype.as_ptr(),
@@ -183,7 +183,7 @@ impl WalletUtils {
         }
 
         let err =
-            sovrin_open_wallet(open_command_handle,
+            indy_open_wallet(open_command_handle,
                                wallet_name.as_ptr(),
                                null(),
                                null(),
@@ -215,7 +215,7 @@ impl WalletUtils {
         let value = CString::new(value).unwrap();
 
         let err =
-            sovrin_wallet_set_seq_no_for_value(command_handle,
+            indy_wallet_set_seq_no_for_value(command_handle,
                                                wallet_handle,
                                                value.as_ptr(),
                                                seq_no,
@@ -247,7 +247,7 @@ impl WalletUtils {
         let wallet_name = CString::new(wallet_name).unwrap();
 
         let err =
-            sovrin_delete_wallet(command_handle,
+            indy_delete_wallet(command_handle,
                                  wallet_name.as_ptr(),
                                  null(),
                                  cb);
@@ -276,7 +276,7 @@ impl WalletUtils {
 
 
         let err =
-            sovrin_close_wallet(command_handle,
+            indy_close_wallet(command_handle,
                                 wallet_handle,
                                 cb);
 
