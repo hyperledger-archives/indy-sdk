@@ -43,8 +43,7 @@
     NSError *ret;
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
-                                                             walletName:@"wallet1"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName failed");
     
@@ -176,9 +175,6 @@
     [TestUtils cleanupStorage];
     
     NSString* poolName = @"pool1";
-    NSString* issuerWalletName = @"issuer_wallet";
-    NSString* proverWalletName = @"prover_wallet";
-    NSString* xtype = @"default";
     SovrinHandle issuerWalletHandle = 0;
     SovrinHandle proverWalletHandle = 0;
     NSError *ret = nil;
@@ -186,15 +182,13 @@
     //1. Create Issuer wallet, get wallet handle
     
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:issuerWalletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
     //2. Create Prover wallet, get wallet handle
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:proverWalletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
@@ -365,9 +359,6 @@
     NSString *proverDid = @"BzfFCYk";
     
     NSString *poolName = @"pool1";
-    NSString *issuer1WalletName = @"issuer1_wallet";
-    NSString *issuer2WalletName = @"issuer2_wallet";
-    NSString *proverWalletName = @"prover_wallet";
     NSString *xtype = @"default";
     NSError *ret;
     
@@ -375,8 +366,7 @@
     
     SovrinHandle issuerGvtWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:issuer1WalletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&issuerGvtWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
@@ -384,8 +374,7 @@
     
     SovrinHandle issuerXyzWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:issuer2WalletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&issuerXyzWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
@@ -393,8 +382,7 @@
     
     SovrinHandle proverWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
-                                                             walletName:proverWalletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
@@ -728,8 +716,7 @@
     
     SovrinHandle issuerWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
-                                                             walletName: issuerWalletName
-                                                                  xtype: xtype
+                                                                  xtype: nil
                                                                  handle: &issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
@@ -737,8 +724,7 @@
     
     SovrinHandle proverWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName: poolName
-                                                             walletName: proverWalletName
-                                                                  xtype: xtype
+                                                                  xtype: nil
                                                                  handle: &proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     

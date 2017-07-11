@@ -6,7 +6,7 @@
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
 //
 
-#import "SovrinSequenceUtils.h"
+#import "SequenceUtils.h"
 
 @interface SequenceUtils()
 

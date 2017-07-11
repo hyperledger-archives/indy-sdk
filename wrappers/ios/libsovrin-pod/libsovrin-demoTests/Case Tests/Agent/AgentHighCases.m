@@ -45,8 +45,7 @@
     // 1. create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool3"
-                                                             walletName:@"wallet3"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed ");
 
@@ -104,7 +103,6 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_agent_connect_works_for_remote_data";
-    NSString *xtype = @"default";
     NSError *ret;
     
     // 1. create and open pool ledger config
@@ -116,16 +114,14 @@
     // 2. Create listener's wallet
     SovrinHandle listenerWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                                                           walletName:@"wallet10.1"
-                                                                                                xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&listenerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listenerWalletHandle");
     
     // 3. Create trustees's wallet
     SovrinHandle trusteeWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:@"wallet10.2"
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&trusteeWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listenerWalletHandle");
     
@@ -228,8 +224,7 @@
     // 1. obtain wallet handle
     SovrinHandle walletHandle;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
-                                                             walletName:@"wallet1"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -292,8 +287,7 @@
     // 1. Obtain wallet handle
     SovrinHandle walletHandle;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool2"
-                                                             walletName:@"wallet2"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -339,8 +333,7 @@
     // 1. Create and open receiver's wallet
     SovrinHandle receiverWallet = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
-                                                             walletName:@"wallet11receiver"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&receiverWallet];
      XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for receiverWallet");
     
@@ -401,8 +394,7 @@
     // 1. Create and open receiver's wallet
     SovrinHandle receiverWallet = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
-                                                             walletName:@"wallet14receiver"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&receiverWallet];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for receiverWallet");
     
@@ -498,8 +490,7 @@
     // 1. Obtain receiver's wallet handle
     SovrinHandle receiverWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
-                                                             walletName:@"wallet13receiver"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&receiverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -546,8 +537,7 @@
     // 1. Create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool4"
-                                                             walletName:@"wallet4"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -658,8 +648,7 @@
     // 1. Create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool3"
-                                                             walletName:@"wallet3"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -728,8 +717,7 @@
     // 1. Create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool4"
-                                                             walletName:@"wallet4"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -812,8 +800,7 @@
     // 1. Create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool8"
-                                                             walletName:@"wallet8"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
      XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -881,27 +868,6 @@
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::sendWithConnectionHandler() returned wrong error code.");
     
     [TestUtils cleanupStorage];
-}
-
-- (void)testAllAgentHighCasesTests
-{
-    [self testAgentListerWorksWithSovrinAgentConnect];
-    [self testAgentConnectWorksForRemoteData];
-    [self testAgentConnectWorksForAllDataInWalletPresent];
-    [self testAgentListenWorksForAllDataInWalletPresent];
-    [self testAgentAddIdentityWorks];
-    [self testAgentAddIdentityWorksForMultipleKeys];
-    [self testAgentRemoveIdentityWorks];
-    [self testAgentSendWorksForAllDataInWalletPresent];
-    [self testAgentCloseConnectionWorksForOngoing];
-    [self testAgentCloseConnectionWorksForIncomingConnection];
-    [self testAgentCloseListenerWorks];
-}
-
-- (void)testSequence
-{
-    [self testAgentAddIdentityWorks];
-    [self testAgentAddIdentityWorksForMultipleKeys];
 }
 
 @end

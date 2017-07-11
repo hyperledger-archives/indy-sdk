@@ -563,8 +563,7 @@
     self.walletHandle = 0;
     SovrinHandle tempWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
-                                                             walletName:@"common_wallet"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&tempWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName failed");
     if (ret.code != Success) {return ret;}

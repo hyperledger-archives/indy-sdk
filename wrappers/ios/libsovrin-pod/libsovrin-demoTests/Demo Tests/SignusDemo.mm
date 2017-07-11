@@ -33,9 +33,6 @@
     [TestUtils cleanupStorage];
 
     NSString *poolName = @"pool1";
-    NSString *myWalletName = @"my_wallet";
-    NSString *theirWalletName = @"their_wallet";
-    NSString *xtype = @"default";
     NSError *ret = nil;
     XCTestExpectation* completionExpectation = nil;
     
@@ -45,8 +42,7 @@
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create and open my wallet
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:  poolName
-                                                             walletName:  myWalletName
-                                                                  xtype:  xtype
+                                                                  xtype:  nil
                                                                  handle: &myWalletHandle];
     
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
@@ -54,8 +50,7 @@
     //2. Create and open Their Wallet
 
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:  poolName
-                                                             walletName:  theirWalletName
-                                                                  xtype:  xtype
+                                                                  xtype:  nil
                                                                  handle: &theirWalletHandle];
     
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
