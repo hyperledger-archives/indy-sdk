@@ -1,5 +1,5 @@
-#ifndef __sovrin__mod_included__
-#define __sovrin__mod_included__
+#ifndef __indy__mod_included__
+#define __indy__mod_included__
 
 typedef enum
 {
@@ -111,7 +111,7 @@ typedef enum
     // Unknown format of DID entity keys
     SignusUnknownCryptoError = 500
 
-} sovrin_error_t;
+} indy_error_t;
 
 #endif
 

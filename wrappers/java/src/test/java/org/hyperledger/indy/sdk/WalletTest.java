@@ -2,7 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import java.io.File;
 
-import org.hyperledger.indy.sdk.LibSovrin;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.wallet.Wallet;
@@ -21,7 +21,7 @@ public class WalletTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 
-		if (! LibSovrin.isInitialized()) LibSovrin.init(new File("./lib/libsovrin.so"));
+		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 
 		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
 		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get().getPool();

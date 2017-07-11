@@ -11,11 +11,11 @@ Pull requests welcome!
 
 ### How to build
 
-First, build the native "sovrin" library at https://github.com/hyperledger/indy-sdk:
+First, build the native "indy" library at https://github.com/hyperledger/indy-sdk:
 
 	cargo build
 
-Then copy the resulting `libsovrin.so` to `./lib/`.
+Then copy the resulting `libindy.so` to `./lib/`.
 
 Then run
 
@@ -31,7 +31,7 @@ Then run
 	
 		public static void main(String[] args) throws Exception {
 	
-			if (! LibSovrin.isInitialized()) LibSovrin.init(new File("./lib/libsovrin.so"));
+			if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 	
 			// create pool
 	
@@ -82,7 +82,7 @@ Then run
 			// create NYM request
 	
 			System.out.println("=== CREATE NYM REQUEST ===");
-			BuildNymRequestResult buildNymRequestResult = Ledger.buildNymRequest(TRUSTEE_VERKEY, TRUSTEE_DID, TRUSTEE_VERKEY, null, null, SovrinConstants.ROLE_TRUSTEE).get();
+			BuildNymRequestResult buildNymRequestResult = Ledger.buildNymRequest(TRUSTEE_VERKEY, TRUSTEE_DID, TRUSTEE_VERKEY, null, null, IndyConstants.ROLE_TRUSTEE).get();
 			System.out.println("BuildNymRequestResult: " + buildNymRequestResult);
 	
 			// sign

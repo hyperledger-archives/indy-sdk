@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.pool;
 
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyJava;
 
 /**
  * pool.rs results
@@ -11,29 +11,29 @@ public final class PoolResults {
 
 	}
 
-	public static class CreatePoolLedgerConfigResult extends SovrinJava.Result {
+	public static class CreatePoolLedgerConfigResult extends IndyJava.Result {
 
 		CreatePoolLedgerConfigResult() { }
 	}
 
-	public static class OpenPoolLedgerResult extends SovrinJava.Result {
+	public static class OpenPoolLedgerResult extends IndyJava.Result {
 
 		private Pool pool;
 		OpenPoolLedgerResult(Pool pool) { this.pool = pool; }
 		public Pool getPool() { return this.pool; }
 	}
 
-	public static class RefreshPoolLedgerResult extends SovrinJava.Result {
+	public static class RefreshPoolLedgerResult extends IndyJava.Result {
 
 		RefreshPoolLedgerResult() { }
 	}
 
-	public static class ClosePoolLedgerResult extends SovrinJava.Result {
+	public static class ClosePoolLedgerResult extends IndyJava.Result {
 
 		ClosePoolLedgerResult() { }
 	}
 
-	public static class DeletePoolLedgerConfigResult extends SovrinJava.Result {
+	public static class DeletePoolLedgerConfigResult extends IndyJava.Result {
 
 		DeletePoolLedgerConfigResult() { }
 	}

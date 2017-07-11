@@ -1,7 +1,7 @@
-extern crate sovrin;
+extern crate indy;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use sovrin::api as api;
+use indy::api as api;
 
 #[macro_use]
 extern crate lazy_static;
@@ -15,7 +15,7 @@ extern crate zmq_pw as zmq;
 use std::sync::mpsc::channel;
 use std::thread;
 
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 #[macro_use]
 mod utils;
@@ -32,7 +32,7 @@ mod high_cases {
     use super::*;
 
     #[test]
-    fn sovrin_agent_listen_works_with_sovrin_agent_connect() {
+    fn indy_agent_listen_works_with_indy_agent_connect() {
         TestUtils::cleanup_storage();
         let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -48,19 +48,19 @@ mod high_cases {
         TestUtils::cleanup_storage();
     }
 
-    mod sovrin_agent_connect {
+    mod indy_agent_connect {
         use super::*;
         use rust_base58::FromBase58;
 
         #[test]
-        fn sovrin_agent_connect_works_for_remote_data() {
+        fn indy_agent_connect_works_for_remote_data() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_connect_works_for_remote_data").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("indy_agent_connect_works_for_remote_data").unwrap();
 
             let endpoint = "127.0.0.1:9710";
-            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", None).unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_connect_works_for_remote_data", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet("indy_agent_connect_works_for_remote_data", None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("indy_agent_connect_works_for_remote_data", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let sender_did = trustee_did.clone();
@@ -84,7 +84,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_agent_connect_works_for_all_data_in_wallet_present() {
+        fn indy_agent_connect_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).expect("create wallet");
@@ -95,7 +95,7 @@ mod high_cases {
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            //FIXME temporary code: replace by sovrin_agent_listen
+            //FIXME temporary code: replace by indy_agent_listen
             thread::spawn(move || {
                 let secret_key = "6wBM7yEYWD7wGd3ZtNQX5r31uWuC8NoZS2Lr6HZvRTY4".from_base58().unwrap();
                 let public_key = "2vTqP9QfNdvPr397QaFKtbVUPbhgqmAum2oDVkYsk4p9".from_base58().unwrap();
@@ -120,11 +120,11 @@ mod high_cases {
         }
     }
 
-    mod sovrin_agent_listen {
+    mod indy_agent_listen {
         use super::*;
 
         #[test]
-        fn sovrin_agent_listen_works_for_all_data_in_wallet_present() {
+        fn indy_agent_listen_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool2", None).expect("create wallet");
@@ -140,12 +140,12 @@ mod high_cases {
         }
     }
 
-    mod sovrin_agent_add_identity {
+    mod indy_agent_add_identity {
         use super::*;
         use rust_base58::FromBase58;
 
         #[test]
-        fn sovrin_agent_add_identity_works() {
+        fn indy_agent_add_identity_works() {
             TestUtils::cleanup_storage();
 
             let endpoint = "127.0.0.1:9711";
@@ -171,7 +171,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_agent_add_identity_works_for_multiply_keys() {
+        fn indy_agent_add_identity_works_for_multiply_keys() {
             TestUtils::cleanup_storage();
 
             let endpoint = "127.0.0.1:9714";
@@ -202,12 +202,12 @@ mod high_cases {
         }
     }
 
-    mod sovrin_agent_rm_identity {
+    mod indy_agent_rm_identity {
         use super::*;
         use rust_base58::FromBase58;
 
         #[test]
-        fn sovrin_agent_rm_identity_works() {
+        fn indy_agent_rm_identity_works() {
             TestUtils::cleanup_storage();
 
             let endpoint = "127.0.0.1:9713";
@@ -242,11 +242,11 @@ mod high_cases {
         }
     }
 
-    mod sovrin_agent_send {
+    mod indy_agent_send {
         use super::*;
 
         #[test]
-        fn sovrin_agent_send_works_for_all_data_in_wallet_present() {
+        fn indy_agent_send_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
@@ -283,11 +283,11 @@ mod high_cases {
         }
     }
 
-    mod sovrin_agent_close_connection {
+    mod indy_agent_close_connection {
         use super::*;
 
         #[test]
-        fn sovrin_agent_close_connection_works_for_outgoing() {
+        fn indy_agent_close_connection_works_for_outgoing() {
             TestUtils::cleanup_storage();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -307,7 +307,7 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_agent_close_connection_works_for_incoming_conn() {
+        fn indy_agent_close_connection_works_for_incoming_conn() {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
@@ -333,11 +333,11 @@ mod high_cases {
         }
     }
 
-    mod sovrin_agent_close_listener {
+    mod indy_agent_close_listener {
         use super::*;
 
         #[test]
-        fn sovrin_agent_close_listener_works() {
+        fn indy_agent_close_listener_works() {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
@@ -367,18 +367,18 @@ mod high_cases {
 mod medium_cases {
     use super::*;
 
-    mod sovrin_agent_add_identity {
+    mod indy_agent_add_identity {
         use super::*;
 
         #[test]
-        fn sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid() {
+        fn indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
 
             let endpoint = "127.0.0.1:9712";
-            let listener_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
             let sender_did = trustee_did.clone();
@@ -414,11 +414,11 @@ mod medium_cases {
         }
     }
 
-    mod sovrin_agent_close_connection {
+    mod indy_agent_close_connection {
         use super::*;
 
         #[test]
-        fn sovrin_agent_close_connection_works_for_incorrect_conn_handle() {
+        fn indy_agent_close_connection_works_for_incorrect_conn_handle() {
             TestUtils::cleanup_storage();
 
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
@@ -443,11 +443,11 @@ mod medium_cases {
         }
     }
 
-    mod sovrin_agent_close_listener {
+    mod indy_agent_close_listener {
         use super::*;
 
         #[test]
-        fn sovrin_agent_close_listener_works_for_incorrect_handle() {
+        fn indy_agent_close_listener_works_for_incorrect_handle() {
             TestUtils::cleanup_storage();
 
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
