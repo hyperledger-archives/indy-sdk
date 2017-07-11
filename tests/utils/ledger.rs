@@ -13,7 +13,8 @@ use indy::api::ledger::{
     indy_build_claim_def_txn,
     indy_build_get_claim_def_txn,
     indy_build_node_request,
-    indy_build_nym_request
+    indy_build_nym_request,
+    indy_build_get_txn_request
 };
 
 use utils::callback::CallbackUtils;
@@ -411,6 +412,36 @@ impl LedgerUtils {
                                       target_did.as_ptr(),
                                       data.as_ptr(),
                                       cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_json)
+    }
+
+    pub fn build_get_txn_request(submitter_did: &str, data: i32) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_json| {
+            sender.send((err, request_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+
+        let err =
+            indy_build_get_txn_request(command_handle,
+                                         submitter_did.as_ptr(),
+                                         data,
+                                         cb);
 
         if err != ErrorCode::Success {
             return Err(err);
