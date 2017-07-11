@@ -5,12 +5,8 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreClaimDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreRevocRegResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerRevokeClaimResult;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverGetClaimOffersResult;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverStoreClaimOfferResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -28,22 +24,22 @@ public class Anoncreds extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static CompletableFuture<IssuerCreateAndStoreClaimDefResult> issuerCreateAndStoreClaimDef(
+	public static CompletableFuture<String> issuerCreateAndStoreClaimDef(
 			Wallet wallet,
 			String schemaJson, 
 			String signatureType, 
 			boolean createNonRevoc) throws IndyException {
 
-		final CompletableFuture<IssuerCreateAndStoreClaimDefResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
 			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String claim_def_json, String claim_def_uuid) {
+			public void callback(int xcommand_handle, int err, String claim_def_json) {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				IssuerCreateAndStoreClaimDefResult result = new IssuerCreateAndStoreClaimDefResult(claim_def_json, claim_def_uuid);
+				String result = claim_def_json, claim_def_uuid;
 				future.complete(result);
 			}
 		};
@@ -133,13 +129,13 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<IssuerRevokeClaimResult> issuerRevokeClaim(
+	public static CompletableFuture<String> issuerRevokeClaim(
 			Wallet wallet,
 			int claimDefSeqNo, 
 			int revocRegSeqNo, 
 			int userRevocIndex) throws IndyException {
 
-		final CompletableFuture<IssuerRevokeClaimResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -148,7 +144,7 @@ public class Anoncreds extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				IssuerRevokeClaimResult result = new IssuerRevokeClaimResult(revoc_reg_update_json);
+				String result = revoc_reg_update_json;
 				future.complete(result);
 			}
 		};
@@ -168,11 +164,11 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<ProverStoreClaimOfferResult> proverStoreClaimOffer(
+	public static CompletableFuture<Void> proverStoreClaimOffer(
 			Wallet wallet,
 			String claimOfferJson) throws IndyException {
 
-		final CompletableFuture<ProverStoreClaimOfferResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Void> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -181,7 +177,7 @@ public class Anoncreds extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				ProverStoreClaimOfferResult result = new ProverStoreClaimOfferResult();
+				Void result = null;
 				future.complete(result);
 			}
 		};
@@ -199,11 +195,11 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<ProverGetClaimOffersResult> proverGetClaimOffers(
+	public static CompletableFuture<String> proverGetClaimOffers(
 			Wallet wallet,
 			String filterJson) throws IndyException {
 
-		final CompletableFuture<ProverGetClaimOffersResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -212,7 +208,7 @@ public class Anoncreds extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				ProverGetClaimOffersResult result = new ProverGetClaimOffersResult(claim_offers_json);
+				String result = claim_offers_json;
 				future.complete(result);
 			}
 		};

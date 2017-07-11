@@ -24,7 +24,7 @@ public class IndyJava {
 
 		protected static final int FIXED_COMMAND_HANDLE = 0;
 
-		protected static boolean checkCallback(CompletableFuture<? extends IndyJava.Result> future, int xcommand_handle, int err) {
+		protected static boolean checkCallback(CompletableFuture<?> future, int xcommand_handle, int err) {
 
 			assert(xcommand_handle == FIXED_COMMAND_HANDLE);
 
@@ -34,7 +34,7 @@ public class IndyJava {
 			return true;
 		}
 
-		protected static boolean checkCallback(CompletableFuture<? extends IndyJava.Result> future, int err) {
+		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
 			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }

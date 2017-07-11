@@ -5,18 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildAttribRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildClaimDefTxnResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetAttribRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetClaimDefTxnResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetDdoRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetNymRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetSchemaRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildNodeRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildNymRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildSchemaRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.SignAndSubmitRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.SubmitRequestResult;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
@@ -35,13 +23,13 @@ public class Ledger extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static CompletableFuture<SignAndSubmitRequestResult> signAndSubmitRequest(
+	public static CompletableFuture<String> signAndSubmitRequest(
 			Pool pool,
 			Wallet wallet,
 			String submitterDid,
 			String requestJson) throws IndyException {
 
-		final CompletableFuture<SignAndSubmitRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -50,7 +38,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				SignAndSubmitRequestResult result = new SignAndSubmitRequestResult(request_result_json);
+				String result = request_result_json;
 				future.complete(result);
 			}
 		};
@@ -71,11 +59,11 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<SubmitRequestResult> submitRequest(
+	public static CompletableFuture<String> submitRequest(
 			Pool pool,
 			String requestJson) throws IndyException {
 
-		final CompletableFuture<SubmitRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -84,7 +72,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				SubmitRequestResult result = new SubmitRequestResult(request_result_json);
+				String result = request_result_json;
 				future.complete(result);
 			}
 		};
@@ -102,12 +90,12 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildGetDdoRequestResult> buildGetDdoRequest(
+	public static CompletableFuture<String> buildGetDdoRequest(
 			String submitterDid,
 			String targetDid,
 			String requestJson) throws IndyException {
 
-		final CompletableFuture<BuildGetDdoRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -116,7 +104,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildGetDdoRequestResult result = new BuildGetDdoRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -132,14 +120,14 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildNymRequestResult> buildNymRequest(
+	public static CompletableFuture<String> buildNymRequest(
 			String submitterDid,
 			String targetDid,
 			String verkey,
 			String alias,
 			String role) throws IndyException {
 
-		final CompletableFuture<BuildNymRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -148,7 +136,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildNymRequestResult result = new BuildNymRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -167,14 +155,14 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildAttribRequestResult> buildAttribRequest(
+	public static CompletableFuture<String> buildAttribRequest(
 			String submitterDid,
 			String targetDid,
 			String hash,
 			String raw,
 			String enc) throws IndyException {
 
-		final CompletableFuture<BuildAttribRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -183,7 +171,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildAttribRequestResult result = new BuildAttribRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -202,12 +190,12 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildGetAttribRequestResult> buildGetAttribRequest(
+	public static CompletableFuture<String> buildGetAttribRequest(
 			String submitterDid,
 			String targetDid,
 			String data) throws IndyException {
 
-		final CompletableFuture<BuildGetAttribRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -216,7 +204,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildGetAttribRequestResult result = new BuildGetAttribRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -233,11 +221,11 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildGetNymRequestResult> buildGetNymRequest(
+	public static CompletableFuture<String> buildGetNymRequest(
 			String submitterDid,
 			String targetDid) throws IndyException {
 
-		final CompletableFuture<BuildGetNymRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -246,7 +234,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildGetNymRequestResult result = new BuildGetNymRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -262,11 +250,11 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildSchemaRequestResult> buildSchemaRequest(
+	public static CompletableFuture<String> buildSchemaRequest(
 			String submitterDid,
 			String data) throws IndyException {
 
-		final CompletableFuture<BuildSchemaRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -275,7 +263,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildSchemaRequestResult result = new BuildSchemaRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -291,11 +279,11 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildGetSchemaRequestResult> buildGetSchemaRequest(
+	public static CompletableFuture<String> buildGetSchemaRequest(
 			String submitterDid,
 			String data) throws IndyException {
 
-		final CompletableFuture<BuildGetSchemaRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -304,7 +292,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildGetSchemaRequestResult result = new BuildGetSchemaRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -320,12 +308,12 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildClaimDefTxnResult> buildClaimDefTxn(
+	public static CompletableFuture<String> buildClaimDefTxn(
 			String submitterDid,
 			String xref,
 			String data) throws IndyException {
 
-		final CompletableFuture<BuildClaimDefTxnResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -334,7 +322,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildClaimDefTxnResult result = new BuildClaimDefTxnResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -351,11 +339,11 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildGetClaimDefTxnResult> buildGetClaimDefTxn(
+	public static CompletableFuture<String> buildGetClaimDefTxn(
 			String submitterDid,
 			String xref) throws IndyException {
 
-		final CompletableFuture<BuildGetClaimDefTxnResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -364,7 +352,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildGetClaimDefTxnResult result = new BuildGetClaimDefTxnResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};
@@ -380,12 +368,12 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<BuildNodeRequestResult> buildNodeRequest(
+	public static CompletableFuture<String> buildNodeRequest(
 			String submitterDid,
 			String targetDid,
 			String data) throws IndyException {
 
-		final CompletableFuture<BuildNodeRequestResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -394,7 +382,7 @@ public class Ledger extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				BuildNodeRequestResult result = new BuildNodeRequestResult(request_json);
+				String result = request_json;
 				future.complete(result);
 			}
 		};

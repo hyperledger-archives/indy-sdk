@@ -7,11 +7,6 @@ import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.CreatePoolLedgerConfigJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
-import org.hyperledger.indy.sdk.pool.PoolResults.ClosePoolLedgerResult;
-import org.hyperledger.indy.sdk.pool.PoolResults.CreatePoolLedgerConfigResult;
-import org.hyperledger.indy.sdk.pool.PoolResults.DeletePoolLedgerConfigResult;
-import org.hyperledger.indy.sdk.pool.PoolResults.OpenPoolLedgerResult;
-import org.hyperledger.indy.sdk.pool.PoolResults.RefreshPoolLedgerResult;
 
 import com.sun.jna.Callback;
 
@@ -36,11 +31,11 @@ public class Pool extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static CompletableFuture<CreatePoolLedgerConfigResult> createPoolLedgerConfig(
+	public static CompletableFuture<Void> createPoolLedgerConfig(
 			String configName,
 			CreatePoolLedgerConfigJSONParameter config) throws IndyException {
 
-		final CompletableFuture<CreatePoolLedgerConfigResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Void> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -49,7 +44,7 @@ public class Pool extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				CreatePoolLedgerConfigResult result = new CreatePoolLedgerConfigResult();
+				Void result = null;
 				future.complete(result);
 			}
 		};
@@ -65,11 +60,11 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<OpenPoolLedgerResult> openPoolLedger(
+	public static CompletableFuture<Pool> openPoolLedger(
 			String configName,
 			OpenPoolLedgerJSONParameter config) throws IndyException {
 
-		final CompletableFuture<OpenPoolLedgerResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Pool> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -78,9 +73,7 @@ public class Pool extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				Pool pool = new Pool(pool_handle);
-
-				OpenPoolLedgerResult result = new OpenPoolLedgerResult(pool);
+				Pool result = new Pool(pool_handle);
 				future.complete(result);
 			}
 		};
@@ -96,10 +89,10 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	private static CompletableFuture<RefreshPoolLedgerResult> refreshPoolLedger(
+	private static CompletableFuture<Void> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
-		final CompletableFuture<RefreshPoolLedgerResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Void> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -108,7 +101,7 @@ public class Pool extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				RefreshPoolLedgerResult result = new RefreshPoolLedgerResult();
+				Void result = null;
 				future.complete(result);
 			}
 		};
@@ -125,10 +118,10 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	private static CompletableFuture<ClosePoolLedgerResult> closePoolLedger(
+	private static CompletableFuture<Void> closePoolLedger(
 			Pool pool) throws IndyException {
 
-		final CompletableFuture<ClosePoolLedgerResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Void> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -137,7 +130,7 @@ public class Pool extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				ClosePoolLedgerResult result = new ClosePoolLedgerResult();
+				Void result = null;
 				future.complete(result);
 			}
 		};
@@ -154,10 +147,10 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<DeletePoolLedgerConfigResult> deletePoolLedgerConfig(
+	public static CompletableFuture<Void> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
-		final CompletableFuture<DeletePoolLedgerConfigResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Void> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -166,7 +159,7 @@ public class Pool extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				DeletePoolLedgerConfigResult result = new DeletePoolLedgerConfigResult();
+				Void result = null;
 				future.complete(result);
 			}
 		};
@@ -185,13 +178,13 @@ public class Pool extends IndyJava.API {
 	 * INSTANCE METHODS
 	 */
 
-	public CompletableFuture<RefreshPoolLedgerResult> refreshPoolLedger(
+	public CompletableFuture<Void> refreshPoolLedger(
 			) throws IndyException {
 
 		return refreshPoolLedger(this);
 	}
 
-	public CompletableFuture<ClosePoolLedgerResult> closePoolLedger(
+	public CompletableFuture<Void> closePoolLedger(
 			) throws IndyException {
 
 		return closePoolLedger(this);

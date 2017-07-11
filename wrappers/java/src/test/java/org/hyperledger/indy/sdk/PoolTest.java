@@ -3,10 +3,8 @@ package org.hyperledger.indy.sdk;
 import java.io.File;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
-import org.hyperledger.indy.sdk.pool.PoolResults.OpenPoolLedgerResult;
 import org.junit.Assert;
 
 import junit.framework.TestCase;
@@ -32,8 +30,8 @@ public class PoolTest extends TestCase {
 		Assert.assertNotNull(result1);*/
 
 		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		Future<OpenPoolLedgerResult> future2 = Pool.openPoolLedger("myconfig", config2);
-		OpenPoolLedgerResult result2 = future2.get();
+		Future<Pool> future2 = Pool.openPoolLedger("myconfig", config2);
+		Pool result2 = future2.get();
 		Assert.assertNotNull(result2);
 	}
 }
