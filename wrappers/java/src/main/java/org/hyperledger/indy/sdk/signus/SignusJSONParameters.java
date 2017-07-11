@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyJava;
 
 /**
  * signus.rs JSON parameters
@@ -11,7 +11,7 @@ public final class SignusJSONParameters {
 
 	}
 
-	public static class CreateAndStoreMyDidJSONParameter extends SovrinJava.JsonParameter {
+	public static class CreateAndStoreMyDidJSONParameter extends IndyJava.JsonParameter {
 
 		public CreateAndStoreMyDidJSONParameter(String did, String seed, String cryptoType, Boolean cid) {
 

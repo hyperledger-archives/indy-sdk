@@ -1,7 +1,7 @@
-extern crate sovrin;
+extern crate indy;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use sovrin::api as api;
+use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
@@ -15,7 +15,7 @@ extern crate log;
 mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use utils::environment::EnvironmentUtils;
 use utils::pool::PoolUtils;
@@ -167,10 +167,10 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_refresh_pool_ledger_works() {
+        fn indy_refresh_pool_ledger_works() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_refresh_pool_ledger_works").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("indy_refresh_pool_ledger_works").unwrap();
 
             PoolUtils::refresh(pool_handle).unwrap();
 
@@ -183,10 +183,10 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_close_pool_ledger_works() {
+        fn indy_close_pool_ledger_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_close_pool_ledger_works";
+            let pool_name = "indy_close_pool_ledger_works";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
@@ -196,10 +196,10 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_close_pool_ledger_works_for_twice() {
+        fn indy_close_pool_ledger_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_close_pool_ledger_works_twice";
+            let pool_name = "indy_close_pool_ledger_works_twice";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
@@ -210,10 +210,10 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_close_pool_ledger_works_for_reopen_after_close() {
+        fn indy_close_pool_ledger_works_for_reopen_after_close() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_close_pool_ledger_works";
+            let pool_name = "indy_close_pool_ledger_works";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
@@ -227,10 +227,10 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn sovrin_delete_pool_ledger_config_works() {
+        fn indy_delete_pool_ledger_config_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_remove_pool_ledger_config_works";
+            let pool_name = "indy_remove_pool_ledger_config_works";
             PoolUtils::create_pool_ledger_config(pool_name, None, None, None).unwrap();
 
             PoolUtils::delete(pool_name).unwrap();
@@ -240,10 +240,10 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_delete_pool_ledger_config_works_for_opened() {
+        fn indy_delete_pool_ledger_config_works_for_opened() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_remove_pool_ledger_config_works_for_opened";
+            let pool_name = "indy_remove_pool_ledger_config_works_for_opened";
             PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             assert_eq!(PoolUtils::delete(pool_name).unwrap_err(), ErrorCode::CommonInvalidState);

@@ -5,8 +5,8 @@ use std::fs;
 pub struct TestUtils {}
 
 impl TestUtils {
-    pub fn cleanup_sovrin_home() {
-        let path = EnvironmentUtils::sovrin_home_path();
+    pub fn cleanup_indy_home() {
+        let path = EnvironmentUtils::indy_home_path();
         if path.exists() {
             fs::remove_dir_all(path).unwrap();
         }
@@ -20,7 +20,7 @@ impl TestUtils {
     }
 
     pub fn cleanup_storage() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         TestUtils::cleanup_temp();
     }
 }

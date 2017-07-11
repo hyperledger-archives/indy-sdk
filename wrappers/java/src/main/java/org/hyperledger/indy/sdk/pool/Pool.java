@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.pool;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.CreatePoolLedgerConfigJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolResults.ClosePoolLedgerResult;
@@ -19,7 +19,7 @@ import com.sun.jna.Callback;
 /**
  * pool.rs API
  */
-public class Pool extends SovrinJava.API {
+public class Pool extends IndyJava.API {
 
 	private final int poolHandle;
 
@@ -39,7 +39,7 @@ public class Pool extends SovrinJava.API {
 	
 	public static Future<CreatePoolLedgerConfigResult> createPoolLedgerConfig(
 			String configName,
-			CreatePoolLedgerConfigJSONParameter config) throws SovrinException {
+			CreatePoolLedgerConfigJSONParameter config) throws IndyException {
 
 		final CompletableFuture<CreatePoolLedgerConfigResult> future = new CompletableFuture<> ();
 
@@ -55,7 +55,7 @@ public class Pool extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_create_pool_ledger_config(
+		int result = LibIndy.api.indy_create_pool_ledger_config(
 				FIXED_COMMAND_HANDLE, 
 				configName, 
 				config == null ? null : config.toJson(), 
@@ -68,7 +68,7 @@ public class Pool extends SovrinJava.API {
 
 	public static Future<OpenPoolLedgerResult> openPoolLedger(
 			String configName,
-			OpenPoolLedgerJSONParameter config) throws SovrinException {
+			OpenPoolLedgerJSONParameter config) throws IndyException {
 
 		final CompletableFuture<OpenPoolLedgerResult> future = new CompletableFuture<> ();
 
@@ -86,7 +86,7 @@ public class Pool extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_open_pool_ledger(
+		int result = LibIndy.api.indy_open_pool_ledger(
 				FIXED_COMMAND_HANDLE, 
 				configName, 
 				config == null ? null : config.toJson(), 
@@ -98,7 +98,7 @@ public class Pool extends SovrinJava.API {
 	}
 
 	private static Future<RefreshPoolLedgerResult> refreshPoolLedger(
-			int handle) throws SovrinException {
+			int handle) throws IndyException {
 
 		final CompletableFuture<RefreshPoolLedgerResult> future = new CompletableFuture<> ();
 
@@ -114,7 +114,7 @@ public class Pool extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_refresh_pool_ledger(
+		int result = LibIndy.api.indy_refresh_pool_ledger(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
 				callback);
@@ -125,7 +125,7 @@ public class Pool extends SovrinJava.API {
 	}
 
 	private static Future<ClosePoolLedgerResult> closePoolLedger(
-			int handle) throws SovrinException {
+			int handle) throws IndyException {
 
 		final CompletableFuture<ClosePoolLedgerResult> future = new CompletableFuture<> ();
 
@@ -141,7 +141,7 @@ public class Pool extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_close_pool_ledger(
+		int result = LibIndy.api.indy_close_pool_ledger(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
 				callback);
@@ -152,7 +152,7 @@ public class Pool extends SovrinJava.API {
 	}
 
 	public static Future<DeletePoolLedgerConfigResult> deletePoolLedgerConfig(
-			String configName) throws SovrinException {
+			String configName) throws IndyException {
 
 		final CompletableFuture<DeletePoolLedgerConfigResult> future = new CompletableFuture<> ();
 
@@ -168,7 +168,7 @@ public class Pool extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_delete_pool_ledger_config(
+		int result = LibIndy.api.indy_delete_pool_ledger_config(
 				FIXED_COMMAND_HANDLE, 
 				configName, 
 				callback);
@@ -183,13 +183,13 @@ public class Pool extends SovrinJava.API {
 	 */
 
 	public Future<RefreshPoolLedgerResult> refreshPoolLedger(
-			) throws SovrinException {
+			) throws IndyException {
 
 		return refreshPoolLedger(this.poolHandle);
 	}
 
 	public Future<ClosePoolLedgerResult> closePoolLedger(
-			) throws SovrinException {
+			) throws IndyException {
 
 		return closePoolLedger(this.poolHandle);
 	}

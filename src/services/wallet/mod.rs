@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn wallet_service_register_type_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -324,23 +324,23 @@ mod tests {
             )
             .unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_create_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", Some("default"), "wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_create_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -362,34 +362,34 @@ mod tests {
 
         wallet_service.create("pool1", Some("inmem"), "wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_create_works_for_none_type() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_create_works_for_unknown_type() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         let res = wallet_service.create("pool1", Some("unknown"), "wallet1", None, None);
         assert_match!(Err(WalletError::UnknownType(_)), res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_create_works_for_twice() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -397,24 +397,24 @@ mod tests {
         let res = wallet_service.create("pool1", None, "wallet1", None, None);
         assert_match!(Err(WalletError::AlreadyExists(_)), res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_delete_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
         wallet_service.delete("wallet1", None).unwrap();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_delete_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -438,24 +438,24 @@ mod tests {
         wallet_service.delete("wallet1", None).unwrap();
         wallet_service.create("pool1", Some("inmem"), "wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_open_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
         wallet_service.open("wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_open_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -478,25 +478,25 @@ mod tests {
         wallet_service.create("pool1", Some("inmem"), "wallet1", None, None).unwrap();
         wallet_service.open("wallet1", None, None).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_close_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
         let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
         wallet_service.close(wallet_handle).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_close_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -520,13 +520,13 @@ mod tests {
         let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
         wallet_service.close(wallet_handle).unwrap();
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_set_get_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -536,12 +536,12 @@ mod tests {
         let value = wallet_service.get(wallet_handle, "key1").unwrap();
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_set_get_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -568,13 +568,13 @@ mod tests {
         let value = wallet_service.get(wallet_handle, "key1").unwrap();
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_set_get_works_for_reopen() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -587,12 +587,12 @@ mod tests {
         let value = wallet_service.get(wallet_handle, "key1").unwrap();
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_get_works_for_unknown() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -601,12 +601,12 @@ mod tests {
         let res = wallet_service.get(wallet_handle, "key1");
         assert_match!(Err(WalletError::NotFound(_)), res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_get_works_for_plugged_and_unknown() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -632,13 +632,13 @@ mod tests {
         let res = wallet_service.get(wallet_handle, "key1");
         assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::WalletNotFoundError)), res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_set_get_works_for_update() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
 
@@ -668,12 +668,12 @@ mod tests {
         let value = wallet_service.get(wallet_handle, "key1").unwrap();
         assert_eq!("value2", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_set_get_works_for_plugged_and_update() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -688,13 +688,13 @@ mod tests {
         let value = wallet_service.get(wallet_handle, "key1").unwrap();
         assert_eq!("value2", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_set_get_not_expired_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -705,12 +705,12 @@ mod tests {
         let value = wallet_service.get_not_expired(wallet_handle, "key1").unwrap();
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_set_get_not_expired_works_for_expired() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -723,12 +723,12 @@ mod tests {
         let res = wallet_service.get_not_expired(wallet_handle, "key1");
         assert_match!(Err(WalletError::NotFound(_)), res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_set_get_not_expired_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -755,13 +755,13 @@ mod tests {
         let value = wallet_service.get_not_expired(wallet_handle, "key1").unwrap();
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_set_get_not_expired_works_for_plugged_and_expired() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -791,13 +791,13 @@ mod tests {
         let res = wallet_service.get_not_expired(wallet_handle, "key1");
         assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::WalletNotFoundError)), res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_list_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
@@ -818,12 +818,12 @@ mod tests {
         assert_eq!("key1::subkey1", key);
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_list_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -861,13 +861,13 @@ mod tests {
         assert_eq!("key1::subkey1", key);
         assert_eq!("value1", value);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_get_pool_name_works() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         let wallet_name = "wallet1";
@@ -877,12 +877,12 @@ mod tests {
 
         assert_eq!(wallet_service.get_pool_name(wallet_handle).unwrap(), pool_name);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
     fn wallet_service_get_pool_name_works_for_plugged() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -907,13 +907,13 @@ mod tests {
 
         assert_eq!(wallet_service.get_pool_name(wallet_handle).unwrap(), "pool1");
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
     }
 
     #[test]
     fn wallet_service_get_pool_name_works_for_incorrect_wallet_handle() {
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
         let wallet_name = "wallet1";
@@ -923,6 +923,6 @@ mod tests {
         let get_pool_name_res = wallet_service.get_pool_name(1);
         assert_match!(Err(WalletError::InvalidHandle(_)), get_pool_name_res);
 
-        TestUtils::cleanup_sovrin_home();
+        TestUtils::cleanup_indy_home();
     }
 }

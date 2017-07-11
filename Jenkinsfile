@@ -2,7 +2,7 @@
 
 @Library('SovrinHelpers') _
 
-name = 'sovrin-client-rust'
+name = 'indy-sdk'
 def err
 def publishBranch = (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel')
 
