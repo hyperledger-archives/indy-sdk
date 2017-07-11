@@ -12,6 +12,8 @@ pub mod crypto;
 #[macro_use]
 pub mod logger;
 
+pub mod inmem_wallet;
+
 #[macro_use]
 pub mod result;
 

@@ -12,9 +12,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Common functionality for the APIs, JSON parameters, and results used
- * by the Java wrapper of libsovrin. 
+ * by the Java wrapper of libindy.
  */
-public class SovrinJava {
+public class IndyJava {
 
 	/*
 	 * API
@@ -24,12 +24,12 @@ public class SovrinJava {
 
 		protected static final int FIXED_COMMAND_HANDLE = 0;
 
-		protected static boolean checkCallback(CompletableFuture<? extends SovrinJava.Result> future, int xcommand_handle, int err) {
+		protected static boolean checkCallback(CompletableFuture<? extends IndyJava.Result> future, int xcommand_handle, int err) {
 
 			assert(xcommand_handle == FIXED_COMMAND_HANDLE);
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(SovrinException.fromErrorCode(errorCode, err)); return false; }
+			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }
 
 			return true;
 		}
@@ -42,10 +42,10 @@ public class SovrinJava {
 			return true;
 		}
 
-		protected static void checkResult(int result) throws SovrinException {
+		protected static void checkResult(int result) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(result);
-			if (! ErrorCode.Success.equals(errorCode)) throw SovrinException.fromErrorCode(errorCode, result);
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, result);
 		}
 
 		@Override

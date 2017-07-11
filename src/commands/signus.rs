@@ -2,7 +2,7 @@ use utils::json::{JsonDecodable, JsonEncodable};
 use errors::signus::SignusError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
-use errors::sovrin::SovrinError;
+use errors::indy::IndyError;
 use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid};
 use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::anoncreds::AnoncredsService;
@@ -27,46 +27,46 @@ pub enum SignusCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
         String, // did json
-        Box<Fn(Result<(String, String, String), SovrinError>) + Send>),
+        Box<Fn(Result<(String, String, String), IndyError>) + Send>),
     ReplaceKeys(
         i32, // wallet handle
         String, // identity json
         String, // did
-        Box<Fn(Result<(String, String), SovrinError>) + Send>),
+        Box<Fn(Result<(String, String), IndyError>) + Send>),
     StoreTheirDid(
         i32, // wallet handle
         String, // identity json
-        Box<Fn(Result<(), SovrinError>) + Send>),
+        Box<Fn(Result<(), IndyError>) + Send>),
     Sign(
         i32, // wallet handle
         String, // did
         String, // msg
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     //TODO divide on two commands
     VerifySignature(
         i32, // wallet handle
         i32, // pool_handle,
         String, // did
         String, // signed message
-        Box<Fn(Result<bool, SovrinError>) + Send>),
+        Box<Fn(Result<bool, IndyError>) + Send>),
     VerifySignatureGetNymAck(
         i32, // wallet handle
         String, // signed message
         i32, //callback id
-        Result<String, SovrinError>) /* result json or error)*/,
+        Result<String, IndyError>) /* result json or error)*/,
     Encrypt(
         i32, // wallet handle
         i32, // pool handle
         String, // my_did
         String, // did
         String, // msg
-        Box<Fn(Result<(String, String), SovrinError>) + Send>),
+        Box<Fn(Result<(String, String), IndyError>) + Send>),
     EncryptGetNymAck(
         i32, // wallet handle
         String, // my_did
         String, // msg
         i32, //cb_id
-        Result<String, SovrinError> //result
+        Result<String, IndyError> //result
     ),
     Decrypt(
         i32, // wallet handle
@@ -74,7 +74,7 @@ pub enum SignusCommand {
         String, // did
         String, // encrypted msg
         String, // nonce
-        Box<Fn(Result<String, SovrinError>) + Send>)
+        Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct SignusCommandExecutor {
@@ -83,8 +83,8 @@ pub struct SignusCommandExecutor {
     wallet_service: Rc<WalletService>,
     signus_service: Rc<SignusService>,
     ledger_service: Rc<LedgerService>,
-    verify_callbacks: RefCell<HashMap<i32, Box<Fn(Result<bool, SovrinError>)>>>,
-    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(String, String), SovrinError>)>>>,
+    verify_callbacks: RefCell<HashMap<i32, Box<Fn(Result<bool, IndyError>)>>>,
+    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(String, String), IndyError>)>>>,
 
 }
 
@@ -149,11 +149,11 @@ impl SignusCommandExecutor {
     fn create_and_store_my_did(&self,
                                wallet_handle: i32,
                                my_did_info_json: &str,
-                               cb: Box<Fn(Result<(String, String, String), SovrinError>) + Send>) {
+                               cb: Box<Fn(Result<(String, String, String), IndyError>) + Send>) {
         cb(self._create_and_store_my_did(wallet_handle, my_did_info_json));
     }
 
-    fn _create_and_store_my_did(&self, wallet_handle: i32, my_did_info_json: &str) -> Result<(String, String, String), SovrinError> {
+    fn _create_and_store_my_did(&self, wallet_handle: i32, my_did_info_json: &str) -> Result<(String, String, String), IndyError> {
         let my_did_info = MyDidInfo::from_json(&my_did_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
@@ -176,14 +176,14 @@ impl SignusCommandExecutor {
                     wallet_handle: i32,
                     keys_info_json: &str,
                     did: &str,
-                    cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
+                    cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         cb(self._replace_keys(wallet_handle, keys_info_json, did));
     }
 
     fn _replace_keys(&self,
                      wallet_handle: i32,
                      keys_info_json: &str,
-                     did: &str) -> Result<(String, String), SovrinError> {
+                     did: &str) -> Result<(String, String), IndyError> {
         let keys_info: MyKyesInfo = MyKyesInfo::from_json(keys_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
@@ -211,13 +211,13 @@ impl SignusCommandExecutor {
     fn store_their_did(&self,
                        wallet_handle: i32,
                        their_did_info_json: &str,
-                       cb: Box<Fn(Result<(), SovrinError>) + Send>) {
+                       cb: Box<Fn(Result<(), IndyError>) + Send>) {
         cb(self._store_their_did(wallet_handle, their_did_info_json));
     }
 
     fn _store_their_did(&self,
                         wallet_handle: i32,
-                        their_did_info_json: &str) -> Result<(), SovrinError> {
+                        their_did_info_json: &str) -> Result<(), IndyError> {
         let their_did_info = TheirDidInfo::from_json(their_did_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
@@ -239,14 +239,14 @@ impl SignusCommandExecutor {
             wallet_handle: i32,
             did: &str,
             msg: &str,
-            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+            cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self._sign(wallet_handle, did, msg));
     }
 
     fn _sign(&self,
              wallet_handle: i32,
              did: &str,
-             msg: &str) -> Result<String, SovrinError> {
+             msg: &str) -> Result<String, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -261,12 +261,12 @@ impl SignusCommandExecutor {
                         pool_handle: i32,
                         did: &str,
                         signed_msg: &str,
-                        cb: Box<Fn(Result<bool, SovrinError>) + Send>) {
-        let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, SovrinError>)>| {
+                        cb: Box<Fn(Result<bool, IndyError>) + Send>) {
+        let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, IndyError>)>| {
             let signed_msg = signed_msg.to_string();
             let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
             if get_nym_request.is_err() {
-                return cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
+                return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
             }
             let get_nym_request = get_nym_request.unwrap();
             let cb_id: i32 = SequenceUtils::get_next_id();
@@ -293,7 +293,7 @@ impl SignusCommandExecutor {
                             })
                         ))).unwrap();
                 }
-                Err(err) => cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("{:?}", err)))))
+                Err(err) => cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("{:?}", err)))))
             }
         };
 
@@ -301,18 +301,18 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    return cb(Err(SovrinError::SignusError(SignusError::CommonError(CommonError::InvalidStructure(format!("Invalid their did json"))))))
+                    return cb(Err(IndyError::SignusError(SignusError::CommonError(CommonError::InvalidStructure(format!("Invalid their did json"))))))
                 }
 
                 let their_did: TheirDid = their_did.unwrap();
 
                 match their_did.verkey {
-                    Some(_) => cb(self.signus_service.verify(&their_did, signed_msg).map_err(|err| SovrinError::SignusError(err))),
+                    Some(_) => cb(self.signus_service.verify(&their_did, signed_msg).map_err(|err| IndyError::SignusError(err))),
                     None => load_verkey_from_ledger(cb)
                 }
             }
             Err(WalletError::NotFound(_)) => load_verkey_from_ledger(cb),
-            Err(err) => cb(Err(SovrinError::WalletError(err)))
+            Err(err) => cb(Err(IndyError::WalletError(err)))
         }
     }
 
@@ -320,7 +320,7 @@ impl SignusCommandExecutor {
                                     wallet_handle: i32,
                                     signed_msg: &str,
                                     cb_id: i32,
-                                    result: Result<String, SovrinError>) {
+                                    result: Result<String, IndyError>) {
         match self.verify_callbacks.try_borrow_mut() {
             Ok(mut cbs) => {
                 let cb = cbs.remove(&cb_id);
@@ -343,7 +343,7 @@ impl SignusCommandExecutor {
     fn _verify_signature_get_nym_ack(&self,
                                      wallet_handle: i32,
                                      get_nym_response: &str,
-                                     signed_msg: &str) -> Result<bool, SovrinError> {
+                                     signed_msg: &str) -> Result<bool, IndyError> {
         let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
             .map_err(map_err_trace!())
             .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
@@ -365,7 +365,7 @@ impl SignusCommandExecutor {
         self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
         self.signus_service.verify(&their_did, &signed_msg)
             .map_err(map_err_trace!())
-            .map_err(|err| SovrinError::SignusError(err))
+            .map_err(|err| IndyError::SignusError(err))
     }
 
     fn encrypt(&self,
@@ -374,7 +374,7 @@ impl SignusCommandExecutor {
                my_did: &str,
                did: &str,
                msg: &str,
-               cb: Box<Fn(Result<(String, String), SovrinError>) + Send>) {
+               cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         let load_public_key_from_ledger = move |cb| {
             let msg = msg.to_string();
             let my_did = my_did.to_string();
@@ -402,7 +402,7 @@ impl SignusCommandExecutor {
                         ))).unwrap();
                 }
                 Err(err) => cb(Err(
-                    SovrinError::CommonError(
+                    IndyError::CommonError(
                         CommonError::InvalidState(format!("{:?}", err)))))
             }
         };
@@ -414,29 +414,29 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    return cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid their did json")))))
+                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid their did json")))))
                 }
                 let their_did: TheirDid = their_did.unwrap();
 
                 let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did));
                 if my_did_json.is_err() {
-                    return cb(Err(SovrinError::WalletError(WalletError::NotFound(format!("My Did not found")))))
+                    return cb(Err(IndyError::WalletError(WalletError::NotFound(format!("My Did not found")))))
                 }
                 let my_did_json = my_did_json.unwrap();
 
                 let my_did = MyDid::from_json(&my_did_json);
                 if my_did.is_err() {
-                    return cb(Err(SovrinError::CommonError(CommonError::InvalidState(format!("Invalid my did json")))))
+                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid my did json")))))
                 }
                 let my_did: MyDid = my_did.unwrap();
 
                 match their_did.pk {
-                    Some(_) => cb(self.signus_service.encrypt(&my_did, &their_did, msg).map_err(|err| SovrinError::SignusError(err))),
+                    Some(_) => cb(self.signus_service.encrypt(&my_did, &their_did, msg).map_err(|err| IndyError::SignusError(err))),
                     None => load_public_key_from_ledger(cb)
                 }
             }
             Err(WalletError::NotFound(_)) => load_public_key_from_ledger(cb),
-            Err(err) => cb(Err(SovrinError::WalletError(err)))
+            Err(err) => cb(Err(IndyError::WalletError(err)))
         }
     }
 
@@ -445,7 +445,7 @@ impl SignusCommandExecutor {
                            my_did: &str,
                            msg: &str,
                            cb_id: i32,
-                           result: Result<String, SovrinError>) {
+                           result: Result<String, IndyError>) {
         match self.encrypt_callbacks.try_borrow_mut() {
             Ok(mut cbs) => {
                 let cb = cbs.remove(&cb_id);
@@ -469,7 +469,7 @@ impl SignusCommandExecutor {
                             wallet_handle: i32,
                             my_did: &str,
                             their_did_json: &str,
-                            msg: &str) -> Result<(String, String), SovrinError> {
+                            msg: &str) -> Result<(String, String), IndyError> {
         let my_did = MyDid::from_json(&my_did)
             .map_err(map_err_trace!())
             .map_err(|_| CommonError::InvalidState(format!("Invalid my did json")))?;
@@ -481,14 +481,14 @@ impl SignusCommandExecutor {
 
         self.signus_service.encrypt(&my_did, &their_did, &msg)
             .map_err(map_err_trace!())
-            .map_err(|err| SovrinError::SignusError(err))
+            .map_err(|err| IndyError::SignusError(err))
     }
 
     fn _encrypt(&self,
                 wallet_handle: i32,
                 my_did: &str,
                 did: &str,
-                msg: &str) -> Result<(String, String), SovrinError> {
+                msg: &str) -> Result<(String, String), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -501,7 +501,7 @@ impl SignusCommandExecutor {
 
         self.signus_service.encrypt(&my_did, &their_did, msg)
             .map_err(map_err_trace!())
-            .map_err(|err| SovrinError::SignusError(err))
+            .map_err(|err| IndyError::SignusError(err))
     }
 
     fn decrypt(&self,
@@ -510,7 +510,7 @@ impl SignusCommandExecutor {
                did: &str,
                encrypted_msg: &str,
                nonce: &str,
-               cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+               cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self._decrypt(wallet_handle, my_did, did, encrypted_msg, nonce));
     }
 
@@ -519,7 +519,7 @@ impl SignusCommandExecutor {
                 my_did: &str,
                 did: &str,
                 encrypted_msg: &str,
-                nonce: &str) -> Result<String, SovrinError> {
+                nonce: &str) -> Result<String, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -531,6 +531,6 @@ impl SignusCommandExecutor {
             .map_err(|err| CommonError::InvalidState(err.to_string()))?;
 
         self.signus_service.decrypt(&my_did, &their_did, encrypted_msg, nonce)
-            .map_err(|err| SovrinError::SignusError(err))
+            .map_err(|err| IndyError::SignusError(err))
     }
 }
