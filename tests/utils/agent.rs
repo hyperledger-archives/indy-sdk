@@ -1,16 +1,16 @@
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
 
-use sovrin::api::agent::{
-    sovrin_agent_add_identity,
-    sovrin_agent_close_connection,
-    sovrin_agent_close_listener,
-    sovrin_agent_connect,
-    sovrin_agent_listen,
-    sovrin_agent_remove_identity,
-    sovrin_agent_send,
+use indy::api::agent::{
+    indy_agent_add_identity,
+    indy_agent_close_connection,
+    indy_agent_close_listener,
+    indy_agent_connect,
+    indy_agent_listen,
+    indy_agent_remove_identity,
+    indy_agent_send,
 };
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
@@ -30,7 +30,7 @@ impl AgentUtils {
             }
         })); //TODO make as parameter?
 
-        let err = sovrin_agent_connect(cmd_connect, pool_handle, wallet_handle,
+        let err = indy_agent_connect(cmd_connect, pool_handle, wallet_handle,
                                        CString::new(sender_did).unwrap().as_ptr(),
                                        CString::new(receiver_did).unwrap().as_ptr(),
                                        cb, msg_cb);
@@ -71,7 +71,7 @@ impl AgentUtils {
         let cb = Box::new(move |err, listener_handle| sender.send((err, listener_handle)).unwrap());
         let (cmd_id, cb) = CallbackUtils::closure_to_agent_listen_cb(cb);
 
-        let res = sovrin_agent_listen(cmd_id, CString::new(endpoint).unwrap().as_ptr(), cb, on_connect, on_msg);
+        let res = indy_agent_listen(cmd_id, CString::new(endpoint).unwrap().as_ptr(), cb, on_connect, on_msg);
 
         if res != ErrorCode::Success {
             return Err(res);
@@ -92,7 +92,7 @@ impl AgentUtils {
             Box::new(move |err_code| sender.send(err_code).unwrap())
         );
 
-        let res = sovrin_agent_add_identity(cmd_id, listener_handle, pool_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
+        let res = indy_agent_add_identity(cmd_id, listener_handle, pool_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -111,7 +111,7 @@ impl AgentUtils {
             Box::new(move |err_code| sender.send(err_code).unwrap())
         );
 
-        let res = sovrin_agent_remove_identity(cmd_id, listener_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
+        let res = indy_agent_remove_identity(cmd_id, listener_handle, wallet_handle, CString::new(did).unwrap().as_ptr(), cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -130,7 +130,7 @@ impl AgentUtils {
             Box::new(move |err_code| send_sender.send(err_code).unwrap())
         );
 
-        let res = sovrin_agent_send(send_cmd_id, conn_handle, CString::new(msg).unwrap().as_ptr(), send_cb);
+        let res = indy_agent_send(send_cmd_id, conn_handle, CString::new(msg).unwrap().as_ptr(), send_cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -149,7 +149,7 @@ impl AgentUtils {
             sender.send(res).unwrap();
         }));
 
-        let res = sovrin_agent_close_connection(cmd_id, conn_handle, cb);
+        let res = indy_agent_close_connection(cmd_id, conn_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -168,7 +168,7 @@ impl AgentUtils {
             sender.send(res).unwrap();
         }));
 
-        let res = sovrin_agent_close_listener(cmd_id, listener_handle, cb);
+        let res = indy_agent_close_listener(cmd_id, listener_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }

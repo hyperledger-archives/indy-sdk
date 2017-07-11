@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use errors::sovrin::SovrinError;
+use errors::indy::IndyError;
 use errors::wallet::WalletError;
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -17,11 +17,11 @@ macro_rules! check_wallet_and_pool_handles_consistency {
 
 pub fn check_wallet_and_pool_handles_consistency(ref ws: Rc<WalletService>, ref ps: Rc<PoolService>,
                                                  wallet_handle: i32, pool_handle: i32)
-                                                 -> Result<(), SovrinError> {
+                                                 -> Result<(), IndyError> {
     if ws.get_pool_name(wallet_handle)?.eq(&ps.get_pool_name(pool_handle)?) {
         return Ok(());
     } else {
-        return Err(SovrinError::WalletError(
+        return Err(IndyError::WalletError(
             WalletError::IncorrectPool(
                 format!("Pool handle {} invalid for wallet handle {}",
                         pool_handle, wallet_handle))));

@@ -1,10 +1,10 @@
 extern crate time;
 
-use sovrin::api::ErrorCode;
-use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_delete_pool_ledger_config};
+use indy::api::ErrorCode;
+use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::pool::{sovrin_close_pool_ledger, sovrin_open_pool_ledger, sovrin_refresh_pool_ledger};
-use sovrin::api::ledger::sovrin_submit_request;
+use indy::api::pool::{indy_close_pool_ledger, indy_open_pool_ledger, indy_refresh_pool_ledger};
+use indy::api::ledger::indy_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
@@ -36,7 +36,7 @@ impl PoolUtils {
         let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
-        let err = sovrin_create_pool_ledger_config(command_handle,
+        let err = indy_create_pool_ledger_config(command_handle,
                                                    pool_name.as_ptr(),
                                                    pool_config.as_ptr(),
                                                    cb);
@@ -68,7 +68,7 @@ impl PoolUtils {
         let pool_name = CString::new(pool_name).unwrap();
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = sovrin_open_pool_ledger(command_handle,
+        let err = indy_open_pool_ledger(command_handle,
                                           pool_name.as_ptr(),
                                           if config.is_some() { config_str.as_ptr() } else { null() },
                                           cb);
@@ -96,7 +96,7 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_refresh_pool_ledger_cb(
             Box::new(move |res| sender.send(res).unwrap()));
 
-        let res = sovrin_refresh_pool_ledger(command_handle, pool_handle, cb);
+        let res = indy_refresh_pool_ledger(command_handle, pool_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -113,7 +113,7 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_close_pool_ledger_cb(
             Box::new(move |res| sender.send(res).unwrap()));
 
-        let res = sovrin_close_pool_ledger(command_handle, pool_handle, cb);
+        let res = indy_close_pool_ledger(command_handle, pool_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -130,7 +130,7 @@ impl PoolUtils {
         let (cmd_id, cb) = CallbackUtils::closure_to_delete_pool_ledger_config_cb(Box::new(
             move |res| sender.send(res).unwrap()));
 
-        let res = sovrin_delete_pool_ledger_config(cmd_id, CString::new(pool_name).unwrap().as_ptr(), cb);
+        let res = indy_delete_pool_ledger_config(cmd_id, CString::new(pool_name).unwrap().as_ptr(), cb);
         if res != ErrorCode::Success {
             return Err(res)
         }
@@ -149,7 +149,7 @@ impl PoolUtils {
         let req = CString::new(request).unwrap();
         let (command_handle, callback) = CallbackUtils::closure_to_send_tx_cb(cb_send);
 
-        let err = sovrin_submit_request(command_handle,
+        let err = indy_submit_request(command_handle,
                                         pool_handle,
                                         req.as_ptr(),
                                         callback);
