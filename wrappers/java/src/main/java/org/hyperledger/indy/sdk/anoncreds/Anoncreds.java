@@ -26,6 +26,7 @@ public class Anoncreds extends IndyJava.API {
 
 	public static CompletableFuture<String> issuerCreateAndStoreClaimDef(
 			Wallet wallet,
+			String issuerDid,
 			String schemaJson, 
 			String signatureType, 
 			boolean createNonRevoc) throws IndyException {
@@ -49,6 +50,7 @@ public class Anoncreds extends IndyJava.API {
 		int result = LibIndy.api.indy_issuer_create_and_store_claim_def(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
+				issuerDid,
 				schemaJson,
 				signatureType,
 				createNonRevoc,
@@ -61,7 +63,8 @@ public class Anoncreds extends IndyJava.API {
 
 	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
-			int claimDefSeqNo, 
+			String issuerDid,
+			int schemaSeqNo, 
 			int maxClaimNum) throws IndyException {
 
 		final CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<> ();
@@ -83,7 +86,8 @@ public class Anoncreds extends IndyJava.API {
 		int result = LibIndy.api.indy_issuer_create_and_store_revoc_reg(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
-				claimDefSeqNo,
+				issuerDid,
+				schemaSeqNo,
 				maxClaimNum,
 				cb);
 
@@ -131,7 +135,6 @@ public class Anoncreds extends IndyJava.API {
 
 	public static CompletableFuture<String> issuerRevokeClaim(
 			Wallet wallet,
-			int claimDefSeqNo, 
 			int revocRegSeqNo, 
 			int userRevocIndex) throws IndyException {
 
@@ -154,7 +157,6 @@ public class Anoncreds extends IndyJava.API {
 		int result = LibIndy.api.indy_issuer_revoke_claim(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
-				claimDefSeqNo,
 				revocRegSeqNo,
 				userRevocIndex,
 				cb);
