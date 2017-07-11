@@ -14,7 +14,7 @@
 #import "SignusUtils.h"
 #import "LedgerUtils.h"
 #import "AnoncredsUtils.h"
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 #import "NSDictionary+JSON.h"
 
 @interface LedgerSchemaRequest : XCTestCase

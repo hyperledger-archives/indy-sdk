@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 
 @interface AppDelegate ()
 

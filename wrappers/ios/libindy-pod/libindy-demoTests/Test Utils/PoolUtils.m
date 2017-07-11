@@ -8,7 +8,7 @@
 
 #import "PoolUtils.h"
 #import "TestUtils.h"
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 #import <XCTest/XCTest.h>
 
 @interface PoolUtils ()

@@ -7,7 +7,7 @@
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
 #import "TestUtils.h"
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 #import "NSDictionary+JSON.h"
 
 @interface LedgerDemo : XCTestCase

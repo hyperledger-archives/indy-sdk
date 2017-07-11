@@ -4,7 +4,7 @@
 //
 
 #import "WalletUtils.h"
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 #import "TestUtils.h"
 
 @implementation WalletUtils

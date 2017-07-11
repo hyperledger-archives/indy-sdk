@@ -9,7 +9,7 @@
 
 #import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 
 @interface LedgerUtils : XCTestCase
 

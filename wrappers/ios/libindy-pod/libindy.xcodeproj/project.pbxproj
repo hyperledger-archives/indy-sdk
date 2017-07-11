@@ -8,26 +8,26 @@
 
 /* Begin PBXBuildFile section */
 		3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */; };
+		5D3D0CE71F1509E10099233C /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D3D0CE61F1509E10099233C /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106CE1F14FD04003679CD /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106B81F14FD04003679CD /* Info.plist */; };
-		5DB106CF1F14FD04003679CD /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106B91F14FD04003679CD /* libindy.h */; };
+		5DB106CF1F14FD04003679CD /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106B91F14FD04003679CD /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106D01F14FD04003679CD /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106BB1F14FD04003679CD /* NSError+IndyError.h */; };
 		5DB106D11F14FD04003679CD /* NSError+IndyError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106BC1F14FD04003679CD /* NSError+IndyError.m */; };
 		5DB106D21F14FD04003679CD /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106BD1F14FD04003679CD /* IndyCallbacks.h */; };
 		5DB106D31F14FD04003679CD /* IndyCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106BE1F14FD04003679CD /* IndyCallbacks.mm */; };
-		5DB106D41F14FD04003679CD /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C01F14FD04003679CD /* IndyAgent.h */; };
+		5DB106D41F14FD04003679CD /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C01F14FD04003679CD /* IndyAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106D51F14FD04003679CD /* IndyAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106C11F14FD04003679CD /* IndyAgent.mm */; };
-		5DB106D61F14FD04003679CD /* IndyAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C21F14FD04003679CD /* IndyAnoncreds.h */; };
+		5DB106D61F14FD04003679CD /* IndyAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C21F14FD04003679CD /* IndyAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106D71F14FD04003679CD /* IndyAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106C31F14FD04003679CD /* IndyAnoncreds.mm */; };
-		5DB106D81F14FD04003679CD /* IndyErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C41F14FD04003679CD /* IndyErrors.h */; };
-		5DB106D91F14FD04003679CD /* IndyLedger.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C51F14FD04003679CD /* IndyLedger.h */; };
+		5DB106D81F14FD04003679CD /* IndyErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C41F14FD04003679CD /* IndyErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DB106D91F14FD04003679CD /* IndyLedger.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C51F14FD04003679CD /* IndyLedger.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106DA1F14FD04003679CD /* IndyLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106C61F14FD04003679CD /* IndyLedger.mm */; };
-		5DB106DB1F14FD04003679CD /* IndyPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C71F14FD04003679CD /* IndyPool.h */; };
+		5DB106DB1F14FD04003679CD /* IndyPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C71F14FD04003679CD /* IndyPool.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106DC1F14FD04003679CD /* IndyPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106C81F14FD04003679CD /* IndyPool.mm */; };
-		5DB106DD1F14FD04003679CD /* IndySignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C91F14FD04003679CD /* IndySignus.h */; };
+		5DB106DD1F14FD04003679CD /* IndySignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB106C91F14FD04003679CD /* IndySignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB106DE1F14FD04003679CD /* IndySignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106CA1F14FD04003679CD /* IndySignus.mm */; };
 		5DB106E11F14FD04003679CD /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106CD1F14FD04003679CD /* IndyWallet.mm */; };
-		5DB107501F15015B003679CD /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB1074E1F15015B003679CD /* IndyTypes.h */; };
-		5DB107531F15033E003679CD /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB107521F15033E003679CD /* IndyWallet.h */; };
+		5DB107531F15033E003679CD /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB107521F15033E003679CD /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A3C6EE9996E6FC5177C2E178 /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 493359A9F08291E98B424915 /* libPods-libindy.a */; };
 /* End PBXBuildFile section */
 
@@ -40,6 +40,7 @@
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
 		4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.release.xcconfig"; sourceTree = "<group>"; };
 		493359A9F08291E98B424915 /* libPods-libindy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D3D0CE61F1509E10099233C /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
 		5DB106B81F14FD04003679CD /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5DB106B91F14FD04003679CD /* libindy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libindy.h; sourceTree = "<group>"; };
 		5DB106BB1F14FD04003679CD /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
@@ -58,7 +59,6 @@
 		5DB106C91F14FD04003679CD /* IndySignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySignus.h; sourceTree = "<group>"; };
 		5DB106CA1F14FD04003679CD /* IndySignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndySignus.mm; sourceTree = "<group>"; };
 		5DB106CD1F14FD04003679CD /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
-		5DB1074E1F15015B003679CD /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
 		5DB107521F15033E003679CD /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
 		A299E67C6C5B8431D11E3C78 /* Pods-libindy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.debug.xcconfig"; sourceTree = "<group>"; };
 		E45BEDC27725D320B01BB7DA /* Pods-libindy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.release.xcconfig"; sourceTree = "<group>"; };
@@ -121,7 +121,6 @@
 		5DB106BA1F14FD04003679CD /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				5DB1074E1F15015B003679CD /* IndyTypes.h */,
 				5DB106BB1F14FD04003679CD /* NSError+IndyError.h */,
 				5DB106BC1F14FD04003679CD /* NSError+IndyError.m */,
 				5DB106BD1F14FD04003679CD /* IndyCallbacks.h */,
@@ -133,8 +132,8 @@
 		5DB106BF1F14FD04003679CD /* Wrapper */ = {
 			isa = PBXGroup;
 			children = (
+				5D3D0CE61F1509E10099233C /* IndyTypes.h */,
 				5DB106C01F14FD04003679CD /* IndyAgent.h */,
-				5DB107521F15033E003679CD /* IndyWallet.h */,
 				5DB106C11F14FD04003679CD /* IndyAgent.mm */,
 				5DB106C21F14FD04003679CD /* IndyAnoncreds.h */,
 				5DB106C31F14FD04003679CD /* IndyAnoncreds.mm */,
@@ -145,6 +144,7 @@
 				5DB106C81F14FD04003679CD /* IndyPool.mm */,
 				5DB106C91F14FD04003679CD /* IndySignus.h */,
 				5DB106CA1F14FD04003679CD /* IndySignus.mm */,
+				5DB107521F15033E003679CD /* IndyWallet.h */,
 				5DB106CD1F14FD04003679CD /* IndyWallet.mm */,
 			);
 			path = Wrapper;
@@ -169,9 +169,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				5DB106DD1F14FD04003679CD /* IndySignus.h in Headers */,
+				5D3D0CE71F1509E10099233C /* IndyTypes.h in Headers */,
 				5DB106D81F14FD04003679CD /* IndyErrors.h in Headers */,
 				5DB106D61F14FD04003679CD /* IndyAnoncreds.h in Headers */,
-				5DB107501F15015B003679CD /* IndyTypes.h in Headers */,
 				5DB106D91F14FD04003679CD /* IndyLedger.h in Headers */,
 				5DB106D01F14FD04003679CD /* NSError+IndyError.h in Headers */,
 				5DB106D21F14FD04003679CD /* IndyCallbacks.h in Headers */,

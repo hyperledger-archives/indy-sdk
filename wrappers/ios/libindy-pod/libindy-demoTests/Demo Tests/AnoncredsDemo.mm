@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
-#import <libsovrin/libsovrin.h>
+#import <libindy/libindy.h>
 #import "TestUtils.h"
 #import "WalletUtils.h"
 #import "NSDictionary+JSON.h"
