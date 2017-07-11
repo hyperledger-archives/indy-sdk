@@ -45,9 +45,6 @@
                   Identifier = "AgentHignCases/testSequence">
                </Test>
                <Test
-                  Identifier = "LedgerHignCases/testClaimDefRequestsWorks">
-               </Test>
-               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test
