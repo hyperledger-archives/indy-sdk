@@ -10,4 +10,6 @@
 
 @interface SovrinSequenceUtils : NSObject
 
++ (SovrinSequenceUtils*) sharedInstance;
+
 @end

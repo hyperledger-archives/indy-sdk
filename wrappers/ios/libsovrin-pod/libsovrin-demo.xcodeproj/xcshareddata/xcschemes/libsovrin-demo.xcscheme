@@ -56,6 +56,21 @@
                <Test
                   Identifier = "LedgerHignCases/testSubmitNodeRequestWorksForNewSteward">
                </Test>
+               <Test
+                  Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testDeleteWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testOpenWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletMediumCases/testOpenWalletWorksForTwice">
+               </Test>
             </SkippedTests>
          </TestableReference>
       </Testables>

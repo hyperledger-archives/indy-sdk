@@ -12,7 +12,6 @@
 + (WalletUtils *)sharedInstance;
 
 - (NSError *)createAndOpenWalletWithPoolName:(NSString *)poolName
-                                  walletName:(NSString *)walletName
                                        xtype:(NSString *)xtype
                                       handle:(SovrinHandle *)handle;
 
@@ -29,8 +28,8 @@
 
 - (NSError *)closeWalletWithHandle:(SovrinHandle)walletHandle;
 
--(NSError*) walletSetSeqNo:(NSNumber *)seqNo
-                  forValue:(NSString *)value
-              walletHandle:(SovrinHandle) walletHandle;
+- (NSError*) walletSetSeqNo:(NSNumber *)seqNo
+                   forValue:(NSString *)value
+               walletHandle:(SovrinHandle) walletHandle;
 
 @end

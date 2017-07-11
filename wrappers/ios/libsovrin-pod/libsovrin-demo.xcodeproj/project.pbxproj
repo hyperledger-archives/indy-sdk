@@ -14,6 +14,7 @@
 		3E2A7F951EC36186006194EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F941EC36186006194EC /* Assets.xcassets */; };
 		3E2A7F981EC36187006194EC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E2A7F961EC36187006194EC /* LaunchScreen.storyboard */; };
 		5D6B306C1F0CDA0100B0C48D /* ClosureUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D6B306B1F0CDA0100B0C48D /* ClosureUtils.m */; };
+		5DFD44381F13C78200D47BC2 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFD44371F13C78200D47BC2 /* SequenceUtils.m */; };
 		7C7243E8873EB75A41166DF8 /* libPods-libsovrin-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */; };
 		8404D1421EF7D0E900709F1B /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8404D1411EF7D0E900709F1B /* NSString+Validation.m */; };
 		84275F2E1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */; };
@@ -104,6 +105,8 @@
 		531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D6B306A1F0CDA0100B0C48D /* ClosureUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClosureUtils.h; sourceTree = "<group>"; };
 		5D6B306B1F0CDA0100B0C48D /* ClosureUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClosureUtils.m; sourceTree = "<group>"; };
+		5DFD44361F13C78200D47BC2 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
+		5DFD44371F13C78200D47BC2 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
 		8404D1411EF7D0E900709F1B /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
 		8404D1431EF7D0F900709F1B /* NSString+Validation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
 		84275F2D1EFA5B5C00352D72 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
@@ -291,6 +294,8 @@
 			children = (
 				84CFCAE71EF3F7D300F91426 /* AnoncredsUtils.h */,
 				84CFCAE81EF3F7D300F91426 /* AnoncredsUtils.m */,
+				5DFD44361F13C78200D47BC2 /* SequenceUtils.h */,
+				5DFD44371F13C78200D47BC2 /* SequenceUtils.m */,
 				84CFCAE91EF3F7D300F91426 /* Environment.h */,
 				84CFCAEA1EF3F7D300F91426 /* Environment.m */,
 				84CFCAEB1EF3F7D300F91426 /* LedgerUtils.h */,
@@ -627,6 +632,7 @@
 				84CFCAF91EF3F7D300F91426 /* SignusUtils.mm in Sources */,
 				848FF4051EFBBBE3009D2FC9 /* PoolHighCases.m in Sources */,
 				84CFCAD91EF3F7C500F91426 /* LedgerNymRequest.mm in Sources */,
+				5DFD44381F13C78200D47BC2 /* SequenceUtils.m in Sources */,
 				84CFCAFA1EF3F7D300F91426 /* TestUtils.m in Sources */,
 				848FF4101EFC0978009D2FC9 /* AgentHighCases.m in Sources */,
 				84CFCB031EF3F83200F91426 /* AnoncredsMediumCases.m in Sources */,

@@ -25,4 +25,3 @@ FOUNDATION_EXPORT const unsigned char libsovrinVersionString[];
 #import <libsovrin/SovrinSignus.h>
 #import <libsovrin/SovrinAgent.h>
 
-

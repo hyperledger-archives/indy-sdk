@@ -17,9 +17,6 @@
 		3E99B99A1EB3C54100B18027 /* SovrinTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E99B9951EB3C54100B18027 /* SovrinTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */; };
-		3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */; };
-		3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */; };
 		3ECDB91B1EC3184700F13F33 /* SovrinAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ECDB9191EC3184700F13F33 /* SovrinAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ECDB91C1EC3184700F13F33 /* SovrinAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */; };
 		3ED5BE4A1EC4926300881380 /* SovrinErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ED5BE491EC491BE00881380 /* SovrinErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -27,7 +24,10 @@
 		3ED5BE5C1ECAE1A400881380 /* SovrinLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5A1ECAE1A300881380 /* SovrinLedger.mm */; };
 		3ED5BE601ECB362C00881380 /* SovrinSignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ED5BE5E1ECB362C00881380 /* SovrinSignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3ED5BE611ECB362C00881380 /* SovrinSignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3ED5BE5F1ECB362C00881380 /* SovrinSignus.mm */; };
-		5D5FBE4C1F0B9118008F2DF9 /* NSError+SovrinError.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ECDB9141EC309D900F13F33 /* NSError+SovrinError.m */; };
+		5DD4CDF01F13BAE700C66C65 /* NSError+SovrinError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DD4CDEA1F13BAE700C66C65 /* NSError+SovrinError.h */; };
+		5DD4CDF11F13BAE700C66C65 /* NSError+SovrinError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DD4CDEB1F13BAE700C66C65 /* NSError+SovrinError.m */; };
+		5DD4CDF21F13BAE700C66C65 /* SovrinCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DD4CDEC1F13BAE700C66C65 /* SovrinCallbacks.h */; };
+		5DD4CDF31F13BAE700C66C65 /* SovrinCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DD4CDED1F13BAE700C66C65 /* SovrinCallbacks.mm */; };
 		846CE3521F012B4500B57188 /* SovrinAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 84D476E21EDD8B5900D8583C /* SovrinAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		84D476E11EDD8AA900D8583C /* SovrinAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84D476E01EDD8AA900D8583C /* SovrinAgent.mm */; };
 /* End PBXBuildFile section */
@@ -46,10 +46,6 @@
 		3E99B9951EB3C54100B18027 /* SovrinTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinTypes.h; sourceTree = "<group>"; };
 		3EBA1FBA1EC4650F00EFEF97 /* SovrinWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinWallet.h; sourceTree = "<group>"; };
 		3EBA1FBB1EC4650F00EFEF97 /* SovrinWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinWallet.mm; sourceTree = "<group>"; };
-		3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinCallbacks.h; sourceTree = "<group>"; };
-		3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinCallbacks.mm; sourceTree = "<group>"; };
-		3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+SovrinError.h"; sourceTree = "<group>"; };
-		3ECDB9141EC309D900F13F33 /* NSError+SovrinError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+SovrinError.m"; sourceTree = "<group>"; };
 		3ECDB9191EC3184700F13F33 /* SovrinAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinAnoncreds.h; sourceTree = "<group>"; };
 		3ECDB91A1EC3184700F13F33 /* SovrinAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = SovrinAnoncreds.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		3ED5BE491EC491BE00881380 /* SovrinErrors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SovrinErrors.h; sourceTree = "<group>"; };
@@ -58,6 +54,10 @@
 		3ED5BE5E1ECB362C00881380 /* SovrinSignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinSignus.h; sourceTree = "<group>"; };
 		3ED5BE5F1ECB362C00881380 /* SovrinSignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinSignus.mm; sourceTree = "<group>"; };
 		4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.release.xcconfig"; sourceTree = "<group>"; };
+		5DD4CDEA1F13BAE700C66C65 /* NSError+SovrinError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+SovrinError.h"; sourceTree = "<group>"; };
+		5DD4CDEB1F13BAE700C66C65 /* NSError+SovrinError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+SovrinError.m"; sourceTree = "<group>"; };
+		5DD4CDEC1F13BAE700C66C65 /* SovrinCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinCallbacks.h; sourceTree = "<group>"; };
+		5DD4CDED1F13BAE700C66C65 /* SovrinCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SovrinCallbacks.mm; sourceTree = "<group>"; };
 		84D476E01EDD8AA900D8583C /* SovrinAgent.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = SovrinAgent.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		84D476E21EDD8B5900D8583C /* SovrinAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SovrinAgent.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -109,7 +109,7 @@
 		3E08C01D1EB3336A000A73BA /* libsovrin */ = {
 			isa = PBXGroup;
 			children = (
-				3ECDB9181EC30AB100F13F33 /* utils */,
+				5DD4CDE91F13BAE700C66C65 /* Utils */,
 				3ECDB9171EC30A5600F13F33 /* src */,
 				3E08C01E1EB3336A000A73BA /* libsovrin.h */,
 				3E08C01F1EB3336A000A73BA /* Info.plist */,
@@ -138,15 +138,15 @@
 			name = src;
 			sourceTree = "<group>";
 		};
-		3ECDB9181EC30AB100F13F33 /* utils */ = {
+		5DD4CDE91F13BAE700C66C65 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				3ECDB90F1EC2F0CF00F13F33 /* SovrinCallbacks.h */,
-				3ECDB9101EC2F0CF00F13F33 /* SovrinCallbacks.mm */,
-				3ECDB9131EC309D900F13F33 /* NSError+SovrinError.h */,
-				3ECDB9141EC309D900F13F33 /* NSError+SovrinError.m */,
+				5DD4CDEA1F13BAE700C66C65 /* NSError+SovrinError.h */,
+				5DD4CDEB1F13BAE700C66C65 /* NSError+SovrinError.m */,
+				5DD4CDEC1F13BAE700C66C65 /* SovrinCallbacks.h */,
+				5DD4CDED1F13BAE700C66C65 /* SovrinCallbacks.mm */,
 			);
-			name = utils;
+			path = Utils;
 			sourceTree = "<group>";
 		};
 		7AA078817B8C2B22C808AE50 /* Pods */ = {
@@ -165,16 +165,16 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3ECDB9111EC2F0CF00F13F33 /* SovrinCallbacks.h in Headers */,
 				3E99B9981EB3C54100B18027 /* SovrinPool.h in Headers */,
 				3ED5BE4A1EC4926300881380 /* SovrinErrors.h in Headers */,
 				3E08C0201EB3336A000A73BA /* libsovrin.h in Headers */,
 				3ECDB91B1EC3184700F13F33 /* SovrinAnoncreds.h in Headers */,
 				846CE3521F012B4500B57188 /* SovrinAgent.h in Headers */,
+				5DD4CDF21F13BAE700C66C65 /* SovrinCallbacks.h in Headers */,
 				3ED5BE5B1ECAE1A300881380 /* SovrinLedger.h in Headers */,
-				3ECDB9151EC309D900F13F33 /* NSError+SovrinError.h in Headers */,
 				3EBA1FBC1EC4650F00EFEF97 /* SovrinWallet.h in Headers */,
 				3ED5BE601ECB362C00881380 /* SovrinSignus.h in Headers */,
+				5DD4CDF01F13BAE700C66C65 /* NSError+SovrinError.h in Headers */,
 				3E99B99A1EB3C54100B18027 /* SovrinTypes.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -283,12 +283,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5DD4CDF11F13BAE700C66C65 /* NSError+SovrinError.m in Sources */,
 				84D476E11EDD8AA900D8583C /* SovrinAgent.mm in Sources */,
-				5D5FBE4C1F0B9118008F2DF9 /* NSError+SovrinError.m in Sources */,
 				3E99B9991EB3C54100B18027 /* SovrinPool.mm in Sources */,
+				5DD4CDF31F13BAE700C66C65 /* SovrinCallbacks.mm in Sources */,
 				3ECDB91C1EC3184700F13F33 /* SovrinAnoncreds.mm in Sources */,
 				3ED5BE5C1ECAE1A400881380 /* SovrinLedger.mm in Sources */,
-				3ECDB9121EC2F0CF00F13F33 /* SovrinCallbacks.mm in Sources */,
 				3EBA1FBD1EC4650F00EFEF97 /* SovrinWallet.mm in Sources */,
 				3ED5BE611ECB362C00881380 /* SovrinSignus.mm in Sources */,
 			);

@@ -8,22 +8,22 @@
 
 #import "SovrinSequenceUtils.h"
 
-@interface SovrinSequenceUtils()
+@interface SequenceUtils()
 
 @property (atomic, strong) NSLock *lock;
 @property (atomic, assign) NSUInteger idsCounter;
 
 @end
 
-@implementation SovrinSequenceUtils
+@implementation SequenceUtils
 
-+ (SovrinSequenceUtils *)sharedInstance
++ (SequenceUtils *)sharedInstance
 {
-    static SovrinSequenceUtils *instance = nil;
+    static SequenceUtils *instance = nil;
     static dispatch_once_t dispatch_once_block;
     
     dispatch_once(&dispatch_once_block, ^{
-        instance = [SovrinSequenceUtils new];
+        instance = [SequenceUtils new];
         instance.idsCounter = 0;
         instance.lock = [NSLock new];
     });

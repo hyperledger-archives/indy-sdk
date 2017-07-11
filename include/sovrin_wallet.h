@@ -26,7 +26,7 @@ extern "C" {
     /// Error code
     
 
-    extern sovrin_error_t sovrin_register_wallet_type(sovrin_handle_t  command_handle
+    extern sovrin_error_t sovrin_register_wallet_type(sovrin_handle_t  command_handle,
                                                       const char* xtype,
                                                       sovrin_error_t (*createFn)(const char* name,
                                                                                  const char* config,

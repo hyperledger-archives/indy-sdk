@@ -8,8 +8,10 @@
 
 #import <Foundation/Foundation.h>
 
-@interface SovrinSequenceUtils : NSObject
+@interface SequenceUtils : NSObject
 
-+ (SovrinSequenceUtils*) sharedInstance;
++ (SequenceUtils*) sharedInstance;
+
+- (NSUInteger)getNextId;
 
 @end

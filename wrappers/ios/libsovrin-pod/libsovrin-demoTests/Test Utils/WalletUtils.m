@@ -7,6 +7,11 @@
 #import <libsovrin/libsovrin.h>
 #import "TestUtils.h"
 
+@interface  WalletUtils()
+
+@property (nonatomic, strong) NSMutableArray *registeredWallets;
+@end
+
 @implementation WalletUtils
 
 + (WalletUtils *)sharedInstance
@@ -16,13 +21,27 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [WalletUtils new];
+        instance.registeredWallets = [NSMutableArray new];
     });
     
     return instance;
 }
 
+// TODO: Implement when architecture is discussed
+//- (NSError *)registerWalletType: (NSString *)xtype
+//{
+//    NSMutableArray *wallets = self.registeredWallets;
+//    
+//    NSError *ret;
+//    if ([wallets containsObject:xtype])
+//    {
+//        return [NSError new];
+//    }
+//    
+//    
+//}
+
 -(NSError*) createAndOpenWalletWithPoolName:(NSString*) poolName
-                                 walletName:(NSString*) walletName
                                       xtype:(NSString*) xtype
                                      handle:(SovrinHandle*) handle
 {
@@ -31,9 +50,12 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
+    NSString *walletName = [NSString stringWithFormat:@"default-wallet-name-%lu", (unsigned long)[[SequenceUtils sharedInstance] getNextId]];
+    NSString *xTypeStr = (xtype) ? xtype : @"default";
+    
     ret = [[SovrinWallet sharedInstance] createWalletWithPoolName:  poolName
                                                              name:  walletName
-                                                            xType:  xtype
+                                                            xType:  xTypeStr
                                                            config:  nil
                                                       credentials:  nil
                                                        completion: ^(NSError* error)
@@ -189,9 +211,9 @@
     return err;
 }
 
--(NSError*) walletSetSeqNo:(NSNumber *)seqNo
-                  forValue:(NSString *)value
-              walletHandle:(SovrinHandle) walletHandle
+- (NSError*) walletSetSeqNo:(NSNumber *)seqNo
+                   forValue:(NSString *)value
+               walletHandle:(SovrinHandle) walletHandle
 {
     __block NSError *err = nil;
     NSError *ret = nil;

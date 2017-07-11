@@ -40,14 +40,14 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_create_wallet_works_for_duplicate_name";
-    NSString *walletName = @"wallet1";
+    NSString *walletName = @"sovrin_create_wallet_works_for_duplicate_name";
     NSError *ret;
     
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
                                                            xtype:nil
                                                           config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() 1 failed");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
     
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                       walletName:walletName
@@ -57,11 +57,26 @@
     [TestUtils cleanupStorage];
 }
 
+- (void)testCreateWalletWorksForEmptyName
+{
+    [TestUtils cleanupStorage];
+    NSString *poolName = @"sovrin_create_wallet_works_for_empty_name";
+    NSString *walletName = @"";
+    
+    NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                               walletName:walletName
+                                                                    xtype:nil
+                                                                   config:nil];
+     XCTAssertEqual(ret.code, CommonInvalidParam3, @"WalletUtils:createWalletWithPoolName() returned wrong code");
+    
+    [TestUtils cleanupStorage];
+}
+
 // MARK: - Delete wallet
 - (void)testDeleteWalletWorksForInvalidName
 {
     [TestUtils cleanupStorage];
-    NSString *walletName = @"wallet1";
+    NSString *walletName = @"sovrin_delete_wallet_works_for_invalid_wallet_name";
     NSError *ret;
     
     ret = [[WalletUtils sharedInstance] deleteWalletWithName:walletName];
@@ -70,11 +85,11 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testDeleteWalletWorksForDeletedWallet
+- (void)testDeleteWalletWorksForTwice
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_delete_wallet_works_for_deleted_wallet";
-    NSString *walletName = @"wallet1";
+    NSString *walletName = @"sovrin_delete_wallet_works_for_deleted_wallet";
     NSError *ret;
     
     // 1. create wallet
@@ -99,7 +114,7 @@
 - (void)testOpenWalletWorksForNotCreatedWallet
 {
     [TestUtils cleanupStorage];
-    NSString *walletName = @"wallet1";
+    NSString *walletName = @"sovrin_open_wallet_works_for_not_created_wallet";
     NSError *ret;
     
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
@@ -111,43 +126,43 @@
 }
 
 // TODO: This test is unfinished in Rust and ignored
-//- (void)testOpenWalletWorksForTwice
-//{
-//    [TestUtils cleanupStorage];
-//    NSString *poolName = @"sovrin_create_wallet_works";
-//    NSString *walletName = @"wallet1";
-//    NSError *ret;
-//    
-//    // 1. Create wallet
-//    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
-//                                                      walletName:walletName
-//                                                           xtype:nil
-//                                                          config:nil];
-//    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
-//    
-//    // 2. Open wallet
-//    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
-//                                                    config:nil
-//                                                 outHandle:nil];
-//    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName() failed");
-//    
-//    
-//    // 3. Open wallet again
-//    // TODO: Returns 0, not 111
-//    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
-//                                                    config:nil
-//                                                 outHandle:nil];
-//    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:openWalletWithName() failed");
-//    
-//    [TestUtils cleanupStorage];
-//}
+- (void)testOpenWalletWorksForTwice
+{
+    [TestUtils cleanupStorage];
+    NSString *poolName = @"sovrin_create_wallet_works";
+    NSString *walletName = @"wallet1";
+    NSError *ret;
+    
+    // 1. Create wallet
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:walletName
+                                                           xtype:nil
+                                                          config:nil];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+    
+    // 2. Open wallet
+    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                    config:nil
+                                                 outHandle:nil];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName() failed");
+    
+    
+    // 3. Open wallet again
+    // TODO: Returns 0, not 111
+    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+                                                    config:nil
+                                                 outHandle:nil];
+    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:openWalletWithName() failed");
+    
+    [TestUtils cleanupStorage];
+}
 
 - (void)testOpenWalletWorksForTwoWallets
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_create_wallet_works";
-    NSString *walletName1 = @"wallet1";
-    NSString *walletName2 = @"wallet2";
+    NSString *walletName1 = @"sovrin_open_wallet_works_for_two_wallets1";
+    NSString *walletName2 = @"sovrin_open_wallet_works_for_two_wallets2";
     NSError *ret;
     
     // 1. Create wallet 1
@@ -182,8 +197,8 @@
 - (void)testOpenWalletWorksForInvalidConfig
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works";
-    NSString *walletName = @"wallet1";
+    NSString *poolName = @"sovrin_open_wallet_works_for_invalid_config";
+    NSString *walletName = @"sovrin_open_wallet_works_for_invalid_config";
     NSString *config = @"{\"field\":\"value\"}";
     NSError *ret;
     
@@ -213,16 +228,13 @@
     [TestUtils cleanupStorage];
     
     SovrinHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"poolName"
-                                                                      walletName:@"walletName"
-                                                                           xtype:@"default"
+    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"testCloseWalletWorksForInvalidHandle"
+                                                                           xtype:nil
                                                                           handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
     
     [TestUtils cleanupStorage];
 
-    //SovrinHandle walletHandle = 1;
-    
     ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle + 1];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"WalletUtils:closeWalletWithHandle() returned wrong code for walletHandle: %d", walletHandle);
     
@@ -232,16 +244,13 @@
 - (void)testCloseWalletWorksForTwice
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_close_wallet_works_for_closed_wallet";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
+    NSString *poolName = @"sovrin_close_wallet_works_for_twice";
     NSError *ret;
     
     // 1. create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName() failed");
     
@@ -262,15 +271,12 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"sovrin_wallet_set_seqno_works_for_not_exists_key";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
     NSError *ret;
     
     // 1. create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName() failed");
     
@@ -288,15 +294,13 @@
 - (void)testWalletSetSeqNoWorksForInvalidWallet
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_wallet_set_seqno_works_for_not_exists_key";
-    NSString *walletName = @"wallet1";
+    NSString *poolName = @"sovrin_wallet_set_seqno_works_for_invalid_wallet";
     NSError *ret;
     
     // 1. create and open wallet
     SovrinHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName() failed");
     

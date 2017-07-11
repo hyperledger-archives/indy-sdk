@@ -13,6 +13,7 @@
 #import "SignusUtils.h"
 #import "WalletUtils.h"
 #import "AgentUtils.h"
+#import "SequenceUtils.h"
 
 #import "NSDictionary+JSON.h"
 #import "NSString+Validation.h"
