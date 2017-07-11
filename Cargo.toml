@@ -19,10 +19,6 @@ name = "indy"
 path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
-[[bin]]
-name = "indy"
-path = "src/main.rs"
-
 [features]
 default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_milagro", "hash_openssl", "local_nodes_pool"]
 bn_openssl = ["openssl", "int_traits"]
