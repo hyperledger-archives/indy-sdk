@@ -1,5 +1,5 @@
-#ifndef __sovrin__wallet__included__
-#define __sovrin__wallet__included__
+#ifndef __indy__wallet__included__
+#define __indy__wallet__included__
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,40 +26,40 @@ extern "C" {
     /// Error code
     
 
-    extern sovrin_error_t sovrin_register_wallet_type(sovrin_handle_t  command_handle
+    extern indy_error_t indy_register_wallet_type(indy_handle_t  command_handle
                                                       const char* xtype,
-                                                      sovrin_error_t (*createFn)(const char* name,
+                                                      indy_error_t (*createFn)(const char* name,
                                                                                  const char* config,
                                                                                  const char* credentials),
                                                       
-                                                      sovrin_error_t (*openFn)(const char* name,
+                                                      indy_error_t (*openFn)(const char* name,
                                                                                const char* config,
                                                                                const char* runtime_config,
                                                                                const char* credentials,
-                                                                               sovrin_handle_t* handle),
+                                                                               indy_handle_t* handle),
                                                       
-                                                      sovrin_error_t (*setFn)(sovrin_handle_t handle,
+                                                      indy_error_t (*setFn)(indy_handle_t handle,
                                                                               const char* key,
                                                                               const char* value),
                                                       
-                                                      sovrin_error_t (*getFn)(sovrin_handle_t handle,
+                                                      indy_error_t (*getFn)(indy_handle_t handle,
                                                                               const char* key,
                                                                               const char *const *value_ptr),
 
-                                                      sovrin_error_t (*getNotExiredFn)(sovrin_handle_t handle,
+                                                      indy_error_t (*getNotExiredFn)(indy_handle_t handle,
                                                                               const char* key,
                                                                               const char *const *value_ptr),
 
-                                                      sovrin_error_t (*listFn)(sovrin_handle_t handle,
+                                                      indy_error_t (*listFn)(indy_handle_t handle,
                                                                               const char* key,
                                                                               const char *const *values_json_ptr),
 
-                                                      sovrin_error_t (*closeFn)(sovrin_handle_t handle),
-                                                      sovrin_error_t (*deleteFn)(const char* name,
+                                                      indy_error_t (*closeFn)(indy_handle_t handle),
+                                                      indy_error_t (*deleteFn)(const char* name,
                                                                                  const char* config,
                                                                                  const char* credentials),
 
-                                                      sovrin_error_t (*freeFn)(sovrin_handle_t handle, const char* str)
+                                                      indy_error_t (*freeFn)(indy_handle_t handle, const char* str)
                                                       );
 
     /// Creates a new secure wallet with the given unique name.
@@ -68,7 +68,7 @@ extern "C" {
     /// pool_name: Name of the pool that corresponds to this wallet.
     /// name: Name of the wallet.
     /// xtype(optional): Type of the wallet. Defaults to 'default'.
-    ///                  Custom types can be registered with sovrin_register_wallet_type call.
+    ///                  Custom types can be registered with indy_register_wallet_type call.
     /// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
     /// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
@@ -81,17 +81,17 @@ extern "C" {
     /// Common*
     /// Wallet*
 
-    extern sovrin_error_t sovrin_create_wallet(sovrin_handle_t  command_handle,
+    extern indy_error_t indy_create_wallet(indy_handle_t  command_handle,
                                                const char*      pool_name,
                                                const char*      name,
                                                const char*      xtype,
                                                const char*      config,
                                                const char*      credentials,
-                                               void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                               void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                               );
     /// Opens the wallet with specific name.
     ///
-    /// Wallet with corresponded name must be previously created with sovrin_create_wallet method.
+    /// Wallet with corresponded name must be previously created with indy_create_wallet method.
     /// It is impossible to open wallet with the same name more than once.
     ///
     /// #Params
@@ -111,17 +111,17 @@ extern "C" {
     /// Common*
     /// Wallet*
 
-    extern sovrin_error_t sovrin_open_wallet(sovrin_handle_t  command_handle,
+    extern indy_error_t indy_open_wallet(indy_handle_t  command_handle,
                                              const char*      name,
                                              const char*      runtime_config,
                                              const char*      credentials,
-                                             void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err, sovrin_handle_t handle)
+                                             void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
                                             );
 
     /// Closes opened wallet and frees allocated resources.
     ///
     /// #Params
-    /// handle: wallet handle returned by sovrin_open_wallet.
+    /// handle: wallet handle returned by indy_open_wallet.
     ///
     /// #Returns
     /// Error code
@@ -130,9 +130,9 @@ extern "C" {
     /// Common*
     /// Wallet*
 
-    extern sovrin_error_t sovrin_close_wallet(sovrin_handle_t  command_handle,
-                                              sovrin_handle_t  handle,
-                                              void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+    extern indy_error_t indy_close_wallet(indy_handle_t  command_handle,
+                                              indy_handle_t  handle,
+                                              void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                              );
 
     /// Deletes created wallet.
@@ -149,10 +149,10 @@ extern "C" {
     /// Common*
     /// Wallet*
 
-    extern sovrin_error_t sovrin_delete_wallet(sovrin_handle_t  command_handle,
+    extern indy_error_t indy_delete_wallet(indy_handle_t  command_handle,
                                                const char*      name,
                                                const char*      credentials,
-                                               void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                               void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                               );
     
     /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
@@ -172,11 +172,11 @@ extern "C" {
     /// Common*
     /// Wallet*
 
-    extern sovrin_error_t sovrin_wallet_set_seq_no_for_value(sovrin_handle_t  command_handle,
-                                                             sovrin_handle_t  wallet_handle,
+    extern indy_error_t indy_wallet_set_seq_no_for_value(indy_handle_t  command_handle,
+                                                             indy_handle_t  wallet_handle,
                                                              const char*      wallet_key,
-                                                             sovrin_i32_t     seq_no,
-                                                             void            (*fn)(sovrin_handle_t xcommand_handle, sovrin_error_t err)
+                                                             indy_i32_t     seq_no,
+                                                             void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                                              );
 
 #ifdef __cplusplus

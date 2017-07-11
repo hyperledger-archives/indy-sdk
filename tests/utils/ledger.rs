@@ -1,20 +1,19 @@
 extern crate time;
 
-use sovrin::api::ErrorCode;
-use sovrin::api::ledger::{
-    sovrin_sign_and_submit_request,
-    sovrin_submit_request,
-    sovrin_build_get_ddo_request,
-    sovrin_build_attrib_request,
-    sovrin_build_get_attrib_request,
-    sovrin_build_get_nym_request,
-    sovrin_build_schema_request,
-    sovrin_build_get_schema_request,
-    sovrin_build_claim_def_txn,
-    sovrin_build_get_claim_def_txn,
-    sovrin_build_node_request,
-    sovrin_build_nym_request,
-    sovrin_build_get_txn_request
+use indy::api::ErrorCode;
+use indy::api::ledger::{
+    indy_sign_and_submit_request,
+    indy_submit_request,
+    indy_build_get_ddo_request,
+    indy_build_attrib_request,
+    indy_build_get_attrib_request,
+    indy_build_get_nym_request,
+    indy_build_schema_request,
+    indy_build_get_schema_request,
+    indy_build_claim_def_txn,
+    indy_build_get_claim_def_txn,
+    indy_build_node_request,
+    indy_build_nym_request
 };
 
 use utils::callback::CallbackUtils;
@@ -40,7 +39,7 @@ impl LedgerUtils {
         let request_json = CString::new(request_json).unwrap();
 
         let err =
-            sovrin_sign_and_submit_request(command_handle,
+            indy_sign_and_submit_request(command_handle,
                                            pool_handle,
                                            wallet_handle,
                                            submitter_did.as_ptr(),
@@ -72,7 +71,7 @@ impl LedgerUtils {
         let request_json = CString::new(request_json).unwrap();
 
         let err =
-            sovrin_submit_request(command_handle,
+            indy_submit_request(command_handle,
                                   pool_handle,
                                   request_json.as_ptr(),
                                   cb);
@@ -103,7 +102,7 @@ impl LedgerUtils {
         let target_did = CString::new(target_did).unwrap();
 
         let err =
-            sovrin_build_get_ddo_request(command_handle,
+            indy_build_get_ddo_request(command_handle,
                                          submitter_did.as_ptr(),
                                          target_did.as_ptr(),
                                          cb);
@@ -138,7 +137,7 @@ impl LedgerUtils {
         let data_str = data.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
         let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
         let err =
-            sovrin_build_nym_request(command_handle,
+            indy_build_nym_request(command_handle,
                                      submitter_did.as_ptr(),
                                      target_did.as_ptr(),
                                      if verkey.is_some() { verkey_str.as_ptr() } else { null() },
@@ -176,7 +175,7 @@ impl LedgerUtils {
         let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
-            sovrin_build_attrib_request(command_handle,
+            indy_build_attrib_request(command_handle,
                                         submitter_did.as_ptr(),
                                         target_did.as_ptr(),
                                         if hash.is_some() { hash_str.as_ptr() } else { null() },
@@ -211,7 +210,7 @@ impl LedgerUtils {
         let data = CString::new(data).unwrap();
 
         let err =
-            sovrin_build_get_attrib_request(command_handle,
+            indy_build_get_attrib_request(command_handle,
                                             submitter_did.as_ptr(),
                                             target_did.as_ptr(),
                                             data.as_ptr(),
@@ -243,7 +242,7 @@ impl LedgerUtils {
         let target_did = CString::new(target_did).unwrap();
 
         let err =
-            sovrin_build_get_nym_request(command_handle,
+            indy_build_get_nym_request(command_handle,
                                          submitter_did.as_ptr(),
                                          target_did.as_ptr(),
                                          cb);
@@ -274,7 +273,7 @@ impl LedgerUtils {
         let data = CString::new(data).unwrap();
 
         let err =
-            sovrin_build_schema_request(command_handle,
+            indy_build_schema_request(command_handle,
                                         submitter_did.as_ptr(),
                                         data.as_ptr(),
                                         cb);
@@ -306,7 +305,7 @@ impl LedgerUtils {
         let data = CString::new(data).unwrap();
 
         let err =
-            sovrin_build_get_schema_request(command_handle,
+            indy_build_get_schema_request(command_handle,
                                             submitter_did.as_ptr(),
                                             dest.as_ptr(),
                                             data.as_ptr(),
@@ -339,7 +338,7 @@ impl LedgerUtils {
         let data = CString::new(data).unwrap();
 
         let err =
-            sovrin_build_claim_def_txn(command_handle,
+            indy_build_claim_def_txn(command_handle,
                                        submitter_did.as_ptr(),
                                        xref,
                                        signature_type.as_ptr(),
@@ -373,7 +372,7 @@ impl LedgerUtils {
         let origin = CString::new(origin).unwrap();
 
         let err =
-            sovrin_build_get_claim_def_txn(command_handle,
+            indy_build_get_claim_def_txn(command_handle,
                                            submitter_did.as_ptr(),
                                            xref,
                                            signature_type.as_ptr(),
@@ -407,7 +406,7 @@ impl LedgerUtils {
         let data = CString::new(data).unwrap();
 
         let err =
-            sovrin_build_node_request(command_handle,
+            indy_build_node_request(command_handle,
                                       submitter_did.as_ptr(),
                                       target_did.as_ptr(),
                                       data.as_ptr(),

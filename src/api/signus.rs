@@ -38,7 +38,7 @@ use self::libc::c_char;
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
+pub  extern fn indy_create_and_store_my_did(command_handle: i32,
                                               wallet_handle: i32,
                                               did_json: *const c_char,
                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -86,7 +86,7 @@ pub  extern fn sovrin_create_and_store_my_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_replace_keys(command_handle: i32,
+pub  extern fn indy_replace_keys(command_handle: i32,
                                    wallet_handle: i32,
                                    did: *const c_char,
                                    identity_json: *const c_char,
@@ -136,7 +136,7 @@ pub  extern fn sovrin_replace_keys(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_store_their_did(command_handle: i32,
+pub  extern fn indy_store_their_did(command_handle: i32,
                                       wallet_handle: i32,
                                       identity_json: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
@@ -174,7 +174,7 @@ pub  extern fn sovrin_store_their_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_sign(command_handle: i32,
+pub  extern fn indy_sign(command_handle: i32,
                            wallet_handle: i32,
                            did: *const c_char,
                            msg: *const c_char,
@@ -224,7 +224,7 @@ pub  extern fn sovrin_sign(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_verify_signature(command_handle: i32,
+pub  extern fn indy_verify_signature(command_handle: i32,
                                        wallet_handle: i32,
                                        pool_handle: i32,
                                        did: *const c_char,
@@ -274,7 +274,7 @@ pub  extern fn sovrin_verify_signature(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_encrypt(command_handle: i32,
+pub  extern fn indy_encrypt(command_handle: i32,
                               wallet_handle: i32,
                               pool_handle: i32,
                               my_did: *const c_char,
@@ -327,7 +327,7 @@ pub  extern fn sovrin_encrypt(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn sovrin_decrypt(command_handle: i32,
+pub  extern fn indy_decrypt(command_handle: i32,
                               wallet_handle: i32,
                               my_did: *const c_char,
                               did: *const c_char,

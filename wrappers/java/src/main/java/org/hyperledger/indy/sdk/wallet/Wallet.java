@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.wallet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CloseWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.DeleteWalletResult;
@@ -17,7 +17,7 @@ import com.sun.jna.Callback;
 /**
  * wallet.rs API
  */
-public class Wallet extends SovrinJava.API {
+public class Wallet extends IndyJava.API {
 
 	private final int walletHandle;
 
@@ -37,14 +37,14 @@ public class Wallet extends SovrinJava.API {
 
 	/* IMPLEMENT LATER
 	 * public Future<...> registerWalletType(
-				...) throws SovrinException;*/
+				...) throws IndyException;*/
 
 	public static Future<CreateWalletResult> createWallet(
 			String poolName,
 			String name,
 			String xtype,
 			String config,
-			String credentials) throws SovrinException {
+			String credentials) throws IndyException {
 
 		final CompletableFuture<CreateWalletResult> future = new CompletableFuture<> ();
 
@@ -60,7 +60,7 @@ public class Wallet extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_create_wallet(
+		int result = LibIndy.api.indy_create_wallet(
 				FIXED_COMMAND_HANDLE, 
 				poolName, 
 				name,
@@ -77,7 +77,7 @@ public class Wallet extends SovrinJava.API {
 	public static Future<OpenWalletResult> openWallet(
 			String name,
 			String runtimeConfig,
-			String credentials) throws SovrinException {
+			String credentials) throws IndyException {
 
 		final CompletableFuture<OpenWalletResult> future = new CompletableFuture<> ();
 
@@ -95,7 +95,7 @@ public class Wallet extends SovrinJava.API {
 			}
 		};
 		
-		int result = LibSovrin.api.sovrin_open_wallet(
+		int result = LibIndy.api.indy_open_wallet(
 				FIXED_COMMAND_HANDLE, 
 				name,
 				runtimeConfig,
@@ -108,7 +108,7 @@ public class Wallet extends SovrinJava.API {
 	}
 
 	private static Future<CloseWalletResult> closeWallet(
-			int handle) throws SovrinException {
+			int handle) throws IndyException {
 
 		final CompletableFuture<CloseWalletResult> future = new CompletableFuture<> ();
 
@@ -124,7 +124,7 @@ public class Wallet extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_close_wallet(
+		int result = LibIndy.api.indy_close_wallet(
 				FIXED_COMMAND_HANDLE, 
 				handle, 
 				callback);
@@ -136,7 +136,7 @@ public class Wallet extends SovrinJava.API {
 
 	public static Future<DeleteWalletResult> deleteWallet(
 			String name,
-			String credentials) throws SovrinException {
+			String credentials) throws IndyException {
 
 		final CompletableFuture<DeleteWalletResult> future = new CompletableFuture<> ();
 
@@ -152,7 +152,7 @@ public class Wallet extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_delete_wallet(
+		int result = LibIndy.api.indy_delete_wallet(
 				FIXED_COMMAND_HANDLE, 
 				name,
 				credentials,
@@ -166,7 +166,7 @@ public class Wallet extends SovrinJava.API {
 	private static Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
 			int walletHandle, 
 			String walletKey,
-			String configName) throws SovrinException {
+			String configName) throws IndyException {
 
 		final CompletableFuture<WalletSetSeqNoForValueResult> future = new CompletableFuture<> ();
 
@@ -182,7 +182,7 @@ public class Wallet extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_wallet_set_seq_no_for_value(
+		int result = LibIndy.api.indy_wallet_set_seq_no_for_value(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle,
 				walletKey, 
@@ -198,14 +198,14 @@ public class Wallet extends SovrinJava.API {
 	 */
 
 	public Future<CloseWalletResult> closeWallet(
-			) throws SovrinException {
+			) throws IndyException {
 		
 		return closeWallet(this.walletHandle);
 	}
 
 	public Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
 			String walletKey,
-			String configName) throws SovrinException {
+			String configName) throws IndyException {
 		
 		return walletSetSeqNoForValue(this.walletHandle, walletKey, configName);
 	}
