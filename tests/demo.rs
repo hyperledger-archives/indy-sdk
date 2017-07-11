@@ -1,5 +1,8 @@
 extern crate sovrin;
 
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use sovrin::api as api;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -39,8 +42,7 @@ use sovrin::api::pool::{
 };
 use sovrin::api::wallet::{
     sovrin_create_wallet,
-    sovrin_open_wallet,
-    sovrin_wallet_set_seq_no_for_value
+    sovrin_open_wallet
 };
 use sovrin::api::signus::{
     sovrin_create_and_store_my_did,
@@ -66,7 +68,6 @@ fn anoncreds_demo_works() {
     let (create_wallet_sender, create_wallet_receiver) = channel();
     let (open_wallet_sender, open_wallet_receiver) = channel();
     let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
-    let (wallet_set_seq_no_for_value_sender, wallet_set_seq_no_for_value_receiver) = channel();
     // TODO: uncomment this for revocation part
     //let (wallet_set_seq_no_for_value_sender2, wallet_set_seq_no_for_value_receiver2) = channel();
     //let (issuer_create_and_store_revoc_reg_sender, issuer_create_and_store_revoc_reg_receiver) = channel();
@@ -78,17 +79,14 @@ fn anoncreds_demo_works() {
     let (prover_create_proof_sender, prover_create_proof_receiver) = channel();
     let (verifier_verify_proof_sender, verifier_verify_proof_receiver) = channel();
 
-    let issuer_create_claim_definition_cb = Box::new(move |err, claim_def_json, claim_def_uuid| {
-        issuer_create_claim_definition_sender.send((err, claim_def_json, claim_def_uuid)).unwrap();
+    let issuer_create_claim_definition_cb = Box::new(move |err, claim_def_json| {
+        issuer_create_claim_definition_sender.send((err, claim_def_json)).unwrap();
     });
     let create_wallet_cb = Box::new(move |err| {
         create_wallet_sender.send(err).unwrap();
     });
     let open_wallet_cb = Box::new(move |err, handle| {
         open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let wallet_set_seq_no_for_value_cb = Box::new(move |err| {
-        wallet_set_seq_no_for_value_sender.send(err).unwrap();
     });
     // TODO: uncomment this for revocation part
     //    let wallet_set_seq_no_for_value_cb2 = Box::new(move |err| {
@@ -122,7 +120,6 @@ fn anoncreds_demo_works() {
     let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
     let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
-    let (wallet_set_seq_no_for_value_command_handle, wallet_set_seq_no_for_value_callback) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb);
     // TODO: uncomment this for revocation part
     //    let (wallet_set_seq_no_for_value_command_handle2, wallet_set_seq_no_for_value_callback2) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb2);
     //    let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
@@ -135,7 +132,7 @@ fn anoncreds_demo_works() {
     let (verifier_verify_proof_handle, verifier_verify_proof_callback) = CallbackUtils::closure_to_verifier_verify_proof_cb(verifier_verify_proof_cb);
 
     let pool_name = "pool1";
-    let wallet_name = "issuer_wallet";
+    let wallet_name = "issuer_wallet1";
     let xtype = "default";
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
@@ -166,6 +163,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let schema_seq_no = 1;
+    let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
     let schema = format!(r#"{{
                             "seqNo":{},
                             "data":{{
@@ -179,29 +177,15 @@ fn anoncreds_demo_works() {
     let err =
         sovrin_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
                                                  wallet_handle,
+                                                 CString::new(issuer_did.clone()).unwrap().as_ptr(),
                                                  CString::new(schema.clone()).unwrap().as_ptr(),
                                                  null(),
                                                  false,
                                                  create_claim_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, mut claim_def_json, claim_def_uuid) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-    info!("claim_def_json {:?}", claim_def_json);
-    assert_eq!(ErrorCode::Success, err);
-
-    let claim_def_seq_no = 1;
-    claim_def_json = claim_def_json.replace(r#""seqNo":null"#, &format!(r#""seqNo":{}"#, claim_def_seq_no));//Need for tests
-
-    // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
-    let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle,
-                                                 wallet_handle,
-                                                 CString::new(claim_def_uuid).unwrap().as_ptr(),
-                                                 claim_def_seq_no,
-                                                 wallet_set_seq_no_for_value_callback);
-
-    assert_eq!(ErrorCode::Success, err);
-    let err = wallet_set_seq_no_for_value_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    println!("claim_def_json {:?}", claim_def_json);
     assert_eq!(ErrorCode::Success, err);
 
     let master_secret_name = "master_secret";
@@ -212,7 +196,8 @@ fn anoncreds_demo_works() {
     //
     //    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
     //                                                       wallet_handle,
-    //                                                       claim_def_seq_no,
+    //                                                       issuer_did,
+    //                                                       schema_seq_no,
     //                                                       max_claim_num,
     //                                                       issuer_create_and_store_revoc_reg_callback);
     //    assert_eq!(ErrorCode::Success, err);
@@ -245,7 +230,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let prover_did = "BzfFCYk";
-    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","claim_def_seq_no":{}, "schema_seq_no":{}}}"#, claim_def_seq_no, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":{}}}"#, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
@@ -297,6 +282,8 @@ fn anoncreds_demo_works() {
 
     let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
                                    "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no);
@@ -369,8 +356,8 @@ fn anoncreds_demo_works() {
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
+    let my_wallet_name = "my_wallet2";
+    let their_wallet_name = "their_wallet3";
     let wallet_type = "default";
     let pool_name = "ledger_demo_works";
     let c_pool_name = CString::new(pool_name).unwrap();
@@ -680,8 +667,8 @@ fn signus_demo_works() {
     let (verify_command_handle, verify_callback) = CallbackUtils::closure_to_verify_signature_cb(verify_cb);
 
     let pool_name = "pool1";
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
+    let my_wallet_name = "my_wallet4";
+    let their_wallet_name = "their_wallet5";
     let xtype = "default";
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
