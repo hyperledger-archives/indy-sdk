@@ -34,10 +34,10 @@ public class IndyJava {
 			return true;
 		}
 
-		protected static boolean checkCallback(CompletableFuture<? extends SovrinJava.Result> future, int err) {
+		protected static boolean checkCallback(CompletableFuture<? extends IndyJava.Result> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(SovrinException.fromErrorCode(errorCode, err)); return false; }
+			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }
 
 			return true;
 		}

@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.agent;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.agent.AgentResults.AgentAddIdentityResult;
 import org.hyperledger.indy.sdk.agent.AgentResults.AgentCloseConnectionResult;
 import org.hyperledger.indy.sdk.agent.AgentResults.AgentCloseListenerResult;
@@ -21,7 +21,7 @@ import com.sun.jna.Callback;
 /**
  * agent.rs API
  */
-public class Agent extends SovrinJava.API {
+public class Agent extends IndyJava.API {
 
 	private Agent() {
 
@@ -36,7 +36,7 @@ public class Agent extends SovrinJava.API {
 			Wallet wallet,
 			String senderDid,
 			String receiverDid,
-			Callback messageCb) throws SovrinException {
+			Callback messageCb) throws IndyException {
 
 		final CompletableFuture<AgentConnectResult> future = new CompletableFuture<> ();
 
@@ -57,7 +57,7 @@ public class Agent extends SovrinJava.API {
 		int poolHandle = pool.getPoolHandle();
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_agent_connect(
+		int result = LibIndy.api.indy_agent_connect(
 				FIXED_COMMAND_HANDLE, 
 				poolHandle,
 				walletHandle, 
@@ -74,7 +74,7 @@ public class Agent extends SovrinJava.API {
 	public static Future<AgentListenResult> agentListen(
 			String endpoint,
 			Callback connectionCb,
-			Callback messageCb) throws SovrinException {
+			Callback messageCb) throws IndyException {
 
 		final CompletableFuture<AgentListenResult> future = new CompletableFuture<> ();
 
@@ -92,7 +92,7 @@ public class Agent extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_agent_listen(
+		int result = LibIndy.api.indy_agent_listen(
 				FIXED_COMMAND_HANDLE, 
 				endpoint,
 				listenerCb,
@@ -110,7 +110,7 @@ public class Agent extends SovrinJava.API {
 			Wallet wallet,
 			String did,
 			Callback connectionCb,
-			Callback messageCb) throws SovrinException {
+			Callback messageCb) throws IndyException {
 
 		final CompletableFuture<AgentAddIdentityResult> future = new CompletableFuture<> ();
 
@@ -130,7 +130,7 @@ public class Agent extends SovrinJava.API {
 		int poolHandle = pool.getPoolHandle();
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_agent_add_identity(
+		int result = LibIndy.api.indy_agent_add_identity(
 				FIXED_COMMAND_HANDLE, 
 				listenerHandle,
 				poolHandle,
@@ -148,7 +148,7 @@ public class Agent extends SovrinJava.API {
 			Wallet wallet,
 			String did,
 			Callback connectionCb,
-			Callback messageCb) throws SovrinException {
+			Callback messageCb) throws IndyException {
 
 		final CompletableFuture<AgentRemoveIdentityResult> future = new CompletableFuture<> ();
 
@@ -167,7 +167,7 @@ public class Agent extends SovrinJava.API {
 		int listenerHandle = listener.getListenerHandle();
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_agent_remove_identity(
+		int result = LibIndy.api.indy_agent_remove_identity(
 				FIXED_COMMAND_HANDLE, 
 				listenerHandle,
 				walletHandle, 
@@ -181,7 +181,7 @@ public class Agent extends SovrinJava.API {
 
 	public static Future<AgentSendResult> agentSend(
 			Agent.Connection connection,
-			String message) throws SovrinException {
+			String message) throws IndyException {
 
 		final CompletableFuture<AgentSendResult> future = new CompletableFuture<> ();
 
@@ -199,7 +199,7 @@ public class Agent extends SovrinJava.API {
 
 		int connectionHandle = connection.getConnectionHandle();
 
-		int result = LibSovrin.api.sovrin_agent_send(
+		int result = LibIndy.api.indy_agent_send(
 				FIXED_COMMAND_HANDLE, 
 				connectionHandle, 
 				message,
@@ -211,7 +211,7 @@ public class Agent extends SovrinJava.API {
 	}
 
 	public static Future<AgentCloseConnectionResult> agentCloseConnection(
-			Agent.Connection connection) throws SovrinException {
+			Agent.Connection connection) throws IndyException {
 
 		final CompletableFuture<AgentCloseConnectionResult> future = new CompletableFuture<> ();
 
@@ -229,7 +229,7 @@ public class Agent extends SovrinJava.API {
 
 		int connectionHandle = connection.getConnectionHandle();
 
-		int result = LibSovrin.api.sovrin_agent_close_connection(
+		int result = LibIndy.api.indy_agent_close_connection(
 				FIXED_COMMAND_HANDLE, 
 				connectionHandle, 
 				cb);
@@ -240,7 +240,7 @@ public class Agent extends SovrinJava.API {
 	}
 
 	public static Future<AgentCloseListenerResult> agentCloseListener(
-			Agent.Listener listener) throws SovrinException {
+			Agent.Listener listener) throws IndyException {
 
 		final CompletableFuture<AgentCloseListenerResult> future = new CompletableFuture<> ();
 
@@ -258,7 +258,7 @@ public class Agent extends SovrinJava.API {
 
 		int listenerHandle = listener.getListenerHandle();
 
-		int result = LibSovrin.api.sovrin_agent_close_connection(
+		int result = LibIndy.api.indy_agent_close_connection(
 				FIXED_COMMAND_HANDLE, 
 				listenerHandle, 
 				cb);
@@ -286,12 +286,12 @@ public class Agent extends SovrinJava.API {
 			return this.connectionHandle;
 		}
 
-		public Future<AgentSendResult> agentSend(String message) throws SovrinException {
+		public Future<AgentSendResult> agentSend(String message) throws IndyException {
 
 			return Agent.agentSend(this, message);
 		}
 
-		public Future<AgentCloseConnectionResult> agentCloseConnection() throws SovrinException {
+		public Future<AgentCloseConnectionResult> agentCloseConnection() throws IndyException {
 
 			return Agent.agentCloseConnection(this);
 		}
@@ -311,17 +311,17 @@ public class Agent extends SovrinJava.API {
 			return this.listenerHandle;
 		}
 
-		public Future<AgentAddIdentityResult> agentAddIdentity(Pool pool, Wallet wallet, String did, Callback connectionCb, Callback messageCb) throws SovrinException {
+		public Future<AgentAddIdentityResult> agentAddIdentity(Pool pool, Wallet wallet, String did, Callback connectionCb, Callback messageCb) throws IndyException {
 
 			return Agent.agentAddIdentity(this, pool, wallet, did, connectionCb, messageCb);
 		}
 
-		public Future<AgentRemoveIdentityResult> agentRemoveIdentity(Wallet wallet, String did, Callback connectionCb, Callback messageCb) throws SovrinException {
+		public Future<AgentRemoveIdentityResult> agentRemoveIdentity(Wallet wallet, String did, Callback connectionCb, Callback messageCb) throws IndyException {
 
 			return Agent.agentRemoveIdentity(this, wallet, did, connectionCb, messageCb);
 		}
 
-		public Future<AgentCloseListenerResult> agentCloseListener() throws SovrinException {
+		public Future<AgentCloseListenerResult> agentCloseListener() throws IndyException {
 
 			return Agent.agentCloseListener(this);
 		}

@@ -72,6 +72,16 @@ public abstract class LibIndy {
 		public int indy_prover_get_claims_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_claims_json, String schemas_json, String master_secret_name, String claim_defs_json, String revoc_regs_json, Callback cb);
 		public int indy_verifier_verify_proof(int command_handle, int wallet_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
+
+		// agent.rs
+
+		public int indy_agent_connect(int command_handle, int pool_handle, int wallet_handle, String sender_did, String receiver_did, Callback connection_cb, Callback message_cb);
+		public int indy_agent_listen(int command_handle, String endpoint, Callback listener_cb, Callback connection_cb, Callback message_cb);
+		public int indy_agent_add_identity(int command_handle, int listener_handle, int pool_handle, int wallet_handle, String did, Callback add_identity_cb);
+		public int indy_agent_remove_identity(int command_handle, int listener_handle, int wallet_handle, String did, Callback rm_identity_cb);
+		public int indy_agent_send(int command_handle, int connection_handle, String message, Callback cb);
+		public int indy_agent_close_connection(int command_handle, int connection_handle, Callback cb);
+		public int indy_agent_close_listener(int command_handle, int listener_handle, Callback cb);
 	}
 
 	/*
