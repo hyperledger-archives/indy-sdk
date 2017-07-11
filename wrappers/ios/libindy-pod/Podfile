@@ -1,15 +1,31 @@
 source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/hyperledger/indy-sdk.git'
 platform :ios, '10.2'
+
+workspace 'libindy.xcworkspace'
+
 #use_frameworks!
 
 def appPods
-    pod 'libsodium',"~> 1.0.12"
-    pod 'libzmq',"~> 4.2.3"
+    pod 'libsodium',"1.0.12"
+    pod 'libzmq-pw',"4.2.2"
+    pod 'OpenSSL'
+    pod 'milagro', "3.0.0"
+    pod 'libindy-core', "0.1.1"
 end
 
-target 'ZeroMQ_Test' do
-    project 'ZeroMQ_Test'
+target 'libindy-demo' do
+    project 'libindy-demo'
+    pod 'CoreBitcoin', :podspec => 'https://raw.github.com/oleganza/CoreBitcoin/master/CoreBitcoin.podspec'
+
+    target 'libindy-demoTests' do
+	inherit! :search_paths
+    end
+end
+
+
+target 'libindy' do
+    project 'libindy'
     appPods
 end
 
@@ -18,10 +34,15 @@ end
 
 post_install do |installer|
     installer.pods_project.targets.each do |target|
+      if target.name == 'milagro'
+        target.build_configurations.each do |config|
+            config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'AMCL_VERSION_MAJOR=3 AMCL_VERSION_PATCH=0 AMCL_VERSION_MINOR=0 OS=\"IOS\"']
+        end
+      end
       if target.name == 'libzmq'
         target.build_configurations.each do |config|
             config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'ZMQ_BUILD_DRAFT_API=1']
-        end   
+        end
       end
       if target.name == 'libsodium'
         target.build_configurations.each do |config|
@@ -30,4 +51,3 @@ post_install do |installer|
       end
     end
 end
-
