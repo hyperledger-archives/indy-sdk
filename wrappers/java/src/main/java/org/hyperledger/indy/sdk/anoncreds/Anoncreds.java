@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.anoncreds;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreClaimDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreRevocRegResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
@@ -19,7 +19,7 @@ import com.sun.jna.Callback;
 /**
  * anoncreds.rs API
  */
-public class Anoncreds extends SovrinJava.API {
+public class Anoncreds extends IndyJava.API {
 
 	private Anoncreds() {
 
@@ -33,7 +33,7 @@ public class Anoncreds extends SovrinJava.API {
 			Wallet wallet,
 			String schemaJson, 
 			String signatureType, 
-			boolean createNonRevoc) throws SovrinException {
+			boolean createNonRevoc) throws IndyException {
 
 		final CompletableFuture<IssuerCreateAndStoreClaimDefResult> future = new CompletableFuture<> ();
 
@@ -51,7 +51,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_issuer_create_and_store_claim_def(
+		int result = LibIndy.api.indy_issuer_create_and_store_claim_def(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				schemaJson,
@@ -67,7 +67,7 @@ public class Anoncreds extends SovrinJava.API {
 	public static Future<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
 			int claimDefSeqNo, 
-			int maxClaimNum) throws SovrinException {
+			int maxClaimNum) throws IndyException {
 
 		final CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<> ();
 
@@ -85,7 +85,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_issuer_create_and_store_revoc_reg(
+		int result = LibIndy.api.indy_issuer_create_and_store_revoc_reg(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				claimDefSeqNo,
@@ -102,7 +102,7 @@ public class Anoncreds extends SovrinJava.API {
 			String claimReqJson, 
 			String claimJson,
 			int revocRegSeqNo,
-			int userRevocIndex) throws SovrinException {
+			int userRevocIndex) throws IndyException {
 
 		final CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<> ();
 
@@ -120,7 +120,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_issuer_create_claim(
+		int result = LibIndy.api.indy_issuer_create_claim(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				claimReqJson,
@@ -138,7 +138,7 @@ public class Anoncreds extends SovrinJava.API {
 			Wallet wallet,
 			int claimDefSeqNo, 
 			int revocRegSeqNo, 
-			int userRevocIndex) throws SovrinException {
+			int userRevocIndex) throws IndyException {
 
 		final CompletableFuture<IssuerRevokeClaimResult> future = new CompletableFuture<> ();
 
@@ -156,7 +156,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_issuer_revoke_claim(
+		int result = LibIndy.api.indy_issuer_revoke_claim(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				claimDefSeqNo,
@@ -171,7 +171,7 @@ public class Anoncreds extends SovrinJava.API {
 
 	public static Future<ProverStoreClaimOfferResult> proverStoreClaimOffer(
 			Wallet wallet,
-			String claimOfferJson) throws SovrinException {
+			String claimOfferJson) throws IndyException {
 
 		final CompletableFuture<ProverStoreClaimOfferResult> future = new CompletableFuture<> ();
 
@@ -189,7 +189,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_prover_store_claim_offer(
+		int result = LibIndy.api.indy_prover_store_claim_offer(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				claimOfferJson,
@@ -202,7 +202,7 @@ public class Anoncreds extends SovrinJava.API {
 
 	public static Future<ProverGetClaimOffersResult> proverGetClaimOffers(
 			Wallet wallet,
-			String filterJson) throws SovrinException {
+			String filterJson) throws IndyException {
 
 		final CompletableFuture<ProverGetClaimOffersResult> future = new CompletableFuture<> ();
 
@@ -220,7 +220,7 @@ public class Anoncreds extends SovrinJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_prover_get_claim_offers(
+		int result = LibIndy.api.indy_prover_get_claim_offers(
 				FIXED_COMMAND_HANDLE, 
 				walletHandle, 
 				filterJson,

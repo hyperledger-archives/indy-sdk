@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.ledger;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildAttribRequestResult;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildClaimDefTxnResult;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetAttribRequestResult;
@@ -26,7 +26,7 @@ import com.sun.jna.Callback;
 /**
  * ledger.rs API
  */
-public class Ledger extends SovrinJava.API {
+public class Ledger extends IndyJava.API {
 
 	private Ledger() {
 
@@ -40,7 +40,7 @@ public class Ledger extends SovrinJava.API {
 			Pool pool,
 			Wallet wallet,
 			String submitterDid,
-			String requestJson) throws SovrinException {
+			String requestJson) throws IndyException {
 
 		final CompletableFuture<SignAndSubmitRequestResult> future = new CompletableFuture<> ();
 
@@ -59,7 +59,7 @@ public class Ledger extends SovrinJava.API {
 		int poolHandle = pool.getPoolHandle();
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_sign_and_submit_request(
+		int result = LibIndy.api.indy_sign_and_submit_request(
 				FIXED_COMMAND_HANDLE, 
 				poolHandle,
 				walletHandle, 
@@ -74,7 +74,7 @@ public class Ledger extends SovrinJava.API {
 
 	public static Future<SubmitRequestResult> submitRequest(
 			Pool pool,
-			String requestJson) throws SovrinException {
+			String requestJson) throws IndyException {
 
 		final CompletableFuture<SubmitRequestResult> future = new CompletableFuture<> ();
 
@@ -92,7 +92,7 @@ public class Ledger extends SovrinJava.API {
 
 		int poolHandle = pool.getPoolHandle();
 
-		int result = LibSovrin.api.sovrin_submit_request(
+		int result = LibIndy.api.indy_submit_request(
 				FIXED_COMMAND_HANDLE, 
 				poolHandle,
 				requestJson,
@@ -106,7 +106,7 @@ public class Ledger extends SovrinJava.API {
 	public static Future<BuildGetDdoRequestResult> buildGetDdoRequest(
 			String submitterDid,
 			String targetDid,
-			String requestJson) throws SovrinException {
+			String requestJson) throws IndyException {
 
 		final CompletableFuture<BuildGetDdoRequestResult> future = new CompletableFuture<> ();
 
@@ -122,7 +122,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_get_ddo_request(
+		int result = LibIndy.api.indy_build_get_ddo_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
@@ -138,7 +138,7 @@ public class Ledger extends SovrinJava.API {
 			String targetDid,
 			String verkey,
 			String alias,
-			String role) throws SovrinException {
+			String role) throws IndyException {
 
 		final CompletableFuture<BuildNymRequestResult> future = new CompletableFuture<> ();
 
@@ -154,7 +154,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_nym_request(
+		int result = LibIndy.api.indy_build_nym_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
@@ -173,7 +173,7 @@ public class Ledger extends SovrinJava.API {
 			String targetDid,
 			String hash,
 			String raw,
-			String enc) throws SovrinException {
+			String enc) throws IndyException {
 
 		final CompletableFuture<BuildAttribRequestResult> future = new CompletableFuture<> ();
 
@@ -189,7 +189,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_attrib_request(
+		int result = LibIndy.api.indy_build_attrib_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
@@ -206,7 +206,7 @@ public class Ledger extends SovrinJava.API {
 	public static Future<BuildGetAttribRequestResult> buildGetAttribRequest(
 			String submitterDid,
 			String targetDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
 		final CompletableFuture<BuildGetAttribRequestResult> future = new CompletableFuture<> ();
 
@@ -222,7 +222,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_get_attrib_request(
+		int result = LibIndy.api.indy_build_get_attrib_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
@@ -236,7 +236,7 @@ public class Ledger extends SovrinJava.API {
 
 	public static Future<BuildGetNymRequestResult> buildGetNymRequest(
 			String submitterDid,
-			String targetDid) throws SovrinException {
+			String targetDid) throws IndyException {
 
 		final CompletableFuture<BuildGetNymRequestResult> future = new CompletableFuture<> ();
 
@@ -252,7 +252,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_get_nym_request(
+		int result = LibIndy.api.indy_build_get_nym_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
@@ -265,7 +265,7 @@ public class Ledger extends SovrinJava.API {
 
 	public static Future<BuildSchemaRequestResult> buildSchemaRequest(
 			String submitterDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
 		final CompletableFuture<BuildSchemaRequestResult> future = new CompletableFuture<> ();
 
@@ -281,7 +281,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_schema_request(
+		int result = LibIndy.api.indy_build_schema_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				data,
@@ -294,7 +294,7 @@ public class Ledger extends SovrinJava.API {
 
 	public static Future<BuildGetSchemaRequestResult> buildGetSchemaRequest(
 			String submitterDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
 		final CompletableFuture<BuildGetSchemaRequestResult> future = new CompletableFuture<> ();
 
@@ -310,7 +310,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_get_schema_request(
+		int result = LibIndy.api.indy_build_get_schema_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				data,
@@ -324,7 +324,7 @@ public class Ledger extends SovrinJava.API {
 	public static Future<BuildClaimDefTxnResult> buildClaimDefTxn(
 			String submitterDid,
 			String xref,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
 		final CompletableFuture<BuildClaimDefTxnResult> future = new CompletableFuture<> ();
 
@@ -340,7 +340,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_claim_def_txn(
+		int result = LibIndy.api.indy_build_claim_def_txn(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				xref,
@@ -354,7 +354,7 @@ public class Ledger extends SovrinJava.API {
 
 	public static Future<BuildGetClaimDefTxnResult> buildGetClaimDefTxn(
 			String submitterDid,
-			String xref) throws SovrinException {
+			String xref) throws IndyException {
 
 		final CompletableFuture<BuildGetClaimDefTxnResult> future = new CompletableFuture<> ();
 
@@ -370,7 +370,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_get_claim_def_txn(
+		int result = LibIndy.api.indy_build_get_claim_def_txn(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				xref,
@@ -384,7 +384,7 @@ public class Ledger extends SovrinJava.API {
 	public static Future<BuildNodeRequestResult> buildNodeRequest(
 			String submitterDid,
 			String targetDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
 		final CompletableFuture<BuildNodeRequestResult> future = new CompletableFuture<> ();
 
@@ -400,7 +400,7 @@ public class Ledger extends SovrinJava.API {
 			}
 		};
 
-		int result = LibSovrin.api.sovrin_build_node_request(
+		int result = LibIndy.api.indy_build_node_request(
 				FIXED_COMMAND_HANDLE, 
 				submitterDid,
 				targetDid,
