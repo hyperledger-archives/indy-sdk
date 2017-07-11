@@ -13,7 +13,8 @@ use indy::api::ledger::{
     indy_build_claim_def_txn,
     indy_build_get_claim_def_txn,
     indy_build_node_request,
-    indy_build_nym_request
+    indy_build_nym_request,
+    indy_build_get_txn_request
 };
 
 use utils::callback::CallbackUtils;

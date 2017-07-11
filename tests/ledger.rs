@@ -728,7 +728,7 @@ mod high_cases {
 
             let get_schema_data = "{\"name\":\"gvt3\",\"version\":\"3.0\"}";
             let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
-            let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
+            PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
 
             let seq_no = schema_response.result.seq_no;
 
