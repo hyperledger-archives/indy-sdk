@@ -8,12 +8,7 @@ import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters.CreateAndStoreMyDidJSONParameter;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.DecryptResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.SignResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.StoreTheirDidResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.VerifySignatureResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -95,11 +90,11 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<StoreTheirDidResult> storeTheirDid(
+	public static CompletableFuture<Void> storeTheirDid(
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
-		final CompletableFuture<StoreTheirDidResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Void> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -108,7 +103,7 @@ public class Signus extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				StoreTheirDidResult result = new StoreTheirDidResult();
+				Void result = null;
 				future.complete(result);
 			}
 		};
@@ -126,12 +121,12 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<SignResult> sign(
+	public static CompletableFuture<String> sign(
 			Wallet wallet,
 			String did,
 			String msg) throws IndyException {
 
-		final CompletableFuture<SignResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -140,7 +135,7 @@ public class Signus extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				SignResult result = new SignResult(signature);
+				String result = signature;
 				future.complete(result);
 			}
 		};
@@ -159,13 +154,13 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<VerifySignatureResult> verifySignature(
+	public static CompletableFuture<Boolean> verifySignature(
 			Wallet wallet,
 			Pool pool,
 			String did,
 			String signedMsg) throws IndyException {
 
-		final CompletableFuture<VerifySignatureResult> future = new CompletableFuture<> ();
+		final CompletableFuture<Boolean> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -174,7 +169,7 @@ public class Signus extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				VerifySignatureResult result = new VerifySignatureResult(valid);
+				Boolean result = Boolean.valueOf(valid);
 				future.complete(result);
 			}
 		};
@@ -195,12 +190,12 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<EncryptResult> encrypt(
+	public static CompletableFuture<String> encrypt(
 			Wallet wallet,
 			String did,
 			String msg) throws IndyException {
 
-		final CompletableFuture<EncryptResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -209,7 +204,7 @@ public class Signus extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				EncryptResult result = new EncryptResult(encryptedMsg);
+				String result = encryptedMsg;
 				future.complete(result);
 			}
 		};
@@ -228,12 +223,12 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<DecryptResult> decrypt(
+	public static CompletableFuture<String> decrypt(
 			Wallet wallet,
 			String did,
 			String encryptedMsg) throws IndyException {
 
-		final CompletableFuture<DecryptResult> future = new CompletableFuture<> ();
+		final CompletableFuture<String> future = new CompletableFuture<> ();
 
 		Callback cb = new Callback() {
 
@@ -242,7 +237,7 @@ public class Signus extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				DecryptResult result = new DecryptResult(decryptedMsg);
+				String result = decryptedMsg;
 				future.complete(result);
 			}
 		};
