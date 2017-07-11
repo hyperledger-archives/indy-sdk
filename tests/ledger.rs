@@ -34,9 +34,13 @@ use utils::types::{
     GetClaimDefReplyResult,
     GetNymReplyResult,
     GetSchemaReplyResult,
-    Reply
+    Reply,
+    SchemaResult,
+    GetTxnResult,
+    SchemaData,
+    Schema
 };
-
+use std::collections::{HashSet};
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
 // See: https://github.com/hyperledger/indy-sdk/issues/25
 
@@ -653,7 +657,7 @@ mod high_cases {
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
 
             let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e",
-                                                                                     &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
+                                                                                &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
             info!("claim_def_json {:}", claim_def_json);
 
             let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
@@ -691,83 +695,88 @@ mod high_cases {
             let identifier = "identifier";
             let data = 1;
 
-            let expected_result = r#""identifier":"identifier","operation":{"type":"106","data":1}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1}"#;
 
             let get_txn_request = LedgerUtils::build_get_txn_request(identifier, data).unwrap();
             assert!(get_txn_request.contains(expected_result));
         }
 
-        #[test]
-        #[ignore] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
+        #[test] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_get_txn_request_works() {
+        fn sovrin_get_txn_request_works_a() {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_get_txn_request_works";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let mut keys: HashSet<String> = HashSet::new();
+            keys.insert("name".to_string());
+            keys.insert("male".to_string());
 
-            let schema_data = "{\"name\":\"gvt2\",\
-                                \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
-            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            let schema_data = SchemaData {
+                name: "get_txn_schema".to_string(),
+                version: "3.0".to_string(),
+                keys: keys
+            };
+            let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
+            let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
 
-            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let get_schema_data = "{\"name\":\"get_txn_schema\",\"version\":\"3.0\"}";
             let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
             let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
 
-            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
+            let seq_no = schema_response.result.seq_no;
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, get_schema_response.result.seq_no.unwrap()).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, seq_no).unwrap();
+            let get_txn_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &get_txn_request).unwrap();
 
-            let get_txn_response = PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
-            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_schema_response.result.data.is_some());
+            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
+            assert!(get_txn_response.result.data.is_some());
+
+            let get_txn_schema: Schema = serde_json::from_str(&get_txn_response.result.data.unwrap()).unwrap();
+
+            assert_eq!(schema_data, get_txn_schema.data);
 
             TestUtils::cleanup_storage();
         }
 
-        #[test]
-        #[ignore] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
+        #[test] //Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
         #[cfg(feature = "local_nodes_pool")]
         fn sovrin_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
 
             let pool_name = "sovrin_get_txn_request_works_for_invalid_seq_no";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, "wallet1", "default").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let mut keys: HashSet<String> = HashSet::new();
+            keys.insert("name".to_string());
+            keys.insert("male".to_string());
 
-            let schema_data = "{\"name\":\"gvt2\",\
-                                \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
-            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            let schema_data = SchemaData {
+                name: "gvt2".to_string(),
+                version: "version".to_string(),
+                keys: keys
+            };
+            let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
+            let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
 
-            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
-            let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
-            let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
+            let seq_no = schema_response.result.seq_no + 1;
 
-            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, seq_no).unwrap();
 
-
-            let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, get_schema_response.result.seq_no.unwrap() + 1).unwrap();
-
-            let get_txn_response = PoolUtils::send_request(pool_handle, &get_txn_request).unwrap();
-            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            let get_txn_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &get_txn_request).unwrap();
+            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
+            assert!(get_txn_response.result.data.is_none());
 
             TestUtils::cleanup_storage();
         }
