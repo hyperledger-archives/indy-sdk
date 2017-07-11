@@ -1,11 +1,10 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreClaimDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreRevocRegResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
@@ -29,7 +28,7 @@ public class Anoncreds extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static Future<IssuerCreateAndStoreClaimDefResult> issuerCreateAndStoreClaimDef(
+	public static CompletableFuture<IssuerCreateAndStoreClaimDefResult> issuerCreateAndStoreClaimDef(
 			Wallet wallet,
 			String schemaJson, 
 			String signatureType, 
@@ -64,7 +63,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
+	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
 			int claimDefSeqNo, 
 			int maxClaimNum) throws IndyException {
@@ -97,7 +96,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<IssuerCreateClaimResult> issuerCreateClaim(
+	public static CompletableFuture<IssuerCreateClaimResult> issuerCreateClaim(
 			Wallet wallet,
 			String claimReqJson, 
 			String claimJson,
@@ -134,7 +133,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<IssuerRevokeClaimResult> issuerRevokeClaim(
+	public static CompletableFuture<IssuerRevokeClaimResult> issuerRevokeClaim(
 			Wallet wallet,
 			int claimDefSeqNo, 
 			int revocRegSeqNo, 
@@ -169,7 +168,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<ProverStoreClaimOfferResult> proverStoreClaimOffer(
+	public static CompletableFuture<ProverStoreClaimOfferResult> proverStoreClaimOffer(
 			Wallet wallet,
 			String claimOfferJson) throws IndyException {
 
@@ -200,7 +199,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<ProverGetClaimOffersResult> proverGetClaimOffers(
+	public static CompletableFuture<ProverGetClaimOffersResult> proverGetClaimOffers(
 			Wallet wallet,
 			String filterJson) throws IndyException {
 

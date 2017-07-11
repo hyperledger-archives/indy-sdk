@@ -1,11 +1,10 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildAttribRequestResult;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildClaimDefTxnResult;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetAttribRequestResult;
@@ -36,7 +35,7 @@ public class Ledger extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static Future<SignAndSubmitRequestResult> signAndSubmitRequest(
+	public static CompletableFuture<SignAndSubmitRequestResult> signAndSubmitRequest(
 			Pool pool,
 			Wallet wallet,
 			String submitterDid,
@@ -72,7 +71,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<SubmitRequestResult> submitRequest(
+	public static CompletableFuture<SubmitRequestResult> submitRequest(
 			Pool pool,
 			String requestJson) throws IndyException {
 
@@ -103,7 +102,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildGetDdoRequestResult> buildGetDdoRequest(
+	public static CompletableFuture<BuildGetDdoRequestResult> buildGetDdoRequest(
 			String submitterDid,
 			String targetDid,
 			String requestJson) throws IndyException {
@@ -133,7 +132,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildNymRequestResult> buildNymRequest(
+	public static CompletableFuture<BuildNymRequestResult> buildNymRequest(
 			String submitterDid,
 			String targetDid,
 			String verkey,
@@ -168,7 +167,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildAttribRequestResult> buildAttribRequest(
+	public static CompletableFuture<BuildAttribRequestResult> buildAttribRequest(
 			String submitterDid,
 			String targetDid,
 			String hash,
@@ -203,7 +202,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildGetAttribRequestResult> buildGetAttribRequest(
+	public static CompletableFuture<BuildGetAttribRequestResult> buildGetAttribRequest(
 			String submitterDid,
 			String targetDid,
 			String data) throws IndyException {
@@ -234,7 +233,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildGetNymRequestResult> buildGetNymRequest(
+	public static CompletableFuture<BuildGetNymRequestResult> buildGetNymRequest(
 			String submitterDid,
 			String targetDid) throws IndyException {
 
@@ -263,7 +262,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildSchemaRequestResult> buildSchemaRequest(
+	public static CompletableFuture<BuildSchemaRequestResult> buildSchemaRequest(
 			String submitterDid,
 			String data) throws IndyException {
 
@@ -292,7 +291,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildGetSchemaRequestResult> buildGetSchemaRequest(
+	public static CompletableFuture<BuildGetSchemaRequestResult> buildGetSchemaRequest(
 			String submitterDid,
 			String data) throws IndyException {
 
@@ -321,7 +320,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildClaimDefTxnResult> buildClaimDefTxn(
+	public static CompletableFuture<BuildClaimDefTxnResult> buildClaimDefTxn(
 			String submitterDid,
 			String xref,
 			String data) throws IndyException {
@@ -352,7 +351,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildGetClaimDefTxnResult> buildGetClaimDefTxn(
+	public static CompletableFuture<BuildGetClaimDefTxnResult> buildGetClaimDefTxn(
 			String submitterDid,
 			String xref) throws IndyException {
 
@@ -381,7 +380,7 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<BuildNodeRequestResult> buildNodeRequest(
+	public static CompletableFuture<BuildNodeRequestResult> buildNodeRequest(
 			String submitterDid,
 			String targetDid,
 			String data) throws IndyException {

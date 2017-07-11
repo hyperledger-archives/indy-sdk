@@ -1,7 +1,6 @@
 package org.hyperledger.indy.sdk.agent;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
@@ -31,7 +30,7 @@ public class Agent extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static Future<AgentConnectResult> agentConnect(
+	public static CompletableFuture<AgentConnectResult> agentConnect(
 			Pool pool,
 			Wallet wallet,
 			String senderDid,
@@ -71,7 +70,7 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<AgentListenResult> agentListen(
+	public static CompletableFuture<AgentListenResult> agentListen(
 			String endpoint,
 			Callback connectionCb,
 			Callback messageCb) throws IndyException {
@@ -104,7 +103,7 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<AgentAddIdentityResult> agentAddIdentity(
+	public static CompletableFuture<AgentAddIdentityResult> agentAddIdentity(
 			Agent.Listener listener,
 			Pool pool,
 			Wallet wallet,
@@ -141,7 +140,7 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<AgentRemoveIdentityResult> agentRemoveIdentity(
+	public static CompletableFuture<AgentRemoveIdentityResult> agentRemoveIdentity(
 			Agent.Listener listener,
 			Wallet wallet,
 			String did) throws IndyException {
@@ -175,7 +174,7 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<AgentSendResult> agentSend(
+	public static CompletableFuture<AgentSendResult> agentSend(
 			Agent.Connection connection,
 			String message) throws IndyException {
 
@@ -206,7 +205,7 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<AgentCloseConnectionResult> agentCloseConnection(
+	public static CompletableFuture<AgentCloseConnectionResult> agentCloseConnection(
 			Agent.Connection connection) throws IndyException {
 
 		final CompletableFuture<AgentCloseConnectionResult> future = new CompletableFuture<> ();
@@ -235,7 +234,7 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<AgentCloseListenerResult> agentCloseListener(
+	public static CompletableFuture<AgentCloseListenerResult> agentCloseListener(
 			Agent.Listener listener) throws IndyException {
 
 		final CompletableFuture<AgentCloseListenerResult> future = new CompletableFuture<> ();
@@ -282,12 +281,12 @@ public class Agent extends IndyJava.API {
 			return this.connectionHandle;
 		}
 
-		public Future<AgentSendResult> agentSend(String message) throws IndyException {
+		public CompletableFuture<AgentSendResult> agentSend(String message) throws IndyException {
 
 			return Agent.agentSend(this, message);
 		}
 
-		public Future<AgentCloseConnectionResult> agentCloseConnection() throws IndyException {
+		public CompletableFuture<AgentCloseConnectionResult> agentCloseConnection() throws IndyException {
 
 			return Agent.agentCloseConnection(this);
 		}
@@ -307,17 +306,17 @@ public class Agent extends IndyJava.API {
 			return this.listenerHandle;
 		}
 
-		public Future<AgentAddIdentityResult> agentAddIdentity(Pool pool, Wallet wallet, String did) throws IndyException {
+		public CompletableFuture<AgentAddIdentityResult> agentAddIdentity(Pool pool, Wallet wallet, String did) throws IndyException {
 
 			return Agent.agentAddIdentity(this, pool, wallet, did);
 		}
 
-		public Future<AgentRemoveIdentityResult> agentRemoveIdentity(Wallet wallet, String did) throws IndyException {
+		public CompletableFuture<AgentRemoveIdentityResult> agentRemoveIdentity(Wallet wallet, String did) throws IndyException {
 
 			return Agent.agentRemoveIdentity(this, wallet, did);
 		}
 
-		public Future<AgentCloseListenerResult> agentCloseListener() throws IndyException {
+		public CompletableFuture<AgentCloseListenerResult> agentCloseListener() throws IndyException {
 
 			return Agent.agentCloseListener(this);
 		}

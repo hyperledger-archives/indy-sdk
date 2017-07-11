@@ -1,11 +1,10 @@
 package org.hyperledger.indy.sdk.wallet;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CloseWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.DeleteWalletResult;
@@ -36,10 +35,10 @@ public class Wallet extends IndyJava.API {
 	 */
 
 	/* IMPLEMENT LATER
-	 * public Future<...> registerWalletType(
+	 * public CompletableFuture<...> registerWalletType(
 				...) throws IndyException;*/
 
-	public static Future<CreateWalletResult> createWallet(
+	public static CompletableFuture<CreateWalletResult> createWallet(
 			String poolName,
 			String name,
 			String xtype,
@@ -74,7 +73,7 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<OpenWalletResult> openWallet(
+	public static CompletableFuture<OpenWalletResult> openWallet(
 			String name,
 			String runtimeConfig,
 			String credentials) throws IndyException {
@@ -107,7 +106,7 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
-	private static Future<CloseWalletResult> closeWallet(
+	private static CompletableFuture<CloseWalletResult> closeWallet(
 			Wallet wallet) throws IndyException {
 
 		final CompletableFuture<CloseWalletResult> future = new CompletableFuture<> ();
@@ -136,7 +135,7 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<DeleteWalletResult> deleteWallet(
+	public static CompletableFuture<DeleteWalletResult> deleteWallet(
 			String name,
 			String credentials) throws IndyException {
 
@@ -165,7 +164,7 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
-	private static Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
+	private static CompletableFuture<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
 			Wallet wallet, 
 			String walletKey,
 			String configName) throws IndyException {
@@ -201,13 +200,13 @@ public class Wallet extends IndyJava.API {
 	 * INSTANCE METHODS
 	 */
 
-	public Future<CloseWalletResult> closeWallet(
+	public CompletableFuture<CloseWalletResult> closeWallet(
 			) throws IndyException {
 
 		return closeWallet(this);
 	}
 
-	public Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
+	public CompletableFuture<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
 			String walletKey,
 			String configName) throws IndyException {
 

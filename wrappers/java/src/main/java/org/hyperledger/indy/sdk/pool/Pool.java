@@ -1,11 +1,10 @@
 package org.hyperledger.indy.sdk.pool;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.CreatePoolLedgerConfigJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolResults.ClosePoolLedgerResult;
@@ -37,7 +36,7 @@ public class Pool extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static Future<CreatePoolLedgerConfigResult> createPoolLedgerConfig(
+	public static CompletableFuture<CreatePoolLedgerConfigResult> createPoolLedgerConfig(
 			String configName,
 			CreatePoolLedgerConfigJSONParameter config) throws IndyException {
 
@@ -66,7 +65,7 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<OpenPoolLedgerResult> openPoolLedger(
+	public static CompletableFuture<OpenPoolLedgerResult> openPoolLedger(
 			String configName,
 			OpenPoolLedgerJSONParameter config) throws IndyException {
 
@@ -97,7 +96,7 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	private static Future<RefreshPoolLedgerResult> refreshPoolLedger(
+	private static CompletableFuture<RefreshPoolLedgerResult> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
 		final CompletableFuture<RefreshPoolLedgerResult> future = new CompletableFuture<> ();
@@ -126,7 +125,7 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	private static Future<ClosePoolLedgerResult> closePoolLedger(
+	private static CompletableFuture<ClosePoolLedgerResult> closePoolLedger(
 			Pool pool) throws IndyException {
 
 		final CompletableFuture<ClosePoolLedgerResult> future = new CompletableFuture<> ();
@@ -155,7 +154,7 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<DeletePoolLedgerConfigResult> deletePoolLedgerConfig(
+	public static CompletableFuture<DeletePoolLedgerConfigResult> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
 		final CompletableFuture<DeletePoolLedgerConfigResult> future = new CompletableFuture<> ();
@@ -186,13 +185,13 @@ public class Pool extends IndyJava.API {
 	 * INSTANCE METHODS
 	 */
 
-	public Future<RefreshPoolLedgerResult> refreshPoolLedger(
+	public CompletableFuture<RefreshPoolLedgerResult> refreshPoolLedger(
 			) throws IndyException {
 
 		return refreshPoolLedger(this);
 	}
 
-	public Future<ClosePoolLedgerResult> closePoolLedger(
+	public CompletableFuture<ClosePoolLedgerResult> closePoolLedger(
 			) throws IndyException {
 
 		return closePoolLedger(this);

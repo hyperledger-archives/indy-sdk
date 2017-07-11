@@ -1,11 +1,10 @@
 package org.hyperledger.indy.sdk.signus;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters.CreateAndStoreMyDidJSONParameter;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
@@ -32,7 +31,7 @@ public class Signus extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static Future<CreateAndStoreMyDidResult> createAndStoreMyDid(
+	public static CompletableFuture<CreateAndStoreMyDidResult> createAndStoreMyDid(
 			Wallet wallet,
 			CreateAndStoreMyDidJSONParameter didJson) throws IndyException {
 
@@ -63,7 +62,7 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<ReplaceKeysResult> replaceKeys(
+	public static CompletableFuture<ReplaceKeysResult> replaceKeys(
 			Wallet wallet,
 			String did,
 			String identityJson) throws IndyException {
@@ -96,7 +95,7 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<StoreTheirDidResult> storeTheirDid(
+	public static CompletableFuture<StoreTheirDidResult> storeTheirDid(
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
@@ -127,7 +126,7 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<SignResult> sign(
+	public static CompletableFuture<SignResult> sign(
 			Wallet wallet,
 			String did,
 			String msg) throws IndyException {
@@ -160,7 +159,7 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<VerifySignatureResult> verifySignature(
+	public static CompletableFuture<VerifySignatureResult> verifySignature(
 			Wallet wallet,
 			Pool pool,
 			String did,
@@ -196,7 +195,7 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<EncryptResult> encrypt(
+	public static CompletableFuture<EncryptResult> encrypt(
 			Wallet wallet,
 			String did,
 			String msg) throws IndyException {
@@ -229,7 +228,7 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
-	public static Future<DecryptResult> decrypt(
+	public static CompletableFuture<DecryptResult> decrypt(
 			Wallet wallet,
 			String did,
 			String encryptedMsg) throws IndyException {
