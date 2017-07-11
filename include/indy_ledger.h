@@ -1,8 +1,8 @@
-#ifndef __sovrin__ledger_included__
-#define __sovrin__ledger_included__
+#ifndef __indy__ledger_included__
+#define __indy__ledger_included__
 
-#include "sovrin_mod.h"
-#include "sovrin_types.h"
+#include "indy_mod.h"
+#include "indy_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,14 +31,14 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     
-    extern sovrin_error_t sovrin_sign_and_submit_request(sovrin_handle_t command_handle,
-                                                         sovrin_handle_t pool_handle,
-                                                         sovrin_handle_t wallet_handle,
+    extern indy_error_t indy_sign_and_submit_request(indy_handle_t command_handle,
+                                                         indy_handle_t pool_handle,
+                                                         indy_handle_t wallet_handle,
                                                          const char *    submitter_did,
                                                          const char *    request_json,
                                                      
-                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                              sovrin_error_t  err,
+                                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                                              indy_error_t  err,
                                                                               const char*     request_result_json)
                                                          );
     
@@ -59,12 +59,12 @@ extern "C" {
     /// Common*
     /// Ledger*
     
-    extern sovrin_error_t sovrin_submit_request(sovrin_handle_t command_handle,
-                                                sovrin_handle_t pool_handle,
+    extern indy_error_t indy_submit_request(indy_handle_t command_handle,
+                                                indy_handle_t pool_handle,
                                                 const char *    request_json,
                                                          
-                                                void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                     sovrin_error_t  err,
+                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                     indy_error_t  err,
                                                                      const char*     request_result_json)
                                                );
 
@@ -82,12 +82,12 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern sovrin_error_t sovrin_build_get_ddo_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_get_ddo_request(indy_handle_t command_handle,
                                                        const char *    submitter_did,
                                                        const char *    target_did,
 
-                                                       void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                            sovrin_error_t  err,
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
                                                                             const char*     request_result_json)
                                                       );
     
@@ -108,15 +108,15 @@ extern "C" {
     /// #Errors
     /// Common*
 
-    extern sovrin_error_t sovrin_build_nym_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_nym_request(indy_handle_t command_handle,
                                                    const char *    submitter_did,
                                                    const char *    target_did,
                                                    const char *    verkey,
                                                    const char *    alias,
                                                    const char *    role,
                                                    
-                                                   void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                        sovrin_error_t  err,
+                                                   void           (*cb)(indy_handle_t xcommand_handle,
+                                                                        indy_error_t  err,
                                                                         const char*     request_json)
                                                   );
 
@@ -137,15 +137,15 @@ extern "C" {
     /// #Errors
     /// Common*
 
-    extern sovrin_error_t sovrin_build_attrib_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_attrib_request(indy_handle_t command_handle,
                                                       const char *    submitter_did,
                                                       const char *    target_did,
                                                       const char *    hash,
                                                       const char *    raw,
                                                       const char *    enc,
                                                    
-                                                      void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                           sovrin_error_t  err,
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
                                                                            const char*     request_json)
                                                       );
 
@@ -164,13 +164,13 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern sovrin_error_t sovrin_build_get_attrib_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_get_attrib_request(indy_handle_t command_handle,
                                                           const char *    submitter_did,
                                                           const char *    target_did,
                                                           const char *    data,
                                                       
-                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                               sovrin_error_t  err,
+                                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                                               indy_error_t  err,
                                                                                const char*     request_json)
                                                          );
 
@@ -188,12 +188,12 @@ extern "C" {
     /// #Errors
     /// Common*
 
-    extern sovrin_error_t sovrin_build_get_nym_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_get_nym_request(indy_handle_t command_handle,
                                                        const char *    submitter_did,
                                                        const char *    target_did,
                                                       
-                                                       void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                            sovrin_error_t  err,
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
                                                                             const char*     request_json)
                                                       );
 
@@ -211,12 +211,12 @@ extern "C" {
     /// #Errors
     /// Common*
 
-    extern sovrin_error_t sovrin_build_schema_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_schema_request(indy_handle_t command_handle,
                                                       const char *    submitter_did,
                                                       const char *    data,
 
-                                                      void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                           sovrin_error_t  err,
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
                                                                            const char*     request_json)
                                                      );
 
@@ -235,13 +235,13 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern sovrin_error_t sovrin_build_get_schema_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_get_schema_request(indy_handle_t command_handle,
                                                           const char *    submitter_did,
                                                           const char *    dest,
                                                           const char *    data,
 
-                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                               sovrin_error_t  err,
+                                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                                               indy_error_t  err,
                                                                                const char*     request_json)
                                                          );
     
@@ -261,14 +261,14 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern sovrin_error_t sovrin_build_claim_def_txn(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_claim_def_txn(indy_handle_t command_handle,
                                                      const char *    submitter_did,
                                                      const char *    xref,
                                                      const char *    signature_type,
                                                      const char *    data,
 
-                                                     void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                          sovrin_error_t  err,
+                                                     void           (*cb)(indy_handle_t xcommand_handle,
+                                                                          indy_error_t  err,
                                                                           const char*     request_json)
                                                      );
     
@@ -288,13 +288,13 @@ extern "C" {
     /// #Errors
     /// Common*
 
-     extern sovrin_error_t sovrin_build_get_claim_def_txn(sovrin_handle_t command_handle,
+     extern indy_error_t indy_build_get_claim_def_txn(indy_handle_t command_handle,
                                                           const char *    submitter_did,
                                                           const char *    xref,
                                                           const char *    signature_type,
                                                           const char *    origin,
-                                                          void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                               sovrin_error_t  err,
+                                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                                               indy_error_t  err,
                                                                                const char*     request_json)
                                                           );
 
@@ -314,13 +314,38 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern sovrin_error_t sovrin_build_node_request(sovrin_handle_t command_handle,
+    extern indy_error_t indy_build_node_request(indy_handle_t command_handle,
                                                     const char *    submitter_did,
                                                     const char *    target_did,
                                                     const char *    data,
                                                          
-                                                    void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                         sovrin_error_t  err,
+                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                                         indy_error_t  err,
+                                                                         const char*     request_json)
+                                                   );
+
+    /// Builds a NODE request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// target_did: Id of Identity stored in secured Wallet.
+    /// data: id of a target NYM record
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+
+
+    extern indy_error_t indy_build_get_txn_request(indy_handle_t command_handle,
+                                                    const char *    submitter_did,
+                                                    indy_i32_t    data,
+
+                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                                         indy_error_t  err,
                                                                          const char*     request_json)
                                                    );
     

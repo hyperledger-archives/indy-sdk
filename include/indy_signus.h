@@ -1,5 +1,5 @@
-#ifndef __sovrin__signus__included__
-#define __sovrin__signus__included__
+#ifndef __indy__signus__included__
+#define __indy__signus__included__
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,12 +32,12 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     
-    extern sovrin_error_t sovrin_create_and_store_my_did(sovrin_handle_t command_handle,
-                                                         sovrin_handle_t wallet_handle,
+    extern indy_error_t indy_create_and_store_my_did(indy_handle_t command_handle,
+                                                         indy_handle_t wallet_handle,
                                                          const char *    did_json,
                                                          
-                                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                              sovrin_error_t  err,
+                                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                                              indy_error_t  err,
                                                                               const char*     did,
                                                                               const char*     verkey,
                                                                               const char*     pk)
@@ -65,13 +65,13 @@ extern "C" {
     /// Wallet*
     /// Crypto*
 
-    extern sovrin_error_t sovrin_replace_keys(sovrin_handle_t command_handle,
-                                              sovrin_handle_t wallet_handle,
+    extern indy_error_t indy_replace_keys(indy_handle_t command_handle,
+                                              indy_handle_t wallet_handle,
                                               const char *    did,
                                               const char *    identity_json,
                                               
-                                              void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                   sovrin_error_t  err,
+                                              void           (*cb)(indy_handle_t xcommand_handle,
+                                                                   indy_error_t  err,
                                                                    const char*     verkey,
                                                                    const char*     pk)
                                              );
@@ -100,12 +100,12 @@ extern "C" {
     /// Wallet*
     /// Crypto*
 
-    extern sovrin_error_t sovrin_store_their_did(sovrin_handle_t command_handle,
-                                                 sovrin_handle_t wallet_handle,
+    extern indy_error_t indy_store_their_did(indy_handle_t command_handle,
+                                                 indy_handle_t wallet_handle,
                                                  const char *    identity_json,
                                                  
-                                                 void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                      sovrin_error_t  err)
+                                                 void           (*cb)(indy_handle_t xcommand_handle,
+                                                                      indy_error_t  err)
                                                 );
 
     /// Signs a message by a signing key associated with my DID. The DID with a signing key
@@ -126,13 +126,13 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     
-    extern sovrin_error_t sovrin_sign(sovrin_handle_t command_handle,
-                                      sovrin_handle_t wallet_handle,
+    extern indy_error_t indy_sign(indy_handle_t command_handle,
+                                      indy_handle_t wallet_handle,
                                       const char *    did,
                                       const char *    msg,
                                       
-                                      void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                           sovrin_error_t  err,
+                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                           indy_error_t  err,
                                                            const char* signature)
                                      );
     
@@ -160,16 +160,16 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     
-    extern sovrin_error_t sovrin_verify_signature(sovrin_handle_t command_handle,
-                                                  sovrin_handle_t wallet_handle,
-                                                  sovrin_handle_t pool_handle,
+    extern indy_error_t indy_verify_signature(indy_handle_t command_handle,
+                                                  indy_handle_t wallet_handle,
+                                                  indy_handle_t pool_handle,
                                                   
                                                   const char *    did,
                                                   const char *    signed_msg,
 
-                                                  void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                                       sovrin_error_t  err,
-                                                                       sovrin_bool_t   valid )
+                                                  void           (*cb)(indy_handle_t xcommand_handle,
+                                                                       indy_error_t  err,
+                                                                       indy_bool_t   valid )
                                                  );
 
     /// Encrypts a message by a public key associated with a DID.
@@ -196,15 +196,15 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     
-    extern sovrin_error_t sovrin_encrypt(sovrin_handle_t command_handle,
-                                         sovrin_handle_t wallet_handle,
-                                         sovrin_handle_t pool_handle,
+    extern indy_error_t indy_encrypt(indy_handle_t command_handle,
+                                         indy_handle_t wallet_handle,
+                                         indy_handle_t pool_handle,
                                          const char *    my_did,
                                          const char *    did,
                                          const char *    msg,
                                          
-                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                              sovrin_error_t  err,
+                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                              indy_error_t  err,
                                                               const char*     encrypted_msg,
                                                               const char*     nonce)
                                        );
@@ -230,15 +230,15 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     
-    extern sovrin_error_t sovrin_decrypt(sovrin_handle_t command_handle,
-                                         sovrin_handle_t wallet_handle,
+    extern indy_error_t indy_decrypt(indy_handle_t command_handle,
+                                         indy_handle_t wallet_handle,
                                          const char *    my_did,
                                          const char *    did,
                                          const char *    encrypted_msg,
                                          const char *    nonce,
                                          
-                                         void           (*cb)(sovrin_handle_t xcommand_handle,
-                                                              sovrin_error_t  err,
+                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                              indy_error_t  err,
                                                               const char*     decrypted_msg)
                                         );    
 

@@ -181,11 +181,12 @@ pub struct RemoteNode {
     pub public_key: Vec<u8>,
     pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
+    pub is_blacklisted: bool,
 }
 
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
-    pub pending_reps: BinaryHeap<CatchupRep>,
+    pub pending_reps: BinaryHeap<(CatchupRep, usize)>,
 }
 
 #[derive(Debug)]

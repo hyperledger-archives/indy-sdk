@@ -1,6 +1,6 @@
 extern crate libc;
 
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use self::libc::c_char;
 use std::ffi::CStr;
@@ -146,21 +146,19 @@ impl CallbackUtils {
         (command_handle, Some(send_tx_callback))
     }
 
-    pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+    pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                                    Option<extern fn(command_handle: i32,
                                                                                                                                     err: ErrorCode,
-                                                                                                                                    claim_def_json: *const c_char,
-                                                                                                                                    claim_def_uuid: *const c_char)>) {
+                                                                                                                                    claim_def_json: *const c_char)>) {
         lazy_static! {
-            static ref CREATE_CLAIM_DEFINITION_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+            static ref CREATE_CLAIM_DEFINITION_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn create_claim_definition_callback(command_handle: i32, err: ErrorCode, claim_def_json: *const c_char, claim_def_uuid: *const c_char) {
+        extern "C" fn create_claim_definition_callback(command_handle: i32, err: ErrorCode, claim_def_json: *const c_char) {
             let mut callbacks = CREATE_CLAIM_DEFINITION_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let claim_def_json = unsafe { CStr::from_ptr(claim_def_json).to_str().unwrap().to_string() };
-            let claim_def_uuid = unsafe { CStr::from_ptr(claim_def_uuid).to_str().unwrap().to_string() };
-            cb(err, claim_def_json, claim_def_uuid)
+            cb(err, claim_def_json)
         }
 
         let mut callbacks = CREATE_CLAIM_DEFINITION_CALLBACKS.lock().unwrap();
@@ -168,6 +166,26 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(create_claim_definition_callback))
+    }
+
+    pub fn closure_to_register_wallet_type_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                  Option<extern fn(command_handle: i32,
+                                                                                                   err: ErrorCode)>) {
+        lazy_static! {
+            static ref REFISTER_WALLET_TYPE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn register_wallet_type_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = REFISTER_WALLET_TYPE_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = REFISTER_WALLET_TYPE_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(register_wallet_type_callback))
     }
 
     pub fn closure_to_create_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,

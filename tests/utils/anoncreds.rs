@@ -1,16 +1,16 @@
-use sovrin::api::ErrorCode;
-use sovrin::api::anoncreds::{
-    sovrin_issuer_create_and_store_claim_def,
-    sovrin_issuer_create_claim,
-    sovrin_prover_create_master_secret,
-    sovrin_prover_create_and_store_claim_req,
-    sovrin_prover_store_claim,
-    sovrin_prover_get_claims_for_proof_req,
-    sovrin_prover_create_proof,
-    sovrin_prover_store_claim_offer,
-    sovrin_prover_get_claim_offers,
-    sovrin_verifier_verify_proof,
-    sovrin_prover_get_claims
+use indy::api::ErrorCode;
+use indy::api::anoncreds::{
+    indy_issuer_create_and_store_claim_def,
+    indy_issuer_create_claim,
+    indy_prover_create_master_secret,
+    indy_prover_create_and_store_claim_req,
+    indy_prover_store_claim,
+    indy_prover_get_claims_for_proof_req,
+    indy_prover_create_proof,
+    indy_prover_store_claim_offer,
+    indy_prover_get_claim_offers,
+    indy_verifier_verify_proof,
+    indy_prover_get_claims
 };
 
 use utils::callback::CallbackUtils;
@@ -34,30 +34,26 @@ pub struct AnoncredsUtils {}
 
 static mut WALLET_HANDLE: i32 = 0;
 static mut CLAIM_DEF_JSON: &'static str = "";
+pub const ISSUER_DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 
 impl AnoncredsUtils {
-    pub fn create_claim_definition_and_set_link(wallet_handle: i32, schema: &str, claim_def_seq_no: i32) -> Result<String, ErrorCode> {
-        let (mut claim_def_json, claim_def_uuid) = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, None, false)?;
-        claim_def_json = claim_def_json.replace(r#""seqNo":null"#, &format!(r#""seqNo":{}"#, claim_def_seq_no));//Need for tests
-        WalletUtils::wallet_set_seq_no_for_value(wallet_handle, &claim_def_uuid, claim_def_seq_no)?;
-        Ok(claim_def_json)
-    }
-
-    pub fn issuer_create_claim_definition(wallet_handle: i32, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<(String, String), ErrorCode> {
+    pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_def_json, claim_def_uuid| {
-            sender.send((err, claim_def_json, claim_def_uuid)).unwrap();
+        let cb = Box::new(move |err, claim_def_json| {
+            sender.send((err, claim_def_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
 
         let schema = CString::new(schema).unwrap();
         let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let issuer_did = CString::new(issuer_did).unwrap();
 
         let err =
-            sovrin_issuer_create_and_store_claim_def(command_handle,
+            indy_issuer_create_and_store_claim_def(command_handle,
                                                      wallet_handle,
+                                                     issuer_did.as_ptr(),
                                                      schema.as_ptr(),
                                                      if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
                                                      create_non_revoc,
@@ -67,13 +63,13 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claim_def_json, claim_def_uuid) = receiver.recv().unwrap();
+        let (err, claim_def_json) = receiver.recv().unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok((claim_def_json, claim_def_uuid))
+        Ok(claim_def_json)
     }
 
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_name: &str) -> Result<(), ErrorCode> {
@@ -87,7 +83,7 @@ impl AnoncredsUtils {
 
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
-        let err = sovrin_prover_create_master_secret(command_handle,
+        let err = indy_prover_create_master_secret(command_handle,
                                                      wallet_handle,
                                                      master_secret_name.as_ptr(),
                                                      cb);
@@ -116,7 +112,7 @@ impl AnoncredsUtils {
 
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
 
-        let err = sovrin_prover_store_claim_offer(command_handle,
+        let err = indy_prover_store_claim_offer(command_handle,
                                                   wallet_handle,
                                                   claim_offer_json.as_ptr(),
                                                   cb);
@@ -145,7 +141,7 @@ impl AnoncredsUtils {
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = sovrin_prover_get_claim_offers(command_handle,
+        let err = indy_prover_get_claim_offers(command_handle,
                                                  wallet_handle,
                                                  filter_json.as_ptr(),
                                                  cb);
@@ -178,7 +174,7 @@ impl AnoncredsUtils {
         let claim_def_json = CString::new(claim_def_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
-        let err = sovrin_prover_create_and_store_claim_req(command_handle,
+        let err = indy_prover_create_and_store_claim_req(command_handle,
                                                            wallet_handle,
                                                            prover_did.as_ptr(),
                                                            claim_offer_json.as_ptr(),
@@ -211,7 +207,7 @@ impl AnoncredsUtils {
         let claim_req_json = CString::new(claim_req_json).unwrap();
         let claim_json = CString::new(claim_json).unwrap();
 
-        let err = sovrin_issuer_create_claim(command_handle,
+        let err = indy_issuer_create_claim(command_handle,
                                              wallet_handle,
                                              claim_req_json.as_ptr(),
                                              claim_json.as_ptr(),
@@ -243,7 +239,7 @@ impl AnoncredsUtils {
 
         let claims_json = CString::new(claims_json).unwrap();
 
-        let err = sovrin_prover_store_claim(command_handle,
+        let err = indy_prover_store_claim(command_handle,
                                             wallet_handle,
                                             claims_json.as_ptr(),
                                             cb);
@@ -272,7 +268,7 @@ impl AnoncredsUtils {
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = sovrin_prover_get_claims(command_handle,
+        let err = indy_prover_get_claims(command_handle,
                                            wallet_handle,
                                            filter_json.as_ptr(),
                                            cb);
@@ -301,7 +297,7 @@ impl AnoncredsUtils {
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
-        let err = sovrin_prover_get_claims_for_proof_req(command_handle,
+        let err = indy_prover_get_claims_for_proof_req(command_handle,
                                                          wallet_handle,
                                                          proof_request_json.as_ptr(),
                                                          cb);
@@ -337,7 +333,7 @@ impl AnoncredsUtils {
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
-        let err = sovrin_prover_create_proof(command_handle,
+        let err = indy_prover_create_proof(command_handle,
                                              wallet_handle,
                                              proof_req_json.as_ptr(),
                                              requested_claims_json.as_ptr(),
@@ -376,7 +372,7 @@ impl AnoncredsUtils {
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
-        let err = sovrin_verifier_verify_proof(command_handle,
+        let err = indy_verifier_verify_proof(command_handle,
                                                proof_request_json.as_ptr(),
                                                proof_json.as_ptr(),
                                                schemas_json.as_ptr(),
@@ -395,6 +391,10 @@ impl AnoncredsUtils {
         }
 
         Ok(valid)
+    }
+
+    pub fn get_claim_def_id(issuer_did: &str, schema_seq_no: i32) -> String {
+        issuer_did.to_string() + ":" + &schema_seq_no.to_string()
     }
 
     pub fn get_gvt_schema_json(schema_seq_no: i32) -> String {
@@ -419,9 +419,9 @@ impl AnoncredsUtils {
                  }}"#, schema_seq_no)
     }
 
-    pub fn get_claim_offer(issuer_did: &str, claim_def_seq_no: i32, schema_seq_no: i32) -> String {
-        format!(r#"{{"issuer_did":"{}","claim_def_seq_no":{},"schema_seq_no":{} }}"#,
-                issuer_did, claim_def_seq_no, schema_seq_no)
+    pub fn get_claim_offer(issuer_did: &str, schema_seq_no: i32) -> String {
+        format!(r#"{{"issuer_did":"{}","schema_seq_no":{} }}"#,
+                issuer_did, schema_seq_no)
     }
 
     pub fn get_gvt_claim_json() -> String {
@@ -463,15 +463,15 @@ impl AnoncredsUtils {
     }
 
     pub fn get_gvt_claim_req() -> String {
-        r#"{
-            "claim_request":{
+        format!(r#"{{
+            "blinded_ms":{{
                 "prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                 "u":"72052674960029442327236458752017934128206007798774128392572211954456711136771871346204637748253860917837147111221378456345006764308173447177933384497678611527908801900335623480700015849806575534757455484512742315652166882850683721692964547448843598104385874050447011820051099399087175505815748958014671544911179795524159951193233504921329404534187047046492036161628814022862661479869322137573048331473599346645871295570237032991261433025344456232326409789544299441933427561947291495434188942844516539974096858281005872862193803356400358925349350554630231733687344283622639185011395343616612151755685912869590344206893",
                 "ur":null
-            },
-            "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e",
-            "claim_def_seq_no":1
-        }"#.to_string()
+            }},
+            "issuer_did":"{}",
+            "schema_seq_no":1
+        }}"#, ISSUER_DID)
     }
 
     pub fn get_unique_claims(proof_claims: &ProofClaimsJson) -> Vec<ClaimInfo> {
@@ -506,20 +506,20 @@ impl AnoncredsUtils {
                 TestUtils::cleanup_storage();
 
                 //1. Create and Open wallet
-                WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", "common_wallet", "default").unwrap();
+                WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
                 //2. Create GVT ClaimDefinition
                 let schema = AnoncredsUtils::get_gvt_schema_json(COMMON_SCHEMA_SEQ_NO);
                 //TODO Fix it.....Convert String to &'static str
-                let claim_def_json = AnoncredsUtils::create_claim_definition_and_set_link(WALLET_HANDLE, &schema, COMMON_CLAIM_DEF_SEQ_NO).unwrap();
+                let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE, ISSUER_DID, &schema, None, false).unwrap();
                 let res = mem::transmute(&claim_def_json as &str);
                 mem::forget(claim_def_json);
                 CLAIM_DEF_JSON = res;
 
                 //3. Store three claim offers
-                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", COMMON_CLAIM_DEF_SEQ_NO, COMMON_SCHEMA_SEQ_NO);
-                let claim_offer_json_2 = AnoncredsUtils::get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e", 2, 2);
-                let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 3, 2);
+                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer(ISSUER_DID, COMMON_SCHEMA_SEQ_NO);
+                let claim_offer_json_2 = AnoncredsUtils::get_claim_offer(ISSUER_DID, 2);
+                let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 2);
 
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_1).unwrap();
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_2).unwrap();
