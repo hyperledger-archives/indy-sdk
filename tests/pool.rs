@@ -239,19 +239,6 @@ mod high_cases {
         }
 
         #[test]
-        fn sovrin_delete_pool_ledger_config_works_for_recreate_after_delete() {
-            TestUtils::cleanup_storage();
-
-            let pool_name = "sovrin_remove_pool_ledger_config_works";
-            PoolUtils::create_pool_ledger_config(pool_name, None, None, None).unwrap();
-            PoolUtils::delete(pool_name).unwrap();
-            
-            PoolUtils::create_pool_ledger_config(pool_name, None, None, None).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_delete_pool_ledger_config_works_for_opened() {
             TestUtils::cleanup_storage();
@@ -260,20 +247,6 @@ mod high_cases {
             PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
 
             assert_eq!(PoolUtils::delete(pool_name).unwrap_err(), ErrorCode::CommonInvalidState);
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_delete_pool_ledger_config_works_for_closed() {
-            TestUtils::cleanup_storage();
-
-            let pool_name = "sovrin_delete_pool_ledger_config_works_for_closed";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            PoolUtils::delete(pool_name).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -391,71 +364,6 @@ mod medium_cases {
 
             let res = PoolUtils::open_pool_ledger(name, Some(config));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn open_pool_ledger_works_for_several_pools() {
-            TestUtils::cleanup_storage();
-            let pool_name_1 = "open_pool_ledger_works_for_several_pools_1";
-            let pool_name_2 = "open_pool_ledger_works_for_several_pools_2";
-
-            PoolUtils::create_pool_ledger_config(pool_name_1, Some(nodes), None, None).unwrap();
-            PoolUtils::create_pool_ledger_config(pool_name_2, Some(nodes), None, None).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-    }
-
-    mod refresh {
-        use super::*;
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_refresh_pool_ledger_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
-
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("sovrin_refresh_pool_ledger_works_for_invalid_handle").unwrap();
-
-            let res = PoolUtils::refresh(pool_handle + 1);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
-
-            TestUtils::cleanup_storage();
-        }
-    }
-
-    mod close {
-        use super::*;
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_close_pool_ledger_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
-
-            let pool_name = "sovrin_close_pool_ledger_works_for_invalid_handle";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-
-            PoolUtils::close(pool_handle + 1).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-    }
-
-    mod delete {
-        use super::*;
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_delete_pool_ledger_config_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
-
-            let pool_name = "sovrin_delete_pool_ledger_config_works_for_invalid_handle";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            PoolUtils::delete(pool_handle + 1).unwrap();
 
             TestUtils::cleanup_storage();
         }
