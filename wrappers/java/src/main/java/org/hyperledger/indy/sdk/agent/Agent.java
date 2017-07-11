@@ -1,6 +1,8 @@
 package org.hyperledger.indy.sdk.agent;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
@@ -15,6 +17,9 @@ import com.sun.jna.Callback;
  */
 public class Agent extends IndyJava.API {
 
+	private static Map<Integer, Agent.Connection> connections = new ConcurrentHashMap<> ();
+	private static Map<Integer, Agent.Listener> listeners = new ConcurrentHashMap<> ();
+
 	private Agent() {
 
 	}
@@ -28,7 +33,7 @@ public class Agent extends IndyJava.API {
 			Wallet wallet,
 			String senderDid,
 			String receiverDid,
-			Callback messageCb) throws IndyException {
+			AgentObservers.AgentConnectObserver agentConnectObserver) throws IndyException {
 
 		final CompletableFuture<Agent.Connection> future = new CompletableFuture<> ();
 
@@ -39,8 +44,25 @@ public class Agent extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				Agent.Connection result = new Agent.Connection(connection_handle);
+				Agent.Connection connection = new Agent.Connection(connection_handle);
+				connections.put(Integer.valueOf(connection_handle), connection);
+
+				Agent.Connection result = connection;
 				future.complete(result);
+			}
+		};
+
+		Callback messageCb = new Callback() {
+
+			@SuppressWarnings("unused")
+			public void callback(int xconnection_handle, int err, String message) throws IndyException {
+
+				checkCallback(err);
+
+				Agent.Connection connection = connections.get(Integer.valueOf(xconnection_handle));
+				if (connection == null) return;
+
+				agentConnectObserver.onMessage(connection, message);
 			}
 		};
 
@@ -63,8 +85,7 @@ public class Agent extends IndyJava.API {
 
 	public static CompletableFuture<Agent.Listener> agentListen(
 			String endpoint,
-			Callback connectionCb,
-			Callback messageCb) throws IndyException {
+			AgentObservers.AgentListenObserver agentListenObserver) throws IndyException {
 
 		final CompletableFuture<Agent.Listener> future = new CompletableFuture<> ();
 
@@ -75,8 +96,42 @@ public class Agent extends IndyJava.API {
 
 				if (! checkCallback(future, xcommand_handle, err)) return;
 
-				Agent.Listener result = new Agent.Listener(listener_handle);
+				Agent.Listener listener = new Agent.Listener(listener_handle);
+				listeners.put(Integer.valueOf(listener_handle), listener);
+
+				Agent.Listener result = listener;
 				future.complete(result);
+			}
+		};
+
+		Callback connectionCb = new Callback() {
+
+			@SuppressWarnings("unused")
+			public void callback(int xlistener_handle, int err, int connection_handle, String sender_did, String receiver_did) throws IndyException {
+
+				checkCallback(err);
+
+				Agent.Listener listener = listeners.get(Integer.valueOf(xlistener_handle));
+				if (listener == null) return;
+
+				Agent.Connection connection = connections.get(Integer.valueOf(connection_handle));
+				if (connection == null) return;
+
+				agentListenObserver.onConnection(listener, connection, sender_did, receiver_did);
+			}
+		};
+
+		Callback messageCb = new Callback() {
+
+			@SuppressWarnings("unused")
+			public void callback(int xconnection_handle, int err, String message) throws IndyException {
+
+				checkCallback(err);
+
+				Agent.Connection connection = connections.get(Integer.valueOf(xconnection_handle));
+				if (connection == null) return;
+
+				agentListenObserver.onMessage(connection, message);
 			}
 		};
 
@@ -213,6 +268,8 @@ public class Agent extends IndyJava.API {
 
 		int connectionHandle = connection.getConnectionHandle();
 
+		connections.remove(Integer.valueOf(connectionHandle));
+
 		int result = LibIndy.api.indy_agent_close_connection(
 				FIXED_COMMAND_HANDLE, 
 				connectionHandle, 
@@ -241,6 +298,8 @@ public class Agent extends IndyJava.API {
 		};
 
 		int listenerHandle = listener.getListenerHandle();
+
+		listeners.remove(Integer.valueOf(listenerHandle));
 
 		int result = LibIndy.api.indy_agent_close_connection(
 				FIXED_COMMAND_HANDLE, 

@@ -34,18 +34,16 @@ public class IndyJava {
 			return true;
 		}
 
-		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
+		protected static void checkCallback(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }
-
-			return true;
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
 		}
 
-		protected static void checkResult(int result) throws IndyException {
+		protected static void checkResult(int err) throws IndyException {
 
-			ErrorCode errorCode = ErrorCode.valueOf(result);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, result);
+			ErrorCode errorCode = ErrorCode.valueOf(err);
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
 		}
 
 		@Override
