@@ -1,7 +1,7 @@
-extern crate sovrin;
+extern crate indy;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use sovrin::api as api;
+use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
@@ -30,7 +30,7 @@ use utils::types::{
     ProofJson
 };
 
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 mod high_cases {
     use super::*;

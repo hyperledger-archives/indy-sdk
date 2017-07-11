@@ -1,16 +1,16 @@
-use sovrin::api::ErrorCode;
-use sovrin::api::anoncreds::{
-    sovrin_issuer_create_and_store_claim_def,
-    sovrin_issuer_create_claim,
-    sovrin_prover_create_master_secret,
-    sovrin_prover_create_and_store_claim_req,
-    sovrin_prover_store_claim,
-    sovrin_prover_get_claims_for_proof_req,
-    sovrin_prover_create_proof,
-    sovrin_prover_store_claim_offer,
-    sovrin_prover_get_claim_offers,
-    sovrin_verifier_verify_proof,
-    sovrin_prover_get_claims
+use indy::api::ErrorCode;
+use indy::api::anoncreds::{
+    indy_issuer_create_and_store_claim_def,
+    indy_issuer_create_claim,
+    indy_prover_create_master_secret,
+    indy_prover_create_and_store_claim_req,
+    indy_prover_store_claim,
+    indy_prover_get_claims_for_proof_req,
+    indy_prover_create_proof,
+    indy_prover_store_claim_offer,
+    indy_prover_get_claim_offers,
+    indy_verifier_verify_proof,
+    indy_prover_get_claims
 };
 
 use utils::callback::CallbackUtils;
@@ -51,7 +51,7 @@ impl AnoncredsUtils {
         let issuer_did = CString::new(issuer_did).unwrap();
 
         let err =
-            sovrin_issuer_create_and_store_claim_def(command_handle,
+            indy_issuer_create_and_store_claim_def(command_handle,
                                                      wallet_handle,
                                                      issuer_did.as_ptr(),
                                                      schema.as_ptr(),
@@ -83,7 +83,7 @@ impl AnoncredsUtils {
 
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
-        let err = sovrin_prover_create_master_secret(command_handle,
+        let err = indy_prover_create_master_secret(command_handle,
                                                      wallet_handle,
                                                      master_secret_name.as_ptr(),
                                                      cb);
@@ -112,7 +112,7 @@ impl AnoncredsUtils {
 
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
 
-        let err = sovrin_prover_store_claim_offer(command_handle,
+        let err = indy_prover_store_claim_offer(command_handle,
                                                   wallet_handle,
                                                   claim_offer_json.as_ptr(),
                                                   cb);
@@ -141,7 +141,7 @@ impl AnoncredsUtils {
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = sovrin_prover_get_claim_offers(command_handle,
+        let err = indy_prover_get_claim_offers(command_handle,
                                                  wallet_handle,
                                                  filter_json.as_ptr(),
                                                  cb);
@@ -174,7 +174,7 @@ impl AnoncredsUtils {
         let claim_def_json = CString::new(claim_def_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
-        let err = sovrin_prover_create_and_store_claim_req(command_handle,
+        let err = indy_prover_create_and_store_claim_req(command_handle,
                                                            wallet_handle,
                                                            prover_did.as_ptr(),
                                                            claim_offer_json.as_ptr(),
@@ -207,7 +207,7 @@ impl AnoncredsUtils {
         let claim_req_json = CString::new(claim_req_json).unwrap();
         let claim_json = CString::new(claim_json).unwrap();
 
-        let err = sovrin_issuer_create_claim(command_handle,
+        let err = indy_issuer_create_claim(command_handle,
                                              wallet_handle,
                                              claim_req_json.as_ptr(),
                                              claim_json.as_ptr(),
@@ -239,7 +239,7 @@ impl AnoncredsUtils {
 
         let claims_json = CString::new(claims_json).unwrap();
 
-        let err = sovrin_prover_store_claim(command_handle,
+        let err = indy_prover_store_claim(command_handle,
                                             wallet_handle,
                                             claims_json.as_ptr(),
                                             cb);
@@ -268,7 +268,7 @@ impl AnoncredsUtils {
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = sovrin_prover_get_claims(command_handle,
+        let err = indy_prover_get_claims(command_handle,
                                            wallet_handle,
                                            filter_json.as_ptr(),
                                            cb);
@@ -297,7 +297,7 @@ impl AnoncredsUtils {
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
-        let err = sovrin_prover_get_claims_for_proof_req(command_handle,
+        let err = indy_prover_get_claims_for_proof_req(command_handle,
                                                          wallet_handle,
                                                          proof_request_json.as_ptr(),
                                                          cb);
@@ -333,7 +333,7 @@ impl AnoncredsUtils {
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
-        let err = sovrin_prover_create_proof(command_handle,
+        let err = indy_prover_create_proof(command_handle,
                                              wallet_handle,
                                              proof_req_json.as_ptr(),
                                              requested_claims_json.as_ptr(),
@@ -372,7 +372,7 @@ impl AnoncredsUtils {
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
-        let err = sovrin_verifier_verify_proof(command_handle,
+        let err = indy_verifier_verify_proof(command_handle,
                                                proof_request_json.as_ptr(),
                                                proof_json.as_ptr(),
                                                schemas_json.as_ptr(),

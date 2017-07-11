@@ -1,7 +1,7 @@
-extern crate sovrin;
+extern crate indy;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use sovrin::api as api;
+use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
@@ -19,36 +19,36 @@ use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
 
-use sovrin::api::ErrorCode;
-use sovrin::api::anoncreds::{
-    sovrin_issuer_create_and_store_claim_def,
-    sovrin_issuer_create_claim,
-    sovrin_prover_create_master_secret,
-    sovrin_prover_create_and_store_claim_req,
-    sovrin_prover_store_claim,
-    sovrin_prover_get_claims_for_proof_req,
-    sovrin_prover_create_proof,
-    sovrin_verifier_verify_proof
+use indy::api::ErrorCode;
+use indy::api::anoncreds::{
+    indy_issuer_create_and_store_claim_def,
+    indy_issuer_create_claim,
+    indy_prover_create_master_secret,
+    indy_prover_create_and_store_claim_req,
+    indy_prover_store_claim,
+    indy_prover_get_claims_for_proof_req,
+    indy_prover_create_proof,
+    indy_verifier_verify_proof
 };
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::ledger::{
-    sovrin_sign_and_submit_request,
-    sovrin_submit_request,
+use indy::api::ledger::{
+    indy_sign_and_submit_request,
+    indy_submit_request,
 };
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::pool::{
-    sovrin_open_pool_ledger,
-    sovrin_create_pool_ledger_config,
+use indy::api::pool::{
+    indy_open_pool_ledger,
+    indy_create_pool_ledger_config,
 };
-use sovrin::api::wallet::{
-    sovrin_create_wallet,
-    sovrin_open_wallet
+use indy::api::wallet::{
+    indy_create_wallet,
+    indy_open_wallet
 };
-use sovrin::api::signus::{
-    sovrin_create_and_store_my_did,
-    sovrin_sign,
-    sovrin_verify_signature,
-    sovrin_store_their_did
+use indy::api::signus::{
+    indy_create_and_store_my_did,
+    indy_sign,
+    indy_verify_signature,
+    indy_store_their_did
 };
 
 use utils::callback::CallbackUtils;
@@ -138,7 +138,7 @@ fn anoncreds_demo_works() {
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create Wallet
     let err =
-        sovrin_create_wallet(create_wallet_command_handle,
+        indy_create_wallet(create_wallet_command_handle,
                              CString::new(pool_name).unwrap().as_ptr(),
                              CString::new(wallet_name).unwrap().as_ptr(),
                              CString::new(xtype).unwrap().as_ptr(),
@@ -152,7 +152,7 @@ fn anoncreds_demo_works() {
 
     //2. Open Issuer Wallet. Gets Issuer wallet handle
     let err =
-        sovrin_open_wallet(open_wallet_command_handle,
+        indy_open_wallet(open_wallet_command_handle,
                            CString::new(wallet_name).unwrap().as_ptr(),
                            null(),
                            null(),
@@ -175,7 +175,7 @@ fn anoncreds_demo_works() {
 
     // 3. Issuer create Claim Definition for Schema
     let err =
-        sovrin_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
+        indy_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
                                                  wallet_handle,
                                                  CString::new(issuer_did.clone()).unwrap().as_ptr(),
                                                  CString::new(schema.clone()).unwrap().as_ptr(),
@@ -194,7 +194,7 @@ fn anoncreds_demo_works() {
     //    // Issuer creates a revocation registry
     //    let max_claim_num: i32 = 5;
     //
-    //    let err = sovrin_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
+    //    let err = indy_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
     //                                                       wallet_handle,
     //                                                       issuer_did,
     //                                                       schema_seq_no,
@@ -208,7 +208,7 @@ fn anoncreds_demo_works() {
     //    // Create relationship between revoc_reg_seq_no and revoc_reg_uuid in wallet
     //    let revoc_reg_seq_no = 2;
     //
-    //    let err = sovrin_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle2,
+    //    let err = indy_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle2,
     //                                                 wallet_handle,
     //                                                 CString::new(revoc_reg_uuid).unwrap().as_ptr(),
     //                                                 revoc_reg_seq_no,
@@ -220,7 +220,7 @@ fn anoncreds_demo_works() {
 
     // 5. Prover create Master Secret
     let err =
-        sovrin_prover_create_master_secret(prover_create_master_secret_command_handle,
+        indy_prover_create_master_secret(prover_create_master_secret_command_handle,
                                            wallet_handle,
                                            CString::new(master_secret_name).unwrap().as_ptr(),
                                            prover_create_master_secret_callback);
@@ -234,7 +234,7 @@ fn anoncreds_demo_works() {
 
     // 6. Prover create Claim Request
     let err =
-        sovrin_prover_create_and_store_claim_req(prover_create_claim_req_command_handle,
+        indy_prover_create_and_store_claim_req(prover_create_claim_req_command_handle,
                                                  wallet_handle,
                                                  CString::new(prover_did).unwrap().as_ptr(),
                                                  CString::new(claim_offer_json).unwrap().as_ptr(),
@@ -256,7 +256,7 @@ fn anoncreds_demo_works() {
 
     // 7. Issuer create Claim for Claim Request
     let err =
-        sovrin_issuer_create_claim(issuer_create_claim_command_handle,
+        indy_issuer_create_claim(issuer_create_claim_command_handle,
                                    wallet_handle,
                                    CString::new(claim_req_json).unwrap().as_ptr(),
                                    CString::new(claim_json).unwrap().as_ptr(),
@@ -271,7 +271,7 @@ fn anoncreds_demo_works() {
 
     // 7. Prover process and store Claim
     let err =
-        sovrin_prover_store_claim(prover_store_claim_command_handle,
+        indy_prover_store_claim(prover_store_claim_command_handle,
                                   wallet_handle,
                                   CString::new(xclaim_json).unwrap().as_ptr(),
                                   prover_store_claim_callback);
@@ -290,7 +290,7 @@ fn anoncreds_demo_works() {
 
     // 8. Prover gets Claims for Proof Request
     let err =
-        sovrin_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_handle,
+        indy_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_handle,
                                                wallet_handle,
                                                CString::new(proof_req_json.clone()).unwrap().as_ptr(),
                                                prover_get_claims_for_proof_req_callback);
@@ -319,7 +319,7 @@ fn anoncreds_demo_works() {
 
     // 9. Prover create Proof for Proof Request
     let err =
-        sovrin_prover_create_proof(prover_create_proof_handle,
+        indy_prover_create_proof(prover_create_proof_handle,
                                    wallet_handle,
                                    CString::new(proof_req_json.clone()).unwrap().as_ptr(),
                                    CString::new(requested_claims_json).unwrap().as_ptr(),
@@ -336,7 +336,7 @@ fn anoncreds_demo_works() {
 
     // 10. Verifier verify proof
     let err =
-        sovrin_verifier_verify_proof(verifier_verify_proof_handle,
+        indy_verifier_verify_proof(verifier_verify_proof_handle,
                                      CString::new(proof_req_json).unwrap().as_ptr(),
                                      CString::new(proof_json).unwrap().as_ptr(),
                                      CString::new(schemas_json).unwrap().as_ptr(),
@@ -399,7 +399,7 @@ fn ledger_demo_works() {
     // 1. Create ledger config from genesis txn file
     PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
     let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
-    let err = sovrin_create_pool_ledger_config(create_command_handle,
+    let err = indy_create_pool_ledger_config(create_command_handle,
                                                c_pool_name.as_ptr(),
                                                pool_config.as_ptr(),
                                                create_callback);
@@ -408,7 +408,7 @@ fn ledger_demo_works() {
     assert_eq!(err, ErrorCode::Success);
 
     // 2. Open pool ledger
-    let err = sovrin_open_pool_ledger(open_command_handle,
+    let err = indy_open_pool_ledger(open_command_handle,
                                       c_pool_name.as_ptr(),
                                       null(),
                                       open_callback);
@@ -419,7 +419,7 @@ fn ledger_demo_works() {
 
     // 3. Create My Wallet
     let err =
-        sovrin_create_wallet(create_my_wallet_command_handle,
+        indy_create_wallet(create_my_wallet_command_handle,
                              CString::new(pool_name).unwrap().as_ptr(),
                              CString::new(my_wallet_name).unwrap().as_ptr(),
                              CString::new(wallet_type).unwrap().as_ptr(),
@@ -433,7 +433,7 @@ fn ledger_demo_works() {
 
     // 4. Open My Wallet. Gets My wallet handle
     let err =
-        sovrin_open_wallet(open_my_wallet_command_handle,
+        indy_open_wallet(open_my_wallet_command_handle,
                            CString::new(my_wallet_name).unwrap().as_ptr(),
                            null(),
                            null(),
@@ -446,7 +446,7 @@ fn ledger_demo_works() {
 
     // 5. Create Their Wallet
     let err =
-        sovrin_create_wallet(create_their_wallet_command_handle,
+        indy_create_wallet(create_their_wallet_command_handle,
                              CString::new(pool_name).unwrap().as_ptr(),
                              CString::new(their_wallet_name).unwrap().as_ptr(),
                              CString::new(wallet_type).unwrap().as_ptr(),
@@ -460,7 +460,7 @@ fn ledger_demo_works() {
 
     // 6. Open Their Wallet. Gets Their wallet handle
     let err =
-        sovrin_open_wallet(open_their_wallet_command_handle,
+        indy_open_wallet(open_their_wallet_command_handle,
                            CString::new(their_wallet_name).unwrap().as_ptr(),
                            null(),
                            null(),
@@ -473,7 +473,7 @@ fn ledger_demo_works() {
     // 7. Create My DID
     let my_did_json = "{}";
     let err =
-        sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
+        indy_create_and_store_my_did(create_and_store_my_did_command_handle,
                                        my_wallet_handle,
                                        CString::new(my_did_json).unwrap().as_ptr(),
                                        create_and_store_my_did_callback);
@@ -488,7 +488,7 @@ fn ledger_demo_works() {
     // 8. Create Their DID from Trustee1 seed
     let their_did_json = r#"{"seed":"000000000000000000000000Trustee1"}"#;
     let err =
-        sovrin_create_and_store_my_did(create_and_store_their_did_command_handle,
+        indy_create_and_store_my_did(create_and_store_their_did_command_handle,
                                        their_wallet_handle,
                                        CString::new(their_did_json).unwrap().as_ptr(),
                                        create_and_store_their_did_callback);
@@ -507,7 +507,7 @@ fn ledger_demo_works() {
                                       }}"#,
                                       their_did, their_pk, their_verkey);
     let err =
-        sovrin_store_their_did(store_their_did_command_handle,
+        indy_store_their_did(store_their_did_command_handle,
                                my_wallet_handle,
                                CString::new(their_identity_json).unwrap().as_ptr(),
                                store_their_did_callback);
@@ -532,7 +532,7 @@ fn ledger_demo_works() {
     let msg = serde_json::to_string(&nym_txn_req).unwrap();
     let req = CString::new(msg).unwrap();
     let did_for_sign = CString::new(their_did).unwrap();
-    let err = sovrin_sign_and_submit_request(send_command_handle,
+    let err = indy_sign_and_submit_request(send_command_handle,
                                              pool_handle,
                                              their_wallet_handle,
                                              did_for_sign.as_ptr(),
@@ -559,7 +559,7 @@ fn ledger_demo_works() {
 
     let request = serde_json::to_string(&get_nym_txn).unwrap();
     let req = CString::new(request).unwrap();
-    let err = sovrin_submit_request(get_nym_command_handle,
+    let err = indy_submit_request(get_nym_command_handle,
                                     pool_handle,
                                     req.as_ptr(),
                                     get_nym_callback);
@@ -674,7 +674,7 @@ fn signus_demo_works() {
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Create My Wallet
     let err =
-        sovrin_create_wallet(create_my_wallet_command_handle,
+        indy_create_wallet(create_my_wallet_command_handle,
                              CString::new(pool_name).unwrap().as_ptr(),
                              CString::new(my_wallet_name).unwrap().as_ptr(),
                              CString::new(xtype).unwrap().as_ptr(),
@@ -688,7 +688,7 @@ fn signus_demo_works() {
 
     //2. Open My Wallet. Gets My wallet handle
     let err =
-        sovrin_open_wallet(open_my_wallet_command_handle,
+        indy_open_wallet(open_my_wallet_command_handle,
                            CString::new(my_wallet_name).unwrap().as_ptr(),
                            null(),
                            null(),
@@ -701,7 +701,7 @@ fn signus_demo_works() {
 
     //3. Create Their Wallet
     let err =
-        sovrin_create_wallet(create_their_wallet_command_handle,
+        indy_create_wallet(create_their_wallet_command_handle,
                              CString::new(pool_name).unwrap().as_ptr(),
                              CString::new(their_wallet_name).unwrap().as_ptr(),
                              CString::new(xtype).unwrap().as_ptr(),
@@ -715,7 +715,7 @@ fn signus_demo_works() {
 
     //4. Open Their Wallet. Gets Their wallet handle
     let err =
-        sovrin_open_wallet(open_their_wallet_command_handle,
+        indy_open_wallet(open_their_wallet_command_handle,
                            CString::new(their_wallet_name).unwrap().as_ptr(),
                            null(),
                            null(),
@@ -728,7 +728,7 @@ fn signus_demo_works() {
     // 5. Create My DID
     let my_did_json = "{}";
     let err =
-        sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
+        indy_create_and_store_my_did(create_and_store_my_did_command_handle,
                                        my_wallet_handle,
                                        CString::new(my_did_json).unwrap().as_ptr(),
                                        create_and_store_my_did_callback);
@@ -743,7 +743,7 @@ fn signus_demo_works() {
     // 6. Create Their DID
     let their_did_json = "{}";
     let err =
-        sovrin_create_and_store_my_did(create_and_store_their_did_command_handle,
+        indy_create_and_store_my_did(create_and_store_their_did_command_handle,
                                        their_wallet_handle,
                                        CString::new(their_did_json).unwrap().as_ptr(),
                                        create_and_store_their_did_callback);
@@ -762,7 +762,7 @@ fn signus_demo_works() {
                                       }}"#,
                                       their_did, their_pk, their_verkey);
     let err =
-        sovrin_store_their_did(store_their_did_command_handle,
+        indy_store_their_did(store_their_did_command_handle,
                                my_wallet_handle,
                                CString::new(their_identity_json).unwrap().as_ptr(),
                                store_their_did_callback);
@@ -782,7 +782,7 @@ fn signus_demo_works() {
         }
     }"#;
     let err =
-        sovrin_sign(sign_command_handle,
+        indy_sign(sign_command_handle,
                     their_wallet_handle,
                     CString::new(their_did.clone()).unwrap().as_ptr(),
                     CString::new(message.clone()).unwrap().as_ptr(),
@@ -795,7 +795,7 @@ fn signus_demo_works() {
 
     // 9. I Verify message
     let err =
-        sovrin_verify_signature(verify_command_handle,
+        indy_verify_signature(verify_command_handle,
                                 my_wallet_handle,
                                 1,
                                 CString::new(their_did).unwrap().as_ptr(),

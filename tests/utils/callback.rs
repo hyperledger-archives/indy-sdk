@@ -1,6 +1,6 @@
 extern crate libc;
 
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use self::libc::c_char;
 use std::ffi::CStr;

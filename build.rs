@@ -9,7 +9,7 @@ fn main() {
         Some(..) => {
 	    // do not build c-code on windows, use binaries
 	    let output_dir = env::var("OUT_DIR").unwrap();
-	    let prebuilt_dir = env::var("SOVRIN_PREBUILT_DEPS_DIR").unwrap();
+	    let prebuilt_dir = env::var("INDY_PREBUILT_DEPS_DIR").unwrap();
 
 	    let dst = Path::new(&output_dir[..]).join("..\\..\\..");
 	    let prebuilt = Path::new(&prebuilt_dir[..]);
