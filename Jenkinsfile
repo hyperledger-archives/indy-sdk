@@ -236,9 +236,6 @@ def publishRpmFiles() {
 
             sh 'chmod -R 777 ci'
 
-            def spec_path = pwd() + "/ci/indy-sdk.spec"
-            sh "chown root.root $spec_path"
-
             sh "./ci/rpm-build.sh $commit"
 
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
