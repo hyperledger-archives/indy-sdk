@@ -691,7 +691,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn sovrin_build_get_txn_request() {
+        fn indy_build_get_txn_request() {
             let identifier = "identifier";
             let data = 1;
 
@@ -704,10 +704,10 @@ mod high_cases {
         #[test]
         #[ignore]//Delete it after merge https://github.com/hyperledger/indy-plenum/pull/265
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_get_txn_request_works_a() {
+        fn indy_get_txn_request_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_get_txn_request_works";
+            let pool_name = "indy_get_txn_request_works";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
@@ -748,10 +748,10 @@ mod high_cases {
         #[test]
         #[ignore]//Delete it after merge https://github.com/hyperledger/indy-plenum/pull/265
         #[cfg(feature = "local_nodes_pool")]
-        fn sovrin_get_txn_request_works_for_invalid_seq_no() {
+        fn indy_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "sovrin_get_txn_request_works_for_invalid_seq_no";
+            let pool_name = "indy_get_txn_request_works_for_invalid_seq_no";
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 

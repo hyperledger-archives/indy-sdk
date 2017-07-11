@@ -437,7 +437,7 @@ impl LedgerUtils {
         let submitter_did = CString::new(submitter_did).unwrap();
 
         let err =
-            sovrin_build_get_txn_request(command_handle,
+            indy_build_get_txn_request(command_handle,
                                          submitter_did.as_ptr(),
                                          data,
                                          cb);

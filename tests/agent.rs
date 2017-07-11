@@ -89,7 +89,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).expect("create wallet");
 
-            let seed: Option<String> = Some("sovrin_agent_connect_works_for_a".to_string());
+            let seed: Option<String> = Some("indy_agent_connect_works_for_a".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
             let endpoint = "127.0.0.1:9702";
 
@@ -129,7 +129,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool2", None).expect("create wallet");
 
-            let seed: Option<String> = Some("sovrin_agent_listen_works_for_al".to_string());
+            let seed: Option<String> = Some("indy_agent_listen_works_for_al".to_string());
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
             let endpoint = "127.0.0.1:9703";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
