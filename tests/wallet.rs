@@ -130,6 +130,35 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore] //There is bug
+        fn sovrin_delete_wallet_works_for_opened() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_delete_wallet_works_for_opened";
+            let wallet_name = "wallet1";
+
+            WalletUtils::create_and_open_wallet(pool_name, wallet_name, "default").unwrap();
+            let res = WalletUtils::delete_wallet(wallet_name);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn sovrin_delete_wallet_works_for_closed() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "sovrin_delete_wallet_works_for_closed";
+            let wallet_name = "wallet1";
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, wallet_name, "default").unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(wallet_name).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_delete_wallet_works_for_plugged() {
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
