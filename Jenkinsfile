@@ -71,26 +71,26 @@ try {
     }
 }
 
-def testUbuntu() {
+def testPipeline(file, env_name) {
     def poolInst
     def network_name = "pool_network"
     try {
-        echo 'Ubuntu Test: Checkout csm'
+        echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        echo "Ubuntu Test: Create docker network (${network_name}) for nodes pool and test image"
+        echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
         sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
-        echo 'Ubuntu Test: Build docker image for nodes pool'
+        echo "${env_name} Test: Build docker image for nodes pool"
         def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
-        echo 'Ubuntu Test: Run nodes pool'
+        echo "${env_name} Test: Run nodes pool"
         poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
-        echo 'Ubuntu Test: Build docker image'
-        def testEnv = dockerHelpers.build(name)
+        echo "${env_name} Test: Build docker image"
+        def testEnv = dockerHelpers.build(name, file)
 
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-           echo 'Ubuntu Test: Test'
+           echo "${env_name} Test: Test"
 
            sh 'cargo update'
 
@@ -108,87 +108,35 @@ def testUbuntu() {
         }
     }
     finally {
-        echo 'Ubuntu Test: Cleanup'
+        echo "${env_name} Test: Cleanup"
         try {
             sh "docker network inspect ${network_name}"
         } catch (ignore) {
         }
         try {
             if (poolInst) {
-                echo 'Ubuntu Test: stop pool'
+                echo "${env_name} Test: stop pool"
                 poolInst.stop()
             }
         } catch (err) {
-            echo "Ubuntu Tests: error while stop pool ${err}"
+            echo "${env_name} Tests: error while stop pool ${err}"
         }
         try {
-            echo "Ubuntu Test: remove pool network ${network_name}"
+            echo "${env_name} Test: remove pool network ${network_name}"
             sh "docker network rm ${network_name}"
         } catch (err) {
-            echo "Ubuntu Test: error while delete ${network_name} - ${err}"
+            echo "${env_name} Test: error while delete ${network_name} - ${err}"
         }
         step([$class: 'WsCleanup'])
     }
 }
 
+def testUbuntu() {
+    testPipeline("ci/ubuntu.dockerfile ci", "Ubuntu")
+}
+
 def testRedHat() {
-    def poolInst
-    def network_name = "pool_network"
-    try {
-        echo 'RedHat Test: Checkout csm'
-        checkout scm
-
-        echo "RedHat Test: Create docker network (${network_name}) for nodes pool and test image"
-        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
-
-        echo 'RedHat Test: Build docker image for nodes pool'
-        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
-        echo 'RedHat Test: Run nodes pool'
-        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
-
-        echo 'RedHat Test: Build docker image'
-        def testEnv = dockerHelpers.build(name, 'ci/amazon.dockerfile ci')
-
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo 'RedHat Test: Test'
-
-            sh 'cargo update'
-
-            try {
-                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
-                /* TODO FIXME restore after xunit will be fixed
-                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
-                 */
-            }
-            finally {
-                /* TODO FIXME restore after xunit will be fixed
-                junit 'test-results.xml'
-                */
-            }
-        }
-    }
-    finally {
-        echo 'RedHat Test: Cleanup'
-        try {
-            sh "docker network inspect ${network_name}"
-        } catch (ignore) {
-        }
-        try {
-            if (poolInst) {
-                echo 'RedHat Test: stop pool'
-                poolInst.stop()
-            }
-        } catch (err) {
-            echo "RedHat Tests: error while stop pool ${err}"
-        }
-        try {
-            echo "RedHat Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name}"
-        } catch (err) {
-            echo "RedHat Test: error while delete ${network_name} - ${err}"
-        }
-        step([$class: 'WsCleanup'])
-    }
+    testPipeline("ci/amazon.dockerfile ci", "RedHat")
 }
 
 def publishToCargo() {
