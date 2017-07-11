@@ -4,10 +4,10 @@
 //
 
 
-#import "SovrinLedger.h"
-#import "SovrinCallbacks.h"
+#import "IndyLedger.h"
+#import "IndyCallbacks.h"
 #import "sovrin_core.h"
-#import "NSError+SovrinError.h"
+#import "NSError+IndyError.h"
 
 @implementation SovrinLedger
 

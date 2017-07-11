@@ -3,7 +3,7 @@
 //  libsovrin
 //
 
-#import "NSError+SovrinError.h"
+#import "NSError+IndyError.h"
 
 static NSString *const SovrinErrorDomain = @"SovrinErrorDomain";
 

@@ -16,13 +16,13 @@ FOUNDATION_EXPORT const unsigned char libsovrinVersionString[];
 
 // In this header, you should import all the public headers of your framework using statements like #import <libsovrin/PublicHeader.h>
 
-#import <libsovrin/SovrinErrors.h>
-#import <libsovrin/SovrinTypes.h>
-#import <libsovrin/SovrinPool.h>
-#import <libsovrin/SovrinAnoncreds.h>
-#import <libsovrin/SovrinWallet.h>
-#import <libsovrin/SovrinLedger.h>
-#import <libsovrin/SovrinSignus.h>
-#import <libsovrin/SovrinAgent.h>
+#import <libindy/IndyErrors.h>
+#import <libindy/IndyTypes.h>
+#import <libindy/IndyPool.h>
+#import <libindy/IndyAnoncreds.h>
+#import <libindy/IndyWallet.h>
+#import <libindy/IndyLedger.h>
+#import <libindy/IndySignus.h>
+#import <libindy/IndyAgent.h>
 
 

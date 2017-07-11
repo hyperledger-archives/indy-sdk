@@ -4,10 +4,10 @@
 //
 
 
-#import "SovrinWallet.h"
-#import "SovrinCallbacks.h"
+#import "IndyWallet.h"
+#import "IndyCallbacks.h"
 #import "sovrin_core.h"
-#import "NSError+SovrinError.h"
+#import "NSError+IndyError.h"
 
 @implementation SovrinWallet
 

@@ -3,10 +3,10 @@
 //  libsovrin
 //
 
-#import "SovrinAgent.h"
-#import "SovrinCallbacks.h"
+#import "IndyAgent.h"
+#import "IndyCallbacks.h"
 #import "sovrin_core.h"
-#import "NSError+SovrinError.h"
+#import "NSError+IndyError.h"
 
 @implementation SovrinAgent
 

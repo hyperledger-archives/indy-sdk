@@ -1,8 +1,8 @@
 #import <Foundation/Foundation.h>
-#import "SovrinCallbacks.h"
-#import "SovrinPool.h"
+#import "IndyCallbacks.h"
+#import "IndyPool.h"
 #import "sovrin_core.h"
-#import "NSError+SovrinError.h"
+#import "NSError+IndyError.h"
 
 @implementation SovrinPool
 

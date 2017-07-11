@@ -1,0 +1,842 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03FFB87E8CFC1AB2702042B5 /* libPods-libindy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2C0C49D7DC18962FC7EEC21A /* libPods-libindy-demo.a */; };
+		4DBC82A66C6BDF86D72567E6 /* libPods-libindy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C4D4FCF06279C5C752DE7F51 /* libPods-libindy-demoTests.a */; };
+		5DB1068A1F14FC15003679CD /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB106891F14FC15003679CD /* libindy.framework */; };
+		5DB1068B1F14FC15003679CD /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB106891F14FC15003679CD /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5DB106EE1F14FD29003679CD /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106E41F14FD29003679CD /* AppDelegate.mm */; };
+		5DB106EF1F14FD29003679CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106E51F14FD29003679CD /* Assets.xcassets */; };
+		5DB106F01F14FD29003679CD /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106E61F14FD29003679CD /* LaunchScreen.storyboard */; };
+		5DB106F11F14FD29003679CD /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106E81F14FD29003679CD /* Main.storyboard */; };
+		5DB106F21F14FD29003679CD /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106EA1F14FD29003679CD /* Info.plist */; };
+		5DB106F31F14FD29003679CD /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106EB1F14FD29003679CD /* main.m */; };
+		5DB106F41F14FD29003679CD /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106ED1F14FD29003679CD /* ViewController.m */; };
+		5DB1072D1F14FD3C003679CD /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106F61F14FD3C003679CD /* Base58Test.m */; };
+		5DB1072E1F14FD3C003679CD /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106F91F14FD3C003679CD /* AgentHighCases.m */; };
+		5DB1072F1F14FD3C003679CD /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106FA1F14FD3C003679CD /* AgentMediumCases.m */; };
+		5DB107301F14FD3C003679CD /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106FC1F14FD3C003679CD /* AnoncredsHighCases.m */; };
+		5DB107311F14FD3C003679CD /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106FD1F14FD3C003679CD /* AnoncredsMediumCases.m */; };
+		5DB107321F14FD3C003679CD /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106FE1F14FD3C003679CD /* AnoncredsMediumCasesDemos.m */; };
+		5DB107331F14FD3C003679CD /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107001F14FD3C003679CD /* LedgerAttribRequest.mm */; };
+		5DB107341F14FD3C003679CD /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107011F14FD3C003679CD /* LedgerHignCases.mm */; };
+		5DB107351F14FD3C003679CD /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107021F14FD3C003679CD /* LedgerNodeRequest.mm */; };
+		5DB107361F14FD3C003679CD /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107031F14FD3C003679CD /* LedgerNymRequest.mm */; };
+		5DB107371F14FD3C003679CD /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107041F14FD3C003679CD /* LedgerSchemaRequest.mm */; };
+		5DB107381F14FD3C003679CD /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107061F14FD3C003679CD /* PoolHighCases.m */; };
+		5DB107391F14FD3C003679CD /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107071F14FD3C003679CD /* PoolMediumCases.m */; };
+		5DB1073A1F14FD3C003679CD /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107091F14FD3C003679CD /* SignusHighCases.m */; };
+		5DB1073B1F14FD3C003679CD /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1070A1F14FD3C003679CD /* SignusMediumCases.m */; };
+		5DB1073C1F14FD3C003679CD /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1070C1F14FD3C003679CD /* WalletHighCases.m */; };
+		5DB1073D1F14FD3C003679CD /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1070D1F14FD3C003679CD /* WalletMediumCases.m */; };
+		5DB1073E1F14FD3C003679CD /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1070F1F14FD3C003679CD /* AnoncredsDemo.mm */; };
+		5DB1073F1F14FD3C003679CD /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107101F14FD3C003679CD /* LedgerDemo.mm */; };
+		5DB107401F14FD3C003679CD /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107111F14FD3C003679CD /* SignusDemo.mm */; };
+		5DB107411F14FD3C003679CD /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DB107121F14FD3C003679CD /* Info.plist */; };
+		5DB107421F14FD3C003679CD /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107151F14FD3C003679CD /* AgentUtils.m */; };
+		5DB107431F14FD3C003679CD /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107171F14FD3C003679CD /* AnoncredsUtils.m */; };
+		5DB107441F14FD3C003679CD /* ClosureUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107191F14FD3C003679CD /* ClosureUtils.m */; };
+		5DB107451F14FD3C003679CD /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1071B1F14FD3C003679CD /* Environment.m */; };
+		5DB107461F14FD3C003679CD /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1071D1F14FD3C003679CD /* LedgerUtils.mm */; };
+		5DB107471F14FD3C003679CD /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1071F1F14FD3C003679CD /* PoolUtils.m */; };
+		5DB107481F14FD3C003679CD /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107211F14FD3C003679CD /* SignusUtils.mm */; };
+		5DB107491F14FD3C003679CD /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107231F14FD3C003679CD /* TestUtils.m */; };
+		5DB1074A1F14FD3C003679CD /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107251F14FD3C003679CD /* WalletUtils.m */; };
+		5DB1074B1F14FD3C003679CD /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB107281F14FD3C003679CD /* NSArray+JSON.m */; };
+		5DB1074C1F14FD3C003679CD /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1072A1F14FD3C003679CD /* NSDictionary+JSON.m */; };
+		5DB1074D1F14FD3C003679CD /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB1072C1F14FD3C003679CD /* NSString+Validation.m */; };
+		7C7243E8873EB75A41166DF8 /* libPods-libsovrin-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3E2A7F9F1EC36187006194EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3E2A7F7D1EC36186006194EC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3E2A7F841EC36186006194EC;
+			remoteInfo = "libsovrin-demo";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3ED5BE501EC4985500881380 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		846CE34E1F0113A700B57188 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5DB1068B1F14FC15003679CD /* libindy.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.release.xcconfig"; sourceTree = "<group>"; };
+		179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C0C49D7DC18962FC7EEC21A /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.release.xcconfig"; sourceTree = "<group>"; };
+		531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DB106891F14FC15003679CD /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DB106E31F14FD29003679CD /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		5DB106E41F14FD29003679CD /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
+		5DB106E51F14FD29003679CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5DB106E71F14FD29003679CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		5DB106E91F14FD29003679CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		5DB106EA1F14FD29003679CD /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DB106EB1F14FD29003679CD /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		5DB106EC1F14FD29003679CD /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		5DB106ED1F14FD29003679CD /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		5DB106F61F14FD3C003679CD /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
+		5DB106F91F14FD3C003679CD /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
+		5DB106FA1F14FD3C003679CD /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
+		5DB106FC1F14FD3C003679CD /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
+		5DB106FD1F14FD3C003679CD /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
+		5DB106FE1F14FD3C003679CD /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
+		5DB107001F14FD3C003679CD /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
+		5DB107011F14FD3C003679CD /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
+		5DB107021F14FD3C003679CD /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
+		5DB107031F14FD3C003679CD /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
+		5DB107041F14FD3C003679CD /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
+		5DB107061F14FD3C003679CD /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
+		5DB107071F14FD3C003679CD /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
+		5DB107091F14FD3C003679CD /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
+		5DB1070A1F14FD3C003679CD /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
+		5DB1070C1F14FD3C003679CD /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
+		5DB1070D1F14FD3C003679CD /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
+		5DB1070F1F14FD3C003679CD /* AnoncredsDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
+		5DB107101F14FD3C003679CD /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
+		5DB107111F14FD3C003679CD /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
+		5DB107121F14FD3C003679CD /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DB107141F14FD3C003679CD /* AgentUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
+		5DB107151F14FD3C003679CD /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
+		5DB107161F14FD3C003679CD /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
+		5DB107171F14FD3C003679CD /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
+		5DB107181F14FD3C003679CD /* ClosureUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClosureUtils.h; sourceTree = "<group>"; };
+		5DB107191F14FD3C003679CD /* ClosureUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClosureUtils.m; sourceTree = "<group>"; };
+		5DB1071A1F14FD3C003679CD /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
+		5DB1071B1F14FD3C003679CD /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
+		5DB1071C1F14FD3C003679CD /* LedgerUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LedgerUtils.h; sourceTree = "<group>"; };
+		5DB1071D1F14FD3C003679CD /* LedgerUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerUtils.mm; sourceTree = "<group>"; };
+		5DB1071E1F14FD3C003679CD /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
+		5DB1071F1F14FD3C003679CD /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
+		5DB107201F14FD3C003679CD /* SignusUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
+		5DB107211F14FD3C003679CD /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
+		5DB107221F14FD3C003679CD /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
+		5DB107231F14FD3C003679CD /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
+		5DB107241F14FD3C003679CD /* WalletUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WalletUtils.h; sourceTree = "<group>"; };
+		5DB107251F14FD3C003679CD /* WalletUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletUtils.m; sourceTree = "<group>"; };
+		5DB107271F14FD3C003679CD /* NSArray+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+JSON.h"; sourceTree = "<group>"; };
+		5DB107281F14FD3C003679CD /* NSArray+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+JSON.m"; sourceTree = "<group>"; };
+		5DB107291F14FD3C003679CD /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
+		5DB1072A1F14FD3C003679CD /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
+		5DB1072B1F14FD3C003679CD /* NSString+Validation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
+		5DB1072C1F14FD3C003679CD /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
+		8ABF5B11084EF5841347E2DF /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
+		A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.debug.xcconfig"; sourceTree = "<group>"; };
+		C4D4FCF06279C5C752DE7F51 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB3E05A5AC03F91112FCE37A /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
+		F8E686C53A5A57253C2E1F32 /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
+		F96C4A8F4E05B57424F79E21 /* Pods-libindy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3E2A7F821EC36186006194EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB1068A1F14FC15003679CD /* libindy.framework in Frameworks */,
+				03FFB87E8CFC1AB2702042B5 /* libPods-libindy-demo.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E2A7F9B1EC36187006194EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C7243E8873EB75A41166DF8 /* libPods-libsovrin-demoTests.a in Frameworks */,
+				4DBC82A66C6BDF86D72567E6 /* libPods-libindy-demoTests.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3E2A7F7C1EC36186006194EC = {
+			isa = PBXGroup;
+			children = (
+				5DB106891F14FC15003679CD /* libindy.framework */,
+				5DB106E21F14FD29003679CD /* libindy-demo */,
+				5DB106F51F14FD3C003679CD /* libindy-demoTests */,
+				3E2A7F861EC36186006194EC /* Products */,
+				FFB35C33119165C4896C64A8 /* Pods */,
+				84DF55ECAD03C4B4CEE16BD1 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		3E2A7F861EC36186006194EC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E2A7F851EC36186006194EC /* libindy-demo.app */,
+				3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5DB106E21F14FD29003679CD /* libindy-demo */ = {
+			isa = PBXGroup;
+			children = (
+				5DB106E31F14FD29003679CD /* AppDelegate.h */,
+				5DB106E41F14FD29003679CD /* AppDelegate.mm */,
+				5DB106E51F14FD29003679CD /* Assets.xcassets */,
+				5DB106E61F14FD29003679CD /* LaunchScreen.storyboard */,
+				5DB106E81F14FD29003679CD /* Main.storyboard */,
+				5DB106EA1F14FD29003679CD /* Info.plist */,
+				5DB106EB1F14FD29003679CD /* main.m */,
+				5DB106EC1F14FD29003679CD /* ViewController.h */,
+				5DB106ED1F14FD29003679CD /* ViewController.m */,
+			);
+			path = "libindy-demo";
+			sourceTree = "<group>";
+		};
+		5DB106F51F14FD3C003679CD /* libindy-demoTests */ = {
+			isa = PBXGroup;
+			children = (
+				5DB106F61F14FD3C003679CD /* Base58Test.m */,
+				5DB106F71F14FD3C003679CD /* Case Tests */,
+				5DB1070E1F14FD3C003679CD /* Demo Tests */,
+				5DB107121F14FD3C003679CD /* Info.plist */,
+				5DB107131F14FD3C003679CD /* Test Utils */,
+				5DB107261F14FD3C003679CD /* Utils */,
+			);
+			path = "libindy-demoTests";
+			sourceTree = SOURCE_ROOT;
+		};
+		5DB106F71F14FD3C003679CD /* Case Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5DB106F81F14FD3C003679CD /* Agent */,
+				5DB106FB1F14FD3C003679CD /* Anoncreds */,
+				5DB106FF1F14FD3C003679CD /* Ledger */,
+				5DB107051F14FD3C003679CD /* Pool */,
+				5DB107081F14FD3C003679CD /* Signus */,
+				5DB1070B1F14FD3C003679CD /* Wallet */,
+			);
+			path = "Case Tests";
+			sourceTree = "<group>";
+		};
+		5DB106F81F14FD3C003679CD /* Agent */ = {
+			isa = PBXGroup;
+			children = (
+				5DB106F91F14FD3C003679CD /* AgentHighCases.m */,
+				5DB106FA1F14FD3C003679CD /* AgentMediumCases.m */,
+			);
+			path = Agent;
+			sourceTree = "<group>";
+		};
+		5DB106FB1F14FD3C003679CD /* Anoncreds */ = {
+			isa = PBXGroup;
+			children = (
+				5DB106FC1F14FD3C003679CD /* AnoncredsHighCases.m */,
+				5DB106FD1F14FD3C003679CD /* AnoncredsMediumCases.m */,
+				5DB106FE1F14FD3C003679CD /* AnoncredsMediumCasesDemos.m */,
+			);
+			path = Anoncreds;
+			sourceTree = "<group>";
+		};
+		5DB106FF1F14FD3C003679CD /* Ledger */ = {
+			isa = PBXGroup;
+			children = (
+				5DB107001F14FD3C003679CD /* LedgerAttribRequest.mm */,
+				5DB107011F14FD3C003679CD /* LedgerHignCases.mm */,
+				5DB107021F14FD3C003679CD /* LedgerNodeRequest.mm */,
+				5DB107031F14FD3C003679CD /* LedgerNymRequest.mm */,
+				5DB107041F14FD3C003679CD /* LedgerSchemaRequest.mm */,
+			);
+			path = Ledger;
+			sourceTree = "<group>";
+		};
+		5DB107051F14FD3C003679CD /* Pool */ = {
+			isa = PBXGroup;
+			children = (
+				5DB107061F14FD3C003679CD /* PoolHighCases.m */,
+				5DB107071F14FD3C003679CD /* PoolMediumCases.m */,
+			);
+			path = Pool;
+			sourceTree = "<group>";
+		};
+		5DB107081F14FD3C003679CD /* Signus */ = {
+			isa = PBXGroup;
+			children = (
+				5DB107091F14FD3C003679CD /* SignusHighCases.m */,
+				5DB1070A1F14FD3C003679CD /* SignusMediumCases.m */,
+			);
+			path = Signus;
+			sourceTree = "<group>";
+		};
+		5DB1070B1F14FD3C003679CD /* Wallet */ = {
+			isa = PBXGroup;
+			children = (
+				5DB1070C1F14FD3C003679CD /* WalletHighCases.m */,
+				5DB1070D1F14FD3C003679CD /* WalletMediumCases.m */,
+			);
+			path = Wallet;
+			sourceTree = "<group>";
+		};
+		5DB1070E1F14FD3C003679CD /* Demo Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5DB1070F1F14FD3C003679CD /* AnoncredsDemo.mm */,
+				5DB107101F14FD3C003679CD /* LedgerDemo.mm */,
+				5DB107111F14FD3C003679CD /* SignusDemo.mm */,
+			);
+			path = "Demo Tests";
+			sourceTree = "<group>";
+		};
+		5DB107131F14FD3C003679CD /* Test Utils */ = {
+			isa = PBXGroup;
+			children = (
+				5DB107141F14FD3C003679CD /* AgentUtils.h */,
+				5DB107151F14FD3C003679CD /* AgentUtils.m */,
+				5DB107161F14FD3C003679CD /* AnoncredsUtils.h */,
+				5DB107171F14FD3C003679CD /* AnoncredsUtils.m */,
+				5DB107181F14FD3C003679CD /* ClosureUtils.h */,
+				5DB107191F14FD3C003679CD /* ClosureUtils.m */,
+				5DB1071A1F14FD3C003679CD /* Environment.h */,
+				5DB1071B1F14FD3C003679CD /* Environment.m */,
+				5DB1071C1F14FD3C003679CD /* LedgerUtils.h */,
+				5DB1071D1F14FD3C003679CD /* LedgerUtils.mm */,
+				5DB1071E1F14FD3C003679CD /* PoolUtils.h */,
+				5DB1071F1F14FD3C003679CD /* PoolUtils.m */,
+				5DB107201F14FD3C003679CD /* SignusUtils.h */,
+				5DB107211F14FD3C003679CD /* SignusUtils.mm */,
+				5DB107221F14FD3C003679CD /* TestUtils.h */,
+				5DB107231F14FD3C003679CD /* TestUtils.m */,
+				5DB107241F14FD3C003679CD /* WalletUtils.h */,
+				5DB107251F14FD3C003679CD /* WalletUtils.m */,
+			);
+			path = "Test Utils";
+			sourceTree = "<group>";
+		};
+		5DB107261F14FD3C003679CD /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				5DB107271F14FD3C003679CD /* NSArray+JSON.h */,
+				5DB107281F14FD3C003679CD /* NSArray+JSON.m */,
+				5DB107291F14FD3C003679CD /* NSDictionary+JSON.h */,
+				5DB1072A1F14FD3C003679CD /* NSDictionary+JSON.m */,
+				5DB1072B1F14FD3C003679CD /* NSString+Validation.h */,
+				5DB1072C1F14FD3C003679CD /* NSString+Validation.m */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */,
+				531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */,
+				2C0C49D7DC18962FC7EEC21A /* libPods-libindy-demo.a */,
+				C4D4FCF06279C5C752DE7F51 /* libPods-libindy-demoTests.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FFB35C33119165C4896C64A8 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */,
+				070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */,
+				04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */,
+				4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */,
+				DB3E05A5AC03F91112FCE37A /* Pods-libindy-demo.debug.xcconfig */,
+				8ABF5B11084EF5841347E2DF /* Pods-libindy-demo.release.xcconfig */,
+				F96C4A8F4E05B57424F79E21 /* Pods-libindy-demoTests.debug.xcconfig */,
+				F8E686C53A5A57253C2E1F32 /* Pods-libindy-demoTests.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3E2A7F841EC36186006194EC /* libindy-demo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E2A7FA71EC36187006194EC /* Build configuration list for PBXNativeTarget "libindy-demo" */;
+			buildPhases = (
+				3DAF44B115C578F44367F9F0 /* [CP] Check Pods Manifest.lock */,
+				3E2A7F811EC36186006194EC /* Sources */,
+				3E2A7F821EC36186006194EC /* Frameworks */,
+				3E2A7F831EC36186006194EC /* Resources */,
+				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
+				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
+				846CE34E1F0113A700B57188 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "libindy-demo";
+			productName = "libsovrin-demo";
+			productReference = 3E2A7F851EC36186006194EC /* libindy-demo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3E2A7F9D1EC36187006194EC /* libindy-demoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "libindy-demoTests" */;
+			buildPhases = (
+				8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */,
+				3E2A7F9A1EC36187006194EC /* Sources */,
+				3E2A7F9B1EC36187006194EC /* Frameworks */,
+				3E2A7F9C1EC36187006194EC /* Resources */,
+				3ED5BE501EC4985500881380 /* CopyFiles */,
+				58E7D3F16AB63FB03CA9D928 /* [CP] Embed Pods Frameworks */,
+				4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3E2A7FA01EC36187006194EC /* PBXTargetDependency */,
+			);
+			name = "libindy-demoTests";
+			productName = "libsovrin-demoTests";
+			productReference = 3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3E2A7F7D1EC36186006194EC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Kirill Neznamov";
+				TargetAttributes = {
+					3E2A7F841EC36186006194EC = {
+						CreatedOnToolsVersion = 8.3.2;
+						DevelopmentTeam = ES8QU3D2A4;
+						ProvisioningStyle = Automatic;
+					};
+					3E2A7F9D1EC36187006194EC = {
+						CreatedOnToolsVersion = 8.3.2;
+						DevelopmentTeam = ES8QU3D2A4;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 3E2A7F841EC36186006194EC;
+					};
+				};
+			};
+			buildConfigurationList = 3E2A7F801EC36186006194EC /* Build configuration list for PBXProject "libindy-demo" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3E2A7F7C1EC36186006194EC;
+			productRefGroup = 3E2A7F861EC36186006194EC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3E2A7F841EC36186006194EC /* libindy-demo */,
+				3E2A7F9D1EC36187006194EC /* libindy-demoTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3E2A7F831EC36186006194EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB106F21F14FD29003679CD /* Info.plist in Resources */,
+				5DB106F11F14FD29003679CD /* Main.storyboard in Resources */,
+				5DB106EF1F14FD29003679CD /* Assets.xcassets in Resources */,
+				5DB107411F14FD3C003679CD /* Info.plist in Resources */,
+				5DB106F01F14FD29003679CD /* LaunchScreen.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E2A7F9C1EC36187006194EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3DAF44B115C578F44367F9F0 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		58E7D3F16AB63FB03CA9D928 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3E2A7F811EC36186006194EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB106F41F14FD29003679CD /* ViewController.m in Sources */,
+				5DB107301F14FD3C003679CD /* AnoncredsHighCases.m in Sources */,
+				5DB1074A1F14FD3C003679CD /* WalletUtils.m in Sources */,
+				5DB107481F14FD3C003679CD /* SignusUtils.mm in Sources */,
+				5DB107461F14FD3C003679CD /* LedgerUtils.mm in Sources */,
+				5DB107351F14FD3C003679CD /* LedgerNodeRequest.mm in Sources */,
+				5DB107331F14FD3C003679CD /* LedgerAttribRequest.mm in Sources */,
+				5DB106F31F14FD29003679CD /* main.m in Sources */,
+				5DB1074C1F14FD3C003679CD /* NSDictionary+JSON.m in Sources */,
+				5DB107321F14FD3C003679CD /* AnoncredsMediumCasesDemos.m in Sources */,
+				5DB107391F14FD3C003679CD /* PoolMediumCases.m in Sources */,
+				5DB1073D1F14FD3C003679CD /* WalletMediumCases.m in Sources */,
+				5DB1073A1F14FD3C003679CD /* SignusHighCases.m in Sources */,
+				5DB1072F1F14FD3C003679CD /* AgentMediumCases.m in Sources */,
+				5DB1074B1F14FD3C003679CD /* NSArray+JSON.m in Sources */,
+				5DB107401F14FD3C003679CD /* SignusDemo.mm in Sources */,
+				5DB1073C1F14FD3C003679CD /* WalletHighCases.m in Sources */,
+				5DB1073B1F14FD3C003679CD /* SignusMediumCases.m in Sources */,
+				5DB107381F14FD3C003679CD /* PoolHighCases.m in Sources */,
+				5DB106EE1F14FD29003679CD /* AppDelegate.mm in Sources */,
+				5DB107431F14FD3C003679CD /* AnoncredsUtils.m in Sources */,
+				5DB1072D1F14FD3C003679CD /* Base58Test.m in Sources */,
+				5DB107371F14FD3C003679CD /* LedgerSchemaRequest.mm in Sources */,
+				5DB107361F14FD3C003679CD /* LedgerNymRequest.mm in Sources */,
+				5DB107471F14FD3C003679CD /* PoolUtils.m in Sources */,
+				5DB107451F14FD3C003679CD /* Environment.m in Sources */,
+				5DB107491F14FD3C003679CD /* TestUtils.m in Sources */,
+				5DB107441F14FD3C003679CD /* ClosureUtils.m in Sources */,
+				5DB107311F14FD3C003679CD /* AnoncredsMediumCases.m in Sources */,
+				5DB1072E1F14FD3C003679CD /* AgentHighCases.m in Sources */,
+				5DB1074D1F14FD3C003679CD /* NSString+Validation.m in Sources */,
+				5DB1073F1F14FD3C003679CD /* LedgerDemo.mm in Sources */,
+				5DB107341F14FD3C003679CD /* LedgerHignCases.mm in Sources */,
+				5DB1073E1F14FD3C003679CD /* AnoncredsDemo.mm in Sources */,
+				5DB107421F14FD3C003679CD /* AgentUtils.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E2A7F9A1EC36187006194EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3E2A7FA01EC36187006194EC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3E2A7F841EC36186006194EC /* libindy-demo */;
+			targetProxy = 3E2A7F9F1EC36187006194EC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		5DB106E61F14FD29003679CD /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5DB106E71F14FD29003679CD /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		5DB106E81F14FD29003679CD /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5DB106E91F14FD29003679CD /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		3E2A7FA51EC36187006194EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3E2A7FA61EC36187006194EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3E2A7FA81EC36187006194EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DB3E05A5AC03F91112FCE37A /* Pods-libindy-demo.debug.xcconfig */;
+			buildSettings = {
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = "libindy-demo/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demo";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3E2A7FA91EC36187006194EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8ABF5B11084EF5841347E2DF /* Pods-libindy-demo.release.xcconfig */;
+			buildSettings = {
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = "libindy-demo/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demo";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		3E2A7FAB1EC36187006194EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F96C4A8F4E05B57424F79E21 /* Pods-libindy-demoTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = "libsovrin-demoTests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demoTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/libindy-demo.app/libindy-demo";
+			};
+			name = Debug;
+		};
+		3E2A7FAC1EC36187006194EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F8E686C53A5A57253C2E1F32 /* Pods-libindy-demoTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = "libsovrin-demoTests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demoTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/libindy-demo.app/libindy-demo";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3E2A7F801EC36186006194EC /* Build configuration list for PBXProject "libindy-demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2A7FA51EC36187006194EC /* Debug */,
+				3E2A7FA61EC36187006194EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E2A7FA71EC36187006194EC /* Build configuration list for PBXNativeTarget "libindy-demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2A7FA81EC36187006194EC /* Debug */,
+				3E2A7FA91EC36187006194EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "libindy-demoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2A7FAB1EC36187006194EC /* Debug */,
+				3E2A7FAC1EC36187006194EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3E2A7F7D1EC36186006194EC /* Project object */;
+}

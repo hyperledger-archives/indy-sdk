@@ -5,7 +5,7 @@
 
 
 #import <Foundation/Foundation.h>
-#import "SovrinTypes.h"
+#import "IndyTypes.h"
 
 @interface SovrinAnoncreds : NSObject
 

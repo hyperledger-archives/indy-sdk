@@ -4,9 +4,9 @@
 //
 
 #include "sovrin_core.h"
-#import "SovrinCallbacks.h"
-#import "NSError+SovrinError.h"
-#import "SovrinTypes.h"
+#import "IndyCallbacks.h"
+#import "NSError+IndyError.h"
+#import "IndyTypes.h"
 
 static NSString* commandCallbackKey    =  @"commandCallback";
 static NSString* connectionCallbackKey =  @"connectionCallback";

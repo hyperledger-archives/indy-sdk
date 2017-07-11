@@ -3,11 +3,11 @@
 //  libsovrin
 //
 
-#import "SovrinAnoncreds.h"
-#import "SovrinCallbacks.h"
+#import "IndyAnoncreds.h"
+#import "IndyCallbacks.h"
 #import "sovrin_core.h"
-#import "NSError+SovrinError.h"
-#import "SovrinTypes.h"
+#import "NSError+IndyError.h"
+#import "IndyTypes.h"
 
 @implementation SovrinAnoncreds
 
