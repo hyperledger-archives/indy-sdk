@@ -36,6 +36,7 @@ public class Agent extends IndyJava.API {
 			CompletableFuture<Agent.Connection> future = (CompletableFuture<Agent.Connection>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
+			assert(! connections.containsKey(Integer.valueOf(connection_handle)));
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(Integer.valueOf(connection_handle), connection);
 
@@ -52,6 +53,7 @@ public class Agent extends IndyJava.API {
 			CompletableFuture<Agent.Listener> future = (CompletableFuture<Agent.Listener>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
+			assert(! listeners.containsKey(Integer.valueOf(listener_handle)));
 			Agent.Listener listener = new Agent.Listener(listener_handle);
 			listeners.put(Integer.valueOf(listener_handle), listener);
 
@@ -187,8 +189,9 @@ public class Agent extends IndyJava.API {
 				Agent.Listener listener = listeners.get(Integer.valueOf(xlistener_handle));
 				if (listener == null) return;
 
-				Agent.Connection connection = connections.get(Integer.valueOf(connection_handle));
-				if (connection == null) return;
+				assert(! connections.containsKey(Integer.valueOf(connection_handle)));
+				Agent.Connection connection = new Agent.Connection(connection_handle);
+				connections.put(Integer.valueOf(connection_handle), connection);
 
 				agentListenObserver.onConnection(listener, connection, sender_did, receiver_did);
 			}
