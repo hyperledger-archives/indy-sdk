@@ -1520,9 +1520,6 @@ mod demos {
         buf.retain(|&element| element != 0);
 
         let proof_req_json = String::from_utf8(buf).unwrap();
-        println!("proof_req_json: {:?}", proof_req_json);
-
-
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
         let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
@@ -1550,7 +1547,6 @@ mod demos {
                                                              &master_secret_name,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
-        println!("proof_json: {:?}", proof_json);
 
         stream.write(format!(r#"{{"type":"check_proof", "data": {}}}"#, proof_json).as_bytes());
         let mut buf = vec![0; 102400];
@@ -1559,7 +1555,7 @@ mod demos {
         buf.retain(|&element| element != 0);
 
         let valid = String::from_utf8(buf).unwrap();
-        println!("valid: {:?}", valid);
+        assert_eq!("true", valid);
 
         TestUtils::cleanup_storage();
     }
