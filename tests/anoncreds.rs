@@ -1617,68 +1617,6 @@ mod demos {
         let claim_defs_json = format!(r#"{{"{}":{}}}"#, 1, claim_def_json);
         let revoc_regs_jsons = "{}";
 
-
-
-        ///remove
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
-
-        //2. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
-
-        //3. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-
-        AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
-
-        //4. Prover create Claim Request
-        let prover_did = "BzfFCYk";
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                          prover_did,
-                                                                          &claim_offer_json,
-                                                                          &claim_def_json,
-                                                                          master_secret_name).unwrap();
-
-        //5. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
-        let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                   &claim_req,
-                                                                   &claim_json).unwrap();
-
-        // 6. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
-
-        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-        let claims_for_attr_1 = claims.attrs.get("attr_uuid").unwrap();
-        let claim = claims_for_attr_1[0].clone();
-
-        // 8. Prover create Proof
-        let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim.claim_uuid);
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let revoc_regs_jsons = "{}";
-
-        let proof_json = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                             &proof_req_json,
-                                                             &requested_claims_json,
-                                                             &schemas_json,
-                                                             &master_secret_name,
-                                                             &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
-        let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
-        println!("new proof from indy: {:?}", proof);
-        ///remove
-
-
-
         // 9. Verifier verify proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
