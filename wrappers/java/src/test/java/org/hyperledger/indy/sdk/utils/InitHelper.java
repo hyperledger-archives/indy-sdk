@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.helpres;
+package org.hyperledger.indy.sdk.utils;
 
 
 import org.hyperledger.indy.sdk.LibIndy;

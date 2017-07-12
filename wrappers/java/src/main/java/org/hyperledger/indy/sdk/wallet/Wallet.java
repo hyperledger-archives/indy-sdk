@@ -1,8 +1,12 @@
 package org.hyperledger.indy.sdk.wallet;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
+import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
@@ -39,6 +43,8 @@ public class Wallet extends IndyJava.API {
 	 * public Future<...> registerWalletType(
 				...) throws IndyException;*/
 
+	private static HashSet<Callback> map = new HashSet<>();//TODO FIX BUG WITH CALLBACK LIVE TIME
+
 	public static Future<CreateWalletResult> createWallet(
 			String poolName,
 			String name,
@@ -59,6 +65,8 @@ public class Wallet extends IndyJava.API {
 				future.complete(result);
 			}
 		};
+
+		map.add(callback);
 
 		int result = LibIndy.api.indy_create_wallet(
 				FIXED_COMMAND_HANDLE, 

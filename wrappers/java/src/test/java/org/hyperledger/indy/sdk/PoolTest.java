@@ -2,7 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.helpres.InitHelper;
+import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolResults.OpenPoolLedgerResult;

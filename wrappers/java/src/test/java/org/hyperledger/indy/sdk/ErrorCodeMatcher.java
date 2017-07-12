@@ -3,9 +3,6 @@ package org.hyperledger.indy.sdk;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 
-/**
- * Created by sminaev on 7/12/17.
- */
 public class ErrorCodeMatcher extends TypeSafeMatcher<IndyException> {
 	private ErrorCode expectedErrorCode;
 
