@@ -34,6 +34,7 @@ public class IndyJava {
 		protected static int addFuture(CompletableFuture<?> future) {
 
 			int commandHandle = Integer.valueOf(atomicInteger.incrementAndGet());
+			assert(! futures.containsKey(Integer.valueOf(commandHandle)));
 			futures.put(Integer.valueOf(commandHandle), future);
 
 			return commandHandle;
@@ -42,7 +43,7 @@ public class IndyJava {
 		protected static CompletableFuture<?> removeFuture(int xcommand_handle) {
 
 			CompletableFuture<?> future = futures.remove(Integer.valueOf(xcommand_handle));
-			assert (future != null);
+			assert(future != null);
 
 			return future;
 		}
