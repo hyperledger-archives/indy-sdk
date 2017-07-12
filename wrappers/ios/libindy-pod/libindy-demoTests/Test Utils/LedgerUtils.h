@@ -73,5 +73,11 @@
                                           origin:(NSString *)origin
                                       resultJson:(NSString**)resultJson;
 
+// MARK: - Get Txn request
+- (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSNumber *)data
+                                     resultJson:(NSString**)resultJson;
+
+
 
 @end

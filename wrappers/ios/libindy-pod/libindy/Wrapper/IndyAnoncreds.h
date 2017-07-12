@@ -10,12 +10,14 @@
 @interface IndyAnoncreds : NSObject
 
 + (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(IndyHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
-                                               completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler;
+                                               completion:(void (^)(NSError *error, NSString *claimDefJSON)) handler;
 
 + (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(IndyHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                             claimDefSeqNo:(NSNumber *)seqNo
                                               maxClaimNum:(NSNumber *)maxClaimNum
                                                completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler;
@@ -28,7 +30,6 @@
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler;
 
 + (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
-                                 claimDefSeqNo:(NSNumber *)claimSeqNo
                                  revocRegSeqNo:(NSNumber *)revocSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler;
@@ -79,5 +80,4 @@
                                    claimDefsJSON:(NSString *)claimDefsJSON
                                    revocRegsJSON:(NSString *)revocJSON
                                       completion:(void (^)(NSError *error, BOOL valid)) handler;
-
 @end

@@ -19,9 +19,7 @@
                              requestJSON:(NSString *)request
                               completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
 
-+ (NSError *)buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                     completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
+// MARK: - Nym request
 
 + (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
                                    targetDID:(NSString *)targetDid
@@ -29,6 +27,12 @@
                                        alias:(NSString *)alias
                                         role:(NSString *)role
                                   completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
+
++ (NSError *)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
+
+// MARK: - Attribute request
 
 + (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                       targetDID:(NSString *)targetDid
@@ -42,9 +46,7 @@
                                               data:(NSString *)data
                                         completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
 
-+ (NSError *)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
+// MARK: - Schema request
 
 + (NSError *)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSString *)data
@@ -55,21 +57,37 @@
                                               data:(NSString *)data
                                         completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
 
+// MARK: - ClaimDefTxn request
+
 + (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
                                          xref:(NSString *)xref
                                 signatureType:(NSString *)signatureType
                                          data:(NSString *)data
                                    completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
 
-+ (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *) submitterDid
-                                            xref:(NSString *) xref
-                                   signatureType:(NSString *) signatureType
-                                          origin:(NSString *) origin
++ (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
+                                            xref:(NSString *)xref
+                                   signatureType:(NSString *)signatureType
+                                          origin:(NSString *)origin
                                       completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
+
+// MARK: - Ddo request
+
++ (NSError *)buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                     completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
+
+// MARK: - Node request
 
 + (NSError *)buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
                                     targetDid:(NSString *)targetDid
                                          data:(NSString *)data
                                    completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
+
+// MARK: - Txn request
+
++ (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSNumber *)data
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler;
 
 @end

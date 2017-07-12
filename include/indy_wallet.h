@@ -26,7 +26,7 @@ extern "C" {
     /// Error code
     
 
-    extern indy_error_t indy_register_wallet_type(indy_handle_t  command_handle
+    extern indy_error_t indy_register_wallet_type(indy_handle_t  command_handle,
                                                       const char* xtype,
                                                       indy_error_t (*createFn)(const char* name,
                                                                                  const char* config,
