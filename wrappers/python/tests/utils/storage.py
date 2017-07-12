@@ -1,20 +1,20 @@
-import logging
+from ..utils.logging import logger
+
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
-
 
 class StorageUtils(object):
     @staticmethod
     def cleanup():
         tmp_path = StorageUtils.indy_temp_path()
-        logging.debug("Cleaning tmp path: %s", tmp_path)
+        logger.debug("Cleaning tmp path: %s", tmp_path)
 
         if tmp_path.exists():
             rmtree(str(tmp_path))
 
         home_path = StorageUtils.indy_home_path()
-        logging.debug("Cleaning home path: %s", home_path)
+        logger.debug("Cleaning home path: %s", home_path)
 
         if home_path.exists():
             rmtree(str(home_path))

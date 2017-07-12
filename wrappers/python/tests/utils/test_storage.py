@@ -1,9 +1,5 @@
 from .storage import StorageUtils
 
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-
 
 def test_storage_utils_indy_home_path_works():
     home_path = StorageUtils.indy_home_path()
