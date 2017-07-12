@@ -35,7 +35,7 @@
 - (void) testSendNymRequestWorksForOnlyRequiredFields
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_nym_request_works_for_only_required_fields";
+    NSString *poolName = @"indy_send_nym_request_works_for_only_required_fields";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -108,7 +108,7 @@
 - (void) testSendNymRequestWorksWithOptionFields
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_nym_request_works_with_option_fields";
+    NSString *poolName = @"indy_send_nym_request_works_with_option_fields";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -207,7 +207,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString *poolName = @"sovrin_nym_request_works_for_wrong_signer_role";
+    NSString *poolName = @"indy_nym_request_works_for_wrong_signer_role";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -313,7 +313,7 @@
 - (void) testNymRequestWorksForUnknownSignerDid
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_nym_request_works_for_unknown_signer_did";
+    NSString *poolName = @"indy_nym_request_works_for_unknown_signer_did";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -388,7 +388,7 @@
 {
     
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_get_nym_request_works_for_unknown_did";
+    NSString *poolName = @"indy_get_nym_request_works_for_unknown_did";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle

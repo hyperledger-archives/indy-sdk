@@ -102,7 +102,7 @@
 - (void)testAgentConnectWorksForRemoteData
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_agent_connect_works_for_remote_data";
+    NSString *poolName = @"indy_agent_connect_works_for_remote_data";
     NSError *ret;
     
     // 1. create and open pool ledger config
@@ -229,7 +229,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    NSString *seed = @"sovrin_agent_connect_works_for_a";
+    NSString *seed = @"indy_agent_connect_works_for_a";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
@@ -249,7 +249,7 @@
                                                                       endpoint:endpoint];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
-    // In Rust there is some temporary code which will be replaced with sovrin_agent_listen
+    // In Rust there is some temporary code which will be replaced with indy_agent_listen
     // 4. listen
     IndyHandle listenerHandle = 0;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:endpoint
@@ -277,7 +277,7 @@
     [TestUtils cleanupStorage];
 }
 
-// MARK: - Sovrin agent listen
+// MARK: - Indy agent listen
 
 - (void)testAgentListenWorksForAllDataInWalletPresent
 {
@@ -292,7 +292,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    NSString *seed = @"sovrin_agent_listen_works_for_al";
+    NSString *seed = @"indy_agent_listen_works_for_al";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;

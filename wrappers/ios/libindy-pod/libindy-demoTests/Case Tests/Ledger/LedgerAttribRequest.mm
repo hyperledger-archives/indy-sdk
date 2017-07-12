@@ -35,7 +35,7 @@
 - (void)testAttribRequestWorksForUnknownDid
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_attrib_request_works_for_unknown_did";
+    NSString *poolName = @"indy_attrib_request_works_for_unknown_did";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -94,7 +94,7 @@
 - (void)testGetAttribRequestWorksForUnknownDid
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_get_attrib_request_works_for_unknown_did";
+    NSString *poolName = @"indy_get_attrib_request_works_for_unknown_did";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -150,7 +150,7 @@
 - (void)testGetAttribrequestWorksForUnknownAttribute
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_get_attrib_request_works_for_unknown_attribute";
+    NSString *poolName = @"indy_get_attrib_request_works_for_unknown_attribute";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle

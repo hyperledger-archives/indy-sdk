@@ -71,6 +71,9 @@
                   Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">
                </Test>
                <Test
+                  Identifier = "WalletHignCases/testCreateWalletWorksForPlugged">
+               </Test>
+               <Test
                   Identifier = "WalletHignCases/testDeleteWalletWorksForPlugged">
                </Test>
                <Test

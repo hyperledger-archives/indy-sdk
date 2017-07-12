@@ -76,7 +76,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_send_node_request_works_for_wrong_role";
+    NSString* poolName = @"indy_send_node_request_works_for_wrong_role";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -142,7 +142,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_submit_node_request_works_for_already_has_node";
+    NSString* poolName = @"indy_submit_node_request_works_for_already_has_node";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle

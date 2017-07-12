@@ -37,7 +37,7 @@
     __block NSString *outJson = nil;
     NSError *ret;
 
-    ret = [SovrinLedger signAndSubmitRequestWithWalletHandle:walletHandle
+    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:walletHandle
                                                   poolHandle:poolHandle
                                                 submitterDID:submitterDid
                                                  requestJSON:requestJson
@@ -74,7 +74,7 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildNymRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildNymRequestWithSubmitterDid:submitterDid
                                               targetDID:targetDid
                                                  verkey:verkey
                                                   alias:alias
@@ -108,7 +108,7 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetNymRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildGetNymRequestWithSubmitterDid:submitterDid
                                                  targetDID:targetDid
                                                 completion:^(NSError *error, NSString *json)
     {
@@ -143,7 +143,7 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildAttribRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildAttribRequestWithSubmitterDid:submitterDid
                                                  targetDID:targetDid
                                                       hash:hash
                                                        raw:raw
@@ -177,7 +177,7 @@
     __block NSString *outRequest = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetAttribRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildGetAttribRequestWithSubmitterDid:submitterDid
                                                     targetDID:targetDid
                                                          data:data
                                                    completion:^(NSError *error, NSString *request)
@@ -208,7 +208,7 @@
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildSchemaRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildSchemaRequestWithSubmitterDid:submitterDid
                                                       data:data
                                                 completion:^(NSError *error, NSString *request)
            {
@@ -239,7 +239,7 @@
     NSError *ret;
     
     
-    ret = [SovrinLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
                                                          dest:dest
                                                          data:data
                                                    completion:^(NSError *error, NSString *request)
@@ -272,7 +272,7 @@
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildNodeRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildNodeRequestWithSubmitterDid:submitterDid
                                                targetDid:targetDid
                                                     data:data
                                               completion:^(NSError *error, NSString *request)
@@ -306,7 +306,7 @@
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildClaimDefTxnWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildClaimDefTxnWithSubmitterDid:submitterDid
                                                     xref:xref
                                            signatureType:signatureType
                                                     data:data
@@ -339,7 +339,7 @@
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetClaimDefTxnWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildGetClaimDefTxnWithSubmitterDid:submitterDid
                                                        xref:xref
                                               signatureType:signatureType
                                                      origin:origin
@@ -370,7 +370,7 @@
     __block NSString *result = nil;
     NSError *ret;
     
-    ret = [SovrinLedger buildGetTxnRequestWithSubmitterDid:submitterDid
+    ret = [IndyLedger buildGetTxnRequestWithSubmitterDid:submitterDid
                                                       data:data
                                                 completion:^(NSError* error, NSString* request)
            {

@@ -40,7 +40,7 @@
 
 /*
 - (NSError*) registerWalletType:(NSString*) type
-             withImplementation:(id<SovrinWalletImplementation>) implementation;
+             withImplementation:(id<IndyWalletImplementation>) implementation;
 */
 
 + (IndyWallet *)sharedInstance;

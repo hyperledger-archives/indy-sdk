@@ -35,7 +35,7 @@
     [TestUtils cleanupStorage];
     NSError *ret;
     NSString *endpoint = @"127.0.0.1:9812";
-    NSString *poolName = @"sovrin_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid";
+    NSString *poolName = @"indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid";
     
     // 1. Obtain pool handle
     IndyHandle poolHandle = 0;

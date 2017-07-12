@@ -81,7 +81,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_schema_request_works_for_unknown_did";
+    NSString* poolName = @"indy_schema_request_works_for_unknown_did";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -145,7 +145,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_get_schema_request_works_for_unknown_name";
+    NSString* poolName = @"indy_get_schema_request_works_for_unknown_name";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle

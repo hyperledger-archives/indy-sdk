@@ -42,8 +42,8 @@
 - (void)testCreateWalletWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works";
-    NSString *walletName = @"sovrin_create_wallet_works";
+    NSString *poolName = @"indy_create_wallet_works";
+    NSString *walletName = @"indy_create_wallet_works";
     NSString *xtype = @"default";
     
     NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
@@ -60,8 +60,8 @@
 {
     [TestUtils cleanupStorage];
     //InmemWallet::cleanup();
-    NSString *poolName = @"sovrin_create_wallet_works";
-    NSString *walletName = @"sovrin_create_wallet_works";
+    NSString *poolName = @"indy_create_wallet_works";
+    NSString *walletName = @"indy_create_wallet_works";
     NSString *xtype = @"inmem";
     
     // register type
@@ -81,8 +81,8 @@
 - (void)testCreateWalletWorksForUnknownType
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works_for_unknown_type";
-    NSString *walletName = @"sovrin_create_wallet_works_for_unknown_type";
+    NSString *poolName = @"indy_create_wallet_works_for_unknown_type";
+    NSString *walletName = @"indy_create_wallet_works_for_unknown_type";
     NSString *xtype = @"type";
     
     NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
@@ -97,8 +97,8 @@
 - (void)testCreateWalletWorksForEmptyType
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works_for_empty_type";
-    NSString *walletName = @"sovrin_create_wallet_works_for_empty_type";
+    NSString *poolName = @"indy_create_wallet_works_for_empty_type";
+    NSString *walletName = @"indy_create_wallet_works_for_empty_type";
     
     NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
                                                                walletName:walletName
@@ -112,8 +112,8 @@
 - (void)testCreateWalletWorksForConfig
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_create_wallet_works";
-    NSString *walletName = @"sovrin_create_wallet_works";
+    NSString *poolName = @"indy_create_wallet_works";
+    NSString *walletName = @"indy_create_wallet_works";
     NSString *xtype = @"default";
     NSString *config = @"{\"freshness_time\":1000}";
     
@@ -131,8 +131,8 @@
 - (void)testDeleteWalletWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_delete_wallet_works";
-    NSString *walletName = @"wallet1";
+    NSString *poolName = @"indy_delete_wallet_works";
+    NSString *walletName = @"indy_delete_wallet_works";
     NSError *ret;
     
     // 1. Create wallet
@@ -163,8 +163,8 @@
     //[InmemWallet cleanupStorage];
     
     NSError *ret;
-    NSString *poolName = @"sovrin_delete_wallet_works_for_plugged";
-    NSString *walletName = @"sovrin_delete_wallet_works_for_plugged";
+    NSString *poolName = @"indy_delete_wallet_works_for_plugged";
+    NSString *walletName = @"indy_delete_wallet_works_for_plugged";
     NSString *xtype = @"inmem";
     
     // 1. Register wallet type
@@ -185,7 +185,7 @@
                                                       walletName:walletName
                                                            xtype:xtype
                                                           config:nil];
-
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
     //[InmemWallet cleanupStorage];
     [TestUtils cleanupStorage];
@@ -195,8 +195,8 @@
 - (void)testOpenWalletWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_open_wallet_works";
-    NSString *walletName = @"sovrin_open_wallet_works";
+    NSString *poolName = @"indy_open_wallet_works";
+    NSString *walletName = @"indy_open_wallet_works";
     NSError *ret;
     
     // 1. Create wallet
@@ -221,8 +221,8 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString *poolName = @"sovrin_open_wallet_works_for_plugged";
-    NSString *walletName = @"sovrin_open_wallet_works_for_plugged";
+    NSString *poolName = @"indy_open_wallet_works_for_plugged";
+    NSString *walletName = @"indy_open_wallet_works_for_plugged";
     NSString *xtype = @"inmem";
     NSError *ret;
     
@@ -248,8 +248,8 @@
 - (void)testOpenWalletWorksForConfig
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_open_wallet_works_for_config";
-    NSString *walletName = @"sovrin_open_wallet_works_for_config";
+    NSString *poolName = @"indy_open_wallet_works_for_config";
+    NSString *walletName = @"indy_open_wallet_works_for_config";
     NSString *config = @"{\"freshness_time\":1000}";
     NSError *ret;
     
@@ -274,8 +274,8 @@
 - (void)testCloseWalletWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_close_wallet_works";
-    NSString *walletName = @"sovrin_close_wallet_works";
+    NSString *poolName = @"indy_close_wallet_works";
+    NSString *walletName = @"indy_close_wallet_works";
     NSError *ret;
     
     // 1. create wallet
@@ -308,8 +308,8 @@
 - (void)testCloseWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_close_wallet_works_for_plugged";
-    NSString *walletName = @"sovrin_close_wallet_works_for_plugged";
+    NSString *poolName = @"indy_close_wallet_works_for_plugged";
+    NSString *walletName = @"indy_close_wallet_works_for_plugged";
     NSString *xtype = @"inmem";
     NSError *ret;
     
@@ -346,7 +346,7 @@
 - (void)testWalletSetSeqNoWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_wallet_set_seqno_works";
+    NSString *poolName = @"indy_wallet_set_seqno_works";
     NSError *ret;
     
     // 1. create and open wallet
@@ -378,7 +378,7 @@
 - (void)testWalletSetSeqNoWorksForPlugged
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_wallet_set_seqno_works_for_plugged";
+    NSString *poolName = @"indy_wallet_set_seqno_works_for_plugged";
     NSString *xtype = @"inmem";
     NSError *ret;
     

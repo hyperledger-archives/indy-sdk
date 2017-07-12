@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C51F161E800024DFB3 /* SequenceUtils.m */; };
+		5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
+		5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DF013DC1F1604C200076592 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013D21F1604C100076592 /* AppDelegate.mm */; };
 		5DF013DD1F1604C200076592 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D31F1604C100076592 /* Assets.xcassets */; };
 		5DF013DE1F1604C200076592 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D41F1604C100076592 /* LaunchScreen.storyboard */; };
@@ -77,6 +80,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -92,6 +96,9 @@
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D13F6C41F161E800024DFB3 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
+		5D13F6C51F161E800024DFB3 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
+		5D13F6C71F161E9C0024DFB3 /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DF013D11F1604C100076592 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5DF013D21F1604C100076592 /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
 		5DF013D31F1604C100076592 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -159,6 +166,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */,
 				C4AEADFDB2CE7D041575D9DA /* libPods-libindy-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -177,6 +185,7 @@
 		3E2A7F7C1EC36186006194EC = {
 			isa = PBXGroup;
 			children = (
+				5D13F6C71F161E9C0024DFB3 /* libindy.framework */,
 				5DF013D01F1604C100076592 /* libindy-demo */,
 				5DF014651F1605EB00076592 /* libindy-demoTests */,
 				3E2A7F861EC36186006194EC /* Products */,
@@ -307,6 +316,8 @@
 		5DF014831F1605EB00076592 /* Test Utils */ = {
 			isa = PBXGroup;
 			children = (
+				5D13F6C41F161E800024DFB3 /* SequenceUtils.h */,
+				5D13F6C51F161E800024DFB3 /* SequenceUtils.m */,
 				5DF014841F1605EB00076592 /* AgentUtils.h */,
 				5DF014851F1605EB00076592 /* AgentUtils.m */,
 				5DF014861F1605EB00076592 /* AnoncredsUtils.h */,
@@ -587,6 +598,7 @@
 			files = (
 				5DF0149D1F1605EB00076592 /* Base58Test.m in Sources */,
 				5DF0149E1F1605EB00076592 /* AgentHighCases.m in Sources */,
+				5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */,
 				5DF014A51F1605EB00076592 /* LedgerNodeRequest.mm in Sources */,
 				5DF014A41F1605EB00076592 /* LedgerHignCases.mm in Sources */,
 				5DF014AC1F1605EB00076592 /* WalletHighCases.m in Sources */,

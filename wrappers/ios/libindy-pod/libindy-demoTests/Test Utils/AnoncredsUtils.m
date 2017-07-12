@@ -165,7 +165,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds  issuerCreateClaimWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds  issuerCreateClaimWithWalletHandle:walletHandle
                                                           claimReqJSON:claimReqJson
                                                              claimJSON:claimJson
                                                          revocRegSeqNo:@(-1)
@@ -202,7 +202,7 @@
     __block NSString *outClaimDefJson = nil;
     XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds  issuerCreateAndStoreClaimDefWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds  issuerCreateAndStoreClaimDefWithWalletHandle:walletHandle
                                                                         issuerDid:issuerDid
                                                                        schemaJSON:schemaJson
                                                                     signatureType:signatureType
@@ -256,7 +256,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverCreateMasterSecretWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds proverCreateMasterSecretWithWalletHandle:walletHandle
                                                             masterSecretName:name
                                                                   completion:^(NSError *error)
                     {
@@ -281,7 +281,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverStoreClaimOfferWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds proverStoreClaimOfferWithWalletHandle:walletHandle
                                                            claimOfferJSON:str
                                                                completion: ^(NSError *error)
                     {
@@ -310,7 +310,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [ SovrinAnoncreds proverGetClaimOffersWithWalletHandle:walletHandle
+    NSError *ret = [ IndyAnoncreds proverGetClaimOffersWithWalletHandle:walletHandle
                                                                filterJSON:filterJson
                                                                completion:^(NSError *error, NSString *claimOffersJSON)
                     {
@@ -343,7 +343,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [ SovrinAnoncreds proverCreateAndStoreClaimReqWithWalletHandle: walletHandle
+    NSError *ret = [ IndyAnoncreds proverCreateAndStoreClaimReqWithWalletHandle: walletHandle
                                                                         proverDid:pd
                                                                    claimOfferJSON:coj
                     
@@ -375,7 +375,7 @@
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverStoreClaimWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds proverStoreClaimWithWalletHandle:walletHandle
                                                           claimsJSON:str
                                                           completion:^(NSError *error)
                     {
@@ -404,7 +404,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverGetClaimsForProofReqWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds proverGetClaimsForProofReqWithWalletHandle:walletHandle
                                                                   proofReqJSON:str
                                                                     completion:^(NSError *error, NSString *claimsJSON)
                     {
@@ -435,7 +435,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverGetClaimsWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds proverGetClaimsWithWalletHandle:walletHandle
                                                          filterJSON:filterJson
                                                          completion:^(NSError *error, NSString *claimsJSON)
                     {
@@ -471,7 +471,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds proverCreateProofWithWalletHandle:walletHandle
+    NSError *ret = [IndyAnoncreds proverCreateProofWithWalletHandle:walletHandle
                                                          proofReqJSON:proofReqJson
                                                   requestedClaimsJSON:requestedClaimsJson
                                                           schemasJSON:schemasJson
@@ -509,7 +509,7 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    NSError *ret = [SovrinAnoncreds verifierVerifyProofWithWalletHandle:proofRequestJson
+    NSError *ret = [IndyAnoncreds verifierVerifyProofWithWalletHandle:proofRequestJson
                                                               proofJSON:proofJson
                                                             schemasJSON:schemasJson
                                                           claimDefsJSON:claimDefsJson

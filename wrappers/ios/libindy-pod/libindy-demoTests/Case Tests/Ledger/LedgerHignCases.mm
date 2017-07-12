@@ -35,7 +35,7 @@
 - (void) testSendRequestWorksForInvalidPoolHandle
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_request_works_for_invalid_pool_handle";
+    NSString *poolName = @"indy_send_request_works_for_invalid_pool_handle";
     NSError *ret;
     
     // 1. Obtain pool handle
@@ -90,7 +90,7 @@
 - (void) testSignAndSubmitRequestWorksForInvalidPoolHandle
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_invalid_pool_handle";
+    NSString *poolName = @"indy_sign_and_submit_request_works_for_invalid_pool_handle";
     NSError *ret;
     
     // 1. Obtain pool handle
@@ -166,7 +166,7 @@
 -(void) testSignAndSubmitRequestWorksForInvalidWalletHandle
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_invalid_wallet_handle";
+    NSString *poolName = @"indy_sign_and_submit_request_works_for_invalid_wallet_handle";
     NSError *ret;
     
     // 1. Obtain pool handle
@@ -242,7 +242,7 @@
 //- (void)testSignAndSubmitRequestWorksForNotFoundSigner
 //{
 //    [TestUtils cleanupStorage];
-//    NSString *poolName = @"sovrin_sign_and_submit_request_works_for_not_found_signer";
+//    NSString *poolName = @"indy_sign_and_submit_request_works_for_not_found_signer";
 //    NSString *walletName = @"wallet1";
 //    NSString *xtype = @"default";
 //    NSError *ret;
@@ -519,7 +519,7 @@
 - (void) testNymRequestWorksWithoutSignature
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_nym_request_works_without_signature";
+    NSString *poolName = @"indy_nym_request_works_without_signature";
     NSError *ret;
     
     // 1. Obtain pool handle
@@ -579,7 +579,7 @@
 - (void) testSendGetNymRequestWorks
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"sovrin_send_get_nym_request_works";
+    NSString *poolName = @"indy_send_get_nym_request_works";
     NSError *ret;
     
     // 1. Obtain pool handle
@@ -640,7 +640,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_nym_requests_works";
+    NSString* poolName = @"indy_nym_requests_works";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -820,7 +820,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_attrib_request_works_without_signature";
+    NSString* poolName = @"indy_attrib_request_works_without_signature";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -883,7 +883,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_attrib_requests_works";
+    NSString* poolName = @"indy_attrib_requests_works";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -1066,7 +1066,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_schema_request_works_without_signature";
+    NSString* poolName = @"indy_schema_request_works_without_signature";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -1295,7 +1295,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_send_node_request_works_without_signature";
+    NSString* poolName = @"indy_send_node_request_works_without_signature";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -1361,7 +1361,7 @@
 - (void) testSubmitNodeRequestWorksForNewSteward
 {
     [TestUtils cleanupStorage];
-    NSString* poolName = @"sovrin_submit_node_request_works_for_new_steward";
+    NSString* poolName = @"indy_submit_node_request_works_for_new_steward";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -1553,7 +1553,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"sovrin_claim_def_requests_works";
+    NSString* poolName = @"indy_claim_def_requests_works";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -1757,12 +1757,12 @@
     XCTAssertTrue([getTxnRequest contains:expectedResult], @"");
 }
 
-// TODO: Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
+// TODO: Delete it after merge ticket Indy SDKIS-149 Pyindy Interoperability: Support GET_TXN in Pyindy
 - (void)testGetTxnRequestWorks
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *poolName = @"sovrin_get_txn_request_works";
+    NSString *poolName = @"indy_get_txn_request_works";
     
     // 1. Create and open pool ledger config
     IndyHandle poolHandle = 0;
@@ -1859,12 +1859,12 @@
     [TestUtils cleanupStorage];
 }
 
-// TODO: Delete it after merge ticket Indy SDKIS-149 Pysovrin Interoperability: Support GET_TXN in Pysovrin
+// TODO: Delete it after merge ticket Indy SDKIS-149 Pyindy Interoperability: Support GET_TXN in Pyindy
 - (void)testGetTxnRequestWorksForInvalidSeqNo
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *poolName = @"sovrin_get_txn_request_works_for_invalid_seq_no";
+    NSString *poolName = @"indy_get_txn_request_works_for_invalid_seq_no";
     
     // 1. Create and open pool ledger config
     IndyHandle poolHandle = 0;

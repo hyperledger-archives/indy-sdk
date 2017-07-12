@@ -8,25 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */; };
-		5DF014521F1604E300076592 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DF0143D1F1604E300076592 /* Info.plist */; };
-		5DF014531F1604E300076592 /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF0143E1F1604E300076592 /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF014541F1604E300076592 /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014401F1604E300076592 /* IndyCallbacks.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF014551F1604E300076592 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014411F1604E300076592 /* NSError+IndyError.h */; };
-		5DF014561F1604E300076592 /* NSError+IndyError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014421F1604E300076592 /* NSError+IndyError.m */; };
-		5DF014571F1604E300076592 /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014441F1604E300076592 /* IndyAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF014581F1604E300076592 /* IndyAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014451F1604E300076592 /* IndyAgent.mm */; };
-		5DF014591F1604E300076592 /* IndyAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014461F1604E300076592 /* IndyAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF0145A1F1604E300076592 /* IndyAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014471F1604E300076592 /* IndyAnoncreds.mm */; };
-		5DF0145B1F1604E300076592 /* IndyErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014481F1604E300076592 /* IndyErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF0145C1F1604E300076592 /* IndyLedger.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014491F1604E300076592 /* IndyLedger.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF0145D1F1604E300076592 /* IndyLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0144A1F1604E300076592 /* IndyLedger.mm */; };
-		5DF0145E1F1604E300076592 /* IndyPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF0144B1F1604E300076592 /* IndyPool.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF0145F1F1604E300076592 /* IndyPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0144C1F1604E300076592 /* IndyPool.mm */; };
-		5DF014601F1604E300076592 /* IndySignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF0144D1F1604E300076592 /* IndySignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF014611F1604E300076592 /* IndySignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0144E1F1604E300076592 /* IndySignus.mm */; };
-		5DF014621F1604E300076592 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF0144F1F1604E300076592 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF014631F1604E300076592 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014501F1604E300076592 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DF014641F1604E300076592 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014511F1604E300076592 /* IndyWallet.mm */; };
+		5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */; };
+		5DF014D51F1615BA00076592 /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C01F1615BA00076592 /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C21F1615BA00076592 /* IndyCallbacks.h */; };
+		5DF014D71F1615BA00076592 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C31F1615BA00076592 /* NSError+IndyError.h */; };
+		5DF014D81F1615BA00076592 /* NSError+IndyError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014C41F1615BA00076592 /* NSError+IndyError.m */; };
+		5DF014D91F1615BA00076592 /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C61F1615BA00076592 /* IndyAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014DA1F1615BA00076592 /* IndyAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014C71F1615BA00076592 /* IndyAgent.mm */; };
+		5DF014DB1F1615BA00076592 /* IndyAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C81F1615BA00076592 /* IndyAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014DC1F1615BA00076592 /* IndyAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014C91F1615BA00076592 /* IndyAnoncreds.mm */; };
+		5DF014DD1F1615BA00076592 /* IndyErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014CA1F1615BA00076592 /* IndyErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014DE1F1615BA00076592 /* IndyLedger.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014CB1F1615BA00076592 /* IndyLedger.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014DF1F1615BA00076592 /* IndyLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014CC1F1615BA00076592 /* IndyLedger.mm */; };
+		5DF014E01F1615BA00076592 /* IndyPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014CD1F1615BA00076592 /* IndyPool.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014E11F1615BA00076592 /* IndyPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014CE1F1615BA00076592 /* IndyPool.mm */; };
+		5DF014E21F1615BA00076592 /* IndySignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014CF1F1615BA00076592 /* IndySignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014E31F1615BA00076592 /* IndySignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014D01F1615BA00076592 /* IndySignus.mm */; };
+		5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D11F1615BA00076592 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D21F1615BA00076592 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014D31F1615BA00076592 /* IndyWallet.mm */; };
 		EE1EC5E2C56623E5A12EA83A /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 72FE36F7769A958F9EAE731E /* libPods-libindy.a */; };
 /* End PBXBuildFile section */
 
@@ -38,25 +38,26 @@
 		3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libsovrin.a"; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-fpqoyzkovibgszalhhmmnlcetkfp/Build/Products/Debug-iphoneos/libPods-libsovrin.a"; sourceTree = "<group>"; };
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
 		4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.release.xcconfig"; sourceTree = "<group>"; };
-		5DF0143D1F1604E300076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		5DF0143E1F1604E300076592 /* libindy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libindy.h; sourceTree = "<group>"; };
-		5DF014401F1604E300076592 /* IndyCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCallbacks.h; sourceTree = "<group>"; };
-		5DF014411F1604E300076592 /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
-		5DF014421F1604E300076592 /* NSError+IndyError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+IndyError.m"; sourceTree = "<group>"; };
-		5DF014441F1604E300076592 /* IndyAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAgent.h; sourceTree = "<group>"; };
-		5DF014451F1604E300076592 /* IndyAgent.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAgent.mm; sourceTree = "<group>"; };
-		5DF014461F1604E300076592 /* IndyAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAnoncreds.h; sourceTree = "<group>"; };
-		5DF014471F1604E300076592 /* IndyAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAnoncreds.mm; sourceTree = "<group>"; };
-		5DF014481F1604E300076592 /* IndyErrors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyErrors.h; sourceTree = "<group>"; };
-		5DF014491F1604E300076592 /* IndyLedger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyLedger.h; sourceTree = "<group>"; };
-		5DF0144A1F1604E300076592 /* IndyLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyLedger.mm; sourceTree = "<group>"; };
-		5DF0144B1F1604E300076592 /* IndyPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPool.h; sourceTree = "<group>"; };
-		5DF0144C1F1604E300076592 /* IndyPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPool.mm; sourceTree = "<group>"; };
-		5DF0144D1F1604E300076592 /* IndySignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySignus.h; sourceTree = "<group>"; };
-		5DF0144E1F1604E300076592 /* IndySignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndySignus.mm; sourceTree = "<group>"; };
-		5DF0144F1F1604E300076592 /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
-		5DF014501F1604E300076592 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
-		5DF014511F1604E300076592 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
+		5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCallbacks.mm; sourceTree = "<group>"; };
+		5DF014BF1F1615BA00076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DF014C01F1615BA00076592 /* libindy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libindy.h; sourceTree = "<group>"; };
+		5DF014C21F1615BA00076592 /* IndyCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCallbacks.h; sourceTree = "<group>"; };
+		5DF014C31F1615BA00076592 /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
+		5DF014C41F1615BA00076592 /* NSError+IndyError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+IndyError.m"; sourceTree = "<group>"; };
+		5DF014C61F1615BA00076592 /* IndyAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAgent.h; sourceTree = "<group>"; };
+		5DF014C71F1615BA00076592 /* IndyAgent.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAgent.mm; sourceTree = "<group>"; };
+		5DF014C81F1615BA00076592 /* IndyAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAnoncreds.h; sourceTree = "<group>"; };
+		5DF014C91F1615BA00076592 /* IndyAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAnoncreds.mm; sourceTree = "<group>"; };
+		5DF014CA1F1615BA00076592 /* IndyErrors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyErrors.h; sourceTree = "<group>"; };
+		5DF014CB1F1615BA00076592 /* IndyLedger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyLedger.h; sourceTree = "<group>"; };
+		5DF014CC1F1615BA00076592 /* IndyLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyLedger.mm; sourceTree = "<group>"; };
+		5DF014CD1F1615BA00076592 /* IndyPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPool.h; sourceTree = "<group>"; };
+		5DF014CE1F1615BA00076592 /* IndyPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPool.mm; sourceTree = "<group>"; };
+		5DF014CF1F1615BA00076592 /* IndySignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySignus.h; sourceTree = "<group>"; };
+		5DF014D01F1615BA00076592 /* IndySignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndySignus.mm; sourceTree = "<group>"; };
+		5DF014D11F1615BA00076592 /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
+		5DF014D21F1615BA00076592 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
+		5DF014D31F1615BA00076592 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
 		717E50F5CB0006C54C8947D5 /* Pods-libindy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.debug.xcconfig"; sourceTree = "<group>"; };
 		72FE36F7769A958F9EAE731E /* libPods-libindy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DEA13FB625E476E575ACEE1F /* Pods-libindy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.release.xcconfig"; sourceTree = "<group>"; };
@@ -90,7 +91,7 @@
 		3E08C0111EB3336A000A73BA = {
 			isa = PBXGroup;
 			children = (
-				5DF0143C1F1604E300076592 /* libindy */,
+				5DF014BE1F1615BA00076592 /* libindy */,
 				3E08C01C1EB3336A000A73BA /* Products */,
 				7AA078817B8C2B22C808AE50 /* Pods */,
 				2C11A2035B94F34DF5CCDB2A /* Frameworks */,
@@ -105,44 +106,45 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		5DF0143C1F1604E300076592 /* libindy */ = {
+		5DF014BE1F1615BA00076592 /* libindy */ = {
 			isa = PBXGroup;
 			children = (
-				5DF0143D1F1604E300076592 /* Info.plist */,
-				5DF0143E1F1604E300076592 /* libindy.h */,
-				5DF0143F1F1604E300076592 /* Utils */,
-				5DF014431F1604E300076592 /* Wrapper */,
+				5DF014BF1F1615BA00076592 /* Info.plist */,
+				5DF014C01F1615BA00076592 /* libindy.h */,
+				5DF014C11F1615BA00076592 /* Utils */,
+				5DF014C51F1615BA00076592 /* Wrapper */,
 			);
 			path = libindy;
 			sourceTree = "<group>";
 		};
-		5DF0143F1F1604E300076592 /* Utils */ = {
+		5DF014C11F1615BA00076592 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				5DF014401F1604E300076592 /* IndyCallbacks.h */,
-				5DF014411F1604E300076592 /* NSError+IndyError.h */,
-				5DF014421F1604E300076592 /* NSError+IndyError.m */,
+				5DF014C21F1615BA00076592 /* IndyCallbacks.h */,
+				5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */,
+				5DF014C31F1615BA00076592 /* NSError+IndyError.h */,
+				5DF014C41F1615BA00076592 /* NSError+IndyError.m */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
 		};
-		5DF014431F1604E300076592 /* Wrapper */ = {
+		5DF014C51F1615BA00076592 /* Wrapper */ = {
 			isa = PBXGroup;
 			children = (
-				5DF014441F1604E300076592 /* IndyAgent.h */,
-				5DF014451F1604E300076592 /* IndyAgent.mm */,
-				5DF014461F1604E300076592 /* IndyAnoncreds.h */,
-				5DF014471F1604E300076592 /* IndyAnoncreds.mm */,
-				5DF014481F1604E300076592 /* IndyErrors.h */,
-				5DF014491F1604E300076592 /* IndyLedger.h */,
-				5DF0144A1F1604E300076592 /* IndyLedger.mm */,
-				5DF0144B1F1604E300076592 /* IndyPool.h */,
-				5DF0144C1F1604E300076592 /* IndyPool.mm */,
-				5DF0144D1F1604E300076592 /* IndySignus.h */,
-				5DF0144E1F1604E300076592 /* IndySignus.mm */,
-				5DF0144F1F1604E300076592 /* IndyTypes.h */,
-				5DF014501F1604E300076592 /* IndyWallet.h */,
-				5DF014511F1604E300076592 /* IndyWallet.mm */,
+				5DF014C61F1615BA00076592 /* IndyAgent.h */,
+				5DF014C71F1615BA00076592 /* IndyAgent.mm */,
+				5DF014C81F1615BA00076592 /* IndyAnoncreds.h */,
+				5DF014C91F1615BA00076592 /* IndyAnoncreds.mm */,
+				5DF014CA1F1615BA00076592 /* IndyErrors.h */,
+				5DF014CB1F1615BA00076592 /* IndyLedger.h */,
+				5DF014CC1F1615BA00076592 /* IndyLedger.mm */,
+				5DF014CD1F1615BA00076592 /* IndyPool.h */,
+				5DF014CE1F1615BA00076592 /* IndyPool.mm */,
+				5DF014CF1F1615BA00076592 /* IndySignus.h */,
+				5DF014D01F1615BA00076592 /* IndySignus.mm */,
+				5DF014D11F1615BA00076592 /* IndyTypes.h */,
+				5DF014D21F1615BA00076592 /* IndyWallet.h */,
+				5DF014D31F1615BA00076592 /* IndyWallet.mm */,
 			);
 			path = Wrapper;
 			sourceTree = "<group>";
@@ -165,17 +167,17 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DF0145C1F1604E300076592 /* IndyLedger.h in Headers */,
-				5DF014591F1604E300076592 /* IndyAnoncreds.h in Headers */,
-				5DF014621F1604E300076592 /* IndyTypes.h in Headers */,
-				5DF014601F1604E300076592 /* IndySignus.h in Headers */,
-				5DF014571F1604E300076592 /* IndyAgent.h in Headers */,
-				5DF014551F1604E300076592 /* NSError+IndyError.h in Headers */,
-				5DF0145B1F1604E300076592 /* IndyErrors.h in Headers */,
-				5DF014531F1604E300076592 /* libindy.h in Headers */,
-				5DF0145E1F1604E300076592 /* IndyPool.h in Headers */,
-				5DF014541F1604E300076592 /* IndyCallbacks.h in Headers */,
-				5DF014631F1604E300076592 /* IndyWallet.h in Headers */,
+				5DF014DE1F1615BA00076592 /* IndyLedger.h in Headers */,
+				5DF014DB1F1615BA00076592 /* IndyAnoncreds.h in Headers */,
+				5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */,
+				5DF014E21F1615BA00076592 /* IndySignus.h in Headers */,
+				5DF014D91F1615BA00076592 /* IndyAgent.h in Headers */,
+				5DF014D71F1615BA00076592 /* NSError+IndyError.h in Headers */,
+				5DF014DD1F1615BA00076592 /* IndyErrors.h in Headers */,
+				5DF014D51F1615BA00076592 /* libindy.h in Headers */,
+				5DF014E01F1615BA00076592 /* IndyPool.h in Headers */,
+				5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */,
+				5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,7 +242,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DF014521F1604E300076592 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -284,13 +285,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DF0145D1F1604E300076592 /* IndyLedger.mm in Sources */,
-				5DF0145A1F1604E300076592 /* IndyAnoncreds.mm in Sources */,
-				5DF014561F1604E300076592 /* NSError+IndyError.m in Sources */,
-				5DF0145F1F1604E300076592 /* IndyPool.mm in Sources */,
-				5DF014611F1604E300076592 /* IndySignus.mm in Sources */,
-				5DF014641F1604E300076592 /* IndyWallet.mm in Sources */,
-				5DF014581F1604E300076592 /* IndyAgent.mm in Sources */,
+				5DF014DF1F1615BA00076592 /* IndyLedger.mm in Sources */,
+				5DF014DC1F1615BA00076592 /* IndyAnoncreds.mm in Sources */,
+				5DF014D81F1615BA00076592 /* NSError+IndyError.m in Sources */,
+				5DF014E11F1615BA00076592 /* IndyPool.mm in Sources */,
+				5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */,
+				5DF014E31F1615BA00076592 /* IndySignus.mm in Sources */,
+				5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */,
+				5DF014DA1F1615BA00076592 /* IndyAgent.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -409,14 +411,7 @@
 				INFOPLIST_FILE = libindy/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/libsodium\"",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/libzmq\"",
-					"\"${PODS_ROOT}/OpenSSL/lib\"",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/milagro\"",
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libsovrin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -437,14 +432,7 @@
 				INFOPLIST_FILE = libindy/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/libsodium\"",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/libzmq\"",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/milagro\"",
-					"$(inherited)",
-					"\"${PODS_ROOT}/OpenSSL/lib\"",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libsovrin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
