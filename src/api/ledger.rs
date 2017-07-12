@@ -519,6 +519,7 @@ pub extern fn indy_build_node_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
+
 /// Builds a GET_TXN request.
 ///
 /// #Params

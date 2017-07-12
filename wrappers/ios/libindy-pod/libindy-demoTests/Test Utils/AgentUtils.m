@@ -53,22 +53,15 @@
     __block IndyHandle tempConnectionHandle;
     
     void (^onConnectCallback)(NSError*, IndyHandle) = ^(NSError *error, IndyHandle connectionHandle) {
-        NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %d", error.code);
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %ld", (long)error.code);
         tempConnectionHandle = connectionHandle;
         connectionErr = error;
         [connectCompletionExpectation fulfill];
     };
     
-    
-    // message callback
-    void (^onMessageCallback)(IndyHandle, NSError*, NSString*) = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
-        if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
-    };
-    
     __weak typeof(self)weakSelf = self;
     weakSelf.connectionCallbacks[@(tempConnectionHandle)] = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %d", error.code);
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
     

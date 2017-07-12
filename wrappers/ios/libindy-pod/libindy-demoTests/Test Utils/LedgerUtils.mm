@@ -74,15 +74,11 @@
     __block NSString *outJson = nil;
     NSError *ret;
     
-    NSString *verkeyStr = (verkey) ? verkey : @"";
-    NSString *aliasStr = (alias) ? alias : @"";
-    NSString *roleStr = (role) ? role : @"";
-    
     ret = [IndyLedger buildNymRequestWithSubmitterDid:submitterDid
                                               targetDID:targetDid
-                                                 verkey:verkeyStr
-                                                   alias:alias
-                                                   role:roleStr
+                                                 verkey:verkey
+                                                  alias:alias
+                                                   role:role
                                              completion:^(NSError *error, NSString *json)
            {
                err = error;
@@ -365,4 +361,32 @@
     return err;
 }
 
+- (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSNumber *)data
+                                     resultJson:(NSString**)resultJson
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+    NSError *ret;
+    
+    ret = [IndyLedger buildGetTxnRequestWithSubmitterDid:submitterDid
+                                                      data:data
+                                                completion:^(NSError* error, NSString* request)
+           {
+               err = error;
+               result = request;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson) { *resultJson = result;}
+    return err;
+}
 @end

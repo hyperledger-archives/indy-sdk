@@ -339,7 +339,6 @@ extern "C" {
     /// #Errors
     /// Common*
 
-
     extern indy_error_t indy_build_get_txn_request(indy_handle_t command_handle,
                                                     const char *    submitter_did,
                                                     indy_i32_t    data,

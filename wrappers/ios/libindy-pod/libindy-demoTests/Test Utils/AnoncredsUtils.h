@@ -13,10 +13,13 @@
 
 + (NSString *)commonMasterSecretName;
 
++ (IndyHandle)walletHandle;
++ (NSString *)claimDefJson;
++ (NSString *)issuerDid;
+
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                          seqNo:(NSNumber *)claimDefSeqNo
                     schemaSeqNo:(NSNumber *)schemaSeqNo;
 
 - (NSString *)getGvtClaimJson;
@@ -25,11 +28,8 @@
 
 - (NSString *)getGvtClaimDef;
 - (NSString *)getGvtClaimRequest;
-
-- (NSError *) createClaimDefinitionAndSetLink:(IndyHandle)walletHandle
-                                       schema:(NSString *)schema
-                                        seqNo:(NSNumber *)claimDefSeqNo
-                                      outJson:(NSString **)outJson;
+- (NSString *)getClaimDefIdForIssuerDid:(NSString *)issuerDid
+                            schemaSeqNo:(NSNumber *)schemaSeqNo;
 
 
 /**
@@ -70,11 +70,11 @@
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON;
 
 - (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(IndyHandle)walletHandle
+                                               issuerDid:(NSString *)issuerDid
                                               schemaJson:(NSString *)schemaJson
                                            signatureType:(NSString *)signatureType
                                           createNonRevoc:(BOOL)createNonRevoc
-                                            claimDefJson:(NSString **)claimDefJson
-                                            claimDefUUID:(NSString **)claimDefUUID;
+                                            claimDefJson:(NSString **)claimDefJson;
 
 - (NSError *) proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
                                     claimsJson:(NSString *)str;
