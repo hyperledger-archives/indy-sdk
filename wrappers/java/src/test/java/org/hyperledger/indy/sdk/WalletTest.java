@@ -10,6 +10,7 @@ import org.hyperledger.indy.sdk.wallet.WalletResults.CloseWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.DeleteWalletResult;
 import org.hyperledger.indy.sdk.wallet.WalletResults.OpenWalletResult;
+import org.hyperledger.indy.sdk.helpres.StorageHelper;
 import org.junit.Assert;
 
 import junit.framework.TestCase;
@@ -23,20 +24,22 @@ public class WalletTest extends TestCase {
 
 		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 
-		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
-		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get().getPool();
+		//OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
+		//this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get().getPool();
 	}
 
 	@Override
 	protected void tearDown() throws Exception {
 
-		this.pool.closePoolLedger();
+		//this.pool.closePoolLedger();
 	}
 
 	public void testWallet() throws Exception {
 
+		StorageHelper.cleanupStorage();
+
 		Wallet wallet;
-		
+
 		CreateWalletResult result1 = Wallet.createWallet("default", "mywallet", null, null, null).get();
 		Assert.assertNotNull(result1);
 
@@ -49,5 +52,7 @@ public class WalletTest extends TestCase {
 
 		DeleteWalletResult result4 = Wallet.deleteWallet("mywallet", null).get();
 		Assert.assertNotNull(result4);
+
+		StorageHelper.cleanupStorage();
 	}
 }

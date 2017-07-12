@@ -36,14 +36,23 @@ public enum ErrorCode {
     // Caller passed invalid value as param 9 (null, invalid json and etc..)
     CommonInvalidParam9(108),
 
+	// Caller passed invalid value as param 10 (null, invalid json and etc..)
+    CommonInvalidParam10(109),
+
+	// Caller passed invalid value as param 11 (null, invalid json and etc..)
+	CommonInvalidParam11(110),
+
+	// Caller passed invalid value as param 12 (null, invalid json and etc..)
+	CommonInvalidParam12(111),
+
     // Invalid library state was detected in runtime. It signals library bug
-    CommonInvalidState(109),
+    CommonInvalidState(112),
 
     // Object (json, config, key, claim and etc...) passed by library caller has invalid structure
-    CommonInvalidStructure(110),
+    CommonInvalidStructure(113),
 
     // IO Error
-    CommonIOError(111),
+    CommonIOError(114),
 
     // Wallet errors
     // Caller passed invalid wallet handle
