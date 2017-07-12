@@ -48,11 +48,11 @@ cargo build --release
 %install
 rm -rf ${RPM_BUILD_ROOT}
 
-install -dm0755 $RPM_BUILD_ROOT/%{_includedir}/sovrin
+install -dm0755 $RPM_BUILD_ROOT/%{_includedir}/indy
 install -dm0755 $RPM_BUILD_ROOT/%{_libdir}
-cp -a include/*.h $RPM_BUILD_ROOT/%{_includedir}/sovrin/
-install -Dm0644 target/release/libsovrin.a $RPM_BUILD_ROOT/%{_libdir}/libsovrin.a
-install -Dm0644 target/release/libsovrin.so $RPM_BUILD_ROOT/%{_libdir}/libsovrin.so
+cp -a include/*.h $RPM_BUILD_ROOT/%{_includedir}/indy/
+install -Dm0644 target/release/libindy.a $RPM_BUILD_ROOT/%{_libdir}/libindy.a
+install -Dm0644 target/release/libindy.so $RPM_BUILD_ROOT/%{_libdir}/libindy.so
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
@@ -63,11 +63,11 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files
 %defattr(-,root,root)
-%{_libdir}/libsovrin.so*
+%{_libdir}/libindy.so*
 
 %files devel
 %defattr(-,root,root)
-%{_libdir}/libsovrin.a
-%{_includedir}/sovrin/*.h
+%{_libdir}/libindy.a
+%{_includedir}/indy/*.h
 
 %changelog

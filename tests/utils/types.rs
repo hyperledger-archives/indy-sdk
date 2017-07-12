@@ -114,6 +114,30 @@ pub struct GetClaimDefReplyResult {
     pub  _ref: i32
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetTxnResult {
+    pub identifier: String,
+    #[serde(rename = "reqId")]
+    pub req_id: u64,
+    #[serde(rename = "seqNo")]
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaResult {
+    pub identifier: String,
+    #[serde(rename = "reqId")]
+    pub req_id: u64,
+    #[serde(rename = "seqNo")]
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: Option<String>
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
     #[serde(rename = "seqNo")]

@@ -52,8 +52,8 @@
       
       ```
       docker network create --subnet 10.0.0.0/8 pool_network
-      docker build -f ci/sovrin-pool.dockerfile -t sovrin_pool .
-      docker run -d --ip="10.0.0.2" --net=pool_network sovrin_pool
+      docker build -f ci/indy-pool.dockerfile -t indy_pool .
+      docker run -d --ip="10.0.0.2" --net=pool_network indy_pool
       ```
     * Run tests
       

@@ -3,7 +3,7 @@ package org.hyperledger.indy.sdk;
 import java.io.File;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.pool.PoolResults.OpenPoolLedgerResult;
@@ -16,7 +16,7 @@ public class PoolTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 
-		if (! LibSovrin.isInitialized()) LibSovrin.init(new File("./lib/libsovrin.so"));
+		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 	}
 
 	@Override

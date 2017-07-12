@@ -1,12 +1,12 @@
 version: '2'
 services:
-  sovrin-client-rust-test:
+  indy-client-rust-test:
     build:
       context: .
       dockerfile: ci/ubuntu.dockerfile
     command: cargo test --color=always -- --nocapture
     volumes:
-      - ".:/home/sovrin/sovrin-client-rust"
-    working_dir: /home/sovrin/sovrin-client-rust
+      - ".:/home/indy/indy-client-rust"
+    working_dir: /home/indy/indy-client-rust
     environment:
         - RUST_TEST_THREADS=1
