@@ -28,6 +28,77 @@ public class Pool extends IndyJava.API {
 	}
 
 	/*
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback createPoolLedgerConfigCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback openPoolLedgerCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, int pool_handle) {
+
+			CompletableFuture<Pool> future = (CompletableFuture<Pool>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Pool pool = new Pool(pool_handle);
+
+			Pool result = pool;
+			future.complete(result);
+		}
+	};
+
+	private static Callback refreshPoolLedgerCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback closePoolLedgerCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback deletePoolLedgerConfigCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+	
+	/*
 	 * STATIC METHODS
 	 */
 
@@ -35,25 +106,14 @@ public class Pool extends IndyJava.API {
 			String configName,
 			CreatePoolLedgerConfigJSONParameter config) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_create_pool_ledger_config(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				configName, 
 				config == null ? null : config.toJson(), 
-				cb);
+				createPoolLedgerConfigCb);
 
 		checkResult(result);
 
@@ -64,25 +124,14 @@ public class Pool extends IndyJava.API {
 			String configName,
 			OpenPoolLedgerJSONParameter config) throws IndyException {
 
-		final CompletableFuture<Pool> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, int pool_handle) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Pool result = new Pool(pool_handle);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Pool> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_open_pool_ledger(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				configName, 
 				config == null ? null : config.toJson(), 
-				cb);
+				openPoolLedgerCb);
 
 		checkResult(result);
 
@@ -92,26 +141,15 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int handle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_refresh_pool_ledger(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				handle, 
-				cb);
+				refreshPoolLedgerCb);
 
 		checkResult(result);
 
@@ -121,26 +159,15 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> closePoolLedger(
 			Pool pool) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int handle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_close_pool_ledger(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				handle, 
-				cb);
+				closePoolLedgerCb);
 
 		checkResult(result);
 
@@ -150,24 +177,13 @@ public class Pool extends IndyJava.API {
 	public static CompletableFuture<Void> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_delete_pool_ledger_config(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				configName, 
-				cb);
+				deletePoolLedgerConfigCb);
 
 		checkResult(result);
 

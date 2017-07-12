@@ -21,6 +21,88 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/*
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback issuerCreateAndStoreClaimDefCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String claim_def_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = claim_def_json, claim_def_uuid;
+			future.complete(result);
+		}
+	};
+
+	private static Callback issuerCreateAndStoreRevocRegCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String revoc_reg_json, String revoc_reg_uuid) {
+
+			CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = (CompletableFuture<IssuerCreateAndStoreRevocRegResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			IssuerCreateAndStoreRevocRegResult result = new IssuerCreateAndStoreRevocRegResult(revoc_reg_json, revoc_reg_uuid);
+			future.complete(result);
+		}
+	};
+
+	private static Callback issuerCreateClaimCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String revoc_reg_update_json, String xclaim_json) {
+
+			CompletableFuture<IssuerCreateClaimResult> future = (CompletableFuture<IssuerCreateClaimResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			IssuerCreateClaimResult result = new IssuerCreateClaimResult(revoc_reg_update_json, xclaim_json);
+			future.complete(result);
+		}
+	};
+
+	private static Callback issuerRevokeClaimCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String revoc_reg_update_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = revoc_reg_update_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback proverStoreClaimOfferCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback proverGetClaimOffersCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String claim_offers_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = claim_offers_json;
+			future.complete(result);
+		}
+	};
+	
+	/*
 	 * STATIC METHODS
 	 */
 
@@ -31,30 +113,19 @@ public class Anoncreds extends IndyJava.API {
 			String signatureType, 
 			boolean createNonRevoc) throws IndyException {
 
-		final CompletableFuture<String> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String claim_def_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				String result = claim_def_json, claim_def_uuid;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_issuer_create_and_store_claim_def(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				issuerDid,
 				schemaJson,
 				signatureType,
 				createNonRevoc,
-				cb);
+				issuerCreateAndStoreClaimDefCb);
 
 		checkResult(result);
 
@@ -67,29 +138,18 @@ public class Anoncreds extends IndyJava.API {
 			int schemaSeqNo, 
 			int maxClaimNum) throws IndyException {
 
-		final CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String revoc_reg_json, String revoc_reg_uuid) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				IssuerCreateAndStoreRevocRegResult result = new IssuerCreateAndStoreRevocRegResult(revoc_reg_json, revoc_reg_uuid);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_issuer_create_and_store_revoc_reg(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				issuerDid,
 				schemaSeqNo,
 				maxClaimNum,
-				cb);
+				issuerCreateAndStoreRevocRegCb);
 
 		checkResult(result);
 
@@ -103,30 +163,19 @@ public class Anoncreds extends IndyJava.API {
 			int revocRegSeqNo,
 			int userRevocIndex) throws IndyException {
 
-		final CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String revoc_reg_update_json, String xclaim_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				IssuerCreateClaimResult result = new IssuerCreateClaimResult(revoc_reg_update_json, xclaim_json);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_issuer_create_claim(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				claimReqJson,
 				claimJson,
 				revocRegSeqNo,
 				userRevocIndex,
-				cb);
+				issuerCreateClaimCb);
 
 		checkResult(result);
 
@@ -138,28 +187,17 @@ public class Anoncreds extends IndyJava.API {
 			int revocRegSeqNo, 
 			int userRevocIndex) throws IndyException {
 
-		final CompletableFuture<String> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String revoc_reg_update_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				String result = revoc_reg_update_json;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_issuer_revoke_claim(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				revocRegSeqNo,
 				userRevocIndex,
-				cb);
+				issuerRevokeClaimCb);
 
 		checkResult(result);
 
@@ -170,27 +208,16 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String claimOfferJson) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_prover_store_claim_offer(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				claimOfferJson,
-				cb);
+				proverStoreClaimOfferCb);
 
 		checkResult(result);
 
@@ -201,27 +228,16 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String filterJson) throws IndyException {
 
-		final CompletableFuture<String> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String claim_offers_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				String result = claim_offers_json;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_prover_get_claim_offers(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				filterJson,
-				cb);
+				proverGetClaimOffersCb);
 
 		checkResult(result);
 

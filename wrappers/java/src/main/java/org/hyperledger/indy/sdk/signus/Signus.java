@@ -23,6 +23,101 @@ public class Signus extends IndyJava.API {
 	}
 
 	/*
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback createAndStoreMyDidCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
+
+			CompletableFuture<CreateAndStoreMyDidResult> future = (CompletableFuture<CreateAndStoreMyDidResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey, pk);
+			future.complete(result);
+		}
+	};
+
+	private static Callback replaceKeysCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String verkey, String pk) {
+
+			CompletableFuture<ReplaceKeysResult> future = (CompletableFuture<ReplaceKeysResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			ReplaceKeysResult result = new ReplaceKeysResult(verkey, pk);
+			future.complete(result);
+		}
+	};
+
+	private static Callback storeTheirDidCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback signCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String signature) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = signature;
+			future.complete(result);
+		}
+	};
+
+	private static Callback verifySignatureCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, boolean valid) {
+
+			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Boolean result = Boolean.valueOf(valid);
+			future.complete(result);
+		}
+	};
+
+	private static Callback encryptCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String encryptedMsg) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = encryptedMsg;
+			future.complete(result);
+		}
+	};
+
+	private static Callback decryptCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String decryptedMsg) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = decryptedMsg;
+			future.complete(result);
+		}
+	};
+
+	/*
 	 * STATIC METHODS
 	 */
 
@@ -30,27 +125,16 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			CreateAndStoreMyDidJSONParameter didJson) throws IndyException {
 
-		final CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey, pk);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_create_and_store_my_did(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				didJson == null ? null : didJson.toJson(),
-				cb);
+				createAndStoreMyDidCb);
 
 		checkResult(result);
 
@@ -62,28 +146,17 @@ public class Signus extends IndyJava.API {
 			String did,
 			String identityJson) throws IndyException {
 
-		final CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String verkey, String pk) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				ReplaceKeysResult result = new ReplaceKeysResult(verkey, pk);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_replace_keys(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				did,
 				identityJson,
-				cb);
+				replaceKeysCb);
 
 		checkResult(result);
 
@@ -94,27 +167,16 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_store_their_did(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				identityJson,
-				cb);
+				storeTheirDidCb);
 
 		checkResult(result);
 
@@ -126,28 +188,17 @@ public class Signus extends IndyJava.API {
 			String did,
 			String msg) throws IndyException {
 
-		final CompletableFuture<String> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String signature) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				String result = signature;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_sign(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				did,
 				msg,
-				cb);
+				signCb);
 
 		checkResult(result);
 
@@ -160,30 +211,19 @@ public class Signus extends IndyJava.API {
 			String did,
 			String signedMsg) throws IndyException {
 
-		final CompletableFuture<Boolean> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, boolean valid) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Boolean result = Boolean.valueOf(valid);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Boolean> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_verify_signature(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				poolHandle,
 				did,
 				signedMsg,
-				cb);
+				verifySignatureCb);
 
 		checkResult(result);
 
@@ -195,28 +235,17 @@ public class Signus extends IndyJava.API {
 			String did,
 			String msg) throws IndyException {
 
-		final CompletableFuture<String> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String encryptedMsg) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				String result = encryptedMsg;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_encrypt(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				did,
 				msg,
-				cb);
+				encryptCb);
 
 		checkResult(result);
 
@@ -228,28 +257,17 @@ public class Signus extends IndyJava.API {
 			String did,
 			String encryptedMsg) throws IndyException {
 
-		final CompletableFuture<String> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String decryptedMsg) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				String result = decryptedMsg;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_decrypt(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				did,
 				encryptedMsg,
-				cb);
+				decryptCb);
 
 		checkResult(result);
 

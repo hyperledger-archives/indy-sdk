@@ -26,6 +26,77 @@ public class Wallet extends IndyJava.API {
 	}
 
 	/*
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback createWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback openWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, int handle) {
+
+			CompletableFuture<Wallet> future = (CompletableFuture<Wallet>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Wallet wallet = new Wallet(handle);
+
+			Wallet result = wallet;
+			future.complete(result);
+		}
+	};
+
+	private static Callback closeWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback deleteWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback walletSetSeqNoForValueCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+	
+	/*
 	 * STATIC METHODS
 	 */
 
@@ -40,28 +111,17 @@ public class Wallet extends IndyJava.API {
 			String config,
 			String credentials) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_create_wallet(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				poolName, 
 				name,
 				xtype,
 				config,
 				credentials,
-				cb);
+				createWalletCb);
 
 		checkResult(result);
 
@@ -73,26 +133,15 @@ public class Wallet extends IndyJava.API {
 			String runtimeConfig,
 			String credentials) throws IndyException {
 
-		final CompletableFuture<Wallet> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, int handle) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Wallet result = new Wallet(handle);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Wallet> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_open_wallet(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				name,
 				runtimeConfig,
 				credentials,
-				cb);
+				openWalletCb);
 
 		checkResult(result);
 
@@ -102,26 +151,15 @@ public class Wallet extends IndyJava.API {
 	private static CompletableFuture<Void> closeWallet(
 			Wallet wallet) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int handle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_close_wallet(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				handle, 
-				cb);
+				closeWalletCb);
 
 		checkResult(result);
 
@@ -132,25 +170,14 @@ public class Wallet extends IndyJava.API {
 			String name,
 			String credentials) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_delete_wallet(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				name,
 				credentials,
-				cb);
+				deleteWalletCb);
 
 		checkResult(result);
 
@@ -162,27 +189,16 @@ public class Wallet extends IndyJava.API {
 			String walletKey,
 			String configName) throws IndyException {
 
-		final CompletableFuture<Void> future = new CompletableFuture<> ();
-
-		Callback cb = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Void result = null;
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<> ();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_wallet_set_seq_no_for_value(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle,
 				walletKey, 
-				cb);
+				walletSetSeqNoForValueCb);
 
 		checkResult(result);
 
