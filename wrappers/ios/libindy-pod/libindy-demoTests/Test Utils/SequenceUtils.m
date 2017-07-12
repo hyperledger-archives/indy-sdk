@@ -34,11 +34,10 @@
 
 - (NSUInteger)getNextId
 {
-    if ([self.lock tryLock])
-    {
-        self.idsCounter +=1;
-    }
+    [self.lock lock];
+    self.idsCounter +=1;
     [self.lock unlock];
+    
     return self.idsCounter;
 }
 

@@ -1676,7 +1676,7 @@
     // 11. Create claim definition
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                             issuerDid:@"NcYxiDXkpYi6ov5FcYDi1e"
                                                                             schemaJson:getSchemaResponseJson
                                                                          signatureType:nil
                                                                         createNonRevoc:false
