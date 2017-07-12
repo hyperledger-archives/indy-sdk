@@ -237,7 +237,91 @@ pub struct PrimaryClaim {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProofJson {
+    pub proofs: HashMap<String, ClaimProof>,
+    pub aggregated_proof: AggregatedProof,
     pub requested_proof: RequestedProofJson
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Proof {
+    pub primary_proof: PrimaryProof,
+    pub non_revoc_proof: Option<NonRevocProof>
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NonRevocProof {
+    pub x_list: NonRevocProofXList,
+    pub c_list: NonRevocProofCList
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NonRevocProofCList {
+    pub e: String,
+    pub d: String,
+    pub a: String,
+    pub g: String,
+    pub w: String,
+    pub s: String,
+    pub u: String
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NonRevocProofXList {
+    pub rho: String,
+    pub r: String,
+    pub r_prime: String,
+    pub r_prime_prime: String,
+    pub r_prime_prime_prime: String,
+    pub o: String,
+    pub o_prime: String,
+    pub m: String,
+    pub m_prime: String,
+    pub t: String,
+    pub t_prime: String,
+    pub m2: String,
+    pub s: String,
+    pub c: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PrimaryProof {
+    pub eq_proof: PrimaryEqualProof,
+    pub ge_proofs: Vec<PrimaryPredicateGEProof>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PrimaryPredicateGEProof {
+    pub u: HashMap<String, String>,
+    pub r: HashMap<String, String>,
+    pub mj: String,
+    pub alpha: String,
+    pub t: HashMap<String, String>,
+    pub predicate: Predicate
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PrimaryEqualProof {
+    pub revealed_attrs: HashMap<String, String>,
+    pub a_prime: String,
+    pub e: String,
+    pub v: String,
+    pub m: HashMap<String, String>,
+    pub m1: String,
+    pub m2: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimProof {
+    pub proof: Proof,
+    pub revoc_reg_seq_no: Option<i32>,
+    pub schema_seq_no: i32,
+    pub issuer_did: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AggregatedProof {
+    pub c_hash: String,
+    pub c_list: Vec<Vec<u8>>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
