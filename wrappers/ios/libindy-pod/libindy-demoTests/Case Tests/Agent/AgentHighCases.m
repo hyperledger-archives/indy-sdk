@@ -37,7 +37,7 @@
     [super tearDown];
 }
 
-- (void)testAgentListerWorksWithSovrinAgentConnect
+- (void)testAgentListerWorksWithIndyAgentConnect
 {
     [TestUtils cleanupStorage];
     NSError *ret;
@@ -228,6 +228,7 @@
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
+    // TODO: Rename to "indy_agent_connect_works_for_a" when it will be done in Rust
     // 2. Obtain did
     NSString *seed = @"sovrin_agent_connect_works_for_a";
     NSString *did;
@@ -292,6 +293,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
+    // TODO: Rename to "indy_agent_listen_works_for_al" when it will be done in Rust
     NSString *seed = @"sovrin_agent_listen_works_for_al";
     NSString *did;
     NSString *verKey;
