@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   LastUpgradeVersion = "0830"
+   version = "1.3">
+   <BuildAction
+      parallelizeBuildables = "YES"
+      buildImplicitDependencies = "YES">
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3E2A7F841EC36186006194EC"
+               BuildableName = "libindy-demo.app"
+               BlueprintName = "libindy-demo"
+               ReferencedContainer = "container:libindy-demo.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3E2A7F9D1EC36187006194EC"
+               BuildableName = "libindy-demoTests.xctest"
+               BlueprintName = "libindy-demoTests"
+               ReferencedContainer = "container:libindy-demo.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      shouldUseLaunchSchemeArgsEnv = "YES">
+      <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3E2A7F9D1EC36187006194EC"
+               BuildableName = "libindy-demoTests.xctest"
+               BlueprintName = "libindy-demoTests"
+               ReferencedContainer = "container:libindy-demo.xcodeproj">
+            </BuildableReference>
+            <SkippedTests>
+               <Test
+                  Identifier = "AgentHignCases/testAllAgentHighCasesTests">
+               </Test>
+               <Test
+                  Identifier = "AgentHignCases/testSequence">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorks">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorksForInvalidSeqNo">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testSubmitNodeRequestWorksForNewSteward">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testDeleteWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testOpenWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletMediumCases/testOpenWalletWorksForTwice">
+               </Test>
+            </SkippedTests>
+         </TestableReference>
+      </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "3E2A7F841EC36186006194EC"
+            BuildableName = "libindy-demo.app"
+            BlueprintName = "libindy-demo"
+            ReferencedContainer = "container:libindy-demo.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <AdditionalOptions>
+      </AdditionalOptions>
+   </TestAction>
+   <LaunchAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      launchStyle = "0"
+      useCustomWorkingDirectory = "NO"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "YES"
+      debugServiceExtension = "internal"
+      allowLocationSimulation = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "3E2A7F841EC36186006194EC"
+            BuildableName = "libindy-demo.app"
+            BlueprintName = "libindy-demo"
+            ReferencedContainer = "container:libindy-demo.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "RUST_LOG"
+            value = "trace"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
+      <AdditionalOptions>
+         <AdditionalOption
+            key = "DYLD_INSERT_LIBRARIES"
+            value = "/usr/lib/libgmalloc.dylib"
+            isEnabled = "YES">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "MallocGuardEdges"
+            value = ""
+            isEnabled = "YES">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "MallocScribble"
+            value = ""
+            isEnabled = "YES">
+         </AdditionalOption>
+      </AdditionalOptions>
+   </LaunchAction>
+   <ProfileAction
+      buildConfiguration = "Release"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
+      debugDocumentVersioning = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "3E2A7F841EC36186006194EC"
+            BuildableName = "libindy-demo.app"
+            BlueprintName = "libindy-demo"
+            ReferencedContainer = "container:libindy-demo.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+   </ProfileAction>
+   <AnalyzeAction
+      buildConfiguration = "Debug">
+   </AnalyzeAction>
+   <ArchiveAction
+      buildConfiguration = "Release"
+      revealArchiveInOrganizer = "YES">
+   </ArchiveAction>
+</Scheme>
