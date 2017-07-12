@@ -1,9 +1,20 @@
 from typing import Callable
-from . import SovrinError
+from . import IndyError
+
+from . import libindy
 
 class Wallet(object):
 
     """TODO: document it"""
+
+    # extern indy_error_t indy_create_wallet(indy_handle_t  command_handle,
+    #                                            const char*      pool_name,
+    #                                            const char*      name,
+    #                                            const char*      xtype,
+    #                                            const char*      config,
+    #                                            const char*      credentials,
+    #                                            void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+    #                                            );
 
     async def create_wallet(pool_name: str,
                             name: str,

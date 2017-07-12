@@ -1,5 +1,5 @@
 from typing import Callable
-from . import SovrinError
+from . import IndyError
 
 class Pool(object):
 
