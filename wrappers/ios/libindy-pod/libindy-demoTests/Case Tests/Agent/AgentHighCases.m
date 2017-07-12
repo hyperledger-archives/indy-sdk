@@ -229,7 +229,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    NSString *seed = @"indy_agent_connect_works_for_a";
+    NSString *seed = @"sovrin_agent_connect_works_for_a";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
@@ -292,7 +292,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    NSString *seed = @"indy_agent_listen_works_for_al";
+    NSString *seed = @"sovrin_agent_listen_works_for_al";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
