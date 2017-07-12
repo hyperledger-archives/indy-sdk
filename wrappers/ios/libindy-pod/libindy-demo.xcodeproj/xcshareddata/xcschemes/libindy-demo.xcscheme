@@ -51,6 +51,41 @@
                BlueprintName = "libindy-demoTests"
                ReferencedContainer = "container:libindy-demo.xcodeproj">
             </BuildableReference>
+            <SkippedTests>
+               <Test
+                  Identifier = "AgentHignCases/testAllAgentHighCasesTests">
+               </Test>
+               <Test
+                  Identifier = "AgentHignCases/testSequence">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorks">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorksForInvalidSeqNo">
+               </Test>
+               <Test
+                  Identifier = "LedgerHignCases/testSubmitNodeRequestWorksForNewSteward">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testCreateWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testDeleteWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testOpenWalletWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
+               </Test>
+               <Test
+                  Identifier = "WalletMediumCases/testOpenWalletWorksForTwice">
+               </Test>
+            </SkippedTests>
          </TestableReference>
       </Testables>
       <MacroExpansion>

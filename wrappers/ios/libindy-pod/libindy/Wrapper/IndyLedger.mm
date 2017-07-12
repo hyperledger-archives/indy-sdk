@@ -60,26 +60,7 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError*) buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                     completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
-{
-    indy_error_t ret;
-    
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
-    
-    ret = indy_build_get_ddo_request( handle,
-                                        [submitterDid UTF8String],
-                                        [targetDid UTF8String],
-                                        IndyWrapperCommon3PSCallback );
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-    }
-
-    return [NSError errorFromIndyError: ret];
-}
+// MARK: - Nym request
 
 + (NSError*) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
                                    targetDID:(NSString *)targetDid
@@ -107,6 +88,29 @@
     
     return [NSError errorFromIndyError: ret];
 }
+
++ (NSError*) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    
+    ret = indy_build_get_nym_request( handle,
+                                       [submitterDid UTF8String],
+                                       [targetDid UTF8String],
+                                       IndyWrapperCommon3PSCallback );
+    
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+    
+    return [NSError errorFromIndyError: ret];
+}
+
+// MARK: - Attribute request
 
 + (NSError*) buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                       targetDID:(NSString *)targetDid
@@ -157,26 +161,7 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError*) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
-{
-    indy_error_t ret;
-    
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
-    
-    ret = indy_build_get_nym_request( handle,
-                                       [submitterDid UTF8String],
-                                       [targetDid UTF8String],
-                                       IndyWrapperCommon3PSCallback );
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-    }
-    
-    return [NSError errorFromIndyError: ret];
-}
+// MARK: - Schema request
 
 + (NSError*) buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSString *)data
@@ -220,6 +205,8 @@
     
     return [NSError errorFromIndyError: ret];
 }
+
+// MARK: - ClaimDefTxn request
 
 + (NSError*) buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
                                          xref:(NSString *)xref
@@ -280,6 +267,31 @@
     return [NSError errorFromIndyError: ret];
 }
 
+// MARK: - Ddo request
+
++ (NSError*) buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDID:(NSString *)targetDid
+                                     completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    
+    ret = indy_build_get_ddo_request( handle,
+                                       [submitterDid UTF8String],
+                                       [targetDid UTF8String],
+                                       IndyWrapperCommon3PSCallback );
+    
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+    
+    return [NSError errorFromIndyError: ret];
+}
+
+// MARK: - Node request
+
 + (NSError*) buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
                                     targetDid:(NSString *)targetDid
                                          data:(NSString *)data
@@ -290,10 +302,32 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_build_node_request( handle,
-                                     [submitterDid UTF8String],
-                                     [targetDid UTF8String],
-                                     [data UTF8String],
-                                     IndyWrapperCommon3PSCallback );
+                                    [submitterDid UTF8String],
+                                    [targetDid UTF8String],
+                                    [data UTF8String],
+                                    IndyWrapperCommon3PSCallback );
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+    
+    return [NSError errorFromIndyError: ret];
+}
+
+// MARK: - Txn request
+
++ (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSNumber *)data
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    
+    ret = indy_build_get_txn_request(handle,
+                                       [submitterDid UTF8String],
+                                       [data intValue],
+                                       IndyWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];

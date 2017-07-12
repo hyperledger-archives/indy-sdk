@@ -7,6 +7,11 @@
 #import <libindy/libindy.h>
 #import "TestUtils.h"
 
+@interface  WalletUtils()
+
+@property (nonatomic, strong) NSMutableArray *registeredWallets;
+@end
+
 @implementation WalletUtils
 
 + (WalletUtils *)sharedInstance
@@ -16,13 +21,27 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [WalletUtils new];
+        instance.registeredWallets = [NSMutableArray new];
     });
     
     return instance;
 }
 
+// TODO: Implement when architecture is discussed
+//- (NSError *)registerWalletType: (NSString *)xtype
+//{
+//    NSMutableArray *wallets = self.registeredWallets;
+//    
+//    NSError *ret;
+//    if ([wallets containsObject:xtype])
+//    {
+//        return [NSError new];
+//    }
+//    
+//    
+//}
+
 -(NSError*) createAndOpenWalletWithPoolName:(NSString*) poolName
-                                 walletName:(NSString*) walletName
                                       xtype:(NSString*) xtype
                                      handle:(IndyHandle*) handle
 {
@@ -31,9 +50,12 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
+    NSString *walletName = [NSString stringWithFormat:@"default-wallet-name-%lu", (unsigned long)[[SequenceUtils sharedInstance] getNextId]];
+    NSString *xTypeStr = (xtype) ? xtype : @"default";
+    
     ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
                                                              name:  walletName
-                                                            xType:  xtype
+                                                            xType:  xTypeStr
                                                            config:  nil
                                                       credentials:  nil
                                                        completion: ^(NSError* error)
@@ -95,33 +117,6 @@
                                                            config:  config
                                                       credentials:  nil
                                                        completion: ^(NSError *error)
-           {
-               err = error;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    return err;
-}
-
--(NSError*) walletSetSeqNoForValue:(IndyHandle) walletHandle
-                      claimDefUUID:(NSString*) uuid
-                     claimDefSeqNo:(NSNumber*) seqNo
-{
-    __block NSError *err = nil;
-    NSError *ret = nil;
-    
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[IndyWallet sharedInstance] walletSetSeqNo:  seqNo
-                                              forHandle:  walletHandle
-                                                 andKey:  uuid
-                                             completion: ^(NSError *error)
            {
                err = error;
                [completionExpectation fulfill];
@@ -215,5 +210,33 @@
     
     return err;
 }
+
+- (NSError*) walletSetSeqNo:(NSNumber *)seqNo
+                   forValue:(NSString *)value
+               walletHandle:(IndyHandle) walletHandle
+{
+    __block NSError *err = nil;
+    NSError *ret = nil;
+    
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    ret = [[IndyWallet sharedInstance] walletSetSeqNo:seqNo
+                                               forValue:value
+                                           walletHandle:walletHandle
+                                             completion:^(NSError *error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    return err;
+}
+
 
 @end

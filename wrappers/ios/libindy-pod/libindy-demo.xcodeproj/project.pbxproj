@@ -7,50 +7,50 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		03FFB87E8CFC1AB2702042B5 /* libPods-libindy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2C0C49D7DC18962FC7EEC21A /* libPods-libindy-demo.a */; };
-		4DBC82A66C6BDF86D72567E6 /* libPods-libindy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C4D4FCF06279C5C752DE7F51 /* libPods-libindy-demoTests.a */; };
-		5D3D0CC51F15079C0099233C /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C8E1F15079C0099233C /* Base58Test.m */; };
-		5D3D0CC61F15079C0099233C /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C911F15079C0099233C /* AgentHighCases.m */; };
-		5D3D0CC71F15079C0099233C /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C921F15079C0099233C /* AgentMediumCases.m */; };
-		5D3D0CC81F15079C0099233C /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C941F15079C0099233C /* AnoncredsHighCases.m */; };
-		5D3D0CC91F15079C0099233C /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C951F15079C0099233C /* AnoncredsMediumCases.m */; };
-		5D3D0CCA1F15079C0099233C /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C961F15079C0099233C /* AnoncredsMediumCasesDemos.m */; };
-		5D3D0CCB1F15079C0099233C /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C981F15079C0099233C /* LedgerAttribRequest.mm */; };
-		5D3D0CCC1F15079C0099233C /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C991F15079C0099233C /* LedgerHignCases.mm */; };
-		5D3D0CCD1F15079C0099233C /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C9A1F15079C0099233C /* LedgerNodeRequest.mm */; };
-		5D3D0CCE1F15079C0099233C /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C9B1F15079C0099233C /* LedgerNymRequest.mm */; };
-		5D3D0CCF1F15079C0099233C /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C9C1F15079C0099233C /* LedgerSchemaRequest.mm */; };
-		5D3D0CD01F15079C0099233C /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C9E1F15079C0099233C /* PoolHighCases.m */; };
-		5D3D0CD11F15079C0099233C /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0C9F1F15079C0099233C /* PoolMediumCases.m */; };
-		5D3D0CD21F15079C0099233C /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA11F15079C0099233C /* SignusHighCases.m */; };
-		5D3D0CD31F15079C0099233C /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA21F15079C0099233C /* SignusMediumCases.m */; };
-		5D3D0CD41F15079C0099233C /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA41F15079C0099233C /* WalletHighCases.m */; };
-		5D3D0CD51F15079C0099233C /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA51F15079C0099233C /* WalletMediumCases.m */; };
-		5D3D0CD61F15079C0099233C /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA71F15079C0099233C /* AnoncredsDemo.mm */; };
-		5D3D0CD71F15079C0099233C /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA81F15079C0099233C /* LedgerDemo.mm */; };
-		5D3D0CD81F15079C0099233C /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CA91F15079C0099233C /* SignusDemo.mm */; };
-		5D3D0CD91F15079C0099233C /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5D3D0CAA1F15079C0099233C /* Info.plist */; };
-		5D3D0CDA1F15079C0099233C /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CAD1F15079C0099233C /* AgentUtils.m */; };
-		5D3D0CDB1F15079C0099233C /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CAF1F15079C0099233C /* AnoncredsUtils.m */; };
-		5D3D0CDC1F15079C0099233C /* ClosureUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CB11F15079C0099233C /* ClosureUtils.m */; };
-		5D3D0CDD1F15079C0099233C /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CB31F15079C0099233C /* Environment.m */; };
-		5D3D0CDE1F15079C0099233C /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CB51F15079C0099233C /* LedgerUtils.mm */; };
-		5D3D0CDF1F15079C0099233C /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CB71F15079C0099233C /* PoolUtils.m */; };
-		5D3D0CE01F15079C0099233C /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CB91F15079C0099233C /* SignusUtils.mm */; };
-		5D3D0CE11F15079C0099233C /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CBB1F15079C0099233C /* TestUtils.m */; };
-		5D3D0CE21F15079C0099233C /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CBD1F15079C0099233C /* WalletUtils.m */; };
-		5D3D0CE31F15079C0099233C /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CC01F15079C0099233C /* NSArray+JSON.m */; };
-		5D3D0CE41F15079C0099233C /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CC21F15079C0099233C /* NSDictionary+JSON.m */; };
-		5D3D0CE51F15079C0099233C /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D3D0CC41F15079C0099233C /* NSString+Validation.m */; };
-		5DB1068A1F14FC15003679CD /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB106891F14FC15003679CD /* libindy.framework */; };
-		5DB1068B1F14FC15003679CD /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB106891F14FC15003679CD /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		5DB106EE1F14FD29003679CD /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106E41F14FD29003679CD /* AppDelegate.mm */; };
-		5DB106EF1F14FD29003679CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106E51F14FD29003679CD /* Assets.xcassets */; };
-		5DB106F01F14FD29003679CD /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106E61F14FD29003679CD /* LaunchScreen.storyboard */; };
-		5DB106F11F14FD29003679CD /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106E81F14FD29003679CD /* Main.storyboard */; };
-		5DB106F21F14FD29003679CD /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DB106EA1F14FD29003679CD /* Info.plist */; };
-		5DB106F31F14FD29003679CD /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106EB1F14FD29003679CD /* main.m */; };
-		5DB106F41F14FD29003679CD /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB106ED1F14FD29003679CD /* ViewController.m */; };
+		5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C51F161E800024DFB3 /* SequenceUtils.m */; };
+		5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
+		5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5DF013DC1F1604C200076592 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013D21F1604C100076592 /* AppDelegate.mm */; };
+		5DF013DD1F1604C200076592 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D31F1604C100076592 /* Assets.xcassets */; };
+		5DF013DE1F1604C200076592 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D41F1604C100076592 /* LaunchScreen.storyboard */; };
+		5DF013DF1F1604C200076592 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D61F1604C100076592 /* Main.storyboard */; };
+		5DF013E11F1604C200076592 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013D91F1604C200076592 /* main.m */; };
+		5DF013E21F1604C200076592 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013DB1F1604C200076592 /* ViewController.m */; };
+		5DF0149D1F1605EB00076592 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014661F1605EB00076592 /* Base58Test.m */; };
+		5DF0149E1F1605EB00076592 /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014691F1605EB00076592 /* AgentHighCases.m */; };
+		5DF0149F1F1605EB00076592 /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146A1F1605EB00076592 /* AgentMediumCases.m */; };
+		5DF014A01F1605EB00076592 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146C1F1605EB00076592 /* AnoncredsHighCases.m */; };
+		5DF014A11F1605EB00076592 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146D1F1605EB00076592 /* AnoncredsMediumCases.m */; };
+		5DF014A21F1605EB00076592 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146E1F1605EB00076592 /* AnoncredsMediumCasesDemos.m */; };
+		5DF014A31F1605EB00076592 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014701F1605EB00076592 /* LedgerAttribRequest.mm */; };
+		5DF014A41F1605EB00076592 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014711F1605EB00076592 /* LedgerHignCases.mm */; };
+		5DF014A51F1605EB00076592 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014721F1605EB00076592 /* LedgerNodeRequest.mm */; };
+		5DF014A61F1605EB00076592 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014731F1605EB00076592 /* LedgerNymRequest.mm */; };
+		5DF014A71F1605EB00076592 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014741F1605EB00076592 /* LedgerSchemaRequest.mm */; };
+		5DF014A81F1605EB00076592 /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014761F1605EB00076592 /* PoolHighCases.m */; };
+		5DF014A91F1605EB00076592 /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014771F1605EB00076592 /* PoolMediumCases.m */; };
+		5DF014AA1F1605EB00076592 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014791F1605EB00076592 /* SignusHighCases.m */; };
+		5DF014AB1F1605EB00076592 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0147A1F1605EB00076592 /* SignusMediumCases.m */; };
+		5DF014AC1F1605EB00076592 /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0147C1F1605EB00076592 /* WalletHighCases.m */; };
+		5DF014AD1F1605EB00076592 /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0147D1F1605EB00076592 /* WalletMediumCases.m */; };
+		5DF014AE1F1605EB00076592 /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0147F1F1605EB00076592 /* AnoncredsDemo.mm */; };
+		5DF014AF1F1605EB00076592 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014801F1605EB00076592 /* LedgerDemo.mm */; };
+		5DF014B01F1605EB00076592 /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014811F1605EB00076592 /* SignusDemo.mm */; };
+		5DF014B11F1605EB00076592 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DF014821F1605EB00076592 /* Info.plist */; };
+		5DF014B21F1605EB00076592 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014851F1605EB00076592 /* AgentUtils.m */; };
+		5DF014B31F1605EB00076592 /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014871F1605EB00076592 /* AnoncredsUtils.m */; };
+		5DF014B41F1605EB00076592 /* ClosureUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014891F1605EB00076592 /* ClosureUtils.m */; };
+		5DF014B51F1605EB00076592 /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0148B1F1605EB00076592 /* Environment.m */; };
+		5DF014B61F1605EB00076592 /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0148D1F1605EB00076592 /* LedgerUtils.mm */; };
+		5DF014B71F1605EB00076592 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0148F1F1605EB00076592 /* PoolUtils.m */; };
+		5DF014B81F1605EB00076592 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014911F1605EB00076592 /* SignusUtils.mm */; };
+		5DF014B91F1605EB00076592 /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014931F1605EB00076592 /* TestUtils.m */; };
+		5DF014BA1F1605EB00076592 /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014951F1605EB00076592 /* WalletUtils.m */; };
+		5DF014BB1F1605EB00076592 /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014981F1605EB00076592 /* NSArray+JSON.m */; };
+		5DF014BC1F1605EB00076592 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0149A1F1605EB00076592 /* NSDictionary+JSON.m */; };
+		5DF014BD1F1605EB00076592 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0149C1F1605EB00076592 /* NSString+Validation.m */; };
+		76FED736F566C40EC1B667DA /* libPods-libindy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */; };
+		C4AEADFDB2CE7D041575D9DA /* libPods-libindy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,7 +59,7 @@
 			containerPortal = 3E2A7F7D1EC36186006194EC /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 3E2A7F841EC36186006194EC;
-			remoteInfo = "libsovrin-demo";
+			remoteInfo = "libindy-demo";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -79,7 +79,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5DB1068B1F14FC15003679CD /* libindy.framework in Embed Frameworks */,
+				5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -87,75 +87,70 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
-		070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.release.xcconfig"; sourceTree = "<group>"; };
-		179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		2C0C49D7DC18962FC7EEC21A /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+        3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demoTests/Pods-libsovrin-demoTests.release.xcconfig"; sourceTree = "<group>"; };
-		531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5D3D0C8E1F15079C0099233C /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
-		5D3D0C911F15079C0099233C /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
-		5D3D0C921F15079C0099233C /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
-		5D3D0C941F15079C0099233C /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
-		5D3D0C951F15079C0099233C /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
-		5D3D0C961F15079C0099233C /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
-		5D3D0C981F15079C0099233C /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
-		5D3D0C991F15079C0099233C /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
-		5D3D0C9A1F15079C0099233C /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
-		5D3D0C9B1F15079C0099233C /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
-		5D3D0C9C1F15079C0099233C /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
-		5D3D0C9E1F15079C0099233C /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
-		5D3D0C9F1F15079C0099233C /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
-		5D3D0CA11F15079C0099233C /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
-		5D3D0CA21F15079C0099233C /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
-		5D3D0CA41F15079C0099233C /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
-		5D3D0CA51F15079C0099233C /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
-		5D3D0CA71F15079C0099233C /* AnoncredsDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
-		5D3D0CA81F15079C0099233C /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
-		5D3D0CA91F15079C0099233C /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
-		5D3D0CAA1F15079C0099233C /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		5D3D0CAC1F15079C0099233C /* AgentUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
-		5D3D0CAD1F15079C0099233C /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
-		5D3D0CAE1F15079C0099233C /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
-		5D3D0CAF1F15079C0099233C /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
-		5D3D0CB01F15079C0099233C /* ClosureUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClosureUtils.h; sourceTree = "<group>"; };
-		5D3D0CB11F15079C0099233C /* ClosureUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClosureUtils.m; sourceTree = "<group>"; };
-		5D3D0CB21F15079C0099233C /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
-		5D3D0CB31F15079C0099233C /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
-		5D3D0CB41F15079C0099233C /* LedgerUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LedgerUtils.h; sourceTree = "<group>"; };
-		5D3D0CB51F15079C0099233C /* LedgerUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerUtils.mm; sourceTree = "<group>"; };
-		5D3D0CB61F15079C0099233C /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
-		5D3D0CB71F15079C0099233C /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
-		5D3D0CB81F15079C0099233C /* SignusUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
-		5D3D0CB91F15079C0099233C /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
-		5D3D0CBA1F15079C0099233C /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
-		5D3D0CBB1F15079C0099233C /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
-		5D3D0CBC1F15079C0099233C /* WalletUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WalletUtils.h; sourceTree = "<group>"; };
-		5D3D0CBD1F15079C0099233C /* WalletUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletUtils.m; sourceTree = "<group>"; };
-		5D3D0CBF1F15079C0099233C /* NSArray+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+JSON.h"; sourceTree = "<group>"; };
-		5D3D0CC01F15079C0099233C /* NSArray+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+JSON.m"; sourceTree = "<group>"; };
-		5D3D0CC11F15079C0099233C /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
-		5D3D0CC21F15079C0099233C /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
-		5D3D0CC31F15079C0099233C /* NSString+Validation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
-		5D3D0CC41F15079C0099233C /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
-		5DB106891F14FC15003679CD /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5DB106E31F14FD29003679CD /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		5DB106E41F14FD29003679CD /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
-		5DB106E51F14FD29003679CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5DB106E71F14FD29003679CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		5DB106E91F14FD29003679CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		5DB106EA1F14FD29003679CD /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		5DB106EB1F14FD29003679CD /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		5DB106EC1F14FD29003679CD /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		5DB106ED1F14FD29003679CD /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		8ABF5B11084EF5841347E2DF /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
-		A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin-demo/Pods-libsovrin-demo.debug.xcconfig"; sourceTree = "<group>"; };
-		C4D4FCF06279C5C752DE7F51 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		DB3E05A5AC03F91112FCE37A /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
-		F8E686C53A5A57253C2E1F32 /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
-		F96C4A8F4E05B57424F79E21 /* Pods-libindy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		5D13F6C41F161E800024DFB3 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
+		5D13F6C51F161E800024DFB3 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
+		5D13F6C71F161E9C0024DFB3 /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DF013D11F1604C100076592 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		5DF013D21F1604C100076592 /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
+		5DF013D31F1604C100076592 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5DF013D51F1604C100076592 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		5DF013D71F1604C100076592 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		5DF013D81F1604C200076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DF013D91F1604C200076592 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		5DF013DA1F1604C200076592 /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		5DF013DB1F1604C200076592 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		5DF014661F1605EB00076592 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
+		5DF014691F1605EB00076592 /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
+		5DF0146A1F1605EB00076592 /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
+		5DF0146C1F1605EB00076592 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
+		5DF0146D1F1605EB00076592 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
+		5DF0146E1F1605EB00076592 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
+		5DF014701F1605EB00076592 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
+		5DF014711F1605EB00076592 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
+		5DF014721F1605EB00076592 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
+		5DF014731F1605EB00076592 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
+		5DF014741F1605EB00076592 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
+		5DF014761F1605EB00076592 /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
+		5DF014771F1605EB00076592 /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
+		5DF014791F1605EB00076592 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
+		5DF0147A1F1605EB00076592 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
+		5DF0147C1F1605EB00076592 /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
+		5DF0147D1F1605EB00076592 /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
+		5DF0147F1F1605EB00076592 /* AnoncredsDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
+		5DF014801F1605EB00076592 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
+		5DF014811F1605EB00076592 /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
+		5DF014821F1605EB00076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DF014841F1605EB00076592 /* AgentUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
+		5DF014851F1605EB00076592 /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
+		5DF014861F1605EB00076592 /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
+		5DF014871F1605EB00076592 /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
+		5DF014881F1605EB00076592 /* ClosureUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClosureUtils.h; sourceTree = "<group>"; };
+		5DF014891F1605EB00076592 /* ClosureUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClosureUtils.m; sourceTree = "<group>"; };
+		5DF0148A1F1605EB00076592 /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
+		5DF0148B1F1605EB00076592 /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
+		5DF0148C1F1605EB00076592 /* LedgerUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LedgerUtils.h; sourceTree = "<group>"; };
+		5DF0148D1F1605EB00076592 /* LedgerUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerUtils.mm; sourceTree = "<group>"; };
+		5DF0148E1F1605EB00076592 /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
+		5DF0148F1F1605EB00076592 /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
+		5DF014901F1605EB00076592 /* SignusUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
+		5DF014911F1605EB00076592 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
+		5DF014921F1605EB00076592 /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
+		5DF014931F1605EB00076592 /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
+		5DF014941F1605EB00076592 /* WalletUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WalletUtils.h; sourceTree = "<group>"; };
+		5DF014951F1605EB00076592 /* WalletUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletUtils.m; sourceTree = "<group>"; };
+		5DF014971F1605EB00076592 /* NSArray+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+JSON.h"; sourceTree = "<group>"; };
+		5DF014981F1605EB00076592 /* NSArray+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+JSON.m"; sourceTree = "<group>"; };
+		5DF014991F1605EB00076592 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
+		5DF0149A1F1605EB00076592 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
+		5DF0149B1F1605EB00076592 /* NSString+Validation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
+		5DF0149C1F1605EB00076592 /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
+		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
+		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
+		F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,8 +158,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DB1068A1F14FC15003679CD /* libindy.framework in Frameworks */,
-				03FFB87E8CFC1AB2702042B5 /* libPods-libindy-demo.a in Frameworks */,
+				5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */,
+				C4AEADFDB2CE7D041575D9DA /* libPods-libindy-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,7 +167,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4DBC82A66C6BDF86D72567E6 /* libPods-libindy-demoTests.a in Frameworks */,
+				76FED736F566C40EC1B667DA /* libPods-libindy-demoTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -182,9 +177,9 @@
 		3E2A7F7C1EC36186006194EC = {
 			isa = PBXGroup;
 			children = (
-				5DB106891F14FC15003679CD /* libindy.framework */,
-				5D3D0C8D1F15079C0099233C /* libindy-demoTests */,
-				5DB106E21F14FD29003679CD /* libindy-demo */,
+				5D13F6C71F161E9C0024DFB3 /* libindy.framework */,
+				5DF013D01F1604C100076592 /* libindy-demo */,
+				5DF014651F1605EB00076592 /* libindy-demoTests */,
 				3E2A7F861EC36186006194EC /* Products */,
 				FFB35C33119165C4896C64A8 /* Pods */,
 				84DF55ECAD03C4B4CEE16BD1 /* Frameworks */,
@@ -200,161 +195,161 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		5D3D0C8D1F15079C0099233C /* libindy-demoTests */ = {
+		5DF013D01F1604C100076592 /* libindy-demo */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0C8E1F15079C0099233C /* Base58Test.m */,
-				5D3D0C8F1F15079C0099233C /* Case Tests */,
-				5D3D0CA61F15079C0099233C /* Demo Tests */,
-				5D3D0CAA1F15079C0099233C /* Info.plist */,
-				5D3D0CAB1F15079C0099233C /* Test Utils */,
-				5D3D0CBE1F15079C0099233C /* Utils */,
+				5DF013D11F1604C100076592 /* AppDelegate.h */,
+				5DF013D21F1604C100076592 /* AppDelegate.mm */,
+				5DF013D31F1604C100076592 /* Assets.xcassets */,
+				5DF013D41F1604C100076592 /* LaunchScreen.storyboard */,
+				5DF013D61F1604C100076592 /* Main.storyboard */,
+				5DF013D81F1604C200076592 /* Info.plist */,
+				5DF013D91F1604C200076592 /* main.m */,
+				5DF013DA1F1604C200076592 /* ViewController.h */,
+				5DF013DB1F1604C200076592 /* ViewController.m */,
+			);
+			path = "libindy-demo";
+			sourceTree = "<group>";
+		};
+		5DF014651F1605EB00076592 /* libindy-demoTests */ = {
+			isa = PBXGroup;
+			children = (
+				5DF014821F1605EB00076592 /* Info.plist */,
+				5DF014661F1605EB00076592 /* Base58Test.m */,
+				5DF014671F1605EB00076592 /* Case Tests */,
+				5DF0147E1F1605EB00076592 /* Demo Tests */,
+				5DF014831F1605EB00076592 /* Test Utils */,
+				5DF014961F1605EB00076592 /* Utils */,
 			);
 			path = "libindy-demoTests";
 			sourceTree = "<group>";
 		};
-		5D3D0C8F1F15079C0099233C /* Case Tests */ = {
+		5DF014671F1605EB00076592 /* Case Tests */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0C901F15079C0099233C /* Agent */,
-				5D3D0C931F15079C0099233C /* Anoncreds */,
-				5D3D0C971F15079C0099233C /* Ledger */,
-				5D3D0C9D1F15079C0099233C /* Pool */,
-				5D3D0CA01F15079C0099233C /* Signus */,
-				5D3D0CA31F15079C0099233C /* Wallet */,
+				5DF014681F1605EB00076592 /* Agent */,
+				5DF0146B1F1605EB00076592 /* Anoncreds */,
+				5DF0146F1F1605EB00076592 /* Ledger */,
+				5DF014751F1605EB00076592 /* Pool */,
+				5DF014781F1605EB00076592 /* Signus */,
+				5DF0147B1F1605EB00076592 /* Wallet */,
 			);
 			path = "Case Tests";
 			sourceTree = "<group>";
 		};
-		5D3D0C901F15079C0099233C /* Agent */ = {
+		5DF014681F1605EB00076592 /* Agent */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0C911F15079C0099233C /* AgentHighCases.m */,
-				5D3D0C921F15079C0099233C /* AgentMediumCases.m */,
+				5DF014691F1605EB00076592 /* AgentHighCases.m */,
+				5DF0146A1F1605EB00076592 /* AgentMediumCases.m */,
 			);
 			path = Agent;
 			sourceTree = "<group>";
 		};
-		5D3D0C931F15079C0099233C /* Anoncreds */ = {
+		5DF0146B1F1605EB00076592 /* Anoncreds */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0C941F15079C0099233C /* AnoncredsHighCases.m */,
-				5D3D0C951F15079C0099233C /* AnoncredsMediumCases.m */,
-				5D3D0C961F15079C0099233C /* AnoncredsMediumCasesDemos.m */,
+				5DF0146C1F1605EB00076592 /* AnoncredsHighCases.m */,
+				5DF0146D1F1605EB00076592 /* AnoncredsMediumCases.m */,
+				5DF0146E1F1605EB00076592 /* AnoncredsMediumCasesDemos.m */,
 			);
 			path = Anoncreds;
 			sourceTree = "<group>";
 		};
-		5D3D0C971F15079C0099233C /* Ledger */ = {
+		5DF0146F1F1605EB00076592 /* Ledger */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0C981F15079C0099233C /* LedgerAttribRequest.mm */,
-				5D3D0C991F15079C0099233C /* LedgerHignCases.mm */,
-				5D3D0C9A1F15079C0099233C /* LedgerNodeRequest.mm */,
-				5D3D0C9B1F15079C0099233C /* LedgerNymRequest.mm */,
-				5D3D0C9C1F15079C0099233C /* LedgerSchemaRequest.mm */,
+				5DF014701F1605EB00076592 /* LedgerAttribRequest.mm */,
+				5DF014711F1605EB00076592 /* LedgerHignCases.mm */,
+				5DF014721F1605EB00076592 /* LedgerNodeRequest.mm */,
+				5DF014731F1605EB00076592 /* LedgerNymRequest.mm */,
+				5DF014741F1605EB00076592 /* LedgerSchemaRequest.mm */,
 			);
 			path = Ledger;
 			sourceTree = "<group>";
 		};
-		5D3D0C9D1F15079C0099233C /* Pool */ = {
+		5DF014751F1605EB00076592 /* Pool */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0C9E1F15079C0099233C /* PoolHighCases.m */,
-				5D3D0C9F1F15079C0099233C /* PoolMediumCases.m */,
+				5DF014761F1605EB00076592 /* PoolHighCases.m */,
+				5DF014771F1605EB00076592 /* PoolMediumCases.m */,
 			);
 			path = Pool;
 			sourceTree = "<group>";
 		};
-		5D3D0CA01F15079C0099233C /* Signus */ = {
+		5DF014781F1605EB00076592 /* Signus */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0CA11F15079C0099233C /* SignusHighCases.m */,
-				5D3D0CA21F15079C0099233C /* SignusMediumCases.m */,
+				5DF014791F1605EB00076592 /* SignusHighCases.m */,
+				5DF0147A1F1605EB00076592 /* SignusMediumCases.m */,
 			);
 			path = Signus;
 			sourceTree = "<group>";
 		};
-		5D3D0CA31F15079C0099233C /* Wallet */ = {
+		5DF0147B1F1605EB00076592 /* Wallet */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0CA41F15079C0099233C /* WalletHighCases.m */,
-				5D3D0CA51F15079C0099233C /* WalletMediumCases.m */,
+				5DF0147C1F1605EB00076592 /* WalletHighCases.m */,
+				5DF0147D1F1605EB00076592 /* WalletMediumCases.m */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
 		};
-		5D3D0CA61F15079C0099233C /* Demo Tests */ = {
+		5DF0147E1F1605EB00076592 /* Demo Tests */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0CA71F15079C0099233C /* AnoncredsDemo.mm */,
-				5D3D0CA81F15079C0099233C /* LedgerDemo.mm */,
-				5D3D0CA91F15079C0099233C /* SignusDemo.mm */,
+				5DF0147F1F1605EB00076592 /* AnoncredsDemo.mm */,
+				5DF014801F1605EB00076592 /* LedgerDemo.mm */,
+				5DF014811F1605EB00076592 /* SignusDemo.mm */,
 			);
 			path = "Demo Tests";
 			sourceTree = "<group>";
 		};
-		5D3D0CAB1F15079C0099233C /* Test Utils */ = {
+		5DF014831F1605EB00076592 /* Test Utils */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0CAC1F15079C0099233C /* AgentUtils.h */,
-				5D3D0CAD1F15079C0099233C /* AgentUtils.m */,
-				5D3D0CAE1F15079C0099233C /* AnoncredsUtils.h */,
-				5D3D0CAF1F15079C0099233C /* AnoncredsUtils.m */,
-				5D3D0CB01F15079C0099233C /* ClosureUtils.h */,
-				5D3D0CB11F15079C0099233C /* ClosureUtils.m */,
-				5D3D0CB21F15079C0099233C /* Environment.h */,
-				5D3D0CB31F15079C0099233C /* Environment.m */,
-				5D3D0CB41F15079C0099233C /* LedgerUtils.h */,
-				5D3D0CB51F15079C0099233C /* LedgerUtils.mm */,
-				5D3D0CB61F15079C0099233C /* PoolUtils.h */,
-				5D3D0CB71F15079C0099233C /* PoolUtils.m */,
-				5D3D0CB81F15079C0099233C /* SignusUtils.h */,
-				5D3D0CB91F15079C0099233C /* SignusUtils.mm */,
-				5D3D0CBA1F15079C0099233C /* TestUtils.h */,
-				5D3D0CBB1F15079C0099233C /* TestUtils.m */,
-				5D3D0CBC1F15079C0099233C /* WalletUtils.h */,
-				5D3D0CBD1F15079C0099233C /* WalletUtils.m */,
+				5D13F6C41F161E800024DFB3 /* SequenceUtils.h */,
+				5D13F6C51F161E800024DFB3 /* SequenceUtils.m */,
+				5DF014841F1605EB00076592 /* AgentUtils.h */,
+				5DF014851F1605EB00076592 /* AgentUtils.m */,
+				5DF014861F1605EB00076592 /* AnoncredsUtils.h */,
+				5DF014871F1605EB00076592 /* AnoncredsUtils.m */,
+				5DF014881F1605EB00076592 /* ClosureUtils.h */,
+				5DF014891F1605EB00076592 /* ClosureUtils.m */,
+				5DF0148A1F1605EB00076592 /* Environment.h */,
+				5DF0148B1F1605EB00076592 /* Environment.m */,
+				5DF0148C1F1605EB00076592 /* LedgerUtils.h */,
+				5DF0148D1F1605EB00076592 /* LedgerUtils.mm */,
+				5DF0148E1F1605EB00076592 /* PoolUtils.h */,
+				5DF0148F1F1605EB00076592 /* PoolUtils.m */,
+				5DF014901F1605EB00076592 /* SignusUtils.h */,
+				5DF014911F1605EB00076592 /* SignusUtils.mm */,
+				5DF014921F1605EB00076592 /* TestUtils.h */,
+				5DF014931F1605EB00076592 /* TestUtils.m */,
+				5DF014941F1605EB00076592 /* WalletUtils.h */,
+				5DF014951F1605EB00076592 /* WalletUtils.m */,
 			);
 			path = "Test Utils";
 			sourceTree = "<group>";
 		};
-		5D3D0CBE1F15079C0099233C /* Utils */ = {
+		5DF014961F1605EB00076592 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				5D3D0CBF1F15079C0099233C /* NSArray+JSON.h */,
-				5D3D0CC01F15079C0099233C /* NSArray+JSON.m */,
-				5D3D0CC11F15079C0099233C /* NSDictionary+JSON.h */,
-				5D3D0CC21F15079C0099233C /* NSDictionary+JSON.m */,
-				5D3D0CC31F15079C0099233C /* NSString+Validation.h */,
-				5D3D0CC41F15079C0099233C /* NSString+Validation.m */,
+				5DF014971F1605EB00076592 /* NSArray+JSON.h */,
+				5DF014981F1605EB00076592 /* NSArray+JSON.m */,
+				5DF014991F1605EB00076592 /* NSDictionary+JSON.h */,
+				5DF0149A1F1605EB00076592 /* NSDictionary+JSON.m */,
+				5DF0149B1F1605EB00076592 /* NSString+Validation.h */,
+				5DF0149C1F1605EB00076592 /* NSString+Validation.m */,
 			);
 			path = Utils;
-			sourceTree = "<group>";
-		};
-		5DB106E21F14FD29003679CD /* libindy-demo */ = {
-			isa = PBXGroup;
-			children = (
-				5DB106E31F14FD29003679CD /* AppDelegate.h */,
-				5DB106E41F14FD29003679CD /* AppDelegate.mm */,
-				5DB106E51F14FD29003679CD /* Assets.xcassets */,
-				5DB106E61F14FD29003679CD /* LaunchScreen.storyboard */,
-				5DB106E81F14FD29003679CD /* Main.storyboard */,
-				5DB106EA1F14FD29003679CD /* Info.plist */,
-				5DB106EB1F14FD29003679CD /* main.m */,
-				5DB106EC1F14FD29003679CD /* ViewController.h */,
-				5DB106ED1F14FD29003679CD /* ViewController.m */,
-			);
-			path = "libindy-demo";
 			sourceTree = "<group>";
 		};
 		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				179B238CDDB2CE6C6998BF99 /* libPods-libsovrin-demo.a */,
-				531A898BBDFEC0A267CFA0E9 /* libPods-libsovrin-demoTests.a */,
-				2C0C49D7DC18962FC7EEC21A /* libPods-libindy-demo.a */,
-				C4D4FCF06279C5C752DE7F51 /* libPods-libindy-demoTests.a */,
+				B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */,
+				8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -362,14 +357,10 @@
 		FFB35C33119165C4896C64A8 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				A49C6DA8781C6A9455450851 /* Pods-libsovrin-demo.debug.xcconfig */,
-				070B273A719A0DC38A316D73 /* Pods-libsovrin-demo.release.xcconfig */,
-				04E83649187CEE73B72BF635 /* Pods-libsovrin-demoTests.debug.xcconfig */,
-				4321F9BC0EC374D87F80862C /* Pods-libsovrin-demoTests.release.xcconfig */,
-				DB3E05A5AC03F91112FCE37A /* Pods-libindy-demo.debug.xcconfig */,
-				8ABF5B11084EF5841347E2DF /* Pods-libindy-demo.release.xcconfig */,
-				F96C4A8F4E05B57424F79E21 /* Pods-libindy-demoTests.debug.xcconfig */,
-				F8E686C53A5A57253C2E1F32 /* Pods-libindy-demoTests.release.xcconfig */,
+				DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */,
+				146E9B9A01FCC8388694FC0B /* Pods-libindy-demo.release.xcconfig */,
+				F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */,
+				ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -394,7 +385,7 @@
 			dependencies = (
 			);
 			name = "libindy-demo";
-			productName = "libsovrin-demo";
+			productName = "libindy-demo";
 			productReference = 3E2A7F851EC36186006194EC /* libindy-demo.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -416,7 +407,7 @@
 				3E2A7FA01EC36187006194EC /* PBXTargetDependency */,
 			);
 			name = "libindy-demoTests";
-			productName = "libsovrin-demoTests";
+			productName = "libindy-demoTests";
 			productReference = 3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -466,10 +457,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DB106F21F14FD29003679CD /* Info.plist in Resources */,
-				5DB106F11F14FD29003679CD /* Main.storyboard in Resources */,
-				5DB106EF1F14FD29003679CD /* Assets.xcassets in Resources */,
-				5DB106F01F14FD29003679CD /* LaunchScreen.storyboard in Resources */,
+				5DF013DF1F1604C200076592 /* Main.storyboard in Resources */,
+				5DF013DD1F1604C200076592 /* Assets.xcassets in Resources */,
+				5DF013DE1F1604C200076592 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -477,7 +467,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5D3D0CD91F15079C0099233C /* Info.plist in Resources */,
+				5DF014B11F1605EB00076592 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -581,9 +571,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DB106F41F14FD29003679CD /* ViewController.m in Sources */,
-				5DB106F31F14FD29003679CD /* main.m in Sources */,
-				5DB106EE1F14FD29003679CD /* AppDelegate.mm in Sources */,
+				5DF013E21F1604C200076592 /* ViewController.m in Sources */,
+				5DF013E11F1604C200076592 /* main.m in Sources */,
+				5DF013DC1F1604C200076592 /* AppDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -591,38 +581,39 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5D3D0CC51F15079C0099233C /* Base58Test.m in Sources */,
-				5D3D0CC61F15079C0099233C /* AgentHighCases.m in Sources */,
-				5D3D0CCD1F15079C0099233C /* LedgerNodeRequest.mm in Sources */,
-				5D3D0CCC1F15079C0099233C /* LedgerHignCases.mm in Sources */,
-				5D3D0CD41F15079C0099233C /* WalletHighCases.m in Sources */,
-				5D3D0CDC1F15079C0099233C /* ClosureUtils.m in Sources */,
-				5D3D0CC71F15079C0099233C /* AgentMediumCases.m in Sources */,
-				5D3D0CE11F15079C0099233C /* TestUtils.m in Sources */,
-				5D3D0CCB1F15079C0099233C /* LedgerAttribRequest.mm in Sources */,
-				5D3D0CCA1F15079C0099233C /* AnoncredsMediumCasesDemos.m in Sources */,
-				5D3D0CDE1F15079C0099233C /* LedgerUtils.mm in Sources */,
-				5D3D0CD51F15079C0099233C /* WalletMediumCases.m in Sources */,
-				5D3D0CD01F15079C0099233C /* PoolHighCases.m in Sources */,
-				5D3D0CD11F15079C0099233C /* PoolMediumCases.m in Sources */,
-				5D3D0CC81F15079C0099233C /* AnoncredsHighCases.m in Sources */,
-				5D3D0CDD1F15079C0099233C /* Environment.m in Sources */,
-				5D3D0CE31F15079C0099233C /* NSArray+JSON.m in Sources */,
-				5D3D0CD21F15079C0099233C /* SignusHighCases.m in Sources */,
-				5D3D0CDB1F15079C0099233C /* AnoncredsUtils.m in Sources */,
-				5D3D0CE01F15079C0099233C /* SignusUtils.mm in Sources */,
-				5D3D0CCF1F15079C0099233C /* LedgerSchemaRequest.mm in Sources */,
-				5D3D0CD61F15079C0099233C /* AnoncredsDemo.mm in Sources */,
-				5D3D0CDF1F15079C0099233C /* PoolUtils.m in Sources */,
-				5D3D0CD81F15079C0099233C /* SignusDemo.mm in Sources */,
-				5D3D0CD71F15079C0099233C /* LedgerDemo.mm in Sources */,
-				5D3D0CDA1F15079C0099233C /* AgentUtils.m in Sources */,
-				5D3D0CD31F15079C0099233C /* SignusMediumCases.m in Sources */,
-				5D3D0CE41F15079C0099233C /* NSDictionary+JSON.m in Sources */,
-				5D3D0CC91F15079C0099233C /* AnoncredsMediumCases.m in Sources */,
-				5D3D0CCE1F15079C0099233C /* LedgerNymRequest.mm in Sources */,
-				5D3D0CE51F15079C0099233C /* NSString+Validation.m in Sources */,
-				5D3D0CE21F15079C0099233C /* WalletUtils.m in Sources */,
+				5DF0149D1F1605EB00076592 /* Base58Test.m in Sources */,
+				5DF0149E1F1605EB00076592 /* AgentHighCases.m in Sources */,
+				5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */,
+				5DF014A51F1605EB00076592 /* LedgerNodeRequest.mm in Sources */,
+				5DF014A41F1605EB00076592 /* LedgerHignCases.mm in Sources */,
+				5DF014AC1F1605EB00076592 /* WalletHighCases.m in Sources */,
+				5DF014B41F1605EB00076592 /* ClosureUtils.m in Sources */,
+				5DF0149F1F1605EB00076592 /* AgentMediumCases.m in Sources */,
+				5DF014B91F1605EB00076592 /* TestUtils.m in Sources */,
+				5DF014A31F1605EB00076592 /* LedgerAttribRequest.mm in Sources */,
+				5DF014A21F1605EB00076592 /* AnoncredsMediumCasesDemos.m in Sources */,
+				5DF014B61F1605EB00076592 /* LedgerUtils.mm in Sources */,
+				5DF014AD1F1605EB00076592 /* WalletMediumCases.m in Sources */,
+				5DF014A81F1605EB00076592 /* PoolHighCases.m in Sources */,
+				5DF014A91F1605EB00076592 /* PoolMediumCases.m in Sources */,
+				5DF014A01F1605EB00076592 /* AnoncredsHighCases.m in Sources */,
+				5DF014B51F1605EB00076592 /* Environment.m in Sources */,
+				5DF014BB1F1605EB00076592 /* NSArray+JSON.m in Sources */,
+				5DF014AA1F1605EB00076592 /* SignusHighCases.m in Sources */,
+				5DF014B31F1605EB00076592 /* AnoncredsUtils.m in Sources */,
+				5DF014B81F1605EB00076592 /* SignusUtils.mm in Sources */,
+				5DF014A71F1605EB00076592 /* LedgerSchemaRequest.mm in Sources */,
+				5DF014AE1F1605EB00076592 /* AnoncredsDemo.mm in Sources */,
+				5DF014B71F1605EB00076592 /* PoolUtils.m in Sources */,
+				5DF014B01F1605EB00076592 /* SignusDemo.mm in Sources */,
+				5DF014AF1F1605EB00076592 /* LedgerDemo.mm in Sources */,
+				5DF014B21F1605EB00076592 /* AgentUtils.m in Sources */,
+				5DF014AB1F1605EB00076592 /* SignusMediumCases.m in Sources */,
+				5DF014BC1F1605EB00076592 /* NSDictionary+JSON.m in Sources */,
+				5DF014A11F1605EB00076592 /* AnoncredsMediumCases.m in Sources */,
+				5DF014A61F1605EB00076592 /* LedgerNymRequest.mm in Sources */,
+				5DF014BD1F1605EB00076592 /* NSString+Validation.m in Sources */,
+				5DF014BA1F1605EB00076592 /* WalletUtils.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -637,18 +628,18 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		5DB106E61F14FD29003679CD /* LaunchScreen.storyboard */ = {
+		5DF013D41F1604C100076592 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				5DB106E71F14FD29003679CD /* Base */,
+				5DF013D51F1604C100076592 /* Base */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
-		5DB106E81F14FD29003679CD /* Main.storyboard */ = {
+		5DF013D61F1604C100076592 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				5DB106E91F14FD29003679CD /* Base */,
+				5DF013D71F1604C100076592 /* Base */,
 			);
 			name = Main.storyboard;
 			sourceTree = "<group>";
@@ -752,39 +743,41 @@
 		};
 		3E2A7FA81EC36187006194EC /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = DB3E05A5AC03F91112FCE37A /* Pods-libindy-demo.debug.xcconfig */;
+			baseConfigurationReference = DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demo";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
 		};
 		3E2A7FA91EC36187006194EC /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8ABF5B11084EF5841347E2DF /* Pods-libindy-demo.release.xcconfig */;
+			baseConfigurationReference = 146E9B9A01FCC8388694FC0B /* Pods-libindy-demo.release.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demo";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};
 		3E2A7FAB1EC36187006194EC /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F96C4A8F4E05B57424F79E21 /* Pods-libindy-demoTests.debug.xcconfig */;
+			baseConfigurationReference = F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demoTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demoTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/libindy-demo.app/libindy-demo";
 			};
@@ -792,13 +785,13 @@
 		};
 		3E2A7FAC1EC36187006194EC /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F8E686C53A5A57253C2E1F32 /* Pods-libindy-demoTests.release.xcconfig */;
+			baseConfigurationReference = ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libsovrin-demoTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demoTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/libindy-demo.app/libindy-demo";
 			};

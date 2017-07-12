@@ -77,8 +77,6 @@
     [TestUtils cleanupStorage];
     
     NSString* poolName = @"indy_send_node_request_works_for_wrong_role";
-    NSString* walletName = @"wallet1";
-    NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -91,8 +89,7 @@
     // 2. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     
@@ -146,8 +143,6 @@
     [TestUtils cleanupStorage];
     
     NSString* poolName = @"indy_submit_node_request_works_for_already_has_node";
-    NSString* walletName = @"wallet1";
-    NSString* xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -160,8 +155,7 @@
     // 2. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     

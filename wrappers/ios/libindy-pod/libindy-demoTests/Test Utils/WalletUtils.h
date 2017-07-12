@@ -12,7 +12,6 @@
 + (WalletUtils *)sharedInstance;
 
 - (NSError *)createAndOpenWalletWithPoolName:(NSString *)poolName
-                                  walletName:(NSString *)walletName
                                        xtype:(NSString *)xtype
                                       handle:(IndyHandle *)handle;
 
@@ -29,10 +28,8 @@
 
 - (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle;
 
-
-
-- (NSError *)walletSetSeqNoForValue:(IndyHandle)walletHandle
-                       claimDefUUID:(NSString *)uuid
-                      claimDefSeqNo:(NSNumber *)seqNo;
+- (NSError*) walletSetSeqNo:(NSNumber *)seqNo
+                   forValue:(NSString *)value
+               walletHandle:(IndyHandle) walletHandle;
 
 @end

@@ -36,8 +36,6 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"indy_attrib_request_works_for_unknown_did";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -50,8 +48,7 @@
     // 2. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     
@@ -98,8 +95,6 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"indy_get_attrib_request_works_for_unknown_did";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -112,8 +107,7 @@
     // 2. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     
@@ -157,8 +151,6 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"indy_get_attrib_request_works_for_unknown_attribute";
-    NSString *walletName = @"wallet1";
-    NSString *xtype = @"default";
     NSError *ret = nil;
     
     // 1. Create and open pool ledger config, get pool handle
@@ -171,8 +163,7 @@
     // 2. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:walletName
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     

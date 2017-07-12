@@ -65,8 +65,8 @@
                        completion:(void (^)(NSError *error ))handler;
 
 - (NSError *)walletSetSeqNo:(NSNumber *)seqNo
-                  forHandle:(IndyHandle)walletHandle
-                     andKey:(NSString *)key
+                   forValue:(NSString *)value
+               walletHandle:(IndyHandle)walletHandle
                  completion:(void (^)(NSError *error ))handler;
 
 @end
