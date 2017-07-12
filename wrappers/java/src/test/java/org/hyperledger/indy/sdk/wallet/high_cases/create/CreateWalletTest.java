@@ -2,6 +2,8 @@ package org.hyperledger.indy.sdk.wallet.high_cases.create;
 
 import java.util.concurrent.ExecutionException;
 
+import org.hyperledger.indy.sdk.ErrorCode;
+import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.helpres.InitHelper;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
@@ -63,7 +65,7 @@ public class CreateWalletTest {
 		StorageHelper.cleanupStorage();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectMessage("WalletUnknownTypeError: 201");
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletUnknownTypeError));
 
 		Wallet.createWallet("default", "mywallet", "unknow_type", null, null).get();
 

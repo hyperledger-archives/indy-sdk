@@ -4,13 +4,19 @@ public class IndyException extends Exception {
 
 	private static final long serialVersionUID = 2650355290834266477L;
 
+	private ErrorCode errorCode;
+
 	public IndyException(String message) {
 
 		super(message);
 	}
 
-	public static IndyException fromErrorCode(ErrorCode errorCode, int err) {
+	public IndyException(ErrorCode errorCode) {
+		this(String.format("%s: %d", errorCode.name(), errorCode.value()));
+		this.errorCode = errorCode;
+	}
 
-		return new IndyException("" + (errorCode == null ? null : errorCode.name()) + ": " + (errorCode == null ? null : errorCode.value()) + " (" + Integer.toString(err) + ")");
+	public ErrorCode getErrorCode() {
+		return errorCode;
 	}
 }

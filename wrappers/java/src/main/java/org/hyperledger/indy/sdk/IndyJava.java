@@ -29,7 +29,7 @@ public class IndyJava {
 			assert(xcommand_handle == FIXED_COMMAND_HANDLE);
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }
+			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(new IndyException(errorCode)); return false; }
 
 			return true;
 		}
@@ -37,7 +37,7 @@ public class IndyJava {
 		protected static void checkResult(int result) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(result);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, result);
+			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
 		}
 
 		@Override
