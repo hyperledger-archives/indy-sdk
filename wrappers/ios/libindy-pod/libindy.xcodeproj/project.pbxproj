@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */; };
 		5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */; };
+		5D2A3A4F1F164BD70003FE43 /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */; };
 		5DF014D51F1615BA00076592 /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C01F1615BA00076592 /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C21F1615BA00076592 /* IndyCallbacks.h */; };
 		5DF014D71F1615BA00076592 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C31F1615BA00076592 /* NSError+IndyError.h */; };
@@ -27,18 +28,13 @@
 		5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D11F1615BA00076592 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D21F1615BA00076592 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014D31F1615BA00076592 /* IndyWallet.mm */; };
-		EE1EC5E2C56623E5A12EA83A /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 72FE36F7769A958F9EAE731E /* libPods-libindy.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		29BD28F5EB59605F9F083E09 /* Pods-libsovrin.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.debug.xcconfig"; sourceTree = "<group>"; };
-		3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libsovrin.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E08C01B1EB3336A000A73BA /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E0FCFD81EE6E1E700E26EEE /* libPods-libsovrin-demo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libsovrin-demo.a"; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-fpqoyzkovibgszalhhmmnlcetkfp/Build/Products/Debug-iphoneos/libPods-libsovrin-demo.a"; sourceTree = "<group>"; };
-		3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libsovrin.a"; path = "../../../../../../Library/Developer/Xcode/DerivedData/libsovrin-fpqoyzkovibgszalhhmmnlcetkfp/Build/Products/Debug-iphoneos/libPods-libsovrin.a"; sourceTree = "<group>"; };
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
-		4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libsovrin.release.xcconfig"; path = "Pods/Target Support Files/Pods-libsovrin/Pods-libsovrin.release.xcconfig"; sourceTree = "<group>"; };
 		5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCallbacks.mm; sourceTree = "<group>"; };
+		5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libindy.a"; path = "Pods/../build/Debug-iphoneos/libPods-libindy.a"; sourceTree = "<group>"; };
 		5DF014BF1F1615BA00076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5DF014C01F1615BA00076592 /* libindy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libindy.h; sourceTree = "<group>"; };
 		5DF014C21F1615BA00076592 /* IndyCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCallbacks.h; sourceTree = "<group>"; };
@@ -59,7 +55,6 @@
 		5DF014D21F1615BA00076592 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
 		5DF014D31F1615BA00076592 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
 		717E50F5CB0006C54C8947D5 /* Pods-libindy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.debug.xcconfig"; sourceTree = "<group>"; };
-		72FE36F7769A958F9EAE731E /* libPods-libindy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DEA13FB625E476E575ACEE1F /* Pods-libindy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -68,8 +63,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5D2A3A4F1F164BD70003FE43 /* libPods-libindy.a in Frameworks */,
 				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
-				EE1EC5E2C56623E5A12EA83A /* libPods-libindy.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,11 +74,8 @@
 		2C11A2035B94F34DF5CCDB2A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				3E0FCFD81EE6E1E700E26EEE /* libPods-libsovrin-demo.a */,
-				3E0FCFD91EE6E1E700E26EEE /* libPods-libsovrin.a */,
+				5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */,
 				3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */,
-				3AF7264CD92E106F9FECE3EB /* libPods-libsovrin.a */,
-				72FE36F7769A958F9EAE731E /* libPods-libindy.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -152,8 +144,6 @@
 		7AA078817B8C2B22C808AE50 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				29BD28F5EB59605F9F083E09 /* Pods-libsovrin.debug.xcconfig */,
-				4744687D6071E21277F409B1 /* Pods-libsovrin.release.xcconfig */,
 				717E50F5CB0006C54C8947D5 /* Pods-libindy.debug.xcconfig */,
 				DEA13FB625E476E575ACEE1F /* Pods-libindy.release.xcconfig */,
 			);
@@ -200,7 +190,7 @@
 			dependencies = (
 			);
 			name = libindy;
-			productName = libsovrin;
+			productName = libindy;
 			productReference = 3E08C01B1EB3336A000A73BA /* libindy.framework */;
 			productType = "com.apple.product-type.framework";
 		};
@@ -411,7 +401,10 @@
 				INFOPLIST_FILE = libindy/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/build/Debug-iphoneos",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libindy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -432,7 +425,10 @@
 				INFOPLIST_FILE = libindy/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/build/Debug-iphoneos",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libindy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
