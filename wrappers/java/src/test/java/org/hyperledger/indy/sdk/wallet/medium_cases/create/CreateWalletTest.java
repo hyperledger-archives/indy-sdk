@@ -2,7 +2,8 @@ package org.hyperledger.indy.sdk.wallet.medium_cases.create;
 
 import java.util.concurrent.ExecutionException;
 
-import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.ErrorCode;
+import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.helpres.InitHelper;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
@@ -29,8 +30,7 @@ public class CreateWalletTest {
 
 		StorageHelper.cleanupStorage();
 
-		thrown.expect(IndyException.class);
-		thrown.expectMessage("CommonInvalidParam2: 101");
+		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam2));
 
 		Wallet.createWallet("", "mywallet", "default", null, null).get();
 
@@ -43,7 +43,7 @@ public class CreateWalletTest {
 		StorageHelper.cleanupStorage();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectMessage("WalletAlreadyExistsError: 203");
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletAlreadyExistsError));
 
 		CreateWalletResult result1 = Wallet.createWallet("default", "mywallet", "default", null, null).get();
 		Assert.assertNotNull(result1);

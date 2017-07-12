@@ -1,8 +1,9 @@
 package org.hyperledger.indy.sdk.wallet.medium_cases.create;
 
+import org.hyperledger.indy.sdk.ErrorCode;
+import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.hyperledger.indy.sdk.wallet.WalletResults;
-import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
 import org.hyperledger.indy.sdk.helpres.StorageHelper;
 import org.hyperledger.indy.sdk.helpres.InitHelper;
 import org.junit.*;
@@ -40,7 +41,7 @@ public class OpenWalletTest {
 		StorageHelper.cleanupStorage();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectMessage("CommonIOError: 114");//TODO FIX in IndySdk
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));//TODO FIX ERROR TYPE in IndySdk.
 
 		WalletResults.OpenWalletResult result2 = Wallet.openWallet("mywallet", null, null).get();
 		Assert.assertNotNull(result2);
