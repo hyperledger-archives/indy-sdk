@@ -1320,11 +1320,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         let pool_name = "pool1";
-        let prover_wallet_name = "prover_wallet";
         let xtype = "default";
 
         //1. Create Prover wallet, get wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, Some(xtype)).unwrap();
 
         let schema_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
@@ -1456,15 +1455,13 @@ mod demos {
         TestUtils::cleanup_storage();
 
         let pool_name = "pool1";
-        let issuer_wallet_name = "issuer_wallet";
-        let prover_wallet_name = "prover_wallet";
         let xtype = "default";
 
         //1. Create Issuer wallet, get wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, issuer_wallet_name, xtype).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, Some(xtype)).unwrap();
 
         //2. Create Prover wallet, get wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, prover_wallet_name, xtype).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, Some(xtype)).unwrap();
 
         //3. Issuer create claim definition
         let schema_seq_no = 1;
