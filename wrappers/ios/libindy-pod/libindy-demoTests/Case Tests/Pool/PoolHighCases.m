@@ -41,7 +41,6 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"";
-    NSString *config = [[PoolUtils sharedInstance] createDefaultPoolConfig:poolName];
     NSError *res = nil;
     res = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
                                                                    nodes:nil

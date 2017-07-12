@@ -49,7 +49,6 @@
     
     //2. Issuer create claim definition
     NSNumber *schemaSeqNo = @(1);
-    NSNumber *claimDefSeqNo = @(1);
     NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:schemaSeqNo];
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
@@ -357,9 +356,7 @@
     
     NSString *issuer2Did = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *proverDid = @"BzfFCYk";
-    
     NSString *poolName = @"pool1";
-    NSString *xtype = @"default";
     NSError *ret;
     
     //1. Issuer1 create wallet, get wallet handles
@@ -707,9 +704,6 @@
     NSString* proverDid = @"BzfFCYk";
     
     NSString* poolName = @"pool1";
-    NSString* issuerWalletName = @"issuer_wallet";
-    NSString* proverWalletName = @"prover_wallet";
-    NSString* xtype = @"default";
     NSError*  ret = nil;
     
     //1. Issuer create wallet, get wallet handles

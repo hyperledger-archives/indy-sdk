@@ -26,8 +26,6 @@
 - (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
                                        poolHandle: (IndyHandle *) handle;
 
-- (NSString *)createPoolConfig:(NSString *)poolName;
-
 - (NSError *)openPoolLedger:(NSString*)poolName
                      config:(NSString*)config
                 poolHandler:(IndyHandle*)handle;

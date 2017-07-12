@@ -386,7 +386,6 @@
     
     // 2. get claim offer
     NSString *issuerDid = [AnoncredsUtils issuerDid];
-    NSNumber *claimDefSeqNo = @(1);
     NSString *claimOffer = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
                                                                   schemaSeqNo:@(1)];
     
