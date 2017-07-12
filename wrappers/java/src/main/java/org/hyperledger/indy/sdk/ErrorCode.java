@@ -103,7 +103,7 @@ public enum ErrorCode {
     SignusUnknownCryptoError(500);
 
 	private int value;
-	private static Map<Integer, ErrorCode> map = new HashMap<> ();
+	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode> ();
 
 	private ErrorCode(int value) {
 

@@ -189,7 +189,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String requestJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
@@ -212,7 +212,7 @@ public class Ledger extends IndyJava.API {
 			Pool pool,
 			String requestJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
@@ -233,7 +233,7 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String requestJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_ddo_request(
@@ -254,7 +254,7 @@ public class Ledger extends IndyJava.API {
 			String alias,
 			String role) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_nym_request(
@@ -278,7 +278,7 @@ public class Ledger extends IndyJava.API {
 			String raw,
 			String enc) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_attrib_request(
@@ -300,7 +300,7 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_attrib_request(
@@ -319,7 +319,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String targetDid) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_nym_request(
@@ -337,7 +337,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_schema_request(
@@ -355,7 +355,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_schema_request(
@@ -374,7 +374,7 @@ public class Ledger extends IndyJava.API {
 			String xref,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_claim_def_txn(
@@ -393,7 +393,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String xref) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_claim_def_txn(
@@ -412,7 +412,7 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_node_request(

@@ -29,7 +29,7 @@ public class IndyJava {
 		 */
 
 		private static AtomicInteger atomicInteger = new AtomicInteger();
-		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<> ();
+		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<Integer, CompletableFuture<?>> ();
 
 		protected static int addFuture(CompletableFuture<?> future) {
 

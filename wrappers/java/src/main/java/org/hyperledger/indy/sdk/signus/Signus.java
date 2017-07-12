@@ -125,7 +125,7 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			CreateAndStoreMyDidJSONParameter didJson) throws IndyException {
 
-		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<> ();
+		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -146,7 +146,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String identityJson) throws IndyException {
 
-		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<> ();
+		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<ReplaceKeysResult> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -167,7 +167,7 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -188,7 +188,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String msg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -211,7 +211,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String signedMsg) throws IndyException {
 
-		CompletableFuture<Boolean> future = new CompletableFuture<> ();
+		CompletableFuture<Boolean> future = new CompletableFuture<Boolean> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -235,7 +235,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String msg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -257,7 +257,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String encryptedMsg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();

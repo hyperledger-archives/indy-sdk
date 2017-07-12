@@ -106,7 +106,7 @@ public class Pool extends IndyJava.API {
 			String configName,
 			CreatePoolLedgerConfigJSONParameter config) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_create_pool_ledger_config(
@@ -124,7 +124,7 @@ public class Pool extends IndyJava.API {
 			String configName,
 			OpenPoolLedgerJSONParameter config) throws IndyException {
 
-		CompletableFuture<Pool> future = new CompletableFuture<> ();
+		CompletableFuture<Pool> future = new CompletableFuture<Pool> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_open_pool_ledger(
@@ -141,7 +141,7 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int handle = pool.getPoolHandle();
@@ -159,7 +159,7 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> closePoolLedger(
 			Pool pool) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int handle = pool.getPoolHandle();
@@ -177,7 +177,7 @@ public class Pool extends IndyJava.API {
 	public static CompletableFuture<Void> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_delete_pool_ledger_config(

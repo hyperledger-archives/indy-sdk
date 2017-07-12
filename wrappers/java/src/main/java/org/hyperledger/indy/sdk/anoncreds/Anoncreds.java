@@ -113,7 +113,7 @@ public class Anoncreds extends IndyJava.API {
 			String signatureType, 
 			boolean createNonRevoc) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -138,7 +138,7 @@ public class Anoncreds extends IndyJava.API {
 			int schemaSeqNo, 
 			int maxClaimNum) throws IndyException {
 
-		CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<> ();
+		CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<IssuerCreateAndStoreRevocRegResult> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -163,7 +163,7 @@ public class Anoncreds extends IndyJava.API {
 			int revocRegSeqNo,
 			int userRevocIndex) throws IndyException {
 
-		CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<> ();
+		CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<IssuerCreateClaimResult> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -187,7 +187,7 @@ public class Anoncreds extends IndyJava.API {
 			int revocRegSeqNo, 
 			int userRevocIndex) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -208,7 +208,7 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String claimOfferJson) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -228,7 +228,7 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String filterJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String> ();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();

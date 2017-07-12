@@ -17,8 +17,8 @@ import com.sun.jna.Callback;
  */
 public class Agent extends IndyJava.API {
 
-	private static Map<Integer, Agent.Connection> connections = new ConcurrentHashMap<> ();
-	private static Map<Integer, Agent.Listener> listeners = new ConcurrentHashMap<> ();
+	private static Map<Integer, Agent.Connection> connections = new ConcurrentHashMap<Integer, Agent.Connection> ();
+	private static Map<Integer, Agent.Listener> listeners = new ConcurrentHashMap<Integer, Agent.Listener> ();
 
 	private Agent() {
 
@@ -136,9 +136,9 @@ public class Agent extends IndyJava.API {
 			Wallet wallet,
 			String senderDid,
 			String receiverDid,
-			AgentObservers.AgentConnectObserver agentConnectObserver) throws IndyException {
+			final AgentObservers.AgentConnectObserver agentConnectObserver) throws IndyException {
 
-		CompletableFuture<Agent.Connection> future = new CompletableFuture<> ();
+		CompletableFuture<Agent.Connection> future = new CompletableFuture<Agent.Connection> ();
 		int commandHandle = addFuture(future);
 
 		Callback messageCb = new Callback() {
@@ -174,9 +174,9 @@ public class Agent extends IndyJava.API {
 
 	public static CompletableFuture<Agent.Listener> agentListen(
 			String endpoint,
-			AgentObservers.AgentListenObserver agentListenObserver) throws IndyException {
+			final AgentObservers.AgentListenObserver agentListenObserver) throws IndyException {
 
-		CompletableFuture<Agent.Listener> future = new CompletableFuture<> ();
+		CompletableFuture<Agent.Listener> future = new CompletableFuture<Agent.Listener> ();
 		int commandHandle = addFuture(future);
 
 		Callback connectionCb = new Callback() {
@@ -229,7 +229,7 @@ public class Agent extends IndyJava.API {
 			Wallet wallet,
 			String did) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int listenerHandle = listener.getListenerHandle();
@@ -254,7 +254,7 @@ public class Agent extends IndyJava.API {
 			Wallet wallet,
 			String did) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int listenerHandle = listener.getListenerHandle();
@@ -276,7 +276,7 @@ public class Agent extends IndyJava.API {
 			Agent.Connection connection,
 			String message) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int connectionHandle = connection.getConnectionHandle();
@@ -295,7 +295,7 @@ public class Agent extends IndyJava.API {
 	public static CompletableFuture<Void> agentCloseConnection(
 			Agent.Connection connection) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int connectionHandle = connection.getConnectionHandle();
@@ -315,7 +315,7 @@ public class Agent extends IndyJava.API {
 	public static CompletableFuture<Void> agentCloseListener(
 			Agent.Listener listener) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
 
 		int listenerHandle = listener.getListenerHandle();
