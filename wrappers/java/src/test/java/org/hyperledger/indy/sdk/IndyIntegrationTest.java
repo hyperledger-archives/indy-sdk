@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -22,6 +23,12 @@ public class IndyIntegrationTest {
 	@Before
 	public void setUp() throws Exception {
 		InitHelper.init();
+		StorageUtils.cleanupStorage();
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		StorageUtils.cleanupStorage();
 	}
 
 	protected HashSet<Pool> openedPools = new HashSet<>();
