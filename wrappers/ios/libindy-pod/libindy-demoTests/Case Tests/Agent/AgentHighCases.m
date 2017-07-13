@@ -45,8 +45,7 @@
     // 1. create and open wallet
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool3"
-                                                             walletName:@"wallet3"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed ");
 
@@ -104,7 +103,6 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"indy_agent_connect_works_for_remote_data";
-    NSString *xtype = @"default";
     NSError *ret;
     
     // 1. create and open pool ledger config
@@ -116,16 +114,14 @@
     // 2. Create listener's wallet
     IndyHandle listenerWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                                                           walletName:@"wallet10.1"
-                                                                                                xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&listenerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listenerWalletHandle");
     
     // 3. Create trustees's wallet
     IndyHandle trusteeWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                             walletName:@"wallet10.2"
-                                                                  xtype:xtype
+                                                                  xtype:nil
                                                                  handle:&trusteeWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listenerWalletHandle");
     
@@ -228,13 +224,13 @@
     // 1. obtain wallet handle
     IndyHandle walletHandle;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
-                                                             walletName:@"wallet1"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
+    // TODO: Rename to "indy_agent_connect_works_for_a" when it will be done in Rust
     // 2. Obtain did
-    NSString *seed = @"indy_agent_connect_works_for_a";
+    NSString *seed = @"sovrin_agent_connect_works_for_a";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
@@ -292,13 +288,13 @@
     // 1. Obtain wallet handle
     IndyHandle walletHandle;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool2"
-                                                             walletName:@"wallet2"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    NSString *seed = @"indy_agent_listen_works_for_al";
+    // TODO: Rename to "indy_agent_listen_works_for_al" when it will be done in Rust
+    NSString *seed = @"sovrin_agent_listen_works_for_al";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
@@ -339,8 +335,7 @@
     // 1. Create and open receiver's wallet
     IndyHandle receiverWallet = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
-                                                             walletName:@"wallet11receiver"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&receiverWallet];
      XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for receiverWallet");
     
@@ -396,13 +391,12 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret;
-    NSString *endpoint = @"127.0.0.1:9811";
+    NSString *endpoint = @"127.0.0.1:9814";
     
     // 1. Create and open receiver's wallet
     IndyHandle receiverWallet = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
-                                                             walletName:@"wallet14receiver"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&receiverWallet];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for receiverWallet");
     
@@ -498,8 +492,7 @@
     // 1. Obtain receiver's wallet handle
     IndyHandle receiverWalletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"ignore"
-                                                             walletName:@"wallet13receiver"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&receiverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -546,8 +539,7 @@
     // 1. Create and open wallet
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool4"
-                                                             walletName:@"wallet4"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -658,8 +650,7 @@
     // 1. Create and open wallet
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool3"
-                                                             walletName:@"wallet3"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -728,8 +719,7 @@
     // 1. Create and open wallet
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool4"
-                                                             walletName:@"wallet4"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -812,8 +802,7 @@
     // 1. Create and open wallet
     IndyHandle walletHandle = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool8"
-                                                             walletName:@"wallet8"
-                                                                  xtype:@"default"
+                                                                  xtype:nil
                                                                  handle:&walletHandle];
      XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
@@ -884,3 +873,5 @@
 }
 
 @end
+
+

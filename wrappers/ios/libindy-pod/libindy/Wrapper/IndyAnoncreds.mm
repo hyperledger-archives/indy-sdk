@@ -12,10 +12,11 @@
 @implementation IndyAnoncreds
 
 + (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(IndyHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                                schemaJSON:(NSString *)schema
                                             signatureType:(NSString *)signatureType
                                            createNonRevoc:(BOOL)createNonRevoc
-                                               completion:(void (^)(NSError *error, NSString *claimDefJSON, NSString *claimDefUUID)) handler
+                                               completion:(void (^)(NSError *error, NSString *claimDefJSON)) handler
 {
     indy_error_t ret;
     
@@ -23,11 +24,11 @@
     
     ret = indy_issuer_create_and_store_claim_def(handle,
                                                    walletHandle,
+                                                   [issuerDid UTF8String],
                                                    [schema UTF8String],
                                                    [signatureType UTF8String],
                                                    (indy_bool_t) createNonRevoc,
-                                                   IndyWrapperCommon4PCallback
-                                                  );
+                                                   IndyWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -37,6 +38,7 @@
 }
 
 + (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(IndyHandle)walletHandle
+                                                issuerDid:(NSString *)issuerDid
                                             claimDefSeqNo:(NSNumber *)seqNo
                                               maxClaimNum:(NSNumber *)maxClaimNum
                                                completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler
@@ -47,10 +49,10 @@
     
     ret = indy_issuer_create_and_store_revoc_reg(handle,
                                                    walletHandle,
+                                                   [issuerDid UTF8String],
                                                    [seqNo intValue],
                                                    [maxClaimNum intValue],
-                                                   IndyWrapperCommon4PCallback
-                                                  );
+                                                   IndyWrapperCommon4PCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -88,7 +90,6 @@
 }
 
 + (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
-                                 claimDefSeqNo:(NSNumber *)claimSeqNo
                                  revocRegSeqNo:(NSNumber *)revocSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler
@@ -99,7 +100,6 @@
     
     ret = indy_issuer_revoke_claim(handle,
                                      walletHandle,
-                                     [claimSeqNo intValue],
                                      [revocSeqNo intValue],
                                      [revocIndex intValue],
                                      IndyWrapperCommon3PSCallback
