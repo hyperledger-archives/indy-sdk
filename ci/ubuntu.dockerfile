@@ -27,11 +27,12 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
     && ./install.sh
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
-RUN mkdir /home/indy
-WORKDIR /home/indy
-RUN git clone https://github.com/hyperledger/indy-anoncreds.git
-RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit --verbose
-RUN useradd -s /bin/bash -u $uid indy
+
+RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-WORKDIR /home/sovrin
+RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
+
+WORKDIR /home/indy
+
+RUN git clone https://github.com/hyperledger/indy-anoncreds.git
