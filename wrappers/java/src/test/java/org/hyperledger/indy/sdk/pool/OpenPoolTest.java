@@ -2,7 +2,6 @@ package org.hyperledger.indy.sdk.pool;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
-import org.hyperledger.indy.sdk.pool.PoolResults.OpenPoolLedgerResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.junit.Test;
@@ -18,11 +17,11 @@ public class OpenPoolTest extends IndyIntegrationTest {
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
 		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		OpenPoolLedgerResult openResult = Pool.openPoolLedger(poolName, config2).get();
+		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
-		assertNotNull(openResult);
+		assertNotNull(pool);
 
-		openResult.getPool().closePoolLedger();
+		pool.closePoolLedger();
 		StorageUtils.cleanupStorage();
 	}
 
@@ -33,11 +32,11 @@ public class OpenPoolTest extends IndyIntegrationTest {
 		String poolName = PoolUtils.createPoolLedgerConfig(2);
 
 		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		OpenPoolLedgerResult openResult = Pool.openPoolLedger(poolName, config2).get();
+		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
-		assertNotNull(openResult);
+		assertNotNull(pool);
 
-		openResult.getPool().closePoolLedger();
+		pool.closePoolLedger();
 		StorageUtils.cleanupStorage();
 	}
 
@@ -48,11 +47,11 @@ public class OpenPoolTest extends IndyIntegrationTest {
 		String poolName = PoolUtils.createPoolLedgerConfig(3);
 
 		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		OpenPoolLedgerResult openResult = Pool.openPoolLedger(poolName, config2).get();
+		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
-		assertNotNull(openResult);
+		assertNotNull(pool);
 
-		openResult.getPool().closePoolLedger();
+		pool.closePoolLedger();
 		StorageUtils.cleanupStorage();
 	}
 
