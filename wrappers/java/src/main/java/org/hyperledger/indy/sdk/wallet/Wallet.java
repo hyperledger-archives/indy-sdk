@@ -43,7 +43,7 @@ public class Wallet extends IndyJava.API {
 	 * public Future<...> registerWalletType(
 				...) throws IndyException;*/
 
-	private static HashSet<Callback> map = new HashSet<>();//TODO FIX BUG WITH CALLBACK LIVE TIME
+	private static HashSet<Callback> map = new HashSet<>();//TODO FIX BUG WITH CALLBACK LIVETIME
 
 	public static Future<CreateWalletResult> createWallet(
 			String poolName,
@@ -102,7 +102,7 @@ public class Wallet extends IndyJava.API {
 				future.complete(result);
 			}
 		};
-		
+
 		int result = LibIndy.api.indy_open_wallet(
 				FIXED_COMMAND_HANDLE, 
 				name,
