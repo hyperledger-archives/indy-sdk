@@ -1,11 +1,15 @@
 package org.hyperledger.indy.sdk;
 
+import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.utils.InitHelper;
+import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 public class IndyIntegrationTest {
@@ -13,10 +17,23 @@ public class IndyIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout= new Timeout(1, TimeUnit.SECONDS);
+	public Timeout globalTimeout = new Timeout(1, TimeUnit.SECONDS);
 
 	@Before
 	public void setUp() throws Exception {
 		InitHelper.init();
+	}
+
+	protected HashSet<Pool> openedPools = new HashSet<>();
+
+	protected void afterEach() throws IOException {
+		openedPools.forEach(pool -> {
+			try {
+				pool.closePoolLedger();
+			} catch (IndyException ignore) {
+			}
+		});
+		openedPools.clear();
+		StorageUtils.cleanupStorage();
 	}
 }

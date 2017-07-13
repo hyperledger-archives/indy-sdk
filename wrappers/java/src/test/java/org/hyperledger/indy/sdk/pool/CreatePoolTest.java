@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
-	public void testCreatePoolWorksWithoutConfig() throws Exception {
+	public void testCreatePoolWorksForNullConfig() throws Exception {
 		StorageUtils.cleanupStorage();
 
 		File file = new File("testCreatePoolWorks.txn");
