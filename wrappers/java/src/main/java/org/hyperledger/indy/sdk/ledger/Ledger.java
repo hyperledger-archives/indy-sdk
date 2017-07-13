@@ -179,6 +179,19 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	public static Callback buildGetTxnRequestCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -421,6 +434,24 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				data,
 				buildNodeRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> buildGetTxnRequest(
+			String submitterDid,
+			int data) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String> ();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_txn_request(
+				commandHandle, 
+				submitterDid, 
+				data, 
+				buildGetTxnRequestCb);
 
 		checkResult(result);
 
