@@ -1353,7 +1353,7 @@ mod demos {
 
         let mut stream = TcpStream::connect("127.0.0.1:1234").unwrap();
 
-        stream.write(r#"{"type":"get_claim_def"}"#.as_bytes());
+        let _ = stream.write(r#"{"type":"get_claim_def"}"#.as_bytes());
         let mut buf = vec![0; 10240];
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
@@ -1377,10 +1377,10 @@ mod demos {
                                                                           &claim_def_json,
                                                                           master_secret_name).unwrap();
 
-        stream.write(format!(r#"{{"type":"issue_claim", "data": {}}}"#, claim_req).as_bytes());
+        let _ = stream.write(format!(r#"{{"type":"issue_claim", "data": {}}}"#, claim_req).as_bytes());
         let mut buf = vec![0; 10240];
         stream.read(&mut buf).unwrap();
-        stream.write(r#"{"type":"close"}"#.as_bytes());
+        let _ = stream.write(r#"{"type":"close"}"#.as_bytes());
         buf.retain(|&element| element != 0);
 
         let mut claim_json: ClaimJson = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
@@ -1475,7 +1475,7 @@ mod demos {
 
         let mut stream = TcpStream::connect("127.0.0.1:1234").unwrap();
 
-        stream.write(format!(r#"{{"type":"receive_claim_def", "data": {}}}"#, claim_def_json).as_bytes());
+        let _ = stream.write(format!(r#"{{"type":"receive_claim_def", "data": {}}}"#, claim_def_json).as_bytes());
 
         //4. Prover create Master Secret
         let master_secret_name = "prover_master_secret";
@@ -1513,7 +1513,7 @@ mod demos {
         // 9. Prover store received Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json).unwrap();
 
-        stream.write(r#"{"type":"get_proof_request"}"#.as_bytes());
+        let _ = stream.write(r#"{"type":"get_proof_request"}"#.as_bytes());
         let mut buf = vec![0; 10240];
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
@@ -1547,10 +1547,10 @@ mod demos {
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
-        stream.write(format!(r#"{{"type":"check_proof", "data": {}}}"#, proof_json).as_bytes());
+        let _ = stream.write(format!(r#"{{"type":"check_proof", "data": {}}}"#, proof_json).as_bytes());
         let mut buf = vec![0; 102400];
         stream.read(&mut buf).unwrap();
-        stream.write(r#"{"type":"close"}"#.as_bytes());
+        let _ = stream.write(r#"{"type":"close"}"#.as_bytes());
         buf.retain(|&element| element != 0);
 
         let valid = String::from_utf8(buf).unwrap();
@@ -1573,7 +1573,7 @@ mod demos {
 
         let mut stream = TcpStream::connect("127.0.0.1:1234").unwrap();
 
-        stream.write(r#"{"type":"get_claim_def"}"#.as_bytes());
+        let _ = stream.write(r#"{"type":"get_claim_def"}"#.as_bytes());
         let mut buf = vec![0; 10240];
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
@@ -1598,7 +1598,7 @@ mod demos {
                                "requested_predicates":{{"predicate_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
                             }}"#, schema_seq_no);
 
-        stream.write(format!(r#"{{"type":"get_proof", "data": {}}}"#, proof_req_json).as_bytes());
+        let _ = stream.write(format!(r#"{{"type":"get_proof", "data": {}}}"#, proof_req_json).as_bytes());
         let mut buf = vec![0; 102400];
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
@@ -1606,7 +1606,7 @@ mod demos {
         let proof: ProofJson = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
         println!("proof: {:?}", proof);
 
-        stream.write(r#"{"type":"close"}"#.as_bytes());
+        let _ = stream.write(r#"{"type":"close"}"#.as_bytes());
         let schemas_json = format!(r#"{{"{}":{}}}"#, 1, schema);
 
         let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr_uuid").unwrap();
