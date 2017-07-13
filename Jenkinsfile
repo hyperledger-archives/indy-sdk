@@ -75,7 +75,7 @@ def testUbuntu() {
             sh 'cargo update'
 
             try {
-                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability-tests"'
+                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
                 /* TODO FIXME restore after xunit will be fixed
                 sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                  */
