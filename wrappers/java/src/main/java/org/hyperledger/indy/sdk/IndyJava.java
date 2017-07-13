@@ -67,14 +67,14 @@ public class IndyJava {
 
 		protected static void checkCallback(int err) throws IndyException {
 
-			ErrorCode errorCode = ErrorCode.valueOf(result);
+			ErrorCode errorCode = ErrorCode.valueOf(err);
 			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
 		}
 
 		protected static void checkResult(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
+			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
 		}
 
 		/*
@@ -111,7 +111,7 @@ public class IndyJava {
 		/*
 		 * JSON CREATION
 		 */
-		
+
 		public final String toJson() {
 
 			StringBuilder builder = new StringBuilder();

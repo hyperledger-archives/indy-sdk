@@ -5,7 +5,6 @@ import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
-import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -23,14 +22,9 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 
-		CreateWalletResult result1 = Wallet.createWallet("default", "deleteWalletWorks", "default", null, null).get();
-		assertNotNull(result1);
-
-		WalletResults.DeleteWalletResult result4 = Wallet.deleteWallet("deleteWalletWorks", null).get();
-		assertNotNull(result4);
-
-		CreateWalletResult result3 = Wallet.createWallet("default", "deleteWalletWorks", "default", null, null).get();
-		assertNotNull(result3);
+		Wallet.createWallet("default", "deleteWalletWorks", "default", null, null).get();
+		Wallet.deleteWallet("deleteWalletWorks", null).get();
+		Wallet.createWallet("default", "deleteWalletWorks", "default", null, null).get();
 
 		StorageUtils.cleanupStorage();
 	}
@@ -40,24 +34,14 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 
-		Wallet wallet;
+		Wallet.createWallet("default", "deleteWalletWorksForClosed", null, null, null).get();
 
-		CreateWalletResult result1 = Wallet.createWallet("default", "deleteWalletWorksForClosed",
-				null, null, null).get();
-		assertNotNull(result1);
+		Wallet wallet = Wallet.openWallet("deleteWalletWorksForClosed", null, null).get();
+		assertNotNull(wallet);
 
-		WalletResults.OpenWalletResult result2 = Wallet.openWallet("deleteWalletWorksForClosed", null, null).get();
-		assertNotNull(result2);
-		wallet = result2.getWallet();
-
-		WalletResults.CloseWalletResult result3 = wallet.closeWallet().get();
-		assertNotNull(result3);
-
-		WalletResults.DeleteWalletResult result4 = Wallet.deleteWallet("deleteWalletWorksForClosed", null).get();
-		assertNotNull(result4);
-
-		CreateWalletResult result5 = Wallet.createWallet("default", "deleteWalletWorksForClosed", null, null, null).get();
-		assertNotNull(result5);
+		wallet.closeWallet().get();
+		Wallet.deleteWallet("deleteWalletWorksForClosed", null).get();
+		Wallet.createWallet("default", "deleteWalletWorksForClosed", null, null, null).get();
 
 		StorageUtils.cleanupStorage();
 	}
@@ -71,12 +55,8 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
-		CreateWalletResult result1 = Wallet.createWallet("default", "deleteWalletWorksForOpened", null, null, null).get();
-		assertNotNull(result1);
-
-		WalletResults.OpenWalletResult result2 = Wallet.openWallet("deleteWalletWorksForOpened", null, null).get();
-		assertNotNull(result2);
-
+		Wallet.createWallet("default", "deleteWalletWorksForOpened", null, null, null).get();
+		Wallet.openWallet("deleteWalletWorksForOpened", null, null).get();
 		Wallet.deleteWallet("deleteWalletWorksForOpened", null).get();
 
 		StorageUtils.cleanupStorage();
@@ -90,22 +70,14 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
-		Wallet wallet;
+		Wallet.createWallet("default", "deleteWalletWorksForTwice", null, null, null).get();
 
-		CreateWalletResult result1 = Wallet.createWallet("default", "deleteWalletWorksForTwice",
-				null, null, null).get();
-		assertNotNull(result1);
+		Wallet wallet = Wallet.openWallet("deleteWalletWorksForTwice", null, null).get();
+		assertNotNull(wallet);
 
-		WalletResults.OpenWalletResult result2 = Wallet.openWallet("deleteWalletWorksForTwice", null, null).get();
-		assertNotNull(result2);
-		wallet = result2.getWallet();
+		wallet.closeWallet().get();
 
-		WalletResults.CloseWalletResult result3 = wallet.closeWallet().get();
-		assertNotNull(result3);
-
-		WalletResults.DeleteWalletResult result4 = Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
-		assertNotNull(result4);
-
+		Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
 		Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
 
 		StorageUtils.cleanupStorage();
