@@ -14,14 +14,19 @@ RUN apt-get update && \
       cmake \
       git \
       python3.5 \
-      python3-pip \
-      python3-charm-crypto
+      python3-pip
 
 RUN pip3 install -U \
 	pip \
 	setuptools \
 	virtualenv \
 	git+https://github.com/hyperledger/indy-anoncreds.git
+
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
+RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
+RUN apt-get update -y
+RUN apt-get install -y \
+	python3-charm-crypto
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
