@@ -1,9 +1,11 @@
 from indy import Wallet
 
 from ..utils.storage import StorageUtils
-from ..utils.logging import logger
 
 import pytest
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio

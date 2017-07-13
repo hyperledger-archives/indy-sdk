@@ -1,12 +1,14 @@
-from ..utils.logging import logger
-
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
 
+import logging
+
 class StorageUtils(object):
     @staticmethod
     def cleanup():
+        logger = logging.getLogger(__name__)
+
         tmp_path = StorageUtils.indy_temp_path()
         logger.debug("Cleaning tmp path: %s", tmp_path)
 

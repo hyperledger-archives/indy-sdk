@@ -1,9 +1,10 @@
-from . import libindy
+from .libindy import LibIndy
 from .error import ErrorCode, IndyError
-from .logging import logger
 
 from ctypes import *
 from asyncio import get_event_loop
+
+import logging
 
 
 class Wallet(object):
@@ -17,6 +18,7 @@ class Wallet(object):
                             xtype: str,
                             config: str,
                             credentials: str) -> None:
+        logger = logging.getLogger(__name__)
 
         c_comman_handle = c_int32(Wallet._XCOMMAND_HANDLE)
         c_pool_name = c_char_p(pool_name.encode('utf-8'))
@@ -38,7 +40,7 @@ class Wallet(object):
 
         c_cb = Wallet._CREATE_WALLET_CB_TYPE(create_wallet_cb)
 
-        res = libindy.cdll.indy_create_wallet(c_comman_handle,
+        res = LibIndy.cdll().indy_create_wallet(c_comman_handle,
                                               c_pool_name,
                                               c_name,
                                               c_xtype,
