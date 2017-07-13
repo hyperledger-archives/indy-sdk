@@ -5,8 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters.CreatePoolLedgerConfigJSONParameter;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 
 import com.sun.jna.Callback;
 
@@ -104,7 +102,7 @@ public class Pool extends IndyJava.API {
 
 	public static CompletableFuture<Void> createPoolLedgerConfig(
 			String configName,
-			CreatePoolLedgerConfigJSONParameter config) throws IndyException {
+			String config) throws IndyException {
 
 		CompletableFuture<Void> future = new CompletableFuture<Void> ();
 		int commandHandle = addFuture(future);
@@ -112,7 +110,7 @@ public class Pool extends IndyJava.API {
 		int result = LibIndy.api.indy_create_pool_ledger_config(
 				commandHandle, 
 				configName, 
-				config == null ? null : config.toJson(), 
+				config, 
 				createPoolLedgerConfigCb);
 
 		checkResult(result);
@@ -122,7 +120,7 @@ public class Pool extends IndyJava.API {
 
 	public static CompletableFuture<Pool> openPoolLedger(
 			String configName,
-			OpenPoolLedgerJSONParameter config) throws IndyException {
+			String config) throws IndyException {
 
 		CompletableFuture<Pool> future = new CompletableFuture<Pool> ();
 		int commandHandle = addFuture(future);
@@ -130,7 +128,7 @@ public class Pool extends IndyJava.API {
 		int result = LibIndy.api.indy_open_pool_ledger(
 				commandHandle, 
 				configName, 
-				config == null ? null : config.toJson(), 
+				config, 
 				openPoolLedgerCb);
 
 		checkResult(result);

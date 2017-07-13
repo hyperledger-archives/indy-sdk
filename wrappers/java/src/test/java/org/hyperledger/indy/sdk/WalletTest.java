@@ -19,7 +19,7 @@ public class WalletTest extends TestCase {
 		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 
 		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
-		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get();
+		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions.toJson()).get();
 	}
 
 	@Override

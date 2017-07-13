@@ -24,7 +24,7 @@ public class SignusTest extends TestCase {
 		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 
 		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
-		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get();
+		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions.toJson()).get();
 		this.wallet = Wallet.openWallet("mywallet", null, null).get();
 	}
 

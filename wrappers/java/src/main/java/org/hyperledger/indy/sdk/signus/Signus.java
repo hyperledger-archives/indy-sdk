@@ -6,7 +6,6 @@ import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters.CreateAndStoreMyDidJSONParameter;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
@@ -123,7 +122,7 @@ public class Signus extends IndyJava.API {
 
 	public static CompletableFuture<CreateAndStoreMyDidResult> createAndStoreMyDid(
 			Wallet wallet,
-			CreateAndStoreMyDidJSONParameter didJson) throws IndyException {
+			String didJson) throws IndyException {
 
 		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult> ();
 		int commandHandle = addFuture(future);
@@ -133,7 +132,7 @@ public class Signus extends IndyJava.API {
 		int result = LibIndy.api.indy_create_and_store_my_did(
 				commandHandle, 
 				walletHandle, 
-				didJson == null ? null : didJson.toJson(),
+				didJson,
 				createAndStoreMyDidCb);
 
 		checkResult(result);
