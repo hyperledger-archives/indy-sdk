@@ -1475,6 +1475,9 @@ mod demos {
 
         let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema, None, false).unwrap();
 
+        Command::new("python3").arg("-V").spawn().expect("failed to execute process");
+        info!("---------------------executed--------------------");
+
         Command::new("python3")
             .arg("/home/indy/indy-anoncreds/anoncreds/test/test_interoperability_with_libsovrin_pysovrin_is_verifier.py")
             .spawn().expect("failed to execute process");
@@ -1529,7 +1532,7 @@ mod demos {
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
         let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-        info!("claims_json: {}", &claims_json);
+
         let claims_for_attr = claims.attrs.get("attr_uuid").unwrap();
         assert_eq!(1, claims_for_attr.len());
         let claim = claims_for_attr[0].clone();
