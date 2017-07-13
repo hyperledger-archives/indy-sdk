@@ -71,7 +71,7 @@ def testUbuntu() {
 
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
             echo 'Ubuntu Test: Test'
-
+            sh 'chmod -R 777 /home/indy/'
             sh 'cargo update'
 
             try {

@@ -17,6 +17,8 @@ RUN apt-get update && \
       python3-pip
 
 RUN pip3 install -U \
+	pip \
+	setuptools \
 	virtualenv \
 	git+https://github.com/hyperledger/indy-anoncreds.git
 
