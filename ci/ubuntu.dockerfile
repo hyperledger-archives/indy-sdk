@@ -17,9 +17,8 @@ RUN apt-get update && \
       python3-pip
 
 RUN pip3 install -U \
-	pip \
-	setuptools \
-	virtualenv
+	virtualenv \
+	git+https://github.com/hyperledger/indy-anoncreds.git
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
