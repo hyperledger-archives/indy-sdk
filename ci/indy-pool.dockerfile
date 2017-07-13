@@ -26,12 +26,7 @@ RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.lis
 RUN useradd -ms /bin/bash -u $uid sovrin
 
 RUN apt-get update -y && apt-get install -y \
-    python3-state-trie=0.2.3 \
-    python3-stp=0.2.40 \
-    python3-ledger=0.3.48 \
-    python3-plenum=0.4.19 \
-    python3-sovrin-common=0.3.17 \
-    sovrin-node=0.4.13
+    sovrin-node=0.4.23
 
 RUN echo '[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
