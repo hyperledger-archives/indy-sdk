@@ -33,3 +33,5 @@ USER indy
 RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
 WORKDIR /home/sovrin
+
+RUN git clone https://github.com/hyperledger/indy-anoncreds.git
