@@ -14,7 +14,10 @@ RUN apt-get update && \
       cmake \
       git \
       python3.5 \
-      python3-pip
+      python3-pip \
+      python-setuptools \
+      apt-transport-https \
+      ca-certificates
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
 RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
