@@ -73,7 +73,7 @@ public enum ErrorCode {
 	// Trying to use wallet with pool that has different name
 	WalletIncompatiblePoolError(205),
 
-	// Trying to use wallet with pool that has different name
+	// Trying to open wallet that was opened already
 	WalletAlreadyOpenedError(206),
 
 	// Ledger errors
