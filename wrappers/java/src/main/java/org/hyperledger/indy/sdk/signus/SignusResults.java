@@ -27,37 +27,4 @@ public final class SignusResults {
 		public String getVerkey() { return this.verkey; }
 		public String getPk() { return this.pk; }
 	}
-
-	public static class StoreTheirDidResult extends IndyJava.Result {
-
-		StoreTheirDidResult() { }
-	}
-
-	public static class SignResult extends IndyJava.Result {
-
-		private String signature;
-		SignResult(String signature) { this.signature = signature; }
-		public String getSignature() { return this.signature; }
-	}
-
-	public static class VerifySignatureResult extends IndyJava.Result {
-
-		private boolean valid;
-		VerifySignatureResult(boolean valid) { this.valid = valid; }
-		public boolean isValid() { return this.valid; }
-	}
-
-	public static class EncryptResult extends IndyJava.Result {
-
-		private String encryptedMsg;
-		EncryptResult(String encryptedMsg) { this.encryptedMsg = encryptedMsg; }
-		public String getEncryptedMsg() { return this.encryptedMsg; }
-	}
-
-	public static class DecryptResult extends IndyJava.Result {
-
-		private String decryptedMsg;
-		DecryptResult(String decryptedMsg) { this.decryptedMsg = decryptedMsg; }
-		public String getDecryptedMsg() { return this.decryptedMsg; }
-	}
 }
