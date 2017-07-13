@@ -1,8 +1,8 @@
 package org.hyperledger.indy.sdk;
 
-import java.io.File;
 import java.util.concurrent.Future;
 
+import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.junit.Assert;
@@ -13,8 +13,7 @@ public class PoolTest extends TestCase {
 
 	@Override
 	protected void setUp() throws Exception {
-
-		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
+		InitHelper.init();
 	}
 
 	@Override

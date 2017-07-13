@@ -60,7 +60,7 @@ public class IndyJava {
 		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }
+			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(new IndyException(errorCode)); return false; }
 
 			return true;
 		}
@@ -68,13 +68,13 @@ public class IndyJava {
 		protected static void checkCallback(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
+			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
 		}
 
 		protected static void checkResult(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
+			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
 		}
 
 		/*
@@ -111,7 +111,7 @@ public class IndyJava {
 		/*
 		 * JSON CREATION
 		 */
-		
+
 		public final String toJson() {
 
 			StringBuilder builder = new StringBuilder();
