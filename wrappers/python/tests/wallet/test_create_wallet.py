@@ -8,7 +8,6 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_indy_create_wallet_works():
-    logger.debug("asasd")
     StorageUtils.cleanup()
 
     pool_name = 'indy_create_wallet_works'
