@@ -9,7 +9,7 @@ public class StorageUtils {
 
 	private static void cleanDirectory(File path) throws Exception {
 		if (path.isDirectory()) {
-			FileUtils.cleanDirectory(path);
+			FileUtils.deleteQuietly(path);
 		}
 	}
 

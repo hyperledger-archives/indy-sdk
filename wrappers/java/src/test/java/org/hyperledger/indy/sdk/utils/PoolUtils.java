@@ -1,5 +1,6 @@
 package org.hyperledger.indy.sdk.utils;
 
+import org.apache.commons.io.FileUtils;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
@@ -25,6 +26,8 @@ public class PoolUtils {
 		};
 
 		File file = new File(path);
+
+		FileUtils.forceMkdirParent(file);
 
 		FileWriter fw = new FileWriter(file);
 		for (int i = 0; i < nodesCnt; i++) {
