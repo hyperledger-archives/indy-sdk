@@ -28,8 +28,7 @@ use utils::types::{
     ClaimRequestJson,
     ClaimInfo,
     ClaimJson,
-    ProofJson,
-    ProofRequestJson
+    ProofJson
 };
 
 use indy::api::ErrorCode;
@@ -1347,7 +1346,7 @@ mod demos {
         assert!(claim_offers.len() == 1);
         let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
 
-        let mut command = Command::new("python3")
+        Command::new("python3")
             .arg("../anoncreds/anoncreds/test/test_interoperability_with_libsovrin_pysovrin_is_issuer.py")
             .spawn().expect("failed to execute process");
         thread::sleep(time::Duration::from_millis(3000));
@@ -1469,7 +1468,7 @@ mod demos {
 
         let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema, None, false).unwrap();
 
-        let mut command = Command::new("python3")
+        Command::new("python3")
             .arg("../anoncreds/anoncreds/test/test_interoperability_with_libsovrin_pysovrin_is_verifier.py")
             .spawn().expect("failed to execute process");
         thread::sleep(time::Duration::from_millis(3000));
@@ -1567,7 +1566,7 @@ mod demos {
         let schema_seq_no = 1;
         let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
 
-        let mut command = Command::new("python3")
+        Command::new("python3")
             .arg("../anoncreds/anoncreds/test/test_interoperability_with_libsovrin_pysovrin_is_prover.py")
             .spawn().expect("failed to execute process");
         thread::sleep(time::Duration::from_millis(3000));
