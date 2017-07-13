@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -22,11 +24,40 @@ public class IndyJava {
 
 	public static class API {
 
-		protected static final int FIXED_COMMAND_HANDLE = 0;
+		/*
+		 * FUTURES
+		 */
 
-		protected static boolean checkCallback(CompletableFuture<? extends IndyJava.Result> future, int xcommand_handle, int err) {
+		private static AtomicInteger atomicInteger = new AtomicInteger();
+		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<Integer, CompletableFuture<?>> ();
 
-			assert(xcommand_handle == FIXED_COMMAND_HANDLE);
+		protected static int newCommandHandle() {
+
+			return Integer.valueOf(atomicInteger.incrementAndGet());
+		}
+
+		protected static int addFuture(CompletableFuture<?> future) {
+
+			int commandHandle = newCommandHandle();
+			assert(! futures.containsKey(Integer.valueOf(commandHandle)));
+			futures.put(Integer.valueOf(commandHandle), future);
+
+			return commandHandle;
+		}
+
+		protected static CompletableFuture<?> removeFuture(int xcommand_handle) {
+
+			CompletableFuture<?> future = futures.remove(Integer.valueOf(xcommand_handle));
+			assert(future != null);
+
+			return future;
+		}
+
+		/*
+		 * ERROR CHECKING
+		 */
+
+		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
 			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromErrorCode(errorCode, err)); return false; }
@@ -34,11 +65,21 @@ public class IndyJava {
 			return true;
 		}
 
-		protected static void checkResult(int result) throws IndyException {
+		protected static void checkCallback(int err) throws IndyException {
 
-			ErrorCode errorCode = ErrorCode.valueOf(result);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, result);
+			ErrorCode errorCode = ErrorCode.valueOf(err);
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
 		}
+
+		protected static void checkResult(int err) throws IndyException {
+
+			ErrorCode errorCode = ErrorCode.valueOf(err);
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromErrorCode(errorCode, err);
+		}
+
+		/*
+		 * OBJECT METHODS
+		 */
 
 		@Override
 		public int hashCode() {
@@ -60,13 +101,17 @@ public class IndyJava {
 	}
 
 	/*
-	 * JSON parameter
+	 * JSON PARAMETER
 	 */
 
 	public abstract static class JsonParameter {
 
 		protected Map<String, Object> map = new HashMap<String, Object> ();
 
+		/*
+		 * JSON CREATION
+		 */
+		
 		public final String toJson() {
 
 			StringBuilder builder = new StringBuilder();
@@ -95,6 +140,10 @@ public class IndyJava {
 
 			return string.replace("\\", "\\\\").replace("\"", "\\\"");
 		}
+
+		/*
+		 * OBJECT METHODS
+		 */
 
 		@Override
 		public int hashCode() {
