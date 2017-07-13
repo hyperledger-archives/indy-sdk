@@ -13,7 +13,13 @@ RUN apt-get update && \
       libsodium-dev \
       cmake \
       git \
-      python3.5
+      python3.5 \
+      python3-pip
+
+RUN pip3 install -U \
+	pip \
+	setuptools \
+	virtualenv
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
@@ -37,3 +43,8 @@ RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 WORKDIR /home/indy
 
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
+RUN virtualenv -p python3.5 /home/indy/
+USER root
+RUN ln -sf /home/indy/bin/python /usr/local/bin/python
+RUN ln -sf /home/indy/bin/pip /usr/local/bin/pip
+USER indy
