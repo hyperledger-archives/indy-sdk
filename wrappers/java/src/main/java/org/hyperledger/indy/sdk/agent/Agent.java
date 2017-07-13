@@ -25,40 +25,131 @@ public class Agent extends IndyJava.API {
 	}
 
 	/*
+	 * OBSERVERS
+	 */
+
+	private static Map<Integer, AgentObservers.ListenerObserver> listenerObservers = new ConcurrentHashMap<Integer, AgentObservers.ListenerObserver> ();
+	private static Map<Integer, AgentObservers.ConnectionObserver> connectionObservers = new ConcurrentHashMap<Integer, AgentObservers.ConnectionObserver> ();
+
+	private static int addListenerObserver(AgentObservers.ListenerObserver listenerObserver) {
+
+		int commandHandle = newCommandHandle();
+		assert(! listenerObservers.containsKey(Integer.valueOf(commandHandle)));
+		listenerObservers.put(Integer.valueOf(commandHandle), listenerObserver);
+
+		return commandHandle;
+	}
+
+	private static AgentObservers.ListenerObserver removeListenerObserver(int xcommand_handle) {
+
+		AgentObservers.ListenerObserver future = listenerObservers.remove(Integer.valueOf(xcommand_handle));
+		assert(future != null);
+
+		return future;
+	}
+
+	private static int addConnectionObserver(AgentObservers.ConnectionObserver connectionObserver) {
+
+		int commandHandle = newCommandHandle();
+		assert(! connectionObservers.containsKey(Integer.valueOf(commandHandle)));
+		connectionObservers.put(Integer.valueOf(commandHandle), connectionObserver);
+
+		return commandHandle;
+	}
+
+	private static AgentObservers.ConnectionObserver removeConnectionObserver(int xcommand_handle) {
+
+		AgentObservers.ConnectionObserver future = connectionObservers.remove(Integer.valueOf(xcommand_handle));
+		assert(future != null);
+
+		return future;
+	}
+
+	/*
 	 * STATIC CALLBACKS
 	 */
 
-	private static Callback agentConnectCb = new Callback() {
+	private static Callback agentConnectConnectionCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
-		public void callback(int xcommand_handle, int err, int connection_handle) {
+		@SuppressWarnings("unused")
+		public void callback(int xcommand_handle, int err, int connection_handle) throws IndyException {
 
-			CompletableFuture<Agent.Connection> future = (CompletableFuture<Agent.Connection>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			checkCallback(err);
 
 			assert(! connections.containsKey(Integer.valueOf(connection_handle)));
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(Integer.valueOf(connection_handle), connection);
 
-			Agent.Connection result = connection;
-			future.complete(result);
+			AgentObservers.ConnectionObserver connectionObserver = removeConnectionObserver(xcommand_handle);
+			AgentObservers.MessageObserver messageObserver = connectionObserver.onConnection(null, connection, null, null);
+			connection.messageObserver = messageObserver;
 		}
 	};
 
-	private static Callback agentListenCb = new Callback() {
+	private static Callback agentConnectMessageCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
-		public void callback(int xcommand_handle, int err, int listener_handle) {
+		@SuppressWarnings("unused")
+		public void callback(int xconnection_handle, int err, String message) throws IndyException {
 
-			CompletableFuture<Agent.Listener> future = (CompletableFuture<Agent.Listener>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			checkCallback(err);
+
+			Agent.Connection connection = connections.get(Integer.valueOf(xconnection_handle));
+			if (connection == null) return;
+
+			AgentObservers.MessageObserver messageObserver = connection.messageObserver;
+			messageObserver.onMessage(connection, message);
+		}
+	};
+
+	private static Callback agentListenListenerCb = new Callback() {
+
+		@SuppressWarnings("unused")
+		public void callback(int xcommand_handle, int err, int listener_handle) throws IndyException {
+
+			checkCallback(err);
 
 			assert(! listeners.containsKey(Integer.valueOf(listener_handle)));
 			Agent.Listener listener = new Agent.Listener(listener_handle);
 			listeners.put(Integer.valueOf(listener_handle), listener);
 
-			Agent.Listener result = listener;
-			future.complete(result);
+			AgentObservers.ListenerObserver listenerObserver = removeListenerObserver(xcommand_handle);
+			AgentObservers.ConnectionObserver connectionObserver = listenerObserver.onListener(listener);
+			listener.connectionObserver = connectionObserver;
+		}
+	};
+
+	private static Callback agentListenConnectionCb = new Callback() {
+
+		@SuppressWarnings("unused")
+		public void callback(int xlistener_handle, int err, int connection_handle, String sender_did, String receiver_did) throws IndyException {
+
+			checkCallback(err);
+
+			Agent.Listener listener = listeners.get(Integer.valueOf(xlistener_handle));
+			if (listener == null) return;
+
+			assert(! connections.containsKey(Integer.valueOf(connection_handle)));
+			Agent.Connection connection = new Agent.Connection(connection_handle);
+			connections.put(Integer.valueOf(connection_handle), connection);
+
+			AgentObservers.ConnectionObserver connectionObserver = listener.connectionObserver;
+			AgentObservers.MessageObserver messageObserver = connectionObserver.onConnection(listener, connection, sender_did, receiver_did);
+			connection.messageObserver = messageObserver;
+		}
+	};
+
+	private static Callback agentListenMessageCb = new Callback() {
+
+		@SuppressWarnings("unused")
+		public void callback(int xconnection_handle, int err, String message) throws IndyException {
+
+			checkCallback(err);
+
+			Agent.Connection connection = connections.get(Integer.valueOf(xconnection_handle));
+			if (connection == null) return;
+
+			AgentObservers.MessageObserver messageObserver = connection.messageObserver;
+			messageObserver.onMessage(connection, message);
 		}
 	};
 
@@ -131,29 +222,14 @@ public class Agent extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static CompletableFuture<Agent.Connection> agentConnect(
+	public static void agentConnect(
 			Pool pool,
 			Wallet wallet,
 			String senderDid,
 			String receiverDid,
-			final AgentObservers.AgentConnectObserver agentConnectObserver) throws IndyException {
+			AgentObservers.ConnectionObserver connectionObserver) throws IndyException {
 
-		CompletableFuture<Agent.Connection> future = new CompletableFuture<Agent.Connection> ();
-		int commandHandle = addFuture(future);
-
-		Callback messageCb = new Callback() {
-
-			@SuppressWarnings({ "unused", "unchecked" })
-			public void callback(int xconnection_handle, int err, String message) throws IndyException {
-
-				checkCallback(err);
-
-				Agent.Connection connection = connections.get(Integer.valueOf(xconnection_handle));
-				if (connection == null) return;
-
-				agentConnectObserver.onMessage(connection, message);
-			}
-		};
+		int commandHandle = addConnectionObserver(connectionObserver);
 
 		int poolHandle = pool.getPoolHandle();
 		int walletHandle = wallet.getWalletHandle();
@@ -164,63 +240,26 @@ public class Agent extends IndyJava.API {
 				walletHandle, 
 				senderDid,
 				receiverDid,
-				agentConnectCb,
-				messageCb);
+				agentConnectConnectionCb,
+				agentConnectMessageCb);
 
 		checkResult(result);
-
-		return future;
 	}
 
-	public static CompletableFuture<Agent.Listener> agentListen(
+	public static void agentListen(
 			String endpoint,
-			final AgentObservers.AgentListenObserver agentListenObserver) throws IndyException {
+			AgentObservers.ListenerObserver listenerObserver) throws IndyException {
 
-		CompletableFuture<Agent.Listener> future = new CompletableFuture<Agent.Listener> ();
-		int commandHandle = addFuture(future);
-
-		Callback connectionCb = new Callback() {
-
-			@SuppressWarnings({ "unused", "unchecked" })
-			public void callback(int xlistener_handle, int err, int connection_handle, String sender_did, String receiver_did) throws IndyException {
-
-				checkCallback(err);
-
-				Agent.Listener listener = listeners.get(Integer.valueOf(xlistener_handle));
-				if (listener == null) return;
-
-				assert(! connections.containsKey(Integer.valueOf(connection_handle)));
-				Agent.Connection connection = new Agent.Connection(connection_handle);
-				connections.put(Integer.valueOf(connection_handle), connection);
-
-				agentListenObserver.onConnection(listener, connection, sender_did, receiver_did);
-			}
-		};
-
-		Callback messageCb = new Callback() {
-
-			@SuppressWarnings({ "unused", "unchecked" })
-			public void callback(int xconnection_handle, int err, String message) throws IndyException {
-
-				checkCallback(err);
-
-				Agent.Connection connection = connections.get(Integer.valueOf(xconnection_handle));
-				if (connection == null) return;
-
-				agentListenObserver.onMessage(connection, message);
-			}
-		};
+		int commandHandle = addListenerObserver(listenerObserver);
 
 		int result = LibIndy.api.indy_agent_listen(
 				commandHandle, 
 				endpoint,
-				agentListenCb,
-				connectionCb,
-				messageCb);
+				agentListenListenerCb,
+				agentListenConnectionCb,
+				agentListenMessageCb);
 
 		checkResult(result);
-
-		return future;
 	}
 
 	public static CompletableFuture<Void> agentAddIdentity(
@@ -336,34 +375,10 @@ public class Agent extends IndyJava.API {
 	 * NESTED CLASSES WITH INSTANCE METHODS
 	 */
 
-	public static class Connection {
-
-		private final int connectionHandle;
-
-		private Connection(int connectionHandle) {
-
-			this.connectionHandle = connectionHandle;
-		}
-
-		public int getConnectionHandle() {
-
-			return this.connectionHandle;
-		}
-
-		public CompletableFuture<Void> agentSend(String message) throws IndyException {
-
-			return Agent.agentSend(this, message);
-		}
-
-		public CompletableFuture<Void> agentCloseConnection() throws IndyException {
-
-			return Agent.agentCloseConnection(this);
-		}
-	}
-
 	public static class Listener {
 
 		private final int listenerHandle;
+		private AgentObservers.ConnectionObserver connectionObserver;
 
 		private Listener(int listenerHandle) {
 
@@ -388,6 +403,32 @@ public class Agent extends IndyJava.API {
 		public CompletableFuture<Void> agentCloseListener() throws IndyException {
 
 			return Agent.agentCloseListener(this);
+		}
+	}
+
+	public static class Connection {
+
+		private final int connectionHandle;
+		private AgentObservers.MessageObserver messageObserver;
+
+		private Connection(int connectionHandle) {
+
+			this.connectionHandle = connectionHandle;
+		}
+
+		public int getConnectionHandle() {
+
+			return this.connectionHandle;
+		}
+
+		public CompletableFuture<Void> agentSend(String message) throws IndyException {
+
+			return Agent.agentSend(this, message);
+		}
+
+		public CompletableFuture<Void> agentCloseConnection() throws IndyException {
+
+			return Agent.agentCloseConnection(this);
 		}
 	}
 }

@@ -31,9 +31,14 @@ public class IndyJava {
 		private static AtomicInteger atomicInteger = new AtomicInteger();
 		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<Integer, CompletableFuture<?>> ();
 
+		protected static int newCommandHandle() {
+
+			return Integer.valueOf(atomicInteger.incrementAndGet());
+		}
+
 		protected static int addFuture(CompletableFuture<?> future) {
 
-			int commandHandle = Integer.valueOf(atomicInteger.incrementAndGet());
+			int commandHandle = newCommandHandle();
 			assert(! futures.containsKey(Integer.valueOf(commandHandle)));
 			futures.put(Integer.valueOf(commandHandle), future);
 

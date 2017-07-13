@@ -9,14 +9,18 @@ public final class AgentObservers {
 
 	}
 
-	public interface AgentConnectObserver {
+	public interface ListenerObserver {
 
-		public void onMessage(Agent.Connection connection, String message);
+		public ConnectionObserver onListener(Agent.Listener listener);
 	}
 
-	public interface AgentListenObserver extends AgentConnectObserver {
+	public interface ConnectionObserver {
 
-		public void onConnection(Agent.Listener listener, Agent.Connection connection, String senderDid, String receiverDid);
+		public MessageObserver onConnection(Agent.Listener listener, Agent.Connection connection, String senderDid, String receiverDid);
+	}
+
+	public interface MessageObserver {
+
 		public void onMessage(Agent.Connection connection, String message);
 	}
 }
