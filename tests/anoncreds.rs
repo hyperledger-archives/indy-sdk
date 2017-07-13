@@ -22,7 +22,6 @@ use utils::test::TestUtils;
 use std::collections::HashMap;
 use utils::types::{
     ClaimDefinition,
-    ClaimDefinitionData,
     ClaimOffer,
     ProofClaimsJson,
     ClaimRequestJson,
@@ -1309,11 +1308,18 @@ mod medium_cases {
 
 mod demos {
     use super::*;
+    #[cfg(feature = "interoperability_tests")]
+    use utils::types::ClaimDefinitionData;
+    #[cfg(feature = "interoperability_tests")]
     use std::process::Command;
+    #[cfg(feature = "interoperability_tests")]
     use std::io::prelude::*;
+    #[cfg(feature = "interoperability_tests")]
     use std::net::TcpStream;
+    #[cfg(feature = "interoperability_tests")]
     use std::{thread, time};
 
+    #[cfg(feature = "interoperability_tests")]
     #[test]
     fn interoperability_test_pysovrin_is_issuer() {
         TestUtils::cleanup_storage();
@@ -1449,6 +1455,7 @@ mod demos {
         TestUtils::cleanup_storage();
     }
 
+    #[cfg(feature = "interoperability_tests")]
     #[test]
     fn interoperability_test_pysovrin_is_verifier() {
         TestUtils::cleanup_storage();
@@ -1559,6 +1566,7 @@ mod demos {
         TestUtils::cleanup_storage();
     }
 
+    #[cfg(feature = "interoperability_tests")]
     #[test]
     fn interoperability_test_pysovrin_is_prover() {
         TestUtils::cleanup_storage();
