@@ -11,7 +11,8 @@ RUN apt-get update && \
       build-essential \
       libsqlite3-dev \
       libsodium-dev \
-      cmake
+      cmake \
+      git
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
