@@ -14,7 +14,8 @@ RUN apt-get update && \
       cmake \
       git \
       python3.5 \
-      python3-pip
+      python3-pip \
+      python3-charm-crypto
 
 RUN pip3 install -U \
 	pip \
@@ -45,6 +46,8 @@ WORKDIR /home/indy
 
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
 RUN virtualenv -p python3.5 /home/indy/
+RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
+RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/lib/python3.5/site-packages/charm
 USER root
 RUN ln -sf /home/indy/bin/python /usr/local/bin/python
 RUN ln -sf /home/indy/bin/pip /usr/local/bin/pip
