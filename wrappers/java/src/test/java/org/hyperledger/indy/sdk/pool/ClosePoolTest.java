@@ -1,5 +1,7 @@
 package org.hyperledger.indy.sdk.pool;
 
+import org.hyperledger.indy.sdk.ErrorCode;
+import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
@@ -20,5 +22,31 @@ public class ClosePoolTest extends IndyIntegrationTest {
 
 		pool.closePoolLedger().get();
 		openedPools.remove(pool);
+	}
+
+	@Test
+	public void testClosePoolWorksForTwice() throws IndyException, ExecutionException, InterruptedException, IOException {
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerInvalidPoolHandle));
+
+		Pool pool = PoolUtils.createAndOpenPoolLedger();
+		assertNotNull(pool);
+		openedPools.add(pool);
+
+		pool.closePoolLedger().get();
+		openedPools.remove(pool);
+		pool.closePoolLedger().get();
+	}
+
+	@Test
+	public void testClosePoolWorksForReopenAfterClose() throws IndyException, ExecutionException, InterruptedException, IOException {
+		String poolName = PoolUtils.createPoolLedgerConfig();
+
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
+		assertNotNull(pool);
+		openedPools.add(pool);
+
+		pool.closePoolLedger().get();
+
+		Pool.openPoolLedger(poolName, null).get();
 	}
 }
