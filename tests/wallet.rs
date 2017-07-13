@@ -16,7 +16,6 @@ mod utils;
 
 use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
-use utils::signus::SignusUtils;
 use utils::test::TestUtils;
 
 use indy::api::ErrorCode;
