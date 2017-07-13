@@ -55,4 +55,11 @@ public class PoolUtils {
 				= new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(genesisTxnFile.getAbsolutePath());
 		Pool.createPoolLedgerConfig(poolName, createPoolLedgerConfigJSONParameter.toJson()).get();
 	}
+
+	public static Pool createAndOpenPoolLedger() throws IndyException, InterruptedException, ExecutionException, IOException {
+		String poolName = PoolUtils.createPoolLedgerConfig();
+
+		PoolJSONParameters.OpenPoolLedgerJSONParameter config = new PoolJSONParameters.OpenPoolLedgerJSONParameter(true, null, null);
+		return Pool.openPoolLedger(poolName, config.toJson()).get();
+	}
 }
