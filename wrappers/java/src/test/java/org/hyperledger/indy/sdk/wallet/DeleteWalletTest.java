@@ -82,4 +82,17 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 	}
+
+	@Test
+	public void testDeleteWalletWorksForNotCreated() throws Exception {
+
+		StorageUtils.cleanupStorage();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
+
+		Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
+
+		StorageUtils.cleanupStorage();
+	}
 }

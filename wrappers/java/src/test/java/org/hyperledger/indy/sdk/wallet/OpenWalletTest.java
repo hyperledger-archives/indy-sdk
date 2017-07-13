@@ -72,4 +72,17 @@ public class OpenWalletTest extends IndyIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 	}
+
+	@Test
+	public void testOpenWalletWorksForNotCreated() throws Exception {
+
+		StorageUtils.cleanupStorage();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
+
+		Wallet.openWallet("testOpenWalletWorksForNotCreated", null, null).get();
+
+		StorageUtils.cleanupStorage();
+	}
 }
