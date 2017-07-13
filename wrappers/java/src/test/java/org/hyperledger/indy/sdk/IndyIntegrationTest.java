@@ -21,19 +21,15 @@ public class IndyIntegrationTest {
 	public Timeout globalTimeout = new Timeout(1, TimeUnit.SECONDS);
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() throws IOException {
 		InitHelper.init();
-		StorageUtils.cleanupStorage();
-	}
-
-	@After
-	public void tearDown() throws Exception {
 		StorageUtils.cleanupStorage();
 	}
 
 	protected HashSet<Pool> openedPools = new HashSet<>();
 
-	protected void afterEach() throws IOException {
+	@After
+	public void tearDown() throws IOException {
 		openedPools.forEach(pool -> {
 			try {
 				pool.closePoolLedger();
