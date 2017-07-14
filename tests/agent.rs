@@ -62,7 +62,7 @@ mod high_cases {
             let listener_wallet = WalletUtils::create_and_open_wallet("indy_agent_connect_works_for_remote_data", None).unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("indy_agent_connect_works_for_remote_data", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
-            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(trustee_wallet, Some("000000000000000000000000Trustee1")).unwrap();
             let sender_did = trustee_did.clone();
             let sender_wallet = trustee_wallet;
 
@@ -89,7 +89,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).expect("create wallet");
 
-            let seed: Option<String> = Some("sovrin_agent_connect_works_for_a".to_string());
+            let seed: Option<&str> = Some("sovrin_agent_connect_works_for_a");
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
             let endpoint = "127.0.0.1:9702";
 
@@ -129,7 +129,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool2", None).expect("create wallet");
 
-            let seed: Option<String> = Some("sovrin_agent_listen_works_for_al".to_string());
+            let seed: Option<&str> = Some("sovrin_agent_listen_works_for_al");
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
             let endpoint = "127.0.0.1:9703";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
@@ -380,7 +380,7 @@ mod medium_cases {
             let listener_wallet = WalletUtils::create_and_open_wallet("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
-            let (trustee_did, _, _) = SignusUtils::create_my_did(trustee_wallet, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(trustee_wallet, Some("000000000000000000000000Trustee1")).unwrap();
             let sender_did = trustee_did.clone();
             let sender_wallet = trustee_wallet;
 

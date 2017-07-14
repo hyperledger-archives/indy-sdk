@@ -519,7 +519,7 @@ fn ledger_demo_works() {
     // 10. Prepare NYM transaction
     let nym_req_id = PoolUtils::get_req_id();
     let nym_txn_req = Request {
-        identifier: their_verkey.clone(),
+        identifier: their_did.clone(),
         operation: Operation {
             dest: my_did.clone(),
             type_: "1".to_string(),
