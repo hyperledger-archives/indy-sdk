@@ -213,7 +213,7 @@ fn agent_demo_works() {
     assert_eq!(ErrorCode::Success, err);
     let trustee_did_c = CString::new(trustee_did.clone()).unwrap();
 
-    // 10. Prepare NYM transaction
+    // 9. Prepare NYM transaction
     let nym_req_id = PoolUtils::get_req_id();
     let nym_txn_req = json!({
         "identifier": trustee_did,
@@ -225,7 +225,7 @@ fn agent_demo_works() {
         "reqId": nym_req_id,
     });
 
-    // 11. Send NYM request with signing
+    // 10. Send NYM request with signing
     let msg = serde_json::to_string(&nym_txn_req).unwrap();
     let req = CString::new(msg).unwrap();
     let err = indy_sign_and_submit_request(send_command_handle,
@@ -241,6 +241,7 @@ fn agent_demo_works() {
     let sender_did = trustee_did.clone();
     let sender_wallet = trustee_wallet;
 
+    // Prepare and send attrib for listener (will be requested from ledger and used by sender at start connection)
     let req_id = PoolUtils::get_req_id();
     let listener_attrib_json = json!({
         "identifier": listener_did,
@@ -253,8 +254,6 @@ fn agent_demo_works() {
     });
     let listener_attrib_json = serde_json::to_string(&listener_attrib_json).unwrap();
     let listener_attrib_json = CString::new(listener_attrib_json).unwrap();
-
-    // Send attrib for listener (will be used by sender at start connection)
     let err =
         indy_sign_and_submit_request(attrib_command_handle,
                                      pool_handle,
@@ -262,19 +261,21 @@ fn agent_demo_works() {
                                      listener_did_c.as_ptr(),
                                      listener_attrib_json.as_ptr(),
                                      attrib_callback);
-
     assert_eq!(err, ErrorCode::Success);
-
     let (err, _) = attrib_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
     assert_eq!(err, ErrorCode::Success);
 
+    // FIXME inline calls bellow, it's demo and should use API calls instead of helpers
 
+    // start listener on endpoint
     let agent_listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+    // allow listener accept incoming connection for specific DID (listener_did)
     AgentUtils::add_identity(agent_listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
 
+    // inititate connection from sender to listener
     let conn_handle_sender_to_listener = AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
+    // send test message from sender to listener TODO: check message received
     AgentUtils::send(conn_handle_sender_to_listener, "msg_from_sender_to_listener").unwrap();
 
     TestUtils::cleanup_storage();
