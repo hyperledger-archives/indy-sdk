@@ -17,6 +17,7 @@ RUN apt-get update && \
       python3.5 \
       python3-pip \
       python-setuptools \
+      pytest \
       apt-transport-https \
       ca-certificates
 
