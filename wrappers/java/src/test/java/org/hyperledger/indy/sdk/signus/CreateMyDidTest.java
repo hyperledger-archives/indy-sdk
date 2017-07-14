@@ -80,7 +80,7 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 	public void testCreateMyDidWorksForPassedDid() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(did, null, null, true);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(did, null, null, false);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 		assertNotNull(result);
