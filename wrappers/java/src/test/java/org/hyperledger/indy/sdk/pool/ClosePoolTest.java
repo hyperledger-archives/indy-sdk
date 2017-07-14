@@ -43,10 +43,10 @@ public class ClosePoolTest extends IndyIntegrationTest {
 
 		Pool pool = Pool.openPoolLedger(poolName, null).get();
 		assertNotNull(pool);
-		openedPools.add(pool);
 
 		pool.closePoolLedger().get();
 
-		Pool.openPoolLedger(poolName, null).get();
+		pool = Pool.openPoolLedger(poolName, null).get();
+		openedPools.add(pool);
 	}
 }

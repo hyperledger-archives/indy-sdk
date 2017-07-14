@@ -38,9 +38,9 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
-		Pool pool1 = Pool.openPoolLedger(poolName, null).get();
-		assertNotNull(pool1);
-		openedPools.add(pool1);
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
+		assertNotNull(pool);
+		openedPools.add(pool);
 
 		Pool.openPoolLedger(poolName, null).get();
 	}
