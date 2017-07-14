@@ -22,8 +22,8 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 
 	@After
 	public void deleteWallet() throws Exception {
-		this.wallet.closeWallet();
-		Wallet.deleteWallet("signusWallet", null);
+		this.wallet.closeWallet().get();
+		Wallet.deleteWallet("signusWallet", null).get();
 	}
 
 	private String seed = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";

@@ -38,8 +38,8 @@ public class ReplaceKeysTest extends IndyIntegrationTest {
 
 	@After
 	public void deleteWallet() throws Exception {
-		wallet.closeWallet();
-		Wallet.deleteWallet("signusWallet", null);
+		wallet.closeWallet().get();
+		Wallet.deleteWallet("signusWallet", null).get();
 	}
 
 	@Test
