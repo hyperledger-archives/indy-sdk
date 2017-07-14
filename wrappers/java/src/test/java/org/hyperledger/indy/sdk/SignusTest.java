@@ -3,7 +3,6 @@ package org.hyperledger.indy.sdk;
 import java.io.File;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.signus.Signus;
@@ -25,8 +24,8 @@ public class SignusTest extends TestCase {
 		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 
 		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
-		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get().getPool();
-		this.wallet = Wallet.openWallet("mywallet", null, null).get().getWallet();
+		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions.toJson()).get();
+		this.wallet = Wallet.openWallet("mywallet", null, null).get();
 	}
 
 	@Override
