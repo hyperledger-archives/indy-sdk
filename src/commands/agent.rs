@@ -25,6 +25,7 @@ use services::wallet::WalletService;
 use utils::crypto::ed25519::ED25519;
 use utils::json::JsonDecodable;
 use utils::sequence::SequenceUtils;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 pub type AgentConnectCB = Box<Fn(Result<i32, IndyError>) + Send>;
 pub type AgentMessageCB = Box<Fn(Result<(i32, String), IndyError>) + Send>;
@@ -464,11 +465,13 @@ impl AgentCommandExecutor {
 
             trace!("parsed get_nym_result_data {:?}", gen_nym_result_data);
 
-            let verkey = gen_nym_result_data.verkey.unwrap_or(gen_nym_result_data.dest);
+            let pk = ED25519::vk_to_curve25519(
+                build_full_verkey(&gen_nym_result_data.dest, &gen_nym_result_data.verkey)
+                    .unwrap()
+                    .as_slice())
+                .unwrap().to_base58();
 
-            let verkey = ED25519::vk_to_curve25519(verkey.from_base58().unwrap().as_slice()).unwrap().to_base58();
-
-            Ok(verkey)
+            Ok(pk)
         });
         self.do_check_connect(listener_handle, did.as_str(), pk.as_str(), res.ok().as_ref().map(String::as_str));
     }
