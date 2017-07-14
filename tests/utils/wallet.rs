@@ -23,14 +23,14 @@ pub struct WalletUtils {}
 
 
 impl WalletUtils {
-    pub fn register_wallet_type(xtype: &str) -> Result<(), ErrorCode> {
+    pub fn register_wallet_type(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
         lazy_static! {
             static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
         }
 
         let mut wallets = REGISERED_WALLETS.lock().unwrap();
 
-        if wallets.contains(xtype) {
+        if wallets.contains(xtype) & !force_create {
             // as registering of plugged wallet with
             return Ok(())
         }

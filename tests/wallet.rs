@@ -32,7 +32,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
 
-            WalletUtils::register_wallet_type("inmem").unwrap();
+            WalletUtils::register_wallet_type("inmem", false).unwrap();
 
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
@@ -64,7 +64,7 @@ mod high_cases {
             let wallet_name = "indy_create_wallet_works";
             let xtype = "inmem";
 
-            WalletUtils::register_wallet_type("inmem").unwrap();
+            WalletUtils::register_wallet_type("inmem", false).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
 
             TestUtils::cleanup_storage();
@@ -138,7 +138,7 @@ mod high_cases {
             let wallet_name = "indy_delete_wallet_works_for_plugged";
             let xtype = "inmem";
 
-            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::register_wallet_type(xtype, false).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
             WalletUtils::delete_wallet(wallet_name).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
@@ -173,7 +173,7 @@ mod high_cases {
             let wallet_name = "indy_open_wallet_works_for_plugged";
             let xtype = "inmem";
 
-            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::register_wallet_type(xtype, false).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
             WalletUtils::open_wallet(wallet_name, None).unwrap();
 
@@ -224,7 +224,7 @@ mod high_cases {
             let wallet_name = "indy_close_wallet_works_for_plugged";
             let xtype = "inmem";
 
-            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::register_wallet_type(xtype, false).unwrap();
             WalletUtils::create_wallet(pool_name, wallet_name, Some(xtype), None).unwrap();
 
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None).unwrap();
@@ -259,7 +259,7 @@ mod high_cases {
 
             let xtype = "inmem";
 
-            WalletUtils::register_wallet_type(xtype).unwrap();
+            WalletUtils::register_wallet_type(xtype, false).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet("indy_wallet_set_seqno_works_for_plugged", Some(xtype)).unwrap();
 
             let (did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
@@ -273,7 +273,113 @@ mod high_cases {
 }
 
 mod medium_cases {
+    extern crate libc;
     use super::*;
+    use std::ffi::CString;
+    use self::libc::c_char;
+
+    mod register_wallet_type {
+        use super::*;
+        use indy::api::wallet::indy_register_wallet_type;
+
+        #[test]
+        fn indy_register_wallet_type_does_not_work_twice_with_same_name() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            WalletUtils::register_wallet_type("inmem", false).unwrap();
+            let res = WalletUtils::register_wallet_type("inmem", true);
+
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletTypeAlreadyRegisteredError);
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+        }
+
+        #[test]
+        fn indy_register_wallet_type_does_not_work_with_null_params() {
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+
+            let xtype = CString::new("inmem").unwrap();
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), None, None, None, None, None,
+                                                None, None, None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam3);
+
+            extern "C" fn callback(_: *const c_char, _: *const c_char,
+                                   _: *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), None, None, None,
+                                                None, None, None, None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam4);
+
+            extern "C" fn callback1(_: *const c_char, _: *const c_char, _: *const c_char,
+                                    _: *const c_char, _: *mut i32) -> ErrorCode {
+                ErrorCode::Success
+            }
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                None, None, None, None, None, None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam5);
+
+            extern "C" fn callback2(_: i32, _: *const c_char, _: *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), None, None, None, None, None,
+                                                None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam6);
+
+            extern "C" fn callback3(_: i32, _: *const c_char, _: *mut *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), Some(callback3), None, None, None,
+                                                None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam7);
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), Some(callback3), Some(callback3),
+                                                None, None, None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam8);
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), Some(callback3), Some(callback3),
+                                                Some(callback3), None, None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam9);
+
+            extern "C" fn callback4(_: i32) -> ErrorCode {
+                ErrorCode::Success
+            }
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), Some(callback3), Some(callback3),
+                                                Some(callback3), Some(callback4), None, None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam10);
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), Some(callback3), Some(callback3),
+                                                Some(callback3), Some(callback4), Some(callback),
+                                                None, None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam11);
+
+            extern "C" fn callback5(_: i32, _: *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+
+            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                Some(callback2), Some(callback3), Some(callback3),
+                                                Some(callback3), Some(callback4), Some(callback),
+                                                Some(callback5), None);
+            assert_eq!(res, ErrorCode::CommonInvalidParam12);
+
+            TestUtils::cleanup_storage();
+            InmemWallet::cleanup();
+        }
+    }
 
     mod create_wallet {
         use super::*;
