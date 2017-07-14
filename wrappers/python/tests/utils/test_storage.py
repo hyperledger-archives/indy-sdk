@@ -1,4 +1,4 @@
-from .storage import StorageUtils
+from .storage import indy_home_path, indy_temp_path, cleanup
 
 import logging
 
@@ -6,14 +6,15 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def test_storage_utils_indy_home_path_works():
-    home_path = StorageUtils.indy_home_path()
+    home_path = indy_home_path()
     assert '.indy' in str(home_path)
 
 
 def test_storage_utils_indy_temp_path_works():
-    tmp_path = StorageUtils.indy_temp_path()
+    tmp_path = indy_temp_path()
     assert 'indy' in str(tmp_path)
 
 
 def test_storage_utils_cleanup_works():
-    StorageUtils.cleanup()
+    cleanup()
+    assert True
