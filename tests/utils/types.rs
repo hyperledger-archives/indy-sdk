@@ -120,10 +120,10 @@ pub struct GetTxnResult {
     #[serde(rename = "reqId")]
     pub req_id: u64,
     #[serde(rename = "seqNo")]
-    pub seq_no: i32,
+    pub seq_no: Option<i32>,
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: Option<String>
+    pub data: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
