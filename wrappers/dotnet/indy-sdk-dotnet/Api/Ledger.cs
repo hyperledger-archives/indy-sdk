@@ -11,8 +11,11 @@ namespace Indy.Sdk.Dotnet.Api
     /// High level API for interacting with ledgers.
     /// </summary>
     public class Ledger
-    {        
-
+    {
+        //*******************
+        // pool related
+        //*******************
+        
         /// <summary>
         /// Creates a new pool config for the ledger.
         /// </summary>
@@ -78,6 +81,10 @@ namespace Indy.Sdk.Dotnet.Api
             return PoolWrapper.CloseAsync();
         }
 
+        //*******************
+        // ledger related
+        //*******************
+
         /// <summary>
         /// Signs and submits a message to the ledger.
         /// </summary>
@@ -112,6 +119,7 @@ namespace Indy.Sdk.Dotnet.Api
         {
             return Wrapper.Ledger.SubmitRequestAsync(PoolWrapper, request.Json);
         }
+
 
         /// <summary>
         /// Submits a pre-signed message to the ledger.

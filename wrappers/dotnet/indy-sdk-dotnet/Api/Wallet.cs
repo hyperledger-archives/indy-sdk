@@ -11,7 +11,11 @@ namespace Indy.Sdk.Dotnet.Api
     /// High level API for interacting with wallets.
     /// </summary>
     public class Wallet
-    {       
+    {
+        //*******************
+        // wallet related
+        //*******************
+
         /// <summary>
         /// Creates a new wallet.
         /// </summary>
@@ -92,6 +96,10 @@ namespace Indy.Sdk.Dotnet.Api
         {
             return Signus.CreateAndStoreMyDidAsync(WalletWrapper, didJson);
         }
+        
+        //*******************
+        // signus related
+        //*******************
 
         /// <summary>
         /// Signs the provided message with the specified DID.
@@ -116,9 +124,14 @@ namespace Indy.Sdk.Dotnet.Api
             return new SignedLedgerRequest(result);
         }
 
-
         //TODO: Add other signus commands
+
+        //*******************
+        // anoncreds related
+        //*******************
+
         //TODO: Add other anoncreds commands
+
         //TODO: Create convenience classes that will construct JSON
         //TODO: Create base classes for messages to submit to wallet or ledger that differentiate signed vs unsigned messages.
     }
