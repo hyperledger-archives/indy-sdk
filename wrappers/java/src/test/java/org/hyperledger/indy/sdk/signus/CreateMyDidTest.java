@@ -5,8 +5,14 @@ import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.junit.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import org.bitcoinj.core.Base58;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
@@ -38,10 +44,10 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, null, null);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 
-		Assert.assertEquals(16, Base58.decode(result.getDid()).length);
-		Assert.assertEquals(32, Base58.decode(result.getVerkey()).length);
+		assertEquals(16, Base58.decode(result.getDid()).length);
+		assertEquals(32, Base58.decode(result.getVerkey()).length);
 	}
 
 	@Test
@@ -51,10 +57,10 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, seed, null, null);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 
-		Assert.assertEquals("NcYxiDXkpYi6ov5FcYDi1e", result.getDid());
-		Assert.assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals("NcYxiDXkpYi6ov5FcYDi1e", result.getDid());
+		assertEquals(expectedVerkey, result.getVerkey());
 	}
 
 	@Test
@@ -64,10 +70,10 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, seed, null, true);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 
-		Assert.assertEquals(expectedVerkey, result.getDid());
-		Assert.assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals(expectedVerkey, result.getDid());
+		assertEquals(expectedVerkey, result.getVerkey());
 	}
 
 	@Test
@@ -77,9 +83,9 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(did, null, null, true);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 
-		Assert.assertEquals(did, result.getDid());
+		assertEquals(did, result.getDid());
 	}
 
 	@Test
@@ -89,7 +95,7 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, existsCryptoType, null);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 	}
 
 	@Test
@@ -123,9 +129,9 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(did, seed, existsCryptoType, true);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 
-		Assert.assertEquals(did, result.getDid());
-		Assert.assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals(did, result.getDid());
+		assertEquals(expectedVerkey, result.getVerkey());
 	}
 }

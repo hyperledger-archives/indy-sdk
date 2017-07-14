@@ -44,7 +44,7 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 
 	@Test
 	public void testStoreTheirDidWorksWithVerkey() throws Exception {
-		Signus.storeTheirDid(this.wallet,"{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
+		Signus.storeTheirDid(this.wallet, "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
 				"\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"}").get();
 	}
 
