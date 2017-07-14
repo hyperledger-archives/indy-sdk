@@ -38,3 +38,30 @@ async def create_wallet(pool_name: str,
                   c_credentials)
 
     logger.debug("create_wallet: <<<")
+
+
+async def open_wallet(name: str,
+                      runtime_config: Optional[str],
+                      credentials: Optional[str]):
+    logger = logging.getLogger(__name__)
+    logger.debug("open_wallet: >>> name: %s, runtime_config: %s, credentials: %s",
+                 name,
+                 runtime_config,
+                 credentials)
+
+    if not hasattr(open_wallet, "cb"):
+        logger.debug("open_wallet: Creating callback")
+        open_wallet.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+
+    c_name = c_char_p(name.encode('utf-8'))
+    c_runtime_config = c_char_p(runtime_config.encode('utf-8')) if runtime_config is not None else None
+    c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
+
+    res = await do_call('indy_open_wallet',
+                        open_wallet.cb,
+                        c_name,
+                        c_runtime_config,
+                        c_credentials)
+
+    logger.debug("open_wallet: <<< res: %s", res)
+    return res

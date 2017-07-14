@@ -50,7 +50,7 @@ def _indy_callback(command_handle: int, err: int, *args):
     logger.debug("_indy_callback: >>> command_handle: %i, err %i, args: %s", command_handle, err, args)
 
     (event_loop, future) = _futures[command_handle]
-    event_loop.call_soon_threadsafe(_indy_loop_callback, command_handle, err, args)
+    event_loop.call_soon_threadsafe(_indy_loop_callback, command_handle, err, *args)
 
     logger.debug("_indy_callback: <<<")
 
@@ -65,7 +65,15 @@ def _indy_loop_callback(command_handle: int, err, *args):
         logger.warning("_indy_loop_callback: Function returned error %i", err)
         future.set_exception(IndyError(err))
     else:
-        future.set_result(args)
+        if len(args) == 0:
+            res = None
+        elif len(args) == 1:
+            (res,) = args
+        else:
+            res = args
+
+        logger.warning("_indy_loop_callback: Function returned %s", res)
+        future.set_result(res)
 
     logger.debug("_indy_loop_callback <<<")
 
