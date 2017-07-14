@@ -20,9 +20,9 @@ namespace Indy.Sdk.Dotnet
             {
                 e.Handle((x) =>
                 {
-                    if (x is SovrinException) // This we know how to handle.
+                    if (x is IndyException) // This we know how to handle.
                     {
-                        if (((SovrinException)x).ErrorCode == (int)ErrorCode.PoolLedgerNotCreatedError)
+                        if (((IndyException)x).ErrorCode == (int)ErrorCode.PoolLedgerNotCreatedError)
                             return true;
                     }
                     return false; // Let anything else stop the application.
@@ -39,9 +39,9 @@ namespace Indy.Sdk.Dotnet
             {
                 e.Handle((x) =>
                 {
-                    if (x is SovrinException) // This we know how to handle.
+                    if (x is IndyException) // This we know how to handle.
                     {
-                        if (((SovrinException)x).ErrorCode == (int)ErrorCode.WalletAlreadyExistsError)
+                        if (((IndyException)x).ErrorCode == (int)ErrorCode.WalletAlreadyExistsError)
                             return true;
                     }
                     return false; // Let anything else stop the application.
@@ -51,7 +51,7 @@ namespace Indy.Sdk.Dotnet
             var wallet = Wallet.OpenAsync("trusteewallet", null, null).Result;
             var storeDidResult = wallet.CreateAndStoreMyDidAsync("{\"seed\":\"" + TRUSTEE_SEED + "\"}").Result;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(TRUSTEE_VERKEY, TRUSTEE_DID, TRUSTEE_VERKEY, null, SovrinConstants.ROLE_TRUSTEE).Result;
+            var nymRequest = Ledger.BuildNymRequestAsync(TRUSTEE_VERKEY, TRUSTEE_DID, TRUSTEE_VERKEY, null, IndyConstants.ROLE_TRUSTEE).Result;
             var signedNymRequest = wallet.SignAsync(TRUSTEE_DID, nymRequest).Result;
             var result = ledger.SubmitRequestAsync(signedNymRequest).Result;
 

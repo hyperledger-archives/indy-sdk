@@ -6,14 +6,14 @@ namespace Indy.Sdk.Dotnet
     /// <summary>
     /// PInvoke import of C-Callable SDK library functions and associated delegates.
     /// </summary>
-    public static class LibSovrin
+    public static class LibIndy
     {
         /// <summary>
         /// Delegate for callbacks that only include the success or failure of command execution.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        public delegate void ResultOnlyDelegate(IntPtr command_handle, int err);
+        public delegate void NoValueDelegate(int command_handle, int err);
         
 
         // pool.rs
@@ -27,7 +27,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_create_pool_ledger_config(IntPtr command_handle, string config_name, string config, ResultOnlyDelegate cb);
+        public static extern int sovrin_create_pool_ledger_config(int command_handle, string config_name, string config, NoValueDelegate cb);
 
         /// <summary>
         /// Deletes created pool ledger configuration.
@@ -37,7 +37,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_delete_pool_ledger_config(IntPtr command_handle, string config_name, ResultOnlyDelegate cb);
+        public static extern int sovrin_delete_pool_ledger_config(int command_handle, string config_name, NoValueDelegate cb);
 
         /// <summary>
         /// Opens pool ledger and performs connecting to pool nodes.
@@ -48,7 +48,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_open_pool_ledger(IntPtr command_handle, string config_name, string config, OpenPoolLedgerResultDelegate cb);
+        public static extern int sovrin_open_pool_ledger(int command_handle, string config_name, string config, OpenPoolLedgerResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_open_pool_ledger function.
@@ -56,7 +56,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="pool_handle">The handle for the opened pool.</param>
-        public delegate void OpenPoolLedgerResultDelegate(IntPtr command_handle, int err, IntPtr pool_handle);
+        public delegate void OpenPoolLedgerResultDelegate(int command_handle, int err, IntPtr pool_handle);
 
         /// <summary>
         /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -66,7 +66,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_refresh_pool_ledger(IntPtr command_handle, IntPtr handle, ResultOnlyDelegate cb);
+        public static extern int sovrin_refresh_pool_ledger(int command_handle, IntPtr handle, NoValueDelegate cb);
 
         /// <summary>
         /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
@@ -76,7 +76,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_close_pool_ledger(IntPtr command_handle, IntPtr handle, ResultOnlyDelegate cb);
+        public static extern int sovrin_close_pool_ledger(int command_handle, IntPtr handle, NoValueDelegate cb);
 
         // wallet.rs
 
@@ -92,7 +92,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_create_wallet(IntPtr command_handle, string pool_name, string name, string xtype, string config, string credentials, ResultOnlyDelegate cb);
+        public static extern int sovrin_create_wallet(int command_handle, string pool_name, string name, string xtype, string config, string credentials, NoValueDelegate cb);
 
         /// <summary>
         /// Opens the wallet with specific name.
@@ -108,7 +108,7 @@ namespace Indy.Sdk.Dotnet
         /// </remarks>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_open_wallet(IntPtr command_handle, string name, string runtime_config, string credentials, OpenWalletResultDelegate cb);
+        public static extern int sovrin_open_wallet(int command_handle, string name, string runtime_config, string credentials, OpenWalletResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_open_pool_ledger function.
@@ -116,7 +116,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="wallet_handle">The handle for the opened wallet.</param>
-        public delegate void OpenWalletResultDelegate(IntPtr command_handle, int err, IntPtr wallet_handle);
+        public delegate void OpenWalletResultDelegate(int command_handle, int err, IntPtr wallet_handle);
 
         /// <summary>
         /// Closes opened wallet and frees allocated resources.
@@ -126,7 +126,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_close_wallet(IntPtr command_handle, IntPtr handle, ResultOnlyDelegate cb);
+        public static extern int sovrin_close_wallet(int command_handle, IntPtr handle, NoValueDelegate cb);
 
         /// <summary>
         /// Deletes created wallet.
@@ -137,7 +137,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_delete_wallet(IntPtr command_handle, string name, string credentials, ResultOnlyDelegate cb);
+        public static extern int sovrin_delete_wallet(int command_handle, string name, string credentials, NoValueDelegate cb);
 
         /// <summary>
         /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
@@ -149,7 +149,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_wallet_set_seq_no_for_value(IntPtr command_handle, IntPtr wallet_handle, string wallet_key, ResultOnlyDelegate cb);
+        public static extern int sovrin_wallet_set_seq_no_for_value(int command_handle, IntPtr wallet_handle, string wallet_key, NoValueDelegate cb);
 
         // ledger.rs
 
@@ -159,7 +159,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="request_result_json">The result data.</param>
-        public delegate void SubmitRequestResultDelegate(IntPtr command_handle, int err, string request_result_json);
+        public delegate void SubmitRequestResultDelegate(int command_handle, int err, string request_result_json);
 
         /// <summary>
         /// Delegate for callbacks used by functions that build requests destined for the ledger.
@@ -167,7 +167,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="request_json">The request that can be signed and submitted to the ledger.</param>
-        public delegate void BuildRequestResultDelegate(IntPtr command_handle, int err, string request_json);
+        public delegate void BuildRequestResultDelegate(int command_handle, int err, string request_json);
 
         /// <summary>
         /// Signs and submits request message to validator pool.
@@ -180,7 +180,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_sign_and_submit_request(IntPtr command_handle, IntPtr pool_handle, IntPtr wallet_handle, string submitter_did, string request_json, SubmitRequestResultDelegate cb);
+        public static extern int sovrin_sign_and_submit_request(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string submitter_did, string request_json, SubmitRequestResultDelegate cb);
 
         /// <summary>
         /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
@@ -191,7 +191,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_submit_request(IntPtr command_handle, IntPtr pool_handle, string request_json, SubmitRequestResultDelegate cb);
+        public static extern int sovrin_submit_request(int command_handle, IntPtr pool_handle, string request_json, SubmitRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a request to get a DDO.
@@ -202,7 +202,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_get_ddo_request(IntPtr command_handle, string submitter_did, string target_did, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_get_ddo_request(int command_handle, string submitter_did, string target_did, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a NYM request.
@@ -216,7 +216,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_nym_request(IntPtr command_handle, string submitter_did, string target_did, string verkey, string alias, string role, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_nym_request(int command_handle, string submitter_did, string target_did, string verkey, string alias, string role, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds an ATTRIB request.
@@ -230,7 +230,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_attrib_request(IntPtr command_handle, string submitter_did, string target_did, string hash, string raw, string enc, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_attrib_request(int command_handle, string submitter_did, string target_did, string hash, string raw, string enc, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a GET_ATTRIB request.
@@ -242,7 +242,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_get_attrib_request(IntPtr command_handle, string submitter_did, string target_did, string data, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_get_attrib_request(int command_handle, string submitter_did, string target_did, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a GET_NYM request.
@@ -253,7 +253,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_get_nym_request(IntPtr command_handle, string submitter_did, string target_did, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_get_nym_request(int command_handle, string submitter_did, string target_did, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a SCHEMA request.
@@ -264,7 +264,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_schema_request(IntPtr command_handle, string submitter_did, string data, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_schema_request(int command_handle, string submitter_did, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a GET_SCHEMA request.
@@ -276,7 +276,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_get_schema_request(IntPtr command_handle, string submitter_did, string dest, string data, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_get_schema_request(int command_handle, string submitter_did, string dest, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds an CLAIM_DEF request.
@@ -289,7 +289,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_claim_def_txn(IntPtr command_handle, string submitter_did, int xref, string signature_type, string data, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_claim_def_txn(int command_handle, string submitter_did, int xref, string signature_type, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a GET_CLAIM_DEF request.
@@ -302,7 +302,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_get_claim_def_txn(IntPtr command_handle, string submitter_did, int xref, string signature_type, string origin, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_get_claim_def_txn(int command_handle, string submitter_did, int xref, string signature_type, string origin, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a NODE request.
@@ -314,7 +314,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_node_request(IntPtr command_handle, string submitter_did, string target_did, string data, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_node_request(int command_handle, string submitter_did, string target_did, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
         /// Builds a GET_TXN request.
@@ -325,7 +325,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_build_get_txn_request(IntPtr command_handle, string submitter_did, string data, BuildRequestResultDelegate cb);
+        public static extern int sovrin_build_get_txn_request(int command_handle, string submitter_did, string data, BuildRequestResultDelegate cb);
 
         // signus.rs
 
@@ -339,7 +339,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_create_and_store_my_did(IntPtr command_handle, IntPtr wallet_handle, string did_json, CreateAndStoreMyDidResultDelegate cb);
+        public static extern int sovrin_create_and_store_my_did(int command_handle, IntPtr wallet_handle, string did_json, CreateAndStoreMyDidResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_create_and_store_my_did function.
@@ -349,7 +349,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="did">The created DID.</param>
         /// <param name="verkey">The verification key for the signature.</param>
         /// <param name="pk">The public key for decryption.</param>
-        public delegate void CreateAndStoreMyDidResultDelegate(IntPtr command_handle, int err, string did, string verkey, string pk);
+        public delegate void CreateAndStoreMyDidResultDelegate(int command_handle, int err, string did, string verkey, string pk);
 
         /// <summary>
         /// Generates new keys (signing and encryption keys) for an existing
@@ -362,7 +362,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_replace_keys(IntPtr command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysResultDelegate cb);
+        public static extern int sovrin_replace_keys(int command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_replace_keys function.
@@ -371,7 +371,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="verkey">The key for verification of signature.</param>
         /// <param name="pk">The public key for decryption.</param>
-        public delegate void ReplaceKeysResultDelegate(IntPtr command_handle, int err, string verkey, string pk);
+        public delegate void ReplaceKeysResultDelegate(int command_handle, int err, string verkey, string pk);
 
         /// <summary>
         /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -383,7 +383,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_store_their_did(IntPtr command_handle, IntPtr wallet_handle, string identity_json, ResultOnlyDelegate cb);
+        public static extern int sovrin_store_their_did(int command_handle, IntPtr wallet_handle, string identity_json, NoValueDelegate cb);
 
         /// <summary>
         /// Signs a message by a signing key associated with my DID.
@@ -395,7 +395,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_sign(IntPtr command_handle, IntPtr wallet_handle, string did, string msg, SignResultDelegate cb);
+        public static extern int sovrin_sign(int command_handle, IntPtr wallet_handle, string did, string msg, SignResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_sign function.
@@ -403,7 +403,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="signature">a signature string</param>
-        public delegate void SignResultDelegate(IntPtr command_handle, int err, string signature);
+        public delegate void SignResultDelegate(int command_handle, int err, string signature);
 
         /// <summary>
         /// Verify a signature created by a key associated with a DID.
@@ -416,7 +416,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_verify_signature(IntPtr command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, string signed_msg, VerifySignatureResultDelegate cb);
+        public static extern int sovrin_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, string signed_msg, VerifySignatureResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_verify_signature function.
@@ -424,7 +424,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="valid">true if the signature is valid, otherwise false</param>
-        public delegate void VerifySignatureResultDelegate(IntPtr command_handle, int err, bool valid);
+        public delegate void VerifySignatureResultDelegate(int command_handle, int err, bool valid);
 
         /// <summary>
         /// Encrypts a message by a public key associated with a DID.
@@ -438,7 +438,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_encrypt(IntPtr command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, string msg, EncryptResultDelegate cb);
+        public static extern int sovrin_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, string msg, EncryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_encrypt function.
@@ -447,7 +447,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="encrypted_msg">The encrypted message.</param>
         /// <param name="nonce">The nonce</param>
-        public delegate void EncryptResultDelegate(IntPtr command_handle, int err, string encrypted_msg, string nonce);
+        public delegate void EncryptResultDelegate(int command_handle, int err, string encrypted_msg, string nonce);
 
         /// <summary>
         /// Decrypts a message encrypted by a public key associated with my DID.
@@ -461,7 +461,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_decrypt(IntPtr command_handle, IntPtr wallet_handle, string my_did, string did, string encrypted_msg, string nonce, DecryptResultDelegate cb);
+        public static extern int sovrin_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, string encrypted_msg, string nonce, DecryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_decrypt function.
@@ -469,7 +469,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="decrypted_msg">The decrypted message.</param>
-        public delegate void DecryptResultDelegate(IntPtr command_handle, int err, string decrypted_msg);
+        public delegate void DecryptResultDelegate(int command_handle, int err, string decrypted_msg);
 
         // anoncreds.rs
 
@@ -485,7 +485,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_issuer_create_and_store_claim_def(IntPtr command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string signature_type, bool create_non_revoc, IssuerCreateAndStoreClaimDefResultDelegate cb);
+        public static extern int sovrin_issuer_create_and_store_claim_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string signature_type, bool create_non_revoc, IssuerCreateAndStoreClaimDefResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_create_and_store_claim_def function.
@@ -494,7 +494,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_def_json">claim definition json containing information about signature type, schema and issuer's public key.</param>
         /// <param name="claim_def_uuid">Unique number identifying the public key in the wallet</param>
-        public delegate void IssuerCreateAndStoreClaimDefResultDelegate(IntPtr command_handle, int err, string claim_def_json, string claim_def_uuid);
+        public delegate void IssuerCreateAndStoreClaimDefResultDelegate(int command_handle, int err, string claim_def_json, string claim_def_uuid);
 
         /// <summary>
         /// Create a new revocation registry for the given claim definition.
@@ -507,7 +507,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_issuer_create_and_store_revoc_reg(IntPtr command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int max_claim_num, IssuerCreateAndStoreClaimRevocRegResultDelegate cb);
+        public static extern int sovrin_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int max_claim_num, IssuerCreateAndStoreClaimRevocRegResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_create_and_store_revoc_reg function.
@@ -516,7 +516,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_json">Revoc registry json</param>
         /// <param name="revoc_reg_uuid">Unique number identifying the revocation registry in the wallet</param>
-        public delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(IntPtr command_handle, int err, string revoc_reg_json, string revoc_reg_uuid);
+        public delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int command_handle, int err, string revoc_reg_json, string revoc_reg_uuid);
 
         /// <summary>
         /// Signs a given claim for the given user by a given key (claim def).
@@ -530,7 +530,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_issuer_create_claim(IntPtr command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int revoc_reg_seq_no, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
+        public static extern int sovrin_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int revoc_reg_seq_no, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_create_and_store_revoc_reg function.
@@ -540,7 +540,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="revoc_reg_update_json">Revocation registry update json with a newly issued claim</param>
         /// <param name="xclaim_json">Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
         /// used for issuance</param>
-        public delegate void IssuerCreateClaimResultDelegate(IntPtr command_handle, int err, string revoc_reg_update_json, string xclaim_json);
+        public delegate void IssuerCreateClaimResultDelegate(int command_handle, int err, string revoc_reg_update_json, string xclaim_json);
 
         /// <summary>
         /// Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -552,7 +552,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_issuer_revoke_claim(IntPtr command_handle, IntPtr wallet_handle, int revoc_reg_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
+        public static extern int sovrin_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, int revoc_reg_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_revoke_claim function.
@@ -560,7 +560,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_update_json">Revocation registry update json with a revoked claim</param>
-        public delegate void IssuerRevokeClaimResultDelegate(IntPtr command_handle, int err, string revoc_reg_update_json);
+        public delegate void IssuerRevokeClaimResultDelegate(int command_handle, int err, string revoc_reg_update_json);
 
         /// <summary>
         /// Stores a claim offer from the given issuer in a secure storage.
@@ -571,7 +571,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_store_claim_offer(IntPtr command_handle, IntPtr wallet_handle, string claim_offer_json, ResultOnlyDelegate cb);
+        public static extern int sovrin_prover_store_claim_offer(int command_handle, IntPtr wallet_handle, string claim_offer_json, NoValueDelegate cb);
 
         /// <summary>
         /// Gets all stored claim offers (see prover_store_claim_offer).
@@ -582,7 +582,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_get_claim_offers(IntPtr command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimOffersResultDelegate cb);
+        public static extern int sovrin_prover_get_claim_offers(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimOffersResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_prover_get_claim_offers function.
@@ -590,7 +590,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_offers_json">A json with a list of claim offers for the filter.</param>
-        public delegate void ProverGetClaimOffersResultDelegate(IntPtr command_handle, int err, string claim_offers_json);
+        public delegate void ProverGetClaimOffersResultDelegate(int command_handle, int err, string claim_offers_json);
 
         /// <summary>
         /// Creates a master secret with a given name and stores it in the wallet.
@@ -601,7 +601,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_create_master_secret(IntPtr command_handle, IntPtr wallet_handle, string master_secret_name, ResultOnlyDelegate cb);
+        public static extern int sovrin_prover_create_master_secret(int command_handle, IntPtr wallet_handle, string master_secret_name, NoValueDelegate cb);
 
         /// <summary>
         /// Creates a clam request json for the given claim offer and stores it in a secure wallet.
@@ -615,7 +615,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_create_and_store_claim_req(IntPtr command_handle, IntPtr wallet_handle, string prover_did, string claim_offer_json, string claim_def_json, string master_secret_name, ProverCreateAndStoreClaimReqResultDelegate cb);
+        public static extern int sovrin_prover_create_and_store_claim_req(int command_handle, IntPtr wallet_handle, string prover_did, string claim_offer_json, string claim_def_json, string master_secret_name, ProverCreateAndStoreClaimReqResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_prover_create_and_store_claim_req function.
@@ -623,7 +623,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_req_json">Claim request json.</param>
-        public delegate void ProverCreateAndStoreClaimReqResultDelegate(IntPtr command_handle, int err, string claim_req_json);
+        public delegate void ProverCreateAndStoreClaimReqResultDelegate(int command_handle, int err, string claim_req_json);
 
         /// <summary>
         /// Updates the claim by a master secret and stores in a secure wallet.
@@ -634,7 +634,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_store_claim(IntPtr command_handle, IntPtr wallet_handle, string claims_json, ResultOnlyDelegate cb);
+        public static extern int sovrin_prover_store_claim(int command_handle, IntPtr wallet_handle, string claims_json, NoValueDelegate cb);
 
         /// <summary>
         /// Gets human readable claims according to the filter.
@@ -645,7 +645,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_get_claims(IntPtr command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimsResultDelegate cb);
+        public static extern int sovrin_prover_get_claims(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimsResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_prover_get_claims function.
@@ -653,7 +653,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claims_json">claims json</param>
-        public delegate void ProverGetClaimsResultDelegate(IntPtr command_handle, int err, string claims_json);
+        public delegate void ProverGetClaimsResultDelegate(int command_handle, int err, string claims_json);
 
         /// <summary>
         /// Gets human readable claims matching the given proof request.
@@ -664,7 +664,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_get_claims_for_proof_req(IntPtr command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetClaimsForProofResultDelegate cb);
+        public static extern int sovrin_prover_get_claims_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetClaimsForProofResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_prover_get_claims_for_proof_req function.
@@ -672,7 +672,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claims_json">json with claims for the given pool request.</param>
-        public delegate void ProverGetClaimsForProofResultDelegate(IntPtr command_handle, int err, string claims_json);
+        public delegate void ProverGetClaimsForProofResultDelegate(int command_handle, int err, string claims_json);
 
         /// <summary>
         /// Creates a proof according to the given proof request
@@ -688,7 +688,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_prover_create_proof(IntPtr command_handle, IntPtr wallet_handle, string proof_req_json, string requested_claims_json, string schemas_json, string master_secret_name, string claim_defs_json, string revoc_regs_json, ProverCreateProofResultDelegate cb);
+        public static extern int sovrin_prover_create_proof(int command_handle, IntPtr wallet_handle, string proof_req_json, string requested_claims_json, string schemas_json, string master_secret_name, string claim_defs_json, string revoc_regs_json, ProverCreateProofResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_prover_create_proof function.
@@ -696,7 +696,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="proof_json">Proof json.</param>
-        public delegate void ProverCreateProofResultDelegate(IntPtr command_handle, int err, string proof_json);
+        public delegate void ProverCreateProofResultDelegate(int command_handle, int err, string proof_json);
 
         /// <summary>
         /// Verifies a proof (of multiple claim).
@@ -711,7 +711,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_verifier_verify_proof(IntPtr command_handle, IntPtr wallet_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofResultDelegate cb);
+        public static extern int sovrin_verifier_verify_proof(int command_handle, IntPtr wallet_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_verifier_verify_proof function.
@@ -719,7 +719,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="valid">true if the proof is valid, otherwise false</param>
-        public delegate void VerifierVerifyProofResultDelegate(IntPtr command_handle, int err, bool valid);
+        public delegate void VerifierVerifyProofResultDelegate(int command_handle, int err, bool valid);
 
         // agent.rs
 
@@ -729,7 +729,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="message">The received message.</param>
-        public delegate void AgentMessageReceivedDelegate(IntPtr command_handle, int err, string message);
+        public delegate void AgentMessageReceivedDelegate(int command_handle, int err, string message);
         
         /// <summary>
         /// Establishes agent to agent connection.
@@ -743,7 +743,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="message_cb">The function that will be called when a message is received.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_connect(IntPtr command_handle, IntPtr pool_handle, IntPtr wallet_handle, string sender_did, string receiver_did, AgentConnectionCreatedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
+        public static extern int sovrin_agent_connect(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string sender_did, string receiver_did, AgentConnectionCreatedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
         
         /// <summary>
         /// Delegate for Agent callbacks that return a connection.
@@ -751,7 +751,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="connectionHandle">The handle to the connection.</param>
-        public delegate void AgentConnectionCreatedDelegate(IntPtr command_handle, int err, IntPtr connectionHandle);
+        public delegate void AgentConnectionCreatedDelegate(int command_handle, int err, IntPtr connectionHandle);
 
         /// <summary>
         /// Starts listening for agent connections.
@@ -763,7 +763,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="message_cb">Callback that will be called on receiving of an incoming message.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_listen(IntPtr command_handle, string endpoint, AgentListenerCreatedDelegate listener_cb, AgentListenConnectionResultDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
+        public static extern int sovrin_agent_listen(int command_handle, string endpoint, AgentListenerCreatedDelegate listener_cb, AgentListenConnectionResultDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
 
         /// <summary>
         /// Delegate for Agent callbacks that return a listener.
@@ -771,7 +771,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="listenerHandle">The handle to the listener.</param>
-        public delegate void AgentListenerCreatedDelegate(IntPtr command_handle, int err, IntPtr listenerHandle);
+        public delegate void AgentListenerCreatedDelegate(int command_handle, int err, IntPtr listenerHandle);
 
         /// <summary>
         /// Delegate for when an agent listener receives a connection.
@@ -781,7 +781,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="connection_handle">Connection handle to use for messages sending and mapping of incomming messages to to this connection.</param>
         /// <param name="sender_did">Id of sender Identity stored in secured Wallet.</param>
         /// <param name="reciever_did">Id of receiver Identity.</param>
-        public delegate void AgentListenConnectionResultDelegate(IntPtr command_handle, int err, IntPtr connection_handle, string sender_did, string reciever_did);
+        public delegate void AgentListenConnectionResultDelegate(int command_handle, int err, IntPtr connection_handle, string sender_did, string reciever_did);
 
         /// <summary>
         /// Add identity to listener.
@@ -794,7 +794,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="add_identity_cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_add_identity(IntPtr command_handle, IntPtr listener_handle, IntPtr pool_handle, IntPtr wallet_handle, string did, ResultOnlyDelegate add_identity_cb);
+        public static extern int sovrin_agent_add_identity(int command_handle, IntPtr listener_handle, IntPtr pool_handle, IntPtr wallet_handle, string did, NoValueDelegate add_identity_cb);
 
         /// <summary>
         /// Remove identity from listener.
@@ -806,7 +806,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="rm_identity_cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_remove_identity(IntPtr command_handle, IntPtr listener_handle, IntPtr wallet_handle, string did, ResultOnlyDelegate rm_identity_cb);
+        public static extern int sovrin_agent_remove_identity(int command_handle, IntPtr listener_handle, IntPtr wallet_handle, string did, NoValueDelegate rm_identity_cb);
 
         /// <summary>
         /// Sends message to connected agent.
@@ -817,7 +817,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_send(IntPtr command_handle, IntPtr connection_handle, string message, ResultOnlyDelegate cb);
+        public static extern int sovrin_agent_send(int command_handle, IntPtr connection_handle, string message, NoValueDelegate cb);
 
         /// <summary>
         /// Closes agent connection.
@@ -827,7 +827,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_close_connection(IntPtr command_handle, IntPtr connection_handle, ResultOnlyDelegate cb);
+        public static extern int sovrin_agent_close_connection(int command_handle, IntPtr connection_handle, NoValueDelegate cb);
 
         /// <summary>
         /// Closes agent connection.
@@ -837,6 +837,6 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_close_listener(IntPtr command_handle, IntPtr listener_handle, ResultOnlyDelegate cb);
+        public static extern int sovrin_agent_close_listener(int command_handle, IntPtr listener_handle, NoValueDelegate cb);
     }
 }

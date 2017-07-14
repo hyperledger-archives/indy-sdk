@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibSovrin;
+using static Indy.Sdk.Dotnet.LibIndy;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -12,24 +12,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
-        private static OpenWalletResultDelegate OpenWalletResultCallback { get; }
-              
-        /// <summary>
-        /// Initializes static members of the wallet.
-        /// </summary>
-        static Wallet()
+        private static OpenWalletResultDelegate _openWalletCallback = (xCommandHandle, err, handle) =>
         {
-            OpenWalletResultCallback = (xCommandHandle, err, handle) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<Wallet>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<Wallet>(xCommandHandle);
 
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
 
-                taskCompletionSource.SetResult(new Wallet(handle));
-            };
-
-        }
+            taskCompletionSource.SetResult(new Wallet(handle));
+        };
 
         /// <summary>
         /// Creates a new wallet.
@@ -42,17 +33,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         public static Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_create_wallet(
+            var result = LibIndy.sovrin_create_wallet(
                 commandHandle,
                 poolName,
                 name,
                 type,
                 config,
                 credentials,
-                ResultOnlyCallback);
+                _noValueCallback);
 
             CheckResult(result);
 
@@ -69,15 +60,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task that returns a Wallet instance.</returns>
         public static Task<Wallet> OpenWalletAsync(string name, string runtimeConfig, string credentials)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<Wallet>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<Wallet>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_open_wallet(
+            var result = LibIndy.sovrin_open_wallet(
                 commandHandle,
                 name,
                 runtimeConfig,
                 credentials,
-                OpenWalletResultCallback
+                _openWalletCallback
                 );
 
             CheckResult(result);
@@ -92,13 +83,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         private static Task CloseWalletAsync(IntPtr handle)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_close_wallet(
+            var result = LibIndy.sovrin_close_wallet(
                 commandHandle,
                 handle,
-                ResultOnlyCallback);
+                _noValueCallback);
 
             CheckResult(result);
 
@@ -113,14 +104,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asyncronous Task with no return value.</returns>
         public static Task DeleteWalletAsync(string name, string credentials)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_delete_wallet(
+            var result = LibIndy.sovrin_delete_wallet(
                 commandHandle,
                 name,
                 credentials,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
@@ -136,14 +127,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns></returns>
         private static Task WalletSetSeqNoForValueAsync(IntPtr walletHandle, string walletKey)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_wallet_set_seq_no_for_value(
+            var result = LibIndy.sovrin_wallet_set_seq_no_for_value(
                 commandHandle,
                 walletHandle,
                 walletKey,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);

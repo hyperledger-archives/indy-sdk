@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibSovrin;
+using static Indy.Sdk.Dotnet.LibIndy;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -15,106 +15,88 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for CreateAndStoreMyDidResultAsync has completed.
         /// </summary>
-        private static CreateAndStoreMyDidResultDelegate CreateAndStoreMyDidResultCallback { get; }
+        private static CreateAndStoreMyDidResultDelegate _createAndStoreMyDidCallback = (xCommandHandle, err, did, verKey, pk) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<CreateAndStoreMyDidResult>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            var callbackResult = new CreateAndStoreMyDidResult(did, verKey, pk);
+
+            taskCompletionSource.SetResult(callbackResult);
+        };
 
         /// <summary>
         /// Gets the callback to use when the command for ReplaceKeysAsync has completed.
         /// </summary>
-        private static ReplaceKeysResultDelegate ReplaceKeysResultCallback { get; }
+        private static ReplaceKeysResultDelegate _replaceKeysCallback = (xCommandHandle, err, verKey, pk) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<ReplaceKeysResult>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            var callbackResult = new ReplaceKeysResult(verKey, pk);
+
+            taskCompletionSource.SetResult(callbackResult);
+        };
 
         /// <summary>
         /// Gets the callback to use when the command for SignAsync has completed.
         /// </summary>
-        private static SignResultDelegate SignResultCallback { get; }
+        private static SignResultDelegate _signCallback = (xCommandHandle, err, signature) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            taskCompletionSource.SetResult(signature);
+        };
 
         /// <summary>
         /// Gets the callback to use when the command for VerifySignatureAsync has completed.
         /// </summary>
-        private static VerifySignatureResultDelegate VerifySignatureResultCallback { get; }
+        private static VerifySignatureResultDelegate _verifySignatureCallback = (xCommandHandle, err, valid) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            taskCompletionSource.SetResult(valid);
+        };
 
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptResultDelegate EncryptResultCallback { get; }
+        private static EncryptResultDelegate _encryptCallback = (xCommandHandle, err, encryptedMsg, nonce) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<EncryptResult>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            var callbackResult = new EncryptResult(encryptedMsg, nonce);
+
+            taskCompletionSource.SetResult(callbackResult);
+        };
 
         /// <summary>
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
-        private static DecryptResultDelegate DecryptResultCallback { get; }
-
-        /// <summary>
-        /// Static initalizer.
-        /// </summary>
-        static Signus()
+        private static DecryptResultDelegate _decryptCallback = (xCommandHandle, err, decryptedMsg) =>
         {
-            CreateAndStoreMyDidResultCallback = (xCommandHandle, err, did, verKey, pk) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<CreateAndStoreMyDidResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
 
-                var callbackResult = new CreateAndStoreMyDidResult(did, verKey, pk);
+            taskCompletionSource.SetResult(decryptedMsg);
+        };
 
-                taskCompletionSource.SetResult(callbackResult);
-            };
-
-            ReplaceKeysResultCallback = (xCommandHandle, err, verKey, pk) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<ReplaceKeysResult>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                var callbackResult = new ReplaceKeysResult(verKey, pk);
-
-                taskCompletionSource.SetResult(callbackResult);
-            };
-
-            SignResultCallback = (xCommandHandle, err, signature) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<string>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                taskCompletionSource.SetResult(signature);
-            };
-
-            VerifySignatureResultCallback = (xCommandHandle, err, valid) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<bool>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                taskCompletionSource.SetResult(valid);
-            };
-
-            EncryptResultCallback = (xCommandHandle, err, encryptedMsg, nonce) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<EncryptResult>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                var callbackResult = new EncryptResult(encryptedMsg, nonce);
-
-                taskCompletionSource.SetResult(callbackResult);
-            };
-
-            DecryptResultCallback = (xCommandHandle, err, decryptedMsg) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<string>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                taskCompletionSource.SetResult(decryptedMsg);
-            };
-
-        }
-
+        
         /// <summary>
         /// Creates and stores the local party's DID in the specified wallet.
         /// </summary>
@@ -123,14 +105,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns a CreateAndStoreMyDidResult.</returns>
         public static Task<CreateAndStoreMyDidResult> CreateAndStoreMyDidAsync(Wallet wallet, string didJson)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<CreateAndStoreMyDidResult>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<CreateAndStoreMyDidResult>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibSovrin.sovrin_create_and_store_my_did(
+            var commandResult = LibIndy.sovrin_create_and_store_my_did(
                 commandHandle,
                 wallet.Handle,
                 didJson,
-                CreateAndStoreMyDidResultCallback);
+                _createAndStoreMyDidCallback);
 
             CheckResult(commandResult);
 
@@ -146,15 +128,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns a ReplaceKeysResult.</returns>
         public static Task<ReplaceKeysResult> ReplaceKeysAsync(Wallet wallet, string did, string identityJson)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<ReplaceKeysResult>(commandHandle);
-            
-            var commandResult = LibSovrin.sovrin_replace_keys(
+            var taskCompletionSource = new TaskCompletionSource<ReplaceKeysResult>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var commandResult = LibIndy.sovrin_replace_keys(
                 commandHandle,
                 wallet.Handle,
                 did,
                 identityJson,
-                ReplaceKeysResultCallback);
+                _replaceKeysCallback);
 
             CheckResult(commandResult);
 
@@ -169,14 +151,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task with no return value.</returns>
         public static Task StoreTheirDidAsync(Wallet wallet, string identityJson)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
-            
-            var commandResult = LibSovrin.sovrin_store_their_did(
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var commandResult = LibIndy.sovrin_store_their_did(
                 commandHandle,
                 wallet.Handle,
                 identityJson,
-                ResultOnlyCallback);
+                _noValueCallback);
 
             CheckResult(commandResult);
 
@@ -192,15 +174,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns the signed message.</returns>
         public static Task<string> SignAsync(Wallet wallet, string did, string msg)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
-            
-            var commandResult = LibSovrin.sovrin_sign(
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var commandResult = LibIndy.sovrin_sign(
                 commandHandle,
                 wallet.Handle,
                 did,
                 msg,
-                SignResultCallback
+                _signCallback
                 );
 
             CheckResult(commandResult);
@@ -218,16 +200,16 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns true if the message is valid, otherwise false.</returns>
         public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, string signedMsg)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
-            
-            var commandResult = LibSovrin.sovrin_verify_signature(
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var commandResult = LibIndy.sovrin_verify_signature(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
                 did,
                 signedMsg,
-                VerifySignatureResultCallback
+                _verifySignatureCallback
                 );
 
             CheckResult(commandResult);
@@ -246,17 +228,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns an EncryptResult.</returns>
         public static Task<EncryptResult> EncryptAsync(Wallet wallet, Pool pool, string my_did, string did, string msg)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<EncryptResult>(commandHandle);
-            
-            var commandResult = LibSovrin.sovrin_encrypt(
+            var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var commandResult = LibIndy.sovrin_encrypt(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
                 my_did,
                 did,
                 msg,
-                EncryptResultCallback);
+                _encryptCallback);
 
             CheckResult(commandResult);
 
@@ -274,18 +256,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns the decrypted message.</returns>
         public static Task<string> DecryptAsync(Wallet wallet, string my_did, string did, string encryptedMsg, string nonce)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-
-            var commandResult = LibSovrin.sovrin_decrypt(
+            var commandResult = LibIndy.sovrin_decrypt(
                 commandHandle,
                 wallet.Handle,
                 my_did,
                 did,
                 encryptedMsg,
                 nonce,
-                DecryptResultCallback
+                _decryptCallback
                 );
 
             CheckResult(commandResult);

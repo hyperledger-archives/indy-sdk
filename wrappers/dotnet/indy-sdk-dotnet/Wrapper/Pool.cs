@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibSovrin;
+using static Indy.Sdk.Dotnet.LibIndy;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -13,23 +13,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Callback to use when a pool open command has completed.
         /// </summary>
-        private static OpenPoolLedgerResultDelegate OpenPoolLedgerResultCallback { get;  }
-
-        /// <summary>
-        /// Static constructor.
-        /// </summary>
-        static Pool()
+        private static OpenPoolLedgerResultDelegate _openPoolLedgerCallback = (xCommandHandle, err, handle) =>
         {
-            OpenPoolLedgerResultCallback = (xCommandHandle, err, handle) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<Pool>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<Pool>(xCommandHandle);
 
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-                
-                taskCompletionSource.SetResult(new Pool(handle));
-            };
-        }
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            taskCompletionSource.SetResult(new Pool(handle));
+        };
         
         /// <summary>
         /// Creates a new pool configuration.
@@ -39,14 +31,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         public static Task CreatePoolLedgerConfigAsync(string configName, string config)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_create_pool_ledger_config(
+            var result = LibIndy.sovrin_create_pool_ledger_config(
                 commandHandle,
                 configName,
                 config,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
@@ -61,13 +53,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         public static Task DeletePoolLedgerConfigAsync(string configName)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_delete_pool_ledger_config(
+            var result = LibIndy.sovrin_delete_pool_ledger_config(
                 commandHandle,
                 configName,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
@@ -83,14 +75,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An aysnchronous Task that returns a Pool instance.</returns>
         public static Task<Pool> OpenPoolLedgerAsync(string configName, string config)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<Pool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<Pool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_open_pool_ledger(
+            var result = LibIndy.sovrin_open_pool_ledger(
                 commandHandle,
                 configName,
                 config,
-                OpenPoolLedgerResultCallback
+                _openPoolLedgerCallback
                 );
 
             CheckResult(result);
@@ -105,13 +97,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         private static Task RefreshPoolLedgerConfigAsync(IntPtr poolHandle)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_refresh_pool_ledger(
+            var result = LibIndy.sovrin_refresh_pool_ledger(
                 commandHandle,
                 poolHandle,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
@@ -126,13 +118,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         private static Task ClosePoolLedgerAsync(IntPtr poolHandle)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<bool>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_close_pool_ledger(
+            var result = LibIndy.sovrin_close_pool_ledger(
                 commandHandle,
                 poolHandle,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);

@@ -5,7 +5,7 @@ namespace Indy.Sdk.Dotnet
     /// <summary>
     /// Constants used in Sovrin.
     /// </summary>
-    public static class SovrinConstants
+    public static class IndyConstants
     {
         /// <summary>
         /// Role for trustees.

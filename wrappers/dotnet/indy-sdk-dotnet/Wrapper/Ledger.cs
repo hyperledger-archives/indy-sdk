@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibSovrin;
+using static Indy.Sdk.Dotnet.LibIndy;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -16,38 +16,29 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when a command that submits a message to the ledger completes.
         /// </summary>
-        private static SubmitRequestResultDelegate SubmitRequestResultCallback { get; }
+        private static SubmitRequestResultDelegate _submitRequestCallback = (xCommandHandle, err, responseJson) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            taskCompletionSource.SetResult(responseJson);
+        };
 
         /// <summary>
         /// Gets the callback to use when a command that builds a request completes.
         /// </summary>
-        private static BuildRequestResultDelegate BuildRequestResultCallback { get; }
-
-        /// <summary>
-        /// Static initializer
-        /// </summary>
-        static Ledger()
+        private static BuildRequestResultDelegate _buildRequestCallback = (xCommandHandle, err, requestJson) =>
         {
-            SubmitRequestResultCallback = (xCommandHandle, err, responseJson) => 
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
 
-                taskCompletionSource.SetResult(responseJson);
-            };
+            taskCompletionSource.SetResult(requestJson);
+        };
 
-            BuildRequestResultCallback = (xCommandHandle, err, requestJson) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<string>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                taskCompletionSource.SetResult(requestJson);
-            };
-        }
 
         /// <summary>
         /// Signs and submits a request to the ledger.
@@ -58,17 +49,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="requstJson">The request to sign and submit.</param>
         /// <returns>An asynchronous Task that returns the submit result.</returns>
         public static Task<string> SignAndSubmitRequestAsync(Pool pool, Wallet wallet, string submitterDid, string requstJson)
-        {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+        {           
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_sign_and_submit_request(
+            var result = LibIndy.sovrin_sign_and_submit_request(
                 commandHandle,
                 pool.Handle,
                 wallet.Handle,
                 submitterDid,
                 requstJson,                
-                SubmitRequestResultCallback
+                _submitRequestCallback
                 );
 
             CheckResult(result);
@@ -84,14 +75,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task that returns the submit result.</returns>
         public static Task<string> SubmitRequestAsync(Pool pool, string requstJson)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_submit_request(
+            var result = LibIndy.sovrin_submit_request(
                 commandHandle,
                 pool.Handle,
                 requstJson,
-                SubmitRequestResultCallback);
+                _submitRequestCallback);
 
             CheckResult(result);
 
@@ -106,14 +97,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildGetDdoRequestAsync(string submitterDid, string targetDid)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_get_ddo_request(
+            var result = LibIndy.sovrin_build_get_ddo_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
-                BuildRequestResultCallback);
+                _buildRequestCallback);
 
             CheckResult(result);
 
@@ -131,17 +122,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildNymRequestAsync(string submitterDid, string targetDid, string verKey, string alias, string role)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_nym_request(
+            var result = LibIndy.sovrin_build_nym_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
                 verKey,
                 alias,
                 role,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -160,17 +151,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildAttribRequestAsync(string submitterDid, string targetDid, string hash, string raw, string enc)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_attrib_request(
+            var result = LibIndy.sovrin_build_attrib_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
                 hash,
                 raw,
                 enc,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -187,15 +178,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildGetAttribRequestAsync(string submitterDid, string targetDid, string data)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_get_attrib_request(
+            var result = LibIndy.sovrin_build_get_attrib_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
                 data,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -211,14 +202,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildGetNymRequestAsync(string submitterDid, string targetDid)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_get_nym_request(
+            var result = LibIndy.sovrin_build_get_nym_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -234,14 +225,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildSchemaRequestAsync(string submitterDid, string data)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_schema_request(
+            var result = LibIndy.sovrin_build_schema_request(
                 commandHandle,
                 submitterDid,
                 data,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -258,15 +249,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildGetSchemaRequestAsync(string submitterDid, string dest, string data)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_get_schema_request(
+            var result = LibIndy.sovrin_build_get_schema_request(
                 commandHandle,
                 submitterDid,
                 dest,
                 data,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -284,16 +275,16 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string data)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_claim_def_txn(
+            var result = LibIndy.sovrin_build_claim_def_txn(
                 commandHandle,
                 submitterDid,
                 xref,
                 signatureType,
                 data,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -311,16 +302,16 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildGetClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string origin)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_get_claim_def_txn(
+            var result = LibIndy.sovrin_build_get_claim_def_txn(
                 commandHandle,
                 submitterDid,
                 xref,
                 signatureType,
                 origin,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);
@@ -337,15 +328,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchonous Task that returns the request.</returns>
         public static Task<string> BuildNodeRequestAsync(string submitterDid, string targetDid, string data)
         {
-            var commandHandle = GetNextCommandHandle();
-            var taskCompletionSource = CreateTaskCompletionSourceForCommand<string>(commandHandle);
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_build_node_request(
+            var result = LibIndy.sovrin_build_node_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
                 data,
-                BuildRequestResultCallback
+                _buildRequestCallback
                 );
 
             CheckResult(result);

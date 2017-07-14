@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibSovrin;
+using static Indy.Sdk.Dotnet.LibIndy;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -15,38 +15,29 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback that will be used when an Agent connection is started.
         /// </summary>
-        private static AgentConnectionCreatedDelegate AgentConnectCallback { get; }
+        private static AgentConnectionCreatedDelegate _agentConnectCallback = (xCommandHandle, err, handle) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<Connection>(xCommandHandle);
+
+            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+                return;
+
+            taskCompletionSource.SetResult(new Connection(handle));
+        };
 
         /// <summary>
         /// Gets the callback that will be used when an Agent listener is started.
         /// </summary>
-        private static AgentListenerCreatedDelegate AgentListenCallback { get; }
-
-        /// <summary>
-        /// Initializes Agent callbacks.
-        /// </summary>
-        static Agent()
-        {
-            AgentConnectCallback = (xCommandHandle, err, handle) =>
+        private static AgentListenerCreatedDelegate _agentListenCallback = (xCommandHandle, err, handle) =>
             {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<Connection>(xCommandHandle);
-
-                if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
-                    return;
-
-                taskCompletionSource.SetResult(new Connection(handle));
-            };
-            
-            AgentListenCallback = (xCommandHandle, err, handle) =>
-            {
-                var taskCompletionSource = GetTaskCompletionSourceForCommand<Listener>(xCommandHandle);
+                var taskCompletionSource = RemoveTaskCompletionSource<Listener>(xCommandHandle);
 
                 if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
                     return;
 
                 taskCompletionSource.SetResult(new Listener(handle));
             };
-        }
+
 
         /// <summary>
         /// Creates a connection to an agent.
@@ -59,20 +50,21 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task that returns an Agent.Connection instance.</returns>
         public static Task<Connection> AgentConnectAsync(Pool pool, Wallet wallet, string senderDid, string receiverDid, AgentMessageReceivedDelegate messageCallback)
         {
-            var promise = new TaskCompletionSource<Connection>();
+            var taskCompletionSource = new TaskCompletionSource<Connection>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_connect(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_connect(
+                commandHandle,
                 pool.Handle,
                 wallet.Handle,
                 senderDid,
                 receiverDid,
-                AgentConnectCallback, 
+                _agentConnectCallback, 
                 messageCallback);
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -84,18 +76,19 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task that returns an Agent.Listener instance.</returns>
         public static Task<Listener> AgentListenAsync(string endpoint, AgentListenConnectionResultDelegate connectionCallback, AgentMessageReceivedDelegate messageCallback)
         {
-            var promise = new TaskCompletionSource<Listener>();
+            var taskCompletionSource = new TaskCompletionSource<Listener>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_listen(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_listen(
+                commandHandle,
                 endpoint,
-                AgentListenCallback,
+                _agentListenCallback,
                 connectionCallback,
                 messageCallback);
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -108,20 +101,21 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns no value.</returns>
         private static Task AgentAddIdentityAsync(Listener listener, Pool pool, Wallet wallet, string did)
         {
-            var promise = new TaskCompletionSource<bool>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_add_identity(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_add_identity(
+                commandHandle,
                 listener.Handle,
                 pool.Handle,
                 wallet.Handle,
                 did,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -133,19 +127,20 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns no value.</returns>
         private static Task AgentRemoveIdentityAsync(Listener listener, Wallet wallet, string did)
         {
-            var promise = new TaskCompletionSource<bool>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_remove_identity(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_remove_identity(
+                commandHandle,
                 listener.Handle,
                 wallet.Handle,
                 did,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -156,18 +151,19 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns no value.</returns>
         private static Task AgentSendAsync(Connection connection, string message)
         {
-            var promise = new TaskCompletionSource<bool>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_send(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_send(
+                commandHandle,
                 connection.Handle,
                 message,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -177,17 +173,18 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns no value.</returns>
         private static Task AgentCloseConnectionAsync(Connection connection)
         {
-            var promise = new TaskCompletionSource<bool>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_close_connection(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_close_connection(
+                commandHandle,
                 connection.Handle,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -197,17 +194,18 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns no value.</returns>
         private static Task AgentCloseListenerAsync(Listener listener)
         {
-            var promise = new TaskCompletionSource<bool>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibSovrin.sovrin_agent_close_listener(
-                GetNextCommandHandle(),
+            var result = LibIndy.sovrin_agent_close_listener(
+                commandHandle,
                 listener.Handle,
-                ResultOnlyCallback
+                _noValueCallback
                 );
 
             CheckResult(result);
 
-            return promise.Task;
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
