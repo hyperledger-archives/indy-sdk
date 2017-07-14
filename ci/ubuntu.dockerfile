@@ -7,6 +7,7 @@ RUN apt-get update && \
       pkg-config \
       libzmq3-dev \
       libssl-dev \
+      libgmp3-dev \
       curl \
       build-essential \
       libsqlite3-dev \
