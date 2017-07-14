@@ -1,45 +1,56 @@
 package org.hyperledger.indy.sdk;
 
-import java.io.File;
-
 import org.hyperledger.indy.sdk.agent.Agent;
 import org.hyperledger.indy.sdk.agent.Agent.Connection;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
 import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
 import org.hyperledger.indy.sdk.agent.AgentObservers.ListenerObserver;
 import org.hyperledger.indy.sdk.agent.AgentObservers.MessageObserver;
+import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
+import org.hyperledger.indy.sdk.signus.Signus;
+import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
+import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.junit.Assert;
+import org.junit.Test;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertNotNull;
 
-public class AgentTest extends TestCase {
+public class AgentTest extends IndyIntegrationTest {
 
-	private Pool pool;
+	@Test
+	public void testAgentDemo() throws Exception {
+		String endpoint = "127.0.0.1:9801";
 
-	@Override
-	protected void setUp() throws Exception {
+		Pool pool = PoolUtils.createAndOpenPoolLedger();
+		assertNotNull(pool);
+		openedPools.add(pool);
 
-		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
+		Wallet.createWallet("test" /* FIXME */, "trustee_wallet", null, null, null).get();
+		Wallet.createWallet("test" /* FIXME */, "listener_wallet", null, null, null).get();
+		Wallet trusteeWallet = Wallet.openWallet("trustee_wallet", null, null).get();
+		assertNotNull(trusteeWallet);
+		Wallet listenerWallet = Wallet.openWallet("listener_wallet", null, null).get();
+		assertNotNull(listenerWallet);
+		Wallet senderWallet = trusteeWallet;
 
-		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
-		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions.toJson()).get();
-	}
+		SignusJSONParameters.CreateAndStoreMyDidJSONParameter myDidJSONParameter
+				= new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, IndyIntegrationTest.TRUSTEE_SEED, null, false);
+		SignusResults.CreateAndStoreMyDidResult trustee = Signus.createAndStoreMyDid(trusteeWallet, myDidJSONParameter.toJson()).get();
 
-	@Override
-	protected void tearDown() throws Exception {
+		SignusResults.CreateAndStoreMyDidResult listener = Signus.createAndStoreMyDid(listenerWallet, "{}").get();
 
-		this.pool.closePoolLedger();
-	}
+		SignusResults.CreateAndStoreMyDidResult sender = trustee;
 
-	public void testAgent() throws Exception {
+		String listenerNymJson = Ledger.buildNymRequest(trustee.getDid(), listener.getDid(), listener.getVerkey(), null, null).get();
 
-		Pool pool = Pool.openPoolLedger("myconfig", null).get();
-		Wallet wallet = Wallet.openWallet("mywallet", null, null).get();
-		Assert.assertNotNull(pool);
-		Assert.assertNotNull(wallet);
+		Ledger.signAndSubmitRequest(pool, trusteeWallet, trustee.getDid(), listenerNymJson).get();
+
+		String listenerAttribJson = Ledger.buildAttribRequest(listener.getDid(), listener.getDid(), null,
+				String.format("{\"endpoint\":{\"ha\":\"%s\",\"verkey\":\"%s\"}}", endpoint, listener.getPk()), null).get();
+
+		Ledger.signAndSubmitRequest(pool, listenerWallet, listener.getDid(), listenerAttribJson).get();
 
 		final MessageObserver messageObserver = new MessageObserver() {
 
@@ -61,16 +72,23 @@ public class AgentTest extends TestCase {
 
 		final ListenerObserver listenerObserver = new ListenerObserver() {
 
-			public ConnectionObserver onListener(Listener listener) {
+			public ConnectionObserver onListener(Listener aListener) {
 
-				System.out.println("New listener " + listener);
+				System.out.println("New listener " + aListener);
+				try {
+					Agent.agentAddIdentity(aListener, pool, listenerWallet, listener.getDid());
+				} catch (IndyException e) {
+					e.printStackTrace();
+				}
 
 				return connectionObserver;
 			}
 		};
 
-		Agent.agentConnect(pool, wallet, "did1", "did2", connectionObserver);
+		Agent.agentListen(endpoint, listenerObserver);
 
-		Agent.agentListen("endpoint", listenerObserver);
+		Agent.agentConnect(pool, senderWallet, sender.getDid(), listener.getDid(), connectionObserver);
+
+		Thread.sleep(500); /* FIXME */
 	}
 }
