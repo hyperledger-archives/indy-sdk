@@ -65,3 +65,20 @@ async def open_wallet(name: str,
 
     logger.debug("open_wallet: <<< res: %s", res)
     return res
+
+
+async def close_wallet(handle: int):
+    logger = logging.getLogger(__name__)
+    logger.debug("close_wallet: >>> handle: %i", handle)
+
+    if not hasattr(close_wallet, "cb"):
+        logger.debug("close_wallet: Creating callback")
+        close_wallet.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_handle = c_int32(handle)
+
+    await do_call('indy_close_wallet',
+                  close_wallet.cb,
+                  c_handle)
+
+    logger.debug("close_wallet: <<<")
