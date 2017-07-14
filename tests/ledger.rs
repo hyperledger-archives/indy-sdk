@@ -775,7 +775,7 @@ mod high_cases {
 
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert_eq!(get_txn_response.result.data, "{}".to_string());
+            assert_eq!(get_txn_response.result.data, "{}".to_string()); /* FIXME: unify with other GET_ transactions (data.is_none()) */
 
             TestUtils::cleanup_storage();
         }
