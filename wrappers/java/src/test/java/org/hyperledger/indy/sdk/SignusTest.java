@@ -17,7 +17,7 @@ public class SignusTest extends TestCase {
 
 	private Pool pool;
 	private Wallet wallet;
-	
+
 	@Override
 	protected void setUp() throws Exception {
 
@@ -38,7 +38,7 @@ public class SignusTest extends TestCase {
 
 	public void testSignus() throws Exception {
 
-		Future<CreateAndStoreMyDidResult> future1 = Signus.createAndStoreMyDid(this.wallet, null);
+		Future<CreateAndStoreMyDidResult> future1 = Signus.createAndStoreMyDid(this.wallet, "{}");
 		CreateAndStoreMyDidResult result1 = future1.get();
 		Assert.assertNotNull(result1);
 		String did1 = result1.getDid();
