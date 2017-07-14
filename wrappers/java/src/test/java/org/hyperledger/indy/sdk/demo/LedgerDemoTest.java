@@ -22,26 +22,25 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 
 		// 1. Create ledger config from genesis txn file
 		String poolName = PoolUtils.createPoolLedgerConfig();
+		
 		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
-
-		// 2. Open pool ledger
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
-		// 3. Create and Open My Wallet
+		// 2. Create and Open My Wallet
 		Wallet.createWallet(poolName, "myWallet", "default", null, null).get();
 		Wallet myWallet = Wallet.openWallet("myWallet", null, null).get();
 
-		// 4. Create and Open Trustee Wallet
+		// 3. Create and Open Trustee Wallet
 		Wallet.createWallet(poolName, "theirWallet", "default", null, null).get();
 		Wallet trusteeWallet = Wallet.openWallet("theirWallet", null, null).get();
 
-		// 5. Create My Did
+		// 4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, "{}").get();
 		assertNotNull(createMyDidResult);
 		String myDid = createMyDidResult.getDid();
 		String myVerkey = createMyDidResult.getVerkey();
 
-		// 6. Create Did from Trustee1 seed
+		// 5. Create Did from Trustee1 seed
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
 
@@ -49,11 +48,11 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		assertNotNull(createTheirDidResult);
 		String trusteeDid = createTheirDidResult.getDid();
 
-		// 7. Build Nym Request
+		// 6. Build Nym Request
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
 		assertNotNull(nymRequest);
 
-		// 8. Trustee Sign Nym Request
+		// 7. Trustee Sign Nym Request
 		String nymResponseJson = Ledger.signAndSubmitRequest(pool, trusteeWallet, trusteeDid, nymRequest).get();
 		assertNotNull(nymResponseJson);
 
@@ -62,15 +61,15 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		assertEquals(myDid, nymResponse.getJSONObject("result").getString("dest"));
 		assertEquals(myVerkey, nymResponse.getJSONObject("result").getString("verkey"));
 
-		// 9. Close and delete My Wallet
+		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
 		Wallet.deleteWallet("myWallet", null).get();
 
-		// 10. Close and delete Their Wallet
+		// 9. Close and delete Their Wallet
 		trusteeWallet.closeWallet().get();
 		Wallet.deleteWallet("theirWallet", null).get();
 
-		// 11. Close Pool
+		// 10. Close Pool
 		pool.closePoolLedger().get();
 	}
 }
