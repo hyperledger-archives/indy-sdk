@@ -20,11 +20,10 @@ RUN apt-get update && \
       apt-transport-https \
       ca-certificates
 
-#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
-#RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
-#RUN apt-get update -y
-#RUN apt-get install -y \
-#	python3-charm-crypto
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
+RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
+RUN apt-get update -y && apt-get install -y \
+	python3-charm-crypto
 
 RUN pip3 install -U \
 	pip \
@@ -53,15 +52,12 @@ RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 WORKDIR /home/indy
 
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
-RUN virtualenv -p python3.5 /home/indy/
-#RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
-#RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/lib/python3.5/site-packages/charm
-RUN /bin/bash /home/indy/indy-anoncreds/setup-charm.sh
+RUN virtualenv -p python3.5 /home/indy/test
+RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/test/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
+RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/test/lib/python3.5/site-packages/charm
 USER root
-
-RUN pip3 install -U \
-	git+https://github.com/hyperledger/indy-anoncreds.git
-
-RUN ln -sf /home/indy/bin/python /usr/local/bin/python
-RUN ln -sf /home/indy/bin/pip /usr/local/bin/pip
+RUN ln -sf /home/indy/test/bin/python /usr/local/bin/python3
+RUN ln -sf /home/indy/test/bin/pip /usr/local/bin/pip3
 USER indy
+RUN pip3 install \
+	/home/indy/indy-anoncreds
