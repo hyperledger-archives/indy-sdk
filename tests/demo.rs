@@ -139,12 +139,12 @@ fn anoncreds_demo_works() {
     //1. Create Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
-                             CString::new(pool_name).unwrap().as_ptr(),
-                             CString::new(wallet_name).unwrap().as_ptr(),
-                             CString::new(xtype).unwrap().as_ptr(),
-                             null(),
-                             null(),
-                             create_wallet_callback);
+                           CString::new(pool_name).unwrap().as_ptr(),
+                           CString::new(wallet_name).unwrap().as_ptr(),
+                           CString::new(xtype).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = create_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -153,10 +153,10 @@ fn anoncreds_demo_works() {
     //2. Open Issuer Wallet. Gets Issuer wallet handle
     let err =
         indy_open_wallet(open_wallet_command_handle,
-                           CString::new(wallet_name).unwrap().as_ptr(),
-                           null(),
-                           null(),
-                           open_wallet_callback);
+                         CString::new(wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, wallet_handle) = open_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -176,12 +176,12 @@ fn anoncreds_demo_works() {
     // 3. Issuer create Claim Definition for Schema
     let err =
         indy_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
-                                                 wallet_handle,
-                                                 CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                                 CString::new(schema.clone()).unwrap().as_ptr(),
-                                                 null(),
-                                                 false,
-                                                 create_claim_definition_callback);
+                                               wallet_handle,
+                                               CString::new(issuer_did.clone()).unwrap().as_ptr(),
+                                               CString::new(schema.clone()).unwrap().as_ptr(),
+                                               null(),
+                                               false,
+                                               create_claim_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -221,9 +221,9 @@ fn anoncreds_demo_works() {
     // 5. Prover create Master Secret
     let err =
         indy_prover_create_master_secret(prover_create_master_secret_command_handle,
-                                           wallet_handle,
-                                           CString::new(master_secret_name).unwrap().as_ptr(),
-                                           prover_create_master_secret_callback);
+                                         wallet_handle,
+                                         CString::new(master_secret_name).unwrap().as_ptr(),
+                                         prover_create_master_secret_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -235,12 +235,12 @@ fn anoncreds_demo_works() {
     // 6. Prover create Claim Request
     let err =
         indy_prover_create_and_store_claim_req(prover_create_claim_req_command_handle,
-                                                 wallet_handle,
-                                                 CString::new(prover_did).unwrap().as_ptr(),
-                                                 CString::new(claim_offer_json).unwrap().as_ptr(),
-                                                 CString::new(claim_def_json.clone()).unwrap().as_ptr(),
-                                                 CString::new(master_secret_name).unwrap().as_ptr(),
-                                                 prover_create_claim_req_callback);
+                                               wallet_handle,
+                                               CString::new(prover_did).unwrap().as_ptr(),
+                                               CString::new(claim_offer_json).unwrap().as_ptr(),
+                                               CString::new(claim_def_json.clone()).unwrap().as_ptr(),
+                                               CString::new(master_secret_name).unwrap().as_ptr(),
+                                               prover_create_claim_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_req_json) = prover_create_claim_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -257,12 +257,12 @@ fn anoncreds_demo_works() {
     // 7. Issuer create Claim for Claim Request
     let err =
         indy_issuer_create_claim(issuer_create_claim_command_handle,
-                                   wallet_handle,
-                                   CString::new(claim_req_json).unwrap().as_ptr(),
-                                   CString::new(claim_json).unwrap().as_ptr(),
-                                   -1,
-                                   -1,
-                                   issuer_create_claim_callback);
+                                 wallet_handle,
+                                 CString::new(claim_req_json).unwrap().as_ptr(),
+                                 CString::new(claim_json).unwrap().as_ptr(),
+                                 -1,
+                                 -1,
+                                 issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -272,9 +272,9 @@ fn anoncreds_demo_works() {
     // 7. Prover process and store Claim
     let err =
         indy_prover_store_claim(prover_store_claim_command_handle,
-                                  wallet_handle,
-                                  CString::new(xclaim_json).unwrap().as_ptr(),
-                                  prover_store_claim_callback);
+                                wallet_handle,
+                                CString::new(xclaim_json).unwrap().as_ptr(),
+                                prover_store_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = prover_store_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -291,9 +291,9 @@ fn anoncreds_demo_works() {
     // 8. Prover gets Claims for Proof Request
     let err =
         indy_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_handle,
-                                               wallet_handle,
-                                               CString::new(proof_req_json.clone()).unwrap().as_ptr(),
-                                               prover_get_claims_for_proof_req_callback);
+                                             wallet_handle,
+                                             CString::new(proof_req_json.clone()).unwrap().as_ptr(),
+                                             prover_get_claims_for_proof_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -320,14 +320,14 @@ fn anoncreds_demo_works() {
     // 9. Prover create Proof for Proof Request
     let err =
         indy_prover_create_proof(prover_create_proof_handle,
-                                   wallet_handle,
-                                   CString::new(proof_req_json.clone()).unwrap().as_ptr(),
-                                   CString::new(requested_claims_json).unwrap().as_ptr(),
-                                   CString::new(schemas_json.clone()).unwrap().as_ptr(),
-                                   CString::new(master_secret_name).unwrap().as_ptr(),
-                                   CString::new(claim_defs_json.clone()).unwrap().as_ptr(),
-                                   CString::new(revoc_regs_jsons.clone()).unwrap().as_ptr(),
-                                   prover_create_proof_callback);
+                                 wallet_handle,
+                                 CString::new(proof_req_json.clone()).unwrap().as_ptr(),
+                                 CString::new(requested_claims_json).unwrap().as_ptr(),
+                                 CString::new(schemas_json.clone()).unwrap().as_ptr(),
+                                 CString::new(master_secret_name).unwrap().as_ptr(),
+                                 CString::new(claim_defs_json.clone()).unwrap().as_ptr(),
+                                 CString::new(revoc_regs_jsons.clone()).unwrap().as_ptr(),
+                                 prover_create_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, proof_json) = prover_create_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -337,12 +337,12 @@ fn anoncreds_demo_works() {
     // 10. Verifier verify proof
     let err =
         indy_verifier_verify_proof(verifier_verify_proof_handle,
-                                     CString::new(proof_req_json).unwrap().as_ptr(),
-                                     CString::new(proof_json).unwrap().as_ptr(),
-                                     CString::new(schemas_json).unwrap().as_ptr(),
-                                     CString::new(claim_defs_json).unwrap().as_ptr(),
-                                     CString::new(revoc_regs_jsons).unwrap().as_ptr(),
-                                     verifier_verify_proof_callback);
+                                   CString::new(proof_req_json).unwrap().as_ptr(),
+                                   CString::new(proof_json).unwrap().as_ptr(),
+                                   CString::new(schemas_json).unwrap().as_ptr(),
+                                   CString::new(claim_defs_json).unwrap().as_ptr(),
+                                   CString::new(revoc_regs_jsons).unwrap().as_ptr(),
+                                   verifier_verify_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, result) = verifier_verify_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -400,18 +400,18 @@ fn ledger_demo_works() {
     PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
     let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
     let err = indy_create_pool_ledger_config(create_command_handle,
-                                               c_pool_name.as_ptr(),
-                                               pool_config.as_ptr(),
-                                               create_callback);
+                                             c_pool_name.as_ptr(),
+                                             pool_config.as_ptr(),
+                                             create_callback);
     assert_eq!(err, ErrorCode::Success);
     let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
 
     // 2. Open pool ledger
     let err = indy_open_pool_ledger(open_command_handle,
-                                      c_pool_name.as_ptr(),
-                                      null(),
-                                      open_callback);
+                                    c_pool_name.as_ptr(),
+                                    null(),
+                                    open_callback);
     assert_eq!(err, ErrorCode::Success);
     let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
@@ -420,12 +420,12 @@ fn ledger_demo_works() {
     // 3. Create My Wallet
     let err =
         indy_create_wallet(create_my_wallet_command_handle,
-                             CString::new(pool_name).unwrap().as_ptr(),
-                             CString::new(my_wallet_name).unwrap().as_ptr(),
-                             CString::new(wallet_type).unwrap().as_ptr(),
-                             null(),
-                             null(),
-                             create_my_wallet_callback);
+                           CString::new(pool_name).unwrap().as_ptr(),
+                           CString::new(my_wallet_name).unwrap().as_ptr(),
+                           CString::new(wallet_type).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = create_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -434,10 +434,10 @@ fn ledger_demo_works() {
     // 4. Open My Wallet. Gets My wallet handle
     let err =
         indy_open_wallet(open_my_wallet_command_handle,
-                           CString::new(my_wallet_name).unwrap().as_ptr(),
-                           null(),
-                           null(),
-                           open_my_wallet_callback);
+                         CString::new(my_wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, my_wallet_handle) = open_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -447,12 +447,12 @@ fn ledger_demo_works() {
     // 5. Create Their Wallet
     let err =
         indy_create_wallet(create_their_wallet_command_handle,
-                             CString::new(pool_name).unwrap().as_ptr(),
-                             CString::new(their_wallet_name).unwrap().as_ptr(),
-                             CString::new(wallet_type).unwrap().as_ptr(),
-                             null(),
-                             null(),
-                             create_their_wallet_callback);
+                           CString::new(pool_name).unwrap().as_ptr(),
+                           CString::new(their_wallet_name).unwrap().as_ptr(),
+                           CString::new(wallet_type).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = create_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -461,10 +461,10 @@ fn ledger_demo_works() {
     // 6. Open Their Wallet. Gets Their wallet handle
     let err =
         indy_open_wallet(open_their_wallet_command_handle,
-                           CString::new(their_wallet_name).unwrap().as_ptr(),
-                           null(),
-                           null(),
-                           open_their_wallet_callback);
+                         CString::new(their_wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -474,9 +474,9 @@ fn ledger_demo_works() {
     let my_did_json = "{}";
     let err =
         indy_create_and_store_my_did(create_and_store_my_did_command_handle,
-                                       my_wallet_handle,
-                                       CString::new(my_did_json).unwrap().as_ptr(),
-                                       create_and_store_my_did_callback);
+                                     my_wallet_handle,
+                                     CString::new(my_did_json).unwrap().as_ptr(),
+                                     create_and_store_my_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -489,9 +489,9 @@ fn ledger_demo_works() {
     let their_did_json = r#"{"seed":"000000000000000000000000Trustee1"}"#;
     let err =
         indy_create_and_store_my_did(create_and_store_their_did_command_handle,
-                                       their_wallet_handle,
-                                       CString::new(their_did_json).unwrap().as_ptr(),
-                                       create_and_store_their_did_callback);
+                                     their_wallet_handle,
+                                     CString::new(their_did_json).unwrap().as_ptr(),
+                                     create_and_store_their_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, their_did, their_verkey, their_pk) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -508,9 +508,9 @@ fn ledger_demo_works() {
                                       their_did, their_pk, their_verkey);
     let err =
         indy_store_their_did(store_their_did_command_handle,
-                               my_wallet_handle,
-                               CString::new(their_identity_json).unwrap().as_ptr(),
-                               store_their_did_callback);
+                             my_wallet_handle,
+                             CString::new(their_identity_json).unwrap().as_ptr(),
+                             store_their_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -533,11 +533,11 @@ fn ledger_demo_works() {
     let req = CString::new(msg).unwrap();
     let did_for_sign = CString::new(their_did).unwrap();
     let err = indy_sign_and_submit_request(send_command_handle,
-                                             pool_handle,
-                                             their_wallet_handle,
-                                             did_for_sign.as_ptr(),
-                                             req.as_ptr(),
-                                             send_callback);
+                                           pool_handle,
+                                           their_wallet_handle,
+                                           did_for_sign.as_ptr(),
+                                           req.as_ptr(),
+                                           send_callback);
     assert_eq!(err, ErrorCode::Success);
     let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
@@ -560,9 +560,9 @@ fn ledger_demo_works() {
     let request = serde_json::to_string(&get_nym_txn).unwrap();
     let req = CString::new(request).unwrap();
     let err = indy_submit_request(get_nym_command_handle,
-                                    pool_handle,
-                                    req.as_ptr(),
-                                    get_nym_callback);
+                                  pool_handle,
+                                  req.as_ptr(),
+                                  get_nym_callback);
     assert_eq!(err, ErrorCode::Success);
     let (err, resp) = get_nym_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
@@ -675,12 +675,12 @@ fn signus_demo_works() {
     //1. Create My Wallet
     let err =
         indy_create_wallet(create_my_wallet_command_handle,
-                             CString::new(pool_name).unwrap().as_ptr(),
-                             CString::new(my_wallet_name).unwrap().as_ptr(),
-                             CString::new(xtype).unwrap().as_ptr(),
-                             null(),
-                             null(),
-                             create_my_wallet_callback);
+                           CString::new(pool_name).unwrap().as_ptr(),
+                           CString::new(my_wallet_name).unwrap().as_ptr(),
+                           CString::new(xtype).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = create_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -689,10 +689,10 @@ fn signus_demo_works() {
     //2. Open My Wallet. Gets My wallet handle
     let err =
         indy_open_wallet(open_my_wallet_command_handle,
-                           CString::new(my_wallet_name).unwrap().as_ptr(),
-                           null(),
-                           null(),
-                           open_my_wallet_callback);
+                         CString::new(my_wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, my_wallet_handle) = open_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -702,12 +702,12 @@ fn signus_demo_works() {
     //3. Create Their Wallet
     let err =
         indy_create_wallet(create_their_wallet_command_handle,
-                             CString::new(pool_name).unwrap().as_ptr(),
-                             CString::new(their_wallet_name).unwrap().as_ptr(),
-                             CString::new(xtype).unwrap().as_ptr(),
-                             null(),
-                             null(),
-                             create_their_wallet_callback);
+                           CString::new(pool_name).unwrap().as_ptr(),
+                           CString::new(their_wallet_name).unwrap().as_ptr(),
+                           CString::new(xtype).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = create_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -716,10 +716,10 @@ fn signus_demo_works() {
     //4. Open Their Wallet. Gets Their wallet handle
     let err =
         indy_open_wallet(open_their_wallet_command_handle,
-                           CString::new(their_wallet_name).unwrap().as_ptr(),
-                           null(),
-                           null(),
-                           open_their_wallet_callback);
+                         CString::new(their_wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -729,9 +729,9 @@ fn signus_demo_works() {
     let my_did_json = "{}";
     let err =
         indy_create_and_store_my_did(create_and_store_my_did_command_handle,
-                                       my_wallet_handle,
-                                       CString::new(my_did_json).unwrap().as_ptr(),
-                                       create_and_store_my_did_callback);
+                                     my_wallet_handle,
+                                     CString::new(my_did_json).unwrap().as_ptr(),
+                                     create_and_store_my_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -744,9 +744,9 @@ fn signus_demo_works() {
     let their_did_json = "{}";
     let err =
         indy_create_and_store_my_did(create_and_store_their_did_command_handle,
-                                       their_wallet_handle,
-                                       CString::new(their_did_json).unwrap().as_ptr(),
-                                       create_and_store_their_did_callback);
+                                     their_wallet_handle,
+                                     CString::new(their_did_json).unwrap().as_ptr(),
+                                     create_and_store_their_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, their_did, their_verkey, their_pk) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -763,9 +763,9 @@ fn signus_demo_works() {
                                       their_did, their_pk, their_verkey);
     let err =
         indy_store_their_did(store_their_did_command_handle,
-                               my_wallet_handle,
-                               CString::new(their_identity_json).unwrap().as_ptr(),
-                               store_their_did_callback);
+                             my_wallet_handle,
+                             CString::new(their_identity_json).unwrap().as_ptr(),
+                             store_their_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -783,10 +783,10 @@ fn signus_demo_works() {
     }"#;
     let err =
         indy_sign(sign_command_handle,
-                    their_wallet_handle,
-                    CString::new(their_did.clone()).unwrap().as_ptr(),
-                    CString::new(message.clone()).unwrap().as_ptr(),
-                    sign_callback);
+                  their_wallet_handle,
+                  CString::new(their_did.clone()).unwrap().as_ptr(),
+                  CString::new(message.clone()).unwrap().as_ptr(),
+                  sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, signed_msg) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -796,11 +796,11 @@ fn signus_demo_works() {
     // 9. I Verify message
     let err =
         indy_verify_signature(verify_command_handle,
-                                my_wallet_handle,
-                                1,
-                                CString::new(their_did).unwrap().as_ptr(),
-                                CString::new(signed_msg).unwrap().as_ptr(),
-                                verify_callback);
+                              my_wallet_handle,
+                              1,
+                              CString::new(their_did).unwrap().as_ptr(),
+                              CString::new(signed_msg).unwrap().as_ptr(),
+                              verify_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
