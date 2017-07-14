@@ -26,7 +26,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerCreateAndStoreClaimDefCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String claim_def_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -39,7 +39,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerCreateAndStoreRevocRegCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_json, String revoc_reg_uuid) {
 
 			CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = (CompletableFuture<IssuerCreateAndStoreRevocRegResult>) removeFuture(xcommand_handle);
@@ -52,7 +52,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerCreateClaimCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_update_json, String xclaim_json) {
 
 			CompletableFuture<IssuerCreateClaimResult> future = (CompletableFuture<IssuerCreateClaimResult>) removeFuture(xcommand_handle);
@@ -65,7 +65,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerRevokeClaimCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_update_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -78,7 +78,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback proverStoreClaimOfferCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -91,7 +91,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback proverGetClaimOffersCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String claim_offers_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -101,6 +101,86 @@ public class Anoncreds extends IndyJava.API {
 			future.complete(result);
 		}
 	};
+
+	private static Callback proverCreateMasterSecretCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback proverCreateClaimReqCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String claim_req_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = claim_req_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback proverStoreClaimCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback proverGetClaimsForProofReqCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String claimsJson) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = claimsJson;
+			future.complete(result);
+		}
+	};
+
+	private static Callback proverCreateProofCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String proofJson) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = proofJson;
+			future.complete(result);
+		}
+	};
+
+	private static Callback verifierVerifyProofCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Boolean valid) {
+
+			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Boolean result = valid;
+			future.complete(result);
+		}
+	};
+
+
 	
 	/*
 	 * STATIC METHODS
@@ -238,6 +318,146 @@ public class Anoncreds extends IndyJava.API {
 				walletHandle, 
 				filterJson,
 				proverGetClaimOffersCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<Void> proverCreateMasterSecret(
+			Wallet wallet,
+			String masterSecretName) throws IndyException {
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_create_master_secret(
+				commandHandle,
+				walletHandle,
+				masterSecretName,
+				proverCreateMasterSecretCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> proverCreateClaimReq(
+			Wallet wallet,
+			String proverDid,
+			String claimOfferJson,
+			String claimDefJson,
+			String masterSecretName) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_create_and_store_claim_req(
+				commandHandle,
+				walletHandle,
+				proverDid,
+				claimOfferJson,
+				claimDefJson,
+				masterSecretName,
+				proverCreateClaimReqCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<Void> proverStoreClaim(
+			Wallet wallet,
+			String claim) throws IndyException {
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_store_claim(
+				commandHandle,
+				walletHandle,
+				claim,
+				proverStoreClaimCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> proverGetClaimsForProofReq(
+			Wallet wallet,
+			String proofRequest) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_get_claims_for_proof_req(
+				commandHandle,
+				walletHandle,
+				proofRequest,
+				proverGetClaimsForProofReqCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> proverCreateProof(
+			Wallet wallet,
+			String proofRequest,
+			String requestedClaims,
+			String schemas,
+			String masterSecret,
+			String claimDefs,
+			String revocRegs) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_create_proof(
+				commandHandle,
+				walletHandle,
+				proofRequest,
+				requestedClaims,
+				schemas,
+				masterSecret,
+				claimDefs,
+				revocRegs,
+				proverCreateProofCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<Boolean> verifierVerifyProof(
+			String proofRequest,
+			String proof,
+			String schemas,
+			String claimDefs,
+			String revocRegs) throws IndyException {
+
+		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_verifier_verify_proof(
+				commandHandle,
+				proofRequest,
+				proof,
+				schemas,
+				claimDefs,
+				revocRegs,
+				verifierVerifyProofCb);
 
 		checkResult(result);
 

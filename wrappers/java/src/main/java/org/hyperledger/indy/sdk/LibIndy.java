@@ -72,7 +72,7 @@ public abstract class LibIndy {
 		public int indy_prover_get_claims(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_claims_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_claims_json, String schemas_json, String master_secret_name, String claim_defs_json, String revoc_regs_json, Callback cb);
-		public int indy_verifier_verify_proof(int command_handle, int wallet_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
+		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
 
 		// agent.rs
 
