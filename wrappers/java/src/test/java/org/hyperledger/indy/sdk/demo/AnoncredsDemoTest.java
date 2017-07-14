@@ -57,7 +57,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//5. Prover create Master Secret
 		String masterSecret = "masterSecretName";
-		Anoncreds.proverCretaMasterSecret(proverWallet, masterSecret).get();
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
 
 		//6. Prover store Claim Offer
 		String claimOffer = String.format("{\"issuer_did\":\"%s\", \"schema_seq_no\":%d}", issuerDid, 1);

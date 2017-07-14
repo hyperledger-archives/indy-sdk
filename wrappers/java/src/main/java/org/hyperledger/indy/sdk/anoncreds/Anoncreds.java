@@ -324,7 +324,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<Void> proverCretaMasterSecret(
+	public static CompletableFuture<Void> proverCreateMasterSecret(
 			Wallet wallet,
 			String masterSecretName) throws IndyException {
 
