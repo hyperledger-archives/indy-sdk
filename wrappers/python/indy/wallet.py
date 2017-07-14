@@ -82,3 +82,25 @@ async def close_wallet(handle: int) -> None:
                   c_handle)
 
     logger.debug("close_wallet: <<<")
+
+
+async def delete_wallet(name: str,
+                        credentials: Optional[str]) -> None:
+    logger = logging.getLogger(__name__)
+    logger.debug("delete_wallet: >>> name: %s, credentials: %s",
+                 name,
+                 credentials)
+
+    if not hasattr(delete_wallet, "cb"):
+        logger.debug("delete_wallet: Creating callback")
+        delete_wallet.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_name = c_char_p(name.encode('utf-8'))
+    c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
+
+    await do_call('indy_delete_wallet',
+                  delete_wallet.cb,
+                  c_name,
+                  c_credentials)
+
+    logger.debug("delete_wallet: <<<")
