@@ -14,11 +14,14 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 public class IndyIntegrationTest {
+
+	public static final String TRUSTEE_SEED = "000000000000000000000000Trustee1";
+
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.SECONDS);
+	public Timeout globalTimeout = new Timeout(10, TimeUnit.SECONDS);
 
 	@Before
 	public void setUp() throws IOException {
