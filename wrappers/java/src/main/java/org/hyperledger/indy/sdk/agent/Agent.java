@@ -33,7 +33,7 @@ public class Agent extends IndyJava.API {
 
 	private static void addMessageObserver(int commandHandle, AgentObservers.MessageObserver messageObserver) {
 
-		assert (!Agent.messageObserver.containsKey(commandHandle));
+		assert(! Agent.messageObserver.containsKey(commandHandle));
 		Agent.messageObserver.put(commandHandle, messageObserver);
 
 	}
@@ -41,14 +41,14 @@ public class Agent extends IndyJava.API {
 	private static AgentObservers.MessageObserver removeMessageObserver(int xcommand_handle) {
 
 		AgentObservers.MessageObserver future = messageObserver.remove(xcommand_handle);
-		assert (future != null);
+		assert(future != null);
 
 		return future;
 	}
 
 	private static void addConnectionObserver(int commandHandle, AgentObservers.ConnectionObserver connectionObserver) {
 
-		assert (!connectionObservers.containsKey(commandHandle));
+		assert(! connectionObservers.containsKey(commandHandle));
 		connectionObservers.put(commandHandle, connectionObserver);
 
 	}
@@ -56,7 +56,7 @@ public class Agent extends IndyJava.API {
 	private static AgentObservers.ConnectionObserver removeConnectionObserver(int xcommand_handle) {
 
 		AgentObservers.ConnectionObserver future = connectionObservers.remove(xcommand_handle);
-		assert (future != null);
+		assert(future != null);
 
 		return future;
 	}
@@ -71,9 +71,9 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, int connection_handle) throws IndyException {
 
 			CompletableFuture<Connection> future = (CompletableFuture<Connection>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
-			assert (!connections.containsKey(connection_handle));
+			assert(! connections.containsKey(connection_handle));
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(connection_handle, connection);
 
@@ -104,9 +104,9 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, int listener_handle) throws IndyException {
 
 			CompletableFuture<Listener> future = (CompletableFuture<Listener>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
-			assert (!listeners.containsKey(listener_handle));
+			assert(! listeners.containsKey(listener_handle));
 			Agent.Listener listener = new Agent.Listener(listener_handle);
 			listeners.put(listener_handle, listener);
 
@@ -126,7 +126,7 @@ public class Agent extends IndyJava.API {
 			Agent.Listener listener = listeners.get(xlistener_handle);
 			if (listener == null) return;
 
-			assert (!connections.containsKey(connection_handle));
+			assert(! connections.containsKey(connection_handle));
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(connection_handle, connection);
 
@@ -156,7 +156,7 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, int listener_handle) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			future.complete(null);
 		}
@@ -168,7 +168,7 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, int listener_handle) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			future.complete(null);
 		}
@@ -180,7 +180,7 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			future.complete(null);
 		}
@@ -192,7 +192,7 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			future.complete(null);
 		}
@@ -204,7 +204,7 @@ public class Agent extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			future.complete(null);
 		}
