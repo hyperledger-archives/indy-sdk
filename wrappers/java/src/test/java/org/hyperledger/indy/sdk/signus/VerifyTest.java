@@ -9,12 +9,21 @@ import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 public class VerifyTest extends IndyIntegrationTest {
-	
+
 	private Pool pool;
 	private Wallet wallet;
 	private String trusteeDid;
@@ -33,10 +42,10 @@ public class VerifyTest extends IndyIntegrationTest {
 		wallet = Wallet.openWallet("signusWallet", null, null).get();
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, true);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, false);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson.toJson()).get();
-		Assert.assertNotNull(result);
+		assertNotNull(result);
 
 		trusteeDid = result.getDid();
 		trusteeVerkey = result.getVerkey();
@@ -49,7 +58,7 @@ public class VerifyTest extends IndyIntegrationTest {
 		pool.closePoolLedger().get();
 	}
 
-	private void createNewNymWithDidInLedger() throws Exception{
+	private void createNewNymWithDidInLedger() throws Exception {
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000000000000My1", null, null);
 
@@ -78,7 +87,7 @@ public class VerifyTest extends IndyIntegrationTest {
 				"            }";
 
 		Boolean valid = Signus.verifySignature(wallet, pool, trusteeDid, msg).get();
-		Assert.assertTrue(valid);
+		assertTrue(valid);
 	}
 
 	@Test
@@ -91,7 +100,7 @@ public class VerifyTest extends IndyIntegrationTest {
 				"\"signature\":\"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai\"}";
 
 		Boolean valid = Signus.verifySignature(wallet, pool, newDid, msg).get();
-		Assert.assertTrue(valid);
+		assertTrue(valid);
 	}
 
 	@Test
@@ -101,7 +110,7 @@ public class VerifyTest extends IndyIntegrationTest {
 				"\"signature\":\"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai\"}";
 
 		Boolean valid = Signus.verifySignature(wallet, pool, newDid, msg).get();
-		Assert.assertTrue(valid);
+		assertTrue(valid);
 	}
 
 	@Test
@@ -163,6 +172,6 @@ public class VerifyTest extends IndyIntegrationTest {
 
 		Boolean valid = Signus.verifySignature(wallet, pool, stewardDid, signedMessage).get();
 
-		Assert.assertFalse(valid);
+		assertFalse(valid);
 	}
 }

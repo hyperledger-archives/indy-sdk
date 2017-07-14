@@ -3,17 +3,18 @@ package org.hyperledger.indy.sdk.utils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 
 
 public class StorageUtils {
 
-	private static void cleanDirectory(File path) throws Exception {
+	private static void cleanDirectory(File path) throws IOException {
 		if (path.isDirectory()) {
 			FileUtils.cleanDirectory(path);
 		}
 	}
 
-	public static void cleanupStorage() throws Exception {
+	public static void cleanupStorage() throws IOException {
 
 		File tmpDir = new File(getTmpPath());
 		File homeDir = new File(getIndyHomePath());

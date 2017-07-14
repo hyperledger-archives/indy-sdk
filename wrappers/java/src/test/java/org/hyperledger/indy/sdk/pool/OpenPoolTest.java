@@ -1,9 +1,10 @@
 package org.hyperledger.indy.sdk.pool;
 
+import org.hyperledger.indy.sdk.ErrorCode;
+import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
-import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -11,48 +12,57 @@ import static org.junit.Assert.assertNotNull;
 public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
-	public void testOpenPoolWorks() throws Exception {
-		StorageUtils.cleanupStorage();
+	public void testOpenPoolWorksForNullConfig() throws Exception {
+		String poolName = PoolUtils.createPoolLedgerConfig();
+
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
+
+		assertNotNull(pool);
+		openedPools.add(pool);
+	}
+
+	@Test
+	public void testOpenPoolWorksForConfig() throws Exception {
+		String poolName = PoolUtils.createPoolLedgerConfig();
+
+		OpenPoolLedgerJSONParameter config = new OpenPoolLedgerJSONParameter(true, null, null);
+		Pool pool = Pool.openPoolLedger(poolName, config.toJson()).get();
+
+		assertNotNull(pool);
+		openedPools.add(pool);
+	}
+
+	@Test
+	public void testOpenPoolWorksForTwice() throws Exception {
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerInvalidPoolHandle));
 
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
-		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
-
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
 		assertNotNull(pool);
+		openedPools.add(pool);
 
-		pool.closePoolLedger();
-		StorageUtils.cleanupStorage();
+		Pool.openPoolLedger(poolName, null).get();
 	}
 
 	@Test
 	public void testOpenPoolWorksForTwoNodes() throws Exception {
-		StorageUtils.cleanupStorage();
-
 		String poolName = PoolUtils.createPoolLedgerConfig(2);
 
-		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
 
 		assertNotNull(pool);
-
-		pool.closePoolLedger();
-		StorageUtils.cleanupStorage();
+		openedPools.add(pool);
 	}
 
 	@Test
 	public void testOpenPoolWorksForThreeNodes() throws Exception {
-		StorageUtils.cleanupStorage();
-
 		String poolName = PoolUtils.createPoolLedgerConfig(3);
 
-		OpenPoolLedgerJSONParameter config2 = new OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
 
 		assertNotNull(pool);
-
-		pool.closePoolLedger();
-		StorageUtils.cleanupStorage();
+		openedPools.add(pool);
 	}
 
 }
