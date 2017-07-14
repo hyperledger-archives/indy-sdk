@@ -17,7 +17,6 @@ RUN apt-get update && \
       python3.5 \
       python3-pip \
       python-setuptools \
-      pytest \
       apt-transport-https \
       ca-certificates
 
@@ -28,6 +27,7 @@ RUN apt-get update -y && apt-get install -y \
 
 RUN pip3 install -U \
 	pip \
+	pytest \
 	setuptools \
 	virtualenv
 
