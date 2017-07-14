@@ -14,7 +14,7 @@ use self::rust_base58::{FromBase58, ToBase58};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::utils::check_wallet_and_pool_handles_consistency;
-use errors::sovrin::SovrinError;
+use errors::indy::IndyError;
 use errors::common::CommonError;
 use services::agent::AgentService;
 use services::ledger::LedgerService;
@@ -25,9 +25,10 @@ use services::wallet::WalletService;
 use utils::crypto::ed25519::ED25519;
 use utils::json::JsonDecodable;
 use utils::sequence::SequenceUtils;
+use utils::crypto::verkey_builder::build_full_verkey;
 
-pub type AgentConnectCB = Box<Fn(Result<i32, SovrinError>) + Send>;
-pub type AgentMessageCB = Box<Fn(Result<(i32, String), SovrinError>) + Send>;
+pub type AgentConnectCB = Box<Fn(Result<i32, IndyError>) + Send>;
+pub type AgentMessageCB = Box<Fn(Result<(i32, String), IndyError>) + Send>;
 
 pub enum AgentCommand {
     Connect(
@@ -40,7 +41,7 @@ pub enum AgentCommand {
     ),
     ResumeConnectProcess(
         i32, // cmd handle
-        Result<(MyConnectInfo, String /* get DDO result JSON */), SovrinError>
+        Result<(MyConnectInfo, String /* get DDO result JSON */), IndyError>
     ),
     ConnectAck(
         i32, // cmd handle (eq conn handle)
@@ -48,7 +49,7 @@ pub enum AgentCommand {
     ),
     CloseConnection(
         i32, // connection handle
-        Box<Fn(Result<(), SovrinError>) + Send>, // close conn cb
+        Box<Fn(Result<(), IndyError>) + Send>, // close conn cb
     ),
     CloseConnectionAck(
         i32, // close cmd handle
@@ -56,8 +57,8 @@ pub enum AgentCommand {
     ),
     Listen(
         String, // endpoint
-        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
-        Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>, // connect cb
+        Box<Fn(Result<i32, IndyError>) + Send>, // listen cb
+        Box<Fn(Result<(i32, i32, String, String), IndyError>) + Send>, // connect cb
         AgentMessageCB, // message cb
     ),
     ListenAck(
@@ -75,7 +76,7 @@ pub enum AgentCommand {
         i32, // listener handle
         String, // did
         String, // pk
-        Result<String, SovrinError> // get nym result
+        Result<String, IndyError> // get nym result
     ),
     ListenerOnConnect(
         i32, // listener handle
@@ -87,7 +88,7 @@ pub enum AgentCommand {
     ),
     CloseListener(
         i32, // listener handle
-        Box<Fn(Result<(), SovrinError>) + Send>, // close listener cb
+        Box<Fn(Result<(), IndyError>) + Send>, // close listener cb
     ),
     CloseListenerAck(
         i32, // close cmd handle
@@ -98,7 +99,7 @@ pub enum AgentCommand {
         i32, // pool handle
         i32, // wallet handle
         String, // did
-        Box<Fn(Result<(), SovrinError>) + Send>, // add identity cb
+        Box<Fn(Result<(), IndyError>) + Send>, // add identity cb
     ),
     ListenerAddIdentityAck(
         i32, // cmd handle
@@ -108,7 +109,7 @@ pub enum AgentCommand {
         i32, // listener handle
         i32, // wallet handle
         String, // did
-        Box<Fn(Result<(), SovrinError>) + Send>, // rm identity cb
+        Box<Fn(Result<(), IndyError>) + Send>, // rm identity cb
     ),
     ListenerRmIdentityAck(
         i32, // cmd handle
@@ -117,7 +118,7 @@ pub enum AgentCommand {
     Send(
         i32, // connection handle
         Option<String>, // message
-        Box<Fn(Result<(), SovrinError>) + Send>, // send cb
+        Box<Fn(Result<(), IndyError>) + Send>, // send cb
     ),
     SendAck(
         i32, // send cmd handle
@@ -135,17 +136,17 @@ pub struct AgentCommandExecutor {
     listeners: RefCell<HashMap<i32, Listener>>,
 
     listen_callbacks: RefCell<HashMap<i32, (
-        Box<Fn(Result<i32, SovrinError>) + Send>, // listen cb
+        Box<Fn(Result<i32, IndyError>) + Send>, // listen cb
         Listener
     )>>,
-    add_rm_identity_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
+    add_rm_identity_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
     connect_callbacks: RefCell<HashMap<i32, (AgentConnectCB, AgentMessageCB)>>,
-    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
-    close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), SovrinError>)>>>,
+    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
+    close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
 }
 
 struct Listener {
-    on_connect: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
+    on_connect: Box<Fn(Result<(i32, i32, String, String), IndyError>) + Send>,
     on_msg: AgentMessageCB,
     conn_handles: HashSet<i32>,
 }
@@ -274,7 +275,7 @@ impl AgentCommandExecutor {
             .and_then(|conn_handle| {
                 match self.connect_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, conn_handle)),
-                    Err(err) => Err(SovrinError::CommonError(CommonError::InvalidState(err.description().to_string()))),
+                    Err(err) => Err(IndyError::CommonError(CommonError::InvalidState(err.description().to_string()))),
                 }
             });
         match result {
@@ -283,10 +284,10 @@ impl AgentCommandExecutor {
         };
     }
 
-    fn resume_connect_process(&self, cmd_id: i32, res: Result<(MyConnectInfo, String), SovrinError>) {
+    fn resume_connect_process(&self, cmd_id: i32, res: Result<(MyConnectInfo, String), IndyError>) {
         let cbs = self.connect_callbacks.borrow_mut().remove(&cmd_id);
         if let Some((connect_cb, on_msg)) = cbs {
-            let res = res.and_then(|(my_info, attrib_resp_json)| -> Result<(MyConnectInfo, ConnectInfo), SovrinError> {
+            let res = res.and_then(|(my_info, attrib_resp_json)| -> Result<(MyConnectInfo, ConnectInfo), IndyError> {
                 let attrib_resp: serde_json::Value = serde_json::from_str(attrib_resp_json.as_str()).map_err(|err|
                     CommonError::InvalidStructure(
                         format!("Can't parse get ATTRIB response json {}", err.description())))?; // TODO change error type?
@@ -312,7 +313,7 @@ impl AgentCommandExecutor {
     }
 
     fn get_connection_info_local(&self, wallet_handle: i32, sender_did: &String, receiver_did: &String)
-                                 -> Result<(MyConnectInfo, Option<ConnectInfo>), SovrinError> {
+                                 -> Result<(MyConnectInfo, Option<ConnectInfo>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", sender_did))?;
         let my_did: MyDid = MyDid::from_json(&my_did_json)
             .map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
@@ -354,14 +355,14 @@ impl AgentCommandExecutor {
                                       "endpoint") {
             Ok(attrib_request) => attrib_request,
             Err(err) => {
-                return connect_cb(Err(SovrinError::from(err)));
+                return connect_cb(Err(IndyError::from(err)));
             }
         };
         let cmd_id = SequenceUtils::get_next_id();
         self.connect_callbacks.borrow_mut().insert(cmd_id, (connect_cb, message_cb));
         CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
             pool_handle, wallet_handle, my_conn_info.sender_did.clone(), attrib_request.to_string(),
-            Box::new(move |res: Result<String, SovrinError>| {
+            Box::new(move |res: Result<String, IndyError>| {
                 let res = res.map(|attrib_resp| { (my_conn_info.clone(), attrib_resp) });
                 CommandExecutor::instance().send(Command::Agent(
                     AgentCommand::ResumeConnectProcess(cmd_id, res))).unwrap();
@@ -381,8 +382,8 @@ impl AgentCommandExecutor {
     }
 
     fn listen(&self, endpoint: String,
-              listen_cb: Box<Fn(Result<i32, SovrinError>) + Send>,
-              connect_cb: Box<Fn(Result<(i32, i32, String, String), SovrinError>) + Send>,
+              listen_cb: Box<Fn(Result<i32, IndyError>) + Send>,
+              connect_cb: Box<Fn(Result<(i32, i32, String, String), IndyError>) + Send>,
               message_cb: AgentMessageCB) {
         let result = self.agent_service
             .listen(endpoint.as_str())
@@ -451,9 +452,9 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn resume_check_connect(&self, listener_handle: i32, did: String, pk: String, res: Result<String, SovrinError>) {
+    fn resume_check_connect(&self, listener_handle: i32, did: String, pk: String, res: Result<String, IndyError>) {
         trace!("resume_check_connect >> listener {}, did {}, pk {}, res {:?}", listener_handle, did, pk, res);
-        let res = res.and_then(|get_nym_response| -> Result<String, SovrinError> {
+        let res = res.and_then(|get_nym_response| -> Result<String, IndyError> {
             let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
                 .map_err(map_err_trace!())
                 .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
@@ -464,11 +465,13 @@ impl AgentCommandExecutor {
 
             trace!("parsed get_nym_result_data {:?}", gen_nym_result_data);
 
-            let verkey = gen_nym_result_data.verkey.unwrap_or(gen_nym_result_data.dest);
+            let pk = ED25519::vk_to_curve25519(
+                build_full_verkey(&gen_nym_result_data.dest, &gen_nym_result_data.verkey)
+                    .unwrap()
+                    .as_slice())
+                .unwrap().to_base58();
 
-            let verkey = ED25519::vk_to_curve25519(verkey.from_base58().unwrap().as_slice()).unwrap().to_base58();
-
-            Ok(verkey)
+            Ok(pk)
         });
         self.do_check_connect(listener_handle, did.as_str(), pk.as_str(), res.ok().as_ref().map(String::as_str));
     }
@@ -483,23 +486,23 @@ impl AgentCommandExecutor {
         self.agent_service.on_connect_checked(listener_handle, did, check_result).unwrap();
     }
 
-    fn get_info_for_check_connect(&self, did: String, wallet_handle: i32) -> Result<Option<String>, SovrinError> {
+    fn get_info_for_check_connect(&self, did: String, wallet_handle: i32) -> Result<Option<String>, IndyError> {
         let td_json = self.wallet_service.get(wallet_handle, format!("their_did::{}", did).as_str())?;
         let td: TheirDid = TheirDid::from_json(td_json.as_str()).unwrap();
         Ok(Some(td.pk.unwrap()))
     }
 
-    fn request_check_connect_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32, listener_handle: i32, did: String, pk: String) -> Result<(), SovrinError> {
+    fn request_check_connect_info_from_ledger(&self, pool_handle: i32, wallet_handle: i32, listener_handle: i32, did: String, pk: String) -> Result<(), IndyError> {
         check_wallet_and_pool_handles_consistency(self.wallet_service.clone(), self.pool_service.clone(), wallet_handle, pool_handle)?;
         let get_nym_request = match self.ledger_service
             .build_get_nym_request(did.as_str() /* TODO receiver did */, did.as_str()) {
             Ok(get_nym_request) => get_nym_request,
-            Err(err) => return Err(SovrinError::from(err))
+            Err(err) => return Err(IndyError::from(err))
         };
 
         CommandExecutor::instance().send(Command::Ledger(LedgerCommand::SubmitRequest(
             pool_handle, get_nym_request.to_string(),
-            Box::new(move |res: Result<String, SovrinError>| {
+            Box::new(move |res: Result<String, IndyError>| {
                 CommandExecutor::instance().send(Command::Agent(
                     AgentCommand::ListenerResumeCheckConnect(listener_handle, did.clone(), pk.clone(), res))).unwrap();
             })))).unwrap();
@@ -508,15 +511,15 @@ impl AgentCommandExecutor {
     }
 
     fn add_identity(&self, listener_handle: i32, pool_handle: i32, wallet_handle: i32, did: String,
-                    cb: Box<Fn(Result<(), SovrinError>)>) {
+                    cb: Box<Fn(Result<(), IndyError>)>) {
         let result = self.get_mydid_from_wallet(wallet_handle, did.as_str())
             .and_then(|my_did: MyDid|
-                self.agent_service.add_identity(listener_handle, did.as_str(), pool_handle, wallet_handle, my_did.sk.as_str(), my_did.pk.as_str()).map_err(SovrinError::from))
+                self.agent_service.add_identity(listener_handle, did.as_str(), pool_handle, wallet_handle, my_did.sk.as_str(), my_did.pk.as_str()).map_err(IndyError::from))
 
             .and_then(|cmd_id| {
                 match self.add_rm_identity_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),
-                    Err(err) => Err(SovrinError::CommonError(CommonError::InvalidState(err.description().to_string()))),
+                    Err(err) => Err(IndyError::CommonError(CommonError::InvalidState(err.description().to_string()))),
                 }
             });
 
@@ -527,15 +530,15 @@ impl AgentCommandExecutor {
     }
 
     fn rm_identity(&self, listener_handle: i32, wallet_handle: i32, did: String,
-                   cb: Box<Fn(Result<(), SovrinError>)>) {
+                   cb: Box<Fn(Result<(), IndyError>)>) {
         let result = self.get_mydid_from_wallet(wallet_handle, did.as_str())
             .and_then(|my_did: MyDid|
-                self.agent_service.rm_identity(listener_handle, did.as_str(), my_did.pk.as_str()).map_err(SovrinError::from))
+                self.agent_service.rm_identity(listener_handle, did.as_str(), my_did.pk.as_str()).map_err(IndyError::from))
 
             .and_then(|cmd_id| {
                 match self.add_rm_identity_callbacks.try_borrow_mut() {
                     Ok(cbs) => Ok((cbs, cmd_id)),
-                    Err(err) => Err(SovrinError::CommonError(CommonError::InvalidState(err.description().to_string()))),
+                    Err(err) => Err(IndyError::CommonError(CommonError::InvalidState(err.description().to_string()))),
                 }
             });
 
@@ -545,13 +548,13 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn get_mydid_from_wallet(&self, wallet_handle: i32, did: &str) -> Result<MyDid, SovrinError> {
+    fn get_mydid_from_wallet(&self, wallet_handle: i32, did: &str) -> Result<MyDid, IndyError> {
         self.wallet_service
             .get(wallet_handle, format!("my_did::{}", did).as_str())
-            .map_err(SovrinError::from)
+            .map_err(IndyError::from)
             .and_then(|my_did_json|
                 MyDid::from_json(my_did_json.as_str())
-                    .map_err(|_| SovrinError::CommonError(CommonError::InvalidState((format!("Invalid my did json"))))))
+                    .map_err(|_| IndyError::CommonError(CommonError::InvalidState((format!("Invalid my did json"))))))
     }
 
     fn on_add_rm_identity_ack(&self, cmd_id: i32, res: Result<(), CommonError>) {
@@ -561,7 +564,7 @@ impl AgentCommandExecutor {
         };
     }
 
-    fn send(&self, conn_id: i32, msg: Option<String>, cb: Box<Fn(Result<(), SovrinError>)>) {
+    fn send(&self, conn_id: i32, msg: Option<String>, cb: Box<Fn(Result<(), IndyError>)>) {
         let result = self.agent_service
             .send(conn_id, msg.as_ref().map(String::as_str))
             .and_then(|cmd_id| {
@@ -583,7 +586,7 @@ impl AgentCommandExecutor {
         };
     }
 
-    fn close_connection_or_listener(&self, handle: i32, cb: Box<Fn(Result<(), SovrinError>)>, close_listener: bool) {
+    fn close_connection_or_listener(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>)>, close_listener: bool) {
         let result = self.agent_service
             .close_connection_or_listener(handle, close_listener)
             .and_then(|cmd_id| {

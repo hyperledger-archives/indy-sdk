@@ -427,7 +427,7 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"106","data":1}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1}"#;
 
         let get_txn_request = ledger_service.build_get_txn_request(identifier, 1);
         assert!(get_txn_request.is_ok());

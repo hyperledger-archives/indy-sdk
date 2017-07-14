@@ -33,7 +33,7 @@ use self::libc::c_char;
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
+pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
                                                        wallet_handle: i32,
                                                        issuer_did: *const c_char,
                                                        schema_json: *const c_char,
@@ -84,7 +84,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
+pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                        wallet_handle: i32,
                                                        issuer_did: *const c_char,
                                                        schema_seq_no: i32,
@@ -159,7 +159,7 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_issuer_create_claim(command_handle: i32,
+pub extern fn indy_issuer_create_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
@@ -214,7 +214,7 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
+pub extern fn indy_issuer_revoke_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          revoc_reg_seq_no: i32,
                                          user_revoc_index: i32,
@@ -258,7 +258,7 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
+pub extern fn indy_prover_store_claim_offer(command_handle: i32,
                                               wallet_handle: i32,
                                               claim_offer_json: *const c_char,
                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
@@ -303,7 +303,7 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
+pub extern fn indy_prover_get_claim_offers(command_handle: i32,
                                              wallet_handle: i32,
                                              filter_json: *const c_char,
                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -343,7 +343,7 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
+pub extern fn indy_prover_create_master_secret(command_handle: i32,
                                                  wallet_handle: i32,
                                                  master_secret_name: *const c_char,
                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
@@ -399,7 +399,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
+pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
                                                        wallet_handle: i32,
                                                        prover_did: *const c_char,
                                                        claim_offer_json: *const c_char,
@@ -459,7 +459,7 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_store_claim(command_handle: i32,
+pub extern fn indy_prover_store_claim(command_handle: i32,
                                         wallet_handle: i32,
                                         claims_json: *const c_char,
                                         cb: Option<extern fn(
@@ -509,7 +509,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claims(command_handle: i32,
+pub extern fn indy_prover_get_claims(command_handle: i32,
                                        wallet_handle: i32,
                                        filter_json: *const c_char,
                                        cb: Option<extern fn(
@@ -573,7 +573,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
+pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
                                                      wallet_handle: i32,
                                                      proof_request_json: *const c_char,
                                                      cb: Option<extern fn(
@@ -599,7 +599,7 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 
 /// Creates a proof according to the given proof request
 /// Either a corresponding claim with optionally revealed attributes or self-attested attribute must be provided
-/// for each requested attribute (see sovrin_prover_get_claims_for_pool_req).
+/// for each requested attribute (see indy_prover_get_claims_for_pool_req).
 /// A proof request may request multiple claims from different schemas and different issuers.
 /// All required schemas, public keys and revocation registries must be provided.
 /// The proof request also contains nonce.
@@ -675,7 +675,7 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_create_proof(command_handle: i32,
+pub extern fn indy_prover_create_proof(command_handle: i32,
                                          wallet_handle: i32,
                                          proof_req_json: *const c_char,
                                          requested_claims_json: *const c_char,
@@ -776,7 +776,7 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
+pub extern fn indy_verifier_verify_proof(command_handle: i32,
                                            proof_request_json: *const c_char,
                                            proof_json: *const c_char,
                                            schemas_json: *const c_char,

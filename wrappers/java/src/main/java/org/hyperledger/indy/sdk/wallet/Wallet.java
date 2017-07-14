@@ -1,192 +1,204 @@
 package org.hyperledger.indy.sdk.wallet;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
-import org.hyperledger.indy.sdk.wallet.WalletResults.CloseWalletResult;
-import org.hyperledger.indy.sdk.wallet.WalletResults.CreateWalletResult;
-import org.hyperledger.indy.sdk.wallet.WalletResults.DeleteWalletResult;
-import org.hyperledger.indy.sdk.wallet.WalletResults.OpenWalletResult;
-import org.hyperledger.indy.sdk.wallet.WalletResults.WalletSetSeqNoForValueResult;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 
 import com.sun.jna.Callback;
 
 /**
  * wallet.rs API
  */
-public class Wallet extends SovrinJava.API {
+public class Wallet extends IndyJava.API {
 
 	private final int walletHandle;
 
-	Wallet(int walletHandle) {
+	private Wallet(int walletHandle) {
 
 		this.walletHandle = walletHandle;
 	}
 
 	public int getWalletHandle() {
-		
+
 		return this.walletHandle;
 	}
 
+	/*
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback createWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback openWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err, int handle) {
+
+			CompletableFuture<Wallet> future = (CompletableFuture<Wallet>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Wallet wallet = new Wallet(handle);
+
+			Wallet result = wallet;
+			future.complete(result);
+		}
+	};
+
+	private static Callback closeWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback deleteWalletCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback walletSetSeqNoForValueCb = new Callback() {
+
+		@SuppressWarnings({ "unused", "unchecked" })
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+	
 	/*
 	 * STATIC METHODS
 	 */
 
 	/* IMPLEMENT LATER
-	 * public Future<...> registerWalletType(
-				...) throws SovrinException;*/
+	 * public CompletableFuture<...> registerWalletType(
+				...) throws IndyException;*/
 
-	public static Future<CreateWalletResult> createWallet(
+	public static CompletableFuture<Void> createWallet(
 			String poolName,
 			String name,
 			String xtype,
 			String config,
-			String credentials) throws SovrinException {
+			String credentials) throws IndyException {
 
-		final CompletableFuture<CreateWalletResult> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				CreateWalletResult result = new CreateWalletResult();
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_create_wallet(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_create_wallet(
+				commandHandle, 
 				poolName, 
 				name,
 				xtype,
 				config,
 				credentials,
-				callback);
+				createWalletCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<OpenWalletResult> openWallet(
+	public static CompletableFuture<Wallet> openWallet(
 			String name,
 			String runtimeConfig,
-			String credentials) throws SovrinException {
+			String credentials) throws IndyException {
 
-		final CompletableFuture<OpenWalletResult> future = new CompletableFuture<> ();
+		CompletableFuture<Wallet> future = new CompletableFuture<Wallet> ();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, int handle) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				Wallet wallet = new Wallet(handle);
-				
-				OpenWalletResult result = new OpenWalletResult(wallet);
-				future.complete(result);
-			}
-		};
-		
-		int result = LibSovrin.api.sovrin_open_wallet(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_open_wallet(
+				commandHandle, 
 				name,
 				runtimeConfig,
 				credentials,
-				callback);
+				openWalletCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	private static Future<CloseWalletResult> closeWallet(
-			int handle) throws SovrinException {
+	private static CompletableFuture<Void> closeWallet(
+			Wallet wallet) throws IndyException {
 
-		final CompletableFuture<CloseWalletResult> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
+		int handle = wallet.getWalletHandle();
 
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				CloseWalletResult result = new CloseWalletResult();
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_close_wallet(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_close_wallet(
+				commandHandle, 
 				handle, 
-				callback);
+				closeWalletCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<DeleteWalletResult> deleteWallet(
+	public static CompletableFuture<Void> deleteWallet(
 			String name,
-			String credentials) throws SovrinException {
+			String credentials) throws IndyException {
 
-		final CompletableFuture<DeleteWalletResult> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				DeleteWalletResult result = new DeleteWalletResult();
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_delete_wallet(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_delete_wallet(
+				commandHandle, 
 				name,
 				credentials,
-				callback);
+				deleteWalletCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	private static Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
-			int walletHandle, 
+	private static CompletableFuture<Void> walletSetSeqNoForValue(
+			Wallet wallet, 
 			String walletKey,
-			String configName) throws SovrinException {
+			String configName) throws IndyException {
 
-		final CompletableFuture<WalletSetSeqNoForValueResult> future = new CompletableFuture<> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
+		int walletHandle = wallet.getWalletHandle();
 
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				WalletSetSeqNoForValueResult result = new WalletSetSeqNoForValueResult();
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_wallet_set_seq_no_for_value(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_wallet_set_seq_no_for_value(
+				commandHandle, 
 				walletHandle,
 				walletKey, 
-				callback);
+				walletSetSeqNoForValueCb);
 
 		checkResult(result);
 
@@ -197,16 +209,16 @@ public class Wallet extends SovrinJava.API {
 	 * INSTANCE METHODS
 	 */
 
-	public Future<CloseWalletResult> closeWallet(
-			) throws SovrinException {
-		
-		return closeWallet(this.walletHandle);
+	public CompletableFuture<Void> closeWallet(
+			) throws IndyException {
+
+		return closeWallet(this);
 	}
 
-	public Future<WalletSetSeqNoForValueResult> walletSetSeqNoForValue(
+	public CompletableFuture<Void> walletSetSeqNoForValue(
 			String walletKey,
-			String configName) throws SovrinException {
-		
-		return walletSetSeqNoForValue(this.walletHandle, walletKey, configName);
+			String configName) throws IndyException {
+
+		return walletSetSeqNoForValue(this, walletKey, configName);
 	}
 }

@@ -13,7 +13,7 @@
    ```
    export PKG_CONFIG_ALLOW_CROSS=1
    export CARGO_INCREMENTAL=1
-   export RUST_LOG=sovrin=trace
+   export RUST_LOG=indy=trace
    export RUST_TEST_THREADS=1
    ```
 1. Setup OPENSSL_DIR variable: path to installed openssl library
@@ -22,7 +22,7 @@
    ```
 1. Checkout and build the library:
    ```
-   git checkout https://github.com/hyperledger/indy-sdk.git
+   git clone https://github.com/hyperledger/indy-sdk.git
    cd ./indy-sdk
    cargo build
    ```
