@@ -37,8 +37,7 @@ use utils::types::{
     Reply,
     SchemaResult,
     GetTxnResult,
-    SchemaData,
-    Schema
+    SchemaData
 };
 use std::collections::{HashSet};
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
@@ -702,7 +701,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]//Delete it after merge https://github.com/hyperledger/indy-plenum/pull/265
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works() {
             TestUtils::cleanup_storage();
@@ -733,20 +731,21 @@ mod high_cases {
             let seq_no = schema_response.result.seq_no;
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, seq_no).unwrap();
-            let get_txn_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &get_txn_request).unwrap();
+            let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_txn_response.result.data.is_some());
 
-            let get_txn_schema: Schema = serde_json::from_str(&get_txn_response.result.data.unwrap()).unwrap();
+            let get_txn_schema_result: SchemaResult = serde_json::from_str(&get_txn_response.result.data).unwrap();
+            assert!(get_txn_schema_result.data.is_some());
 
-            assert_eq!(schema_data, get_txn_schema.data);
+            let get_txn_schema_data: SchemaData = serde_json::from_str(&get_txn_schema_result.data.unwrap()).unwrap();
+
+            assert_eq!(schema_data, get_txn_schema_data);
 
             TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[ignore]//Delete it after merge https://github.com/hyperledger/indy-plenum/pull/265
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
@@ -774,9 +773,9 @@ mod high_cases {
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, seq_no).unwrap();
 
-            let get_txn_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &get_txn_request).unwrap();
+            let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_txn_response.result.data.is_none());
+            assert_eq!(get_txn_response.result.data, "{}".to_string()); /* FIXME: unify with other GET_ transactions (data.is_none()) */
 
             TestUtils::cleanup_storage();
         }
