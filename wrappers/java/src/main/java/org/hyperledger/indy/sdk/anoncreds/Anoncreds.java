@@ -26,7 +26,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerCreateAndStoreClaimDefCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String claim_def_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -39,7 +39,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerCreateAndStoreRevocRegCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_json, String revoc_reg_uuid) {
 
 			CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = (CompletableFuture<IssuerCreateAndStoreRevocRegResult>) removeFuture(xcommand_handle);
@@ -52,7 +52,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerCreateClaimCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_update_json, String xclaim_json) {
 
 			CompletableFuture<IssuerCreateClaimResult> future = (CompletableFuture<IssuerCreateClaimResult>) removeFuture(xcommand_handle);
@@ -65,7 +65,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback issuerRevokeClaimCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_update_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -78,7 +78,7 @@ public class Anoncreds extends IndyJava.API {
 
 	private static Callback proverStoreClaimOfferCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -95,7 +95,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String claim_offers_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			String result = claim_offers_json;
 			future.complete(result);
@@ -108,7 +108,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -121,7 +121,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String claim_req_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			String result = claim_req_json;
 			future.complete(result);
@@ -134,7 +134,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -147,7 +147,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String claimsJson) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			String result = claimsJson;
 			future.complete(result);
@@ -160,7 +160,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String proofJson) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			String result = proofJson;
 			future.complete(result);
@@ -173,7 +173,7 @@ public class Anoncreds extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Boolean valid) {
 
 			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (! checkCallback(future, err)) return;
 
 			Boolean result = valid;
 			future.complete(result);
