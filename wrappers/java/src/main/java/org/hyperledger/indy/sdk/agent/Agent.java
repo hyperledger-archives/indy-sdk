@@ -29,7 +29,7 @@ public class Agent extends IndyJava.API {
 	 */
 
 	private static Map<Integer, AgentObservers.MessageObserver> messageObserver = new ConcurrentHashMap<Integer, AgentObservers.MessageObserver>();
-	private static Map<Integer, AgentObservers.IncomingConnectionObserver> connectionObservers = new ConcurrentHashMap<Integer, AgentObservers.IncomingConnectionObserver>();
+	private static Map<Integer, AgentObservers.ConnectionObserver> connectionObservers = new ConcurrentHashMap<Integer, AgentObservers.ConnectionObserver>();
 
 	private static void addMessageObserver(int commandHandle, AgentObservers.MessageObserver messageObserver) {
 
@@ -46,16 +46,16 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
-	private static void addIncomingConnectionObserver(int commandHandle, AgentObservers.IncomingConnectionObserver incomingConnectionObserver) {
+	private static void addConnectionObserver(int commandHandle, AgentObservers.ConnectionObserver connectionObserver) {
 
 		assert (!connectionObservers.containsKey(commandHandle));
-		connectionObservers.put(commandHandle, incomingConnectionObserver);
+		connectionObservers.put(commandHandle, connectionObserver);
 
 	}
 
-	private static AgentObservers.IncomingConnectionObserver removeIncomingConnectionObserver(int xcommand_handle) {
+	private static AgentObservers.ConnectionObserver removeConnectionObserver(int xcommand_handle) {
 
-		AgentObservers.IncomingConnectionObserver future = connectionObservers.remove(xcommand_handle);
+		AgentObservers.ConnectionObserver future = connectionObservers.remove(xcommand_handle);
 		assert (future != null);
 
 		return future;
@@ -110,7 +110,7 @@ public class Agent extends IndyJava.API {
 			Agent.Listener listener = new Agent.Listener(listener_handle);
 			listeners.put(listener_handle, listener);
 
-			listener.incomingConnectionObserver = removeIncomingConnectionObserver(xcommand_handle);
+			listener.connectionObserver = removeConnectionObserver(xcommand_handle);
 
 			future.complete(listener);
 		}
@@ -130,8 +130,8 @@ public class Agent extends IndyJava.API {
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(connection_handle, connection);
 
-			AgentObservers.IncomingConnectionObserver incomingConnectionObserver = listener.incomingConnectionObserver;
-			connection.messageObserver = incomingConnectionObserver.onConnection(listener, connection, sender_did, receiver_did);
+			AgentObservers.ConnectionObserver connectionObserver = listener.connectionObserver;
+			connection.messageObserver = connectionObserver.onConnection(listener, connection, sender_did, receiver_did);
 		}
 	};
 
@@ -244,11 +244,11 @@ public class Agent extends IndyJava.API {
 
 	public static CompletableFuture<Listener> agentListen(
 			String endpoint,
-			AgentObservers.IncomingConnectionObserver incomingConnectionObserver) throws IndyException {
+			AgentObservers.ConnectionObserver connectionObserver) throws IndyException {
 
 		CompletableFuture<Listener> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
-		addIncomingConnectionObserver(commandHandle, incomingConnectionObserver);
+		addConnectionObserver(commandHandle, connectionObserver);
 
 		int result = LibIndy.api.indy_agent_listen(
 				commandHandle,
@@ -378,7 +378,7 @@ public class Agent extends IndyJava.API {
 	public static class Listener {
 
 		private final int listenerHandle;
-		private AgentObservers.IncomingConnectionObserver incomingConnectionObserver;
+		private AgentObservers.ConnectionObserver connectionObserver;
 
 		private Listener(int listenerHandle) {
 

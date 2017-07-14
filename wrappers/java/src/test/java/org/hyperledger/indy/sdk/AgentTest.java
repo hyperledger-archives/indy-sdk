@@ -3,7 +3,7 @@ package org.hyperledger.indy.sdk;
 import org.hyperledger.indy.sdk.agent.Agent;
 import org.hyperledger.indy.sdk.agent.Agent.Connection;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
-import org.hyperledger.indy.sdk.agent.AgentObservers.IncomingConnectionObserver;
+import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
 import org.hyperledger.indy.sdk.agent.AgentObservers.MessageObserver;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
@@ -67,7 +67,7 @@ public class AgentTest extends IndyIntegrationTest {
 			}
 		};
 
-		final IncomingConnectionObserver incomingConnectionObserver = new IncomingConnectionObserver() {
+		final ConnectionObserver incomingConnectionObserver = new ConnectionObserver() {
 
 			public MessageObserver onConnection(Listener listener, Connection connection, String senderDid, String receiverDid) {
 
