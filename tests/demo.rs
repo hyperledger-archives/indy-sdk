@@ -5,6 +5,7 @@ use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
@@ -14,6 +15,7 @@ extern crate log;
 #[macro_use]
 mod utils;
 
+use utils::agent::AgentUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
@@ -54,12 +56,229 @@ use indy::api::signus::{
 use utils::callback::CallbackUtils;
 
 use std::ptr::null;
-use std::sync::mpsc::{channel};
-use std::ffi::{CString};
+use std::sync::mpsc::channel;
+use std::ffi::CString;
 use utils::types::ProofClaimsJson;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
+
+#[test]
+fn agent_demo_works() {
+    TestUtils::cleanup_storage();
+
+    let endpoint = "127.0.0.1:9801";
+    let pool_name = "indy_agent_connect_works_for_remote_data";
+
+    let listener_wallet_name = "listener_wallet";
+    let trustee_wallet_name = "trustee_wallet";
+    let wallet_type = "default";
+    let c_pool_name = CString::new(pool_name).unwrap();
+
+    let (submit_sender, submit_receiver) = channel();
+    let (create_sender, create_receiver) = channel();
+    let (open_sender, open_receiver) = channel();
+    let (create_listener_wallet_sender, create_listener_wallet_receiver) = channel();
+    let (create_trustee_wallet_sender, create_trustee_wallet_receiver) = channel();
+    let (open_listener_wallet_sender, open_listener_wallet_receiver) = channel();
+    let (open_trustee_wallet_sender, open_trustee_wallet_receiver) = channel();
+    let (create_and_store_listener_did_sender, create_and_store_listener_did_receiver) = channel();
+    let (create_and_store_trustee_did_sender, create_and_store_trustee_did_receiver) = channel();
+    let (attrib_sender, attrib_receiver) = channel();
+    let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
+    let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
+    let send_cb = Box::new(move |err, resp| { submit_sender.send((err, resp)).unwrap(); });
+    let create_listener_wallet_cb = Box::new(move |err| { create_listener_wallet_sender.send(err).unwrap(); });
+    let create_trustee_wallet_cb = Box::new(move |err| { create_trustee_wallet_sender.send(err).unwrap(); });
+    let open_listener_wallet_cb = Box::new(move |err, handle| { open_listener_wallet_sender.send((err, handle)).unwrap(); });
+    let open_trustee_wallet_cb = Box::new(move |err, handle| { open_trustee_wallet_sender.send((err, handle)).unwrap(); });
+    let create_and_store_listener_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_listener_did_sender.send((err, did, verkey, public_key)).unwrap(); });
+    let create_and_store_trustee_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_trustee_did_sender.send((err, did, verkey, public_key)).unwrap(); });
+    let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
+    let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
+    let (send_command_handle, send_callback) = CallbackUtils::closure_to_send_tx_cb(send_cb);
+    let (create_listener_wallet_command_handle, create_listener_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_listener_wallet_cb);
+    let (create_trustee_wallet_command_handle, create_trustee_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_trustee_wallet_cb);
+    let (open_listener_wallet_command_handle, open_listener_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_listener_wallet_cb);
+    let (open_trustee_wallet_command_handle, open_trustee_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_trustee_wallet_cb);
+    let (create_and_store_listener_did_command_handle, create_and_store_listener_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_listener_did_cb);
+    let (create_and_store_trustee_did_command_handle, create_and_store_trustee_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_trustee_did_cb);
+    let (attrib_command_handle, attrib_callback) = CallbackUtils::closure_to_sign_and_submit_request_cb(Box::new(move |err, request_result_json| {
+        attrib_sender.send((err, request_result_json)).unwrap();
+    }));
+
+    // 1. Create ledger config from genesis txn file
+    PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
+    let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
+    let err = indy_create_pool_ledger_config(create_command_handle,
+                                             c_pool_name.as_ptr(),
+                                             pool_config.as_ptr(),
+                                             create_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    // 2. Open pool ledger
+    let err = indy_open_pool_ledger(open_command_handle,
+                                    c_pool_name.as_ptr(),
+                                    null(),
+                                    open_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+    thread::sleep(TimeoutUtils::short_timeout());
+
+    // 3. Create Listener Wallet
+    let err =
+        indy_create_wallet(create_listener_wallet_command_handle,
+                           c_pool_name.as_ptr(),
+                           CString::new(listener_wallet_name).unwrap().as_ptr(),
+                           CString::new(wallet_type).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_listener_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = create_listener_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 4. Open Listener Wallet. Gets My wallet handle
+    let err =
+        indy_open_wallet(open_listener_wallet_command_handle,
+                         CString::new(listener_wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_listener_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, listener_wallet) = open_listener_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+
+    // 5. Create Their Wallet (trustee, sender)
+    let err =
+        indy_create_wallet(create_trustee_wallet_command_handle,
+                           CString::new(pool_name).unwrap().as_ptr(),
+                           CString::new(trustee_wallet_name).unwrap().as_ptr(),
+                           CString::new(wallet_type).unwrap().as_ptr(),
+                           null(),
+                           null(),
+                           create_trustee_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let err = create_trustee_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 6. Open Their Wallet. Gets Their wallet handle
+    let err =
+        indy_open_wallet(open_trustee_wallet_command_handle,
+                         CString::new(trustee_wallet_name).unwrap().as_ptr(),
+                         null(),
+                         null(),
+                         open_trustee_wallet_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, trustee_wallet) = open_trustee_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 7. Create My DID
+    let listener_did_json = "{}";
+    let err =
+        indy_create_and_store_my_did(create_and_store_listener_did_command_handle,
+                                     listener_wallet,
+                                     CString::new(listener_did_json).unwrap().as_ptr(),
+                                     create_and_store_listener_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, listener_did, listener_vk, listener_pk) = create_and_store_listener_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    info!("listener did {:?}", listener_did);
+    info!("listener verkey {:?}", listener_vk);
+    info!("listener pk {:?}", listener_pk);
+    assert_eq!(ErrorCode::Success, err);
+    let listener_did_c = CString::new(listener_did.clone()).unwrap();
+
+    // 8. Create Their DID from Trustee1 seed
+    let trustee_did_json = r#"{"seed":"000000000000000000000000Trustee1"}"#;
+    let err =
+        indy_create_and_store_my_did(create_and_store_trustee_did_command_handle,
+                                     trustee_wallet,
+                                     CString::new(trustee_did_json).unwrap().as_ptr(),
+                                     create_and_store_trustee_did_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, trustee_did, trustee_verkey, trustee_pk) = create_and_store_trustee_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    info!("sender (trustee) did {:?}", trustee_did);
+    info!("sender (trustee) verkey {:?}", trustee_verkey);
+    info!("sender (trustee) pk {:?}", trustee_pk);
+    assert_eq!(ErrorCode::Success, err);
+    let trustee_did_c = CString::new(trustee_did.clone()).unwrap();
+
+    // 10. Prepare NYM transaction
+    let nym_req_id = PoolUtils::get_req_id();
+    let nym_txn_req = json!({
+        "identifier": trustee_did,
+        "operation": {
+            "dest": listener_did,
+            "verkey": listener_vk,
+            "type": "1",
+        },
+        "reqId": nym_req_id,
+    });
+
+    // 11. Send NYM request with signing
+    let msg = serde_json::to_string(&nym_txn_req).unwrap();
+    let req = CString::new(msg).unwrap();
+    let err = indy_sign_and_submit_request(send_command_handle,
+                                           pool_handle,
+                                           trustee_wallet,
+                                           trustee_did_c.as_ptr(),
+                                           req.as_ptr(),
+                                           send_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, _) = submit_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    let sender_did = trustee_did.clone();
+    let sender_wallet = trustee_wallet;
+
+    let req_id = PoolUtils::get_req_id();
+    let listener_attrib_json = json!({
+        "identifier": listener_did,
+        "operation": {
+            "dest": listener_did,
+            "raw": format!("{{\"endpoint\":{{\"ha\":\"{}\", \"verkey\":\"{}\"}}}}", endpoint, listener_pk),
+            "type": "100",
+        },
+        "reqId": req_id
+    });
+    let listener_attrib_json = serde_json::to_string(&listener_attrib_json).unwrap();
+    let listener_attrib_json = CString::new(listener_attrib_json).unwrap();
+
+    // Send attrib for listener (will be used by sender at start connection)
+    let err =
+        indy_sign_and_submit_request(attrib_command_handle,
+                                     pool_handle,
+                                     listener_wallet,
+                                     listener_did_c.as_ptr(),
+                                     listener_attrib_json.as_ptr(),
+                                     attrib_callback);
+
+    assert_eq!(err, ErrorCode::Success);
+
+    let (err, _) = attrib_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+    assert_eq!(err, ErrorCode::Success);
+
+
+    let agent_listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
+    AgentUtils::add_identity(agent_listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
+
+    let conn_handle_sender_to_listener = AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
+
+    AgentUtils::send(conn_handle_sender_to_listener, "msg_from_sender_to_listener").unwrap();
+
+    TestUtils::cleanup_storage();
+}
 
 #[test]
 fn anoncreds_demo_works() {
