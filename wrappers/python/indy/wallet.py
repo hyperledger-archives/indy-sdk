@@ -10,7 +10,7 @@ async def create_wallet(pool_name: str,
                         name: str,
                         xtype: Optional[str],
                         config: Optional[str],
-                        credentials: Optional[str]):
+                        credentials: Optional[str]) -> None:
     logger = logging.getLogger(__name__)
     logger.debug("create_wallet: >>> pool_name: %s, name: %s, xtype: %s, config: %s, credentials: %s",
                  pool_name,
@@ -42,7 +42,7 @@ async def create_wallet(pool_name: str,
 
 async def open_wallet(name: str,
                       runtime_config: Optional[str],
-                      credentials: Optional[str]):
+                      credentials: Optional[str]) -> int:
     logger = logging.getLogger(__name__)
     logger.debug("open_wallet: >>> name: %s, runtime_config: %s, credentials: %s",
                  name,
@@ -67,7 +67,7 @@ async def open_wallet(name: str,
     return res
 
 
-async def close_wallet(handle: int):
+async def close_wallet(handle: int) -> None:
     logger = logging.getLogger(__name__)
     logger.debug("close_wallet: >>> handle: %i", handle)
 
