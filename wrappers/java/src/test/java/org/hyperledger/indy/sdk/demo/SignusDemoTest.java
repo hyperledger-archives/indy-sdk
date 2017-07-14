@@ -4,18 +4,13 @@ import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import java.util.concurrent.TimeUnit;
 
 public class SignusDemoTest extends IndyIntegrationTest {
 
@@ -37,17 +32,11 @@ public class SignusDemoTest extends IndyIntegrationTest {
 		Wallet theirWallet = Wallet.openWallet("theirWallet", null, null).get();
 
 		//4. Create My Did
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter myDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, null, true);
-
-		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, myDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, "{}").get();
 		assertNotNull(createMyDidResult);
 
 		//5. Create Their Did
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, null, true);
-
-		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(theirWallet, theirDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(theirWallet, "{}").get();
 		assertNotNull(createTheirDidResult);
 		String theirDid = createTheirDidResult.getDid();
 		String theirVerkey = createTheirDidResult.getVerkey();

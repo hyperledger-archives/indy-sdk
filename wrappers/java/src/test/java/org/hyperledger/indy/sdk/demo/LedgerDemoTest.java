@@ -36,17 +36,14 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		Wallet trusteeWallet = Wallet.openWallet("theirWallet", null, null).get();
 
 		// 5. Create My Did
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter myDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, null, true);
-
-		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, myDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, "{}").get();
 		assertNotNull(createMyDidResult);
 		String myDid = createMyDidResult.getDid();
-		String myVerkey = createMyDidResult.getDid();
+		String myVerkey = createMyDidResult.getVerkey();
 
 		// 6. Create Did from Trustee1 seed
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, true);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
 
 		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(trusteeWallet, theirDidJson.toJson()).get();
 		assertNotNull(createTheirDidResult);
