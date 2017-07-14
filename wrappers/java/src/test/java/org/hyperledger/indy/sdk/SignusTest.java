@@ -3,7 +3,6 @@ package org.hyperledger.indy.sdk;
 import java.io.File;
 import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.signus.Signus;
@@ -18,15 +17,15 @@ public class SignusTest extends TestCase {
 
 	private Pool pool;
 	private Wallet wallet;
-	
+
 	@Override
 	protected void setUp() throws Exception {
 
 		if (! LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
 
 		OpenPoolLedgerJSONParameter openPoolLedgerOptions = new OpenPoolLedgerJSONParameter(null, null, null);
-		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions).get().getPool();
-		this.wallet = Wallet.openWallet("mywallet", null, null).get().getWallet();
+		this.pool = Pool.openPoolLedger("myconfig", openPoolLedgerOptions.toJson()).get();
+		this.wallet = Wallet.openWallet("mywallet", null, null).get();
 	}
 
 	@Override
@@ -39,7 +38,7 @@ public class SignusTest extends TestCase {
 
 	public void testSignus() throws Exception {
 
-		Future<CreateAndStoreMyDidResult> future1 = Signus.createAndStoreMyDid(this.wallet, null);
+		Future<CreateAndStoreMyDidResult> future1 = Signus.createAndStoreMyDid(this.wallet, "{}");
 		CreateAndStoreMyDidResult result1 = future1.get();
 		Assert.assertNotNull(result1);
 		String did1 = result1.getDid();
