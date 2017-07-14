@@ -27,7 +27,6 @@ RUN apt-get update -y && apt-get install -y \
 
 RUN pip3 install -U \
 	pip \
-	pytest \
 	setuptools \
 	virtualenv
 
@@ -61,4 +60,5 @@ RUN ln -sf /home/indy/test/bin/python /usr/local/bin/python3
 RUN ln -sf /home/indy/test/bin/pip /usr/local/bin/pip3
 USER indy
 RUN pip3 install \
-	/home/indy/indy-anoncreds
+	/home/indy/indy-anoncreds \
+	pytest
