@@ -57,11 +57,11 @@ RUN virtualenv -p python3.5 /home/indy/
 #RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
 #RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/lib/python3.5/site-packages/charm
 USER root
-RUN /home/indy/indy-anoncreds/setup-charm.sh
+RUN ./home/indy/indy-anoncreds/setup-charm.sh
 
 RUN pip3 install -U \
 	git+https://github.com/hyperledger/indy-anoncreds.git
-	
+
 RUN ln -sf /home/indy/bin/python /usr/local/bin/python
 RUN ln -sf /home/indy/bin/pip /usr/local/bin/pip
 USER indy
