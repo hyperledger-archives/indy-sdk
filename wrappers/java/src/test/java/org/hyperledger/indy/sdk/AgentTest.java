@@ -3,8 +3,7 @@ package org.hyperledger.indy.sdk;
 import org.hyperledger.indy.sdk.agent.Agent;
 import org.hyperledger.indy.sdk.agent.Agent.Connection;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
-import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
-import org.hyperledger.indy.sdk.agent.AgentObservers.ListenerObserver;
+import org.hyperledger.indy.sdk.agent.AgentObservers.IncomingConnectionObserver;
 import org.hyperledger.indy.sdk.agent.AgentObservers.MessageObserver;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
@@ -27,8 +26,8 @@ public class AgentTest extends IndyIntegrationTest {
 		assertNotNull(pool);
 		openedPools.add(pool);
 
-		Wallet.createWallet("test" /* FIXME */, "trustee_wallet", null, null, null).get();
-		Wallet.createWallet("test" /* FIXME */, "listener_wallet", null, null, null).get();
+		Wallet.createWallet(PoolUtils.DEFAULT_POOL_NAME, "trustee_wallet", null, null, null).get();
+		Wallet.createWallet(PoolUtils.DEFAULT_POOL_NAME, "listener_wallet", null, null, null).get();
 		Wallet trusteeWallet = Wallet.openWallet("trustee_wallet", null, null).get();
 		assertNotNull(trusteeWallet);
 		Wallet listenerWallet = Wallet.openWallet("listener_wallet", null, null).get();
@@ -60,35 +59,30 @@ public class AgentTest extends IndyIntegrationTest {
 			}
 		};
 
-		final ConnectionObserver connectionObserver = new ConnectionObserver() {
+		final MessageObserver messageObserverForIncoming = new MessageObserver() {
+
+			public void onMessage(Connection connection, String message) {
+
+				System.out.println("Received message '" + message + "' on incoming connection " + connection);
+			}
+		};
+
+		final IncomingConnectionObserver incomingConnectionObserver = new IncomingConnectionObserver() {
 
 			public MessageObserver onConnection(Listener listener, Connection connection, String senderDid, String receiverDid) {
 
 				System.out.println("New connection " + connection);
 
-				return messageObserver;
+				return messageObserverForIncoming;
 			}
 		};
 
-		final ListenerObserver listenerObserver = new ListenerObserver() {
+		Listener activeListener = Agent.agentListen(endpoint, incomingConnectionObserver).get();
 
-			public ConnectionObserver onListener(Listener aListener) {
+		activeListener.agentAddIdentity(pool, listenerWallet, listener.getDid()).get();
 
-				System.out.println("New listener " + aListener);
-				try {
-					Agent.agentAddIdentity(aListener, pool, listenerWallet, listener.getDid());
-				} catch (IndyException e) {
-					e.printStackTrace();
-				}
+		Connection connection = Agent.agentConnect(pool, senderWallet, sender.getDid(), listener.getDid(), messageObserver).get();
 
-				return connectionObserver;
-			}
-		};
-
-		Agent.agentListen(endpoint, listenerObserver);
-
-		Agent.agentConnect(pool, senderWallet, sender.getDid(), listener.getDid(), connectionObserver);
-
-		Thread.sleep(500); /* FIXME */
+		connection.agentSend("test").get();
 	}
 }

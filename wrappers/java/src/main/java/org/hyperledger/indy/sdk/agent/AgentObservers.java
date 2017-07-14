@@ -9,12 +9,7 @@ public final class AgentObservers {
 
 	}
 
-	public interface ListenerObserver {
-
-		public ConnectionObserver onListener(Agent.Listener listener);
-	}
-
-	public interface ConnectionObserver {
+	public interface IncomingConnectionObserver {
 
 		public MessageObserver onConnection(Agent.Listener listener, Agent.Connection connection, String senderDid, String receiverDid);
 	}

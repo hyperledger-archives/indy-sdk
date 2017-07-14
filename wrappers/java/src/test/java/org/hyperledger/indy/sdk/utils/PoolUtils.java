@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 public class PoolUtils {
+
+	public static final String DEFAULT_POOL_NAME = "default_pool";
+
 	public static File createGenesisTxnFile(String filename) throws IOException {
 		return createGenesisTxnFile(filename, 4);
 	}
@@ -44,9 +47,8 @@ public class PoolUtils {
 	}
 
 	public static String createPoolLedgerConfig(int nodesCnt) throws InterruptedException, ExecutionException, IndyException, IOException {
-		String poolName = "test";
-		createPoolLedgerConfig(poolName, nodesCnt);
-		return poolName;
+		createPoolLedgerConfig(DEFAULT_POOL_NAME, nodesCnt);
+		return DEFAULT_POOL_NAME;
 	}
 
 	public static void createPoolLedgerConfig(String poolName, int nodesCnt) throws IOException, InterruptedException, java.util.concurrent.ExecutionException, IndyException {
