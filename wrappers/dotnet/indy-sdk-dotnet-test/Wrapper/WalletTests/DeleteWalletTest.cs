@@ -35,23 +35,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         [TestMethod]
         [Ignore] //Bug in Indy
-        public void TestDeleteWalletWorksForOpened()
+        public async Task TestDeleteWalletWorksForOpened()
         {
             Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorksForOpened", null, null, null).Wait();
             var wallet = Wallet.OpenWalletAsync("DeleteWalletAsyncWorksForOpened", null, null).Result;
 
-            try
-            {
-                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForOpened", null).Wait();
-            }
-            catch (IndyException e)
-            {
-                Assert.AreEqual(e.ErrorCode, ErrorCode.CommonIOError);
-            }
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForOpened", null)
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.CommonIOError);            
         }
 
         [TestMethod]
-        public void TestDeleteWalletWorksForTwice()
+        public async Task TestDeleteWalletWorksForTwice()
         {
             Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorksForTwice", null, null, null).Wait();
 
@@ -63,26 +60,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
             Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null).Wait();
 
-            try {
-                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null).Wait();
-            }
-            catch (IndyException e)
-            {
-                Assert.AreEqual(e.ErrorCode, ErrorCode.CommonIOError);
-            }
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                 Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null)
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.CommonIOError);
+        
         }
 
         [TestMethod]
-        public void TestDeleteWalletWorksForNotCreated()
+        public async Task TestDeleteWalletWorksForNotCreated()
         {
-            try
-            {
-                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null).Wait();
-            }
-            catch (IndyException e)
-            {
-                Assert.AreEqual(e.ErrorCode, ErrorCode.CommonIOError);
-            }
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null)
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.CommonIOError);
         }
     }
 }

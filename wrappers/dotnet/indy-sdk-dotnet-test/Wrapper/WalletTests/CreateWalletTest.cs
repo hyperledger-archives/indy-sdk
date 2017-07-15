@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Indy.Sdk.Dotnet.Wrapper;
+using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
@@ -26,23 +27,36 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        public void TestCreateWalletWorksForUnknownType()
+        public async Task TestCreateWalletWorksForUnknownType()
         {
-            Wallet.CreateWalletAsync("default", "createWalletWorks", "unknown_type", null, null).Wait();
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Wallet.CreateWalletAsync("default", "createWalletWorks", "unknown_type", null, null)
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.WalletUnknownTypeError);
         }
 
         [TestMethod]
-        public void TestCreateWalletWorksForEmptyName()
+        public async Task TestCreateWalletWorksForEmptyName()
         {
-            Wallet.CreateWalletAsync(string.Empty, "createWalletWorks", "default", null, null).Wait();
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Wallet.CreateWalletAsync(string.Empty, "createWalletWorks", "default", null, null)
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.CommonInvalidParam2);            
         }
 
         [TestMethod]
-        [ExpectedException(typeof(IndyException))]
-        public void TestCreateWalletWorksForDuplicateName()
+        public async Task TestCreateWalletWorksForDuplicateName()
         {
+
             Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
-            Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
+
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null)
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.WalletAlreadyExistsError);
         }
     }
 }

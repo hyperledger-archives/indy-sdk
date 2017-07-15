@@ -24,7 +24,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        public void testCloseWalletWorksForTwice()
+        public async Task testCloseWalletWorksForTwice()
         {
             Wallet.CreateWalletAsync("default", "CloseAsyncWorksForTwice", "default", null, null).Wait();
 
@@ -34,14 +34,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
             wallet.CloseAsync().Wait();
 
-            try
-            {
-                wallet.CloseAsync().Wait();
-            }
-            catch (IndyException e)
-            {
-                Assert.AreEqual(e.ErrorCode, ErrorCode.WalletInvalidHandle);
-            }
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                wallet.CloseAsync()
+            );
+
+            Assert.AreEqual(ex.ErrorCode, ErrorCode.WalletInvalidHandle);
         }
     }
 }
