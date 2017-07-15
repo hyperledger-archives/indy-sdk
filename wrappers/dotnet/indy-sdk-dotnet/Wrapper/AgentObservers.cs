@@ -19,7 +19,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
         /// <summary>
-        /// Observer for listeners.
+        /// Interface for handling the event raised on creation of a listener.
         /// </summary>
         public interface ListenerObserver
         {
@@ -32,7 +32,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
         /// <summary>
-        /// Observer for connections.
+        /// Interface for handling the event raised on establishment of a connection.
         /// </summary>
         public interface ConnectionObserver
         {
@@ -48,7 +48,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
         /// <summary>
-        /// Observer for messages.
+        /// Interface for handling the event raised when a message is received.
         /// </summary>
         public interface MessageObserver
         {
