@@ -5,3 +5,4 @@ Cargo.lock
 .DS_Store
 Podfile.lock
 
+wrappers/dotnet/packages/
