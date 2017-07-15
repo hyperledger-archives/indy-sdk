@@ -378,7 +378,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             /// <returns>An asynchronous task that returns no value.</returns>
             public Task SendAsync(string message) 
             {
-			    return Agent.AgentSendAsync(this, message);
+                return Agent.AgentSendAsync(this, message);
             }
 
             /// <summary>
@@ -387,7 +387,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             /// <returns>An asynchronous task that returns no value.</returns>
             public Task CloseAsync() 
             {
-    			return Agent.AgentCloseConnectionAsync(this);
+                return Agent.AgentCloseConnectionAsync(this);
             }
         }
 
@@ -441,7 +441,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             /// <returns>An asynchronous task that returns no value.</returns>
             public Task CloseAsync()
             {
-			    return Agent.AgentCloseListenerAsync(this);
+                return Agent.AgentCloseListenerAsync(this);
             }
         }
     }
