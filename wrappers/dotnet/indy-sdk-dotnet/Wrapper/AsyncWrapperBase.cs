@@ -68,6 +68,18 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
         /// <summary>
+        /// Checks the result of a callback made by the Sovrin library.
+        /// </summary>
+        /// <param name="errorCode">The error code returned to the callback by the sovrin function.</param>
+        /// <exception cref="IndyException">If the errorCode is not a success result a SovrinException will be thrown.</exception>
+        protected static void CheckCallback(int errorCode)
+        {
+            if (errorCode != (int)ErrorCode.Success)
+                throw IndyException.fromErrorCode(errorCode);
+        }
+
+
+        /// <summary>
         /// Gets the next command handle.
         /// </summary>
         /// <returns>The next command handle.</returns>

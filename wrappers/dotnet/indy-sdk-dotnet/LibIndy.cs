@@ -726,10 +726,10 @@ namespace Indy.Sdk.Dotnet
         /// <summary>
         /// Delegate for the agent functions that receive messages.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="connection_handle">The handle for the connection the message was recevied on.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="message">The received message.</param>
-        public delegate void AgentMessageReceivedDelegate(int command_handle, int err, string message);
+        public delegate void AgentMessageReceivedDelegate(IntPtr connection_handle, int err, string message);
         
         /// <summary>
         /// Establishes agent to agent connection.
@@ -743,7 +743,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="message_cb">The function that will be called when a message is received.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_connect(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string sender_did, string receiver_did, AgentConnectionCreatedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
+        public static extern int sovrin_agent_connect(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string sender_did, string receiver_did, AgentConnectionEstablishedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
         
         /// <summary>
         /// Delegate for Agent callbacks that return a connection.
@@ -751,7 +751,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="connectionHandle">The handle to the connection.</param>
-        public delegate void AgentConnectionCreatedDelegate(int command_handle, int err, IntPtr connectionHandle);
+        public delegate void AgentConnectionEstablishedDelegate(int command_handle, int err, IntPtr connectionHandle);
 
         /// <summary>
         /// Starts listening for agent connections.
@@ -763,7 +763,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="message_cb">Callback that will be called on receiving of an incoming message.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("Sovrin.dll")]
-        public static extern int sovrin_agent_listen(int command_handle, string endpoint, AgentListenerCreatedDelegate listener_cb, AgentListenConnectionResultDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
+        public static extern int sovrin_agent_listen(int command_handle, string endpoint, AgentListenerCreatedDelegate listener_cb, AgentListenerConnectionEstablishedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
 
         /// <summary>
         /// Delegate for Agent callbacks that return a listener.
@@ -776,12 +776,12 @@ namespace Indy.Sdk.Dotnet
         /// <summary>
         /// Delegate for when an agent listener receives a connection.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="listener_handle">The handle for the listener the connection was created on.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="connection_handle">Connection handle to use for messages sending and mapping of incomming messages to to this connection.</param>
         /// <param name="sender_did">Id of sender Identity stored in secured Wallet.</param>
         /// <param name="reciever_did">Id of receiver Identity.</param>
-        public delegate void AgentListenConnectionResultDelegate(int command_handle, int err, IntPtr connection_handle, string sender_did, string reciever_did);
+        public delegate void AgentListenerConnectionEstablishedDelegate(IntPtr listener_handle, int err, IntPtr connection_handle, string sender_did, string reciever_did);
 
         /// <summary>
         /// Add identity to listener.
