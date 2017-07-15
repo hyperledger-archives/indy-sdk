@@ -53,8 +53,12 @@
     <Compile Include="InitHelper.cs" />
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
-    <Compile Include="Wrapper\CreateWalletTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentTest.cs" />
+    <Compile Include="Wrapper\WalletTests\CloseWalletTest.cs" />
+    <Compile Include="Wrapper\WalletTests\CreateWalletTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Wrapper\WalletTests\DeleteWalletTest.cs" />
+    <Compile Include="Wrapper\WalletTests\OpenWalletTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

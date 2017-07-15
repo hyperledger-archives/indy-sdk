@@ -104,6 +104,11 @@
         /// </summary>
         WalletIncompatiblePoolError = 205,
 
+        /// <summary>
+        /// Trying to open wallet that was opened already
+        /// </summary>
+        WalletAlreadyOpenedError = 206,
+
         // Ledger errors
 
         /// <summary>

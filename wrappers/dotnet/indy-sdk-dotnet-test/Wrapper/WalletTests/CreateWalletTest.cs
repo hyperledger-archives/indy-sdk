@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Indy.Sdk.Dotnet.Wrapper;
 
-namespace Indy.Sdk.Dotnet.Test.Wrapper
+namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
     [TestClass]
     public class CreateWalletTest : IndyIntegrationTest
