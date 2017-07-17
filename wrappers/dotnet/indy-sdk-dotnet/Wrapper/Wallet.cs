@@ -36,7 +36,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_create_wallet(
+            var result = LibIndy.indy_create_wallet(
                 commandHandle,
                 poolName,
                 name,
@@ -63,7 +63,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_open_wallet(
+            var result = LibIndy.indy_open_wallet(
                 commandHandle,
                 name,
                 runtimeConfig,
@@ -86,7 +86,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_close_wallet(
+            var result = LibIndy.indy_close_wallet(
                 commandHandle,
                 handle,
                 _noValueCallback);
@@ -107,7 +107,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_delete_wallet(
+            var result = LibIndy.indy_delete_wallet(
                 commandHandle,
                 name,
                 credentials,
@@ -130,7 +130,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_wallet_set_seq_no_for_value(
+            var result = LibIndy.indy_wallet_set_seq_no_for_value(
                 commandHandle,
                 walletHandle,
                 walletKey,

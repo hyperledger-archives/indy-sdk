@@ -203,7 +203,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var commandHandle = AddConnectionObserver(connectionObserver);
 
-            var result = LibIndy.sovrin_agent_connect(
+            var result = LibIndy.indy_agent_connect(
                 commandHandle,
                 pool.Handle,
                 wallet.Handle,
@@ -224,7 +224,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var commandHandle = AddListenerObserver(listenerObserver);
 
-            var result = LibIndy.sovrin_agent_listen(
+            var result = LibIndy.indy_agent_listen(
                 commandHandle,
                 endpoint,
                 _listenerCreatedCallback,
@@ -247,7 +247,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_agent_add_identity(
+            var result = LibIndy.indy_agent_add_identity(
                 commandHandle,
                 listener.Handle,
                 pool.Handle,
@@ -273,7 +273,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_agent_remove_identity(
+            var result = LibIndy.indy_agent_remove_identity(
                 commandHandle,
                 listener.Handle,
                 wallet.Handle,
@@ -297,7 +297,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_agent_send(
+            var result = LibIndy.indy_agent_send(
                 commandHandle,
                 connection.Handle,
                 message,
@@ -319,7 +319,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_agent_close_connection(
+            var result = LibIndy.indy_agent_close_connection(
                 commandHandle,
                 connection.Handle,
                 _noValueCallback
@@ -340,7 +340,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_agent_close_listener(
+            var result = LibIndy.indy_agent_close_listener(
                 commandHandle,
                 listener.Handle,
                 _noValueCallback

@@ -53,7 +53,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_sign_and_submit_request(
+            var result = LibIndy.indy_sign_and_submit_request(
                 commandHandle,
                 pool.Handle,
                 wallet.Handle,
@@ -78,7 +78,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_submit_request(
+            var result = LibIndy.indy_submit_request(
                 commandHandle,
                 pool.Handle,
                 requstJson,
@@ -100,7 +100,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_get_ddo_request(
+            var result = LibIndy.indy_build_get_ddo_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -125,7 +125,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_nym_request(
+            var result = LibIndy.indy_build_nym_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -154,7 +154,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_attrib_request(
+            var result = LibIndy.indy_build_attrib_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -181,7 +181,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_get_attrib_request(
+            var result = LibIndy.indy_build_get_attrib_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -205,7 +205,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_get_nym_request(
+            var result = LibIndy.indy_build_get_nym_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -228,7 +228,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_schema_request(
+            var result = LibIndy.indy_build_schema_request(
                 commandHandle,
                 submitterDid,
                 data,
@@ -252,7 +252,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_get_schema_request(
+            var result = LibIndy.indy_build_get_schema_request(
                 commandHandle,
                 submitterDid,
                 dest,
@@ -278,7 +278,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_claim_def_txn(
+            var result = LibIndy.indy_build_claim_def_txn(
                 commandHandle,
                 submitterDid,
                 xref,
@@ -305,7 +305,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_get_claim_def_txn(
+            var result = LibIndy.indy_build_get_claim_def_txn(
                 commandHandle,
                 submitterDid,
                 xref,
@@ -331,7 +331,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.sovrin_build_node_request(
+            var result = LibIndy.indy_build_node_request(
                 commandHandle,
                 submitterDid,
                 targetDid,

@@ -163,7 +163,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreClaimDefResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_issuer_create_and_store_claim_def(
+            var commandResult = LibIndy.indy_issuer_create_and_store_claim_def(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
@@ -191,7 +191,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreRevocRegResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_issuer_create_and_store_revoc_reg(
+            var commandResult = LibIndy.indy_issuer_create_and_store_revoc_reg(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
@@ -219,7 +219,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateClaimResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_issuer_create_claim(
+            var commandResult = LibIndy.indy_issuer_create_claim(
                 commandHandle,
                 wallet.Handle,
                 claimReqJson,
@@ -246,7 +246,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_issuer_revoke_claim(
+            var commandResult = LibIndy.indy_issuer_revoke_claim(
                 commandHandle,
                 wallet.Handle,
                 revocRegSeqNo,
@@ -270,7 +270,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_store_claim_offer(
+            var commandResult = LibIndy.indy_prover_store_claim_offer(
                 commandHandle,
                 wallet.Handle,
                 claimOfferJson,
@@ -293,7 +293,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_get_claim_offers(
+            var commandResult = LibIndy.indy_prover_get_claim_offers(
                 commandHandle,
                 wallet.Handle,
                 filterJson,
@@ -316,7 +316,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreRevocRegResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_create_master_secret(
+            var commandResult = LibIndy.indy_prover_create_master_secret(
                 commandHandle,
                 wallet.Handle,
                 masterSecretName,
@@ -342,7 +342,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_create_and_store_claim_req(
+            var commandResult = LibIndy.indy_prover_create_and_store_claim_req(
                 commandHandle,
                 wallet.Handle,
                 proverDid,
@@ -368,7 +368,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_store_claim(
+            var commandResult = LibIndy.indy_prover_store_claim(
                 commandHandle,
                 wallet.Handle,
                 claimsJson,
@@ -391,7 +391,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_get_claims(
+            var commandResult = LibIndy.indy_prover_get_claims(
                 commandHandle,
                 wallet.Handle,
                 filterJson,
@@ -414,7 +414,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_get_claims_for_proof_req(
+            var commandResult = LibIndy.indy_prover_get_claims_for_proof_req(
                 commandHandle,
                 wallet.Handle,
                 proofRequestJson,
@@ -442,7 +442,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_prover_create_proof(
+            var commandResult = LibIndy.indy_prover_create_proof(
                 commandHandle,
                 wallet.Handle,
                 proofReqJson,
@@ -473,7 +473,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.sovrin_verifier_verify_proof(
+            var commandResult = LibIndy.indy_verifier_verify_proof(
                 commandHandle,
                 wallet.Handle,
                 proofRequestJson,
