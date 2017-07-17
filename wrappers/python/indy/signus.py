@@ -136,14 +136,43 @@ async def verify_signature(wallet_handle: int,
 
 
 async def encrypt(wallet_handle: int,
+                  pool_handle: int,
+                  my_did: str,
                   did: str,
-                  msg: str,
-                  encrypted_msg: str) -> None:
-    pass
+                  msg: str) -> (str, str):
+    logger = logging.getLogger(__name__)
+    logger.debug("encrypt: >>> wallet_handle: %s, pool_handle: %s, my_did: %s, did: %s, msg: %s",
+                 wallet_handle,
+                 pool_handle,
+                 my_did,
+                 did,
+                 msg)
+
+    if not hasattr(encrypt, "cb"):
+        logger.debug("encrypt: Creating callback")
+        encrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_pool_handle = c_int32(pool_handle)
+    c_my_did = c_char_p(my_did.encode('utf-8'))
+    c_did = c_char_p(did.encode('utf-8'))
+    c_msg = c_char_p(msg.encode('utf-8'))
+
+    res = await do_call('indy_encrypt',
+                        encrypt.cb,
+                        c_wallet_handle,
+                        c_pool_handle,
+                        c_my_did,
+                        c_did,
+                        c_msg)
+
+    logger.debug("encrypt: <<< res: %s", res)
+    return res
 
 
 async def decrypt(wallet_handle: int,
+                  my_did: str,
                   did: str,
                   encrypted_msg: str,
-                  decrypted_msg: str) -> None:
+                  nonce: str) -> str:
     pass
