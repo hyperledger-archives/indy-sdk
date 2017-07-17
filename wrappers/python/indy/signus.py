@@ -56,7 +56,25 @@ async def replace_keys(wallet_handle: int,
 
 async def store_their_did(wallet_handle: int,
                           identity_json: str) -> None:
-    pass
+    logger = logging.getLogger(__name__)
+    logger.debug("store_their_did: >>> wallet_handle: %s, identity_json: %s",
+                 wallet_handle,
+                 identity_json)
+
+    if not hasattr(store_their_did, "cb"):
+        logger.debug("store_their_did: Creating callback")
+        store_their_did.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_identity_json = c_char_p(identity_json.encode('utf-8'))
+
+    res = await do_call('indy_store_their_did',
+                        store_their_did.cb,
+                        c_wallet_handle,
+                        c_identity_json)
+
+    logger.debug("store_their_did: <<< res: %s", res)
+    return res
 
 
 async def sign(wallet_handle: int,
