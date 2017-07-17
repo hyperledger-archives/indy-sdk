@@ -1,6 +1,5 @@
 from .libindy import do_call, create_cb
 
-from typing import Optional
 from ctypes import *
 
 import logging
