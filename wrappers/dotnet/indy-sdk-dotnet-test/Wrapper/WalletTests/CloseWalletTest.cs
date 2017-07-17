@@ -12,7 +12,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
     public class CloseWalletTest : IndyIntegrationTest
     {
         [TestMethod]
-        public void testCloseWalletWorks()
+        public void TestCloseWalletWorks()
         {
             Wallet.CreateWalletAsync("default", "CloseAsyncWorks", "default", null, null).Wait();
 
@@ -24,7 +24,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        public async Task testCloseWalletWorksForTwice()
+        public async Task TestCloseWalletWorksForTwice()
         {
             Wallet.CreateWalletAsync("default", "CloseAsyncWorksForTwice", "default", null, null).Wait();
 

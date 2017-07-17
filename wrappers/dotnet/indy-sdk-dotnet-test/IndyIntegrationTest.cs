@@ -10,7 +10,7 @@ namespace Indy.Sdk.Dotnet.Test
 {
     public class IndyIntegrationTest
     {
-        protected HashSet<Pool> openedPools = new HashSet<Pool>();
+        protected HashSet<Pool> _openedPools = new HashSet<Pool>();
 
         [TestInitialize]
         public void SetUp()
@@ -22,7 +22,7 @@ namespace Indy.Sdk.Dotnet.Test
         [TestCleanup]
         public async Task TearDown()
         {
-            foreach (var pool in openedPools)
+            foreach (var pool in _openedPools)
             {
                 try
                 {
@@ -32,7 +32,7 @@ namespace Indy.Sdk.Dotnet.Test
                 { }
             }
 
-            openedPools.Clear();
+            _openedPools.Clear();
             StorageUtils.CleanupStorage();
         }       
     }
