@@ -29,10 +29,29 @@ async def create_and_store_my_did(wallet_handle: int,
 
 async def replace_keys(wallet_handle: int,
                        did: str,
-                       identity_json: str,
-                       verkey: str,
-                       pk: str) -> None:
-    pass
+                       identity_json: str) -> (str, str):
+    logger = logging.getLogger(__name__)
+    logger.debug("replace_keys: >>> wallet_handle: %s, did: %s, identity_json: %s",
+                 wallet_handle,
+                 did,
+                 identity_json)
+
+    if not hasattr(replace_keys, "cb"):
+        logger.debug("replace_keys: Creating callback")
+        replace_keys.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did)
+    c_identity_json = c_char_p(identity_json.encode('utf-8'))
+
+    res = await do_call('indy_replace_keys',
+                        replace_keys.cb,
+                        c_wallet_handle,
+                        c_did,
+                        c_identity_json)
+
+    logger.debug("replace_keys: <<< res: %s", res)
+    return res
 
 
 async def store_their_did(wallet_handle: int,
