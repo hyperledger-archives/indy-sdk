@@ -79,9 +79,29 @@ async def store_their_did(wallet_handle: int,
 
 async def sign(wallet_handle: int,
                did: str,
-               msg: str,
-               signature: str) -> None:
-    pass
+               msg: str) -> str:
+    logger = logging.getLogger(__name__)
+    logger.debug("sign: >>> wallet_handle: %s, did: %s, msg: %s",
+                 wallet_handle,
+                 did,
+                 msg)
+
+    if not hasattr(sign, "cb"):
+        logger.debug("sign: Creating callback")
+        sign.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did)
+    c_msg = c_char_p(msg.encode('utf-8'))
+
+    res = await do_call('indy_sign',
+                        sign.cb,
+                        c_wallet_handle,
+                        c_did,
+                        c_msg)
+
+    logger.debug("sign: <<< res: %s", res)
+    return res
 
 
 async def verify_signature(wallet_handle: int,
