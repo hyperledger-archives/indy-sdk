@@ -24,5 +24,5 @@ async def test_replace_keys_works():
     wallet_handle = await wallet.open_wallet(wallet_name, None, None)
     assert wallet_handle is not None
     (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
-    (new_did, new_ver_key) = await signus.replace_keys(wallet_handle, did, "{}")
+    (new_did, new_ver_key) = await signus.replace_keys(wallet_handle, did.decode(), "{}")
     assert (new_did != did) and (new_ver_key != ver_key)

@@ -44,5 +44,5 @@ async def test_verify_signature_works():
         "signature": "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
     }
 
-    valid = await signus.verify_signature(wallet_handle, pool_handle, did, json.dumps(message))
+    valid = await signus.verify_signature(wallet_handle, pool_handle, did.decode(), json.dumps(message))
     assert valid

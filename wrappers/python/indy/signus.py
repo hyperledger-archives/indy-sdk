@@ -41,7 +41,7 @@ async def replace_keys(wallet_handle: int,
         replace_keys.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_did = c_char_p(did)
+    c_did = c_char_p(did.encode('utf-8'))
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
     res = await do_call('indy_replace_keys',
@@ -91,7 +91,7 @@ async def sign(wallet_handle: int,
         sign.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_did = c_char_p(did)
+    c_did = c_char_p(did.encode('utf-8'))
     c_msg = c_char_p(msg.encode('utf-8'))
 
     res = await do_call('indy_sign',
@@ -121,7 +121,7 @@ async def verify_signature(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_pool_handle = c_int32(pool_handle)
-    c_did = c_char_p(did)
+    c_did = c_char_p(did.encode('utf-8'))
     c_signed_msg = c_char_p(signed_msg.encode('utf-8'))
 
     res = await do_call('indy_verify_signature',
