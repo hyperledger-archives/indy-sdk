@@ -131,10 +131,10 @@ pub extern fn indy_agent_listen(command_handle: i32,
                                   message_cb: Option<extern fn(xconnection_handle: i32,
                                                                err: ErrorCode,
                                                                message: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam5);
 
     let cmd = Command::Agent(AgentCommand::Listen(
         endpoint,
