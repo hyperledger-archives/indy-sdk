@@ -175,4 +175,31 @@ async def decrypt(wallet_handle: int,
                   did: str,
                   encrypted_msg: str,
                   nonce: str) -> str:
-    pass
+    logger = logging.getLogger(__name__)
+    logger.debug("decrypt: >>> wallet_handle: %s, my_did: %s, did: %s, encrypted_msg: %s, nonce: %s",
+                 wallet_handle,
+                 my_did,
+                 did,
+                 encrypted_msg,
+                 nonce)
+
+    if not hasattr(decrypt, "cb"):
+        logger.debug("decrypt: Creating callback")
+        decrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_my_did = c_char_p(my_did.encode('utf-8'))
+    c_did = c_char_p(did.encode('utf-8'))
+    c_encrypted_msg = c_char_p(encrypted_msg.encode('utf-8'))
+    c_nonce = c_char_p(nonce.encode('utf-8'))
+
+    res = await do_call('indy_decrypt',
+                        decrypt.cb,
+                        c_wallet_handle,
+                        c_my_did,
+                        c_did,
+                        c_encrypted_msg,
+                        c_nonce)
+
+    logger.debug("decrypt: <<< res: %s", res)
+    return res
