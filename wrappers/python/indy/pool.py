@@ -36,7 +36,7 @@ async def open_pool_ledger(config_name: str,
 
     if not hasattr(open_pool_ledger, "cb"):
         logger.debug("open_pool_ledger: Creating callback")
-        open_pool_ledger.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+        open_pool_ledger.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
     c_config_name = c_char_p(config_name.encode('utf-8'))
     c_config = c_char_p(config.encode('utf-8'))
