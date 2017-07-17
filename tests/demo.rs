@@ -15,7 +15,6 @@ extern crate log;
 #[macro_use]
 mod utils;
 
-use utils::agent::AgentUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
@@ -52,6 +51,12 @@ use indy::api::signus::{
     indy_verify_signature,
     indy_store_their_did
 };
+use indy::api::agent::{
+    indy_agent_listen,
+    indy_agent_add_identity,
+    indy_agent_connect,
+    indy_agent_send
+};
 
 use utils::callback::CallbackUtils;
 
@@ -85,6 +90,11 @@ fn agent_demo_works() {
     let (create_and_store_listener_did_sender, create_and_store_listener_did_receiver) = channel();
     let (create_and_store_trustee_did_sender, create_and_store_trustee_did_receiver) = channel();
     let (attrib_sender, attrib_receiver) = channel();
+    let (listen_sender, listen_receiver) = channel();
+    let (add_identity_sender, add_identity_receiver) = channel();
+    let (connect_sender, connect_receiver) = channel();
+    let (send_sender, send_receiver) = channel();
+
     let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
     let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
     let send_cb = Box::new(move |err, resp| { submit_sender.send((err, resp)).unwrap(); });
@@ -94,6 +104,11 @@ fn agent_demo_works() {
     let open_trustee_wallet_cb = Box::new(move |err, handle| { open_trustee_wallet_sender.send((err, handle)).unwrap(); });
     let create_and_store_listener_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_listener_did_sender.send((err, did, verkey, public_key)).unwrap(); });
     let create_and_store_trustee_did_cb = Box::new(move |err, did, verkey, public_key| { create_and_store_trustee_did_sender.send((err, did, verkey, public_key)).unwrap(); });
+    let listen_cb = Box::new(move |err, listener_handle| listen_sender.send((err, listener_handle)).unwrap());
+    let add_identity_cb = Box::new(move |err_code| add_identity_sender.send(err_code).unwrap());
+    let connect_cb = Box::new(move |err, connection_handle| { connect_sender.send((err, connection_handle)).unwrap(); });
+    let agent_send_cb = Box::new(move |err_code| send_sender.send(err_code).unwrap());
+
     let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
     let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
     let (send_command_handle, send_callback) = CallbackUtils::closure_to_send_tx_cb(send_cb);
@@ -106,6 +121,10 @@ fn agent_demo_works() {
     let (attrib_command_handle, attrib_callback) = CallbackUtils::closure_to_sign_and_submit_request_cb(Box::new(move |err, request_result_json| {
         attrib_sender.send((err, request_result_json)).unwrap();
     }));
+    let (listen_command_handle, listen_callback) = CallbackUtils::closure_to_agent_listen_cb(listen_cb);
+    let (add_identity_command_handle, add_identity_cb) = CallbackUtils::closure_to_agent_add_identity_cb(add_identity_cb);
+    let (connect_command_hamdle, connect_callback) = CallbackUtils::closure_to_agent_connect_cb(connect_cb);
+    let (agent_send_command_handle, agent_send_callback) = CallbackUtils::closure_to_agent_send_cb(agent_send_cb);
 
     // 1. Create ledger config from genesis txn file
     PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
@@ -265,18 +284,52 @@ fn agent_demo_works() {
     let (err, _) = attrib_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
 
-    // FIXME inline calls bellow, it's demo and should use API calls instead of helpers
+    // 10. start listener on endpoint
+    let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
+    let on_msg = Box::new(move |_, _, msg| { wait_msg_from_srv_send.send(msg).unwrap(); });
+    let (on_msg_cb_id, on_msg_callback) = CallbackUtils::closure_to_agent_message_cb(on_msg);
 
-    // start listener on endpoint
-    let agent_listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
-    // allow listener accept incoming connection for specific DID (listener_did)
-    AgentUtils::add_identity(agent_listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
+    let on_connect_cb = Box::new(move |_, _, conn_handle, _, _| { CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle); });
+    let (on_connect_cb_id, on_connect_callback) = CallbackUtils::closure_to_agent_connected_cb(on_connect_cb);
 
-    // inititate connection from sender to listener
-    let conn_handle_sender_to_listener = AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
+    let endpoint = CString::new(endpoint).unwrap();
 
-    // send test message from sender to listener TODO: check message received
-    AgentUtils::send(conn_handle_sender_to_listener, "msg_from_sender_to_listener").unwrap();
+    let err = indy_agent_listen(listen_command_handle, endpoint.as_ptr(), listen_callback, on_connect_callback, on_msg_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, agent_listener_handle) = listen_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    CallbackUtils::closure_map_ids(on_connect_cb_id, agent_listener_handle);
+
+    // 11. Allow listener accept incoming connection for specific DID (listener_did)
+    let listener_did = CString::new(listener_did.clone()).unwrap();
+    let err = indy_agent_add_identity(add_identity_command_handle, agent_listener_handle, pool_handle, listener_wallet, listener_did.as_ptr(), add_identity_cb);
+    assert_eq!(err, ErrorCode::Success);
+    let err = add_identity_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    // 12. Initiate connection from sender to listener
+    let (msg_cb_id, msg_callback) = CallbackUtils::closure_to_agent_message_cb(Box::new(move |_, _, _| {}));
+    let sender_did = CString::new(sender_did).unwrap();
+
+    let err = indy_agent_connect(connect_command_hamdle, pool_handle, sender_wallet, sender_did.as_ptr(), listener_did.as_ptr(), connect_callback, msg_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, conn_handle_sender_to_listener) = connect_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    CallbackUtils::closure_map_ids(msg_cb_id, conn_handle_sender_to_listener);
+
+    // 13. Send test message from sender to listener
+    let message = "msg_from_sender_to_listener";
+    let msg = CString::new(message).unwrap();
+
+    let res = indy_agent_send(agent_send_command_handle, conn_handle_sender_to_listener, msg.as_ptr(), agent_send_callback);
+    assert_eq!(res, ErrorCode::Success);
+    let res = send_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    assert_eq!(res, ErrorCode::Success);
+
+    // 14. Check message received
+    assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), message);
 
     TestUtils::cleanup_storage();
 }
