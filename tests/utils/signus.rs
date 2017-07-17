@@ -48,7 +48,7 @@ impl SignusUtils {
         Ok(signature)
     }
 
-    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<String>) -> Result<(String, String, String), ErrorCode> {
+    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String, String), ErrorCode> {
         let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
         let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| {
             create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap();

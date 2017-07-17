@@ -25,7 +25,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback signAndSubmitRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -38,7 +38,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback submitRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -51,7 +51,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildGetDdoRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -64,7 +64,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildNymRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -77,7 +77,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildAttribRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -90,7 +90,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildGetAttribRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -103,7 +103,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildGetNymRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -116,7 +116,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildSchemaRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -129,7 +129,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildGetSchemaRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -142,7 +142,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildClaimDefTxnCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -155,7 +155,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildGetClaimDefTxnCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -168,7 +168,7 @@ public class Ledger extends IndyJava.API {
 
 	private static Callback buildNodeRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -181,7 +181,7 @@ public class Ledger extends IndyJava.API {
 
 	public static Callback buildGetTxnRequestCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -202,7 +202,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String requestJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
@@ -225,7 +225,7 @@ public class Ledger extends IndyJava.API {
 			Pool pool,
 			String requestJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
@@ -246,7 +246,7 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String requestJson) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_ddo_request(
@@ -267,7 +267,7 @@ public class Ledger extends IndyJava.API {
 			String alias,
 			String role) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_nym_request(
@@ -291,7 +291,7 @@ public class Ledger extends IndyJava.API {
 			String raw,
 			String enc) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_attrib_request(
@@ -313,7 +313,7 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_attrib_request(
@@ -332,7 +332,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String targetDid) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_nym_request(
@@ -350,7 +350,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_schema_request(
@@ -368,7 +368,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_schema_request(
@@ -387,7 +387,7 @@ public class Ledger extends IndyJava.API {
 			String xref,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_claim_def_txn(
@@ -406,7 +406,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String xref) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_claim_def_txn(
@@ -425,7 +425,7 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_node_request(
@@ -444,7 +444,7 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			int data) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_txn_request(

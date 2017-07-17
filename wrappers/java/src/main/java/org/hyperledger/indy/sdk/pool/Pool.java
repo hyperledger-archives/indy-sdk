@@ -31,7 +31,7 @@ public class Pool extends IndyJava.API {
 
 	private static Callback createPoolLedgerConfigCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -44,7 +44,7 @@ public class Pool extends IndyJava.API {
 
 	private static Callback openPoolLedgerCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, int pool_handle) {
 
 			CompletableFuture<Pool> future = (CompletableFuture<Pool>) removeFuture(xcommand_handle);
@@ -59,7 +59,7 @@ public class Pool extends IndyJava.API {
 
 	private static Callback refreshPoolLedgerCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -72,7 +72,7 @@ public class Pool extends IndyJava.API {
 
 	private static Callback closePoolLedgerCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -85,7 +85,7 @@ public class Pool extends IndyJava.API {
 
 	private static Callback deletePoolLedgerConfigCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -104,7 +104,7 @@ public class Pool extends IndyJava.API {
 			String configName,
 			String config) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_create_pool_ledger_config(
@@ -122,7 +122,7 @@ public class Pool extends IndyJava.API {
 			String configName,
 			String config) throws IndyException {
 
-		CompletableFuture<Pool> future = new CompletableFuture<Pool> ();
+		CompletableFuture<Pool> future = new CompletableFuture<Pool>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_open_pool_ledger(
@@ -139,7 +139,7 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int handle = pool.getPoolHandle();
@@ -157,7 +157,7 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> closePoolLedger(
 			Pool pool) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int handle = pool.getPoolHandle();
@@ -175,7 +175,7 @@ public class Pool extends IndyJava.API {
 	public static CompletableFuture<Void> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_delete_pool_ledger_config(

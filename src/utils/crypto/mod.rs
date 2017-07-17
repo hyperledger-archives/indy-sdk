@@ -27,3 +27,5 @@ pub mod xsalsa20;
 pub mod hash;
 
 pub mod signature_serializer;
+
+pub mod verkey_builder;
