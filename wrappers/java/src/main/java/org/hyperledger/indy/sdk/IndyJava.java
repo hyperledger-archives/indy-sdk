@@ -29,7 +29,7 @@ public class IndyJava {
 		 */
 
 		private static AtomicInteger atomicInteger = new AtomicInteger();
-		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<Integer, CompletableFuture<?>> ();
+		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<Integer, CompletableFuture<?>>();
 
 		protected static int newCommandHandle() {
 
@@ -106,7 +106,7 @@ public class IndyJava {
 
 	public abstract static class JsonParameter {
 
-		protected Map<String, Object> map = new HashMap<String, Object> ();
+		protected Map<String, Object> map = new HashMap<String, Object>();
 
 		/*
 		 * JSON CREATION
