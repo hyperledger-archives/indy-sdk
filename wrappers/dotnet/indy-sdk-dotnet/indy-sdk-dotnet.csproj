@@ -52,10 +52,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Api\LedgerRequest.cs" />
-    <Compile Include="Api\SignedLedgerRequest.cs" />
-    <Compile Include="Api\Wallet.cs" />
-    <Compile Include="Api\Ledger.cs" />
     <Compile Include="Wrapper\Agent.cs" />
     <Compile Include="Wrapper\AgentObservers.cs" />
     <Compile Include="Wrapper\AnonCredsResults.cs" />
