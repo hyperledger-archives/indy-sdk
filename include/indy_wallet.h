@@ -154,30 +154,6 @@ extern "C" {
                                                const char*      credentials,
                                                void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                               );
-    
-    /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
-    /// in a secure wallet identified by the given string.
-    /// The string identifying the value in the wallet is returned when the value is stored in the wallet.
-    ///
-    /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
-    /// command_handle: command handle to map callback to user context.
-    /// wallet_key: unique string identifying the value in the wallet.
-    /// seq_no: transaction sequence number.
-    ///
-    /// #Returns
-    /// Error code
-    ///
-    /// #Errors
-    /// Common*
-    /// Wallet*
-
-    extern indy_error_t indy_wallet_set_seq_no_for_value(indy_handle_t  command_handle,
-                                                             indy_handle_t  wallet_handle,
-                                                             const char*      wallet_key,
-                                                             indy_i32_t     seq_no,
-                                                             void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                                             );
 
 #ifdef __cplusplus
 }
