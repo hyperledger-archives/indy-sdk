@@ -1,5 +1,6 @@
 from tests.utils import pool, storage
 from indy import ledger
+from indy.pool import close_pool_ledger
 
 import json
 import pytest
@@ -15,9 +16,15 @@ def before_after_each():
     storage.cleanup()
 
 
+@pytest.fixture
+async def pool_handle():
+    handle = await pool.create_and_open_pool_ledger("pool_name")
+    yield handle
+    await close_pool_ledger(handle)
+
+
 @pytest.mark.asyncio
-async def test_submit_request_works():
-    pool_handle = await pool.create_and_open_pool_ledger("pool_name")
+async def test_submit_request_works(pool_handle):
     request = {
         "reqId": 1491566332010860,
         "identifier": "Th7MpTaRZVRYnPiabds81Y",
