@@ -38,7 +38,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 wallet.CloseAsync()
             );
 
-            Assert.AreEqual(ex.ErrorCode, ErrorCode.WalletInvalidHandle);
+            Assert.AreEqual(ErrorCode.WalletInvalidHandle, (ErrorCode)ex.ErrorCode);
         }
     }
 }

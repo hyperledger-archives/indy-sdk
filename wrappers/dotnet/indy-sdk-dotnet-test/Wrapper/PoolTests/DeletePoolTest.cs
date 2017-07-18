@@ -48,7 +48,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
                Pool.OpenPoolLedgerAsync(poolName, null)
             );
 
-            Assert.AreEqual(ex.ErrorCode, ErrorCode.PoolLedgerInvalidPoolHandle);
+            Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, (ErrorCode)ex.ErrorCode);
 
         }
 

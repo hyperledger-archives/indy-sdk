@@ -33,17 +33,17 @@ namespace Indy.Sdk.Dotnet.Test
 
         public static String GetIndyHomePath(string filename)
         {
-            return GetIndyHomePath() + filename;
+            return Path.Combine(GetIndyHomePath(), filename);
         }
 
         public static string GetTmpPath()
         {
-            return Path.Combine(Path.GetTempPath(), "indy");
+            return Path.Combine(Path.GetTempPath(), ".indy");
         }
 
         public static string GetTmpPath(string filename)
         {
-            return GetTmpPath() + filename;
+            return Path.Combine(GetTmpPath(), filename);
         }
     }
 }

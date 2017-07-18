@@ -33,7 +33,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.CreateWalletAsync("default", "createWalletWorks", "unknown_type", null, null)
             );
 
-            Assert.AreEqual(ex.ErrorCode, ErrorCode.WalletUnknownTypeError);
+            Assert.AreEqual(ErrorCode.WalletUnknownTypeError, (ErrorCode)ex.ErrorCode);
         }
 
         [TestMethod]
@@ -43,7 +43,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.CreateWalletAsync(string.Empty, "createWalletWorks", "default", null, null)
             );
 
-            Assert.AreEqual(ex.ErrorCode, ErrorCode.CommonInvalidParam2);            
+            Assert.AreEqual(ErrorCode.CommonInvalidParam2, (ErrorCode)ex.ErrorCode);            
         }
 
         [TestMethod]
@@ -56,7 +56,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null)
             );
 
-            Assert.AreEqual(ex.ErrorCode, ErrorCode.WalletAlreadyExistsError);
+            Assert.AreEqual(ErrorCode.WalletAlreadyExistsError, (ErrorCode)ex.ErrorCode);
         }
     }
 }

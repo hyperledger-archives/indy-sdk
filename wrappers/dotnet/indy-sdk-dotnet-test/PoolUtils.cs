@@ -17,7 +17,7 @@ namespace Indy.Sdk.Dotnet.Test
 
         public static string CreateGenesisTxnFile(string filename, int nodesCnt)
         {
-            var path = StorageUtils.GetTmpPath(filename);
+            var file = StorageUtils.GetTmpPath(filename);
 
             var defaultTxns = new string[]{
                 "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"10.0.0.2\",\"client_port\":9702,\"node_ip\":\"10.0.0.2\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
@@ -26,17 +26,17 @@ namespace Indy.Sdk.Dotnet.Test
                 "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"10.0.0.2\",\"client_port\":9708,\"node_ip\":\"10.0.0.2\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}"
              };
 
-            Directory.CreateDirectory(path);
-            var stream = new StreamWriter(path);
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            var stream = new StreamWriter(file);
 
             for (int i = 0; i < nodesCnt; i++)
             {
-                stream.WriteLine(filename, defaultTxns[i]);
+                stream.WriteLine(defaultTxns[i]);
             }
 
             stream.Close();
 
-            return path;
+            return file;
         }
 
         public static string CreatePoolLedgerConfig()
@@ -55,7 +55,8 @@ namespace Indy.Sdk.Dotnet.Test
         public static void CreatePoolLedgerConfig(string poolName, int nodesCnt)
         {
             var genesisTxnFile = CreateGenesisTxnFile("temp.txn", nodesCnt);
-            var createPoolLedgerConfig = string.Format("{\"genesis_txn\":{0}}", Path.GetFullPath(genesisTxnFile));
+            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
+            var createPoolLedgerConfig = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
             Pool.CreatePoolLedgerConfigAsync(poolName, createPoolLedgerConfig).Wait();
         }
@@ -63,7 +64,7 @@ namespace Indy.Sdk.Dotnet.Test
         public static Pool CreateAndOpenPoolLedger()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var openPoolLedgerConfig = "{\"refreshOnOpen\":true,\"autoRefreshTime\":false,\"networkTimeout\":false}";
+            var openPoolLedgerConfig = "{\"refreshOnOpen\":true}";
 
             return Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig).Result;
         }

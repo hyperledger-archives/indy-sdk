@@ -40,7 +40,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
                 Pool.CreatePoolLedgerConfigAsync("", configJson)
             );
 
-            Assert.AreEqual(ex.ErrorCode, ErrorCode.CommonInvalidParam2);
+            Assert.AreEqual(ErrorCode.CommonInvalidParam2, (ErrorCode)ex.ErrorCode);
         }
     }
 }
