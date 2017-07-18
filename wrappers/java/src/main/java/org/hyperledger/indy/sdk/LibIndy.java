@@ -30,7 +30,6 @@ public abstract class LibIndy {
 		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
 		public int indy_delete_wallet(int command_handle, String name, String credentials, Callback cb);
-		public int indy_wallet_set_seq_no_for_value(int command_handle, int wallet_handle, String wallet_key, Callback cb);
 
 		// ledger.rs
 
