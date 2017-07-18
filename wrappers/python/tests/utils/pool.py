@@ -28,3 +28,10 @@ def create_genesis_txn_file(file_name, predefined_data=None):
         f.writelines(predefined_data or default_txn)
 
     return path
+
+
+async def create_and_open_pool_ledger(name):
+    await create_pool_ledger_config(name)
+    pool_handle = await pool.open_pool_ledger(name, "")
+    assert pool_handle is not None
+    return pool_handle
