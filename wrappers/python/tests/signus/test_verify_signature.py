@@ -3,7 +3,6 @@ from indy import wallet, signus
 from ..utils import storage
 from ..utils.wallet import create_and_open_wallet
 
-import asyncio
 import json
 import pytest
 import logging
@@ -11,23 +10,18 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def before_after_each():
     storage.cleanup()
     yield
     storage.cleanup()
 
 
-@pytest.yield_fixture()
-def wallet_handle():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    future = asyncio.Future()
-    asyncio.ensure_future(create_and_open_wallet(future))
-    loop.run_until_complete(future)
-    yield future.result()
-    loop.run_until_complete(wallet.close_wallet(future.result()))
-    loop.close()
+@pytest.fixture
+async def wallet_handle():
+    handle = await create_and_open_wallet()
+    yield handle
+    await wallet.close_wallet(handle)
 
 
 @pytest.mark.asyncio
