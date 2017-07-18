@@ -44,7 +44,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForOpened", null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonIOError, (ErrorCode)ex.ErrorCode);            
+            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);            
         }
 
         [TestMethod]
@@ -64,7 +64,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                  Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonIOError, (ErrorCode)ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         
         }
 
@@ -75,7 +75,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonIOError, (ErrorCode)ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         }
     }
 }

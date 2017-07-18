@@ -57,6 +57,8 @@
     <Compile Include="Wrapper\AgentTests\AgentTest.cs" />
     <Compile Include="Wrapper\PoolTests\ClosePoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\CreatePoolTest.cs" />
+    <Compile Include="Wrapper\PoolTests\RefreshPoolTest.cs" />
+    <Compile Include="Wrapper\PoolTests\OpenPoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\DeletePoolTest.cs" />
     <Compile Include="Wrapper\WalletTests\CloseWalletTest.cs" />
     <Compile Include="Wrapper\WalletTests\CreateWalletTest.cs" />

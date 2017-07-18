@@ -12,31 +12,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
     public class DeletePoolTest : IndyIntegrationTest
     {
         [TestMethod]
-        public void TestOpenPoolWorksForNullConfig()
+        public void TestDeletePoolWorks()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
-
-            Assert.IsNotNull(pool);
-
-            _openedPools.Add(pool);
+            Pool.DeletePoolLedgerConfigAsync(poolName).Wait();
         }
 
         [TestMethod]
-        public void TestOpenPoolWorksForConfig()
-        {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
-
-            var config = "{\"refreshOnOpen\":true,\"autoRefreshTime\":false,\"networkTimeout\":false}";
-            var pool = Pool.OpenPoolLedgerAsync(poolName, config).Result;
-
-
-            Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
-        }
-
-        [TestMethod]
-        public async Task TestOpenPoolWorksForTwice()
+        public async Task TestDeletePoolWorksForOpened()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
             var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
@@ -45,33 +28,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
             _openedPools.Add(pool);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-               Pool.OpenPoolLedgerAsync(poolName, null)
+                Pool.DeletePoolLedgerConfigAsync(poolName)
             );
 
-            Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, (ErrorCode)ex.ErrorCode);
-
-        }
-
-        [TestMethod]
-        public void TestOpenPoolWorksForTwoNodes()
-        {
-            var poolName = PoolUtils.CreatePoolLedgerConfig(2);
-
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
-
-            Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
-        }
-
-        [TestMethod]
-        public void TestOpenPoolWorksForThreeNodes()
-        {
-            var poolName = PoolUtils.CreatePoolLedgerConfig(3);
-
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
-
-            Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
-        }
+            Assert.AreEqual(ErrorCode.CommonInvalidState, ex.ErrorCode);
+        }        
     }
 }

@@ -36,7 +36,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.OpenWalletAsync("openWalletWorksForNotCreatedWallet", null, null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonIOError, (ErrorCode)ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                Wallet.OpenWalletAsync("openWalletWorksForTwice", null, null)
             );
 
-            Assert.AreEqual(ErrorCode.WalletAlreadyOpenedError, (ErrorCode)ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.WalletAlreadyOpenedError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -60,7 +60,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                Wallet.OpenWalletAsync("testOpenWalletWorksForNotCreated", null, null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonIOError, (ErrorCode)ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
                 pool.CloseAsync()
             );
 
-            Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, (ErrorCode)ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, ex.ErrorCode);
         }
 
         public void TestClosePoolWorksForReopenAfterClose()
