@@ -366,6 +366,7 @@ public class Ledger extends IndyJava.API {
 
 	public static CompletableFuture<String> buildGetSchemaRequest(
 			String submitterDid,
+			String dest,
 			String data) throws IndyException {
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -374,6 +375,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_schema_request(
 				commandHandle, 
 				submitterDid,
+				dest,
 				data,
 				buildGetSchemaRequestCb);
 
@@ -384,7 +386,8 @@ public class Ledger extends IndyJava.API {
 
 	public static CompletableFuture<String> buildClaimDefTxn(
 			String submitterDid,
-			String xref,
+			int xref,
+			String signatureType,
 			String data) throws IndyException {
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -394,6 +397,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle, 
 				submitterDid,
 				xref,
+				signatureType,
 				data,
 				buildClaimDefTxnCb);
 
@@ -404,7 +408,9 @@ public class Ledger extends IndyJava.API {
 
 	public static CompletableFuture<String> buildGetClaimDefTxn(
 			String submitterDid,
-			String xref) throws IndyException {
+			int xref,
+			String signatureType,
+			String origin) throws IndyException {
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -413,6 +419,8 @@ public class Ledger extends IndyJava.API {
 				commandHandle, 
 				submitterDid,
 				xref,
+				signatureType,
+				origin,
 				buildGetClaimDefTxnCb);
 
 		checkResult(result);
