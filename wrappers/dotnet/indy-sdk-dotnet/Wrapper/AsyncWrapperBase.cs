@@ -34,7 +34,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             taskCompletionSource.SetResult(true);
         };
-        
 
         /// <summary>
         /// Checks the result from a Sovrin function call.

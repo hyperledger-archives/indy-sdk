@@ -58,19 +58,34 @@
         CommonInvalidParam9 = 108,
 
         /// <summary>
+        /// Caller passed invalid value as param 10 (null, invalid json and etc..)
+        /// </summary>
+        CommonInvalidParam10 = 109,
+
+        /// <summary>
+        /// Caller passed invalid value as param 11 (null, invalid json and etc..)
+        /// </summary>
+        CommonInvalidParam11 = 110,
+
+        /// <summary>
+        /// Caller passed invalid value as param 12 (null, invalid json and etc..)
+        /// </summary>
+        CommonInvalidParam12 = 111,
+
+        /// <summary>
         /// Invalid library state was detected in runtime. It signals library bug
         /// </summary>
-        CommonInvalidState = 109,
+        CommonInvalidState = 112,
 
         /// <summary>
         /// Object (json, config, key, claim and etc...) passed by library caller has invalid structure
         /// </summary>
-        CommonInvalidStructure = 110,
+        CommonInvalidStructure = 113,
 
         /// <summary>
         /// IO Error
         /// </summary>
-        CommonIOError = 111,
+        CommonIOError = 114,
 
         // Wallet errors
 

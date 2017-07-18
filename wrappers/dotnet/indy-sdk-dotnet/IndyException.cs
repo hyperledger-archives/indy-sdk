@@ -12,7 +12,7 @@ namespace Indy.Sdk.Dotnet
         /// </summary>
         /// <param name="message">The message for the exception.</param>
         /// <param name="errorCode">The error code for the exception.</param>
-        public IndyException(String message, int errorCode) : base(message)
+        public IndyException(String message, ErrorCode errorCode) : base(message)
         {
             ErrorCode = errorCode;
         }
@@ -24,21 +24,16 @@ namespace Indy.Sdk.Dotnet
         /// <returns>A SovrinException instance.</returns>
         public static IndyException fromErrorCode(int errorCode)
         {
-            if (Enum.IsDefined(typeof(ErrorCode), errorCode))
-            {
-                var message = string.Format("{0}:{1}", Enum.GetName(typeof(ErrorCode), errorCode), errorCode);
-                return new IndyException(message, errorCode);
-            }
-            else
-            {
-                var message = string.Format("An unknown error occurred ({0}).", errorCode);
-                return new IndyException(message, errorCode);
-            }
+            if (!Enum.IsDefined(typeof(ErrorCode), errorCode))
+                throw new InvalidCastException(string.Format("The error code '{0}' does not have a corresponding ErrorCode value.", errorCode));
+
+            var message = string.Format("{0}:{1}", Enum.GetName(typeof(ErrorCode), errorCode), errorCode);
+            return new IndyException(message, (ErrorCode)errorCode);            
         }
 
         /// <summary>
         /// Gets the error code for the exception.
         /// </summary>
-        public int ErrorCode { get; }
+        public ErrorCode ErrorCode { get; }
     }
 }
