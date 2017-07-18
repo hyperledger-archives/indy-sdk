@@ -40,6 +40,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Base58Check, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Base58Check.0.2.0\lib\Net40\Base58Check.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\MSTest.TestFramework.1.1.18\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
     </Reference>
@@ -60,6 +63,9 @@
     <Compile Include="Wrapper\PoolTests\RefreshPoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\OpenPoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\DeletePoolTest.cs" />
+    <Compile Include="Wrapper\SignusTests\SignTest.cs" />
+    <Compile Include="Wrapper\SignusTests\ReplaceKeysTest.cs" />
+    <Compile Include="Wrapper\SignusTests\CreateMyDidTest.cs" />
     <Compile Include="Wrapper\WalletTests\CloseWalletTest.cs" />
     <Compile Include="Wrapper\WalletTests\CreateWalletTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -72,9 +78,7 @@
       <Name>indy-sdk-dotnet</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Wrapper\SignusTests\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
