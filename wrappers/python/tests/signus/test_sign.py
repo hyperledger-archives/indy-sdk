@@ -1,7 +1,9 @@
 from indy import wallet, signus
 
 from ..utils import storage
+from ..utils.wallet import create_and_open_wallet
 
+import asyncio
 import json
 import pytest
 import logging
@@ -16,14 +18,20 @@ def before_after_each():
     storage.cleanup()
 
 
-@pytest.mark.asyncio
-async def test_sign_works():
-    pool_name = "indy_open_wallet_works"
-    wallet_name = "indy_open_wallet_works"
+@pytest.yield_fixture()
+def wallet_handle():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    future = asyncio.Future()
+    asyncio.ensure_future(create_and_open_wallet(future))
+    loop.run_until_complete(future)
+    yield future.result()
+    loop.run_until_complete(wallet.close_wallet(future.result()))
+    loop.close()
 
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
-    assert wallet_handle is not None
+
+@pytest.mark.asyncio
+async def test_sign_works(wallet_handle):
     (did, _, _) = await signus.create_and_store_my_did(wallet_handle, '{"seed":"000000000000000000000000Trustee1"}')
 
     message = {
