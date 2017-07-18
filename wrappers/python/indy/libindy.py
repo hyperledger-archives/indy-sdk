@@ -11,7 +11,7 @@ _futures = {}
 _futures_counter = itertools.count()
 
 
-def do_call(name: str, cb: CFUNCTYPE, *args):
+def do_call(name: str, *args):
     logger = logging.getLogger(__name__)
     logger.debug("do_call: >>> name: %s, args: %s", name, args)
 
@@ -22,8 +22,7 @@ def do_call(name: str, cb: CFUNCTYPE, *args):
     _futures[command_handle] = (event_loop, future)
 
     err = getattr(_cdll(), name)(command_handle,
-                                 *args,
-                                 cb)
+                                 *args)
 
     logger.debug("do_call: Function %s returned err: %i", name, err)
 
