@@ -1,11 +1,12 @@
 from .libindy import do_call, create_cb
 
+from typing import Optional
 from ctypes import *
 
 import logging
 
 async def create_pool_ledger_config(config_name: str,
-                                    config: str) -> None:
+                                    config: Optional[str]) -> None:
     logger = logging.getLogger(__name__)
     logger.debug("create_pool_ledger_config: >>> config_name: %s, config: %s",
                  config_name,
@@ -16,7 +17,7 @@ async def create_pool_ledger_config(config_name: str,
         create_pool_ledger_config.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     c_config_name = c_char_p(config_name.encode('utf-8'))
-    c_config = c_char_p(config.encode('utf-8'))
+    c_config = c_char_p(config.encode('utf-8')) if config is not None else None
 
     res = await do_call('indy_create_pool_ledger_config',
                         create_pool_ledger_config.cb,
@@ -28,7 +29,7 @@ async def create_pool_ledger_config(config_name: str,
 
 
 async def open_pool_ledger(config_name: str,
-                           config: str) -> int:
+                           config: Optional[str]) -> int:
     logger = logging.getLogger(__name__)
     logger.debug("open_pool_ledger: >>> config_name: %s, config: %s",
                  config_name,
@@ -39,7 +40,7 @@ async def open_pool_ledger(config_name: str,
         open_pool_ledger.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
     c_config_name = c_char_p(config_name.encode('utf-8'))
-    c_config = c_char_p(config.encode('utf-8'))
+    c_config = c_char_p(config.encode('utf-8')) if config is not None else None
 
     res = await do_call('indy_open_pool_ledger',
                         open_pool_ledger.cb,
