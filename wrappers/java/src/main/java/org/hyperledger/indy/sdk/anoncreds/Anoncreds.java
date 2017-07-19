@@ -141,6 +141,19 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	private static Callback proverGetClaimsCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String claimsJson) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = claimsJson;
+			future.complete(result);
+		}
+	};
+
 	private static Callback proverGetClaimsForProofReqCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -384,6 +397,26 @@ public class Anoncreds extends IndyJava.API {
 				walletHandle,
 				claim,
 				proverStoreClaimCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> proverGetClaims(
+			Wallet wallet,
+			String filter) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_get_claims(
+				commandHandle,
+				walletHandle,
+				filter,
+				proverGetClaimsCb);
 
 		checkResult(result);
 

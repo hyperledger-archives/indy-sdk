@@ -529,9 +529,9 @@ mod high_cases {
         fn indy_build_node_request_works_for_correct_data_json() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
 
-            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
 
             let node_request = LedgerUtils::build_node_request(identifier, dest, data).unwrap();
             assert!(node_request.contains(expected_result));
@@ -630,6 +630,53 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_claim_def_request_works_without_signature() {
+            TestUtils::cleanup_storage();
+            let pool_name = "indy_claim_def_request_works_without_signature";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let schema_data = "{\"name\":\"gvt2\",\
+                                \"version\":\"2.0\",\
+                                \"keys\": [\"name\", \"male\"]}";
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+
+            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
+            let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
+
+            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
+
+            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &my_did.clone(),
+                                                                                &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
+            info!("claim_def_json {:}", claim_def_json);
+
+            let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
+            let claim_def_data = ClaimDefinitionData {
+                public_key: claim_def.data.public_key,
+                public_key_revocation: claim_def.data.public_key_revocation
+            };
+            let claim_def_data_json = serde_json::to_string(&claim_def_data).unwrap();
+
+            let claim_def_request = LedgerUtils::build_claim_def_txn(&my_did.clone(), get_schema_response.result.seq_no.unwrap(),
+                                                                     &claim_def.signature_type, &claim_def_data_json).unwrap();
+
+            let res = PoolUtils::send_request(pool_handle, &claim_def_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_claim_def_requests_works() {
             TestUtils::cleanup_storage();
             let pool_name = "indy_claim_def_requests_works";
@@ -655,7 +702,7 @@ mod high_cases {
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
 
-            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e",
+            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &my_did.clone(),
                                                                                 &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
             info!("claim_def_json {:}", claim_def_json);
 
@@ -719,7 +766,7 @@ mod high_cases {
                 version: "3.0".to_string(),
                 keys: keys
             };
-            let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
+            let schema_data_json = serde_json::to_string(&schema_data).unwrap();
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
@@ -764,7 +811,7 @@ mod high_cases {
                 version: "3.0".to_string(),
                 keys: keys
             };
-            let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
+            let schema_data_json = serde_json::to_string(&schema_data).unwrap();
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
@@ -1170,7 +1217,7 @@ mod medium_cases {
         fn indy_build_node_request_works_for_missed_field_in_data_json() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
             assert!(res.is_err());
@@ -1181,7 +1228,7 @@ mod medium_cases {
         fn indy_build_node_request_works_for_wrong_service() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
             assert!(res.is_err());
