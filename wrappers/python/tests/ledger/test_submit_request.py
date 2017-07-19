@@ -75,7 +75,7 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_
 
 
 @pytest.mark.asyncio
-async def test_nym_request_works_without_signature(pool_handle, wallet_handle):
+async def test_send_nym_request_works_without_signature(pool_handle, wallet_handle):
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"00000000000000000000000000000My1"}')
 
@@ -114,7 +114,7 @@ async def test_nym_requests_works(pool_handle, wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_attrib_request_works_without_signature(pool_handle, wallet_handle):
+async def test_send_attrib_request_works_without_signature(pool_handle, wallet_handle):
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"00000000000000000000000000000My1"}')
 
@@ -144,7 +144,7 @@ async def test_attrib_requests_works(pool_handle, wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_schema_request_works_without_signature(pool_handle, wallet_handle):
+async def test_send_schema_request_works_without_signature(pool_handle, wallet_handle):
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"00000000000000000000000000000My1"}')
 
@@ -186,3 +186,27 @@ async def test_schema_requests_works(pool_handle, wallet_handle):
     get_schema_request = await ledger.build_get_schema_request(my_did.decode(), my_did.decode(), json.dumps(get_schema_data))
     response = json.loads((await ledger.submit_request(pool_handle, get_schema_request.decode())).decode())
     assert response['result']['data'] is not None
+
+
+@pytest.mark.asyncio
+async def test_send_node_request_works_without_signature(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"00000000000000000000000000000My1"}')
+
+    node_data = {
+        "node_ip": "10.0.0.100",
+        "node_port": 9710,
+        "client_ip": "10.0.0.100",
+        "client_port": 9709,
+        "alias": "Node5",
+        "services": ["VALIDATOR"]
+    }
+
+    node_request = await ledger.build_node_request(my_did.decode(), my_did.decode(), json.dumps(node_data))
+
+    try:
+        await ledger.submit_request(pool_handle, node_request.decode())
+        raise Exception("Failed")
+    except Exception as e:
+        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
+               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
