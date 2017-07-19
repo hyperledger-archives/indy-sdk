@@ -2,6 +2,7 @@ from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
 
+import os
 import logging
 
 
@@ -23,6 +24,10 @@ def indy_home_path() -> Path:
 
     logger.debug("indy_home_path: <<< res: %s", res)
     return res
+
+
+def create_temp_dir():
+    os.makedirs(str(indy_temp_path()))
 
 
 def cleanup():

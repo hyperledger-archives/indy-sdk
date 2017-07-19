@@ -1,6 +1,7 @@
 from indy import wallet, signus
 
 from ..utils import storage
+from ..utils.wallet import create_and_open_wallet
 
 import json
 import pytest
@@ -9,22 +10,23 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def before_after_each():
     storage.cleanup()
     yield
     storage.cleanup()
 
 
-@pytest.mark.asyncio
-async def test_verify_signature_works():
-    pool_name = "indy_open_wallet_works"
-    pool_handle = 1
-    wallet_name = "indy_open_wallet_works"
+@pytest.fixture
+async def wallet_handle():
+    handle = await create_and_open_wallet()
+    yield handle
+    await wallet.close_wallet(handle)
 
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
-    assert wallet_handle is not None
+
+@pytest.mark.asyncio
+async def test_verify_signature_works(wallet_handle):
+    pool_handle = 1
     (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, '{"seed":"000000000000000000000000Trustee1"}')
     identity_json = {
         "did": did.decode(),
