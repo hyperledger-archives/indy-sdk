@@ -72,3 +72,44 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_
     except Exception as e:
         assert type(IndyError(ErrorCode.PoolLedgerInvalidPoolHandle)) == type(e) and \
                IndyError(ErrorCode.PoolLedgerInvalidPoolHandle).args == e.args
+
+
+@pytest.mark.asyncio
+async def test_nym_request_works_without_signature(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"00000000000000000000000000000My1"}')
+
+    nym_request = await ledger.build_nym_request(my_did.decode(), my_did.decode(), None, None, None)
+    try:
+        await ledger.submit_request(pool_handle, nym_request.decode())
+        raise Exception("Failed")
+    except Exception as e:
+        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
+               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
+
+
+@pytest.mark.asyncio
+async def test_send_get_nym_request_works(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"000000000000000000000000Trustee1"}')
+
+    get_nym_request = await ledger.build_get_nym_request(my_did.decode(), my_did.decode())
+
+    response = json.loads((await ledger.submit_request(pool_handle, get_nym_request.decode())).decode())
+    assert response['result']['data'] is not None
+
+
+@pytest.mark.asyncio
+async def test_nym_requests_works(pool_handle, wallet_handle):
+    (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                               '{"seed":"000000000000000000000000Trustee1"}')
+    (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                                   '{"seed":"00000000000000000000000000000My1"}')
+
+    nym_request = await ledger.build_nym_request(trustee_did.decode(), my_did.decode(), my_ver_key.decode(), None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did.decode(), nym_request.decode())
+    get_nym_request = await ledger.build_get_nym_request(my_did.decode(), my_did.decode())
+    response = json.loads((await ledger.submit_request(pool_handle, get_nym_request.decode())).decode())
+    assert response['result']['data'] is not None
+
+
