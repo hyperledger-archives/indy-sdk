@@ -193,3 +193,55 @@ async def agent_add_identity(listener_handle: int,
                   agent_add_identity.cb)
 
     logger.debug("agent_add_identity: <<<")
+
+
+async def agent_remove_identity(listener_handle: int,
+                                pool_handle: int,
+                                wallet_handle: int,
+                                did: str) -> None:
+    logger = logging.getLogger(__name__)
+    logger.debug("agent_remove_identity: >>> listener_handle: %i, pool_handle: %i, wallet_handle: %i, did: %s",
+                 listener_handle,
+                 pool_handle,
+                 wallet_handle,
+                 did)
+
+    if not hasattr(agent_remove_identity, "cb"):
+        logger.debug("agent_remove_identity: Creating callback")
+        agent_remove_identity.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+
+    c_listener_handle = c_int32(listener_handle)
+    c_pool_handle = c_int32(pool_handle)
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+
+    await do_call('indy_agent_remove_identity',
+                  c_listener_handle,
+                  c_pool_handle,
+                  c_wallet_handle,
+                  c_did,
+                  agent_remove_identity.cb)
+
+    logger.debug("agent_remove_identity: <<<")
+
+
+async def agent_send(connection_handle: int,
+                     message: str) -> None:
+    logger = logging.getLogger(__name__)
+    logger.debug("agent_send: >>> connection_handle: %i, message: %s",
+                 connection_handle,
+                 message)
+
+    if not hasattr(agent_send, "cb"):
+        logger.debug("agent_send: Creating callback")
+        agent_send.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+
+    c_connection_handle = c_int32(connection_handle)
+    c_message = c_char_p(message.encode('utf-8'))
+
+    await do_call('indy_agent_send',
+                  c_connection_handle,
+                  c_message,
+                  agent_send.cb)
+
+    logger.debug("agent_send: <<<")
