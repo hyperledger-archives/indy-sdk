@@ -49,11 +49,7 @@ pub enum WalletCommand {
           Box<Fn(Result<(), IndyError>) + Send>),
     Delete(String, // name
            Option<String>, // wallet credentials
-           Box<Fn(Result<(), IndyError>) + Send>),
-    SetSeqNoForValue(i32, // wallet handle
-                     String, // wallet key
-                     i32, // sequence number
-                     Box<Fn(Result<(), IndyError>) + Send>)
+           Box<Fn(Result<(), IndyError>) + Send>)
 }
 
 pub struct WalletCommandExecutor {
@@ -93,10 +89,6 @@ impl WalletCommandExecutor {
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
                 self.delete(&name, credentials.as_ref().map(String::as_str), cb);
-            }
-            WalletCommand::SetSeqNoForValue(handle, key, seq_no, cb) => {
-                info!(target: "wallet_command_executor", "SetSeqNoForValue command received");
-                self.set_seq_no_for_value(handle, &key, seq_no, cb);
             }
         };
     }
@@ -171,15 +163,6 @@ impl WalletCommandExecutor {
               credentials: Option<&str>,
               cb: Box<Fn(Result<(), IndyError>) + Send>) {
         cb(self.wallet_service.delete(handle, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
-    }
-
-    fn set_seq_no_for_value(&self,
-                            handle: i32,
-                            key: &str,
-                            seq_no: i32,
-                            cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.set(handle, &format!("seq_no::{}", seq_no), key)
             .map_err(|err| IndyError::WalletError(err)));
     }
 }

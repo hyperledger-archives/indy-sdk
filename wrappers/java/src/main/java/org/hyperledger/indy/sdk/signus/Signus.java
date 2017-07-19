@@ -27,7 +27,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback createAndStoreMyDidCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
 
 			CompletableFuture<CreateAndStoreMyDidResult> future = (CompletableFuture<CreateAndStoreMyDidResult>) removeFuture(xcommand_handle);
@@ -40,7 +40,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback replaceKeysCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String verkey, String pk) {
 
 			CompletableFuture<ReplaceKeysResult> future = (CompletableFuture<ReplaceKeysResult>) removeFuture(xcommand_handle);
@@ -53,7 +53,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback storeTheirDidCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
@@ -66,7 +66,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback signCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String signature) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -79,7 +79,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback verifySignatureCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, boolean valid) {
 
 			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
@@ -92,7 +92,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback encryptCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String encryptedMsg) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -105,7 +105,7 @@ public class Signus extends IndyJava.API {
 
 	private static Callback decryptCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String decryptedMsg) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
@@ -124,7 +124,7 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String didJson) throws IndyException {
 
-		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult> ();
+		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -145,7 +145,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String identityJson) throws IndyException {
 
-		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<ReplaceKeysResult> ();
+		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<ReplaceKeysResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -166,7 +166,7 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
-		CompletableFuture<Void> future = new CompletableFuture<Void> ();
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -187,7 +187,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String msg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -210,7 +210,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String signedMsg) throws IndyException {
 
-		CompletableFuture<Boolean> future = new CompletableFuture<Boolean> ();
+		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -234,7 +234,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String msg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -256,7 +256,7 @@ public class Signus extends IndyJava.API {
 			String did,
 			String encryptedMsg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();

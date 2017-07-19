@@ -1,7 +1,10 @@
 cargo-registry
 target
+build
 Cargo.lock
 .idea
+.venv
+.cache
 .DS_Store
 Podfile.lock
 

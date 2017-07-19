@@ -30,7 +30,6 @@ public abstract class LibIndy {
 		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
 		public int indy_delete_wallet(int command_handle, String name, String credentials, Callback cb);
-		public int indy_wallet_set_seq_no_for_value(int command_handle, int wallet_handle, String wallet_key, Callback cb);
 
 		// ledger.rs
 
@@ -42,9 +41,9 @@ public abstract class LibIndy {
 		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_get_schema_request(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_claim_def_txn(int command_handle, String submitter_did, String xref, String data, Callback cb);
-		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, String xref, Callback cb);
+		public int indy_build_get_schema_request(int command_handle, String submitter_did, String dest, String data, Callback cb);
+		public int indy_build_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String data, Callback cb);
+		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String origin, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
 
@@ -72,7 +71,7 @@ public abstract class LibIndy {
 		public int indy_prover_get_claims(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_claims_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_claims_json, String schemas_json, String master_secret_name, String claim_defs_json, String revoc_regs_json, Callback cb);
-		public int indy_verifier_verify_proof(int command_handle, int wallet_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
+		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
 
 		// agent.rs
 
