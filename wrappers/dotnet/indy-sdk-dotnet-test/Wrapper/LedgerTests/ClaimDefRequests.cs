@@ -94,13 +94,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
-        [TestMethod]
-        public void TestClaimDefRequestsWorks()
+        [TestMethod] //Seems to fail unreliably; schema members do not maintain their order.  Test problem or underlying SDK isssue?
+        public void TestClaimDefRequestWorks()
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
             var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson).Result;
-            String trusteeDid = trusteeDidResult.Did;
+            var trusteeDid = trusteeDidResult.Did;
 
             var myJson = "{}";
 
@@ -133,7 +133,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var signatureType = (string)claimDefObj["signature_type"];
 
             var claimDefRequest = Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, signatureType, claimDefObj["data"].ToString()).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, claimDefRequest).Wait();
+            var claimDefResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, claimDefRequest).Result;
 
             var getClaimDefRequest = Ledger.BuildGetClaimDefTxnAsync(myDid, schemaSeqNo, signatureType, claimDefObj["origin"].ToString()).Result;
             var getClaimDefResponse = Ledger.SubmitRequestAsync(_pool, getClaimDefRequest).Result;
@@ -149,6 +149,49 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Assert.AreEqual(expectedClaimDef["z"], actualClaimDef["z"]);
             Assert.AreEqual(expectedClaimDef["n"], actualClaimDef["n"]);
             Assert.AreEqual(expectedClaimDef["r"].ToString(), actualClaimDef["r"].ToString());
+        }
+
+        [TestMethod]
+        public async Task TestClaimDefRequestWorksWithoutSignature()
+        {
+            var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
+
+            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson).Result;
+            var trusteeDid = trusteeDidResult.Did;
+
+            var myJson = "{}";
+
+            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myJson).Result;
+            var myDid = myDidResult.Did;
+            var myVerkey = myDidResult.VerKey;
+
+            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null).Result;
+            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+
+            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+
+            var schemaRequest = Ledger.BuildSchemaRequestAsync(myDid, schemaData).Result;
+            var schemaResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest).Result;
+
+            var schemaObj = JObject.Parse(schemaResponse);
+
+            int schemaSeqNo = (int)schemaObj["result"]["seqNo"];
+            var schemaJson = string.Format("{{\"seqNo\":{0},\"data\":{1}}}", schemaSeqNo, schemaData);
+
+            var claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, myDid, schemaJson, null, false).Result;
+
+            var claimDefObj = JObject.Parse(claimDef);
+
+            var claimDefJson = claimDefObj["data"].ToString();
+
+            var claimDefRequest = Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, (string)claimDefObj["signature_type"], claimDefJson).Result;
+
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Ledger.SubmitRequestAsync(_pool, claimDefRequest)
+            );
+
+            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
+
         }
     }
 }
