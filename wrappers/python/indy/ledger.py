@@ -342,7 +342,7 @@ async def build_node_request(submitter_did: str,
 
 
 async def build_get_txn_request(submitter_did: str,
-                                data: str) -> str:
+                                data: int) -> str:
     logger = logging.getLogger(__name__)
     logger.debug("build_get_txn_request: >>> submitter_did: %s, data: %s",
                  submitter_did,
@@ -353,7 +353,7 @@ async def build_get_txn_request(submitter_did: str,
         build_get_txn_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_data = c_char_p(data.encode('utf-8'))
+    c_data = c_int32(data)
 
     res = await do_call('indy_build_get_txn_request',
                         build_get_txn_request.cb,
