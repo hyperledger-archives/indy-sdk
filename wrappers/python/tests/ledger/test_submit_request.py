@@ -141,3 +141,48 @@ async def test_attrib_requests_works(pool_handle, wallet_handle):
     get_attrib_request = await ledger.build_get_attrib_request(my_did.decode(), my_did.decode(), "endpoint")
     response = json.loads((await ledger.submit_request(pool_handle, get_attrib_request.decode())).decode())
     assert response['result']['data'] is not None
+
+
+@pytest.mark.asyncio
+async def test_schema_request_works_without_signature(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"00000000000000000000000000000My1"}')
+
+    schema_data = {
+        "name": "gvt2",
+        "version": "2.0",
+        "keys": ["name", "male"]
+    }
+
+    schema_request = await ledger.build_schema_request(my_did.decode(), json.dumps(schema_data))
+
+    try:
+        await ledger.submit_request(pool_handle, schema_request.decode())
+        raise Exception("Failed")
+    except Exception as e:
+        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
+               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
+
+
+@pytest.mark.asyncio
+async def test_schema_requests_works(pool_handle, wallet_handle):
+    (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                               '{"seed":"000000000000000000000000Trustee1"}')
+    (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                                   '{"seed":"00000000000000000000000000000My1"}')
+
+    schema_data = {
+        "name": "gvt2",
+        "version": "2.0",
+        "keys": ["name", "male"]
+    }
+
+    schema_request = await ledger.build_schema_request(my_did.decode(), json.dumps(schema_data))
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did.decode(), schema_request.decode())
+    get_schema_data = {
+        "name": "gvt2",
+        "version": "2.0"
+    }
+    get_schema_request = await ledger.build_get_schema_request(my_did.decode(), my_did.decode(), json.dumps(get_schema_data))
+    response = json.loads((await ledger.submit_request(pool_handle, get_schema_request.decode())).decode())
+    assert response['result']['data'] is not None
