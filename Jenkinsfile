@@ -116,13 +116,12 @@ def testPipeline(file, env_name, run_interoperability_tests) {
         echo "${env_name} Test: Cleanup"
         try {
             sh "docker network inspect ${network_name}"
-        } catch (ignore) {
+        } catch (err) {
+            echo "${env_name} Tests: error while inspect network ${network_name} - ${err}"
         }
         try {
-            if (poolInst) {
-                echo "${env_name} Test: stop pool"
-                poolInst.stop()
-            }
+            echo "${env_name} Test: stop pool"
+            poolInst.stop()
         } catch (err) {
             echo "${env_name} Tests: error while stop pool ${err}"
         }
