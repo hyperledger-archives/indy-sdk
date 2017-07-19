@@ -39,6 +39,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
             Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, ex.ErrorCode);
         }
 
+        [TestMethod]
         public void TestClosePoolWorksForReopenAfterClose()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();

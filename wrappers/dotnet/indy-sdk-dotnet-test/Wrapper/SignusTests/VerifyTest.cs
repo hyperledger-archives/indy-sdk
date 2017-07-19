@@ -169,7 +169,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
             var signedMessage = Signus.SignAsync(_wallet, _trusteeDid, msg).Result;
 
             var valid = Signus.VerifySignatureAsync(_wallet, _pool, stewardDid, signedMessage).Result;
-            Assert.IsTrue(valid);
+            Assert.IsFalse(valid);
         }
     }
 }

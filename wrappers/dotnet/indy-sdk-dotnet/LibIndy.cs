@@ -493,8 +493,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_def_json">claim definition json containing information about signature type, schema and issuer's public key.</param>
-        /// <param name="claim_def_uuid">Unique number identifying the public key in the wallet</param>
-        public delegate void IssuerCreateAndStoreClaimDefResultDelegate(int command_handle, int err, string claim_def_json, string claim_def_uuid);
+        public delegate void IssuerCreateAndStoreClaimDefResultDelegate(int command_handle, int err, string claim_def_json);
 
         /// <summary>
         /// Create a new revocation registry for the given claim definition.

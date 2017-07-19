@@ -7,33 +7,6 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
-    /// Result of creating and storing an issuer claim definition. 
-    /// </summary>
-    public sealed class IssuerCreateAndStoreClaimDefResult
-    {
-        /// <summary>
-        /// Initializes a new IssuerCreateAndStoreClaimDefResult.
-        /// </summary>
-        /// <param name="claimDefJson">The claim definition JSON.</param>
-        /// <param name="claimDefUuid">The claim definition UUID.</param>
-        public IssuerCreateAndStoreClaimDefResult(string claimDefJson, string claimDefUuid)
-        {
-            ClaimDefJson = claimDefJson;
-            ClaimDefUuid = claimDefUuid;
-        }
-
-        /// <summary>
-        /// Gets the claim definition JSON.
-        /// </summary>
-        public string ClaimDefJson { get; }
-
-        /// <summary>
-        /// Gets the claim definition UUID.
-        /// </summary>
-        public string ClaimDefUuid { get; }
-    }
-
-    /// <summary>
     /// Result of creating and storing a revocation registry.
     /// </summary>
     public sealed class IssuerCreateAndStoreRevocRegResult

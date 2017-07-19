@@ -90,7 +90,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public async Task testCreateMyDidWorksForInvalidSeed()
+        public async Task TestCreateMyDidWorksForInvalidSeed()
         {
             var json = "{\"seed\":\"aaaaaaaaaaa\"}";
 

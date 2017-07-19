@@ -15,16 +15,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimDefResultDelegate _issuerCreateAndStoreClaimDefCallback = (xCommandHandle, err, claimDefJson, claimDefUuid) =>
+        private static IssuerCreateAndStoreClaimDefResultDelegate _issuerCreateAndStoreClaimDefCallback = (xCommandHandle, err, claimDefJson) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<IssuerCreateAndStoreClaimDefResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
                 return;
 
-            var callbackResult = new IssuerCreateAndStoreClaimDefResult(claimDefJson, claimDefUuid);
-
-            taskCompletionSource.SetResult(callbackResult);
+            taskCompletionSource.SetResult(claimDefJson);
         };
 
         /// <summary>
@@ -158,9 +156,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="signatureType">The type of signature to use.</param>
         /// <param name="createNonRevoc">Whether to request non-revocation claim.</param>
         /// <returns>An asynchronous task that returns a IssuerCreateAndStoreClaimDefResult result.</returns>
-        public static Task<IssuerCreateAndStoreClaimDefResult> IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string issuerDid, string schemaJson, string signatureType, bool createNonRevoc)
+        public static Task<string> IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string issuerDid, string schemaJson, string signatureType, bool createNonRevoc)
         {
-            var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreClaimDefResult>();
+            var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = LibIndy.indy_issuer_create_and_store_claim_def(

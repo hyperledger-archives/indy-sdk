@@ -15,15 +15,26 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         [TestMethod]
         public void TestCreatePoolWorksForNullConfig()
         {
-            Pool.CreatePoolLedgerConfigAsync("testCreatePoolWorks", null).Wait();
+            var txnFile = "testCreatePoolWorks.txn";
+
+            try
+            {
+                File.Create(txnFile).Dispose();
+                Pool.CreatePoolLedgerConfigAsync("testCreatePoolWorks", null).Wait();
+            }
+            finally
+            {
+                File.Delete(txnFile);
+            }
         }
 
         [TestMethod]
         public void TestCreatePoolWorksForConfigJSON()
         {
             var genesisTxnFile = PoolUtils.CreateGenesisTxnFile("genesis.txn");
+            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
 
-            var configJson = string.Format("{\"genesis_txn\":{0}}", Path.GetFullPath(genesisTxnFile));
+            var configJson = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
             Pool.CreatePoolLedgerConfigAsync("testCreatePoolWorks", configJson).Wait();
         }
@@ -33,8 +44,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         {
 
             var genesisTxnFile = PoolUtils.CreateGenesisTxnFile("genesis.txn");
+            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
 
-            var configJson = string.Format("{\"genesis_txn\":{0}}", Path.GetFullPath(genesisTxnFile));
+            var configJson = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Pool.CreatePoolLedgerConfigAsync("", configJson)
