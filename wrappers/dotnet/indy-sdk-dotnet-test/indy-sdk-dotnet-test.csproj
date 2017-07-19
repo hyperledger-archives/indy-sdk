@@ -61,6 +61,7 @@
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
     <Compile Include="Wrapper\AgentTests\AgentTest.cs" />
+    <Compile Include="Wrapper\LedgerTests\SchemaRequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\RequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\NymRequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\NodeRequestTest.cs" />
