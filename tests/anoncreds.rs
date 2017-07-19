@@ -62,7 +62,7 @@ mod high_cases {
 
             let schema = AnoncredsUtils::get_gvt_schema_json(1);
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle, &ISSUER_DID, &schema, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -96,7 +96,7 @@ mod high_cases {
 
             let claim_offer_json = AnoncredsUtils::get_claim_offer(&ISSUER_DID, 1);
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_store_claim_offer(invalid_wallet_handle, &claim_offer_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -164,7 +164,7 @@ mod high_cases {
         fn prover_get_claim_offers_works_for_invalid_wallet_handle() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claim_offers(invalid_wallet_handle, r#"{"schema_seq_no":"1"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -184,7 +184,7 @@ mod high_cases {
         fn prover_create_master_secret_works_invalid_wallet_handle() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_master_secret(invalid_wallet_handle, "master_secret_name2");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -217,7 +217,7 @@ mod high_cases {
 
             let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_and_store_claim_req(invalid_wallet_handle,
                                                                         "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                                                                         &claim_offer_json,
@@ -294,7 +294,7 @@ mod high_cases {
 
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_claim(invalid_wallet_handle, &claim_req, &claim_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -306,10 +306,13 @@ mod high_cases {
         #[test]
         fn prover_store_claim_works() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
 
             let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
 
-            let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
+            AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+            let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                                                                               &claim_offer_json,
                                                                               &claim_def_json,
@@ -318,7 +321,7 @@ mod high_cases {
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
             let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json).unwrap();
 
-            AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
+            AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json).unwrap();
         }
 
         #[test]
@@ -336,7 +339,7 @@ mod high_cases {
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
             let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json).unwrap();
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_store_claim(invalid_wallet_handle, &claim_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -389,7 +392,7 @@ mod high_cases {
         fn prover_get_claims_works_for_invalid_wallet_handle() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claims(invalid_wallet_handle, r#"{}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -533,7 +536,7 @@ mod high_cases {
                                 "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
                                 }"#;
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claims_for_proof_req(invalid_wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -644,7 +647,7 @@ mod high_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
-            let invalid_wallet_handle = wallet_handle + 1;
+            let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_proof(invalid_wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
@@ -755,9 +758,19 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_invalid_schema() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "name":"name","version":"1.0", "keys":[]}"#;
+            let schema = r#"{"seqNo":1, "name":"name","version":"1.0", "keys":["name"]}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, ISSUER_DID, &schema, None, false);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        fn issuer_create_and_store_claim_def_works_for_invalid_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","keys":[]}}"#;
+
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, "invalid_base58_String", &schema, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -768,6 +781,16 @@ mod medium_cases {
             let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","keys":[]}}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, None, false);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        fn issuer_create_and_store_claim_def_works_for_correct_signature_type() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let schema = AnoncredsUtils::get_gvt_schema_json(1);
+
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, Some("CL"), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -840,6 +863,14 @@ mod medium_cases {
             AnoncredsUtils::prover_create_master_secret(wallet_handle, "master_secret_name_duplicate").unwrap();
             let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, "master_secret_name_duplicate");
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsMasterSecretDuplicateNameError);
+        }
+
+        #[test]
+        fn prover_create_master_secret_works_for_empty_name() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, "");
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
         }
     }
 
@@ -1036,6 +1067,72 @@ mod medium_cases {
 
             let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
             assert_eq!(claims_for_attr_1.len(), 0);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{"nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "requested_attrs":{"attr1_uuid":{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e", "name":"name"}},
+                                "requested_predicates":{}
+                              }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+
+            assert_eq!(claims.attrs.len(), 1);
+            assert_eq!(claims.predicates.len(), 0);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 1);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_with_other_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{"nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "requested_attrs":{"attr1_uuid":{"issuer_did":"Ac23dAXkpYi6ov5FcYDi1e", "name":"name"}},
+                                "requested_predicates":{}
+                              }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+
+            assert_eq!(claims.attrs.len(), 1);
+            assert_eq!(claims.predicates.len(), 0);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 0);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_satisfy_predicate_by_specific_issuer_and_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{"nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "requested_attrs":{},
+                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e"}}
+                              }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+
+            assert_eq!(claims.attrs.len(), 0);
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 1);
         }
 
         #[test]
@@ -1797,7 +1894,7 @@ mod demos {
         let self_attested_value = "value";
         let requested_claims_json = format!(r#"{{
                                           "self_attested_attributes":{{"self1":"{}"}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true],
+                                          "requested_attrs":{{"attr1_uuid":["{}", true],
                                                               "attr2_uuid":["{}", false]}},
                                           "requested_predicates":{{"predicate1_uuid":"{}"}}
                                         }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid, claim.claim_uuid);
@@ -1864,7 +1961,7 @@ mod demos {
         claim_defs.insert(ISSUER_DID.to_string(), gvt_claim_def_json.clone());
 
 
-        //5. Issuer1 create claim definition by xyz schema
+        //5. Issuer2 create claim definition by xyz schema
         let xyz_schema_seq_no = 2;
         let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
 

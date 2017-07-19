@@ -91,6 +91,17 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_create_my_did_works_for_exists_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            SignusUtils::create_my_did(wallet_handle, r#"{"crypto_type":"ed25519"}"#).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_create_my_did_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
@@ -143,6 +154,22 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::replace_keys(invalid_wallet_handle, &my_did, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_works_for_seed() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let (new_verkey, _) = SignusUtils::replace_keys(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            assert_eq!(new_verkey, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW");
+
+            assert!(my_verkey != new_verkey);
 
             TestUtils::cleanup_storage();
         }
@@ -201,6 +228,31 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_store_their_did_works_without_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let identity_json = r#"{"verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"}"#;
+            let res = SignusUtils::store_their_did(wallet_handle, identity_json);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_store_their_did_works_for_correct_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i", "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa", "crypto_type": "ed25519"}"#;
+            SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod sign {
@@ -240,7 +292,7 @@ mod high_cases {
 
             let message = r#"{"reqId":1495034346617224651}"#;
 
-            let res = SignusUtils::sign(wallet_handle, "some_did", message);
+            let res = SignusUtils::sign(wallet_handle, "did", message);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
@@ -393,6 +445,41 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_verify_works_for_other_signer() {
+            TestUtils::cleanup_storage();
+            let pool_name = "indy_verify_works_for_other_signer";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (did, verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1"}"#).unwrap();
+            let (other_did, other_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Steward1"}"#).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, other_did, other_verkey);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{
+                "reqId":1496822211362017764,
+                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "operation":{
+                    "type":"1",
+                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
+                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                }
+            }"#;
+
+            let msg = SignusUtils::sign(wallet_handle, &did, message).unwrap();
+
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &other_did, &msg).unwrap();
+            assert!(!valid);
+
+            TestUtils::cleanup_storage();
+        }
     }
 }
 
@@ -462,6 +549,20 @@ mod medium_cases {
 
             //TODO may be we must return WalletNotFound in case if key not exists in wallet
             SignusUtils::replace_keys(wallet_handle, "8wZcEriaNLNKtteJvx7f8i", "{}").unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_works_for_not_invalid_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let res = SignusUtils::replace_keys(wallet_handle, &my_did, r#"{"crypto_type":"type"}"#);
+            assert_eq!(res.unwrap_err(), ErrorCode::SignusUnknownCryptoError);
 
             TestUtils::cleanup_storage();
         }
@@ -605,10 +706,10 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_verify_works_for_get_unknow_nym_from_ledger() {
+        fn indy_verify_works_for_get_ledger_not_found_nym() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_verify_works_for_get_unknow_nym_from_ledger";
+            let pool_name = "indy_verify_works_for_get_ledger_not_found_nym";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
@@ -628,10 +729,10 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_verify_works_for_unknown_nym() {
+        fn indy_verify_works_for_no_nym_in_wallet() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_verify_works_for_unknown_did";
+            let pool_name = "indy_verify_works_for_no_nym_in_wallet";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
