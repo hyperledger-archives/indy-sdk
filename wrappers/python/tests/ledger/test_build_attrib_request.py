@@ -1,5 +1,6 @@
 from tests.utils import storage
 from indy import ledger
+from indy.error import *
 
 import json
 import pytest
@@ -32,3 +33,16 @@ async def test_build_attrib_request_works_for_raw_data():
 
     response = json.loads((await ledger.build_attrib_request(identifier, destination, None, raw, None)).decode())
     assert expected_response.items() <= response.items()
+
+
+@pytest.mark.asyncio
+async def test_build_attrib_request_works_for_missed_attribute():
+    identifier = "Th7MpTaRZVRYnPiabds81Y"
+    destination = "Th7MpTaRZVRYnPiabds81Y"
+
+    try:
+        await ledger.build_attrib_request(identifier, destination, None, None, None)
+    except Exception as e:
+        assert type(IndyError(ErrorCode.CommonInvalidStructure)) == type(e) and \
+               IndyError(ErrorCode.CommonInvalidStructure).args == e.args
+
