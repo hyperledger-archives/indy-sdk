@@ -36,7 +36,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void TestBuildAttribRequestWorksForRawData()
+        public void TestBuildNodeRequestWorks()
         {
             var identifier = "Th7MpTaRZVRYnPiabds81Y";
             var dest = "Th7MpTaRZVRYnPiabds81Y";
@@ -56,11 +56,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var nodeRequest = Ledger.BuildNodeRequestAsync(identifier, dest, data).Result;
 
-             Assert.IsTrue(nodeRequest.Replace("\\", "").Contains(expectedResult));
+            Assert.IsTrue(nodeRequest.Replace("\\", "").Contains(expectedResult));
         }
 
         [TestMethod]
-        public async Task TestBuildAttribRequestWorksForMissedAttribute()
+        public async Task TestSendNodeRequestWorksWithoutSignature()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Steward1\"}";
             var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
@@ -74,7 +74,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"services\":[\"VALIDATOR\"]}";
 
             var nodeRequest = Ledger.BuildNodeRequestAsync(did, did, data).Result;
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() => 
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, nodeRequest)
             );
 
@@ -171,6 +171,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var nodeRequest = Ledger.BuildNodeRequestAsync(myDid, dest, data).Result;
             Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, nodeRequest).Wait();
-        }     
+        }
+
+
     }
 }

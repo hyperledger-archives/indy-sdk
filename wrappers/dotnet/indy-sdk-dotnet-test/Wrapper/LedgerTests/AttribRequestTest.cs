@@ -103,7 +103,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void testAttribRequestsWorks()
+        public void TestAttribRequestWorks()
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
