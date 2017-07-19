@@ -86,7 +86,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, -1, -1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, - 1, - 1).get();
 		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
@@ -148,11 +148,11 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);
 
-		// 14. Close and delete My Wallet
+		// 14. Close and delete Issuer Wallet
 		issuerWallet.closeWallet().get();
 		Wallet.deleteWallet("issuerWallet", null).get();
 
-		// 15. Close and delete Their Wallet
+		// 15. Close and delete Prover Wallet
 		proverWallet.closeWallet().get();
 		Wallet.deleteWallet("proverWallet", null).get();
 
