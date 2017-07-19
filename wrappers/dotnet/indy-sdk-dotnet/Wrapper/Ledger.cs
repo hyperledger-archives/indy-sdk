@@ -343,5 +343,28 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             return taskCompletionSource.Task;
         }
+
+        /// <summary>
+        /// Builds a GET_TXN request
+        /// </summary>
+        /// <param name="submitterDid">The DID of the submitter.</param>
+        /// <param name="data">seq_no of transaction in ledger</param>
+        /// <returns>An asynchonous Task that returns the request.</returns>
+        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, int data)
+        {
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var result = LibIndy.indy_build_get_txn_request(
+                commandHandle,
+                submitterDid,
+                data,
+                _buildRequestCallback);
+
+        CheckResult(result);
+
+        return taskCompletionSource.Task;
     }
+}
 }

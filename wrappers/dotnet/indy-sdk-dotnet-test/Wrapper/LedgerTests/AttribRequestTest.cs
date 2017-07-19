@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
     [TestClass]
-    public class AttribRequestsTest : IndyIntegrationTest
+    public class AttribRequestTest : IndyIntegrationTest
     {
         private Pool _pool;
         private Wallet _wallet;

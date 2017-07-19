@@ -61,8 +61,10 @@
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
     <Compile Include="Wrapper\AgentTests\AgentTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\ClaimDefRequests.cs" />
-    <Compile Include="Wrapper\LedgerTests\AttribRequestsTest.cs" />
+    <Compile Include="Wrapper\LedgerTests\NodeRequestTest.cs" />
+    <Compile Include="Wrapper\LedgerTests\GetTxnRequestTest.cs" />
+    <Compile Include="Wrapper\LedgerTests\ClaimDefRequestTest.cs" />
+    <Compile Include="Wrapper\LedgerTests\AttribRequestTest.cs" />
     <Compile Include="Wrapper\PoolTests\ClosePoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\CreatePoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\RefreshPoolTest.cs" />

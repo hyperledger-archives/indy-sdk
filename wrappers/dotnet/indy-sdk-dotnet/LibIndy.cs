@@ -325,7 +325,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll")]
-        public static extern int indy_build_get_txn_request(int command_handle, string submitter_did, string data, BuildRequestResultDelegate cb);
+        public static extern int indy_build_get_txn_request(int command_handle, string submitter_did, int data, BuildRequestResultDelegate cb);
 
         // signus.rs
 
