@@ -268,3 +268,53 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle):
     get_claim_def_response = json.loads(
         (await ledger.submit_request(pool_handle, get_claim_def_request.decode())).decode())
     assert claim_def == get_claim_def_response['result']['data']
+
+
+@pytest.mark.asyncio
+async def test_get_txn_request_works(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"000000000000000000000000Trustee1"}')
+
+    schema_data = json.dumps({
+        "name": "gvt3",
+        "version": "3.0",
+        "keys": ["name"]
+    })
+
+    schema_request = await ledger.build_schema_request(my_did.decode(), schema_data)
+    schema_response = json.loads((await ledger.sign_and_submit_request(
+        pool_handle, wallet_handle, my_did.decode(), schema_request.decode())).decode())
+
+    get_schema_data = {
+        "name": "gvt3",
+        "version": "3.0"
+    }
+    get_schema_request = await ledger.build_get_schema_request(
+        my_did.decode(), my_did.decode(), json.dumps(get_schema_data))
+    await ledger.submit_request(pool_handle, get_schema_request.decode())
+
+    get_txn_request = await ledger.build_get_txn_request(my_did.decode(), schema_response['result']['seqNo'])
+    get_txn_response = json.loads((await ledger.submit_request(pool_handle, get_txn_request.decode())).decode())
+    assert schema_data == json.loads(get_txn_response['result']['data'])['data']
+
+
+@pytest.mark.asyncio
+async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"000000000000000000000000Trustee1"}')
+
+    schema_data = json.dumps({
+        "name": "gvt3",
+        "version": "3.0",
+        "keys": ["name"]
+    })
+
+    schema_request = await ledger.build_schema_request(my_did.decode(), schema_data)
+    schema_response = json.loads((await ledger.sign_and_submit_request(
+        pool_handle, wallet_handle, my_did.decode(), schema_request.decode())).decode())
+
+    seq_no = schema_response['result']['seqNo'] + 1
+
+    get_txn_request = await ledger.build_get_txn_request(my_did.decode(), seq_no)
+    get_txn_response = json.loads((await ledger.submit_request(pool_handle, get_txn_request.decode())).decode())
+    assert get_txn_response['result']['data'] == "{}"
