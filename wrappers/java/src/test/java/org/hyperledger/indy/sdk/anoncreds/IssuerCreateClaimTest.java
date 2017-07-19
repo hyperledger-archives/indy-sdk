@@ -8,6 +8,7 @@ import org.junit.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
@@ -32,10 +33,10 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
 		JSONObject primaryClaim = claimObj.getJSONObject("signature").getJSONObject("primary_claim");
 
-		Assert.assertTrue(primaryClaim.getString("a").length() > 0);
-		Assert.assertTrue(primaryClaim.getString("m2").length() > 0);
-		Assert.assertTrue(primaryClaim.getString("e").length() > 0);
-		Assert.assertTrue(primaryClaim.getString("v").length() > 0);
+		assertTrue(primaryClaim.getString("a").length() > 0);
+		assertTrue(primaryClaim.getString("m2").length() > 0);
+		assertTrue(primaryClaim.getString("e").length() > 0);
+		assertTrue(primaryClaim.getString("v").length() > 0);
 	}
 
 	@Test

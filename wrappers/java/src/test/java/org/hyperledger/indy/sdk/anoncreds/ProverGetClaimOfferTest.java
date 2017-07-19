@@ -7,6 +7,9 @@ import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 	@Test
@@ -17,7 +20,7 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, "{}").get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
-		Assert.assertEquals(3, claimOffersArray.length());
+		assertEquals(3, claimOffersArray.length());
 	}
 
 	@Test
@@ -30,10 +33,10 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
-		Assert.assertEquals(2, claimOffersArray.length());
+		assertEquals(2, claimOffersArray.length());
 
-		Assert.assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 1)));
-		Assert.assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 2)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 1)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 2)));
 	}
 
 	@Test
@@ -46,10 +49,10 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
-		Assert.assertEquals(2, claimOffersArray.length());
+		assertEquals(2, claimOffersArray.length());
 
-		Assert.assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 2)));
-		Assert.assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid2, 2)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 2)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid2, 2)));
 	}
 
 	@Test
@@ -62,9 +65,9 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
-		Assert.assertEquals(1, claimOffersArray.length());
+		assertEquals(1, claimOffersArray.length());
 
-		Assert.assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 1)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 1)));
 	}
 
 	@Test
@@ -77,7 +80,7 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
-		Assert.assertEquals(0, claimOffersArray.length());
+		assertEquals(0, claimOffersArray.length());
 	}
 
 	@Test
