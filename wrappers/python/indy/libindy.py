@@ -29,7 +29,7 @@ def do_call(name: str, cb: CFUNCTYPE, *args):
 
     if err != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        future.set_exception(IndyError(err))
+        future.set_exception(IndyError(ErrorCode(err)))
 
     logger.debug("do_call: <<< %s", future)
     return future
@@ -63,7 +63,7 @@ def _indy_loop_callback(command_handle: int, err, *args):
 
     if err != ErrorCode.Success:
         logger.warning("_indy_loop_callback: Function returned error %i", err)
-        future.set_exception(IndyError(err))
+        future.set_exception(IndyError(ErrorCode(err)))
     else:
         if len(args) == 0:
             res = None
