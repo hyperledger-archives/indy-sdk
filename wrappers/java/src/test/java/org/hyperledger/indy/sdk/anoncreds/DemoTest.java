@@ -61,7 +61,7 @@ public class DemoTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void anoncredsWorksForMultiplyIssuerSingleProver() throws Exception {
+	public void testAnoncredsWorksForMultiplyIssuerSingleProver() throws Exception {
 
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 		String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -221,7 +221,7 @@ public class DemoTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void anoncredsWorksForSingleIssuerSingleProver() throws Exception {
+	public void testAnoncredsWorksForSingleIssuerSingleProver() throws Exception {
 
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 
@@ -362,7 +362,7 @@ public class DemoTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void verifyProofWorksForProofDoesNotCorrespondToProofRequest() throws Exception {
+	public void testVerifyProofWorksForProofDoesNotCorrespondToProofRequest() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
