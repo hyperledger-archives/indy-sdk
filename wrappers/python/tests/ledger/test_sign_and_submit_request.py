@@ -17,14 +17,14 @@ def before_after_each():
 
 @pytest.fixture
 async def pool_handle():
-    handle = await pool.create_and_open_pool_ledger("pool_name")
+    handle = await pool.create_and_open_pool_ledger("pool_1")
     yield handle
     await close_pool_ledger(handle)
 
 
 @pytest.fixture
 async def wallet_handle():
-    handle = await create_and_open_wallet(pool_name="pool_name")
+    handle = await create_and_open_wallet()
     yield handle
     await wallet.close_wallet(handle)
 

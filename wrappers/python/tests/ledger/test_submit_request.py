@@ -1,6 +1,8 @@
 from tests.utils import pool, storage
-from indy import ledger
+from tests.utils.wallet import create_and_open_wallet
+from indy import ledger, wallet, signus
 from indy.pool import close_pool_ledger
+from indy.error import ErrorCode, IndyError
 
 import json
 import pytest
@@ -17,8 +19,15 @@ def before_after_each():
 
 
 @pytest.fixture
+async def wallet_handle():
+    handle = await create_and_open_wallet()
+    yield handle
+    await wallet.close_wallet(handle)
+
+
+@pytest.fixture
 async def pool_handle():
-    handle = await pool.create_and_open_pool_ledger("pool_name")
+    handle = await pool.create_and_open_pool_ledger("pool_1")
     yield handle
     await close_pool_ledger(handle)
 
@@ -48,3 +57,18 @@ async def test_submit_request_works(pool_handle):
     }
     response = json.loads((await ledger.submit_request(pool_handle, json.dumps(request))).decode())
     assert response == expected_response
+
+
+@pytest.mark.asyncio
+async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_handle):
+    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                          '{"seed":"000000000000000000000000Trustee1"}')
+
+    get_nym_request = await ledger.build_get_nym_request(my_did.decode(), my_did.decode())
+    invalid_pool_handle = pool_handle + 1
+    try:
+        await ledger.submit_request(invalid_pool_handle, get_nym_request.decode())
+        raise Exception("Failed")
+    except Exception as e:
+        assert type(IndyError(ErrorCode.PoolLedgerInvalidPoolHandle)) == type(e) and \
+               IndyError(ErrorCode.PoolLedgerInvalidPoolHandle).args == e.args
