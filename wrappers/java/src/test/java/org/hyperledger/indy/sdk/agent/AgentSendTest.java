@@ -4,10 +4,11 @@ import org.hyperledger.indy.sdk.agent.Agent.Connection;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusResults;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
+
+import static org.junit.Assert.assertEquals;
 
 public class AgentSendTest extends AgentIntegrationTest {
 
@@ -68,11 +69,11 @@ public class AgentSendTest extends AgentIntegrationTest {
 
 		clientToServerConnection.agentSend(clientToServerMessage).get();
 
-		Assert.assertEquals(clientToServerMessage, clientToServerMsgFuture.get());
+		assertEquals(clientToServerMessage, clientToServerMsgFuture.get());
 
 		Connection serverToClientConnection = serverToClientConnectionFuture.get();
 		serverToClientConnection.agentSend(serverToClientMessage).get();
 
-		Assert.assertEquals(serverToClientMessage, serverToClientMsgFuture.get());
+		assertEquals(serverToClientMessage, serverToClientMsgFuture.get());
 	}
 }
