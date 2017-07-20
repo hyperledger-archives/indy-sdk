@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
     [TestClass]
-    public class RequestTest : IndyIntegrationTest
+    public class RequestTest : IndyIntegrationTestBase
     {
         private Pool _pool;
         private string _poolName;

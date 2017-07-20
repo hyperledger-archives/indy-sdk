@@ -3,7 +3,7 @@
 namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
 {
     [TestClass]
-    public class RefreshPoolTest : IndyIntegrationTest
+    public class RefreshPoolTest : IndyIntegrationTestBase
     {
         [TestMethod]
         public void TestRefreshPoolWorks()

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
     [TestClass]
-    public class OpenWalletTest : IndyIntegrationTest
+    public class OpenWalletTest : IndyIntegrationTestBase
     {
         [TestMethod]
         public void TestOpenWalletWorks()

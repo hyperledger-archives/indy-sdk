@@ -8,7 +8,7 @@ using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
-    public class AgentSendTest : AgentIntegrationTest
+    public class AgentSendTest : AgentIntegrationTestBase
     {
         private static TaskCompletionSource<Connection> serverToClientConnectionFuture = new TaskCompletionSource<Connection>();
         private static TaskCompletionSource<string> serverToClientMsgFuture = new TaskCompletionSource<string>();

@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
     [TestClass]
-    public class GetTxnRequestTest : IndyIntegrationTest
+    public class GetTxnRequestTest : IndyIntegrationTestBase
     {
         private Pool _pool;
         private Wallet _wallet;

@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
-    public class AgentListenTest : AgentIntegrationTest
+    public class AgentListenTest : AgentIntegrationTestBase
     {
         [TestMethod]
         public void TestAgentListenWorks()

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
 {
     [TestClass]
-    public class ReplaceKeysTest : IndyIntegrationTest
+    public class ReplaceKeysTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
 

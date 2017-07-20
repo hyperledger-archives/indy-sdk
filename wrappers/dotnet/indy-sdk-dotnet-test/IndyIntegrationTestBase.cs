@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test
 {
-    public class IndyIntegrationTest
+    public abstract class IndyIntegrationTestBase
     {
         protected HashSet<Pool> _openedPools = new HashSet<Pool>();
 

@@ -5,7 +5,7 @@ using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
-    public abstract class AgentIntegrationTest
+    public abstract class AgentIntegrationTestBase
     {
         protected static Wallet _wallet;
         protected static Pool _pool;

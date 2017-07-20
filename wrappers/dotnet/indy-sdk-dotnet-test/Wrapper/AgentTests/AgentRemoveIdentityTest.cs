@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
-    public class AgentRemoveIdentityTest : AgentIntegrationTest
+    public class AgentRemoveIdentityTest : AgentIntegrationTestBase
     {
         [TestMethod]
         public void TestAgentRemoveIdentityWorks()

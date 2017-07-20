@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
-    public class AgentConnectTest : AgentIntegrationTest
+    public class AgentConnectTest : AgentIntegrationTestBase
     {
         [TestMethod]
         public void TestAgentConnectWorksForRemoteData()

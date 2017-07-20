@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
     [TestClass]
-    public class AgentAddIdentityTest : AgentIntegrationTest
+    public class AgentAddIdentityTest : AgentIntegrationTestBase
     {
         [TestMethod]
         public void TestAgentAddIdentityWorks()

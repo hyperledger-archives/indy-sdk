@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
     [TestClass]
-    public class NymRequestTest : IndyIntegrationTest
+    public class NymRequestTest : IndyIntegrationTestBase
     {
         private Pool _pool;
         private Wallet _wallet;

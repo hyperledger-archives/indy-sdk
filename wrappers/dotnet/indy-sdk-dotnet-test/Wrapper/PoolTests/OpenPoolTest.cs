@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
 {
     [TestClass]
-    public class OpenPoolTest : IndyIntegrationTest
+    public class OpenPoolTest : IndyIntegrationTestBase
     {
         [TestMethod]
         public void TestOpenPoolWorksForNullConfig()

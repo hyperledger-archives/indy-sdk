@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
 {
     [TestClass]
-    public class StoreTheirDidTest : IndyIntegrationTest
+    public class StoreTheirDidTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
 

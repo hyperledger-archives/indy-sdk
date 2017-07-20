@@ -56,7 +56,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IndyIntegrationTest.cs" />
+    <Compile Include="IndyIntegrationTestBase.cs" />
     <Compile Include="InitHelper.cs" />
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
@@ -67,7 +67,9 @@
     <Compile Include="Wrapper\AgentTests\AgentConnectTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentCloseListenerTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentCloseConnectionTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentIntegrationTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentIntegrationTestBase.cs" />
+    <Compile Include="Wrapper\AnonCredsTests\IssuerCreateAndStoreClaimDefinitionTest.cs" />
+    <Compile Include="Wrapper\AnonCredsTests\AnonCredsIntegrationTestBase.cs" />
     <Compile Include="Wrapper\LedgerTests\SchemaRequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\RequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\NymRequestTest.cs" />
