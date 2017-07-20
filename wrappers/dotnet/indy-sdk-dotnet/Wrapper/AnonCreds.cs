@@ -307,7 +307,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous task that returns no value.</returns>
         public static Task ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretName)
         {
-            var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreRevocRegResult>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = LibIndy.indy_prover_create_master_secret(

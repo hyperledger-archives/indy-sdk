@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the map of command handles and their task completion sources.
         /// </summary>
-        private static Dictionary<int, object> _taskCompletionSources = new Dictionary<int, object>();
+        private static IDictionary<int, object> _taskCompletionSources = new ConcurrentDictionary<int, object>();
 
         /// <summary>
         /// Gets the callback to use for functions that don't return a value.
