@@ -87,7 +87,7 @@ async def agent_connect(pool_handle: int,
 
     if not hasattr(agent_connect, "connection_cb"):
         logger.debug("agent_connect: Creating connection callback")
-        agent_connect.connection_cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+        agent_connect.connection_cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
     def _message_cb(connection_handle: int, err: int, message: str):
         logger.debug("agent_connect._message_cb: connection_handle: %i, err: %i, message: %s",
@@ -124,7 +124,7 @@ async def agent_listen(endpoint: str) -> int:
 
     if not hasattr(agent_listen, "listener_cb"):
         logger.debug("agent_listen: Creating listener callback")
-        agent_listen.listener_cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+        agent_listen.listener_cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
     def _connection_cb(listener_handle: int, err: int, connection_handle: int, sender_did: str, receiver_did: str):
         logger.debug("agent_connect._connection_cb: listener_handle: %i, err: %i, connection_handle: %i, sender_did: "
@@ -178,7 +178,7 @@ async def agent_add_identity(listener_handle: int,
 
     if not hasattr(agent_add_identity, "cb"):
         logger.debug("agent_add_identity: Creating callback")
-        agent_add_identity.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+        agent_add_identity.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     c_listener_handle = c_int32(listener_handle)
     c_pool_handle = c_int32(pool_handle)
@@ -208,7 +208,7 @@ async def agent_remove_identity(listener_handle: int,
 
     if not hasattr(agent_remove_identity, "cb"):
         logger.debug("agent_remove_identity: Creating callback")
-        agent_remove_identity.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+        agent_remove_identity.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     c_listener_handle = c_int32(listener_handle)
     c_pool_handle = c_int32(pool_handle)
@@ -225,8 +225,7 @@ async def agent_remove_identity(listener_handle: int,
     logger.debug("agent_remove_identity: <<<")
 
 
-async def agent_send(connection_handle: int,
-                     message: str) -> None:
+async def agent_send(connection_handle: int, message: str) -> None:
     logger = logging.getLogger(__name__)
     logger.debug("agent_send: >>> connection_handle: %i, message: %s",
                  connection_handle,
@@ -234,7 +233,7 @@ async def agent_send(connection_handle: int,
 
     if not hasattr(agent_send, "cb"):
         logger.debug("agent_send: Creating callback")
-        agent_send.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+        agent_send.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     c_connection_handle = c_int32(connection_handle)
     c_message = c_char_p(message.encode('utf-8'))
@@ -245,3 +244,37 @@ async def agent_send(connection_handle: int,
                   agent_send.cb)
 
     logger.debug("agent_send: <<<")
+
+
+async def agent_close_connection(connection_handle: int) -> None:
+    logger = logging.getLogger(__name__)
+    logger.debug("agent_close_connection: >>> connection_handle: %i", connection_handle)
+
+    if not hasattr(agent_close_connection, "cb"):
+        logger.debug("agent_close_connection: Creating callback")
+        agent_close_connection.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_connection_handle = c_int32(connection_handle)
+
+    await do_call('indy_agent_close_connection',
+                  c_connection_handle,
+                  agent_close_connection.cb)
+
+    logger.debug("agent_close_connection: <<<")
+
+
+async def agent_close_listener(listener_handle: int) -> None:
+    logger = logging.getLogger(__name__)
+    logger.debug("agent_close_listener: >>> listener_handle: %i", listener_handle)
+
+    if not hasattr(agent_close_listener, "cb"):
+        logger.debug("agent_close_listener: Creating callback")
+        agent_close_listener.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_listener_handle = c_int32(listener_handle)
+
+    await do_call('indy_agent_close_listener',
+                  c_listener_handle,
+                  agent_close_listener.cb)
+
+    logger.debug("agent_close_listener: <<<")
