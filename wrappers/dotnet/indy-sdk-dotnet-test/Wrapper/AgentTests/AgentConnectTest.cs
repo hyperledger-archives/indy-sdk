@@ -1,18 +1,11 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.Agent;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
     public class AgentConnectTest : AgentIntegrationTest
-    {        
+    {
         [TestMethod]
         public void TestAgentConnectWorksForRemoteData()
         {
@@ -33,7 +26,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
             var listenerPk = createMyDidResult.Pk;
 
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
- 
+
             var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson).Result;
             var trusteeDid = trusteeDidResult.Did;
             var senderDid = trusteeDid;
@@ -56,6 +49,24 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 
             trusteeWallet.CloseAsync().Wait();
             Wallet.DeleteWalletAsync(trusteeWalletName, null).Wait();
+        }
+
+        [TestMethod]
+        public void testAgentConnectWorksForAllDataInWalletPresent()
+        {
+            var endpoint = "127.0.0.1:9906";
+
+            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+
+            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
+                    myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
+            Signus.StoreTheirDidAsync(_wallet, identityJson).Wait();
+
+            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+
+            activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did).Wait();
+
+            Agent.AgentConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did, _messageObserver).Wait();
         }
     }
 }
