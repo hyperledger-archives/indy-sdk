@@ -27,6 +27,8 @@ spectool -g -R indy-sdk.spec || exit 3
 rpmbuild -ba indy-sdk.spec || exit 4
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
+mkdir /var/repository/repos/rpm/indy-sdk
+mkdir /var/repository/repos/rpm/indy-sdk/$version
 cd /var/repository/repos/rpm/indy-sdk/$version
 put -r /usr/src/rpm/RPMS/
 put -r /usr/src/rpm/SRPMS/
