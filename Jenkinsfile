@@ -54,7 +54,7 @@ try {
     }
 
     // 4. PUBLISH DEB TO repo.evernym.com
-    stage('Publish RPM Files') {
+    stage('Publish DEB Files') {
         node('ubuntu') {
             publishDebFiles()
         }
