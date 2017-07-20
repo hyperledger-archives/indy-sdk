@@ -49,7 +49,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var connection = new Agent.Connection(connectionHandle);
             _connections.Add(connectionHandle, connection);
 
-            var messageObserver = RemoveConnectionObserver(xCommandHandle);
+            var messageObserver = RemoveMessageObserver(xCommandHandle);
 
             taskCompletionSource.SetResult(connection);
         };
@@ -61,7 +61,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             CheckCallback(err);
 
-            var connection = _connections[connectionHandle];
+            Connection connection;
+            _connections.TryGetValue(connectionHandle, out connection);
 
             if (connection == null)
                 return;
@@ -86,6 +87,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             _listeners.Add(listenerHandle, listener);
 
             listener.ConnectionObserver = RemoveConnectionObserver(xCommandHandle);
+            taskCompletionSource.SetResult(listener);
         };
 
         /// <summary>
@@ -95,9 +97,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             CheckCallback(err);
 
-            Debug.Assert(!_listeners.ContainsKey(listenerHandle));
-
-            var listener = _listeners[listenerHandle];
+            Listener listener;
+            _listeners.TryGetValue(listenerHandle, out listener);
 
             if (listener == null)
                 return;

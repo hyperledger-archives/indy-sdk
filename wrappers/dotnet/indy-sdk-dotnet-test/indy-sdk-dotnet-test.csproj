@@ -60,7 +60,11 @@
     <Compile Include="InitHelper.cs" />
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentAddIdentityTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentConnectTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentCloseListenerTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentCloseConnectionTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentIntegrationTest.cs" />
     <Compile Include="Wrapper\LedgerTests\SchemaRequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\RequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\NymRequestTest.cs" />
