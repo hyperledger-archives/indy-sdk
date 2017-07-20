@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
 	@Test
-	public void testProverCreateAndStoreClaimReqWorks() throws Exception {
+	public void testIssuerCreateClaimWorks() throws Exception {
 
 		initCommonWallet();
 
@@ -40,7 +40,7 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	public void testProverCreateAndStoreClaimReqWorksForClaimDoesNotCorrespondToClaimRequest() throws Exception {
+	public void testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimRequest() throws Exception {
 
 		initCommonWallet();
 
@@ -57,7 +57,7 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	public void testProverCreateAndStoreClaimReqWorksForInvalidClaim() throws Exception {
+	public void testIssuerCreateClaimWorksForInvalidClaim() throws Exception {
 
 		initCommonWallet();
 

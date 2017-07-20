@@ -26,9 +26,6 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	private Wallet wallet;
 	private String walletName = "ledgerWallet";
 
-	@Rule
-	public Timeout globalTimeout = new Timeout(5, TimeUnit.SECONDS);
-
 	@Before
 	public void openPool() throws Exception {
 		String poolName = PoolUtils.createPoolLedgerConfig();
