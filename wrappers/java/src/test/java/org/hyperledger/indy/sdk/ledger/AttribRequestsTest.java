@@ -119,10 +119,7 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter myDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000000000000My1", null, null);
-
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, myDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 
