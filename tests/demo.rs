@@ -260,7 +260,7 @@ fn agent_demo_works() {
     let sender_did = trustee_did.clone();
     let sender_wallet = trustee_wallet;
 
-    // Prepare and send attrib for listener (will be requested from ledger and used by sender at start connection)
+    //10. Prepare and send attrib for listener (will be requested from ledger and used by sender at start connection)
     let req_id = PoolUtils::get_req_id();
     let listener_attrib_json = json!({
         "identifier": listener_did,
@@ -286,10 +286,16 @@ fn agent_demo_works() {
 
     // 10. start listener on endpoint
     let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
-    let on_msg = Box::new(move |_, _, msg| { wait_msg_from_srv_send.send(msg).unwrap(); });
+    let on_msg = Box::new(move |conn_handle, err, msg| {
+        info!("On connection {} received (with error {:?}) agent message (CLI->SRV): {}", conn_handle, err, msg);
+        wait_msg_from_srv_send.send(msg).unwrap();
+    });
     let (on_msg_cb_id, on_msg_callback) = CallbackUtils::closure_to_agent_message_cb(on_msg);
 
-    let on_connect_cb = Box::new(move |_, _, conn_handle, _, _| { CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle); });
+    let on_connect_cb = Box::new(move |listener_handle, err, conn_handle, sender_did, receiver_did| {
+        CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle);
+        info!("New connection {} on listener {}, err {:?}, sender DID {}, receiver DID {}", conn_handle, listener_handle, err, sender_did, receiver_did);
+    });
     let (on_connect_cb_id, on_connect_callback) = CallbackUtils::closure_to_agent_connected_cb(on_connect_cb);
 
     let endpoint = CString::new(endpoint).unwrap();
@@ -309,7 +315,9 @@ fn agent_demo_works() {
     assert_eq!(err, ErrorCode::Success);
 
     // 12. Initiate connection from sender to listener
-    let (msg_cb_id, msg_callback) = CallbackUtils::closure_to_agent_message_cb(Box::new(move |_, _, _| {}));
+    let (msg_cb_id, msg_callback) = CallbackUtils::closure_to_agent_message_cb(Box::new(move |conn_handle, err, msg| {
+        info!("On connection {} received (with error {:?}) agent message (SRV->CLI): {}", conn_handle, err, msg);
+    }));
     let sender_did = CString::new(sender_did).unwrap();
 
     let err = indy_agent_connect(connect_command_hamdle, pool_handle, sender_wallet, sender_did.as_ptr(), listener_did.as_ptr(), connect_callback, msg_callback);
@@ -342,7 +350,6 @@ fn anoncreds_demo_works() {
     let (open_wallet_sender, open_wallet_receiver) = channel();
     let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
     // TODO: uncomment this for revocation part
-    //let (wallet_set_seq_no_for_value_sender2, wallet_set_seq_no_for_value_receiver2) = channel();
     //let (issuer_create_and_store_revoc_reg_sender, issuer_create_and_store_revoc_reg_receiver) = channel();
     let (prover_create_master_secret_sender, prover_create_master_secret_receiver) = channel();
     let (prover_create_claim_req_sender, prover_create_claim_req_receiver) = channel();
@@ -362,9 +369,6 @@ fn anoncreds_demo_works() {
         open_wallet_sender.send((err, handle)).unwrap();
     });
     // TODO: uncomment this for revocation part
-    //    let wallet_set_seq_no_for_value_cb2 = Box::new(move |err| {
-    //        wallet_set_seq_no_for_value_sender2.send(err).unwrap();
-    //    });
     //    let issuer_create_and_store_revoc_reg_cb = Box::new(move |err, revoc_reg_json, revoc_reg_uuid| {
     //        issuer_create_and_store_revoc_reg_sender.send((err, revoc_reg_json, revoc_reg_uuid)).unwrap();
     //    });
@@ -394,7 +398,6 @@ fn anoncreds_demo_works() {
     let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
     // TODO: uncomment this for revocation part
-    //    let (wallet_set_seq_no_for_value_command_handle2, wallet_set_seq_no_for_value_callback2) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(wallet_set_seq_no_for_value_cb2);
     //    let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
     let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
     let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
@@ -478,18 +481,6 @@ fn anoncreds_demo_works() {
     //    info!("revocation_reg_json: {:?}", revoc_reg_json);
     //    assert_eq!(ErrorCode::Success, err);
     //
-    //    // Create relationship between revoc_reg_seq_no and revoc_reg_uuid in wallet
-    //    let revoc_reg_seq_no = 2;
-    //
-    //    let err = indy_wallet_set_seq_no_for_value(wallet_set_seq_no_for_value_command_handle2,
-    //                                                 wallet_handle,
-    //                                                 CString::new(revoc_reg_uuid).unwrap().as_ptr(),
-    //                                                 revoc_reg_seq_no,
-    //                                                 wallet_set_seq_no_for_value_callback2);
-    //
-    //    assert_eq!(ErrorCode::Success, err);
-    //    let err = wallet_set_seq_no_for_value_receiver2.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    //    assert_eq!(ErrorCode::Success, err);
 
     // 5. Prover create Master Secret
     let err =
