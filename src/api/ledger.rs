@@ -143,7 +143,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: i32,
 /// submitter_did: Id of Identity stored in secured Wallet.
 /// target_did: Id of Identity stored in secured Wallet.
 /// verkey: verification key
-/// alias
+/// alias: alias
 /// role: Role of a user NYM record
 /// cb: Callback that takes command result as parameter.
 ///
