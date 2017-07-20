@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Indy.Sdk.Dotnet.Wrapper
+﻿namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
     /// Result of creating and storing my DID.

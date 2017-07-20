@@ -1,10 +1,6 @@
 ﻿using Base58Check;
 using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests

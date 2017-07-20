@@ -1,6 +1,5 @@
-﻿using System;
+﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Indy.Sdk.Dotnet.Wrapper;
 using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
