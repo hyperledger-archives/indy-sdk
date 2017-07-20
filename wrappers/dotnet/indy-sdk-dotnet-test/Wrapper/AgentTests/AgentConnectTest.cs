@@ -52,7 +52,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         }
 
         [TestMethod]
-        public void testAgentConnectWorksForAllDataInWalletPresent()
+        public void TestAgentConnectWorksForAllDataInWalletPresent()
         {
             var endpoint = "127.0.0.1:9906";
 

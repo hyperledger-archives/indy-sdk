@@ -61,6 +61,9 @@
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
     <Compile Include="Wrapper\AgentTests\AgentAddIdentityTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentSendTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentRemoveIdentityTest.cs" />
+    <Compile Include="Wrapper\AgentTests\AgentListenTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentConnectTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentCloseListenerTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentCloseConnectionTest.cs" />
