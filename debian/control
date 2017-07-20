@@ -2,7 +2,7 @@ Source: indy-sdk
 Section: devel
 Priority: optional
 Maintainer: Hyperledger <info@hyperledger.org>
-Build-Depends: libssl-dev, libsodium-dev, libsqlite0-dev
+Build-Depends: libssl-dev, libsodium-dev, libsqlite3-dev
 Standards-Version: 0.1.1
 Vcs-Git: https://github.com/hyperledger/indy-sdk/
 Vcs-Browser: https://github.com/hyperledger/indy-sdk/

@@ -53,6 +53,13 @@ try {
         }
     }
 
+    // 4. PUBLISH DEB TO repo.evernym.com
+    stage('Publish RPM Files') {
+        node('ubuntu') {
+            publishDebFiles()
+        }
+    }
+
 } catch (e) {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
@@ -188,15 +195,38 @@ def publishRpmFiles() {
 
             sh 'chmod -R 777 ci'
 
-            sh "./ci/rpm-build.sh $commit"
-
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/upload-rpm.sh $evernym_repo_key"
+                sh "./ci/rpm-build-and-upload.sh $commit $evernym_repo_key"
             }
         }
     }
     finally {
         echo 'Publish RPM: Cleanup'
+        step([$class: 'WsCleanup'])
+    }
+}
+
+def publishDebFiles() {
+    try {
+        echo 'Publish Deb files: Checkout csm'
+        checkout scm
+
+        echo 'Publish Deb: Build docker image'
+        def testEnv = dockerHelpers.build(name)
+
+        testEnv.inside('-u 0:0') {
+
+            commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+            sh 'chmod -R 777 ci'
+
+            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                sh "./ci/deb-build-and-upload.sh $commit $evernym_repo_key"
+            }
+        }
+    }
+    finally {
+        echo 'Publish Deb: Cleanup'
         step([$class: 'WsCleanup'])
     }
 }

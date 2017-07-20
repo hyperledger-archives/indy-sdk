@@ -13,6 +13,7 @@ version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit
 
 [ -z $version ] && exit 1
 [ -z $commit ] && exit 2
+[ -z $key ] && exit 3
 
 cd ci
 
@@ -23,8 +24,8 @@ sed \
 
 chown root.root indy-sdk.spec
 
-spectool -g -R indy-sdk.spec || exit 3
-rpmbuild -ba indy-sdk.spec || exit 4
+spectool -g -R indy-sdk.spec || exit 4
+rpmbuild -ba indy-sdk.spec || exit 5
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/rpm/indy-sdk
