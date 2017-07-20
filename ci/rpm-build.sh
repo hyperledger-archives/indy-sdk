@@ -1,10 +1,11 @@
 #!/bin/bash
 
 if [ "$1" = "--help" ] ; then
-  echo "Usage: $0 <commit>"
+  echo "Usage: $0 <commit> $1 <key>"
 fi
 
 commit="$1"
+key="$2"
 
 mkdir -p /usr/src/rpm/SOURCES/
 
@@ -24,3 +25,10 @@ chown root.root indy-sdk.spec
 
 spectool -g -R indy-sdk.spec || exit 3
 rpmbuild -ba indy-sdk.spec || exit 4
+
+cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
+cd /var/repository/repos/rpm/indy-sdk/$version
+put -r /usr/src/rpm/RPMS/
+put -r /usr/src/rpm/SRPMS/
+ls -l /var/repository/repos/rpm/indy-sdk/$version
+EOF
