@@ -13,7 +13,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     {
         private  Wallet _wallet;
         private  string _walletName = "createAndStoreClaimDefWallet";
-        private  string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
+        private new string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
         private  string _gvtSchemaJson = "{\n" +
                 "                    \"seqNo\":1,\n" +
                 "                    \"data\": {\n" +

@@ -33,7 +33,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         {
             InitHelper.Init();
         }
-
+                
         protected void InitCommonWallet()
         {
             if (_walletOpened)

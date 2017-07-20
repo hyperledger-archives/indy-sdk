@@ -11,6 +11,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class IssuerCreateClaimTest : AnonCredsIntegrationTestBase
     {
+        [ClassCleanup]
+        public static void CloseCommonWallet()
+        {
+            _commonWallet.CloseAsync().Wait();
+
+        }
+
         [TestMethod]
         public void TestIssuerCreateAndStoreClaimDefWorks()
         {

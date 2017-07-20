@@ -68,6 +68,8 @@
     <Compile Include="Wrapper\AgentTests\AgentCloseListenerTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentCloseConnectionTest.cs" />
     <Compile Include="Wrapper\AgentTests\AgentIntegrationTestBase.cs" />
+    <Compile Include="Wrapper\AnonCredsTests\ProverCreateMasterSecretTest.cs" />
+    <Compile Include="Wrapper\AnonCredsTests\ProverCreateAndStoreClaimReqTest.cs" />
     <Compile Include="Wrapper\AnonCredsTests\IssuerCreateClaimTest.cs" />
     <Compile Include="Wrapper\AnonCredsTests\IssuerCreateAndStoreClaimDefinitionTest.cs" />
     <Compile Include="Wrapper\AnonCredsTests\AnonCredsIntegrationTestBase.cs" />
