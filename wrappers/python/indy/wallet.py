@@ -13,6 +13,7 @@ async def create_wallet(pool_name: str,
                         credentials: Optional[str]) -> None:
     """
     Creates a new secure wallet with the given unique name.
+
     :param pool_name: Name of the pool that corresponds to this wallet.
     :param name: Name of the wallet.
     :param xtype: (optional) Type of the wallet. Defaults to 'default'.
@@ -60,6 +61,7 @@ async def open_wallet(name: str,
     Opens the wallet with specific name.
     Wallet with corresponded name must be previously created with indy_create_wallet method.
     It is impossible to open wallet with the same name more than once.
+
     :param name: Name of the wallet.
     :param runtime_config: (optional) Runtime wallet configuration json.
      if NULL, then default runtime_config will be used. Example:
@@ -99,6 +101,7 @@ async def open_wallet(name: str,
 async def close_wallet(handle: int) -> None:
     """
     Closes opened wallet and frees allocated resources.
+
     :param handle: wallet handle returned by indy_open_wallet.
     :return: Error code
     """
@@ -123,6 +126,7 @@ async def delete_wallet(name: str,
                         credentials: Optional[str]) -> None:
     """
     Deletes created wallet.
+
     :param name: Name of the wallet to delete.
     :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
      if NULL, then default credentials will be used.

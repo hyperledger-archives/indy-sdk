@@ -16,6 +16,7 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
     and signature type (currently only CL signature type is supported).
     Store the keys together with signature type and schema in a secure wallet as a claim definition.
     The claim definition in the wallet is identifying by a returned unique key.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
     :param schema_json: schema as a json
@@ -34,6 +35,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     """
     Create a new revocation registry for the given claim definition.
     Stores it in a secure wallet identifying by the returned key.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
     :param schema_seq_no: seq no of a schema transaction in Ledger
@@ -53,6 +55,7 @@ async def issuer_create_claim(wallet_handle: int,
     Signs a given claim for the given user by a given key (claim ef).
     The corresponding claim definition and revocation registry must be already created
     an stored into the wallet.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param claim_req_json: a claim request with a blinded secret
         from the user (returned by prover_create_and_store_claim_req).
@@ -94,6 +97,7 @@ async def issuer_revoke_claim(wallet_handle: int,
     Revokes a user identified by a revoc_id in a given revoc-registry.
     The corresponding claim definition and revocation registry must be already
     created an stored into the wallet.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
     :param user_revoc_index: index of the user in the revocation registry
@@ -106,6 +110,7 @@ async def prover_store_claim_offer(wallet_handle: int,
                                    claim_offer_json: str) -> None:
     """
     Stores a claim offer from the given issuer in a secure storage.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param claim_offer_json: claim offer as a json containing information about the issuer and a claim:
         {
@@ -122,6 +127,7 @@ async def prover_get_claim_offers(wallet_handle: int,
     """
     Gets all stored claim offers (see prover_store_claim_offer).
     A filter can be specified to get claim offers for specific Issuer, claim_def or schema only.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param filter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only
         Each of the filters is optional and can be combines
@@ -143,6 +149,7 @@ async def prover_create_master_secret(wallet_handle: int,
     """
     Creates a master secret with a given name and stores it in the wallet.
     The name must be unique.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param master_secret_name: a new master secret name
     :return: None.
@@ -163,6 +170,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
     and creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
     The blinded master secret is a part of the claim request.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param prover_did: a DID of the prover
     :param claim_offer_json: claim offer as a json containing information about the issuer and a claim:
@@ -191,6 +199,7 @@ async def prover_store_claim(wallet_handle: int,
     Seq_no is a sequence number of the corresponding transaction in the ledger.
     The method loads a blinded secret for this key from the wallet,
     updates the claim and stores it in a wallet.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param claims_json: claim json:
         {
@@ -211,6 +220,7 @@ async def prover_get_claims(wallet_handle: int,
     Gets human readable claims according to the filter.
     If filter is NULL, then all claims are returned.
     Claims can be filtered by Issuer, claim_def and/or Schema.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param filter_json: filter for claims
         {
@@ -233,6 +243,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
                                           proof_request_json: str) -> str:
     """
     Gets human readable claims matching the given proof request.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param proof_request_json: proof request json
         {
@@ -280,6 +291,7 @@ async def prover_create_proof(wallet_handle: int,
     All required schemas, public keys and revocation registries must be provided.
     The proof request also contains nonce.
     The proof contains either proof or self-attested attribute value for each requested attribute.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param proof_req_json: proof request json as come from the verifier
         {
@@ -353,6 +365,7 @@ async def verifier_verify_proof(wallet_handle: int,
     """
     Verifies a proof (of multiple claim).
     All required schemas, public keys and revocation registries must be provided.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param proof_request_json: initial proof request as sent by the verifier
         {

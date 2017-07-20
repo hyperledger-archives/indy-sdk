@@ -9,6 +9,7 @@ async def create_pool_ledger_config(config_name: str,
                                     config: Optional[str]) -> None:
     """
     Creates a new local pool ledger configuration that can be used later to connect pool nodes.
+
     :param config_name: Name of the pool ledger configuration.
     :param config: (optional) Pool configuration json. if NULL, then default config will be used. Example:
         {
@@ -47,6 +48,7 @@ async def open_pool_ledger(config_name: str,
     Pool ledger configuration with corresponded name must be previously created
     with indy_create_pool_ledger_config method.
     It is impossible to open pool with the same name more than once.
+
     :param config_name: Name of the pool ledger configuration.
     :param config: (optional) Runtime pool configuration json.
      if NULL, then default config will be used. Example:
@@ -85,6 +87,7 @@ async def open_pool_ledger(config_name: str,
 async def refresh_pool_ledger(handle: int) -> None:
     """
     Refreshes a local copy of a pool ledger and updates pool nodes connections.
+
     :param handle: pool handle returned by indy_open_pool_ledger
     :return: Error code
     """
@@ -110,6 +113,7 @@ async def refresh_pool_ledger(handle: int) -> None:
 async def close_pool_ledger(handle: int) -> None:
     """
     Closes opened pool ledger, opened nodes connections and frees allocated resources.
+
     :param handle: pool handle returned by indy_open_pool_ledger.
     :return: Error code
     """
@@ -135,6 +139,7 @@ async def close_pool_ledger(handle: int) -> None:
 async def delete_pool_ledger_config(config_name: str) -> None:
     """
     Deletes created pool ledger configuration.
+
     :param config_name: Name of the pool ledger configuration to delete.
     :return: Error code
     """
