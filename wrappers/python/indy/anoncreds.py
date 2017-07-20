@@ -25,7 +25,36 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
     :return: claim definition json containing information about signature type, schema and issuer's public key.
             Unique number identifying the public key in the wallet
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_create_and_store_claim_def: >>> wallet_handle: %s, issuer_did: %s, schema_json: %s,"
+                 " signature_type: %s, create_non_revoc: %s",
+                 wallet_handle,
+                 issuer_did,
+                 schema_json,
+                 signature_type,
+                 create_non_revoc)
+
+    if not hasattr(issuer_create_and_store_claim_def, "cb"):
+        logger.debug("issuer_create_and_store_claim_def: Creating callback")
+        issuer_create_and_store_claim_def.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+    c_schema_json = c_char_p(schema_json.encode('utf-8'))
+    c_signature_type = c_char_p(signature_type.encode('utf-8')) if signature_type is not None else None
+    c_create_non_revoc = c_bool(create_non_revoc)
+
+    claim_def_json = await do_call('indy_issuer_create_and_store_claim_def',
+                                   issuer_create_and_store_claim_def.cb,
+                                   c_wallet_handle,
+                                   c_issuer_did,
+                                   c_schema_json,
+                                   c_signature_type,
+                                   c_create_non_revoc)
+    res = claim_def_json.decode()
+    logger.debug("issuer_create_and_store_claim_def: <<< res: %s", res)
+    return res
 
 
 async def issuer_create_and_store_revoc_reg(wallet_handle: int,
