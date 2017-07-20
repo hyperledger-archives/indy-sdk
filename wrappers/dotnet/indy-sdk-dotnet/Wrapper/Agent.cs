@@ -25,9 +25,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         private static IDictionary<IntPtr, Agent.Listener> _listeners = new ConcurrentDictionary<IntPtr, Agent.Listener>();
         
         /// <summary>
-        /// Map of command handles to listener observers.
+        /// Map of command handles to message observers.
         /// </summary>
-        private static IDictionary<int, AgentObservers.ListenerObserver> _listenerObservers = new ConcurrentDictionary<int, AgentObservers.ListenerObserver>();
+        private static IDictionary<int, AgentObservers.MessageObserver> _messageObservers = new ConcurrentDictionary<int, AgentObservers.MessageObserver>();
 
         /// <summary>
         /// Map of command handles to connection observers.
@@ -41,7 +41,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<Agent.Connection>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             Debug.Assert(!_connections.ContainsKey(connectionHandle));
@@ -49,9 +49,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var connection = new Agent.Connection(connectionHandle);
             _connections.Add(connectionHandle, connection);
 
-            var connectionObserver = RemoveConnectionObserver(xCommandHandle);
-            var messageObserver = connectionObserver.OnConnection(null, connection, null, null);
-            connection.MessageObserver = messageObserver;
+            var messageObserver = RemoveConnectionObserver(xCommandHandle);
 
             taskCompletionSource.SetResult(connection);
         };
@@ -77,16 +75,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// </summary>
         private static AgentListenerCreatedDelegate _listenerCreatedCallback = (xCommandHandle, err, listenerHandle) =>
         {
-            CheckCallback(err);
+            var taskCompletionSource = RemoveTaskCompletionSource<Listener>(xCommandHandle);
+
+            if(!CheckCallback(taskCompletionSource, err))
+                return;
 
             Debug.Assert(!_listeners.ContainsKey(listenerHandle));
 
             var listener = new Agent.Listener(listenerHandle);
             _listeners.Add(listenerHandle, listener);
 
-            var listenerObserver = RemoveListenerObserver(xCommandHandle);
-            var connectionObserver = listenerObserver.OnListener(listener);
-            listener.ConnectionObserver = connectionObserver;
+            listener.ConnectionObserver = RemoveConnectionObserver(xCommandHandle);
         };
 
         /// <summary>
@@ -109,8 +108,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             _connections.Add(connectionHandle, connection);
 
             var connectionObserver = listener.ConnectionObserver;
-            var messageObserver = connectionObserver.OnConnection(listener, connection, senderDid, receiverDid);
-            connection.MessageObserver = messageObserver;            
+            connection.MessageObserver = connectionObserver.OnConnection(listener, connection, senderDid, receiverDid);          
         };
 
         /// <summary>
@@ -130,32 +128,30 @@ namespace Indy.Sdk.Dotnet.Wrapper
         };
 
         /// <summary>
-        /// Adds a listener observer to track.
+        /// Adds a message observer to track.
         /// </summary>
-        /// <param name="listenerObserver">The listener observer to track.</param>
-        /// <returns>The handle of the command the listener observer is associated with.</returns>
-        private static int AddListenerObserver(AgentObservers.ListenerObserver listenerObserver)
+        /// <param name="commandHandle">The command handle to use when tracking the message observer.</param>
+        /// <param name="messageObserver">The message observer to track.</param>
+        /// <returns>The handle of the command the message observer is associated with.</returns>
+        private static void AddMessageObserver(int commandHandle, AgentObservers.MessageObserver messageObserver)
         {
-            var commandHandle = GetNextCommandHandle();
-            Debug.Assert(!_listenerObservers.ContainsKey(commandHandle));
-            _listenerObservers.Add(commandHandle, listenerObserver);
-
-            return commandHandle;
+            Debug.Assert(!_messageObservers.ContainsKey(commandHandle));
+            _messageObservers.Add(commandHandle, messageObserver);
         }
 
         /// <summary>
-        /// Gets a listener observer by it's command handle and removes it from tracking.
+        /// Gets a message observer by it's command handle and removes it from tracking.
         /// </summary>
-        /// <param name="commandHandle">The command handle associated with the listener observer.</param>
-        /// <returns>The listener observer associated with the command handle.</returns>
-        private static AgentObservers.ListenerObserver RemoveListenerObserver(int commandHandle)
+        /// <param name="commandHandle">The command handle associated with the message observer.</param>
+        /// <returns>The message observer associated with the command handle.</returns>
+        private static AgentObservers.MessageObserver RemoveMessageObserver(int commandHandle)
         {
-            AgentObservers.ListenerObserver observer;
-            _listenerObservers.TryGetValue(commandHandle, out observer);
+            AgentObservers.MessageObserver observer;
+            _messageObservers.TryGetValue(commandHandle, out observer);
 
             Debug.Assert(observer != null);
 
-            _listenerObservers.Remove(commandHandle);
+            _messageObservers.Remove(commandHandle);
 
             return observer;
         }
@@ -163,11 +159,11 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Adds a connection observer to track.
         /// </summary>
+        /// <param name="commandHandle">The command handle to use when tracking the connection observer.</param>
         /// <param name="connectionObserver">The connection observer to track.</param>
         /// <returns>The handle of the command the connection observer is associated with.</returns>
-        private static int AddConnectionObserver(AgentObservers.ConnectionObserver connectionObserver)
+        private static int AddConnectionObserver(int commandHandle, AgentObservers.ConnectionObserver connectionObserver)
         {
-            int commandHandle = GetNextCommandHandle();
             Debug.Assert(!_connectionObservers.ContainsKey(commandHandle));
             _connectionObservers.Add(commandHandle, connectionObserver);            
 
@@ -189,7 +185,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             _connectionObservers.Remove(commandHandle);
 
             return observer;
-        }        
+        }
 
         /// <summary>
         /// Creates a connection to an agent.
@@ -198,10 +194,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="wallet">The wallet containing the keys for the DIDs.</param>
         /// <param name="senderDid">The DID to use when initiating the connection.</param>
         /// <param name="receiverDid">The DID of the target of the connection.</param>
-        /// <param name="connectionObserver">The observer that will receive events from the connection.</param>
-        public static void AgentConnect(Pool pool, Wallet wallet, string senderDid, string receiverDid, AgentObservers.ConnectionObserver connectionObserver)
+        /// <param name="messageObserver">The observer that will receive message events from the connection.</param>
+        /// <returns>An asynchronous task that returns a Connection result.</returns>
+        public static Task<Connection> AgentConnectAsync(Pool pool, Wallet wallet, string senderDid, string receiverDid, AgentObservers.MessageObserver messageObserver)
         {
-            var commandHandle = AddConnectionObserver(connectionObserver);
+            var taskCompletionSource = new TaskCompletionSource<Connection>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+            AddMessageObserver(commandHandle, messageObserver);
 
             var result = LibIndy.indy_agent_connect(
                 commandHandle,
@@ -213,16 +212,21 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 _connectionMessageReceivedCallback);
 
             CheckResult(result);
+
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
         /// Creates a listener than can be connected to by other agents.
         /// </summary>
         /// <param name="endpoint">The endpoint the agent is to be exposed on.</param>
-        /// <param name="listenerObserver">The observer that will receive events from the listener.</param>
-        public static void AgentListen(string endpoint, AgentObservers.ListenerObserver listenerObserver)
+        /// <param name="connectionObserver">The observer that will receive connection events from the listener.</param>
+        /// <returns>An asynchronous task that returns a Listener result.</returns>
+        public static Task<Listener> AgentListenAsync(string endpoint, AgentObservers.ConnectionObserver connectionObserver)
         {
-            var commandHandle = AddListenerObserver(listenerObserver);
+            var taskCompletionSource = new TaskCompletionSource<Listener>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+            AddConnectionObserver(commandHandle, connectionObserver);
 
             var result = LibIndy.indy_agent_listen(
                 commandHandle,
@@ -232,6 +236,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 _agentListenerMessageReceivedCallback);
 
             CheckResult(result);
+
+            return taskCompletionSource.Task;
         }
 
         /// <summary>

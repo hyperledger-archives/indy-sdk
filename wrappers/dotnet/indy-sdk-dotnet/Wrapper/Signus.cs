@@ -19,7 +19,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<CreateAndStoreMyDidResult>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             var callbackResult = new CreateAndStoreMyDidResult(did, verKey, pk);
@@ -34,7 +34,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<ReplaceKeysResult>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             var callbackResult = new ReplaceKeysResult(verKey, pk);
@@ -49,7 +49,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(signature);
@@ -62,7 +62,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(valid);
@@ -75,7 +75,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<EncryptResult>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             var callbackResult = new EncryptResult(encryptedMsg, nonce);
@@ -90,7 +90,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(decryptedMsg);

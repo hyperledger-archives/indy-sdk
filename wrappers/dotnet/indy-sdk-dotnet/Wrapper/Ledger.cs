@@ -20,7 +20,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(responseJson);
@@ -33,7 +33,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(requestJson);

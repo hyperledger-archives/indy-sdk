@@ -16,7 +16,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<Wallet>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(new Wallet(handle));

@@ -19,19 +19,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
         }
 
         /// <summary>
-        /// Interface for handling the event raised on creation of a listener.
-        /// </summary>
-        public interface ListenerObserver
-        {
-            /// <summary>
-            /// Called when a listener is created.
-            /// </summary>
-            /// <param name="listener">The listener that was created.</param>
-            /// <returns>A ConnectionObserver that will receive notifications when connections are established to the lis</returns>
-            ConnectionObserver OnListener(Agent.Listener listener);
-        }
-
-        /// <summary>
         /// Interface for handling the event raised on establishment of a connection.
         /// </summary>
         public interface ConnectionObserver

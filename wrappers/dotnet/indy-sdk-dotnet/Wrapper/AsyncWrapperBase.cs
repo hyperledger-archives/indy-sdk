@@ -29,7 +29,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
 
-            if (!CheckCallback(taskCompletionSource, xCommandHandle, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             taskCompletionSource.SetResult(true);
@@ -51,11 +51,10 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// </summary>
         /// <typeparam name="T">The type the promise will return.</typeparam>
         /// <param name="taskCompletionSource">The source controlling the async result.</param>
-        /// <param name="commandHandle">The command handle of the command that was processed.</param>
         /// <param name="errorCode">The error code returned to the callback by the sovrin function.</param>
         /// <returns>true if the error code was success, otherwise false.</returns>
         /// <exception cref="IndyException">If the errorCode is not a success result a SovrinException will be thrown.</exception>
-        protected static bool CheckCallback<T>(TaskCompletionSource<T> taskCompletionSource, int commandHandle, int errorCode)
+        protected static bool CheckCallback<T>(TaskCompletionSource<T> taskCompletionSource, int errorCode)
         {
             if (errorCode != (int)ErrorCode.Success)
             {
