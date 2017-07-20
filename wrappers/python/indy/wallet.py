@@ -11,6 +11,19 @@ async def create_wallet(pool_name: str,
                         xtype: Optional[str],
                         config: Optional[str],
                         credentials: Optional[str]) -> None:
+    """
+    Creates a new secure wallet with the given unique name.
+    :param pool_name: Name of the pool that corresponds to this wallet.
+    :param name: Name of the wallet.
+    :param xtype: (optional) Type of the wallet. Defaults to 'default'.
+     Custom types can be registered with indy_register_wallet_type call.
+    :param config: (optional) Wallet configuration json. List of supported keys are defined by wallet type.
+     if NULL, then default config will be used.
+    :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
+     if NULL, then default config will be used.
+    :return: Error code
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("create_wallet: >>> pool_name: %s, name: %s, xtype: %s, config: %s, credentials: %s",
                  pool_name,
@@ -43,6 +56,22 @@ async def create_wallet(pool_name: str,
 async def open_wallet(name: str,
                       runtime_config: Optional[str],
                       credentials: Optional[str]) -> int:
+    """
+    Opens the wallet with specific name.
+    Wallet with corresponded name must be previously created with indy_create_wallet method.
+    It is impossible to open wallet with the same name more than once.
+    :param name: Name of the wallet.
+    :param runtime_config: (optional) Runtime wallet configuration json.
+     if NULL, then default runtime_config will be used. Example:
+        {
+            "freshnessTime": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
+            ... List of additional supported keys are defined by wallet type.
+        }
+    :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
+     if NULL, then default credentials will be used.
+    :return: Handle to opened wallet to use in methods that require wallet access.
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("open_wallet: >>> name: %s, runtime_config: %s, credentials: %s",
                  name,
@@ -68,6 +97,12 @@ async def open_wallet(name: str,
 
 
 async def close_wallet(handle: int) -> None:
+    """
+    Closes opened wallet and frees allocated resources.
+    :param handle: wallet handle returned by indy_open_wallet.
+    :return: Error code
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("close_wallet: >>> handle: %i", handle)
 
@@ -86,6 +121,14 @@ async def close_wallet(handle: int) -> None:
 
 async def delete_wallet(name: str,
                         credentials: Optional[str]) -> None:
+    """
+    Deletes created wallet.
+    :param name: Name of the wallet to delete.
+    :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
+     if NULL, then default credentials will be used.
+    :return:
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("delete_wallet: >>> name: %s, credentials: %s",
                  name,
