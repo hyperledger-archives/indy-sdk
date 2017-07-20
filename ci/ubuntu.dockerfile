@@ -18,7 +18,8 @@ RUN apt-get update && \
       python3-pip \
       python-setuptools \
       apt-transport-https \
-      ca-certificates
+      ca-certificates \
+      debhelper
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
 RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
