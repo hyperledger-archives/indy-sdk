@@ -260,7 +260,7 @@ fn agent_demo_works() {
     let sender_did = trustee_did.clone();
     let sender_wallet = trustee_wallet;
 
-    // Prepare and send attrib for listener (will be requested from ledger and used by sender at start connection)
+    //10. Prepare and send attrib for listener (will be requested from ledger and used by sender at start connection)
     let req_id = PoolUtils::get_req_id();
     let listener_attrib_json = json!({
         "identifier": listener_did,
@@ -286,10 +286,16 @@ fn agent_demo_works() {
 
     // 10. start listener on endpoint
     let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
-    let on_msg = Box::new(move |_, _, msg| { wait_msg_from_srv_send.send(msg).unwrap(); });
+    let on_msg = Box::new(move |conn_handle, err, msg| {
+        info!("On connection {} received (with error {:?}) agent message (CLI->SRV): {}", conn_handle, err, msg);
+        wait_msg_from_srv_send.send(msg).unwrap();
+    });
     let (on_msg_cb_id, on_msg_callback) = CallbackUtils::closure_to_agent_message_cb(on_msg);
 
-    let on_connect_cb = Box::new(move |_, _, conn_handle, _, _| { CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle); });
+    let on_connect_cb = Box::new(move |listener_handle, err, conn_handle, sender_did, receiver_did| {
+        CallbackUtils::closure_map_ids(on_msg_cb_id, conn_handle);
+        info!("New connection {} on listener {}, err {:?}, sender DID {}, receiver DID {}", conn_handle, listener_handle, err, sender_did, receiver_did);
+    });
     let (on_connect_cb_id, on_connect_callback) = CallbackUtils::closure_to_agent_connected_cb(on_connect_cb);
 
     let endpoint = CString::new(endpoint).unwrap();
@@ -309,7 +315,9 @@ fn agent_demo_works() {
     assert_eq!(err, ErrorCode::Success);
 
     // 12. Initiate connection from sender to listener
-    let (msg_cb_id, msg_callback) = CallbackUtils::closure_to_agent_message_cb(Box::new(move |_, _, _| {}));
+    let (msg_cb_id, msg_callback) = CallbackUtils::closure_to_agent_message_cb(Box::new(move |conn_handle, err, msg| {
+        info!("On connection {} received (with error {:?}) agent message (SRV->CLI): {}", conn_handle, err, msg);
+    }));
     let sender_did = CString::new(sender_did).unwrap();
 
     let err = indy_agent_connect(connect_command_hamdle, pool_handle, sender_wallet, sender_did.as_ptr(), listener_did.as_ptr(), connect_callback, msg_callback);

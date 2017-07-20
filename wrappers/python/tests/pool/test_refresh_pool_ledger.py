@@ -15,5 +15,5 @@ def before_after_each():
 
 @pytest.mark.asyncio
 async def test_refresh_pool_ledger_works():
-    handle = await pool.create_and_open_pool_ledger("pool_name")
+    handle = await pool.create_and_open_pool_ledger("pool_1")
     await refresh_pool_ledger(handle)
