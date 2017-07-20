@@ -72,7 +72,33 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     :return: Revoc registry json
         Unique number identifying the revocation registry in the wallet
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %s, issuer_did: %s, schema_seq_no: %s,"
+                 " max_claim_num: %s",
+                 wallet_handle,
+                 issuer_did,
+                 schema_seq_no,
+                 max_claim_num)
+
+    if not hasattr(issuer_create_and_store_revoc_reg, "cb"):
+        logger.debug("issuer_create_and_store_revoc_reg: Creating callback")
+        issuer_create_and_store_revoc_reg.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+    c_schema_seq_no = c_int32(schema_seq_no)
+    c_max_claim_num = c_int32(max_claim_num)
+
+    (revoc_reg_json, revoc_reg_uuid) = await do_call('indy_issuer_create_and_store_revoc_reg',
+                                                     issuer_create_and_store_revoc_reg.cb,
+                                                     c_wallet_handle,
+                                                     c_issuer_did,
+                                                     c_schema_seq_no,
+                                                     c_max_claim_num)
+    res = (revoc_reg_json.decode(), revoc_reg_uuid.decode())
+    logger.debug("issuer_create_and_store_revoc_reg: <<< res: %s", res)
+    return res
 
 
 async def issuer_create_claim(wallet_handle: int,
