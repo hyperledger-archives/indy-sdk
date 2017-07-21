@@ -20,7 +20,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void testAgentAddIdentityWorksForMultiplyKeys()
+        public void TestAgentAddIdentityWorksForMultiplyKeys()
         {
             var endpoint = "127.0.0.1:9902";
 
