@@ -26,6 +26,7 @@ public abstract class LibIndy {
 
 		// wallet.rs
 
+		public int indy_register_wallet_type(int command_handle, String xtype, Callback create, Callback open, Callback set, Callback get, Callback get_not_expired, Callback list, Callback close, Callback delete, Callback free, Callback cb);
 		public int indy_create_wallet(int command_handle, String pool_name, String name, String xtype, String config, String credentials, Callback cb);
 		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
@@ -54,8 +55,8 @@ public abstract class LibIndy {
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
 		public int indy_sign(int command_handle, int wallet_handle, String did, String msg, Callback cb);
 		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, String signed_msg, Callback cb);
-		public int indy_encrypt(int command_handle, int wallet_handle, String did, String msg, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, String did, String encrypted_msg, Callback cb);
+		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, String msg, Callback cb);
+		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, String encrypted_msg, String nonce, Callback cb);
 
 		// anoncreds.rs
 

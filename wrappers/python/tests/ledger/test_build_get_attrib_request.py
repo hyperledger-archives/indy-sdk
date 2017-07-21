@@ -16,7 +16,7 @@ def before_after_each():
 
 
 @pytest.mark.asyncio
-async def test_build_get_attrib_request_works_for_raw_data():
+async def test_build_get_attrib_request_works():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "Th7MpTaRZVRYnPiabds81Y"
     raw = "endpoint"
