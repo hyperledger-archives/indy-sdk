@@ -18,10 +18,12 @@ async def create_and_store_my_did(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_did_json = c_char_p(did_json.encode('utf-8'))
 
-    res = await do_call('indy_create_and_store_my_did',
+    did, verkey, pk = await do_call('indy_create_and_store_my_did',
                         c_wallet_handle,
                         c_did_json,
                         create_and_store_my_did.cb)
+
+    res = (did.decode(), verkey.decode(), pk.decode())
 
     logger.debug("create_and_store_my_did: <<< res: %s", res)
     return res

@@ -20,27 +20,46 @@ class ConnectionEvent(Event):
     sender_did: str
     receiver_did: str
 
-    def __init__(self, handle: int, err: int, connection_handle: int, sender_did: str, receiver_did):
-        self.handle = handle,
+    def __init__(self, handle: int, err: int, connection_handle: int, sender_did: bytes, receiver_did: bytes):
+        logger = logging.getLogger(__name__)
+        logger.debug("ConnectionEvent:__init__ >>> handle: %r, err: %r, connection_handle: %r, sender_did: %r, "
+                     "receiver_did: %r",
+                     handle,
+                     err,
+                     connection_handle,
+                     sender_did,
+                     receiver_did)
+
+        self.handle = handle
 
         if err != ErrorCode.Success:
             self.error = IndyError(ErrorCode(err))
         else:
             self.connection_handle = connection_handle
-            self.sender_did = sender_did
-            self.receiver_did = receiver_did
+            self.sender_did = sender_did.decode()
+            self.receiver_did = receiver_did.decode()
+
+        logger.debug("ConnectionEvent:__init__ <<< self: %r", self)
 
 
 class MessageEvent(Event):
     message: str
 
-    def __init__(self, handle: int, err: int, message: str):
+    def __init__(self, handle: int, err: int, message: bytes):
+        logger = logging.getLogger(__name__)
+        logger.debug("MessageEvent:__init__ >>> handle: %r, err: %r, message: %r",
+                     handle,
+                     err,
+                     message)
+
         self.handle = handle,
 
         if err != ErrorCode.Success:
             self._error = IndyError(ErrorCode(err))
         else:
-            self.message = message
+            self.message = message.decode()
+
+        logger.debug("MessageEvent:__init__ <<< self: %r", self)
 
 
 _events: List[Event] = []
@@ -48,6 +67,11 @@ _event_waiters: List[Tuple[List[int], Any, Any]] = []
 
 
 def _notify_event_waiters():
+    logger = logging.getLogger(__name__)
+    logger.debug("_notify_event_waiters: >>> _event_waiters: %r, _events: %r",
+                 _event_waiters,
+                 _events)
+
     for i, (handles, event_loop, future) in enumerate(_event_waiters):
         for j, event in enumerate(_events):
             if event.handle in handles:
@@ -56,11 +80,15 @@ def _notify_event_waiters():
                 event_loop.call_soon_threadsafe(lambda f, e: f.set_result(e),
                                                 future,
                                                 event)
+                logger.debug("_notify_event_waiters: <<< handles: %r, event: %r", handles, event)
+                return
+
+    logger.debug("_notify_event_waiters: <<< no events")
 
 
 async def agent_wait_for_event(handles: List[int]) -> Event:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_wait_for_event: >>> handles: %s", handles)
+    logger.debug("agent_wait_for_event: >>> handles: %r", handles)
 
     event_loop = asyncio.get_event_loop()
     future = event_loop.create_future()
@@ -70,7 +98,7 @@ async def agent_wait_for_event(handles: List[int]) -> Event:
 
     res = await future
 
-    logger.debug("agent_wait_for_event: <<< res: %s", res)
+    logger.debug("agent_wait_for_event: <<< res: %r", res)
     return res
 
 
@@ -79,7 +107,7 @@ async def agent_connect(pool_handle: int,
                         sender_did: str,
                         receiver_did: str) -> int:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_connect: >>> pool_handle: %i, wallet_handle: %i, sender_did: %s, receiver_did: %s",
+    logger.debug("agent_connect: >>> pool_handle: %r, wallet_handle: %r, sender_did: %r, receiver_did: %r",
                  pool_handle,
                  wallet_handle,
                  sender_did,
@@ -89,8 +117,8 @@ async def agent_connect(pool_handle: int,
         logger.debug("agent_connect: Creating connection callback")
         agent_connect.connection_cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
-    def _message_cb(connection_handle: int, err: int, message: str):
-        logger.debug("agent_connect._message_cb: connection_handle: %i, err: %i, message: %s",
+    def _message_cb(connection_handle: int, err: int, message: bytes):
+        logger.debug("agent_connect._message_cb: connection_handle: %r, err: %r, message: %r",
                      connection_handle,
                      err,
                      message)
@@ -114,21 +142,21 @@ async def agent_connect(pool_handle: int,
                         agent_connect.connection_cb,
                         agent_connect.message_cb)
 
-    logger.debug("agent_connect: <<< res: %i", res)
+    logger.debug("agent_connect: <<< res: %r", res)
     return res
 
 
 async def agent_listen(endpoint: str) -> int:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_listen: >>> endpoint: %s", endpoint)
+    logger.debug("agent_listen: >>> endpoint: %r", endpoint)
 
     if not hasattr(agent_listen, "listener_cb"):
         logger.debug("agent_listen: Creating listener callback")
         agent_listen.listener_cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
-    def _connection_cb(listener_handle: int, err: int, connection_handle: int, sender_did: str, receiver_did: str):
-        logger.debug("agent_connect._connection_cb: listener_handle: %i, err: %i, connection_handle: %i, sender_did: "
-                     "%s, receiver_did: %s",
+    def _connection_cb(listener_handle: int, err: int, connection_handle: int, sender_did: bytes, receiver_did: bytes):
+        logger.debug("agent_connect._connection_cb: listener_handle: %r, err: %r, connection_handle: %r, sender_did: "
+                     "%r, receiver_did: %r",
                      connection_handle,
                      err,
                      connection_handle,
@@ -139,10 +167,10 @@ async def agent_listen(endpoint: str) -> int:
 
     if not hasattr(agent_listen, "connection_cb"):
         logger.debug("agent_listen: Creating connection callback")
-        agent_listen.connection_cb = CFUNCTYPE(None, c_int32, c_int32, c_char_p)(_connection_cb)
+        agent_listen.connection_cb = CFUNCTYPE(None, c_int32, c_int32, c_int32, c_char_p, c_char_p)(_connection_cb)
 
-    def _message_cb(connection_handle: int, err: int, message: str):
-        logger.debug("agent_connect._message_cb: connection_handle: %i, err: %i, message: %s",
+    def _message_cb(connection_handle: int, err: int, message: bytes):
+        logger.debug("agent_connect._message_cb: connection_handle: %r, err: %r, message: %r",
                      connection_handle,
                      err,
                      message)
@@ -161,7 +189,7 @@ async def agent_listen(endpoint: str) -> int:
                         agent_listen.connection_cb,
                         agent_listen.message_cb)
 
-    logger.debug("agent_listen: <<< res: %i", res)
+    logger.debug("agent_listen: <<< res: %r", res)
     return res
 
 
@@ -170,7 +198,7 @@ async def agent_add_identity(listener_handle: int,
                              wallet_handle: int,
                              did: str) -> None:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_add_identity: >>> listener_handle: %i, pool_handle: %i, wallet_handle: %i, did: %s",
+    logger.debug("agent_add_identity: >>> listener_handle: %r, pool_handle: %r, wallet_handle: %r, did: %r",
                  listener_handle,
                  pool_handle,
                  wallet_handle,
@@ -200,7 +228,7 @@ async def agent_remove_identity(listener_handle: int,
                                 wallet_handle: int,
                                 did: str) -> None:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_remove_identity: >>> listener_handle: %i, pool_handle: %i, wallet_handle: %i, did: %s",
+    logger.debug("agent_remove_identity: >>> listener_handle: %r, pool_handle: %r, wallet_handle: %r, did: %r",
                  listener_handle,
                  pool_handle,
                  wallet_handle,
@@ -227,7 +255,7 @@ async def agent_remove_identity(listener_handle: int,
 
 async def agent_send(connection_handle: int, message: str) -> None:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_send: >>> connection_handle: %i, message: %s",
+    logger.debug("agent_send: >>> connection_handle: %r, message: %r",
                  connection_handle,
                  message)
 
@@ -248,7 +276,7 @@ async def agent_send(connection_handle: int, message: str) -> None:
 
 async def agent_close_connection(connection_handle: int) -> None:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_close_connection: >>> connection_handle: %i", connection_handle)
+    logger.debug("agent_close_connection: >>> connection_handle: %r", connection_handle)
 
     if not hasattr(agent_close_connection, "cb"):
         logger.debug("agent_close_connection: Creating callback")
@@ -265,7 +293,7 @@ async def agent_close_connection(connection_handle: int) -> None:
 
 async def agent_close_listener(listener_handle: int) -> None:
     logger = logging.getLogger(__name__)
-    logger.debug("agent_close_listener: >>> listener_handle: %i", listener_handle)
+    logger.debug("agent_close_listener: >>> listener_handle: %r", listener_handle)
 
     if not hasattr(agent_close_listener, "cb"):
         logger.debug("agent_close_listener: Creating callback")
