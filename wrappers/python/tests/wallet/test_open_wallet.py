@@ -17,9 +17,9 @@ def before_after_each():
 
 @pytest.mark.asyncio
 async def test_open_wallet_works():
-    pool_name = "indy_open_wallet_works"
-    wallet_name = "indy_open_wallet_works"
-
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    await wallet.create_wallet('pool1', 'wallet1', None, None, None)
+    wallet_handle = await wallet.open_wallet('wallet1', None, None)
     assert wallet_handle is not None
+
+    await wallet.close_wallet(wallet_handle)
+    assert True

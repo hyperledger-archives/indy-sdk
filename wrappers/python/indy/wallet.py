@@ -30,12 +30,12 @@ async def create_wallet(pool_name: str,
     c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
 
     await do_call('indy_create_wallet',
-                  create_wallet.cb,
                   c_pool_name,
                   c_name,
                   c_xtype,
                   c_config,
-                  c_credentials)
+                  c_credentials,
+                  create_wallet.cb)
 
     logger.debug("create_wallet: <<<")
 
@@ -58,10 +58,10 @@ async def open_wallet(name: str,
     c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
 
     res = await do_call('indy_open_wallet',
-                        open_wallet.cb,
                         c_name,
                         c_runtime_config,
-                        c_credentials)
+                        c_credentials,
+                        open_wallet.cb)
 
     logger.debug("open_wallet: <<< res: %s", res)
     return res
@@ -78,12 +78,16 @@ async def close_wallet(handle: int) -> None:
     c_handle = c_int32(handle)
 
     await do_call('indy_close_wallet',
-                  close_wallet.cb,
-                  c_handle)
+                  c_handle,
+                  close_wallet.cb)
 
     logger.debug("close_wallet: <<<")
 
 
+# pub extern fn indy_delete_wallet(command_handle: i32,
+#                                    name: *const c_char,
+#                                    credentials: *const c_char,
+#                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
 async def delete_wallet(name: str,
                         credentials: Optional[str]) -> None:
     logger = logging.getLogger(__name__)
@@ -99,8 +103,8 @@ async def delete_wallet(name: str,
     c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
 
     await do_call('indy_delete_wallet',
-                  delete_wallet.cb,
                   c_name,
-                  c_credentials)
+                  c_credentials,
+                  delete_wallet.cb)
 
     logger.debug("delete_wallet: <<<")

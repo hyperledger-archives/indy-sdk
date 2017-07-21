@@ -65,5 +65,5 @@ async def test_build_nym_request_works_with_option_fields():
         }
     }
 
-    response = json.loads((await ledger.build_nym_request(identifier, destination, ver_key, alias, role)).decode())
+    response = json.loads(await ledger.build_nym_request(identifier, destination, ver_key, alias, role))
     assert expected_response.items() <= response.items()

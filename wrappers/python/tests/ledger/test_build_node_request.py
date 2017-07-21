@@ -57,5 +57,5 @@ async def test_build_node_request_works_for_correct_data_json():
         }
     }
 
-    response = json.loads((await ledger.build_node_request(identifier, destination, json.dumps(data))).decode())
+    response = json.loads(await ledger.build_node_request(identifier, destination, json.dumps(data)))
     assert expected_response.items() <= response.items()

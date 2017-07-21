@@ -55,7 +55,7 @@ async def test_submit_request_works(pool_handle):
         },
         "op": "REPLY"
     }
-    response = json.loads((await ledger.submit_request(pool_handle, json.dumps(request))).decode())
+    response = json.loads(await ledger.submit_request(pool_handle, json.dumps(request)))
     assert response == expected_response
 
 
@@ -64,10 +64,10 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"000000000000000000000000Trustee1"}')
 
-    get_nym_request = await ledger.build_get_nym_request(my_did.decode(), my_did.decode())
+    get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     invalid_pool_handle = pool_handle + 1
     try:
-        await ledger.submit_request(invalid_pool_handle, get_nym_request.decode())
+        await ledger.submit_request(invalid_pool_handle, get_nym_request)
         raise Exception("Failed")
     except Exception as e:
         assert type(IndyError(ErrorCode.PoolLedgerInvalidPoolHandle)) == type(e) and \
@@ -79,9 +79,9 @@ async def test_send_nym_request_works_without_signature(pool_handle, wallet_hand
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"00000000000000000000000000000My1"}')
 
-    nym_request = await ledger.build_nym_request(my_did.decode(), my_did.decode(), None, None, None)
+    nym_request = await ledger.build_nym_request(my_did, my_did, None, None, None)
     try:
-        await ledger.submit_request(pool_handle, nym_request.decode())
+        await ledger.submit_request(pool_handle, nym_request)
         raise Exception("Failed")
     except Exception as e:
         assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
@@ -93,9 +93,9 @@ async def test_send_get_nym_request_works(pool_handle, wallet_handle):
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"000000000000000000000000Trustee1"}')
 
-    get_nym_request = await ledger.build_get_nym_request(my_did.decode(), my_did.decode())
+    get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
 
-    response = json.loads((await ledger.submit_request(pool_handle, get_nym_request.decode())).decode())
+    response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
     assert response['result']['data'] is not None
 
 
@@ -106,10 +106,10 @@ async def test_nym_requests_works(pool_handle, wallet_handle):
     (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                    '{"seed":"00000000000000000000000000000My1"}')
 
-    nym_request = await ledger.build_nym_request(trustee_did.decode(), my_did.decode(), my_ver_key.decode(), None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did.decode(), nym_request.decode())
-    get_nym_request = await ledger.build_get_nym_request(my_did.decode(), my_did.decode())
-    response = json.loads((await ledger.submit_request(pool_handle, get_nym_request.decode())).decode())
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+    get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
+    response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
     assert response['result']['data'] is not None
 
 
@@ -118,10 +118,10 @@ async def test_send_attrib_request_works_without_signature(pool_handle, wallet_h
     (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                           '{"seed":"00000000000000000000000000000My1"}')
 
-    attrib_request = await ledger.build_attrib_request(my_did.decode(), my_did.decode(), None,
+    attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
     try:
-        await ledger.submit_request(pool_handle, attrib_request.decode())
+        await ledger.submit_request(pool_handle, attrib_request)
         raise Exception("Failed")
     except Exception as e:
         assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
@@ -134,13 +134,13 @@ async def test_attrib_requests_works(pool_handle, wallet_handle):
                                                                '{"seed":"000000000000000000000000Trustee1"}')
     (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                    '{"seed":"00000000000000000000000000000My1"}')
-    nym_request = await ledger.build_nym_request(trustee_did.decode(), my_did.decode(), my_ver_key.decode(), None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did.decode(), nym_request.decode())
-    attrib_request = await ledger.build_attrib_request(my_did.decode(), my_did.decode(), None,
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+    attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did.decode(), attrib_request.decode())
-    get_attrib_request = await ledger.build_get_attrib_request(my_did.decode(), my_did.decode(), "endpoint")
-    response = json.loads((await ledger.submit_request(pool_handle, get_attrib_request.decode())).decode())
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
+    get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, "endpoint")
+    response = json.loads(await ledger.submit_request(pool_handle, get_attrib_request))
     assert response['result']['data'] is not None
 
 
@@ -155,10 +155,10 @@ async def test_send_schema_request_works_without_signature(pool_handle, wallet_h
         "keys": ["name", "male"]
     }
 
-    schema_request = await ledger.build_schema_request(my_did.decode(), json.dumps(schema_data))
+    schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
 
     try:
-        await ledger.submit_request(pool_handle, schema_request.decode())
+        await ledger.submit_request(pool_handle, schema_request)
         raise Exception("Failed")
     except Exception as e:
         assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
@@ -178,16 +178,16 @@ async def test_schema_requests_works(pool_handle, wallet_handle):
         "keys": ["name", "male"]
     }
 
-    nym_request = await ledger.build_nym_request(trustee_did.decode(), my_did.decode(), my_ver_key.decode(), None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did.decode(), nym_request.decode())
-    schema_request = await ledger.build_schema_request(my_did.decode(), json.dumps(schema_data))
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did.decode(), schema_request.decode())
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+    schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
     get_schema_data = {
         "name": "gvt2",
         "version": "2.0"
     }
-    get_schema_request = await ledger.build_get_schema_request(my_did.decode(), my_did.decode(), json.dumps(get_schema_data))
-    response = json.loads((await ledger.submit_request(pool_handle, get_schema_request.decode())).decode())
+    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
     assert response['result']['data'] is not None
 
 
@@ -205,10 +205,10 @@ async def test_send_node_request_works_without_signature(pool_handle, wallet_han
         "services": ["VALIDATOR"]
     }
 
-    node_request = await ledger.build_node_request(my_did.decode(), my_did.decode(), json.dumps(node_data))
+    node_request = await ledger.build_node_request(my_did, my_did, json.dumps(node_data))
 
     try:
-        await ledger.submit_request(pool_handle, node_request.decode())
+        await ledger.submit_request(pool_handle, node_request)
         raise Exception("Failed")
     except Exception as e:
         assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
@@ -228,19 +228,19 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle):
         "keys": ["name", "male"]
     }
 
-    nym_request = await ledger.build_nym_request(trustee_did.decode(), my_did.decode(), my_ver_key.decode(), None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did.decode(), nym_request.decode())
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
-    schema_request = await ledger.build_schema_request(my_did.decode(), json.dumps(schema_data))
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did.decode(), schema_request.decode())
+    schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
     get_schema_data = {
         "name": "gvt2",
         "version": "2.0"
     }
 
-    get_schema_request = await ledger.build_get_schema_request(my_did.decode(), my_did.decode(), json.dumps(get_schema_data))
-    get_schema_response = json.loads((await ledger.submit_request(pool_handle, get_schema_request.decode())).decode())
+    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    get_schema_response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
 
     claim_def = {
         "primary": {
@@ -260,13 +260,13 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle):
     }
 
     claim_def_request = await ledger.build_claim_def_txn(
-        my_did.decode(), get_schema_response['result']['seqNo'], "CL", json.dumps(claim_def))
+        my_did, get_schema_response['result']['seqNo'], "CL", json.dumps(claim_def))
 
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did.decode(), claim_def_request.decode())
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
     get_claim_def_request = await ledger.build_get_claim_def_txn(
-        my_did.decode(), get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['data']['origin'])
+        my_did, get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['data']['origin'])
     get_claim_def_response = json.loads(
-        (await ledger.submit_request(pool_handle, get_claim_def_request.decode())).decode())
+        (await ledger.submit_request(pool_handle, get_claim_def_request)))
     assert claim_def == get_claim_def_response['result']['data']
 
 
@@ -281,20 +281,20 @@ async def test_get_txn_request_works(pool_handle, wallet_handle):
         "keys": ["name"]
     })
 
-    schema_request = await ledger.build_schema_request(my_did.decode(), schema_data)
-    schema_response = json.loads((await ledger.sign_and_submit_request(
-        pool_handle, wallet_handle, my_did.decode(), schema_request.decode())).decode())
+    schema_request = await ledger.build_schema_request(my_did, schema_data)
+    schema_response = json.loads(await ledger.sign_and_submit_request(
+        pool_handle, wallet_handle, my_did, schema_request))
 
     get_schema_data = {
         "name": "gvt3",
         "version": "3.0"
     }
     get_schema_request = await ledger.build_get_schema_request(
-        my_did.decode(), my_did.decode(), json.dumps(get_schema_data))
-    await ledger.submit_request(pool_handle, get_schema_request.decode())
+        my_did, my_did, json.dumps(get_schema_data))
+    await ledger.submit_request(pool_handle, get_schema_request)
 
-    get_txn_request = await ledger.build_get_txn_request(my_did.decode(), schema_response['result']['seqNo'])
-    get_txn_response = json.loads((await ledger.submit_request(pool_handle, get_txn_request.decode())).decode())
+    get_txn_request = await ledger.build_get_txn_request(my_did, schema_response['result']['seqNo'])
+    get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
     assert schema_data == json.loads(get_txn_response['result']['data'])['data']
 
 
@@ -309,12 +309,12 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
         "keys": ["name"]
     })
 
-    schema_request = await ledger.build_schema_request(my_did.decode(), schema_data)
-    schema_response = json.loads((await ledger.sign_and_submit_request(
-        pool_handle, wallet_handle, my_did.decode(), schema_request.decode())).decode())
+    schema_request = await ledger.build_schema_request(my_did, schema_data)
+    schema_response = json.loads(await ledger.sign_and_submit_request(
+        pool_handle, wallet_handle, my_did, schema_request))
 
     seq_no = schema_response['result']['seqNo'] + 1
 
-    get_txn_request = await ledger.build_get_txn_request(my_did.decode(), seq_no)
-    get_txn_response = json.loads((await ledger.submit_request(pool_handle, get_txn_request.decode())).decode())
+    get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
+    get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
     assert get_txn_response['result']['data'] == "{}"
