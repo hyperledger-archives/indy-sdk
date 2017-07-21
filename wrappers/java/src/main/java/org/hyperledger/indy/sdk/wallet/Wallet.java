@@ -100,7 +100,7 @@ public class Wallet extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public CompletableFuture<Void> registerWalletType(
+	public static CompletableFuture<Void> registerWalletType(
 			String xtype,
 			WalletType walletType) throws IndyException {
 
