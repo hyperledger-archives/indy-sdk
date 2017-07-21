@@ -231,6 +231,8 @@ public class Signus extends IndyJava.API {
 
 	public static CompletableFuture<String> encrypt(
 			Wallet wallet,
+			Pool pool,
+			String myDid,
 			String did,
 			String msg) throws IndyException {
 
@@ -238,10 +240,13 @@ public class Signus extends IndyJava.API {
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_encrypt(
 				commandHandle, 
 				walletHandle, 
+				poolHandle, 
+				myDid,
 				did,
 				msg,
 				encryptCb);
@@ -253,8 +258,10 @@ public class Signus extends IndyJava.API {
 
 	public static CompletableFuture<String> decrypt(
 			Wallet wallet,
+			String myDid,
 			String did,
-			String encryptedMsg) throws IndyException {
+			String encryptedMsg,
+			String nonce) throws IndyException {
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -264,8 +271,10 @@ public class Signus extends IndyJava.API {
 		int result = LibIndy.api.indy_decrypt(
 				commandHandle, 
 				walletHandle, 
+				myDid,
 				did,
 				encryptedMsg,
+				nonce,
 				decryptCb);
 
 		checkResult(result);
