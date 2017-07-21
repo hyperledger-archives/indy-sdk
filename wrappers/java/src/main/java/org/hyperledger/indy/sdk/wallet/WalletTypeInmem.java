@@ -8,7 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 
 public class WalletTypeInmem extends WalletType {
 
@@ -53,42 +56,46 @@ public class WalletTypeInmem extends WalletType {
 
 		WalletInmem wallet = this.walletsByHandle.get(handle);
 		if (wallet == null) return ErrorCode.CommonInvalidState;
-		
+
 		wallet.values.put(key, value);
-		
-		System.out.println("SET " + key + " --> " + value);
-		
+
 		return ErrorCode.Success;
 	}
 
 	@Override
-	public ErrorCode get(int handle, String key, Pointer valuePtr) {
+	public ErrorCode get(int handle, String key, PointerByReference valuePtr) {
 
 		WalletInmem wallet = this.walletsByHandle.get(handle);
 		if (wallet == null) return ErrorCode.CommonInvalidState;
 
 		String value = wallet.values.get(key);
 
-		System.out.println("GET " + key + " --> " + value);
-		
-		valuePtr.setString(0, value);
+		byte[] bytes = Native.toByteArray(value);
+		Pointer pointer = new Memory(bytes.length + 1);
+		pointer.write(0, bytes, 0, bytes.length);
+		pointer.setByte(bytes.length, (byte)0);
+		valuePtr.setPointer(pointer);
 		return ErrorCode.Success;
 	}
 
 	@Override
-	public ErrorCode getNotExpired(int handle, String key, Pointer valuePtr) {
+	public ErrorCode getNotExpired(int handle, String key, PointerByReference valuePtr) {
 
 		WalletInmem wallet = this.walletsByHandle.get(handle);
 		if (wallet == null) return ErrorCode.CommonInvalidState;
 
 		String value = wallet.values.get(key);
 
-		valuePtr.setString(0, value);
+		byte[] bytes = Native.toByteArray(value);
+		Pointer pointer = new Memory(bytes.length + 1);
+		pointer.write(0, bytes, 0, bytes.length);
+		pointer.setByte(bytes.length, (byte)0);
+		valuePtr.setPointer(pointer);
 		return ErrorCode.Success;
 	}
 
 	@Override
-	public ErrorCode list(int handle, String keyPrefix, Pointer valuesJsonPtr) {
+	public ErrorCode list(int handle, String keyPrefix, PointerByReference valuesJsonPtr) {
 
 		WalletInmem wallet = this.walletsByHandle.get(handle);
 		if (wallet == null) return ErrorCode.CommonInvalidState;
@@ -97,7 +104,7 @@ public class WalletTypeInmem extends WalletType {
 		builder.append("[");
 
 		for (Iterator<Map.Entry<String, String>> iterator = wallet.values.entrySet().iterator(); iterator.hasNext(); ) {
-			
+
 			Map.Entry<String, String> entry = iterator.next();
 			String key = entry.getKey();
 			String value = entry.getValue();
@@ -108,7 +115,11 @@ public class WalletTypeInmem extends WalletType {
 
 		builder.append("]");
 
-		valuesJsonPtr.setString(0, builder.toString());
+		byte[] bytes = Native.toByteArray(builder.toString());
+		Pointer pointer = new Memory(bytes.length + 1);
+		pointer.write(0, bytes, 0, bytes.length);
+		pointer.setByte(bytes.length, (byte)0);
+		valuesJsonPtr.setPointer(pointer);
 		return ErrorCode.Success;
 	}
 
@@ -119,7 +130,7 @@ public class WalletTypeInmem extends WalletType {
 		if (wallet == null) return ErrorCode.CommonInvalidState;
 
 		wallet.open = false;
-		
+
 		return ErrorCode.Success;
 	}
 
@@ -136,8 +147,9 @@ public class WalletTypeInmem extends WalletType {
 	}
 
 	@Override
-	public ErrorCode free(int walletHandle, String value) {
-		// TODO Auto-generated method stub
+	public ErrorCode free(int walletHandle, Pointer value) {
+
+		Native.free(Pointer.nativeValue(value));
 
 		return ErrorCode.Success;
 	}
