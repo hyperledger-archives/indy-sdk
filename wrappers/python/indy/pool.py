@@ -5,6 +5,7 @@ from ctypes import *
 
 import logging
 
+
 async def create_pool_ledger_config(config_name: str,
                                     config: Optional[str]) -> None:
     logger = logging.getLogger(__name__)
@@ -20,9 +21,9 @@ async def create_pool_ledger_config(config_name: str,
     c_config = c_char_p(config.encode('utf-8')) if config is not None else None
 
     res = await do_call('indy_create_pool_ledger_config',
-                        create_pool_ledger_config.cb,
                         c_config_name,
-                        c_config)
+                        c_config,
+                        create_pool_ledger_config.cb)
 
     logger.debug("create_pool_ledger_config: <<< res: %s", res)
     return res
@@ -43,9 +44,9 @@ async def open_pool_ledger(config_name: str,
     c_config = c_char_p(config.encode('utf-8')) if config is not None else None
 
     res = await do_call('indy_open_pool_ledger',
-                        open_pool_ledger.cb,
                         c_config_name,
-                        c_config)
+                        c_config,
+                        open_pool_ledger.cb)
 
     logger.debug("open_pool_ledger: <<< res: %s", res)
     return res
@@ -63,8 +64,8 @@ async def refresh_pool_ledger(handle: int) -> None:
     c_handle = c_int32(handle)
 
     res = await do_call('indy_refresh_pool_ledger',
-                        refresh_pool_ledger.cb,
-                        c_handle)
+                        c_handle,
+                        refresh_pool_ledger.cb)
 
     logger.debug("refresh_pool_ledger: <<< res: %s", res)
     return res
@@ -82,8 +83,8 @@ async def close_pool_ledger(handle: int) -> None:
     c_handle = c_int32(handle)
 
     res = await do_call('indy_close_pool_ledger',
-                        close_pool_ledger.cb,
-                        c_handle)
+                        c_handle,
+                        close_pool_ledger.cb)
 
     logger.debug("close_pool_ledger: <<< res: %s", res)
     return res
@@ -101,8 +102,8 @@ async def delete_pool_ledger_config(config_name: str) -> None:
     c_config_name = c_char_p(config_name.encode('utf-8'))
 
     res = await do_call('indy_delete_pool_ledger_config',
-                        delete_pool_ledger_config.cb,
-                        c_config_name)
+                        c_config_name,
+                        delete_pool_ledger_config.cb)
 
     logger.debug("delete_pool_ledger_config: <<< res: %s", res)
     return res

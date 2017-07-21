@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 endpoint = "127.0.0.1:9701"
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def cleanup_storage():
     storage.cleanup()
     yield
@@ -35,7 +35,7 @@ async def wallet_with_identities(cleanup_storage):
 
 
 @pytest.mark.asyncio
-async def test_agent_connect_works(wallet_with_identities):
+async def test_agent_listen_works(wallet_with_identities):
     wallet_handle, did = wallet_with_identities
 
     listener_handle = await agent.agent_listen(endpoint)
