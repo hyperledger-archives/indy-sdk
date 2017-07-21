@@ -54,8 +54,8 @@ public abstract class LibIndy {
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
 		public int indy_sign(int command_handle, int wallet_handle, String did, String msg, Callback cb);
 		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, String signed_msg, Callback cb);
-		public int indy_encrypt(int command_handle, int wallet_handle, String did, String msg, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, String did, String encrypted_msg, Callback cb);
+		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, String msg, Callback cb);
+		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, String encrypted_msg, String nonce, Callback cb);
 
 		// anoncreds.rs
 
