@@ -14,8 +14,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [ClassCleanup]
         public static void CloseCommonWallet()
         {
-            _commonWallet.CloseAsync().Wait();
-
+            try
+            {
+                _commonWallet.CloseAsync().Wait();
+            }
+            catch (Exception)
+            { }
         }
 
         [TestMethod]
