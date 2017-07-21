@@ -105,6 +105,9 @@
     <Compile Include="Wrapper\WalletTests\CreateWalletTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Wrapper\WalletTests\DeleteWalletTest.cs" />
+    <Compile Include="Wrapper\WalletTests\InMemWallet.cs" />
+    <Compile Include="Wrapper\WalletTests\InMemWalletType.cs" />
+    <Compile Include="Wrapper\WalletTests\RegisterWalletTypeTest.cs" />
     <Compile Include="Wrapper\WalletTests\OpenWalletTest.cs" />
   </ItemGroup>
   <ItemGroup>

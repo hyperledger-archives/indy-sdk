@@ -23,6 +23,36 @@ namespace Indy.Sdk.Dotnet.Wrapper
         };
 
         /// <summary>
+        /// Registers a custom wallet type.
+        /// </summary>
+        /// <param name="xType">The name of the custom time.</param>
+        /// <param name="walletType">The type type.</param>
+        /// <returns></returns>
+        public static Task RegisterWalletTypeAsync(string xType, WalletType walletType)
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            var result = LibIndy.indy_register_wallet_type(
+                commandHandle,
+                xType,
+                walletType.CreateCallback,
+                walletType.OpenCallback,
+                walletType.SetCallback,
+                walletType.GetCallback,
+                walletType.GetNotExpiredCallback,
+                walletType.ListCallback,
+                walletType.CloseCallback,
+                walletType.DeleteCallback,
+                walletType.FreeCallback,
+                _noValueCallback);
+
+            CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Creates a new wallet.
         /// </summary>
         /// <param name="poolName">The name of the pool the wallet is associated with.</param>

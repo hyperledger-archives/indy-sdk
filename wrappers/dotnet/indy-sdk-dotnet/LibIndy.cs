@@ -81,6 +81,97 @@ namespace Indy.Sdk.Dotnet
         // wallet.rs
 
         /// <summary>
+        /// Registers custom wallet implementation.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="xtype">Wallet type name.</param>
+        /// <param name="create">WalletType create operation handler</param>
+        /// <param name="open">WalletType open operation handler</param>
+        /// <param name="set">Wallet set operation handler</param>
+        /// <param name="get">Wallet get operation handler</param>
+        /// <param name="get_not_expired">Wallet get_not_expired operation handler</param>
+        /// <param name="list">Wallet list operation handler</param>
+        /// <param name="close">Wallet close operation handler</param>
+        /// <param name="delete">WalletType delete operation handler</param>
+        /// <param name="free">Handler that allows to de-allocate strings allocated in caller code</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport("indy.dll")]
+        public static extern int indy_register_wallet_type(int command_handle, string xtype, WalletTypeCreateDelegate create, WalletTypeOpenDelegate open, WalletTypeSetDelegate set, WalletTypeGetDelegate get, WalletTypeGetNotExpiredDelegate get_not_expired, WalletTypeListDelegate list, WalletTypeCloseDelegate close, WalletTypeDeleteDelegate delete, WalletTypeFreeDelegate free, NoValueDelegate cb);
+
+        /// <summary>
+        /// Delegate for the function called back to when a wallet of a custom type is created.
+        /// </summary>
+        /// <param name="name">The name of the wallet.</param>
+        /// <param name="config">The configuration of the wallet.</param>
+        /// <param name="credentials">The credentials for the wallet.</param>
+        public delegate ErrorCode WalletTypeCreateDelegate(string name, string config, string credentials);
+
+        /// <summary>
+        /// Delegate for the function called back to when a wallet of a custom type is opened.
+        /// </summary>
+        /// <param name="name">The name of the wallet to open.</param>
+        /// <param name="config">The configuration for the wallet.</param>
+        /// <param name="runtimeConfig">The runtime configuration for the wallet.</param>
+        /// <param name="credentials">The credentials of the wallet.</param>
+        /// <param name="walletHandle">A handle to use when tracking the wallet instance.</param>
+        public delegate ErrorCode WalletTypeOpenDelegate(string name, string config, string runtimeConfig, string credentials, ref int walletHandle);
+
+        /// <summary>
+        /// Delegate for the function called back to when value is set on a wallet of a custom type.
+        /// </summary>
+        /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
+        /// <param name="key">The key of the value to set.</param>
+        /// <param name="value">The value to set.</param>
+        public delegate ErrorCode WalletTypeSetDelegate(int walletHandle, string key, string value);
+
+        /// <summary>
+        /// Delegate for the function called back to when value is requested from a wallet of a custom type.
+        /// </summary>
+        /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="valuePtr">The pointer to the value associated with the key.</param>
+        public delegate ErrorCode WalletTypeGetDelegate(int walletHandle, string key, ref IntPtr valuePtr);
+
+        /// <summary>
+        /// Delegate for the function called back to when an unexpired value is requested from a wallet of a custom type.
+        /// </summary>
+        /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="valuePtr">The pointer to the value associated with the key.</param>
+        public delegate ErrorCode WalletTypeGetNotExpiredDelegate(int walletHandle, string key, ref IntPtr valuePtr);
+
+        /// <summary>
+        /// Delegate for the function called back to when an list of values is requested from a wallet of a custom type.
+        /// </summary>
+        /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
+        /// <param name="keyPrefix">The key prefix for the values requested.</param>
+        /// <param name="valuesJsonPtr">The pointer to the values associated with the key prefix.</param>
+        public delegate ErrorCode WalletTypeListDelegate(int walletHandle, string keyPrefix, ref IntPtr valuesJsonPtr);
+
+        /// <summary>
+        /// Delegate for the function called back to when a wallet of a custom type is closed.
+        /// </summary>
+        /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
+        public delegate ErrorCode WalletTypeCloseDelegate(int walletHandle);
+
+        /// <summary>
+        /// Delegate for the function called back to when a wallet of a custom type is deleted.
+        /// </summary>
+        /// <param name="name">The name of the wallet being deleted</param>
+        /// <param name="config">The configuration of the wallet.</param>
+        /// <param name="credentials">The credentials of the wallet.</param>
+        public delegate ErrorCode WalletTypeDeleteDelegate(string name, string config, string credentials);
+
+        /// <summary>
+        /// Delegate for the function called back to when a value in a  wallet of a custom type is freed.
+        /// </summary>
+        /// <param name="walletHandle">The handle of the wallet the action is being performed on.</param>
+        /// <param name="valuePtr">A pointer to the value to be freed.</param>
+        public delegate ErrorCode WalletTypeFreeDelegate(int walletHandle, IntPtr valuePtr);
+
+
+        /// <summary>
         /// Creates a new secure wallet with the given unique name.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
