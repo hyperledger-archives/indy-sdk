@@ -142,7 +142,36 @@ async def issuer_create_claim(wallet_handle: int,
             "schema_seq_no", string,
         }
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_create_claim: >>> wallet_handle: %s, claim_req_json: %s, claim_json: %s,"
+                 " revoc_reg_seq_no: %s, user_revoc_index: %s",
+                 wallet_handle,
+                 claim_req_json,
+                 claim_json,
+                 revoc_reg_seq_no,
+                 user_revoc_index)
+
+    if not hasattr(issuer_create_claim, "cb"):
+        logger.debug("issuer_create_claim: Creating callback")
+        issuer_create_claim.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_claim_req_json = c_char_p(claim_req_json.encode('utf-8'))
+    c_claim_json = c_char_p(claim_json.encode('utf-8'))
+    c_revoc_reg_seq_no = c_int32(revoc_reg_seq_no)
+    c_user_revoc_index = c_int32(user_revoc_index)
+
+    (revoc_reg_update_json, claim_json) = await do_call('indy_issuer_create_claim',
+                                                        issuer_create_claim.cb,
+                                                        c_wallet_handle,
+                                                        c_claim_req_json,
+                                                        c_claim_json,
+                                                        c_revoc_reg_seq_no,
+                                                        c_user_revoc_index)
+    res = (revoc_reg_update_json.decode(), claim_json.decode())
+    logger.debug("issuer_create_claim: <<< res: %s", res)
+    return res
 
 
 async def issuer_revoke_claim(wallet_handle: int,
