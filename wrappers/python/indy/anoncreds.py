@@ -187,7 +187,29 @@ async def issuer_revoke_claim(wallet_handle: int,
     :param user_revoc_index: index of the user in the revocation registry
     :return: Revocation registry update json with a revoked claim
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_revoke_claim: >>> wallet_handle: %s, revoc_reg_seq_no: %s, user_revoc_index: %s",
+                 wallet_handle,
+                 revoc_reg_seq_no,
+                 user_revoc_index)
+
+    if not hasattr(issuer_revoke_claim, "cb"):
+        logger.debug("issuer_revoke_claim: Creating callback")
+        issuer_revoke_claim.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_revoc_reg_seq_no = c_int32(revoc_reg_seq_no)
+    c_user_revoc_index = c_int32(user_revoc_index)
+
+    revoc_reg_update_json = await do_call('indy_issuer_revoke_claim',
+                                          issuer_revoke_claim.cb,
+                                          c_wallet_handle,
+                                          c_revoc_reg_seq_no,
+                                          c_user_revoc_index)
+    res = revoc_reg_update_json.decode()
+    logger.debug("issuer_revoke_claim: <<< res: %s", res)
+    return res
 
 
 async def prover_store_claim_offer(wallet_handle: int,
