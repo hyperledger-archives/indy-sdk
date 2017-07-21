@@ -26,6 +26,7 @@ public abstract class LibIndy {
 
 		// wallet.rs
 
+		public int indy_register_wallet_type(int command_handle, String xtype, Callback create, Callback open, Callback set, Callback get, Callback get_not_expired, Callback list, Callback close, Callback delete, Callback free, Callback cb);
 		public int indy_create_wallet(int command_handle, String pool_name, String name, String xtype, String config, String credentials, Callback cb);
 		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
