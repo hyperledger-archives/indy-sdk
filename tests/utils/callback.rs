@@ -1,6 +1,6 @@
 extern crate libc;
 
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use self::libc::c_char;
 use std::ffi::CStr;
@@ -11,6 +11,10 @@ use std::sync::Mutex;
 
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+}
+
+lazy_static! {
+    static ref CLOSURE_CB_MAP: Mutex<HashMap<i32, i32>> = Default::default();
 }
 
 pub struct CallbackUtils {}
@@ -57,6 +61,66 @@ impl CallbackUtils {
         (command_handle, Some(open_pool_ledger_callback))
     }
 
+    pub fn closure_to_refresh_pool_ledger_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                        Option<extern fn(command_handle: i32,
+                                                                                                         err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
+    pub fn closure_to_close_pool_ledger_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                       err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
+    pub fn closure_to_delete_pool_ledger_config_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                              Option<extern fn(command_handle: i32,
+                                                                                                               err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
     pub fn closure_to_send_tx_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
                                  -> (i32,
                                      Option<extern fn(command_handle: i32, err: ErrorCode,
@@ -82,21 +146,19 @@ impl CallbackUtils {
         (command_handle, Some(send_tx_callback))
     }
 
-    pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+    pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                                    Option<extern fn(command_handle: i32,
                                                                                                                                     err: ErrorCode,
-                                                                                                                                    claim_def_json: *const c_char,
-                                                                                                                                    claim_def_uuid: *const c_char)>) {
+                                                                                                                                    claim_def_json: *const c_char)>) {
         lazy_static! {
-            static ref CREATE_CLAIM_DEFINITION_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+            static ref CREATE_CLAIM_DEFINITION_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn create_claim_definition_callback(command_handle: i32, err: ErrorCode, claim_def_json: *const c_char, claim_def_uuid: *const c_char) {
+        extern "C" fn create_claim_definition_callback(command_handle: i32, err: ErrorCode, claim_def_json: *const c_char) {
             let mut callbacks = CREATE_CLAIM_DEFINITION_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let claim_def_json = unsafe { CStr::from_ptr(claim_def_json).to_str().unwrap().to_string() };
-            let claim_def_uuid = unsafe { CStr::from_ptr(claim_def_uuid).to_str().unwrap().to_string() };
-            cb(err, claim_def_json, claim_def_uuid)
+            cb(err, claim_def_json)
         }
 
         let mut callbacks = CREATE_CLAIM_DEFINITION_CALLBACKS.lock().unwrap();
@@ -104,6 +166,26 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(create_claim_definition_callback))
+    }
+
+    pub fn closure_to_register_wallet_type_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                  Option<extern fn(command_handle: i32,
+                                                                                                   err: ErrorCode)>) {
+        lazy_static! {
+            static ref REFISTER_WALLET_TYPE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn register_wallet_type_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = REFISTER_WALLET_TYPE_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = REFISTER_WALLET_TYPE_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(register_wallet_type_callback))
     }
 
     pub fn closure_to_create_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
@@ -145,26 +227,6 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(open_wallet_callback))
-    }
-
-    pub fn closure_to_wallet_set_seq_no_for_value_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                                Option<extern fn(command_handle: i32,
-                                                                                                                 err: ErrorCode)>) {
-        lazy_static! {
-            static ref WALLET_SET_SEQ_NO_FOR_VALUE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
-        }
-
-        extern "C" fn closure_to_wallet_set_seq_no_for_value_callback(command_handle: i32, err: ErrorCode) {
-            let mut callbacks = WALLET_SET_SEQ_NO_FOR_VALUE_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err)
-        }
-
-        let mut callbacks = WALLET_SET_SEQ_NO_FOR_VALUE_CALLBACKS.lock().unwrap();
-        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(closure_to_wallet_set_seq_no_for_value_callback))
     }
 
     pub fn closure_to_issuer_create_and_store_revoc_reg_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
@@ -519,23 +581,29 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_agent_message_cb(closure: Box<FnMut(i32, ErrorCode, String) + Send>)
-                                       -> Option<extern fn(connection_handle: i32, err: ErrorCode, msg: *const c_char)> {
+                                       -> (i32, Option<extern fn(connection_handle: i32, err: ErrorCode, msg: *const c_char)>) {
         lazy_static! {
-            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, String) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, ErrorCode, String) + Send>>> = Default::default();
         }
 
         extern "C" fn agent_message_callback(conn_handle: i32, err: ErrorCode, msg: *const c_char) {
+            info!("CallbackUtils::agent_message_callback");
             let mut callbacks = CALLBACKS.lock().unwrap();
             let msg = unsafe { CStr::from_ptr(msg).to_str().unwrap().to_string() };
-            for cb in callbacks.iter_mut() {
-                cb(conn_handle, err, msg.clone())
-            }
+            let cb_id: i32 = *CLOSURE_CB_MAP.lock().unwrap().get(&conn_handle).unwrap();
+            callbacks.get_mut(&cb_id).unwrap()(conn_handle, err, msg);
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.push(closure);
+        let cb_id = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(cb_id, closure);
 
-        Some(agent_message_callback)
+        (cb_id, Some(agent_message_callback))
+    }
+
+    pub fn closure_map_ids(cb_id: i32, param_id: i32) {
+        let mut map = CLOSURE_CB_MAP.lock().unwrap();
+        map.insert(param_id, cb_id);
     }
 
     pub fn closure_to_agent_listen_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
@@ -560,33 +628,114 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_agent_connected_cb(closure: Box<FnMut(i32, ErrorCode, i32, String, String) + Send>)
-                                         -> Option<extern fn(listener_handle: i32,
-                                                             err: ErrorCode,
-                                                             conn_handle: i32,
-                                                             sender_did: *const c_char,
-                                                             receiver_did: *const c_char)> {
+                                         -> (i32, Option<extern fn(listener_handle: i32,
+                                                                   err: ErrorCode,
+                                                                   conn_handle: i32,
+                                                                   sender_did: *const c_char,
+                                                                   receiver_did: *const c_char)>) {
         lazy_static! {
-            static ref CALLBACKS: Mutex<Vec<Box<FnMut(i32, ErrorCode, i32, String, String) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, ErrorCode, i32, String, String) + Send>>> = Default::default();
         }
 
-        extern "C" fn agent_connected_callback(listener_handle: i32,
-                                               err: ErrorCode,
-                                               conn_handle: i32,
-                                               sender_did: *const c_char,
-                                               receiver_did: *const c_char) {
+        extern "C" fn callback(listener_handle: i32,
+                               err: ErrorCode,
+                               conn_handle: i32,
+                               sender_did: *const c_char,
+                               receiver_did: *const c_char) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let sender_did = unsafe { CStr::from_ptr(sender_did).to_str().unwrap().to_string() };
             let receiver_did = unsafe { CStr::from_ptr(receiver_did).to_str().unwrap().to_string() };
-            for cb in callbacks.iter_mut() {
-                cb(listener_handle, err, conn_handle, sender_did.clone(), receiver_did.clone())
-            }
+            let cb_id: i32 = *CLOSURE_CB_MAP.lock().unwrap().get(&listener_handle).unwrap();
+            callbacks.get_mut(&cb_id).unwrap()(listener_handle, err, conn_handle, sender_did.clone(), receiver_did.clone());
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.push(closure);
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
 
-        Some(agent_connected_callback)
+        (command_handle, Some(callback))
     }
+
+    pub fn closure_to_agent_add_identity_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
+    pub fn closure_to_agent_rm_identity_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
+    pub fn closure_to_agent_send_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                               Option<extern fn(command_handle: i32,
+                                                                                                err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+
+    pub fn closure_to_agent_close_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                Option<extern fn(command_handle: i32,
+                                                                                                 err: ErrorCode)>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn agent_close_connection_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(agent_close_connection_callback))
+    }
+
 
     pub fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                     Option<extern fn(command_handle: i32,

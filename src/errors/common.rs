@@ -1,4 +1,4 @@
-extern crate zmq;
+extern crate zmq_pw as zmq;
 
 use std::cell::{BorrowError, BorrowMutError};
 use std::error::Error;

@@ -33,30 +33,31 @@ use self::libc::c_char;
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
+pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
                                                        wallet_handle: i32,
+                                                       issuer_did: *const c_char,
                                                        schema_json: *const c_char,
                                                        signature_type: *const c_char,
                                                        create_non_revoc: bool,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            claim_def_json: *const c_char,
-                                                                            claim_def_uuid: *const c_char
+                                                                            claim_def_json: *const c_char
                                                        )>) -> ErrorCode {
-    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimDefinition(
             wallet_handle,
+            issuer_did,
             schema_json,
             signature_type,
             create_non_revoc,
             Box::new(move |result| {
-                let (err, claim_def_json, claim_def_uuid) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, claim_def_json) = result_to_err_code_1!(result, String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
-                let claim_def_uuid = CStringUtils::string_to_cstring(claim_def_uuid);
-                cb(command_handle, err, claim_def_json.as_ptr(), claim_def_uuid.as_ptr())
+                cb(command_handle, err, claim_def_json.as_ptr())
             })
         ))));
 
@@ -70,7 +71,7 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
-/// claim_def_seq_no: seq no of a public key transaction in Ledger
+/// schema_seq_no: seq no of a schema transaction in Ledger
 /// max_claim_num: maximum number of claims the new registry can process.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -83,22 +84,26 @@ pub extern fn sovrin_issuer_create_and_store_claim_def(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
+pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                        wallet_handle: i32,
-                                                       claim_def_seq_no: i32,
+                                                       issuer_did: *const c_char,
+                                                       schema_seq_no: i32,
                                                        max_claim_num: i32,
                                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                             revoc_reg_json: *const c_char,
                                                                             revoc_reg_uuid: *const c_char
                                                        )>) -> ErrorCode {
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
                 IssuerCommand::CreateAndStoreRevocationRegistry(
                     wallet_handle,
-                    claim_def_seq_no,
+                    issuer_did,
+                    schema_seq_no,
                     max_claim_num,
                     Box::new(move |result| {
                         let (err, revoc_reg_json, revoc_reg_wallet_key) = result_to_err_code_2!(result, String::new(), String::new());
@@ -120,11 +125,11 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// claim_req_json: a claim request with a blinded secret
 ///     from the user (returned by prover_create_and_store_claim_req).
-///     Also contains claim_def_seq_no and issuer_did
+///     Also contains schema_seq_no and issuer_did
 ///     Example:
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
-///      "claim_def_seq_no" : <claim_def_seq_no>,
+///      "schema_seq_no" : <schema_seq_no>,
 ///      "issuer_did" : <issuer_did>
 ///     }
 /// claim_json: a claim containing attribute values for each of requested attribute names.
@@ -139,13 +144,14 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///
 /// #Returns
 /// Revocation registry update json with a newly issued claim
-/// Claim json containing issued claim, and claim_def_seq_no and revoc_reg_seq_no
+/// Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
 /// used for issuance
 ///     {
 ///         "claim": <see claim_json above>,
 ///         "signature": <signature>,
-///         "claim_def_seq_no": string,
-///         "revoc_reg_seq_no", string
+///         "revoc_reg_seq_no", string,
+///         "issuer_did", string,
+///         "schema_seq_no", string,
 ///     }
 ///
 /// #Errors
@@ -153,7 +159,7 @@ pub extern fn sovrin_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_issuer_create_claim(command_handle: i32,
+pub extern fn indy_issuer_create_claim(command_handle: i32,
                                          wallet_handle: i32,
                                          claim_req_json: *const c_char,
                                          claim_json: *const c_char,
@@ -196,7 +202,6 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transactions to the Ledger
-/// claim_def_seq_no: seq no of a claim definition transaction in Ledger
 /// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
@@ -209,9 +214,8 @@ pub extern fn sovrin_issuer_create_claim(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
+pub extern fn indy_issuer_revoke_claim(command_handle: i32,
                                          wallet_handle: i32,
-                                         claim_def_seq_no: i32,
                                          revoc_reg_seq_no: i32,
                                          user_revoc_index: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -224,7 +228,6 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
             AnoncredsCommand::Issuer(
                 IssuerCommand::RevokeClaim(
                     wallet_handle,
-                    claim_def_seq_no,
                     revoc_reg_seq_no,
                     user_revoc_index,
                     Box::new(move |result| {
@@ -245,7 +248,6 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "claim_def_seq_no": string,
 ///            "schema_seq_no": string
 ///        }
 ///
@@ -256,7 +258,7 @@ pub extern fn sovrin_issuer_revoke_claim(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
+pub extern fn indy_prover_store_claim_offer(command_handle: i32,
                                               wallet_handle: i32,
                                               claim_offer_json: *const c_char,
                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
@@ -287,7 +289,6 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 ///     Each of the filters is optional and can be combines
 ///        {
 ///            "issuer_did": string,
-///            "claim_def_seq_no": string,
 ///            "schema_seq_no": string
 ///        }
 ///
@@ -295,7 +296,6 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 /// A json with a list of claim offers for the filter.
 ///        {
 ///            [{"issuer_did": string,
-///            "claim_def_seq_no": string,
 ///            "schema_seq_no": string}]
 ///        }
 ///
@@ -303,7 +303,7 @@ pub extern fn sovrin_prover_store_claim_offer(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
+pub extern fn indy_prover_get_claim_offers(command_handle: i32,
                                              wallet_handle: i32,
                                              filter_json: *const c_char,
                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -343,7 +343,7 @@ pub extern fn sovrin_prover_get_claim_offers(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
+pub extern fn indy_prover_create_master_secret(command_handle: i32,
                                                  wallet_handle: i32,
                                                  master_secret_name: *const c_char,
                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
@@ -366,7 +366,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 
 
 /// Creates a clam request json for the given claim offer and stores it in a secure wallet.
-/// The claim offer contains the information about Issuer (DID, claim_def_seq_no),
+/// The claim offer contains the information about Issuer (DID, schema_seq_no),
 /// and the schema (schema_seq_no).
 /// The method gets public key and schema from the ledger, stores them in a wallet,
 /// and creates a blinded master secret for a master secret identified by a provided name.
@@ -380,10 +380,9 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "claim_def_seq_no": string,
 ///            "schema_seq_no": string
 ///        }
-/// claim_def_json: claim definition json associated with a claim_def_seq_no in the claim_offer
+/// claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
@@ -391,7 +390,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 /// Claim request json.
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
-///      "claim_def_seq_no" : <claim_def_seq_no>,
+///      "schema_seq_no" : <schema_seq_no>,
 ///      "issuer_did" : <issuer_did>
 ///     }
 ///
@@ -400,7 +399,7 @@ pub extern fn sovrin_prover_create_master_secret(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
+pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
                                                        wallet_handle: i32,
                                                        prover_did: *const c_char,
                                                        claim_offer_json: *const c_char,
@@ -434,7 +433,7 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 
 /// Updates the claim by a master secret and stores in a secure wallet.
 /// The claim contains the information about
-/// claim_def_seq_no revoc_reg_seq_no (see issuer_create_claim).
+/// schema_seq_no, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
 /// Seq_no is a sequence number of the corresponding transaction in the ledger.
 /// The method loads a blinded secret for this key from the wallet,
 /// updates the claim and stores it in a wallet.
@@ -447,8 +446,8 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 ///         "claim": {attr1:[value, value_as_int]}
 ///         "signature": <signature>,
 ///         "schema_seq_no": string,
-///         "claim_def_seq_no": string,
 ///         "revoc_reg_seq_no", string
+///         "issuer_did", string
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -460,7 +459,7 @@ pub extern fn sovrin_prover_create_and_store_claim_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_store_claim(command_handle: i32,
+pub extern fn indy_prover_store_claim(command_handle: i32,
                                         wallet_handle: i32,
                                         claims_json: *const c_char,
                                         cb: Option<extern fn(
@@ -492,8 +491,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 /// filter_json: filter for claims
 ///     {
 ///         "issuer_did": string,
-///         "schema_seq_no": string,
-///         "claim_def_seq_no": string,
+///         "schema_seq_no": string
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -503,7 +501,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 ///         "claim_uuid": <string>,
 ///         "attrs": [{"attr_name" : "attr_value"}],
 ///         "schema_seq_no": string,
-///         "claim_def_seq_no": string,
+///         "issuer_did": string,
 ///         "revoc_reg_seq_no": string,
 ///     }]
 /// #Errors
@@ -511,7 +509,7 @@ pub extern fn sovrin_prover_store_claim(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claims(command_handle: i32,
+pub extern fn indy_prover_get_claims(command_handle: i32,
                                        wallet_handle: i32,
                                        filter_json: *const c_char,
                                        cb: Option<extern fn(
@@ -541,6 +539,8 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// proof_request_json: proof request json
 ///     {
+///         "name": string,
+///         "version": string,
 ///         "nonce": string,
 ///         "requested_attr1_uuid": <attr_info>,
 ///         "requested_attr2_uuid": <attr_info>,
@@ -552,7 +552,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 ///
 /// #Returns
 /// json with claims for the given pool request.
-/// Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
 ///     {
 ///         "requested_attr1_uuid": [claim1, claim2],
 ///         "requested_attr2_uuid": [],
@@ -564,7 +564,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 ///         "claim_uuid": <string>,
 ///         "attrs": [{"attr_name" : "attr_value"}],
 ///         "schema_seq_no": string,
-///         "claim_def_seq_no": string,
+///         "issuer_did": string,
 ///         "revoc_reg_seq_no": string,
 ///     }
 ///
@@ -573,7 +573,7 @@ pub extern fn sovrin_prover_get_claims(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
+pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
                                                      wallet_handle: i32,
                                                      proof_request_json: *const c_char,
                                                      cb: Option<extern fn(
@@ -599,7 +599,7 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 
 /// Creates a proof according to the given proof request
 /// Either a corresponding claim with optionally revealed attributes or self-attested attribute must be provided
-/// for each requested attribute (see sovrin_prover_get_claims_for_pool_req).
+/// for each requested attribute (see indy_prover_get_claims_for_pool_req).
 /// A proof request may request multiple claims from different schemas and different issuers.
 /// All required schemas, public keys and revocation registries must be provided.
 /// The proof request also contains nonce.
@@ -651,7 +651,7 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 /// Proof json
 /// For each requested attribute either a proof (with optionally revealed attribute value) or
 /// self-attested attribute value is provided.
-/// Each proof is associated with a claim and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
 /// There ais also aggregated proof part common for all claim proofs.
 ///     {
 ///         "requested": {
@@ -663,9 +663,9 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 ///             "requested_predicate_2_uuid": [claim_proof3_uuid],
 ///         }
 ///         "claim_proofs": {
-///             "claim_proof1_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof2_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof3_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no]
+///             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
 ///         },
 ///         "aggregated_proof": <aggregated_proof>
 ///     }
@@ -675,7 +675,7 @@ pub extern fn sovrin_prover_get_claims_for_proof_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_prover_create_proof(command_handle: i32,
+pub extern fn indy_prover_create_proof(command_handle: i32,
                                          wallet_handle: i32,
                                          proof_req_json: *const c_char,
                                          requested_claims_json: *const c_char,
@@ -730,7 +730,7 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// proof_json: proof json
 /// For each requested attribute either a proof (with optionally revealed attribute value) or
 /// self-attested attribute value is provided.
-/// Each proof is associated with a claim and corresponding schema_seq_no, claim_def_seq_no and revoc_reg_seq_no.
+/// Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
 /// There ais also aggregated proof part common for all claim proofs.
 ///     {
 ///         "requested": {
@@ -742,9 +742,9 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 ///             "requested_predicate_2_uuid": [claim_proof3_uuid],
 ///         }
 ///         "claim_proofs": {
-///             "claim_proof1_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof2_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no],
-///             "claim_proof3_uuid": [<claim_proof>, claim_def_seq_no, revoc_reg_seq_no]
+///             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+///             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
 ///         },
 ///         "aggregated_proof": <aggregated_proof>
 ///     }
@@ -776,7 +776,7 @@ pub extern fn sovrin_prover_create_proof(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn sovrin_verifier_verify_proof(command_handle: i32,
+pub extern fn indy_verifier_verify_proof(command_handle: i32,
                                            proof_request_json: *const c_char,
                                            proof_json: *const c_char,
                                            schemas_json: *const c_char,

@@ -10,10 +10,10 @@ use self::libc::c_char;
 
 /// Establishes agent to agent connection.
 ///
-/// Information about sender Identity must be saved in the wallet with sovrin_create_and_store_my_did
+/// Information about sender Identity must be saved in the wallet with indy_create_and_store_my_did
 /// call before establishing of connection.
 ///
-/// Information about receiver Identity can be saved in the wallet with sovrin_store_their_did
+/// Information about receiver Identity can be saved in the wallet with indy_store_their_did
 /// call before establishing of connection. If there is no corresponded wallet record for receiver Identity
 /// than this call will lookup Identity Ledger and cache this information in the wallet.
 ///
@@ -21,11 +21,14 @@ use self::libc::c_char;
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
+/// pool_handle: Pool handle (created by open_pool_ledger).
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// sender_did: Id of sender Identity stored in secured Wallet.
 /// receiver_did: Id of receiver Identity.
 /// connection_cb: Callback that will be called after establishing of connection or on error.
-/// message_cb: Callback that will be called on receiving of an incomming message.
+///     Will be called exactly once with result of connect operation.
+/// message_cb: Callback that will be called on receiving of an incoming message.
+///     Can be called multiply times: once for each incoming message.
 ///
 /// #Returns
 /// Error code
@@ -38,8 +41,8 @@ use self::libc::c_char;
 /// - err: Error code.
 /// - message: Received message.
 #[no_mangle]
-#[warn(unused_variables)]
-pub extern fn sovrin_agent_connect(command_handle: i32,
+pub extern fn indy_agent_connect(command_handle: i32,
+                                   pool_handle: i32,
                                    wallet_handle: i32,
                                    sender_did: *const c_char,
                                    receiver_did: *const c_char,
@@ -57,6 +60,7 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
     let result = CommandExecutor::instance().send(
         Command::Agent(
             AgentCommand::Connect(
+                pool_handle,
                 wallet_handle,
                 sender_did,
                 receiver_did,
@@ -78,12 +82,10 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 
 /// Starts listening of agent connections.
 ///
-/// On incomming connection listener performs wallet lookup to find corresponded receiver Identity
-/// information. Information about receiver Identity must be saved in the wallet with
-/// sovrin_create_and_store_my_did call before establishing of connection.
+/// Listener will accept only connections to registered DIDs by indy_agent_add_identity call.
 ///
 /// Information about sender Identity for incomming connection validation can be saved in the wallet
-/// with sovrin_store_their_did call before establishing of connection. If there is no corresponded
+/// with indy_store_their_did call before establishing of connection. If there is no corresponded
 /// wallet record for sender Identity than listener will lookup Identity Ledger and cache this
 /// information in the wallet.
 ///
@@ -91,11 +93,13 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// wallet_handle: wallet handle (created by open_wallet).
 /// endpoint: endpoint to use in starting listener.
 /// listener_cb: Callback that will be called after listening started or on error.
-/// connection_cb: Callback that will be called after establishing of incomming connection.
-/// message_cb: Callback that will be called on receiving of an incomming message.
+///     Will be called exactly once with result of start listen operation.
+/// connection_cb: Callback that will be called after establishing of incoming connection.
+///     Can be called multiply times: once for each incoming connection.
+/// message_cb: Callback that will be called on receiving of an incoming message.
+///     Can be called multiply times: once for each incoming message.
 ///
 /// #Returns
 /// Error code
@@ -114,9 +118,7 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// - err: Error code.
 /// - message: Received message.
 #[no_mangle]
-#[warn(unused_variables)]
-pub extern fn sovrin_agent_listen(command_handle: i32,
-                                  wallet_handle: i32,
+pub extern fn indy_agent_listen(command_handle: i32,
                                   endpoint: *const c_char,
                                   listener_cb: Option<extern fn(xcommand_handle: i32,
                                                                 err: ErrorCode,
@@ -129,13 +131,12 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
                                   message_cb: Option<extern fn(xconnection_handle: i32,
                                                                err: ErrorCode,
                                                                message: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam5);
 
     let cmd = Command::Agent(AgentCommand::Listen(
-        wallet_handle,
         endpoint,
         Box::new(move |result| {
             let (err, handle) = result_to_err_code_1!(result, 0);
@@ -160,6 +161,105 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Add identity to listener.
+///
+/// Performs wallet lookup to find corresponded receiver Identity information.
+/// Information about receiver Identity must be saved in the wallet with
+/// indy_create_and_store_my_did call before this call.
+///
+/// After successfully add_identity listener will start to accept incoming connection to added DID.
+///
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// listener_handle: listener handle (created by indy_agent_listen).
+/// pool_handle: pool handle (created by open_pool_ledger).
+/// wallet_handle: wallet handle (created by open_wallet).
+/// did: DID of identity.
+///
+/// add_identity_cb: Callback that will be called after identity added or on error.
+///     Will be called exactly once with result of start listen operation.
+///
+/// #Returns
+/// Error code
+/// add_identity_cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code
+#[no_mangle]
+pub extern fn indy_agent_add_identity(command_handle: i32,
+                                        listener_handle: i32,
+                                        pool_handle: i32,
+                                        wallet_handle: i32,
+                                        did: *const c_char,
+                                        add_identity_cb: Option<extern fn(xcommand_handle: i32,
+                                                                          err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(add_identity_cb, ErrorCode::CommonInvalidParam6);
+
+    let cmd = Command::Agent(AgentCommand::ListenerAddIdentity(
+        listener_handle,
+        pool_handle,
+        wallet_handle,
+        did,
+        Box::new(move |result| {
+            let result = result_to_err_code!(result);
+            add_identity_cb(command_handle, result);
+        }),
+    ));
+
+    let result = CommandExecutor::instance().send(cmd);
+
+    result_to_err_code!(result)
+}
+
+/// Remove identity from listener.
+///
+/// Performs wallet lookup to find corresponded receiver Identity information.
+/// Information about receiver Identity must be saved in the wallet with
+/// indy_create_and_store_my_did call before this call.
+///
+/// After successfully rm_identity listener will stop to accept incoming connection to removed DID.
+///
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// listener_handle: listener handle (created by indy_agent_listen).
+/// wallet_handle: wallet handle (created by open_wallet).
+/// did: DID of identity.
+///
+/// rm_identity_cb: Callback that will be called after identity removed or on error.
+///     Will be called exactly once with result of start listen operation.
+///
+/// #Returns
+/// Error code
+/// rm_identity_cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code
+#[no_mangle]
+pub extern fn indy_agent_remove_identity(command_handle: i32,
+                                           listener_handle: i32,
+                                           wallet_handle: i32,
+                                           did: *const c_char,
+                                           rm_identity_cb: Option<extern fn(xcommand_handle: i32,
+                                                                        err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(rm_identity_cb, ErrorCode::CommonInvalidParam5);
+
+    let cmd = Command::Agent(AgentCommand::ListenerRmIdentity(
+        listener_handle,
+        wallet_handle,
+        did,
+        Box::new(move |result| {
+            let result = result_to_err_code!(result);
+            rm_identity_cb(command_handle, result);
+        }),
+    ));
+
+    let result = CommandExecutor::instance().send(cmd);
+
+    result_to_err_code!(result)
+}
+
 /// Sends message to connected agent.
 ///
 /// Note that this call works for both incoming and outgoing connections.
@@ -167,9 +267,9 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// connection_handle: Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.
+/// connection_handle: Connection handle returned by indy_agent_connect or indy_agent_listen calls.
 /// message: Message to send.
-/// cb: Callback that will be called after message sent or on error.
+/// cb: Callback that will be called after message sent or on error. Will be called exactly once.
 ///
 /// #Returns
 /// err: Error code
@@ -179,12 +279,24 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn sovrin_agent_send(command_handle: i32,
+pub extern fn indy_agent_send(command_handle: i32,
                                 connection_handle: i32,
                                 message: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: i32,
                                                      err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_opt_c_str!(message, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let cmd = Command::Agent(AgentCommand::Send(
+        connection_handle,
+        message,
+        Box::new(move |result| {
+            cb(command_handle, result_to_err_code!(result))
+        })
+    ));
+
+    let res = CommandExecutor::instance().send(cmd);
+    result_to_err_code!(res)
 }
 
 /// Closes agent connection.
@@ -193,8 +305,8 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// connection_handle: Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.
-/// cb: Callback that will be called after connection closed or on error.
+/// connection_handle: Connection handle returned by indy_agent_connect or indy_agent_listen calls.
+/// cb: Callback that will be called after connection closed or on error. Will be called exactly once.
 ///
 /// #Returns
 /// Error code
@@ -204,11 +316,21 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn sovrin_agent_close_connection(command_handle: i32,
+pub extern fn indy_agent_close_connection(command_handle: i32,
                                             connection_handle: i32,
                                             cb: Option<extern fn(xcommand_handle: i32,
                                                                  err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let cmd = Command::Agent(AgentCommand::CloseConnection(
+        connection_handle,
+        Box::new(move |result| {
+            cb(command_handle, result_to_err_code!(result))
+        })
+    ));
+
+    let res = CommandExecutor::instance().send(cmd);
+    result_to_err_code!(res)
 }
 
 /// Closes listener and stops listening for agent connections.
@@ -217,8 +339,8 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// listener_handle: Listener handle returned by sovrin_agent_listen call.
-/// cb: Callback that will be called after listener closed or on error.
+/// listener_handle: Listener handle returned by indy_agent_listen call.
+/// cb: Callback that will be called after listener closed or on error. Will be called exactly once.
 ///
 /// #Returns
 /// Error code
@@ -228,9 +350,19 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn sovrin_agent_close_listener(command_handle: i32,
+pub extern fn indy_agent_close_listener(command_handle: i32,
                                           listener_handle: i32,
                                           cb: Option<extern fn(xcommand_handle: i32,
                                                                err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let cmd = Command::Agent(AgentCommand::CloseListener(
+        listener_handle,
+        Box::new(move |result| {
+            cb(command_handle, result_to_err_code!(result))
+        })
+    ));
+
+    let res = CommandExecutor::instance().send(cmd);
+    result_to_err_code!(res)
 }

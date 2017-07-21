@@ -14,6 +14,7 @@ use services::anoncreds::types::{
     AccumulatorSecretKey,
     ByteOrder,
     ClaimDefinition,
+    ClaimDefinitionData,
     ClaimDefinitionPrivate,
     ClaimRequest,
     ClaimSignature,
@@ -52,7 +53,7 @@ impl Issuer {
         Issuer {}
     }
 
-    pub fn generate_claim_definition(&self, schema: Schema, signature_type: Option<&str>,
+    pub fn generate_claim_definition(&self, issuer_did: &str, schema: Schema, signature_type: Option<&str>,
                                      create_non_revoc: bool) -> Result<(ClaimDefinition, ClaimDefinitionPrivate), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> start", &schema);
 
@@ -67,7 +68,8 @@ impl Issuer {
         } else {
             (None, None)
         };
-        let claim_definition = ClaimDefinition::new(pk, pkr, schema.seq_no, SignatureTypes::CL);
+        let claim_definition_data = ClaimDefinitionData::new(pk, pkr);
+        let claim_definition = ClaimDefinition::new(schema.seq_no, issuer_did.to_string(), SignatureTypes::CL, claim_definition_data);
         let claim_definition_private = ClaimDefinitionPrivate::new(sk, skr);
 
         info!(target: "anoncreds_service", "Issuer generate claim definition for Schema {:?} -> done", &schema);
@@ -78,7 +80,7 @@ impl Issuer {
         info!(target: "anoncreds_service", "Issuer generate primary keys for Schema {:?} -> start", &schema);
         let mut ctx = BigNumber::new_context()?;
 
-        if schema.keys.len() == 0 {
+        if schema.data.keys.len() == 0 {
             return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
         }
 
@@ -98,7 +100,7 @@ impl Issuer {
         let xz = Issuer::_gen_x(&p_prime, &q_prime)?;
         let mut r: HashMap<String, BigNumber> = HashMap::new();
 
-        for attribute in &schema.keys {
+        for attribute in &schema.data.keys {
             let random = Issuer::_gen_x(&p_prime, &q_prime)?;
             r.insert(attribute.to_string(), s.mod_exp(&random, &n, Some(&mut ctx))?);
         }
@@ -157,9 +159,11 @@ impl Issuer {
         Ok(result)
     }
 
-    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, claim_def_seq_no: i32)
+    pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, issuer_did: &str, schema_seq_no: i32)
                              -> Result<(RevocationRegistry, RevocationRegistryPrivate), AnoncredsError> {
-        info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> start", claim_def_seq_no);
+        info!(target: "anoncreds_service",
+        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> start",
+        issuer_did, schema_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let mut g_dash: HashMap<i32, PointG2> = HashMap::new();
@@ -187,10 +191,12 @@ impl Issuer {
         let acc_pk = AccumulatorPublicKey::new(z);
         let acc_sk = AccumulatorSecretKey::new(gamma);
 
-        let revocation_registry = RevocationRegistry::new(acc, acc_pk, claim_def_seq_no);
+        let revocation_registry = RevocationRegistry::new(acc, acc_pk, issuer_did.to_string(), schema_seq_no);
         let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g, g_dash);
 
-        info!(target: "anoncreds_service", "Issuer create accumulator for claim_def_seq_no {} -> done", claim_def_seq_no);
+        info!(target: "anoncreds_service",
+        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> done",
+        issuer_did, schema_seq_no);
         Ok((revocation_registry, revocation_registry_private))
     }
 
@@ -207,7 +213,7 @@ impl Issuer {
 
         let primary_claim =
             Issuer::_issue_primary_claim(
-                &claim_definition.public_key,
+                &claim_definition.data.public_key,
                 &claim_definition_private.secret_key,
                 &claim_request.u,
                 &context_attribute,
@@ -215,7 +221,7 @@ impl Issuer {
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
         if let (Some(ref pk_r), Some(ref sk_r),
-            &Some(ref revoc_reg), &Some(ref revoc_reg_priv), Some(ref ur)) = (claim_definition.public_key_revocation.clone(),
+            &Some(ref revoc_reg), &Some(ref revoc_reg_priv), Some(ref ur)) = (claim_definition.data.public_key_revocation.clone(),
                                                                               claim_definition_private.secret_key_revocation.clone(),
                                                                               revocation_registry, revocation_registry_private,
                                                                               claim_request.ur) {
@@ -268,12 +274,7 @@ impl Issuer {
 
         info!(target: "anoncreds_service", "Issuer issue primary claim -> done");
 
-        Ok(PrimaryClaim {
-            m2: context_attribute.clone()?,
-            a: a,
-            e: e,
-            v_prime: v_prime_prime
-        })
+        Ok(PrimaryClaim::new(context_attribute.clone()?, a, e, v_prime_prime))
     }
 
     fn _sign(public_key: &PublicKey, secret_key: &SecretKey, context_attribute: &BigNumber,
@@ -328,7 +329,9 @@ impl Issuer {
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
 
         if accumulator.is_full() {
-            return Err(AnoncredsError::AccumulatorIsFull(format!("{}", revocation_registry.borrow().claim_def_seq_no)))
+            return Err(AnoncredsError::AccumulatorIsFull(
+                format!("issuer_did: {} schema_seq_no: {}", revocation_registry.borrow().issuer_did, revocation_registry.borrow().schema_seq_no))
+            )
         }
 
         let i = match seq_number {
@@ -477,7 +480,7 @@ mod tests {
     #[test]
     fn generate_keys_works() {
         let issuer = Issuer::new();
-        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(mocks::get_gvt_schema(), None, false).unwrap();
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(mocks::ISSUER_DID, mocks::get_gvt_schema(), None, false).unwrap();
         assert_eq!(claim_definition, mocks::get_claim_definition());
         assert_eq!(claim_definition_private, mocks::get_claim_definition_private());
     }
@@ -495,12 +498,12 @@ mod tests {
         let signature_type = None;
         let create_non_revoc = false;
 
-        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        let result = issuer.generate_claim_definition(mocks::ISSUER_DID, schema, signature_type, create_non_revoc);
         assert!(result.is_ok());
 
         let (claim_definition, claim_definition_private) = result.unwrap();
 
-        assert!(claim_definition.public_key_revocation.is_none());
+        assert!(claim_definition.data.public_key_revocation.is_none());
         assert!(claim_definition_private.secret_key_revocation.is_none());
     }
 
@@ -512,12 +515,12 @@ mod tests {
         let signature_type = None;
         let create_non_revoc = true;
 
-        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        let result = issuer.generate_claim_definition(mocks::ISSUER_DID, schema, signature_type, create_non_revoc);
         assert!(result.is_ok());
 
         let (claim_definition, claim_definition_private) = result.unwrap();
 
-        assert!(claim_definition.public_key_revocation.is_some());
+        assert!(claim_definition.data.public_key_revocation.is_some());
         assert!(claim_definition_private.secret_key_revocation.is_some());
     }
 
@@ -525,12 +528,12 @@ mod tests {
     fn generate_claim_definition_does_not_works_with_empty_attributes() {
         let issuer = Issuer::new();
         let mut schema = mocks::get_gvt_schema();
-        schema.keys = HashSet::new();
+        schema.data.keys = HashSet::new();
 
         let signature_type = None;
         let create_non_revoc = false;
 
-        let result = issuer.generate_claim_definition(schema, signature_type, create_non_revoc);
+        let result = issuer.generate_claim_definition(mocks::ISSUER_DID, schema, signature_type, create_non_revoc);
         assert!(result.is_err());
     }
 
@@ -566,6 +569,9 @@ mod tests {
 
 pub mod mocks {
     use super::*;
+    use services::anoncreds::types::SchemaData;
+
+    pub const ISSUER_DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 
     pub fn get_claim_definition() -> ClaimDefinition {
         let mut r: HashMap<String, BigNumber> = HashMap::new();
@@ -581,7 +587,8 @@ pub mod mocks {
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap(),
             BigNumber::from_dec("58606710922154038918005745652863947546479611221487923871520854046018234465128105585608812090213473225037875788462225679336791123783441657062831589984290779844020407065450830035885267846722229953206567087435754612694085258455822926492275621650532276267042885213400704012011608869094703483233081911010530256094461587809601298503874283124334225428746479707531278882536314925285434699376158578239556590141035593717362562548075653598376080466948478266094753818404986494459240364648986755479857098110402626477624280802323635285059064580583239726433768663879431610261724430965980430886959304486699145098822052003020688956471").unwrap()
         );
-        ClaimDefinition::new(public_key, None, 1, SignatureTypes::CL)
+        let claim_def_data = ClaimDefinitionData::new(public_key, None);
+        ClaimDefinition::new(1, ISSUER_DID.to_string(), SignatureTypes::CL, claim_def_data)
     }
 
     pub fn get_claim_definition_private() -> ClaimDefinitionPrivate {
@@ -596,11 +603,10 @@ pub mod mocks {
         keys.insert("height".to_string());
         keys.insert("sex".to_string());
 
+        let schema_data = SchemaData::new("gvt".to_string(), "1.0".to_string(), keys);
         Schema {
-            name: "gvt".to_string(),
-            version: "1.0".to_string(),
-            keys: keys,
-            seq_no: 1
+            seq_no: 1,
+            data: schema_data
         }
     }
 
@@ -609,11 +615,10 @@ pub mod mocks {
         keys.insert("status".to_string());
         keys.insert("period".to_string());
 
+        let schema_data = SchemaData::new("xyz".to_string(), "1.0".to_string(), keys);
         Schema {
-            name: "xyz".to_string(),
-            version: "1.0".to_string(),
-            keys: keys,
-            seq_no: 2
+            seq_no: 2,
+            data: schema_data
         }
     }
 

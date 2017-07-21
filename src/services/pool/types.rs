@@ -40,6 +40,8 @@ pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
     pub ledgerId: u8,
+    pub ppSeqNo: Option<String>,
+    pub viewNo: Option<String>,
 }
 
 #[allow(non_snake_case)]
@@ -177,14 +179,14 @@ impl PoolConfig {
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,
-    pub verify_key: Vec<u8>,
     pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
+    pub is_blacklisted: bool,
 }
 
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
-    pub pending_reps: BinaryHeap<CatchupRep>,
+    pub pending_reps: BinaryHeap<(CatchupRep, usize)>,
 }
 
 #[derive(Debug)]
@@ -217,7 +219,8 @@ pub struct CommandProcess {
 pub enum ZMQLoopAction {
     RequestToSend(RequestToSend),
     MessageToProcess(MessageToProcess),
-    Terminate,
+    Terminate(i32),
+    Refresh(i32),
 }
 
 #[derive(Debug, PartialEq, Eq)]

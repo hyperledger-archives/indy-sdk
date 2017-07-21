@@ -95,15 +95,17 @@ impl AggregatedProof {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
-    pub schema_seq_no: i32,
-    pub name: String
+    pub name: String,
+    pub schema_seq_no: Option<i32>,
+    pub issuer_did: Option<String>
 }
 
 impl AttributeInfo {
-    pub fn new(schema_seq_no: i32, name: String) -> AttributeInfo {
+    pub fn new(name: String, schema_seq_no: Option<i32>, issuer_did: Option<String>) -> AttributeInfo {
         AttributeInfo {
+            name: name,
             schema_seq_no: schema_seq_no,
-            name: name
+            issuer_did: issuer_did
         }
     }
 }
@@ -115,15 +117,13 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub claim_def_seq_no: i32,
     pub schema_seq_no: i32
 }
 
 impl ClaimOffer {
-    pub fn new(issuer_did: String, claim_def_seq_no: i32, schema_seq_no: i32) -> ClaimOffer {
+    pub fn new(issuer_did: String, schema_seq_no: i32) -> ClaimOffer {
         ClaimOffer {
             issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no,
             schema_seq_no: schema_seq_no
         }
     }
@@ -132,7 +132,6 @@ impl ClaimOffer {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOfferFilter {
     pub issuer_did: Option<String>,
-    pub claim_def_seq_no: Option<i32>,
     pub schema_seq_no: Option<i32>
 }
 
@@ -144,17 +143,17 @@ impl<'a> JsonDecodable<'a> for ClaimOffer {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimRequestJson {
-    pub claim_request: ClaimRequest,
+    pub blinded_ms: ClaimRequest,
     pub issuer_did: String,
-    pub claim_def_seq_no: i32
+    pub schema_seq_no: i32
 }
 
 impl ClaimRequestJson {
-    pub fn new(claim_request: ClaimRequest, issuer_did: String, claim_def_seq_no: i32) -> ClaimRequestJson {
+    pub fn new(blinded_ms: ClaimRequest, issuer_did: String, schema_seq_no: i32) -> ClaimRequestJson {
         ClaimRequestJson {
-            claim_request: claim_request,
+            blinded_ms: blinded_ms,
             issuer_did: issuer_did,
-            claim_def_seq_no: claim_def_seq_no
+            schema_seq_no: schema_seq_no
         }
     }
 }
@@ -167,20 +166,20 @@ impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
 pub struct ClaimInfo {
     pub claim_uuid: String,
     pub attrs: HashMap<String, String>,
-    pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
-    pub schema_seq_no: i32
+    pub schema_seq_no: i32,
+    pub issuer_did: String
 }
 
 impl ClaimInfo {
-    pub fn new(claim_uuid: String, attrs: HashMap<String, String>, claim_def_seq_no: i32,
-               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32) -> ClaimInfo {
+    pub fn new(claim_uuid: String, attrs: HashMap<String, String>,
+               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
-            claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
-            schema_seq_no: schema_seq_no
+            schema_seq_no: schema_seq_no,
+            issuer_did: issuer_did
         }
     }
 }
@@ -188,7 +187,6 @@ impl ClaimInfo {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimInfoFilter {
     pub issuer_did: Option<String>,
-    pub claim_def_seq_no: Option<i32>,
     pub schema_seq_no: Option<i32>
 }
 
@@ -218,16 +216,18 @@ impl<'a> JsonDecodable<'a> for ClaimRequest {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimProof {
     pub proof: Proof,
-    pub claim_def_seq_no: i32,
-    pub revoc_reg_seq_no: Option<i32>
+    pub revoc_reg_seq_no: Option<i32>,
+    pub schema_seq_no: i32,
+    pub issuer_did: String
 }
 
 impl ClaimProof {
-    pub fn new(proof: Proof, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>) -> ClaimProof {
+    pub fn new(proof: Proof, schema_seq_no: i32, issuer_did: String, revoc_reg_seq_no: Option<i32>) -> ClaimProof {
         ClaimProof {
             proof: proof,
-            claim_def_seq_no: claim_def_seq_no,
-            revoc_reg_seq_no: revoc_reg_seq_no
+            schema_seq_no: schema_seq_no,
+            revoc_reg_seq_no: revoc_reg_seq_no,
+            issuer_did: issuer_did
         }
     }
 }
@@ -239,29 +239,55 @@ pub enum SignatureTypes {
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinition {
-    pub public_key: PublicKey,
-    pub public_key_revocation: Option<RevocationPublicKey>,
+    #[serde(rename = "ref")]
     pub schema_seq_no: i32,
-    pub signature_type: SignatureTypes
+    #[serde(rename = "origin")]
+    pub issuer_did: String,
+    pub signature_type: SignatureTypes,
+    pub data: ClaimDefinitionData
 }
 
 impl ClaimDefinition {
-    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>,
-               schema_seq_no: i32, signature_type: SignatureTypes) -> ClaimDefinition {
+    pub fn new(schema_seq_no: i32, issuer_did: String, signature_type: SignatureTypes,
+               data: ClaimDefinitionData) -> ClaimDefinition {
         ClaimDefinition {
-            public_key: public_key,
-            public_key_revocation: public_key_revocation,
             schema_seq_no: schema_seq_no,
-            signature_type: signature_type
+            issuer_did: issuer_did,
+            signature_type: signature_type,
+            data: data
         }
     }
 
     pub fn clone(&self) -> Result<ClaimDefinition, CommonError> {
         Ok(ClaimDefinition {
-            public_key: self.public_key.clone()?,
-            public_key_revocation: self.public_key_revocation.clone(),
-            schema_seq_no: self.schema_seq_no.clone(),
+            schema_seq_no: self.schema_seq_no,
+            issuer_did: self.issuer_did.clone(),
             signature_type: self.signature_type.clone(),
+            data: self.data.clone()?,
+        })
+    }
+}
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinitionData {
+    #[serde(rename = "primary")]
+    pub public_key: PublicKey,
+    #[serde(rename = "revocation")]
+    pub public_key_revocation: Option<RevocationPublicKey>,
+}
+
+impl ClaimDefinitionData {
+    pub fn new(public_key: PublicKey, public_key_revocation: Option<RevocationPublicKey>) -> ClaimDefinitionData {
+        ClaimDefinitionData {
+            public_key: public_key,
+            public_key_revocation: public_key_revocation
+        }
+    }
+
+    pub fn clone(&self) -> Result<ClaimDefinitionData, CommonError> {
+        Ok(ClaimDefinitionData {
+            public_key: self.public_key.clone()?,
+            public_key_revocation: self.public_key_revocation.clone()
         })
     }
 }
@@ -331,21 +357,21 @@ impl<'a> JsonDecodable<'a> for ClaimInitData {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
-    pub claim_def_seq_no: i32,
     pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
-    pub signature: ClaimSignature
+    pub signature: ClaimSignature,
+    pub issuer_did: String
 }
 
 impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, claim_def_seq_no: i32, revoc_reg_seq_no: Option<i32>,
-               signature: ClaimSignature, schema_seq_no: i32) -> ClaimJson {
+    pub fn new(claim: HashMap<String, Vec<String>>, revoc_reg_seq_no: Option<i32>,
+               signature: ClaimSignature, schema_seq_no: i32, issuer_did: String) -> ClaimJson {
         ClaimJson {
             claim: claim,
-            claim_def_seq_no: claim_def_seq_no,
             revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
-            signature: signature
+            signature: signature,
+            issuer_did: issuer_did
         }
     }
 }
@@ -606,15 +632,19 @@ impl<'a> JsonDecodable<'a> for PublicKey {}
 pub struct Predicate {
     pub attr_name: String,
     pub p_type: PredicateType,
-    pub value: i32
+    pub value: i32,
+    pub schema_seq_no: Option<i32>,
+    pub issuer_did: Option<String>
 }
 
 impl Predicate {
-    pub fn new(attr_name: String, p_type: PredicateType, value: i32) -> Predicate {
+    pub fn new(attr_name: String, p_type: PredicateType, value: i32, schema_seq_no: Option<i32>, issuer_did: Option<String>) -> Predicate {
         Predicate {
             attr_name: attr_name,
             p_type: p_type,
-            value: value
+            value: value,
+            schema_seq_no: schema_seq_no,
+            issuer_did: issuer_did
         }
     }
 }
@@ -624,16 +654,16 @@ pub struct PrimaryClaim {
     pub m2: BigNumber,
     pub a: BigNumber,
     pub e: BigNumber,
-    pub v_prime: BigNumber
+    pub v: BigNumber
 }
 
 impl PrimaryClaim {
-    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v_prime: BigNumber) -> PrimaryClaim {
+    pub fn new(m2: BigNumber, a: BigNumber, e: BigNumber, v: BigNumber) -> PrimaryClaim {
         PrimaryClaim {
             m2: m2,
             a: a,
             e: e,
-            v_prime: v_prime
+            v: v
         }
     }
 }
@@ -878,15 +908,19 @@ impl<'a> JsonDecodable<'a> for ProofClaimsJson {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequestJson {
     pub nonce: BigNumber,
+    pub name: String,
+    pub version: String,
     pub requested_attrs: HashMap<String, AttributeInfo>,
     pub requested_predicates: HashMap<String, Predicate>
 }
 
 impl ProofRequestJson {
-    pub fn new(nonce: BigNumber, requested_attr: HashMap<String, AttributeInfo>,
+    pub fn new(nonce: BigNumber, name: String, version: String, requested_attr: HashMap<String, AttributeInfo>,
                requested_predicate: HashMap<String, Predicate>) -> ProofRequestJson {
         ProofRequestJson {
             nonce: nonce,
+            name: name,
+            version: version,
             requested_attrs: requested_attr,
             requested_predicates: requested_predicate
         }
@@ -921,18 +955,20 @@ impl<'a> JsonDecodable<'a> for ProofJson {}
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistry {
-    pub claim_def_seq_no: i32,
+    pub issuer_did: String,
+    pub schema_seq_no: i32,
     pub accumulator: Accumulator,
     pub acc_pk: AccumulatorPublicKey
 }
 
 impl RevocationRegistry {
     pub fn new(accumulator: Accumulator, acc_pk: AccumulatorPublicKey,
-               claim_def_seq_no: i32) -> RevocationRegistry {
+               issuer_did: String, schema_seq_no: i32) -> RevocationRegistry {
         RevocationRegistry {
+            issuer_did: issuer_did,
             accumulator: accumulator,
             acc_pk: acc_pk,
-            claim_def_seq_no: claim_def_seq_no
+            schema_seq_no: schema_seq_no
         }
     }
 }
@@ -1087,19 +1123,33 @@ impl RequestedProofJson {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
-    pub name: String,
-    pub version: String,
-    pub keys: HashSet<String>,
-    pub seq_no: i32
+    #[serde(rename = "seqNo")]
+    pub seq_no: i32,
+    pub data: SchemaData
 }
 
 impl Schema {
-    pub fn new(name: String, version: String, keys: HashSet<String>, seq_no: i32) -> Schema {
+    pub fn new(seq_no: i32, data: SchemaData) -> Schema {
         Schema {
+            seq_no: seq_no,
+            data: data
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaData {
+    pub name: String,
+    pub version: String,
+    pub keys: HashSet<String>
+}
+
+impl SchemaData {
+    pub fn new(name: String, version: String, keys: HashSet<String>) -> SchemaData {
+        SchemaData {
             name: name,
             version: version,
-            keys: keys,
-            seq_no: seq_no
+            keys: keys
         }
     }
 }

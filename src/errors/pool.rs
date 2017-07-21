@@ -1,4 +1,4 @@
-extern crate zmq;
+extern crate zmq_pw as zmq;
 extern crate serde_json;
 
 use std::{error, fmt, io};
@@ -88,7 +88,7 @@ mod tests {
     // TODO: FIXME: Provide tests!!!
 
     //    #[test]
-    //    fn sovrin_error_can_be_created() {
+    //    fn indy_error_can_be_created() {
     //        let not_created_error = PoolError::NotCreated("NotCreated".to_string());
     //        let invalid_handle_error = PoolError::InvalidHandle("InvalidHandle".to_string());
     //        let no_consensus_error = PoolError::NoConsensus("NoConsensus".to_string());
@@ -97,7 +97,7 @@ mod tests {
     //    }
     //
     //    #[test]
-    //    fn sovrin_error_can_be_formatted() {
+    //    fn indy_error_can_be_formatted() {
     //        let not_created_error_formatted = format!("{}", PoolError::NotCreated("NotCreated".to_string()));
     //        let invalid_handle_error_formatted = format!("{}", PoolError::InvalidHandle("InvalidHandle".to_string()));
     //        let no_consensus_error_formatted = format!("{}", PoolError::NoConsensus("NoConsensus".to_string()));

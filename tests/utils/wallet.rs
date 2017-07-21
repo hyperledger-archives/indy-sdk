@@ -1,23 +1,78 @@
-use sovrin::api::ErrorCode;
-use sovrin::api::wallet::{
-    sovrin_create_wallet,
-    sovrin_open_wallet,
-    sovrin_wallet_set_seq_no_for_value,
-    sovrin_delete_wallet,
-    sovrin_close_wallet
+use indy::api::ErrorCode;
+use indy::api::wallet::{
+    indy_register_wallet_type,
+    indy_create_wallet,
+    indy_open_wallet,
+    indy_delete_wallet,
+    indy_close_wallet
 };
 
 use utils::callback::CallbackUtils;
+use utils::inmem_wallet::InmemWallet;
 use utils::timeout::TimeoutUtils;
+use utils::sequence::SequenceUtils;
 
+use std::collections::HashSet;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::mpsc::channel;
+use std::sync::Mutex;
 
 pub struct WalletUtils {}
 
 
 impl WalletUtils {
+    pub fn register_wallet_type(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
+        lazy_static! {
+            static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
+        }
+
+        let mut wallets = REGISERED_WALLETS.lock().unwrap();
+
+        if wallets.contains(xtype) & !force_create {
+            // as registering of plugged wallet with
+            return Ok(())
+        }
+
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err| {
+            sender.send(err).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_register_wallet_type_cb(cb);
+
+        let xxtype = CString::new(xtype).unwrap();
+
+        let err = indy_register_wallet_type(
+            command_handle,
+            xxtype.as_ptr(),
+            Some(InmemWallet::create),
+            Some(InmemWallet::open),
+            Some(InmemWallet::set),
+            Some(InmemWallet::get),
+            Some(InmemWallet::get_not_expied),
+            Some(InmemWallet::list),
+            Some(InmemWallet::close),
+            Some(InmemWallet::delete),
+            Some(InmemWallet::free),
+            cb
+        );
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        wallets.insert(xtype.to_string());
+        Ok(())
+    }
+
     pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -33,7 +88,7 @@ impl WalletUtils {
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
-            sovrin_create_wallet(command_handle,
+            indy_create_wallet(command_handle,
                                  pool_name.as_ptr(),
                                  wallet_name.as_ptr(),
                                  if xtype.is_some() { xtype_str.as_ptr() } else { null() },
@@ -67,7 +122,7 @@ impl WalletUtils {
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
-            sovrin_open_wallet(command_handle,
+            indy_open_wallet(command_handle,
                                wallet_name.as_ptr(),
                                if config.is_some() { config_str.as_ptr() } else { null() },
                                null(),
@@ -86,7 +141,7 @@ impl WalletUtils {
         Ok(wallet_handle)
     }
 
-    pub fn create_and_open_wallet(pool_name: &str, wallet_name: &str, xtype: &str) -> Result<i32, ErrorCode> {
+    pub fn create_and_open_wallet(pool_name: &str, xtype: Option<&str>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
         let (open_sender, open_receiver) = channel();
 
@@ -101,11 +156,14 @@ impl WalletUtils {
         let (open_command_handle, open_cb) = CallbackUtils::closure_to_open_wallet_cb(open_cb);
 
         let pool_name = CString::new(pool_name).unwrap();
-        let wallet_name = CString::new(wallet_name).unwrap();
-        let xtype = CString::new(xtype).unwrap();
+        let wallet_name = CString::new(format!("default-wallet-name-{}", SequenceUtils::get_next_id())).unwrap();
+        let xtype = match xtype {
+            Some(xtype) => CString::new(xtype).unwrap(),
+            None => CString::new("default").unwrap()
+        };
 
         let err =
-            sovrin_create_wallet(command_handle,
+            indy_create_wallet(command_handle,
                                  pool_name.as_ptr(),
                                  wallet_name.as_ptr(),
                                  xtype.as_ptr(),
@@ -124,7 +182,7 @@ impl WalletUtils {
         }
 
         let err =
-            sovrin_open_wallet(open_command_handle,
+            indy_open_wallet(open_command_handle,
                                wallet_name.as_ptr(),
                                null(),
                                null(),
@@ -143,39 +201,6 @@ impl WalletUtils {
         Ok(wallet_handle)
     }
 
-    pub fn wallet_set_seq_no_for_value(wallet_handle: i32, claim_def_uuid: &str, claim_def_seq_no: i32) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-
-        let cb = Box::new(move |err| {
-            sender.send(err).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(cb);
-
-        let claim_def_uuid = CString::new(claim_def_uuid).unwrap();
-
-        let err =
-            sovrin_wallet_set_seq_no_for_value(command_handle,
-                                               wallet_handle,
-                                               claim_def_uuid.as_ptr(),
-                                               claim_def_seq_no,
-                                               cb);
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
-    }
-
-
     pub fn delete_wallet(wallet_name: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -188,7 +213,7 @@ impl WalletUtils {
         let wallet_name = CString::new(wallet_name).unwrap();
 
         let err =
-            sovrin_delete_wallet(command_handle,
+            indy_delete_wallet(command_handle,
                                  wallet_name.as_ptr(),
                                  null(),
                                  cb);
@@ -217,7 +242,7 @@ impl WalletUtils {
 
 
         let err =
-            sovrin_close_wallet(command_handle,
+            indy_close_wallet(command_handle,
                                 wallet_handle,
                                 cb);
 

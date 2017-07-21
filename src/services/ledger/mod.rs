@@ -20,10 +20,12 @@ use self::types::{
     GetDdoOperation,
     NodeOperation,
     NodeOperationData,
-    Role
+    Role,
+    GetTxnOperation
 };
 use errors::common::CommonError;
 use utils::json::{JsonEncodable, JsonDecodable};
+use utils::crypto::base58::Base58;
 
 trait LedgerSerializer {
     fn serialize(&self) -> String;
@@ -39,6 +41,9 @@ impl LedgerService {
     pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
         //TODO: check identifier, dest, verkey
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         let req_id = LedgerService::get_req_id();
 
         let role = match role {
@@ -64,6 +69,9 @@ impl LedgerService {
     }
 
     pub fn build_get_nym_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         let req_id = LedgerService::get_req_id();
         let operation = GetNymOperation::new(dest.to_string());
         let request = Request::new(req_id,
@@ -75,6 +83,9 @@ impl LedgerService {
     }
 
     pub fn build_get_ddo_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         let req_id = LedgerService::get_req_id();
         let operation = GetDdoOperation::new(dest.to_string());
         let request = Request::new(req_id,
@@ -87,6 +98,9 @@ impl LedgerService {
 
     pub fn build_attrib_request(&self, identifier: &str, dest: &str, hash: Option<&str>,
                                 raw: Option<&str>, enc: Option<&str>) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         if raw.is_none() && hash.is_none() && enc.is_none() {
             return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")))
         }
@@ -104,6 +118,9 @@ impl LedgerService {
     }
 
     pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         let req_id = LedgerService::get_req_id();
         let operation = GetAttribOperation::new(dest.to_string(),
                                                 raw.to_string());
@@ -116,6 +133,8 @@ impl LedgerService {
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+
         let req_id = LedgerService::get_req_id();
         SchemaOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
@@ -129,6 +148,9 @@ impl LedgerService {
     }
 
     pub fn build_get_schema_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         let req_id = LedgerService::get_req_id();
         let data = GetSchemaOperationData::from_json(data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
@@ -142,6 +164,8 @@ impl LedgerService {
     }
 
     pub fn build_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, data: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+
         let req_id = LedgerService::get_req_id();
 
         ClaimDefOperationData::from_json(&data)
@@ -156,6 +180,9 @@ impl LedgerService {
     }
 
     pub fn build_get_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, origin: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&origin)?;
+
         let req_id = LedgerService::get_req_id();
         let operation = GetClaimDefOperation::new(_ref,
                                                   signature_type.to_string(),
@@ -169,6 +196,9 @@ impl LedgerService {
     }
 
     pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+        Base58::decode(&dest)?;
+
         let req_id = LedgerService::get_req_id();
         let data = NodeOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
@@ -178,6 +208,20 @@ impl LedgerService {
                                    operation);
         let request_json = Request::to_json(&request)
             .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {}", err.to_string())))?;
+        Ok(request_json)
+    }
+
+    pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
+        Base58::decode(&identifier)?;
+
+        let req_id = LedgerService::get_req_id();
+
+        let operation = GetTxnOperation::new(data);
+        let request = Request::new(req_id,
+                                   identifier.to_string(),
+                                   operation);
+        let request_json = Request::to_json(&request)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get txn request json: {}", err.to_string())))?;
         Ok(request_json)
     }
 
@@ -193,10 +237,10 @@ mod tests {
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
+        let identifier = "identifier";
+        let dest = "dest";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"1","dest":"some_dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
@@ -207,12 +251,12 @@ mod tests {
     #[test]
     fn build_nym_request_works_for_optional_fields() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
-        let verkey = "some_verkey";
+        let identifier = "identifier";
+        let dest = "dest";
+        let verkey = "verkey";
         let alias = "some_alias";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"1","dest":"some_dest","verkey":"some_verkey","alias":"some_alias"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","verkey":"verkey","alias":"some_alias"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), None);
         assert!(nym_request.is_ok());
@@ -223,10 +267,10 @@ mod tests {
     #[test]
     fn build_get_nym_request_works() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
+        let identifier = "identifier";
+        let dest = "dest";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"105","dest":"some_dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"105","dest":"dest"}"#;
 
         let get_nym_request = ledger_service.build_get_nym_request(identifier, dest);
         assert!(get_nym_request.is_ok());
@@ -237,10 +281,10 @@ mod tests {
     #[test]
     fn build_get_ddo_request_works() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
+        let identifier = "identifier";
+        let dest = "dest";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"120","dest":"some_dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"120","dest":"dest"}"#;
 
         let get_ddo_request = ledger_service.build_get_ddo_request(identifier, dest);
         assert!(get_ddo_request.is_ok());
@@ -251,8 +295,8 @@ mod tests {
     #[test]
     fn build_attrib_request_works_for_miss_attrib_field() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
+        let identifier = "identifier";
+        let dest = "dest";
 
         let attrib_request = ledger_service.build_attrib_request(identifier, dest, None, None, None);
         assert!(attrib_request.is_err());
@@ -261,11 +305,11 @@ mod tests {
     #[test]
     fn build_attrib_request_works_for_hash_field() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
-        let hash = "some_hash";
+        let identifier = "identifier";
+        let dest = "dest";
+        let hash = "hash";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"100","dest":"some_dest","hash":"some_hash"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"100","dest":"dest","hash":"hash"}"#;
 
         let attrib_request = ledger_service.build_attrib_request(identifier, dest, Some(hash), None, None);
         assert!(attrib_request.is_ok());
@@ -276,11 +320,11 @@ mod tests {
     #[test]
     fn build_get_attrib_request_works() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
-        let raw = "some_raw";
+        let identifier = "identifier";
+        let dest = "dest";
+        let raw = "raw";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"104","dest":"some_dest","raw":"some_raw"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"}"#;
 
         let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, raw);
         assert!(get_attrib_request.is_ok());
@@ -291,7 +335,7 @@ mod tests {
     #[test]
     fn build_schema_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
+        let identifier = "identifier";
         let data = r#"{"name":"name"}"#;
 
         let get_attrib_request = ledger_service.build_schema_request(identifier, data);
@@ -301,10 +345,10 @@ mod tests {
     #[test]
     fn build_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
+        let identifier = "identifier";
         let data = r#"{"name":"name", "version":"1.0", "keys":["name","male"]}"#;
 
-        let expected_result = "\"operation\":{\"type\":\"101\",\"data\":\"{\\\"name\\\":\\\"name\\\", \\\"version\\\":\\\"1.0\\\", \\\"keys\\\":[\\\"name\\\",\\\"male\\\"]";
+        let expected_result = r#""operation":{"type":"101","data":"{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]"#;
 
         let schema_request = ledger_service.build_schema_request(identifier, data);
         assert!(schema_request.is_ok());
@@ -315,7 +359,7 @@ mod tests {
     #[test]
     fn build_get_schema_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
+        let identifier = "identifier";
         let data = r#"{"name":"name","keys":["name","male"]}"#;
 
         let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
@@ -325,10 +369,10 @@ mod tests {
     #[test]
     fn build_get_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
+        let identifier = "identifier";
         let data = r#"{"name":"name","version":"1.0"}"#;
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"107","dest":"some_identifier","data":{"name":"name","version":"1.0"}}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}}"#;
 
         let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
         assert!(get_schema_request.is_ok());
@@ -339,12 +383,12 @@ mod tests {
     #[test]
     fn build_get_claim_def_request_works() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
+        let identifier = "identifier";
         let _ref = 1;
         let signature_type = "signature_type";
-        let origin = "some_origin";
+        let origin = "origin";
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"some_origin"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"}"#;
 
         let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, _ref, signature_type, origin);
         assert!(get_claim_def_request.is_ok());
@@ -355,11 +399,11 @@ mod tests {
     #[test]
     fn build_node_request_works() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
+        let identifier = "identifier";
+        let dest = "dest";
         let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
 
-        let expected_result = r#""identifier":"some_identifier","operation":{"type":"0","dest":"some_dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
 
         let node_request = ledger_service.build_node_request(identifier, dest, data);
         assert!(node_request.is_ok());
@@ -370,11 +414,24 @@ mod tests {
     #[test]
     fn build_node_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
-        let identifier = "some_identifier";
-        let dest = "some_dest";
+        let identifier = "identifier";
+        let dest = "dest";
         let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
 
         let node_request = ledger_service.build_node_request(identifier, dest, data);
         assert!(node_request.is_err());
+    }
+
+    #[test]
+    fn build_get_txn_request_works() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1}"#;
+
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, 1);
+        assert!(get_txn_request.is_ok());
+        let get_txn_request = get_txn_request.unwrap();
+        assert!(get_txn_request.contains(expected_result));
     }
 }

@@ -4,7 +4,7 @@ mod catchup;
 extern crate byteorder;
 extern crate rust_base58;
 extern crate serde_json;
-extern crate zmq;
+extern crate zmq_pw as zmq;
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
@@ -18,6 +18,7 @@ use std::error::Error;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
+use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::catchup::CatchupHandler;
@@ -136,7 +137,11 @@ impl TransactionHandler {
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             let pend_cmd: &mut CommandProcess = pend_cmd;
-            let json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            let mut json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            if let Some(str) = json_msg.inner["result"]["data"].clone().as_str() {
+                let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
+                json_msg.inner["result"]["data"] = tmp_obj;
+            }
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
             if reply_cnt == self.f {
                 //already have f same replies and receive f+1 now
@@ -262,19 +267,30 @@ impl PoolWorker {
             self.handler.nodes_mut().push(rn);
         }
         self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+        if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
+            handler.reset_nodes_votes();
+        }
         Ok(())
     }
 
-    fn init_catchup(&mut self) -> Result<(), PoolError> {
+    fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
         let catchup_handler = CatchupHandler {
             merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
-            open_cmd_id: self.open_cmd_id,
+            initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
+            is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
         self.connect_to_known_nodes(None)?;
         Ok(())
+    }
+
+    fn refresh(&mut self, cmd_id: i32) -> Result<(), PoolError> {
+        match self.handler.flush_requests(Err(PoolError::Terminate)) {
+            Ok(()) => self.init_catchup(Some(cmd_id)),
+            Err(err) => CommandExecutor::instance().send(Command::Pool(PoolCommand::RefreshAck(cmd_id, Err(err)))).map_err(PoolError::from),
+        }
     }
 
     pub fn run(&mut self) -> Result<(), PoolError> {
@@ -288,7 +304,7 @@ impl PoolWorker {
     }
 
     fn _run(&mut self) -> Result<(), PoolError> {
-        self.init_catchup()?; //TODO consider error as PoolOpen error
+        self.init_catchup(None)?; //TODO consider error as PoolOpen error
 
         loop {
             trace!("zmq poll loop >>");
@@ -304,8 +320,15 @@ impl PoolWorker {
     fn process_actions(&mut self, actions: Vec<ZMQLoopAction>) -> Result<(), PoolError> {
         for action in &actions {
             match action {
-                &ZMQLoopAction::Terminate => {
+                &ZMQLoopAction::Terminate(cmd_id) => {
+                    let res = self.handler.flush_requests(Err(PoolError::Terminate));
+                    if cmd_id >= 0 {
+                        CommandExecutor::instance().send(Command::Pool(PoolCommand::CloseAck(cmd_id, res)))?;
+                    }
                     return Err(PoolError::Terminate);
+                }
+                &ZMQLoopAction::Refresh(cmd_id) => {
+                    self.refresh(cmd_id)?;
                 }
                 &ZMQLoopAction::MessageToProcess(ref msg) => {
                     if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
@@ -351,11 +374,14 @@ impl PoolWorker {
             let cmd_s = String::from_utf8(cmd[0].clone())
                 .map_err(|err|
                     CommonError::InvalidState("Invalid command received".to_string()))?;
+            let id = if cmd.len() > 1 { LittleEndian::read_i32(cmd[1].as_slice()) } else { -1 };
             if "exit".eq(cmd_s.as_str()) {
-                actions.push(ZMQLoopAction::Terminate);
+                actions.push(ZMQLoopAction::Terminate(id));
+            } else if "refresh".eq(cmd_s.as_str()) {
+                actions.push(ZMQLoopAction::Refresh(id));
             } else {
                 actions.push(ZMQLoopAction::RequestToSend(RequestToSend {
-                    id: LittleEndian::read_i32(cmd[1].as_slice()),
+                    id: id,
                     request: cmd_s,
                 }));
             }
@@ -418,7 +444,7 @@ impl Pool {
             pool_id: pool_id,
             name: name.to_string(),
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
-                open_cmd_id: cmd_id,
+                initiate_cmd_id: cmd_id,
                 pool_id: pool_id,
                 ..Default::default()
             }),
@@ -441,6 +467,18 @@ impl Pool {
         LittleEndian::write_i32(&mut buf, cmd_id);
         Ok(self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT)?)
     }
+
+    pub fn close(&self, cmd_id: i32) -> Result<(), PoolError> {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        Ok(self.cmd_sock.send_multipart(&["exit".as_bytes(), &buf], zmq::DONTWAIT)?)
+    }
+
+    pub fn refresh(&self, cmd_id: i32) -> Result<(), PoolError> {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        Ok(self.cmd_sock.send_multipart(&["refresh".as_bytes(), &buf], zmq::DONTWAIT)?)
+    }
 }
 
 impl Drop for Pool {
@@ -459,33 +497,30 @@ impl Drop for Pool {
 
 impl Debug for RemoteNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RemoteNode: {{ public_key: {:?}, verify_key {:?}, zaddr {:?}, zsock is_some {} }}",
-               self.public_key, self.verify_key, self.zaddr, self.zsock.is_some())
+        write!(f, "RemoteNode: {{ public_key {:?}, zaddr {:?}, zsock is_some {} }}",
+               self.public_key, self.zaddr, self.zsock.is_some())
     }
 }
 
 impl RemoteNode {
     fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
-        let public_key = txn.dest.as_str().from_base58()
+        let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key)?,
-            public_key: public_key,
+            public_key: ED25519::vk_to_curve25519(&node_verkey)?,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
+            is_blacklisted: false,
         })
     }
 
     fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(key_pair.public_key.as_bytes())?;
-        s.set_curve_secretkey(key_pair.secret_key.as_str())?;
-        s.set_curve_publickey(key_pair.public_key.as_str())?;
-        s.set_curve_serverkey(
-            zmq::z85_encode(self.verify_key.as_slice())
-                .map_err(|err| { CommonError::InvalidStructure("Can't encode server key as z85".to_string()) })?
-                .as_str())?;
+        s.set_identity(zmq::z85_encode(&key_pair.public_key).unwrap().as_bytes())?;
+        s.set_curve_secretkey(&key_pair.secret_key)?;
+        s.set_curve_publickey(&key_pair.public_key)?;
+        s.set_curve_serverkey(self.public_key.as_slice())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(self.zaddr.as_str())?;
         self.zsock = Some(s);
@@ -512,7 +547,7 @@ impl RemoteNode {
         info!("Sending {:?}", str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send_str(str, zmq::DONTWAIT)?;
+            .send(str, zmq::DONTWAIT)?;
         Ok(())
     }
 
@@ -525,19 +560,6 @@ impl RemoteNode {
     }
 }
 
-impl From<GenTransaction> for RemoteNode {
-    fn from(tx: GenTransaction) -> RemoteNode {
-        let public_key = tx.dest.as_str().from_base58().expect("dest field in GenTransaction isn't valid");
-        RemoteNode {
-            verify_key: ED25519::vk_to_curve25519(&public_key).expect("dest field in GenTransaction isn't valid"),
-            public_key: public_key,
-            zaddr: format!("tcp://{}:{}", tx.data.client_ip, tx.data.client_port),
-            zsock: None,
-            name: tx.data.alias,
-        }
-    }
-}
-
 impl PoolService {
     pub fn new() -> PoolService {
         PoolService {
@@ -546,6 +568,7 @@ impl PoolService {
     }
 
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
+        trace!("PoolService::create {} with config {:?}", name, config);
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config = match config {
             Some(config) => PoolConfig::from_json(config)
@@ -558,23 +581,23 @@ impl PoolService {
             return Err(PoolError::NotCreated("Already created".to_string()));
         }
 
-        fs::create_dir_all(path.as_path())?;
+        fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
 
         path.push(name);
         path.set_extension("txn");
-        fs::copy(&pool_config.genesis_txn, path.as_path())?;
+        fs::copy(&pool_config.genesis_txn, path.as_path()).map_err(map_err_trace!())?;
         path.pop();
 
         path.push("config");
         path.set_extension("json");
-        let mut f: fs::File = fs::File::create(path.as_path())?;
+        let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
         f.write(pool_config
             .to_json()
             .map_err(|err|
-                CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description())))?
-            .as_bytes())?;
-        f.flush()?;
+                CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
+            .as_bytes()).map_err(map_err_trace!())?;
+        f.flush().map_err(map_err_trace!())?;
 
         // TODO probably create another one file pool.json with pool description,
         // but now there is no info to save (except name witch equal to directory)
@@ -583,7 +606,13 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        unimplemented!()
+        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+            if pool.name.eq(name) {
+                return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
+            }
+        }
+        let path = EnvironmentUtils::pool_path(name);
+        fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
     pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
@@ -610,12 +639,20 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn close(&self, handle: i32) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .close(cmd_id)
+            .map(|()| cmd_id)
     }
 
-    pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
-        unimplemented!()
+    pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+        self.pools.try_borrow_mut().map_err(CommonError::from)?
+            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .refresh(cmd_id)
+            .map(|()| cmd_id)
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
@@ -681,20 +718,109 @@ mod mocks {
 mod tests {
     use super::*;
 
-    #[test]
-    fn pool_service_new_works() {
-        let pool_service = PoolService::new();
-        assert!(true, "No crashes on PoolService::new");
-    }
+    mod pool_service {
+        use super::*;
+        use std::path;
 
-    #[test]
-    fn pool_service_drop_works() {
-        fn drop_test() {
+        #[test]
+        fn pool_service_new_works() {
             let pool_service = PoolService::new();
+            assert!(true, "No crashes on PoolService::new");
         }
 
-        drop_test();
-        assert!(true, "No crashes on PoolService::drop");
+        #[test]
+        fn pool_service_drop_works() {
+            fn drop_test() {
+                let pool_service = PoolService::new();
+            }
+
+            drop_test();
+            assert!(true, "No crashes on PoolService::drop");
+        }
+
+        #[test]
+        fn pool_service_close_works() {
+            let ps = PoolService::new();
+            let pool_id = SequenceUtils::get_next_id();
+            let ctx = zmq::Context::new();
+            let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            recv_soc.bind("inproc://test").unwrap();
+            send_soc.connect("inproc://test").unwrap();
+            ps.pools.borrow_mut().insert(pool_id, Pool {
+                name: String::new(),
+                id: pool_id,
+                worker: None,
+                cmd_sock: send_soc,
+            });
+            let cmd_id = ps.close(pool_id).unwrap();
+            let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
+            assert_eq!(recv.len(), 2);
+            assert_eq!("exit", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+        }
+
+        #[test]
+        fn pool_service_refresh_works() {
+            let ps = PoolService::new();
+            let pool_id = SequenceUtils::get_next_id();
+            let ctx = zmq::Context::new();
+            let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
+            recv_soc.bind("inproc://test").unwrap();
+            send_soc.connect("inproc://test").unwrap();
+            ps.pools.borrow_mut().insert(pool_id, Pool {
+                name: String::new(),
+                id: pool_id,
+                worker: None,
+                cmd_sock: send_soc,
+            });
+            let cmd_id = ps.refresh(pool_id).unwrap();
+            let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
+            assert_eq!(recv.len(), 2);
+            assert_eq!("refresh", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+        }
+
+        #[test]
+        fn pool_service_delete_works() {
+            let ps = PoolService::new();
+            let pool_name = "pool_service_delete_works";
+            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            fs::create_dir_all(path.as_path()).unwrap();
+            assert!(path.exists());
+            ps.delete(pool_name).unwrap();
+            assert!(!path.exists());
+        }
+
+        #[test]
+        fn pool_service_delete_works_for_opened() {
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let ps = PoolService::new();
+            let pool_name = "pool_service_delete_works";
+            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            let pool_id = SequenceUtils::get_next_id();
+
+            let inproc_sock_name: String = format!("inproc://pool_{}", pool_name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+
+            let pool = Pool {
+                worker: None,
+                name: pool_name.to_string(),
+                cmd_sock: recv_cmd_sock,
+                id: pool_id
+            };
+            ps.pools.borrow_mut().insert(pool_id, pool);
+
+            fs::create_dir_all(path.as_path()).unwrap();
+            assert!(path.exists());
+            let res = ps.delete(pool_name);
+            assert_match!(Err(PoolError::CommonError(CommonError::InvalidState(_))), res);
+            assert!(path.exists());
+        }
     }
 
     #[test]
@@ -781,11 +907,11 @@ mod tests {
         let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
             pw.poll_zmq().unwrap()
         });
-        send_cmd_sock.send_str("exit", zmq::DONTWAIT).expect("send");
+        send_cmd_sock.send("exit", zmq::DONTWAIT).expect("send");
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
 
         assert_eq!(actions.len(), 1);
-        assert_eq!(actions[0], ZMQLoopAction::Terminate);
+        assert_eq!(actions[0], ZMQLoopAction::Terminate(-1));
     }
 
     #[test]
@@ -887,7 +1013,7 @@ mod tests {
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);
-        ch.new_mt_size = 2;
+        ch.target_mt_size = 2;
 
         ch.start_catchup().unwrap();
 
@@ -945,8 +1071,8 @@ mod tests {
                 dest: (&vk.0 as &[u8]).to_base58(),
             };
             let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
-            s.set_curve_publickey(zmq::z85_encode(pkc.as_slice()).unwrap().as_str()).expect("set public key");
-            s.set_curve_secretkey(zmq::z85_encode(skc.as_slice()).unwrap().as_str()).expect("set secret key");
+            s.set_curve_publickey(pkc.as_slice()).expect("set public key");
+            s.set_curve_secretkey(skc.as_slice()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {

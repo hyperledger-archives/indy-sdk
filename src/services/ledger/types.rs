@@ -6,12 +6,14 @@ use services::ledger::constants::{
     ATTRIB,
     SCHEMA,
     GET_ATTR,
+    GET_DDO,
     GET_NYM,
     GET_SCHEMA,
     CLAIM_DEF,
     GET_CLAIM_DEF,
     STEWARD,
-    TRUSTEE
+    TRUSTEE,
+    GET_TXN
 };
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -98,7 +100,6 @@ pub struct AttribOperation {
     pub hash: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub raw: Option<String>,
-    // TODO   raw must be {attr_name: {ha: value}}
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enc: Option<String>
 }
@@ -111,7 +112,6 @@ impl AttribOperation {
             dest: dest,
             hash: hash,
             raw: raw,
-            // TODO Looks like currently implemented only raw in strange format raw: {"endpoint" : {"ha": "127.0.0.1:5555"}}
             enc: enc,
         }
     }
@@ -359,14 +359,31 @@ pub struct GetDdoOperation {
 impl GetDdoOperation {
     pub fn new(dest: String) -> GetDdoOperation {
         GetDdoOperation {
-            _type: "120".to_string(),
-            //TODO
+            _type: GET_DDO.to_string(),
             dest: dest
         }
     }
 }
 
 impl JsonEncodable for GetDdoOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetTxnOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: i32
+}
+
+impl GetTxnOperation {
+    pub fn new(data: i32) -> GetTxnOperation {
+        GetTxnOperation {
+            _type: GET_TXN.to_string(),
+            data: data
+        }
+    }
+}
+
+impl JsonEncodable for GetTxnOperation {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Reply<T> {
@@ -399,30 +416,3 @@ pub struct GetNymResultData {
 }
 
 impl<'a> JsonDecodable<'a> for GetNymResultData {}
-
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct GetClaimDefReplyResult {
-    pub identifier: String,
-    #[serde(rename = "reqId")]
-    pub req_id: u64,
-    #[serde(rename = "seqNo")]
-    pub  seq_no: i32,
-    #[serde(rename = "type")]
-    pub _type: String,
-    pub data: ClaimDefinitionData,
-    pub origin: String,
-    pub signature_type: String,
-    #[serde(rename = "ref")]
-    pub _ref: i32
-}
-
-impl<'a> JsonDecodable<'a> for GetClaimDefReplyResult {}
-
-
-#[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct ClaimDefinitionData {
-    pub primary: PublicKey,
-    pub revocation: Option<String>
-}
-
-impl<'a> JsonDecodable<'a> for ClaimDefinitionData {}
