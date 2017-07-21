@@ -299,7 +299,26 @@ async def prover_create_master_secret(wallet_handle: int,
     :param master_secret_name: a new master secret name
     :return: None.
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_create_master_secret: >>> wallet_handle: %r, master_secret_name: %r",
+                 wallet_handle,
+                 master_secret_name)
+
+    if not hasattr(prover_create_master_secret, "cb"):
+        logger.debug("prover_create_master_secret: Creating callback")
+        prover_create_master_secret.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
+
+    res = await do_call('indy_prover_create_master_secret',
+                        prover_create_master_secret.cb,
+                        c_wallet_handle,
+                        c_master_secret_name)
+
+    logger.debug("prover_create_master_secret: <<< res: %r", res)
+    return res
 
 
 async def prover_create_and_store_claim_req(wallet_handle: int,
