@@ -1,10 +1,10 @@
 extern crate time;
 
-use sovrin::api::ErrorCode;
-use sovrin::api::pool::{sovrin_create_pool_ledger_config, sovrin_delete_pool_ledger_config};
+use indy::api::ErrorCode;
+use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
 #[cfg(feature = "local_nodes_pool")]
-use sovrin::api::pool::{sovrin_close_pool_ledger, sovrin_open_pool_ledger, sovrin_refresh_pool_ledger};
-use sovrin::api::ledger::sovrin_submit_request;
+use indy::api::pool::{indy_close_pool_ledger, indy_open_pool_ledger, indy_refresh_pool_ledger};
+use indy::api::ledger::indy_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
@@ -36,7 +36,7 @@ impl PoolUtils {
         let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
 
-        let err = sovrin_create_pool_ledger_config(command_handle,
+        let err = indy_create_pool_ledger_config(command_handle,
                                                    pool_name.as_ptr(),
                                                    pool_config.as_ptr(),
                                                    cb);
@@ -68,7 +68,7 @@ impl PoolUtils {
         let pool_name = CString::new(pool_name).unwrap();
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = sovrin_open_pool_ledger(command_handle,
+        let err = indy_open_pool_ledger(command_handle,
                                           pool_name.as_ptr(),
                                           if config.is_some() { config_str.as_ptr() } else { null() },
                                           cb);
@@ -96,7 +96,7 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_refresh_pool_ledger_cb(
             Box::new(move |res| sender.send(res).unwrap()));
 
-        let res = sovrin_refresh_pool_ledger(command_handle, pool_handle, cb);
+        let res = indy_refresh_pool_ledger(command_handle, pool_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -113,7 +113,7 @@ impl PoolUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_close_pool_ledger_cb(
             Box::new(move |res| sender.send(res).unwrap()));
 
-        let res = sovrin_close_pool_ledger(command_handle, pool_handle, cb);
+        let res = indy_close_pool_ledger(command_handle, pool_handle, cb);
         if res != ErrorCode::Success {
             return Err(res);
         }
@@ -130,7 +130,7 @@ impl PoolUtils {
         let (cmd_id, cb) = CallbackUtils::closure_to_delete_pool_ledger_config_cb(Box::new(
             move |res| sender.send(res).unwrap()));
 
-        let res = sovrin_delete_pool_ledger_config(cmd_id, CString::new(pool_name).unwrap().as_ptr(), cb);
+        let res = indy_delete_pool_ledger_config(cmd_id, CString::new(pool_name).unwrap().as_ptr(), cb);
         if res != ErrorCode::Success {
             return Err(res)
         }
@@ -149,7 +149,7 @@ impl PoolUtils {
         let req = CString::new(request).unwrap();
         let (command_handle, callback) = CallbackUtils::closure_to_send_tx_cb(cb_send);
 
-        let err = sovrin_submit_request(command_handle,
+        let err = indy_submit_request(command_handle,
                                         pool_handle,
                                         req.as_ptr(),
                                         callback);
@@ -178,10 +178,10 @@ impl PoolUtils {
 
         let mut f = fs::File::create(path.clone()).unwrap();
         let data = format!("{}\n{}\n{}\n{}\n",
-                           "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"10.0.0.2\",\"client_port\":9702,\"node_ip\":\"10.0.0.2\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
-                           "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"10.0.0.2\",\"client_port\":9704,\"node_ip\":\"10.0.0.2\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
-                           "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"10.0.0.2\",\"client_port\":9706,\"node_ip\":\"10.0.0.2\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
-                           "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"10.0.0.2\",\"client_port\":9708,\"node_ip\":\"10.0.0.2\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
+                           "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"10.0.0.2\",\"client_port\":9702,\"node_ip\":\"10.0.0.2\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
+                           "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"10.0.0.2\",\"client_port\":9704,\"node_ip\":\"10.0.0.2\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
+                           "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"10.0.0.2\",\"client_port\":9706,\"node_ip\":\"10.0.0.2\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
+                           "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"10.0.0.2\",\"client_port\":9708,\"node_ip\":\"10.0.0.2\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
 
         let data = predefined_data.unwrap_or(data);
 
