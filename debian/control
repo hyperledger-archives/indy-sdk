@@ -10,7 +10,7 @@ Vcs-Browser: https://github.com/hyperledger/indy-sdk/
 
 Package: indy-sdk
 Architecture: amd64
-Depends: libssl1.0.0, libsodium18, libsqlite0
+Depends: libssl (>= 1.0.0), libsodium (>= 1), libsqlite (>= 0)
 Suggests: build-essential
 Description: This is the official SDK for Hyperledger Indy, which provides a
   distributed-ledger-based foundation for self-sovereign identity.
