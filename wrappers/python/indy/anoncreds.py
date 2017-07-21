@@ -606,7 +606,44 @@ async def prover_create_proof(wallet_handle: int,
                 "aggregated_proof": <aggregated_proof>
             }
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_create_proof: >>> wallet_handle: %r, proof_req_json: %r,"
+                 " requested_claims_json: %r, schemas_json: %r, master_secret_name: %r,"
+                 " claim_defs_json: %r, revoc_regs_json: %r",
+                 wallet_handle,
+                 proof_req_json,
+                 requested_claims_json,
+                 schemas_json,
+                 master_secret_name,
+                 claim_defs_json,
+                 revoc_regs_json)
+
+    if not hasattr(prover_create_proof, "cb"):
+        logger.debug("prover_create_proof: Creating callback")
+        prover_create_proof.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_proof_req_json = c_char_p(proof_req_json.encode('utf-8'))
+    c_requested_claims_json = c_char_p(requested_claims_json.encode('utf-8'))
+    c_schemas_json = c_char_p(schemas_json.encode('utf-8'))
+    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
+    c_claim_defs_json = c_char_p(claim_defs_json.encode('utf-8'))
+    c_revoc_regs_json = c_char_p(revoc_regs_json.encode('utf-8'))
+
+    proof_json = await do_call('indy_prover_create_proof',
+                               prover_create_proof.cb,
+                               c_wallet_handle,
+                               c_proof_req_json,
+                               c_requested_claims_json,
+                               c_schemas_json,
+                               c_master_secret_name,
+                               c_claim_defs_json,
+                               c_revoc_regs_json)
+
+    res = proof_json.decode()
+    logger.debug("prover_create_proof: <<< res: %r", res)
+    return res
 
 
 async def verifier_verify_proof(wallet_handle: int,
