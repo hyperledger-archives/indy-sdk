@@ -8,14 +8,34 @@ from .libindy import do_call, create_cb
 
 
 class Event:
+    """
+    Base class for agent 2 agent communication events
+
+    :handle: (int) Event source handle
+    :error: (IndyError) If event is erroneous contains related IndyError exception
+    """
+
     handle: int
-    error: IndexError
+    error: IndyError
 
     def is_success(self):
+        """
+        Checks is event erroneous or not
+
+        :return: True if there are no errors assigned to this event and False otherwise
+        """
+
         return self.error is None
 
 
 class ConnectionEvent(Event):
+    """
+    Agent 2 agent communication listener's connection event
+
+    :connection_handle: Incoming connection handle
+    :sender_did: Sender DID
+    :receiver_did: Receiver DID
+    """
     connection_handle: int
     sender_did: str
     receiver_did: str
@@ -43,6 +63,12 @@ class ConnectionEvent(Event):
 
 
 class MessageEvent(Event):
+    """
+    Agent 2 agent communication connection's message event
+
+    :message: Incoming message
+    """
+
     message: str
 
     def __init__(self, handle: int, err: int, message: bytes):
@@ -87,6 +113,13 @@ def _notify_event_waiters():
 
 
 async def agent_wait_for_event(handles: List[int]) -> Event:
+    """
+    Waits for events for listeners and connections defined by list of corresponded handles
+
+    :param handles: list of listeners or connections handles
+    :return: first occurred listener or connection event
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("agent_wait_for_event: >>> handles: %r", handles)
 
@@ -106,6 +139,28 @@ async def agent_connect(pool_handle: int,
                         wallet_handle: int,
                         sender_did: str,
                         receiver_did: str) -> int:
+    """
+    Establishes agent to agent connection.
+
+    Information about sender Identity must be saved in the wallet with indy_create_and_store_my_did
+    call before establishing of connection.
+
+    Information about receiver Identity can be saved in the wallet with indy_store_their_did
+    call before establishing of connection. If there is no corresponded wallet record for receiver Identity
+    than this call will lookup Identity Ledger and cache this information in the wallet.
+
+    Note that messages encryption/decryption will be performed automatically.
+
+    After connection is established returned connection handle can be used to wait for messages with
+    agent_wait_for_event or sending messages with agent_send.
+
+    :param pool_handle: pool handle (created by open_pool_ledger).
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param sender_did: id of sender Identity stored in secured Wallet.
+    :param receiver_did: id of receiver Identity.
+    :return: connection handle to use for messages sending and waiting of incoming messages with agent_wait_for_event
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("agent_connect: >>> pool_handle: %r, wallet_handle: %r, sender_did: %r, receiver_did: %r",
                  pool_handle,
@@ -147,6 +202,23 @@ async def agent_connect(pool_handle: int,
 
 
 async def agent_listen(endpoint: str) -> int:
+    """
+    Starts listening of agent connections.
+
+    Listener will accept only connections to registered DIDs by indy_agent_add_identity call.
+
+    Information about sender Identity for incomming connection validation can be saved in the wallet
+    with indy_store_their_did call before establishing of connection. If there is no corresponded
+    wallet record for sender Identity than listener will lookup Identity Ledger and cache this
+    information in the wallet.
+
+    Note that messages encryption/decryption will be performed automatically.
+
+    :param endpoint: endpoint to use in starting listener.
+    :return: listener handle to use for waiting of incoming connections with agent_wait_for_event and management of
+             assigned to this endpoint identities with agent_add_identity or agent_remove_identity.
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("agent_listen: >>> endpoint: %r", endpoint)
 
@@ -197,6 +269,20 @@ async def agent_add_identity(listener_handle: int,
                              pool_handle: int,
                              wallet_handle: int,
                              did: str) -> None:
+    """
+    Add identity to listener.
+
+    Performs wallet lookup to find corresponded receiver Identity information.
+    Information about receiver Identity must be saved in the wallet with
+    indy_create_and_store_my_did call before this call.
+
+    After successfully add_identity listener will start to accept incoming connection to added DID.
+
+    :param listener_handle: listener handle (created by indy_agent_listen).
+    :param pool_handle: pool handle (created by open_pool_ledger).
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param did: DID of identity.
+    """
     logger = logging.getLogger(__name__)
     logger.debug("agent_add_identity: >>> listener_handle: %r, pool_handle: %r, wallet_handle: %r, did: %r",
                  listener_handle,
@@ -227,6 +313,20 @@ async def agent_remove_identity(listener_handle: int,
                                 pool_handle: int,
                                 wallet_handle: int,
                                 did: str) -> None:
+    """
+    Remove identity from listener.
+
+    Performs wallet lookup to find corresponded receiver Identity information.
+    Information about receiver Identity must be saved in the wallet with
+    signus.create_and_store_my_did call before this call.
+
+    After successfully rm_identity listener will stop to accept incoming connection to removed DID.
+
+    :param listener_handle: listener handle (created by indy_agent_listen).
+    :param pool_handle: pool handle (create by open_pool_ledger)
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param did: DID of identity.
+    """
     logger = logging.getLogger(__name__)
     logger.debug("agent_remove_identity: >>> listener_handle: %r, pool_handle: %r, wallet_handle: %r, did: %r",
                  listener_handle,
@@ -254,6 +354,16 @@ async def agent_remove_identity(listener_handle: int,
 
 
 async def agent_send(connection_handle: int, message: str) -> None:
+    """"
+    Sends message to connected agent.
+
+    Note that this call works for both incoming and outgoing connections.
+    Note that messages encryption/decryption will be performed automatically.
+
+    :param connection_handle: connection handle returned by indy_agent_connect or indy_agent_listen calls.
+    :param message: message to send.
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("agent_send: >>> connection_handle: %r, message: %r",
                  connection_handle,
@@ -275,6 +385,14 @@ async def agent_send(connection_handle: int, message: str) -> None:
 
 
 async def agent_close_connection(connection_handle: int) -> None:
+    """
+    Closes agent connection.
+
+    Note that this call works for both incoming and outgoing connections.
+
+    :param connection_handle: connection handle returned by indy_agent_connect or indy_agent_listen calls.
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("agent_close_connection: >>> connection_handle: %r", connection_handle)
 
@@ -292,6 +410,14 @@ async def agent_close_connection(connection_handle: int) -> None:
 
 
 async def agent_close_listener(listener_handle: int) -> None:
+    """
+    Closes listener and stops listening for agent connections.
+
+    Note that all opened incomming connections will be closed automatically.
+
+    :param listener_handle: Listener handle returned by indy_agent_listen call.
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("agent_close_listener: >>> listener_handle: %r", listener_handle)
 
