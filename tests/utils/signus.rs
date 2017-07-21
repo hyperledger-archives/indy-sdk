@@ -1,14 +1,14 @@
 use std::sync::mpsc::{channel};
 use std::ffi::{CString};
 
-use sovrin::api::signus::{
-    sovrin_sign,
-    sovrin_create_and_store_my_did,
-    sovrin_store_their_did,
-    sovrin_replace_keys,
-    sovrin_verify_signature
+use indy::api::signus::{
+    indy_sign,
+    indy_create_and_store_my_did,
+    indy_store_their_did,
+    indy_replace_keys,
+    indy_verify_signature
 };
-use sovrin::api::ErrorCode;
+use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
@@ -29,7 +29,7 @@ impl SignusUtils {
         let msg = CString::new(msg).unwrap();
 
         let err =
-            sovrin_sign(command_handle,
+            indy_sign(command_handle,
                         wallet_handle,
                         their_did.as_ptr(),
                         msg.as_ptr(),
@@ -48,7 +48,7 @@ impl SignusUtils {
         Ok(signature)
     }
 
-    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<String>) -> Result<(String, String, String), ErrorCode> {
+    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String, String), ErrorCode> {
         let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
         let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| {
             create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap();
@@ -60,7 +60,7 @@ impl SignusUtils {
         let my_did_json = CString::new(my_did_json).unwrap();
 
         let err =
-            sovrin_create_and_store_my_did(create_and_store_my_did_command_handle,
+            indy_create_and_store_my_did(create_and_store_my_did_command_handle,
                                            wallet_handle,
                                            my_did_json.as_ptr(),
                                            create_and_store_my_did_callback);
@@ -87,7 +87,7 @@ impl SignusUtils {
         let my_did_json = CString::new(my_did_json).unwrap();
 
         let err =
-            sovrin_create_and_store_my_did(command_handle,
+            indy_create_and_store_my_did(command_handle,
                                            wallet_handle,
                                            my_did_json.as_ptr(),
                                            cb);
@@ -118,7 +118,7 @@ impl SignusUtils {
 
 
         let err =
-            sovrin_store_their_did(command_handle,
+            indy_store_their_did(command_handle,
                                    wallet_handle,
                                    identity_json.as_ptr(),
                                    cb);
@@ -151,7 +151,7 @@ impl SignusUtils {
         let their_identity_json = CString::new(their_identity_json).unwrap();
 
         let err =
-            sovrin_store_their_did(store_their_did_command_handle,
+            indy_store_their_did(store_their_did_command_handle,
                                    wallet_handle,
                                    their_identity_json.as_ptr(),
                                    store_their_did_callback);
@@ -179,7 +179,7 @@ impl SignusUtils {
         let identity_json = CString::new(identity_json).unwrap();
 
         let err =
-            sovrin_replace_keys(command_handle,
+            indy_replace_keys(command_handle,
                                 wallet_handle,
                                 did.as_ptr(),
                                 identity_json.as_ptr(),
@@ -211,7 +211,7 @@ impl SignusUtils {
         let signed_msg = CString::new(signed_msg).unwrap();
 
         let err =
-            sovrin_verify_signature(command_handle,
+            indy_verify_signature(command_handle,
                                     wallet_handle,
                                     pool_handle,
                                     did.as_ptr(),

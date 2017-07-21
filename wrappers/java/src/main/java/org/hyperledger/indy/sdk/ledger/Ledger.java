@@ -1,23 +1,10 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
-import org.hyperledger.indy.sdk.LibSovrin;
-import org.hyperledger.indy.sdk.SovrinException;
-import org.hyperledger.indy.sdk.SovrinJava;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildAttribRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildClaimDefTxnResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetAttribRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetClaimDefTxnResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetDdoRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetNymRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildGetSchemaRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildNodeRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildNymRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.BuildSchemaRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.SignAndSubmitRequestResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.SubmitRequestResult;
+import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
@@ -26,386 +13,453 @@ import com.sun.jna.Callback;
 /**
  * ledger.rs API
  */
-public class Ledger extends SovrinJava.API {
+public class Ledger extends IndyJava.API {
 
 	private Ledger() {
 
 	}
 
+	/* 
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback signAndSubmitRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_result_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_result_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback submitRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_result_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_result_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildGetDdoRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildNymRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildAttribRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildGetAttribRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildGetNymRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildSchemaRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildGetSchemaRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildClaimDefTxnCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildGetClaimDefTxnCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	private static Callback buildNodeRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	public static Callback buildGetTxnRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
 
-	public static Future<SignAndSubmitRequestResult> signAndSubmitRequest(
+	public static CompletableFuture<String> signAndSubmitRequest(
 			Pool pool,
 			Wallet wallet,
 			String submitterDid,
-			String requestJson) throws SovrinException {
+			String requestJson) throws IndyException {
 
-		final CompletableFuture<SignAndSubmitRequestResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_result_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				SignAndSubmitRequestResult result = new SignAndSubmitRequestResult(request_result_json);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibSovrin.api.sovrin_sign_and_submit_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_sign_and_submit_request(
+				commandHandle, 
 				poolHandle,
 				walletHandle, 
 				submitterDid,
 				requestJson,
-				callback);
+				signAndSubmitRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<SubmitRequestResult> submitRequest(
+	public static CompletableFuture<String> submitRequest(
 			Pool pool,
-			String requestJson) throws SovrinException {
+			String requestJson) throws IndyException {
 
-		final CompletableFuture<SubmitRequestResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_result_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				SubmitRequestResult result = new SubmitRequestResult(request_result_json);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
 
-		int result = LibSovrin.api.sovrin_submit_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_submit_request(
+				commandHandle, 
 				poolHandle,
 				requestJson,
-				callback);
+				submitRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildGetDdoRequestResult> buildGetDdoRequest(
+	public static CompletableFuture<String> buildGetDdoRequest(
 			String submitterDid,
 			String targetDid,
-			String requestJson) throws SovrinException {
+			String requestJson) throws IndyException {
 
-		final CompletableFuture<BuildGetDdoRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildGetDdoRequestResult result = new BuildGetDdoRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_get_ddo_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_get_ddo_request(
+				commandHandle, 
 				submitterDid,
 				targetDid,
-				callback);
+				buildGetDdoRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildNymRequestResult> buildNymRequest(
+	public static CompletableFuture<String> buildNymRequest(
 			String submitterDid,
 			String targetDid,
 			String verkey,
 			String alias,
-			String role) throws SovrinException {
+			String role) throws IndyException {
 
-		final CompletableFuture<BuildNymRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildNymRequestResult result = new BuildNymRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_nym_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_nym_request(
+				commandHandle, 
 				submitterDid,
 				targetDid,
 				verkey,
 				alias,
 				role,
-				callback);
+				buildNymRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildAttribRequestResult> buildAttribRequest(
+	public static CompletableFuture<String> buildAttribRequest(
 			String submitterDid,
 			String targetDid,
 			String hash,
 			String raw,
-			String enc) throws SovrinException {
+			String enc) throws IndyException {
 
-		final CompletableFuture<BuildAttribRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildAttribRequestResult result = new BuildAttribRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_attrib_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_attrib_request(
+				commandHandle, 
 				submitterDid,
 				targetDid,
 				hash,
 				raw,
 				enc,
-				callback);
+				buildAttribRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildGetAttribRequestResult> buildGetAttribRequest(
+	public static CompletableFuture<String> buildGetAttribRequest(
 			String submitterDid,
 			String targetDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
-		final CompletableFuture<BuildGetAttribRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildGetAttribRequestResult result = new BuildGetAttribRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_get_attrib_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_get_attrib_request(
+				commandHandle, 
 				submitterDid,
 				targetDid,
 				data,
-				callback);
+				buildGetAttribRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildGetNymRequestResult> buildGetNymRequest(
+	public static CompletableFuture<String> buildGetNymRequest(
 			String submitterDid,
-			String targetDid) throws SovrinException {
+			String targetDid) throws IndyException {
 
-		final CompletableFuture<BuildGetNymRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildGetNymRequestResult result = new BuildGetNymRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_get_nym_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_get_nym_request(
+				commandHandle, 
 				submitterDid,
 				targetDid,
-				callback);
+				buildGetNymRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildSchemaRequestResult> buildSchemaRequest(
+	public static CompletableFuture<String> buildSchemaRequest(
 			String submitterDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
-		final CompletableFuture<BuildSchemaRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildSchemaRequestResult result = new BuildSchemaRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_schema_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_schema_request(
+				commandHandle, 
 				submitterDid,
 				data,
-				callback);
+				buildSchemaRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildGetSchemaRequestResult> buildGetSchemaRequest(
+	public static CompletableFuture<String> buildGetSchemaRequest(
 			String submitterDid,
-			String data) throws SovrinException {
+			String dest,
+			String data) throws IndyException {
 
-		final CompletableFuture<BuildGetSchemaRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildGetSchemaRequestResult result = new BuildGetSchemaRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_get_schema_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_get_schema_request(
+				commandHandle, 
 				submitterDid,
+				dest,
 				data,
-				callback);
+				buildGetSchemaRequestCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildClaimDefTxnResult> buildClaimDefTxn(
+	public static CompletableFuture<String> buildClaimDefTxn(
 			String submitterDid,
-			String xref,
-			String data) throws SovrinException {
+			int xref,
+			String signatureType,
+			String data) throws IndyException {
 
-		final CompletableFuture<BuildClaimDefTxnResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildClaimDefTxnResult result = new BuildClaimDefTxnResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_claim_def_txn(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_claim_def_txn(
+				commandHandle, 
 				submitterDid,
 				xref,
+				signatureType,
 				data,
-				callback);
+				buildClaimDefTxnCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildGetClaimDefTxnResult> buildGetClaimDefTxn(
+	public static CompletableFuture<String> buildGetClaimDefTxn(
 			String submitterDid,
-			String xref) throws SovrinException {
+			int xref,
+			String signatureType,
+			String origin) throws IndyException {
 
-		final CompletableFuture<BuildGetClaimDefTxnResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildGetClaimDefTxnResult result = new BuildGetClaimDefTxnResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_get_claim_def_txn(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_get_claim_def_txn(
+				commandHandle, 
 				submitterDid,
 				xref,
-				callback);
+				signatureType,
+				origin,
+				buildGetClaimDefTxnCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<BuildNodeRequestResult> buildNodeRequest(
+	public static CompletableFuture<String> buildNodeRequest(
 			String submitterDid,
 			String targetDid,
-			String data) throws SovrinException {
+			String data) throws IndyException {
 
-		final CompletableFuture<BuildNodeRequestResult> future = new CompletableFuture<> ();
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String request_json) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				BuildNodeRequestResult result = new BuildNodeRequestResult(request_json);
-				future.complete(result);
-			}
-		};
-
-		int result = LibSovrin.api.sovrin_build_node_request(
-				FIXED_COMMAND_HANDLE, 
+		int result = LibIndy.api.indy_build_node_request(
+				commandHandle, 
 				submitterDid,
 				targetDid,
 				data,
-				callback);
+				buildNodeRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> buildGetTxnRequest(
+			String submitterDid,
+			int data) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_txn_request(
+				commandHandle, 
+				submitterDid, 
+				data, 
+				buildGetTxnRequestCb);
 
 		checkResult(result);
 

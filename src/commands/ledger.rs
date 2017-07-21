@@ -1,6 +1,6 @@
 use errors::common::CommonError;
 use errors::pool::PoolError;
-use errors::sovrin::SovrinError;
+use errors::indy::IndyError;
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
@@ -23,11 +23,11 @@ pub enum LedgerCommand {
         i32, // wallet handle
         String, // submitter did
         String, // request json
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     SubmitRequest(
         i32, // pool handle
         String, // request json
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     SubmitAck(
         i32, // cmd_id
         Result<String, PoolError>, // result json or error
@@ -35,60 +35,60 @@ pub enum LedgerCommand {
     BuildGetDdoRequest(
         String, // submitter did
         String, // target did
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildNymRequest(
         String, // submitter did
         String, // target did
         Option<String>, // verkey
         Option<String>, // alias
         Option<String>, // role
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildAttribRequest(
         String, // submitter did
         String, // target did
         Option<String>, // hash
         Option<String>, // raw
         Option<String>, // enc
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetAttribRequest(
         String, // submitter did
         String, // target did
         String, // data
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetNymRequest(
         String, // submitter did
         String, // target did
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildSchemaRequest(
         String, // submitter did
         String, // data
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetSchemaRequest(
         String, // submitter did
         String, // dest
         String, // data
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildClaimDefRequest(
         String, // submitter did
         i32, // xref
         String, // signature_type
         String, // data
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetClaimDefRequest(
         String, // submitter did
         i32, // xref
         String, // signature_type
         String, // origin
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildNodeRequest(
         String, // submitter did
         String, // target_did
         String, // data
-        Box<Fn(Result<String, SovrinError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnRequest(
         String, // submitter did
         i32, // data
-        Box<Fn(Result<String, SovrinError>) + Send>)
+        Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct LedgerCommandExecutor {
@@ -98,7 +98,7 @@ pub struct LedgerCommandExecutor {
     wallet_service: Rc<WalletService>,
     ledger_service: Rc<LedgerService>,
 
-    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, SovrinError>)>>>,
+    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, IndyError>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -131,7 +131,7 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "SubmitAck command received");
                 self.send_callbacks.borrow_mut().remove(&handle)
                     .expect("Expect callback to process ack command")
-                    (result.map_err(SovrinError::from));
+                    (result.map_err(IndyError::from));
             }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
@@ -193,7 +193,7 @@ impl LedgerCommandExecutor {
                                wallet_handle: i32,
                                submitter_did: &str,
                                request_json: &str,
-                               cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                               cb: Box<Fn(Result<String, IndyError>) + Send>) {
         check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
                                                    wallet_handle, pool_handle, cb);
         match self._sign_request(wallet_handle, submitter_did, request_json) {
@@ -206,7 +206,7 @@ impl LedgerCommandExecutor {
                      wallet_handle: i32,
                      submitter_did: &str,
                      request_json: &str,
-    ) -> Result<String, SovrinError> {
+    ) -> Result<String, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
@@ -218,20 +218,20 @@ impl LedgerCommandExecutor {
     fn submit_request(&self,
                       handle: i32,
                       request_json: &str,
-                      cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                      cb: Box<Fn(Result<String, IndyError>) + Send>) {
         let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
-            Err(err) => { cb(Err(SovrinError::PoolError(err))); }
+            Err(err) => { cb(Err(IndyError::PoolError(err))); }
         };
     }
 
     fn build_get_ddo_request(&self,
                              submitter_did: &str,
                              target_did: &str,
-                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_get_ddo_request(submitter_did, target_did)
-            .map_err(|err| SovrinError::CommonError(err)))
+            .map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_nym_request(&self,
@@ -240,13 +240,13 @@ impl LedgerCommandExecutor {
                          verkey: Option<&str>,
                          alias: Option<&str>,
                          role: Option<&str>,
-                         cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                         cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_nym_request(submitter_did,
                                                  target_did,
                                                  verkey,
                                                  alias,
                                                  role
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_attrib_request(&self,
@@ -255,53 +255,53 @@ impl LedgerCommandExecutor {
                             hash: Option<&str>,
                             raw: Option<&str>,
                             enc: Option<&str>,
-                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                            cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_attrib_request(submitter_did,
                                                     target_did,
                                                     hash,
                                                     raw,
                                                     enc
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_get_attrib_request(&self,
                                 submitter_did: &str,
                                 target_did: &str,
                                 data: &str,
-                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_get_attrib_request(submitter_did,
                                                         target_did,
                                                         data
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_get_nym_request(&self,
                              submitter_did: &str,
                              target_did: &str,
-                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_get_nym_request(submitter_did,
                                                      target_did
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_schema_request(&self,
                             submitter_did: &str,
                             data: &str,
-                            cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                            cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_schema_request(submitter_did,
                                                     data
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_get_schema_request(&self,
                                 submitter_did: &str,
                                 dest: &str,
                                 data: &str,
-                                cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_get_schema_request(submitter_did,
                                                         dest,
                                                         data
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_claim_def_request(&self,
@@ -309,12 +309,12 @@ impl LedgerCommandExecutor {
                                xref: i32,
                                signature_type: &str,
                                data: &str,
-                               cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                               cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_claim_def_request(submitter_did,
                                                        xref,
                                                        signature_type,
                                                        data
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_get_claim_def_request(&self,
@@ -322,31 +322,31 @@ impl LedgerCommandExecutor {
                                    xref: i32,
                                    signature_type: &str,
                                    origin: &str,
-                                   cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                                   cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_get_claim_def_request(submitter_did,
                                                            xref,
                                                            signature_type,
                                                            origin
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_node_key_request(&self,
                               submitter_did: &str,
                               target_did: &str,
                               data: &str,
-                              cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                              cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_node_request(submitter_did,
                                                   target_did,
                                                   data
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 
     fn build_get_txn_request(&self,
                              submitter_did: &str,
                              data: i32,
-                             cb: Box<Fn(Result<String, SovrinError>) + Send>) {
+                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self.ledger_service.build_get_txn_request(submitter_did,
                                                      data
-        ).map_err(|err| SovrinError::CommonError(err)))
+        ).map_err(|err| IndyError::CommonError(err)))
     }
 }

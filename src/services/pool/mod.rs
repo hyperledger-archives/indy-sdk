@@ -137,7 +137,11 @@ impl TransactionHandler {
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             let pend_cmd: &mut CommandProcess = pend_cmd;
-            let json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            let mut json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            if let Some(str) = json_msg.inner["result"]["data"].clone().as_str() {
+                let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
+                json_msg.inner["result"]["data"] = tmp_obj;
+            }
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
             if reply_cnt == self.f {
                 //already have f same replies and receive f+1 now
@@ -263,6 +267,9 @@ impl PoolWorker {
             self.handler.nodes_mut().push(rn);
         }
         self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+        if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
+            handler.reset_nodes_votes();
+        }
         Ok(())
     }
 
@@ -504,6 +511,7 @@ impl RemoteNode {
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
+            is_blacklisted: false,
         })
     }
 
@@ -1005,7 +1013,7 @@ mod tests {
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);
-        ch.new_mt_size = 2;
+        ch.target_mt_size = 2;
 
         ch.start_catchup().unwrap();
 

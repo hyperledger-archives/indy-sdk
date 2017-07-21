@@ -25,7 +25,7 @@ use self::libc::c_char;
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_create_pool_ledger_config(command_handle: i32,
+pub extern fn indy_create_pool_ledger_config(command_handle: i32,
                                                config_name: *const c_char,
                                                config: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
@@ -49,7 +49,7 @@ pub extern fn sovrin_create_pool_ledger_config(command_handle: i32,
 /// Opens pool ledger and performs connecting to pool nodes.
 ///
 /// Pool ledger configuration with corresponded name must be previously created
-/// with sovrin_create_pool_ledger_config method.
+/// with indy_create_pool_ledger_config method.
 /// It is impossible to open pool with the same name more than once.
 ///
 /// config_name: Name of the pool ledger configuration.
@@ -71,7 +71,7 @@ pub extern fn sovrin_create_pool_ledger_config(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_open_pool_ledger(command_handle: i32,
+pub extern fn indy_open_pool_ledger(command_handle: i32,
                                       config_name: *const c_char,
                                       config: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode {
@@ -95,7 +95,7 @@ pub extern fn sovrin_open_pool_ledger(command_handle: i32,
 /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
 ///
 /// #Params
-/// handle: pool handle returned by sovrin_open_pool_ledger
+/// handle: pool handle returned by indy_open_pool_ledger
 ///
 /// #Returns
 /// Error code
@@ -104,7 +104,7 @@ pub extern fn sovrin_open_pool_ledger(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_refresh_pool_ledger(command_handle: i32,
+pub extern fn indy_refresh_pool_ledger(command_handle: i32,
                                          handle: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
@@ -124,7 +124,7 @@ pub extern fn sovrin_refresh_pool_ledger(command_handle: i32,
 /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
 ///
 /// #Params
-/// handle: pool handle returned by sovrin_open_pool_ledger.
+/// handle: pool handle returned by indy_open_pool_ledger.
 ///
 /// #Returns
 /// Error code
@@ -133,7 +133,7 @@ pub extern fn sovrin_refresh_pool_ledger(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_close_pool_ledger(command_handle: i32,
+pub extern fn indy_close_pool_ledger(command_handle: i32,
                                        handle: i32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
@@ -162,7 +162,7 @@ pub extern fn sovrin_close_pool_ledger(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn sovrin_delete_pool_ledger_config(command_handle: i32,
+pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
                                                config_name: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);

@@ -10,10 +10,10 @@ use self::libc::c_char;
 
 /// Establishes agent to agent connection.
 ///
-/// Information about sender Identity must be saved in the wallet with sovrin_create_and_store_my_did
+/// Information about sender Identity must be saved in the wallet with indy_create_and_store_my_did
 /// call before establishing of connection.
 ///
-/// Information about receiver Identity can be saved in the wallet with sovrin_store_their_did
+/// Information about receiver Identity can be saved in the wallet with indy_store_their_did
 /// call before establishing of connection. If there is no corresponded wallet record for receiver Identity
 /// than this call will lookup Identity Ledger and cache this information in the wallet.
 ///
@@ -41,7 +41,7 @@ use self::libc::c_char;
 /// - err: Error code.
 /// - message: Received message.
 #[no_mangle]
-pub extern fn sovrin_agent_connect(command_handle: i32,
+pub extern fn indy_agent_connect(command_handle: i32,
                                    pool_handle: i32,
                                    wallet_handle: i32,
                                    sender_did: *const c_char,
@@ -82,10 +82,10 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 
 /// Starts listening of agent connections.
 ///
-/// Listener will accept only connections to registered DIDs by sovrin_agent_add_identity call.
+/// Listener will accept only connections to registered DIDs by indy_agent_add_identity call.
 ///
 /// Information about sender Identity for incomming connection validation can be saved in the wallet
-/// with sovrin_store_their_did call before establishing of connection. If there is no corresponded
+/// with indy_store_their_did call before establishing of connection. If there is no corresponded
 /// wallet record for sender Identity than listener will lookup Identity Ledger and cache this
 /// information in the wallet.
 ///
@@ -118,7 +118,7 @@ pub extern fn sovrin_agent_connect(command_handle: i32,
 /// - err: Error code.
 /// - message: Received message.
 #[no_mangle]
-pub extern fn sovrin_agent_listen(command_handle: i32,
+pub extern fn indy_agent_listen(command_handle: i32,
                                   endpoint: *const c_char,
                                   listener_cb: Option<extern fn(xcommand_handle: i32,
                                                                 err: ErrorCode,
@@ -131,10 +131,10 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
                                   message_cb: Option<extern fn(xconnection_handle: i32,
                                                                err: ErrorCode,
                                                                message: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(message_cb, ErrorCode::CommonInvalidParam5);
 
     let cmd = Command::Agent(AgentCommand::Listen(
         endpoint,
@@ -165,14 +165,14 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 ///
 /// Performs wallet lookup to find corresponded receiver Identity information.
 /// Information about receiver Identity must be saved in the wallet with
-/// sovrin_create_and_store_my_did call before this call.
+/// indy_create_and_store_my_did call before this call.
 ///
 /// After successfully add_identity listener will start to accept incoming connection to added DID.
 ///
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// listener_handle: listener handle (created by sovrin_agent_listen).
+/// listener_handle: listener handle (created by indy_agent_listen).
 /// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
 /// did: DID of identity.
@@ -186,7 +186,7 @@ pub extern fn sovrin_agent_listen(command_handle: i32,
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 #[no_mangle]
-pub extern fn sovrin_agent_add_identity(command_handle: i32,
+pub extern fn indy_agent_add_identity(command_handle: i32,
                                         listener_handle: i32,
                                         pool_handle: i32,
                                         wallet_handle: i32,
@@ -216,14 +216,14 @@ pub extern fn sovrin_agent_add_identity(command_handle: i32,
 ///
 /// Performs wallet lookup to find corresponded receiver Identity information.
 /// Information about receiver Identity must be saved in the wallet with
-/// sovrin_create_and_store_my_did call before this call.
+/// indy_create_and_store_my_did call before this call.
 ///
 /// After successfully rm_identity listener will stop to accept incoming connection to removed DID.
 ///
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// listener_handle: listener handle (created by sovrin_agent_listen).
+/// listener_handle: listener handle (created by indy_agent_listen).
 /// wallet_handle: wallet handle (created by open_wallet).
 /// did: DID of identity.
 ///
@@ -236,7 +236,7 @@ pub extern fn sovrin_agent_add_identity(command_handle: i32,
 /// - xcommand_handle: command handle to map callback to caller context.
 /// - err: Error code
 #[no_mangle]
-pub extern fn sovrin_agent_remove_identity(command_handle: i32,
+pub extern fn indy_agent_remove_identity(command_handle: i32,
                                            listener_handle: i32,
                                            wallet_handle: i32,
                                            did: *const c_char,
@@ -267,7 +267,7 @@ pub extern fn sovrin_agent_remove_identity(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// connection_handle: Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.
+/// connection_handle: Connection handle returned by indy_agent_connect or indy_agent_listen calls.
 /// message: Message to send.
 /// cb: Callback that will be called after message sent or on error. Will be called exactly once.
 ///
@@ -279,7 +279,7 @@ pub extern fn sovrin_agent_remove_identity(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn sovrin_agent_send(command_handle: i32,
+pub extern fn indy_agent_send(command_handle: i32,
                                 connection_handle: i32,
                                 message: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: i32,
@@ -305,7 +305,7 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// connection_handle: Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.
+/// connection_handle: Connection handle returned by indy_agent_connect or indy_agent_listen calls.
 /// cb: Callback that will be called after connection closed or on error. Will be called exactly once.
 ///
 /// #Returns
@@ -316,7 +316,7 @@ pub extern fn sovrin_agent_send(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn sovrin_agent_close_connection(command_handle: i32,
+pub extern fn indy_agent_close_connection(command_handle: i32,
                                             connection_handle: i32,
                                             cb: Option<extern fn(xcommand_handle: i32,
                                                                  err: ErrorCode)>) -> ErrorCode {
@@ -339,7 +339,7 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// listener_handle: Listener handle returned by sovrin_agent_listen call.
+/// listener_handle: Listener handle returned by indy_agent_listen call.
 /// cb: Callback that will be called after listener closed or on error. Will be called exactly once.
 ///
 /// #Returns
@@ -350,7 +350,7 @@ pub extern fn sovrin_agent_close_connection(command_handle: i32,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn sovrin_agent_close_listener(command_handle: i32,
+pub extern fn indy_agent_close_listener(command_handle: i32,
                                           listener_handle: i32,
                                           cb: Option<extern fn(xcommand_handle: i32,
                                                                err: ErrorCode)>) -> ErrorCode {

@@ -2,7 +2,7 @@
 
 @Library('SovrinHelpers') _
 
-name = 'sovrin-client-rust'
+name = 'indy-sdk'
 def err
 def publishBranch = (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel')
 
@@ -62,7 +62,7 @@ def testUbuntu() {
         sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
         echo 'Ubuntu Test: Build docker image for nodes pool'
-        def poolEnv = dockerHelpers.build('sovrin_pool', 'ci/sovrin-pool.dockerfile ci')
+        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
         echo 'Ubuntu Test: Run nodes pool'
         poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
@@ -71,11 +71,11 @@ def testUbuntu() {
 
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
             echo 'Ubuntu Test: Test'
-
+            sh 'chmod -R 777 /home/indy/'
             sh 'cargo update'
 
             try {
-                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
                 /* TODO FIXME restore after xunit will be fixed
                 sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                  */

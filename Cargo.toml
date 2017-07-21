@@ -1,5 +1,5 @@
 [package]
-name = "sovrin-client"
+name = "indy-sdk"
 version = "0.1.1"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
@@ -10,18 +10,14 @@ authors = [
   "Sergey Minaev <sergey.minaev@dsr-company.com>"
   ]
 
-description = "Sovrin client with c-callable interface"
+description = "This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects), which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org). The major artifact of the SDK is a c-callable library."
 license = "MIT/Apache-2.0"
 build = "build.rs"
 
 [lib]
-name = "sovrin"
+name = "indy"
 path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
-
-[[bin]]
-name = "sovrin"
-path = "src/main.rs"
 
 [features]
 default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_milagro", "hash_openssl", "local_nodes_pool"]
@@ -33,6 +29,7 @@ pair_milagro = ["milagro-crypto"]
 pair_amcl = ["amcl"]
 hash_openssl = ["openssl"]
 local_nodes_pool = []
+interoperability_tests = []
 
 [dependencies]
 amcl = { version = "0.1.0", optional = true }
