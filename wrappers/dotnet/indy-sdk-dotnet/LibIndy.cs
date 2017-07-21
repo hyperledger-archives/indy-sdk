@@ -701,7 +701,6 @@ namespace Indy.Sdk.Dotnet
         /// Verifies a proof (of multiple claim).
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="proof_request_json">initial proof request as sent by the verifier</param>
         /// <param name="proof_json">proof json</param>
         /// <param name="schemas_json">all schema jsons participating in the proof</param>
@@ -710,7 +709,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll")]
-        public static extern int indy_verifier_verify_proof(int command_handle, IntPtr wallet_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofResultDelegate cb);
+        public static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_verifier_verify_proof function.

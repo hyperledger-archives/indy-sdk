@@ -455,21 +455,19 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Verify a proof for a verifier.
         /// </summary>
-        /// <param name="wallet">The target wallet.</param>
         /// <param name="proofRequestJson">The proof request JSON.</param>
         /// <param name="proofJson">The proof JSON.</param>
         /// <param name="schemasJson">The schemas JSON.</param>
         /// <param name="claimDefsJson">The claim definitions JSON.</param>
         /// <param name="revocRegsJson">The revocation registries JSON.</param>
         /// <returns>An asynchronous task that returns true if the signature is valide, otherwise false.</returns>
-        public static Task<bool> VerifierVerifyProofAsync(Wallet wallet, string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
+        public static Task<bool> VerifierVerifyProofAsync(string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
         {
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = LibIndy.indy_verifier_verify_proof(
                 commandHandle,
-                wallet.Handle,
                 proofRequestJson,
                 proofJson,
                 schemasJson,
