@@ -449,7 +449,27 @@ async def prover_get_claims(wallet_handle: int,
             "revoc_reg_seq_no": string,
         }]
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_get_claims: >>> wallet_handle: %r, filter_json: %r",
+                 wallet_handle,
+                 filter_json)
+
+    if not hasattr(prover_get_claims, "cb"):
+        logger.debug("prover_get_claims: Creating callback")
+        prover_get_claims.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_filter_json = c_char_p(filter_json.encode('utf-8'))
+
+    claims_json = await do_call('indy_prover_get_claims',
+                                prover_get_claims.cb,
+                                c_wallet_handle,
+                                c_filter_json)
+
+    res = claims_json.decode()
+    logger.debug("prover_get_claims: <<< res: %r", res)
+    return res
 
 
 async def prover_get_claims_for_proof_req(wallet_handle: int,
