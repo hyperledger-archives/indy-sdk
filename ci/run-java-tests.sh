@@ -5,4 +5,4 @@
 
 cd wrappers/java
 
-maven clean test
+mvn clean test
