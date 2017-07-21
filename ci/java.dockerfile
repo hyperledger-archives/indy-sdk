@@ -18,4 +18,4 @@ RUN gdebi -n indy-sdk_0.1.1_amd64.deb
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-WORKDIR /home/indy
+WORKDIR /home/indy/wrappers/java
