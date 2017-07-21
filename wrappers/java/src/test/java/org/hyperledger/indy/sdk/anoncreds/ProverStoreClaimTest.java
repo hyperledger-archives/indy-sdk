@@ -2,22 +2,26 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertNotNull;
-
 public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 
 	@Test
-	public void testProverCreateAndStoreClaimReqWorks() throws Exception {
-
+	public void testProverStoreClaimWorks() throws Exception {
 		initCommonWallet();
+
+		String proverWalletName = "proverWallet";
+		Wallet.createWallet("default", proverWalletName, "default", null, null).get();
+		Wallet proverWallet = proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
+
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretName).get();
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
 
-		String claimRequest = Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 
 		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -26,14 +30,16 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 				"        }";
 
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1, - 1).get();
-		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();
+
+		proverWallet.closeWallet().get();
+		Wallet.deleteWallet(proverWalletName, null).get();
 	}
 
 	@Test
-	public void testProverCreateAndStoreClaimReqWorksWithoutClaimReq() throws Exception {
+	public void testProverStoreClaimWorksWithoutClaimReq() throws Exception {
 
 		initCommonWallet();
 
@@ -51,7 +57,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	public void testProverCreateAndStoreClaimReqWorksForInvalidClaimJson() throws Exception {
+	public void testProverStoreClaimWorksForInvalidClaimJson() throws Exception {
 
 		initCommonWallet();
 

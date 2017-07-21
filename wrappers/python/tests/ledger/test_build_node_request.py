@@ -33,3 +33,29 @@ async def test_build_node_request_works_for_missed_field_in_data_json():
     except Exception as e:
         assert type(IndyError(ErrorCode.CommonInvalidStructure)) == type(e) and \
                IndyError(ErrorCode.CommonInvalidStructure).args == e.args
+
+
+@pytest.mark.asyncio
+async def test_build_node_request_works_for_correct_data_json():
+    identifier = "identifier"
+    destination = "destination"
+    data = {
+        "node_ip": "ip",
+        "node_port": 1,
+        "client_ip": "ip",
+        "client_port": 1,
+        "alias": "some",
+        "services": ["VALIDATOR"]
+    }
+
+    expected_response = {
+        "identifier": identifier,
+        "operation": {
+            "type": "0",
+            "dest": destination,
+            "data": data
+        }
+    }
+
+    response = json.loads((await ledger.build_node_request(identifier, destination, json.dumps(data))).decode())
+    assert expected_response.items() <= response.items()

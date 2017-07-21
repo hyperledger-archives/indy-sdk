@@ -21,7 +21,7 @@ public class IndyIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(10, TimeUnit.SECONDS);
+	public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
 
 	@Before
 	public void setUp() throws IOException {
