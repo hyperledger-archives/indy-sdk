@@ -707,4 +707,36 @@ async def verifier_verify_proof(wallet_handle: int,
         }
     :return: valid: true - if signature is valid, false - otherwise
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("verifier_verify_proof: >>> wallet_handle: %r, proof_request_json: %r,"
+                 " proof_json: %r, schemas_json: %r, claim_defs_jsons: %r, revoc_regs_json: %r",
+                 wallet_handle,
+                 proof_request_json,
+                 proof_json,
+                 schemas_json,
+                 claim_defs_jsons,
+                 revoc_regs_json)
+
+    if not hasattr(verifier_verify_proof, "cb"):
+        logger.debug("verifier_verify_proof: Creating callback")
+        verifier_verify_proof.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_proof_request_json = c_char_p(proof_request_json.encode('utf-8'))
+    c_proof_json = c_char_p(proof_json.encode('utf-8'))
+    c_schemas_json = c_char_p(schemas_json.encode('utf-8'))
+    c_claim_defs_jsons = c_char_p(claim_defs_jsons.encode('utf-8'))
+    c_revoc_regs_json = c_char_p(revoc_regs_json.encode('utf-8'))
+
+    res = await do_call('indy_verifier_verify_proof',
+                        verifier_verify_proof.cb,
+                        c_wallet_handle,
+                        c_proof_request_json,
+                        c_proof_json,
+                        c_schemas_json,
+                        c_claim_defs_jsons,
+                        c_revoc_regs_json)
+
+    logger.debug("verifier_verify_proof: <<< res: %r", res)
+    return res
