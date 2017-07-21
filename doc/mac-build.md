@@ -4,8 +4,9 @@
 
 2. Install required native libraries and utilities
    > brew install libsodium
-   > brew install zeromq
    > brew install cmake
+   > brew install automake 
+   > brew install autoconf
    > brew install openssl
 
 3. Setup environment variables:
@@ -17,10 +18,10 @@
 
 4. Setup OPENSSL_DIR variable: path to installed openssl library
    
-   >export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
+   > export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
    
 5. Build the library:
    
-   >cargo build
+   > cargo build
 
 
