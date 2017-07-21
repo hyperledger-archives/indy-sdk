@@ -79,6 +79,10 @@
     <Compile Include="Wrapper\AnonCredsTests\IssuerCreateClaimTest.cs" />
     <Compile Include="Wrapper\AnonCredsTests\IssuerCreateAndStoreClaimDefinitionTest.cs" />
     <Compile Include="Wrapper\AnonCredsTests\AnonCredsIntegrationTestBase.cs" />
+    <Compile Include="Wrapper\DemoTests\SignusDemoTest.cs" />
+    <Compile Include="Wrapper\DemoTests\LedgerDemoTest.cs" />
+    <Compile Include="Wrapper\DemoTests\AnonCredsDemoTest.cs" />
+    <Compile Include="Wrapper\DemoTests\AgentDemoTest.cs" />
     <Compile Include="Wrapper\LedgerTests\SchemaRequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\RequestTest.cs" />
     <Compile Include="Wrapper\LedgerTests\NymRequestTest.cs" />
