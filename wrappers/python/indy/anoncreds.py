@@ -27,8 +27,8 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_and_store_claim_def: >>> wallet_handle: %s, issuer_did: %s, schema_json: %s,"
-                 " signature_type: %s, create_non_revoc: %s",
+    logger.debug("issuer_create_and_store_claim_def: >>> wallet_handle: %r, issuer_did: %r, schema_json: %r,"
+                 " signature_type: %r, create_non_revoc: %r",
                  wallet_handle,
                  issuer_did,
                  schema_json,
@@ -53,7 +53,7 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
                                    c_signature_type,
                                    c_create_non_revoc)
     res = claim_def_json.decode()
-    logger.debug("issuer_create_and_store_claim_def: <<< res: %s", res)
+    logger.debug("issuer_create_and_store_claim_def: <<< res: %r", res)
     return res
 
 
@@ -74,8 +74,8 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %s, issuer_did: %s, schema_seq_no: %s,"
-                 " max_claim_num: %s",
+    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %r, issuer_did: %r, schema_seq_no: %r,"
+                 " max_claim_num: %r",
                  wallet_handle,
                  issuer_did,
                  schema_seq_no,
@@ -97,7 +97,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                                      c_schema_seq_no,
                                                      c_max_claim_num)
     res = (revoc_reg_json.decode(), revoc_reg_uuid.decode())
-    logger.debug("issuer_create_and_store_revoc_reg: <<< res: %s", res)
+    logger.debug("issuer_create_and_store_revoc_reg: <<< res: %r", res)
     return res
 
 
@@ -144,8 +144,8 @@ async def issuer_create_claim(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_claim: >>> wallet_handle: %s, claim_req_json: %s, claim_json: %s,"
-                 " revoc_reg_seq_no: %s, user_revoc_index: %s",
+    logger.debug("issuer_create_claim: >>> wallet_handle: %r, claim_req_json: %r, claim_json: %r,"
+                 " revoc_reg_seq_no: %r, user_revoc_index: %r",
                  wallet_handle,
                  claim_req_json,
                  claim_json,
@@ -170,7 +170,7 @@ async def issuer_create_claim(wallet_handle: int,
                                                         c_revoc_reg_seq_no,
                                                         c_user_revoc_index)
     res = (revoc_reg_update_json.decode(), claim_json.decode())
-    logger.debug("issuer_create_claim: <<< res: %s", res)
+    logger.debug("issuer_create_claim: <<< res: %r", res)
     return res
 
 
@@ -189,7 +189,7 @@ async def issuer_revoke_claim(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_revoke_claim: >>> wallet_handle: %s, revoc_reg_seq_no: %s, user_revoc_index: %s",
+    logger.debug("issuer_revoke_claim: >>> wallet_handle: %r, revoc_reg_seq_no: %r, user_revoc_index: %r",
                  wallet_handle,
                  revoc_reg_seq_no,
                  user_revoc_index)
@@ -208,7 +208,7 @@ async def issuer_revoke_claim(wallet_handle: int,
                                           c_revoc_reg_seq_no,
                                           c_user_revoc_index)
     res = revoc_reg_update_json.decode()
-    logger.debug("issuer_revoke_claim: <<< res: %s", res)
+    logger.debug("issuer_revoke_claim: <<< res: %r", res)
     return res
 
 
@@ -227,7 +227,7 @@ async def prover_store_claim_offer(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("prover_store_claim_offer: >>> wallet_handle: %s, claim_offer_json: %s",
+    logger.debug("prover_store_claim_offer: >>> wallet_handle: %r, claim_offer_json: %r",
                  wallet_handle,
                  claim_offer_json)
 
@@ -243,7 +243,7 @@ async def prover_store_claim_offer(wallet_handle: int,
                         c_wallet_handle,
                         c_claim_offer_json)
 
-    logger.debug("prover_store_claim_offer: <<< res: %s", res)
+    logger.debug("prover_store_claim_offer: <<< res: %r", res)
     return res
 
 
@@ -266,7 +266,27 @@ async def prover_get_claim_offers(wallet_handle: int,
             "schema_seq_no": string}]
         }
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_store_claim_offer: >>> wallet_handle: %r, filter_json: %r",
+                 wallet_handle,
+                 filter_json)
+
+    if not hasattr(prover_get_claim_offers, "cb"):
+        logger.debug("prover_get_claim_offers: Creating callback")
+        prover_get_claim_offers.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_filter_json = c_char_p(filter_json.encode('utf-8'))
+
+    claim_offers_json = await do_call('indy_prover_get_claim_offers',
+                                      prover_get_claim_offers.cb,
+                                      c_wallet_handle,
+                                      c_filter_json)
+
+    res = claim_offers_json.decode()
+    logger.debug("prover_get_claim_offers: <<< res: %r", res)
+    return res
 
 
 async def prover_create_master_secret(wallet_handle: int,
