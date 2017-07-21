@@ -225,7 +225,26 @@ async def prover_store_claim_offer(wallet_handle: int,
         }
     :return: None.
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_store_claim_offer: >>> wallet_handle: %s, claim_offer_json: %s",
+                 wallet_handle,
+                 claim_offer_json)
+
+    if not hasattr(prover_store_claim_offer, "cb"):
+        logger.debug("prover_store_claim_offer: Creating callback")
+        prover_store_claim_offer.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_claim_offer_json = c_char_p(claim_offer_json.encode('utf-8'))
+
+    res = await do_call('indy_prover_store_claim_offer',
+                        prover_store_claim_offer.cb,
+                        c_wallet_handle,
+                        c_claim_offer_json)
+
+    logger.debug("prover_store_claim_offer: <<< res: %s", res)
+    return res
 
 
 async def prover_get_claim_offers(wallet_handle: int,
