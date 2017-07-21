@@ -5,7 +5,6 @@ ARG uid=1000
 RUN apt-get update && \
     apt-get install -y \
       pkg-config \
-      libzmq3-dev \
       libssl-dev \
       libgmp3-dev \
       curl \
