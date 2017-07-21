@@ -351,7 +351,37 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
             "issuer_did" : <issuer_did>
         }
     """
-    pass
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_create_and_store_claim_req: >>> wallet_handle: %r, prover_did: %r, claim_offer_json: %r,"
+                 " claim_def_json: %r, master_secret_name: %r",
+                 wallet_handle,
+                 prover_did,
+                 claim_offer_json,
+                 claim_def_json,
+                 master_secret_name)
+
+    if not hasattr(prover_create_and_store_claim_req, "cb"):
+        logger.debug("prover_create_and_store_claim_req: Creating callback")
+        prover_create_and_store_claim_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_prover_did = c_char_p(prover_did.encode('utf-8'))
+    c_claim_offer_json = c_char_p(claim_offer_json.encode('utf-8'))
+    c_claim_def_json = c_char_p(claim_def_json.encode('utf-8'))
+    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
+
+    claim_req_json = await do_call('indy_prover_create_and_store_claim_req',
+                                   prover_create_and_store_claim_req.cb,
+                                   c_wallet_handle,
+                                   c_prover_did,
+                                   c_claim_offer_json,
+                                   c_claim_def_json,
+                                   c_master_secret_name)
+
+    res = claim_req_json.decode()
+    logger.debug("prover_create_and_store_claim_req: <<< res: %r", res)
+    return res
 
 
 async def prover_store_claim(wallet_handle: int,
