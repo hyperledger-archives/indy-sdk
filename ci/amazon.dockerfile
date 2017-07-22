@@ -11,10 +11,12 @@ RUN \
            cmake \
            pkgconfig \
            openssl-devel \
-           sqlite-devel
+           sqlite-devel \
+           spectool
+
 
 RUN cd /tmp && \
-    curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.12 && \
     ./configure && \
     make && \
@@ -23,15 +25,6 @@ RUN cd /tmp && \
 
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-
-RUN cd /tmp && \
-    wget https://github.com/zeromq/libzmq/releases/download/v4.2.2/zeromq-4.2.2.tar.gz && \
-    tar xfz zeromq-4.2.2.tar.gz && rm zeromq-4.2.2.tar.gz && \
-    cd /tmp/zeromq-4.2.2 && \
-    ./configure && \
-    make && \
-    make install && \
-    rm -rf /tmp/zeromq-4.2.2
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
@@ -50,4 +43,6 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.ca
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-WORKDIR /home/indy
+RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
+
+WORKDIR /home/sorvin

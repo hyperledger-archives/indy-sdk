@@ -4,6 +4,7 @@ from ctypes import *
 
 import logging
 
+
 async def create_and_store_my_did(wallet_handle: int,
                                   did_json: str) -> (str, str, str):
     """
@@ -40,13 +41,16 @@ async def create_and_store_my_did(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_did_json = c_char_p(did_json.encode('utf-8'))
 
-    res = await do_call('indy_create_and_store_my_did',
-                        create_and_store_my_did.cb,
-                        c_wallet_handle,
-                        c_did_json)
+    did, verkey, pk = await do_call('indy_create_and_store_my_did',
+                                    c_wallet_handle,
+                                    c_did_json,
+                                    create_and_store_my_did.cb)
+
+    res = (did.decode(), verkey.decode(), pk.decode())
 
     logger.debug("create_and_store_my_did: <<< res: %s", res)
     return res
+
 
 async def replace_keys(wallet_handle: int,
                        did: str,
@@ -81,10 +85,10 @@ async def replace_keys(wallet_handle: int,
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
     res = await do_call('indy_replace_keys',
-                        replace_keys.cb,
                         c_wallet_handle,
                         c_did,
-                        c_identity_json)
+                        c_identity_json,
+                        replace_keys.cb)
 
     logger.debug("replace_keys: <<< res: %s", res)
     return res
@@ -120,9 +124,9 @@ async def store_their_did(wallet_handle: int,
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
     res = await do_call('indy_store_their_did',
-                        store_their_did.cb,
                         c_wallet_handle,
-                        c_identity_json)
+                        c_identity_json,
+                        store_their_did.cb)
 
     logger.debug("store_their_did: <<< res: %s", res)
     return res
@@ -156,10 +160,10 @@ async def sign(wallet_handle: int,
     c_msg = c_char_p(msg.encode('utf-8'))
 
     res = await do_call('indy_sign',
-                        sign.cb,
                         c_wallet_handle,
                         c_did,
-                        c_msg)
+                        c_msg,
+                        sign.cb)
 
     logger.debug("sign: <<< res: %s", res)
     return res
@@ -201,11 +205,11 @@ async def verify_signature(wallet_handle: int,
     c_signed_msg = c_char_p(signed_msg.encode('utf-8'))
 
     res = await do_call('indy_verify_signature',
-                        verify_signature.cb,
                         c_wallet_handle,
                         c_pool_handle,
                         c_did,
-                        c_signed_msg)
+                        c_signed_msg,
+                        verify_signature.cb)
 
     logger.debug("verify_signature: <<< res: %s", res)
     return res
@@ -251,12 +255,12 @@ async def encrypt(wallet_handle: int,
     c_msg = c_char_p(msg.encode('utf-8'))
 
     res = await do_call('indy_encrypt',
-                        encrypt.cb,
                         c_wallet_handle,
                         c_pool_handle,
                         c_my_did,
                         c_did,
-                        c_msg)
+                        c_msg,
+                        encrypt.cb)
 
     logger.debug("encrypt: <<< res: %s", res)
     return res
@@ -299,12 +303,12 @@ async def decrypt(wallet_handle: int,
     c_nonce = c_char_p(nonce.encode('utf-8'))
 
     res = await do_call('indy_decrypt',
-                        decrypt.cb,
                         c_wallet_handle,
                         c_my_did,
                         c_did,
                         c_encrypted_msg,
-                        c_nonce)
+                        c_nonce,
+                        decrypt.cb)
 
     logger.debug("decrypt: <<< res: %s", res)
     return res

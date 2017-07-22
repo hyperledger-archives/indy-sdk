@@ -30,5 +30,5 @@ async def test_build_get_attrib_request_works():
         }
     }
 
-    response = json.loads((await ledger.build_get_attrib_request(identifier, destination, raw)).decode())
+    response = json.loads(await ledger.build_get_attrib_request(identifier, destination, raw))
     assert expected_response.items() <= response.items()

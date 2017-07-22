@@ -32,5 +32,5 @@ async def test_build_get_schema_requests_works_for_correct_data_json():
         }
     }
 
-    response = json.loads((await ledger.build_get_schema_request(identifier, identifier, data)).decode())
+    response = json.loads(await ledger.build_get_schema_request(identifier, identifier, data))
     assert expected_response.items() <= response.items()

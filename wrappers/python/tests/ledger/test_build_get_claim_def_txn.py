@@ -66,7 +66,7 @@ async def test_build_claim_def_request_works_for_correct_data_json():
         }
     }
 
-    response = json.loads((await ledger.build_claim_def_txn(
-        identifier, schema_seq_no, signature_type, json.dumps(data)
-    )).decode())
+    response = json.loads(
+        await ledger.build_claim_def_txn(
+            identifier, schema_seq_no, signature_type, json.dumps(data)))
     assert expected_response.items() <= response.items()
