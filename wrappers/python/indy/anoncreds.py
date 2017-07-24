@@ -46,12 +46,12 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
     c_create_non_revoc = c_bool(create_non_revoc)
 
     claim_def_json = await do_call('indy_issuer_create_and_store_claim_def',
-                                   issuer_create_and_store_claim_def.cb,
                                    c_wallet_handle,
                                    c_issuer_did,
                                    c_schema_json,
                                    c_signature_type,
-                                   c_create_non_revoc)
+                                   c_create_non_revoc,
+                                   issuer_create_and_store_claim_def.cb)
     res = claim_def_json.decode()
     logger.debug("issuer_create_and_store_claim_def: <<< res: %r", res)
     return res
@@ -91,11 +91,11 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     c_max_claim_num = c_int32(max_claim_num)
 
     (revoc_reg_json, revoc_reg_uuid) = await do_call('indy_issuer_create_and_store_revoc_reg',
-                                                     issuer_create_and_store_revoc_reg.cb,
                                                      c_wallet_handle,
                                                      c_issuer_did,
                                                      c_schema_seq_no,
-                                                     c_max_claim_num)
+                                                     c_max_claim_num,
+                                                     issuer_create_and_store_revoc_reg.cb)
     res = (revoc_reg_json.decode(), revoc_reg_uuid.decode())
     logger.debug("issuer_create_and_store_revoc_reg: <<< res: %r", res)
     return res
@@ -163,12 +163,12 @@ async def issuer_create_claim(wallet_handle: int,
     c_user_revoc_index = c_int32(user_revoc_index)
 
     (revoc_reg_update_json, claim_json) = await do_call('indy_issuer_create_claim',
-                                                        issuer_create_claim.cb,
                                                         c_wallet_handle,
                                                         c_claim_req_json,
                                                         c_claim_json,
                                                         c_revoc_reg_seq_no,
-                                                        c_user_revoc_index)
+                                                        c_user_revoc_index,
+                                                        issuer_create_claim.cb)
     res = (revoc_reg_update_json.decode(), claim_json.decode())
     logger.debug("issuer_create_claim: <<< res: %r", res)
     return res
@@ -203,10 +203,10 @@ async def issuer_revoke_claim(wallet_handle: int,
     c_user_revoc_index = c_int32(user_revoc_index)
 
     revoc_reg_update_json = await do_call('indy_issuer_revoke_claim',
-                                          issuer_revoke_claim.cb,
                                           c_wallet_handle,
                                           c_revoc_reg_seq_no,
-                                          c_user_revoc_index)
+                                          c_user_revoc_index,
+                                          issuer_revoke_claim.cb)
     res = revoc_reg_update_json.decode()
     logger.debug("issuer_revoke_claim: <<< res: %r", res)
     return res
@@ -239,9 +239,9 @@ async def prover_store_claim_offer(wallet_handle: int,
     c_claim_offer_json = c_char_p(claim_offer_json.encode('utf-8'))
 
     res = await do_call('indy_prover_store_claim_offer',
-                        prover_store_claim_offer.cb,
                         c_wallet_handle,
-                        c_claim_offer_json)
+                        c_claim_offer_json,
+                        prover_store_claim_offer.cb)
 
     logger.debug("prover_store_claim_offer: <<< res: %r", res)
     return res
@@ -280,9 +280,9 @@ async def prover_get_claim_offers(wallet_handle: int,
     c_filter_json = c_char_p(filter_json.encode('utf-8'))
 
     claim_offers_json = await do_call('indy_prover_get_claim_offers',
-                                      prover_get_claim_offers.cb,
                                       c_wallet_handle,
-                                      c_filter_json)
+                                      c_filter_json,
+                                      prover_get_claim_offers.cb)
 
     res = claim_offers_json.decode()
     logger.debug("prover_get_claim_offers: <<< res: %r", res)
@@ -313,9 +313,9 @@ async def prover_create_master_secret(wallet_handle: int,
     c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
 
     res = await do_call('indy_prover_create_master_secret',
-                        prover_create_master_secret.cb,
                         c_wallet_handle,
-                        c_master_secret_name)
+                        c_master_secret_name,
+                        prover_create_master_secret.cb)
 
     logger.debug("prover_create_master_secret: <<< res: %r", res)
     return res
@@ -372,12 +372,12 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
     c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
 
     claim_req_json = await do_call('indy_prover_create_and_store_claim_req',
-                                   prover_create_and_store_claim_req.cb,
                                    c_wallet_handle,
                                    c_prover_did,
                                    c_claim_offer_json,
                                    c_claim_def_json,
-                                   c_master_secret_name)
+                                   c_master_secret_name,
+                                   prover_create_and_store_claim_req.cb)
 
     res = claim_req_json.decode()
     logger.debug("prover_create_and_store_claim_req: <<< res: %r", res)
@@ -419,9 +419,9 @@ async def prover_store_claim(wallet_handle: int,
     c_claims_json = c_char_p(claims_json.encode('utf-8'))
 
     res = await do_call('indy_prover_store_claim',
-                        prover_store_claim.cb,
                         c_wallet_handle,
-                        c_claims_json)
+                        c_claims_json,
+                        prover_store_claim.cb)
 
     logger.debug("prover_store_claim: <<< res: %r", res)
     return res
@@ -463,9 +463,9 @@ async def prover_get_claims(wallet_handle: int,
     c_filter_json = c_char_p(filter_json.encode('utf-8'))
 
     claims_json = await do_call('indy_prover_get_claims',
-                                prover_get_claims.cb,
                                 c_wallet_handle,
-                                c_filter_json)
+                                c_filter_json,
+                                prover_get_claims.cb)
 
     res = claims_json.decode()
     logger.debug("prover_get_claims: <<< res: %r", res)
@@ -520,9 +520,9 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
     c_proof_request_json = c_char_p(proof_request_json.encode('utf-8'))
 
     claims_json = await do_call('indy_prover_get_claims_for_proof_req',
-                                prover_get_claims_for_proof_req.cb,
                                 c_wallet_handle,
-                                c_proof_request_json)
+                                c_proof_request_json,
+                                prover_get_claims_for_proof_req.cb)
 
     res = claims_json.decode()
     logger.debug("prover_get_claims_for_proof_req: <<< res: %r", res)
@@ -632,14 +632,14 @@ async def prover_create_proof(wallet_handle: int,
     c_revoc_regs_json = c_char_p(revoc_regs_json.encode('utf-8'))
 
     proof_json = await do_call('indy_prover_create_proof',
-                               prover_create_proof.cb,
                                c_wallet_handle,
                                c_proof_req_json,
                                c_requested_claims_json,
                                c_schemas_json,
                                c_master_secret_name,
                                c_claim_defs_json,
-                               c_revoc_regs_json)
+                               c_revoc_regs_json,
+                               prover_create_proof.cb)
 
     res = proof_json.decode()
     logger.debug("prover_create_proof: <<< res: %r", res)
@@ -730,13 +730,13 @@ async def verifier_verify_proof(wallet_handle: int,
     c_revoc_regs_json = c_char_p(revoc_regs_json.encode('utf-8'))
 
     res = await do_call('indy_verifier_verify_proof',
-                        verifier_verify_proof.cb,
                         c_wallet_handle,
                         c_proof_request_json,
                         c_proof_json,
                         c_schemas_json,
                         c_claim_defs_jsons,
-                        c_revoc_regs_json)
+                        c_revoc_regs_json,
+                        verifier_verify_proof.cb)
 
     logger.debug("verifier_verify_proof: <<< res: %r", res)
     return res
