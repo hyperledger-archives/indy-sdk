@@ -67,7 +67,7 @@ async def connection(listener_with_identity):
     connection_handle = await agent.agent_connect(0, wallet_handle, did, did)
     assert connection_handle is not None
 
-    event = await agent.agent_wait_for_event(listener_handle)  # type: agent.ConnectionEvent
+    event = await agent.agent_wait_for_event([listener_handle])  # type: agent.ConnectionEvent
 
     assert type(event) is agent.ConnectionEvent
     assert event.handle == listener_handle
