@@ -5,6 +5,7 @@ import json
 ISSUER_DID = "NcYxiDXkpYi6ov5FcYDi1e"
 COMMON_SCHEMA_SEQ_NO = 1
 COMMON_MASTER_SECRET_NAME = "common_master_secret_name"
+COMMON_MASTER_SECRET_NAME_1 = "common_master_secret_name_1"
 
 
 async def prepare_common_wallet(wallet_handle):
