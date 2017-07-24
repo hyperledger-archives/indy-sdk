@@ -52,8 +52,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             try
             {
                 var wallet = GetWalletByHandle(walletHandle);
-                wallet.Set(key, value);
-                return ErrorCode.Success;
+                return wallet.Set(key, value);                
             }
             catch (Exception)
             {
@@ -68,7 +67,10 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 var wallet = GetWalletByHandle(walletHandle);
 
                 string value;
-                wallet.Get(key, out value);
+                var result = wallet.Get(key, out value);
+
+                if (result != ErrorCode.Success)
+                    return result;
 
                 var valueHandle = GCHandle.Alloc(value);
                 wallet.ValueHandles.Add(valueHandle);
@@ -89,7 +91,10 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 var wallet = GetWalletByHandle(walletHandle);
 
                 string value;
-                wallet.GetNotExpired(key, out value);
+                var result = wallet.GetNotExpired(key, out value);
+
+                if (result != ErrorCode.Success)
+                    return result;
 
                 var valueHandle = GCHandle.Alloc(value);
                 wallet.ValueHandles.Add(valueHandle);
@@ -110,7 +115,10 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 var wallet = GetWalletByHandle(walletHandle);
 
                 string value;
-                wallet.List(keyPrefix, out value);
+                var result = wallet.List(keyPrefix, out value);
+
+                if (result != ErrorCode.Success)
+                    return result;
 
                 var valueHandle = GCHandle.Alloc(value);
                 wallet.ValueHandles.Add(valueHandle);

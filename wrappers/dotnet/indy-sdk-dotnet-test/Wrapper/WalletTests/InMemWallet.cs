@@ -16,26 +16,43 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         public bool IsOpen { get; set; }
 
-        public override void Set(string key, string value)
+        public override ErrorCode Set(string key, string value)
         {
             _values.Add(key, value);
+            return ErrorCode.Success;
         }
 
-        public override void Get(string key, out string value)
+        public override ErrorCode Get(string key, out string value)
         {
+            value = null;
+
+            if (_values.ContainsKey(key))
+                return ErrorCode.WalletNotFoundError;
+
             value = _values[key];
+
+            return ErrorCode.Success;
         }
 
-        public override void GetNotExpired(string key, out string value)
+        public override ErrorCode GetNotExpired(string key, out string value)
         {
+            value = null;
+
+            if (_values.ContainsKey(key))
+                return ErrorCode.WalletNotFoundError;
+
             value = _values[key]; //Nothing is ever expired in *this* wallet...
+
+            return ErrorCode.Success;
         }
 
-        public override void List(string keyPrefix, out string valuesJson)
+        public override ErrorCode List(string keyPrefix, out string valuesJson)
         {
             var matchingValues = _values.Where((x) => x.Key.StartsWith(keyPrefix));
 
-            valuesJson = JsonConvert.SerializeObject(matchingValues.ToArray());            
+            valuesJson = JsonConvert.SerializeObject(matchingValues.ToArray());
+
+            return ErrorCode.Success;
         }
     }
 }
