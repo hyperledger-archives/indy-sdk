@@ -10,13 +10,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
     /// <summary>
     /// Base class that custom wallets must be implemented for.
     /// </summary>
-    public abstract class WalletBase
+    public abstract class CustomWalletBase
     {
-        private List<GCHandle> _valueHandles = new List<GCHandle>();
+        private List<IntPtr> _valuePointers = new List<IntPtr>();
 
-        internal List<GCHandle> ValueHandles
+        internal List<IntPtr> ValuePointers
         {
-            get { return _valueHandles; }
+            get { return _valuePointers; }
         }
 
         
@@ -56,10 +56,10 @@ namespace Indy.Sdk.Dotnet.Wrapper
         public void Dispose()
         {
             //Free any outstanding handles.
-            for (int i = _valueHandles.Count - 1; i >= 0; i--)
+            for (int i = _valuePointers.Count - 1; i >= 0; i--)
             {
-                _valueHandles[i].Free();
-                _valueHandles.RemoveAt(i);
+                Marshal.FreeHGlobal(_valuePointers[i]);
+                _valuePointers.RemoveAt(i);
             }
         }
     }

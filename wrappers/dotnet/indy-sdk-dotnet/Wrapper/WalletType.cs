@@ -21,13 +21,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// </summary>
         /// <param name="handle">The handle of the wallet.</param>
         /// <returns>Thw wallet instance associated with the handle.</returns>
-        protected abstract WalletBase GetWalletByHandle(int handle);
+        protected abstract CustomWalletBase GetWalletByHandle(int handle);
 
         internal ErrorCode CreateCallback(string name, string config, string credentials)
         {
             try
             {
                 return Create(name, config, credentials);
+
             }
             catch (Exception)
             {
@@ -71,10 +72,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
                 if (result != ErrorCode.Success)
                     return result;
-
-                var valueHandle = GCHandle.Alloc(value);
-                wallet.ValueHandles.Add(valueHandle);
-                valuePtr = GCHandle.ToIntPtr(valueHandle);
+                
+                valuePtr = Marshal.StringToHGlobalAnsi(value);
+                wallet.ValuePointers.Add(valuePtr);
 
                 return ErrorCode.Success;
             }
@@ -96,9 +96,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
 
-                var valueHandle = GCHandle.Alloc(value);
-                wallet.ValueHandles.Add(valueHandle);
-                valuePtr = GCHandle.ToIntPtr(valueHandle);
+                valuePtr = Marshal.StringToHGlobalAnsi(value);
+                wallet.ValuePointers.Add(valuePtr);
 
                 return ErrorCode.Success;
             }
@@ -120,10 +119,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
 
-                var valueHandle = GCHandle.Alloc(value);
-                wallet.ValueHandles.Add(valueHandle);
-                valuesJsonPtr = GCHandle.ToIntPtr(valueHandle);
-                
+                valuesJsonPtr = Marshal.StringToHGlobalAnsi(value);
+                wallet.ValuePointers.Add(valuesJsonPtr);
+
                 return ErrorCode.Success;
             }
             catch (Exception)
@@ -162,9 +160,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
             {
                 var wallet = GetWalletByHandle(walletHandle);
 
-                var valueHandle = GCHandle.FromIntPtr(valuePtr);
-                valueHandle.Free();
-                wallet.ValueHandles.Remove(valueHandle);
+                Marshal.FreeHGlobal(valuePtr);                
+                wallet.ValuePointers.Remove(valuePtr);
                 return ErrorCode.Success;
             }
             catch (Exception)

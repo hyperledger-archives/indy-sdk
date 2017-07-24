@@ -67,7 +67,7 @@
     <Compile Include="Wrapper\SignusResults.cs" />
     <Compile Include="Wrapper\Signus.cs" />
     <Compile Include="Wrapper\Wallet.cs" />
-    <Compile Include="Wrapper\WalletBase.cs" />
+    <Compile Include="Wrapper\CustomWalletBase.cs" />
     <Compile Include="Wrapper\WalletType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

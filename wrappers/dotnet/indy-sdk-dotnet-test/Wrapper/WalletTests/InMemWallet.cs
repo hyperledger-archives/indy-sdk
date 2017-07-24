@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
-    public class InMemWallet : WalletBase
+    public class InMemWallet : CustomWalletBase
     {
         private static IDictionary<string, string> _values = new Dictionary<string, string>();
 
@@ -18,7 +18,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         public override ErrorCode Set(string key, string value)
         {
-            _values.Add(key, value);
+            _values[key] = value;
             return ErrorCode.Success;
         }
 
@@ -26,7 +26,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             value = null;
 
-            if (_values.ContainsKey(key))
+            if (!_values.ContainsKey(key))
                 return ErrorCode.WalletNotFoundError;
 
             value = _values[key];
@@ -38,7 +38,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             value = null;
 
-            if (_values.ContainsKey(key))
+            if (!_values.ContainsKey(key))
                 return ErrorCode.WalletNotFoundError;
 
             value = _values[key]; //Nothing is ever expired in *this* wallet...
@@ -48,9 +48,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         public override ErrorCode List(string keyPrefix, out string valuesJson)
         {
-            var matchingValues = _values.Where((x) => x.Key.StartsWith(keyPrefix));
+            var matchingValues = _values.Where(kvp => kvp.Key.StartsWith(keyPrefix)).ToList();
 
-            valuesJson = JsonConvert.SerializeObject(matchingValues.ToArray());
+            var array = new JArray();
+            foreach(var value in matchingValues)
+            {
+                array.Add(value.Value);
+            }
+
+            valuesJson = array.ToString(Formatting.None);
 
             return ErrorCode.Success;
         }

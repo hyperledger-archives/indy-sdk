@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.LibIndy;
 
@@ -9,6 +10,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
     /// </summary>
     public sealed class Wallet : AsyncWrapperBase
     {
+        private static HashSet<WalletType> _registeredWalletTypes = new HashSet<WalletType>();
+
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
@@ -27,9 +30,11 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// </summary>
         /// <param name="xType">The name of the custom time.</param>
         /// <param name="walletType">The type type.</param>
-        /// <returns></returns>
+        /// <returns>An asynchronous Task with no return value.</returns>
         public static Task RegisterWalletTypeAsync(string xType, WalletType walletType)
         {
+            _registeredWalletTypes.Add(walletType);
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 

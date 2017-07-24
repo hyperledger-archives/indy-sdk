@@ -91,7 +91,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             return ErrorCode.Success;
         }
 
-        protected override WalletBase GetWalletByHandle(int handle)
+        protected override CustomWalletBase GetWalletByHandle(int handle)
         {
             return _walletsByHandle[handle];
         }
