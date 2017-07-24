@@ -26,6 +26,8 @@ async def prepare_common_wallet(wallet_handle):
         wallet_handle, claim_req, json.dumps(get_gvt_claim_json()), -1, -1)
     await anoncreds.prover_store_claim(wallet_handle, claim_json)
 
+    return claim_def_json
+
 
 def get_claim_offer(issuer_did, schema_seq_no):
     return {"issuer_did": issuer_did, "schema_seq_no": schema_seq_no}
