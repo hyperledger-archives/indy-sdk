@@ -10,10 +10,8 @@ import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.*;
-import org.junit.rules.Timeout;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
 
@@ -22,6 +20,8 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 	private Pool pool;
 	private Wallet wallet;
 	private String walletName = "ledgerWallet";
+	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
+	private String dest = "Th7MpTaRZVRYnPiabds81Y";
 
 	@Before
 	public void openPool() throws Exception {
@@ -42,8 +42,6 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildNodeRequestWorks() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String dest = "Th7MpTaRZVRYnPiabds81Y";
 		String data = "{\"node_ip\":\"10.0.0.100\"," +
 				"\"node_port\":910," +
 				"\"client_ip\":\"10.0.0.100\"," +
@@ -92,8 +90,6 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String dest = "Th7MpTaRZVRYnPiabds81Y";
 		String data = "{\"node_ip\":\"10.0.0.100\"," +
 				"\"node_port\":910," +
 				"\"client_ip\":\"10.0.0.100\"," +
@@ -110,8 +106,6 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String dest = "Th7MpTaRZVRYnPiabds81Y";
 		String data = "{\"node_ip\":\"10.0.0.100\"," +
 				"\"node_port\":910," +
 				"\"client_ip\":\"10.0.0.100\"," +
@@ -128,7 +122,7 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
@@ -149,7 +143,7 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 	public void testSendNodeRequestWorksForNewSteward() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = didResult.getDid();

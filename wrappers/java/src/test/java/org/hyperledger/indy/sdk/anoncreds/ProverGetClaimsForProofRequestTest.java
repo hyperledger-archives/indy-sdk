@@ -29,7 +29,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(claimsForAttribute1.length(), 1);
+		assertEquals(1, claimsForAttribute1.length());
 	}
 
 	@Test
@@ -49,7 +49,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(claimsForAttribute1.length(), 0);
+		assertEquals(0, claimsForAttribute1.length());
 	}
 
 	@Test
@@ -69,7 +69,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		assertEquals(claimsForPredicate.length(), 1);
+		assertEquals(1, claimsForPredicate.length());
 	}
 
 	@Test
@@ -89,7 +89,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		assertEquals(claimsForPredicate.length(), 0);
+		assertEquals(0, claimsForPredicate.length());
 	}
 
 	@Test
@@ -114,16 +114,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(claimsForAttribute1.length(), 1);
+		assertEquals(1, claimsForAttribute1.length());
 
 		JSONArray claimsForAttribute2 = claims.getJSONObject("attrs").getJSONArray("attr2_uuid");
-		assertEquals(claimsForAttribute2.length(), 1);
+		assertEquals(1, claimsForAttribute2.length());
 
 		JSONArray claimsForPredicate1 = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		assertEquals(claimsForPredicate1.length(), 1);
+		assertEquals(1, claimsForPredicate1.length());
 
 		JSONArray claimsForPredicate2 = claims.getJSONObject("predicates").getJSONArray("predicate2_uuid");
-		assertEquals(claimsForPredicate2.length(), 1);
+		assertEquals(1, claimsForPredicate2.length());
 	}
 
 	@Test
@@ -142,8 +142,8 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		assertEquals(claims.getJSONObject("attrs").length(), 0);
-		assertEquals(claims.getJSONObject("predicates").length(), 0);
+		assertEquals(0, claims.getJSONObject("attrs").length());
+		assertEquals(0, claims.getJSONObject("predicates").length());
 	}
 
 	@Test
@@ -163,7 +163,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(claimsForAttribute1.length(), 0);
+		assertEquals(0, claimsForAttribute1.length());
 	}
 
 	@Test
@@ -183,7 +183,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(claimsForAttribute1.length(), 1);
+		assertEquals(1, claimsForAttribute1.length());
 	}
 
 	@Test
@@ -203,7 +203,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		JSONObject claims = new JSONObject(claimsJson);
 
 		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		assertEquals(claimsForPredicate.length(), 1);
+		assertEquals(1, claimsForPredicate.length());
 	}
 
 	@Test

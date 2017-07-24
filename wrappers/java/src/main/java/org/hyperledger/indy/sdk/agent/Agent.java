@@ -361,7 +361,7 @@ public class Agent extends IndyJava.API {
 
 		listeners.remove(listenerHandle);
 
-		int result = LibIndy.api.indy_agent_close_connection(
+		int result = LibIndy.api.indy_agent_close_listener(
 				commandHandle,
 				listenerHandle,
 				agentCloseListenerCb);

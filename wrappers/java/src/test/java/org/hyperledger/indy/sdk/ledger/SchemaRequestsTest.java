@@ -11,10 +11,8 @@ import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import org.junit.*;
-import org.junit.rules.Timeout;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
@@ -26,6 +24,7 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 	private Pool pool;
 	private Wallet wallet;
 	private String walletName = "ledgerWallet";
+	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
 
 	@Before
 	public void openPool() throws Exception {
@@ -46,7 +45,6 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildSchemaRequestWorks() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
 		String data = "{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]}";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
@@ -63,7 +61,6 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildGetSchemaRequestWorks() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
 		String data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
@@ -85,7 +82,7 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
@@ -104,7 +101,7 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 	public void testSchemaRequestsWorks() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
@@ -129,7 +126,7 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 	public void testGetSchemaRequestsWorksForUnknownSchema() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
@@ -149,7 +146,6 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
 		String data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
 		Ledger.buildSchemaRequest(identifier, data).get();

@@ -19,17 +19,19 @@ import java.util.concurrent.ExecutionException;
 public class CreateMyDidTest extends IndyIntegrationTest {
 
 	private Wallet wallet;
+	private String walletName = "signusWallet";
 
 	@Before
 	public void createWallet() throws Exception {
-		Wallet.createWallet("default", "signusWallet", "default", null, null).get();
-		this.wallet = Wallet.openWallet("signusWallet", null, null).get();
+
+		Wallet.createWallet("default", walletName, "default", null, null).get();
+		this.wallet = Wallet.openWallet(walletName, null, null).get();
 	}
 
 	@After
 	public void deleteWallet() throws Exception {
 		this.wallet.closeWallet().get();
-		Wallet.deleteWallet("signusWallet", null).get();
+		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	private String seed = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -59,7 +61,8 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 		assertNotNull(result);
 
-		assertEquals("NcYxiDXkpYi6ov5FcYDi1e", result.getDid());
+		String expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
+		assertEquals(expectedDid, result.getDid());
 		assertEquals(expectedVerkey, result.getVerkey());
 	}
 

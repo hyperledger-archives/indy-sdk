@@ -19,14 +19,15 @@ public class SignTest extends IndyIntegrationTest {
 
 	private Wallet wallet;
 	private String did;
+	private String walletName = "signusWallet";
 
 	@Before
 	public void createWalletWhitDid() throws Exception {
-		Wallet.createWallet("default", "signusWallet", "default", null, null).get();
-		this.wallet = Wallet.openWallet("signusWallet", null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, null).get();
+		this.wallet = Wallet.openWallet(walletName, null, null).get();
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 		did = result.getDid();
@@ -35,7 +36,7 @@ public class SignTest extends IndyIntegrationTest {
 	@After
 	public void deleteWallet() throws Exception {
 		this.wallet.closeWallet().get();
-		Wallet.deleteWallet("signusWallet", null).get();
+		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	@Test
