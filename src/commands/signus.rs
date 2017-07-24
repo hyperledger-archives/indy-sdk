@@ -46,6 +46,7 @@ pub enum SignusCommand {
     VerifySignature(
         i32, // wallet handle
         i32, // pool_handle,
+        String, // my_did
         String, // did
         String, // signed message
         Box<Fn(Result<bool, IndyError>) + Send>),
@@ -123,9 +124,9 @@ impl SignusCommandExecutor {
                 info!(target: "signus_command_executor", "Sign command received");
                 self.sign(wallet_handle, &did, &msg, cb);
             }
-            SignusCommand::VerifySignature(wallet_handle, pool_handle, did, signed_msg, cb) => {
+            SignusCommand::VerifySignature(wallet_handle, pool_handle, my_did, did, signed_msg, cb) => {
                 info!(target: "signus_command_executor", "VerifySignature command received");
-                self.verify_signature(wallet_handle, pool_handle, &did, &signed_msg, cb);
+                self.verify_signature(wallet_handle, pool_handle, &my_did, &did, &signed_msg, cb);
             }
             SignusCommand::VerifySignatureGetNymAck(wallet_handle, signed_msg, cb_id, result) => {
                 info!(target: "signus_command_executor", "VerifySignatureGetNymAck command received");
@@ -259,12 +260,13 @@ impl SignusCommandExecutor {
     fn verify_signature(&self,
                         wallet_handle: i32,
                         pool_handle: i32,
+                        my_did: &str,
                         did: &str,
                         signed_msg: &str,
                         cb: Box<Fn(Result<bool, IndyError>) + Send>) {
         let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, IndyError>)>| {
             let signed_msg = signed_msg.to_string();
-            let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
+            let get_nym_request = self.ledger_service.build_get_nym_request(my_did, did);
             if get_nym_request.is_err() {
                 return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
             }
@@ -375,10 +377,14 @@ impl SignusCommandExecutor {
                did: &str,
                msg: &str,
                cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let load_public_key_from_ledger = move |cb| {
+        let load_public_key_from_ledger = move |cb: Box<Fn(Result<(String, String), IndyError>)>| {
             let msg = msg.to_string();
             let my_did = my_did.to_string();
-            let get_nym_request = "".to_string(); //TODO add build_nym_request function in ledger service
+            let get_nym_request = self.ledger_service.build_get_nym_request(&my_did, did);
+            if get_nym_request.is_err() {
+                return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
+            }
+            let get_nym_request = get_nym_request.unwrap();
             let cb_id: i32 = SequenceUtils::get_next_id();
 
             match self.encrypt_callbacks.try_borrow_mut() {
