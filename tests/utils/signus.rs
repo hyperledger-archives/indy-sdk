@@ -30,10 +30,10 @@ impl SignusUtils {
 
         let err =
             indy_sign(command_handle,
-                        wallet_handle,
-                        their_did.as_ptr(),
-                        msg.as_ptr(),
-                        cb);
+                      wallet_handle,
+                      their_did.as_ptr(),
+                      msg.as_ptr(),
+                      cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -61,9 +61,9 @@ impl SignusUtils {
 
         let err =
             indy_create_and_store_my_did(create_and_store_my_did_command_handle,
-                                           wallet_handle,
-                                           my_did_json.as_ptr(),
-                                           create_and_store_my_did_callback);
+                                         wallet_handle,
+                                         my_did_json.as_ptr(),
+                                         create_and_store_my_did_callback);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -88,9 +88,9 @@ impl SignusUtils {
 
         let err =
             indy_create_and_store_my_did(command_handle,
-                                           wallet_handle,
-                                           my_did_json.as_ptr(),
-                                           cb);
+                                         wallet_handle,
+                                         my_did_json.as_ptr(),
+                                         cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -119,9 +119,9 @@ impl SignusUtils {
 
         let err =
             indy_store_their_did(command_handle,
-                                   wallet_handle,
-                                   identity_json.as_ptr(),
-                                   cb);
+                                 wallet_handle,
+                                 identity_json.as_ptr(),
+                                 cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -152,9 +152,9 @@ impl SignusUtils {
 
         let err =
             indy_store_their_did(store_their_did_command_handle,
-                                   wallet_handle,
-                                   their_identity_json.as_ptr(),
-                                   store_their_did_callback);
+                                 wallet_handle,
+                                 their_identity_json.as_ptr(),
+                                 store_their_did_callback);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -180,10 +180,10 @@ impl SignusUtils {
 
         let err =
             indy_replace_keys(command_handle,
-                                wallet_handle,
-                                did.as_ptr(),
-                                identity_json.as_ptr(),
-                                cb);
+                              wallet_handle,
+                              did.as_ptr(),
+                              identity_json.as_ptr(),
+                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -198,7 +198,7 @@ impl SignusUtils {
         Ok((my_verkey, my_pk))
     }
 
-    pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, signed_msg: &str) -> Result<bool, ErrorCode> {
+    pub fn verify(wallet_handle: i32, pool_handle: i32, my_did: &str, did: &str, signed_msg: &str) -> Result<bool, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, valid| {
@@ -207,16 +207,18 @@ impl SignusUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_verify_signature_cb(cb);
 
+        let my_did = CString::new(my_did).unwrap();
         let did = CString::new(did).unwrap();
         let signed_msg = CString::new(signed_msg).unwrap();
 
         let err =
             indy_verify_signature(command_handle,
-                                    wallet_handle,
-                                    pool_handle,
-                                    did.as_ptr(),
-                                    signed_msg.as_ptr(),
-                                    cb);
+                                  wallet_handle,
+                                  pool_handle,
+                                  my_did.as_ptr(),
+                                  did.as_ptr(),
+                                  signed_msg.as_ptr(),
+                                  cb);
 
         if err != ErrorCode::Success {
             return Err(err);

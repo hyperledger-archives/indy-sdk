@@ -1062,6 +1062,7 @@ fn signus_demo_works() {
         indy_verify_signature(verify_command_handle,
                               my_wallet_handle,
                               1,
+                              CString::new(my_did).unwrap().as_ptr(),
                               CString::new(their_did).unwrap().as_ptr(),
                               CString::new(signed_msg).unwrap().as_ptr(),
                               verify_callback);

@@ -210,6 +210,7 @@ pub  extern fn indy_sign(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// pool_handle: pool handle.
+/// my_did: My did
 /// did: DID that signed the message
 /// signed_msg: message
 /// cb: Callback that takes command result as parameter.
@@ -226,10 +227,12 @@ pub  extern fn indy_sign(command_handle: i32,
 pub  extern fn indy_verify_signature(command_handle: i32,
                                        wallet_handle: i32,
                                        pool_handle: i32,
+                                       my_did: *const c_char,
                                        did: *const c_char,
                                        signed_msg: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             valid: bool)>) -> ErrorCode {
+    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(signed_msg, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -238,6 +241,7 @@ pub  extern fn indy_verify_signature(command_handle: i32,
         .send(Command::Signus(SignusCommand::VerifySignature(
             wallet_handle,
             pool_handle,
+            my_did,
             did,
             signed_msg,
             Box::new(move |result| {
