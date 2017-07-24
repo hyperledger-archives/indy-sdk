@@ -7,6 +7,7 @@ import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -34,6 +35,7 @@ public class SignusDemoTest extends IndyIntegrationTest {
 		//4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, "{}").get();
 		assertNotNull(createMyDidResult);
+		String myDid = createMyDidResult.getDid();
 
 		//5. Create Their Did
 		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(theirWallet, "{}").get();
@@ -59,7 +61,7 @@ public class SignusDemoTest extends IndyIntegrationTest {
 		assertNotNull(signedMessage);
 
 		// 8. I verify message
-		Boolean valid = Signus.verifySignature(myWallet, pool, theirDid, signedMessage).get();
+		Boolean valid = Signus.verifySignature(myWallet, pool, myDid, theirDid, signedMessage).get();
 		assertTrue(valid);
 
 		// 9. Close and delete My Wallet

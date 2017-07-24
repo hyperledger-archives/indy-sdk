@@ -1,5 +1,8 @@
 package org.hyperledger.indy.sdk.wallet;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.hyperledger.indy.sdk.IndyException;
@@ -100,30 +103,44 @@ public class Wallet extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
+	private static final List<String> REGISERED_WALLETS = Collections.synchronizedList(new ArrayList<String>());
+
 	public static CompletableFuture<Void> registerWalletType(
 			String xtype,
-			WalletType walletType) throws IndyException {
+			WalletType walletType,
+			Boolean forceCreate) throws IndyException, InterruptedException {
 
-		CompletableFuture<Void> future = new CompletableFuture<Void> ();
-		int commandHandle = addFuture(future);
+		synchronized (REGISERED_WALLETS) {
+			CompletableFuture<Void> future = new CompletableFuture<Void>();
+			int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_register_wallet_type(
-				commandHandle, 
-				xtype, 
-				walletType.getCreateCb(), 
-				walletType.getOpenCb(), 
-				walletType.getSetCb(), 
-				walletType.getGetCb(), 
-				walletType.getGetNotExpiredCb(), 
-				walletType.getListCb(), 
-				walletType.getCloseCb(), 
-				walletType.getDeleteCb(), 
-				walletType.getFreeCb(), 
-				registerWalletTypeCb);
 
-		checkResult(result);
+			if (REGISERED_WALLETS.contains(xtype) && ! forceCreate) {
+				future.complete(null);
+				return future;
+			}
 
-		return future;
+
+			REGISERED_WALLETS.add(xtype);
+
+			int result = LibIndy.api.indy_register_wallet_type(
+					commandHandle,
+					xtype,
+					walletType.getCreateCb(),
+					walletType.getOpenCb(),
+					walletType.getSetCb(),
+					walletType.getGetCb(),
+					walletType.getGetNotExpiredCb(),
+					walletType.getListCb(),
+					walletType.getCloseCb(),
+					walletType.getDeleteCb(),
+					walletType.getFreeCb(),
+					registerWalletTypeCb);
+
+			checkResult(result);
+
+			return future;
+		}
 	}
 
 	public static CompletableFuture<Void> createWallet(

@@ -49,13 +49,14 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		assertNotNull(claimDef);
 
 		JSONObject claimDefObject = new JSONObject(claimDef);
+		JSONObject primary = claimDefObject.getJSONObject("data").getJSONObject("primary");
 
-		assertEquals(claimDefObject.getJSONObject("data").getJSONObject("primary").getJSONObject("r").length(), 4);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("n").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("s").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("z").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("rms").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("rctxt").length() > 0);
+		assertEquals(4, primary.getJSONObject("r").length());
+		assertTrue(primary.getString("n").length() > 0);
+		assertTrue(primary.getString("s").length() > 0);
+		assertTrue(primary.getString("z").length() > 0);
+		assertTrue(primary.getString("rms").length() > 0);
+		assertTrue(primary.getString("rctxt").length() > 0);
 	}
 
 	@Test
@@ -94,13 +95,14 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		assertNotNull(claimDef);
 
 		JSONObject claimDefObject = new JSONObject(claimDef);
+		JSONObject primary = claimDefObject.getJSONObject("data").getJSONObject("primary");
 
-		assertEquals(claimDefObject.getJSONObject("data").getJSONObject("primary").getJSONObject("r").length(), 4);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("n").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("s").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("z").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("rms").length() > 0);
-		assertTrue(claimDefObject.getJSONObject("data").getJSONObject("primary").getString("rctxt").length() > 0);
+		assertEquals(4, primary.getJSONObject("r").length());
+		assertTrue(primary.getString("n").length() > 0);
+		assertTrue(primary.getString("s").length() > 0);
+		assertTrue(primary.getString("z").length() > 0);
+		assertTrue(primary.getString("rms").length() > 0);
+		assertTrue(primary.getString("rctxt").length() > 0);
 	}
 
 	@Test

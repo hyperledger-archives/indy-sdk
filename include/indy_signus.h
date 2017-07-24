@@ -147,6 +147,7 @@ extern "C" {
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
     /// pool_handle: pool handle.
+    /// my_did: My did
     /// did: DID that signed the message
     /// signature: a signature to be verified
     /// cb: Callback that takes command result as parameter.
@@ -164,6 +165,7 @@ extern "C" {
                                                   indy_handle_t wallet_handle,
                                                   indy_handle_t pool_handle,
                                                   
+                                                  const char *    my_did,
                                                   const char *    did,
                                                   const char *    signed_msg,
 

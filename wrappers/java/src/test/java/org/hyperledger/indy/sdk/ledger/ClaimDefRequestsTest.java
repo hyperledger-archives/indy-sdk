@@ -3,7 +3,6 @@ package org.hyperledger.indy.sdk.ledger;
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
@@ -64,13 +63,13 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 			"                }\n" +
 			"            }\n" +
 			"        }";
-	String signatureType = "CL";
+	private String signatureType = "CL";
+	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
+	private String signature_type = "CL";
 
 	@Test
 	public void testBuildClaimDefRequestWorks() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String signature_type = "CL";
 		int schema_seq_no = 1;
 		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}";
 
@@ -90,9 +89,6 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildGetClaimDefRequestWorks() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String origin = "Th7MpTaRZVRYnPiabds81Y";
-		String signature_type = "CL";
 		int ref = 1;
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
@@ -101,9 +97,9 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 				"\"ref\":%d," +
 				"\"signature_type\":\"%s\"," +
 				"\"origin\":\"%s\"" +
-				"}", identifier, ref, signature_type, origin);
+				"}", identifier, ref, signature_type, identifier);
 
-		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(identifier, ref, signature_type, origin).get();
+		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(identifier, ref, signature_type, identifier).get();
 
 		assertTrue(getClaimDefRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -114,8 +110,6 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String signature_type = "CL";
 		int schema_seq_no = 1;
 		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
 
@@ -126,7 +120,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 	public void testClaimDefRequestsWorks() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -187,7 +181,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();

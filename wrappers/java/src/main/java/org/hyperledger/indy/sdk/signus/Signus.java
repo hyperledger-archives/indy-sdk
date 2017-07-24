@@ -207,6 +207,7 @@ public class Signus extends IndyJava.API {
 	public static CompletableFuture<Boolean> verifySignature(
 			Wallet wallet,
 			Pool pool,
+			String myDid,
 			String did,
 			String signedMsg) throws IndyException {
 
@@ -220,6 +221,7 @@ public class Signus extends IndyJava.API {
 				commandHandle, 
 				walletHandle, 
 				poolHandle,
+				myDid,
 				did,
 				signedMsg,
 				verifySignatureCb);
