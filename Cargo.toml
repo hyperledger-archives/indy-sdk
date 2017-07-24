@@ -1,5 +1,5 @@
 [package]
-name = "indy-sdk"
+name = "indy"
 version = "0.1.1"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
