@@ -14,11 +14,14 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 
 
 	private Wallet wallet;
+	private String walletName = "signusWallet";
+	private String did = "8wZcEriaNLNKtteJvx7f8i";
+	private String verkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
 
 	@Before
 	public void createWallet() throws Exception {
-		Wallet.createWallet("default", "signusWallet", "default", null, null).get();
-		this.wallet = Wallet.openWallet("signusWallet", null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, null).get();
+		this.wallet = Wallet.openWallet(walletName, null, null).get();
 
 	}
 
@@ -26,12 +29,12 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 	public void deleteWallet() throws Exception {
 
 		this.wallet.closeWallet().get();
-		Wallet.deleteWallet("signusWallet", null).get();
+		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	@Test
 	public void testStoreTheirDidWorks() throws Exception {
-		Signus.storeTheirDid(this.wallet, "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\"}").get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\"}", did)).get();
 	}
 
 	@Test
@@ -44,8 +47,7 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 
 	@Test
 	public void testStoreTheirDidWorksWithVerkey() throws Exception {
-		Signus.storeTheirDid(this.wallet, "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
-				"\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"}").get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\"}", did, verkey)).get();
 	}
 
 	@Test
@@ -53,13 +55,12 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		Signus.storeTheirDid(this.wallet, "{\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"}").get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"verkey\":\"%s\"}", verkey)).get();
 	}
 
 	@Test
 	public void testStoreTheirDidWorksForCorrectCryptoType() throws Exception {
-		Signus.storeTheirDid(this.wallet, "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
-				"\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\", \"crypto_type\": \"ed25519\"}").get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"ed25519\"}", did, verkey)).get();
 	}
 
 	@Test
@@ -67,7 +68,6 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.SignusUnknownCryptoError));
 
-		Signus.storeTheirDid(this.wallet, "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
-				"\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\", \"crypto_type\": \"some_type\"}").get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"some_type\"}", did, verkey)).get();
 	}
 }

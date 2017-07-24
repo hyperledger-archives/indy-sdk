@@ -30,6 +30,7 @@ public class VerifyTest extends IndyIntegrationTest {
 	private String trusteeVerkey;
 	private String identityJson;
 	private String newDid;
+	private String walletName = "signusWallet";
 
 	@Before
 	public void createWalletWithDid() throws Exception {
@@ -38,11 +39,11 @@ public class VerifyTest extends IndyIntegrationTest {
 		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
 		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
-		Wallet.createWallet(poolName, "signusWallet", "default", null, null).get();
-		wallet = Wallet.openWallet("signusWallet", null, null).get();
+		Wallet.createWallet(poolName, walletName, "default", null, null).get();
+		wallet = Wallet.openWallet(walletName, null, null).get();
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, false);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, false);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson.toJson()).get();
 		assertNotNull(result);
@@ -54,7 +55,7 @@ public class VerifyTest extends IndyIntegrationTest {
 	@After
 	public void deleteWallet() throws Exception {
 		wallet.closeWallet().get();
-		Wallet.deleteWallet("signusWallet", null).get();
+		Wallet.deleteWallet(walletName, null).get();
 		pool.closePoolLedger().get();
 	}
 
@@ -93,8 +94,7 @@ public class VerifyTest extends IndyIntegrationTest {
 	@Test
 	public void testVerifyWorksForGetVerkeyFromLedger() throws Exception {
 		createNewNymWithDidInLedger();
-		identityJson = String.format("{\"did\":\"%s\"}", newDid);
-		Signus.storeTheirDid(wallet, identityJson).get();
+		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", newDid)).get();
 
 		String msg = "{\"reqId\":1496822211362017764,\n" +
 				"\"signature\":\"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai\"}";
