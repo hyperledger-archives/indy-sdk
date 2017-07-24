@@ -646,8 +646,7 @@ async def prover_create_proof(wallet_handle: int,
     return res
 
 
-async def verifier_verify_proof(wallet_handle: int,
-                                proof_request_json: str,
+async def verifier_verify_proof(proof_request_json: str,
                                 proof_json: str,
                                 schemas_json: str,
                                 claim_defs_jsons: str,
@@ -709,9 +708,8 @@ async def verifier_verify_proof(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("verifier_verify_proof: >>> wallet_handle: %r, proof_request_json: %r,"
+    logger.debug("verifier_verify_proof: >>> proof_request_json: %r,"
                  " proof_json: %r, schemas_json: %r, claim_defs_jsons: %r, revoc_regs_json: %r",
-                 wallet_handle,
                  proof_request_json,
                  proof_json,
                  schemas_json,
@@ -720,9 +718,8 @@ async def verifier_verify_proof(wallet_handle: int,
 
     if not hasattr(verifier_verify_proof, "cb"):
         logger.debug("verifier_verify_proof: Creating callback")
-        verifier_verify_proof.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+        verifier_verify_proof.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_bool))
 
-    c_wallet_handle = c_int32(wallet_handle)
     c_proof_request_json = c_char_p(proof_request_json.encode('utf-8'))
     c_proof_json = c_char_p(proof_json.encode('utf-8'))
     c_schemas_json = c_char_p(schemas_json.encode('utf-8'))
@@ -730,7 +727,6 @@ async def verifier_verify_proof(wallet_handle: int,
     c_revoc_regs_json = c_char_p(revoc_regs_json.encode('utf-8'))
 
     res = await do_call('indy_verifier_verify_proof',
-                        c_wallet_handle,
                         c_proof_request_json,
                         c_proof_json,
                         c_schemas_json,
