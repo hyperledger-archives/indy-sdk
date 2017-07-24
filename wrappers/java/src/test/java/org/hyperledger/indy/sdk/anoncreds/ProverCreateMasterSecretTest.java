@@ -35,17 +35,20 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverCreateMasterSecretWorksForDuplicate() throws Exception {
 
-		Anoncreds.proverCreateMasterSecret(wallet, "master_secret_name").get();
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.AnoncredsMasterSecretDuplicateNameError));
+
+		String masterSecretName = "master_secret_name_duplicate";
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 	}
 
 	@Test
-	public void testProverStoreClaimOfferWorksForInvalidIssuerDid() throws Exception {
+	public void testProverCreateMasterSecretWorksForEmptyName() throws Exception {
 
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam3));
 
-		String claimOffer = "{\"issuer_did\":\"invalid_base58_string\",\"schema_seq_no\":1}";
+		Anoncreds.proverCreateMasterSecret(wallet, "").get();
 
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
 	}
 }

@@ -15,7 +15,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 
 		String proverWalletName = "proverWallet";
 		Wallet.createWallet("default", proverWalletName, "default", null, null).get();
-		Wallet proverWallet = proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
+		Wallet proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
 
 		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretName).get();
 

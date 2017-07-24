@@ -73,7 +73,7 @@ public class WalletTypeInmem extends WalletType {
 		byte[] bytes = Native.toByteArray(value);
 		Pointer pointer = new Memory(bytes.length + 1);
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte)0);
+		pointer.setByte(bytes.length, (byte) 0);
 		valuePtr.setPointer(pointer);
 		return ErrorCode.Success;
 	}
@@ -89,7 +89,7 @@ public class WalletTypeInmem extends WalletType {
 		byte[] bytes = Native.toByteArray(value);
 		Pointer pointer = new Memory(bytes.length + 1);
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte)0);
+		pointer.setByte(bytes.length, (byte) 0);
 		valuePtr.setPointer(pointer);
 		return ErrorCode.Success;
 	}
@@ -118,7 +118,7 @@ public class WalletTypeInmem extends WalletType {
 		byte[] bytes = Native.toByteArray(builder.toString());
 		Pointer pointer = new Memory(bytes.length + 1);
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte)0);
+		pointer.setByte(bytes.length, (byte) 0);
 		valuesJsonPtr.setPointer(pointer);
 		return ErrorCode.Success;
 	}
@@ -166,6 +166,11 @@ public class WalletTypeInmem extends WalletType {
 	private int newHandle() {
 
 		return Integer.valueOf(atomicInteger.incrementAndGet());
+	}
+
+	public void clear() {
+		this.walletsByName.clear();
+		this.walletsByHandle.clear();
 	}
 
 	private class WalletInmem {

@@ -42,7 +42,7 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 
 		// 5. Create Did from Trustee1 seed
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(trusteeWallet, theirDidJson.toJson()).get();
 		assertNotNull(createTheirDidResult);
