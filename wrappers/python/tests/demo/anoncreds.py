@@ -48,7 +48,7 @@ async def test_anoncreds_demo_works():
     # 4. Prover create Claim Request
     prover_did = 'BzfFCYk'
     claim_offer = {
-        'issuer_did': 'NcYxiDXkpYi6ov5FcYDi1e',
+        'issuer_did': issuer_did,
         'schema_seq_no': schema_seq_no
     }
 
@@ -84,9 +84,9 @@ async def test_anoncreds_demo_works():
     proof_req_json = json.dumps(proof_req)
 
     claim_for_proof_json = await anoncreds.prover_get_claims_for_proof_req(wallet_handle, proof_req_json)
-    claim_for_proof_json = json.loads(claim_for_proof_json)
+    claims_for_proof = json.loads(claim_for_proof_json)
 
-    claim_for_attr1 = claim_for_proof_json['attrs']['attr1_uuid']
+    claim_for_attr1 = claims_for_proof['attrs']['attr1_uuid']
     assert 1 == len(claim_for_attr1)
 
     claim_uuid = claim_for_attr1[0]['claim_uuid']

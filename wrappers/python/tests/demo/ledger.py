@@ -32,7 +32,7 @@ async def test_ledger_demo_works():
     await pool.create_pool_ledger_config(pool_name, pool_config)
 
     # 2. Open pool ledger
-    pool_handle = await open_pool_ledger(pool_name, "")
+    pool_handle = await open_pool_ledger(pool_name, None)
 
     # 3. Create My Wallet and Get Wallet Handle
     await wallet.create_wallet(pool_name, my_wallet_name, None, None, None)
