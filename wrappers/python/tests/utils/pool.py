@@ -30,8 +30,12 @@ def create_genesis_txn_file(file_name, predefined_data=None):
     return path
 
 
-async def create_and_open_pool_ledger(name):
+async def create_and_open_pool_ledger(name="pool_1"):
     await create_pool_ledger_config(name)
     pool_handle = await pool.open_pool_ledger(name, "")
     assert pool_handle is not None
     return pool_handle
+
+
+async def close_pool_ledger(pool_handle):
+    await pool.close_pool_ledger(pool_handle)

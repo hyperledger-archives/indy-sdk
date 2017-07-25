@@ -4,11 +4,14 @@ import pytest
 
 from indy import signus, agent
 
-endpoint = "127.0.0.1:9701"
+
+@pytest.fixture
+async def endpoint():
+    return "127.0.0.1:9701"
 
 
 @pytest.fixture
-async def wallet_with_identity(wallet_handle):
+async def wallet_with_identity(wallet_handle, endpoint):
     did, verkey, pk = await signus.create_and_store_my_did(wallet_handle, "{}")
     await signus.store_their_did(wallet_handle,
                                  json.dumps({
@@ -22,7 +25,7 @@ async def wallet_with_identity(wallet_handle):
 
 
 @pytest.fixture
-async def wallet_with_identities(wallet_with_identity):
+async def wallet_with_identities(wallet_with_identity, endpoint):
     wallet_handle, did1 = wallet_with_identity
 
     did2, verkey2, pk2 = await signus.create_and_store_my_did(wallet_handle, "{}")
@@ -38,7 +41,7 @@ async def wallet_with_identities(wallet_with_identity):
 
 
 @pytest.fixture
-async def listener_handle():
+async def listener_handle(endpoint):
     listener_handle = await agent.agent_listen(endpoint)
     assert type(listener_handle) is int
     yield listener_handle
