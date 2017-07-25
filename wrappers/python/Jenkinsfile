@@ -68,16 +68,15 @@ def pythonTestUbuntu() {
         }
     }
     finally {
-        echo 'Ubuntu Python Test: Cleanup'
+        echo "Ubuntu Python Test: Cleanup"
         try {
             sh "docker network inspect ${network_name}"
-        } catch (ignore) {
+        } catch (err) {
+            echo "Ubuntu Python Tests: error while inspect network ${network_name} - ${err}"
         }
         try {
-            if (poolInst) {
-                echo 'Ubuntu Python Test: stop pool'
-                poolInst.stop()
-            }
+            echo "Ubuntu Python Test: stop pool"
+            poolInst.stop()
         } catch (err) {
             echo "Ubuntu Python Tests: error while stop pool ${err}"
         }
