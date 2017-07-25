@@ -75,10 +75,15 @@ async def test_agent_demo_works():
 
     # 10. Initiate connection from sender to listener
     connection_handle = await agent.agent_connect(pool_handle, sender_wallet_handle, sender_did, listener_did)
+    event = await agent.agent_wait_for_event([listener_handle])
+    inc_con_handle = event.connection_handle
 
     # 11. Send test message from sender to listener
     message = 'msg_from_sender_to_listener'
     await agent.agent_send(connection_handle, message)
+
+    message_event = await agent.agent_wait_for_event([listener_handle, inc_con_handle])  # type: agent.MessageEvent
+    assert message_event.message == message
 
     # 12. Close connection, listener, wallets, pool
     await agent.agent_close_listener(listener_handle)
