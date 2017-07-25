@@ -211,8 +211,7 @@ pub  extern fn indy_sign(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// pool_handle: pool handle.
 /// did: DID that signed the message
-/// msg: message
-/// signature: a signature to be verified
+/// signed_msg: message
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -260,6 +259,7 @@ pub  extern fn indy_verify_signature(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// pool_handle: pool handle.
 /// my_did: encrypting DID
 /// did: encrypting DID
 /// msg: a message to be signed

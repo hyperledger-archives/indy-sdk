@@ -201,7 +201,6 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// issuer_did: a DID of the issuer signing transactions to the Ledger
 /// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
@@ -633,6 +632,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///         "claim3_uuid_in_wallet": <schema3>,
 ///     }
 ///
+/// master_secret_name: the name of the master secret stored in the wallet
 /// claim_def_jsons: all claim definition jsons participating in the proof request
 ///     {
 ///         "claim1_uuid_in_wallet": <claim_def1>,
