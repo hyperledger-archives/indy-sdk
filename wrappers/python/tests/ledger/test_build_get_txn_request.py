@@ -26,5 +26,5 @@ async def test_build_get_txn_request_works():
         }
     }
 
-    response = json.loads((await ledger.build_get_txn_request(identifier, data)).decode())
+    response = json.loads(await ledger.build_get_txn_request(identifier, data))
     assert expected_response.items() <= response.items()

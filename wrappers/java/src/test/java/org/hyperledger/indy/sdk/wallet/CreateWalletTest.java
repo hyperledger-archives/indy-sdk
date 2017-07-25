@@ -17,6 +17,16 @@ public class CreateWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
+	public void testCreateWalletWorksForPlugged() throws Exception {
+		WalletTypeInmem.getInstance().clear();
+
+		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance(), false).get();
+		Wallet.createWallet("default", "createWalletWorks", "default", null, null).get();
+
+		WalletTypeInmem.getInstance().clear();
+	}
+
+	@Test
 	public void testCreateWalletWorksForEmptyType() throws Exception {
 
 		Wallet.createWallet("default", "createWalletWorks", null, null, null).get();
@@ -51,7 +61,11 @@ public class CreateWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletAlreadyExistsError));
 
-		Wallet.createWallet("default", "createWalletWorks", "default", null, null).get();
-		Wallet.createWallet("default", "createWalletWorks", "default", null, null).get();
+		String poolName = "default";
+		String walletName = "deleteWalletWorks";
+		String type = "default";
+
+		Wallet.createWallet(poolName, walletName, type, null, null).get();
+		Wallet.createWallet(poolName, walletName, type, null, null).get();
 	}
 }

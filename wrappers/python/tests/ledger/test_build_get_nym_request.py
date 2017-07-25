@@ -28,5 +28,5 @@ async def test_build_get_nym_request_works():
         }
     }
 
-    response = json.loads((await ledger.build_get_nym_request(identifier, destination)).decode())
+    response = json.loads(await ledger.build_get_nym_request(identifier, destination))
     assert expected_response.items() <= response.items()

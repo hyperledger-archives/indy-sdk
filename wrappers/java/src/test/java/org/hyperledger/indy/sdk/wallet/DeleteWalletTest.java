@@ -3,7 +3,9 @@ package org.hyperledger.indy.sdk.wallet;
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
+
 import static org.junit.Assert.assertNotNull;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -15,22 +17,29 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorks() throws Exception {
 
-		Wallet.createWallet("default", "deleteWalletWorks", "default", null, null).get();
-		Wallet.deleteWallet("deleteWalletWorks", null).get();
-		Wallet.createWallet("default", "deleteWalletWorks", "default", null, null).get();
+		String poolName = "default";
+		String walletName = "deleteWalletWorks";
+		String type = "default";
+
+		Wallet.createWallet(poolName, walletName, type, null, null).get();
+		Wallet.deleteWallet(walletName, null).get();
+		Wallet.createWallet(poolName, walletName, type, null, null).get();
 	}
 
 	@Test
 	public void testDeleteWalletWorksForClosed() throws Exception {
 
-		Wallet.createWallet("default", "deleteWalletWorksForClosed", null, null, null).get();
+		String poolName = "default";
+		String walletName = "deleteWalletWorksForOpened";
 
-		Wallet wallet = Wallet.openWallet("deleteWalletWorksForClosed", null, null).get();
+		Wallet.createWallet(poolName, walletName, null, null, null).get();
+
+		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 		assertNotNull(wallet);
 
 		wallet.closeWallet().get();
-		Wallet.deleteWallet("deleteWalletWorksForClosed", null).get();
-		Wallet.createWallet("default", "deleteWalletWorksForClosed", null, null, null).get();
+		Wallet.deleteWallet(walletName, null).get();
+		Wallet.createWallet(poolName, walletName, null, null, null).get();
 	}
 
 	@Test
@@ -40,9 +49,11 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
-		Wallet.createWallet("default", "deleteWalletWorksForOpened", null, null, null).get();
-		Wallet.openWallet("deleteWalletWorksForOpened", null, null).get();
-		Wallet.deleteWallet("deleteWalletWorksForOpened", null).get();
+		String walletName = "deleteWalletWorksForOpened";
+
+		Wallet.createWallet("default", walletName, null, null, null).get();
+		Wallet.openWallet(walletName, null, null).get();
+		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	@Test
@@ -51,15 +62,33 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
-		Wallet.createWallet("default", "deleteWalletWorksForTwice", null, null, null).get();
+		String walletName = "deleteWalletWorksForTwice";
 
-		Wallet wallet = Wallet.openWallet("deleteWalletWorksForTwice", null, null).get();
+		Wallet.createWallet("default", walletName, null, null, null).get();
+
+		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 		assertNotNull(wallet);
 
 		wallet.closeWallet().get();
 
-		Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
-		Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
+		Wallet.deleteWallet(walletName, null).get();
+		Wallet.deleteWallet(walletName, null).get();
+	}
+
+	@Test
+	public void testDeleteWalletWorksForPlugged() throws Exception {
+		WalletTypeInmem.getInstance().clear();
+
+		String type = "inmem";
+		String poolName = "default";
+		String walletName = "wallet";
+
+		Wallet.registerWalletType(type, WalletTypeInmem.getInstance(), false).get();
+		Wallet.createWallet(poolName, walletName, type, null, null).get();
+		Wallet.deleteWallet(walletName, null).get();
+		Wallet.createWallet(poolName, walletName, type, null, null).get();
+
+		WalletTypeInmem.getInstance().clear();
 	}
 
 	@Test

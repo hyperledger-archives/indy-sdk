@@ -22,16 +22,14 @@ public class ReplaceKeysTest extends IndyIntegrationTest {
 	private Wallet wallet;
 	private String did;
 	private String verkey;
+	private String walletName = "signusWallet";
 
 	@Before
 	public void createWalletWithDid() throws Exception {
-		Wallet.createWallet("default", "signusWallet", "default", null, null).get();
-		wallet = Wallet.openWallet("signusWallet", null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, null).get();
+		wallet = Wallet.openWallet(walletName, null, null).get();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, null, null);
-
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, "{}").get();
 
 		did = result.getDid();
 		verkey = result.getVerkey();
@@ -40,7 +38,7 @@ public class ReplaceKeysTest extends IndyIntegrationTest {
 	@After
 	public void deleteWallet() throws Exception {
 		wallet.closeWallet().get();
-		Wallet.deleteWallet("signusWallet", null).get();
+		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	@Test

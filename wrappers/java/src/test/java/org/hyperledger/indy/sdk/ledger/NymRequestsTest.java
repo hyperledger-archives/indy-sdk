@@ -11,10 +11,8 @@ import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import org.junit.*;
-import org.junit.rules.Timeout;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -25,6 +23,8 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	private Pool pool;
 	private Wallet wallet;
 	private String walletName = "ledgerWallet";
+	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
+	private String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
 
 	@Before
 	public void openPool() throws Exception {
@@ -45,9 +45,6 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildNymRequestWorksForOnlyRequiredFields() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-
 		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"1\",\"dest\":\"%s\"}", identifier, dest);
 
 		String nymRequest = Ledger.buildNymRequest(identifier, dest, null, null, null).get();
@@ -58,8 +55,6 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildNymRequestWorksForOnlyOptionalFields() throws Exception {
 
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
 		String verkey = "Anfh2rjAcxkE249DcdsaQl";
 		String role = "STEWARD";
 		String alias = "some_alias";
@@ -80,9 +75,6 @@ public class NymRequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testBuildGetNymRequestWorks() throws Exception {
-
-		String identifier = "Th7MpTaRZVRYnPiabds81Y";
-		String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
 
 		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"105\",\"dest\":\"%s\"}", identifier, dest);
 
@@ -108,7 +100,7 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	public void testSendNymRequestsWorksForOnlyRequiredFields() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -126,7 +118,7 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	public void testSendNymRequestsWorksForOptionalFields() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -147,7 +139,7 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	public void testGetNymRequestWorks() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson.toJson()).get();
 		String did = result.getDid();
@@ -167,7 +159,7 @@ public class NymRequestsTest extends IndyIntegrationTest {
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -217,7 +209,7 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	public void testNymRequestsWorks() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -245,7 +237,6 @@ public class NymRequestsTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		Ledger.buildNymRequest("Th7MpTaRZVRYnPiabds81Y",
-				"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4", null, null, "WRONG_ROLE").get();
+		Ledger.buildNymRequest(identifier, dest, null, null, "WRONG_ROLE").get();
 	}
 }

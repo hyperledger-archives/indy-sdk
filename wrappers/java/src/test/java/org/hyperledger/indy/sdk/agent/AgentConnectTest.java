@@ -8,6 +8,8 @@ import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Test;
 
+import static org.hyperledger.indy.sdk.IndyIntegrationTest.TRUSTEE_SEED;
+
 
 public class AgentConnectTest extends AgentIntegrationTest {
 
@@ -30,7 +32,7 @@ public class AgentConnectTest extends AgentIntegrationTest {
 		String listenerPk = createMyDidResult.getPk();
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee1", null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(trusteeWallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();

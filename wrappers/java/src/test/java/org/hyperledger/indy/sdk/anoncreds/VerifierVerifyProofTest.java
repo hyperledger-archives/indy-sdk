@@ -23,9 +23,9 @@ public class VerifierVerifyProofTest extends AnoncredsIntegrationTest {
 			"                                \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
 			"                              }";
 
-	String schemasJson = String.format("{\"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd\":%s}", schema);
-	String claimDefsJson = String.format("{\"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd\":%s}", claimDef);
-	String revocRegsJson = "{}";
+	private String schemasJson = String.format("{\"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd\":%s}", schema);
+	private String claimDefsJson = String.format("{\"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd\":%s}", claimDef);
+	private String revocRegsJson = "{}";
 
 	@Test
 	public void testVerifierVerifyProofWorksForCorrectProof() throws Exception {
