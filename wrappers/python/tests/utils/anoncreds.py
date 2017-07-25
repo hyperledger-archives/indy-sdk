@@ -54,6 +54,13 @@ def get_gvt_claim_json():
     }
 
 
+def get_xyz_claim_json():
+    return {
+        "status": ["partial", "51792877103171595686471452153480627530895"],
+        "period": ["8", "8"]
+    }
+
+
 def get_claim_req():
     return {"blinded_ms": {"prover_did": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                            "u": "541727375645293327107242131390489410830131768916446771173223218236303087346206273292"
