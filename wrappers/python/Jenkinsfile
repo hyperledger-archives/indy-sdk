@@ -1,0 +1,92 @@
+#!groovy​
+
+@Library('SovrinHelpers') _
+
+name = 'indy-sdk'
+def err
+def publishBranch = (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel')
+
+try {
+
+// ALL BRANCHES: master, devel, PRs
+
+    // 1. TEST
+    stage('Test') {
+        parallel 'ubuntu-python-test': {
+            node('ubuntu') {
+                stage('Ubuntu Python Test') {
+                    pythonTestUbuntu()
+                }
+            }
+        }
+    }
+
+} catch (e) {
+    currentBuild.result = "FAILED"
+    node('ubuntu-master') {
+        sendNotification.fail([slack: publishBranch])
+    }
+    err = e
+} finally {
+    if (err) {
+        throw err
+    }
+    currentBuild.result = "SUCCESS"
+    if (publishBranch) {
+        node('ubuntu-master') {
+            sendNotification.success(name)
+        }
+    }
+}
+
+def pythonTestUbuntu() {
+    def poolInst
+    def network_name = "pool_network"
+    try {
+        echo 'Ubuntu Python Test: Checkout csm'
+        checkout scm
+
+        echo "Ubuntu Python Test: Create docker network (${network_name}) for nodes pool and test image"
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+
+        echo 'Ubuntu Python Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
+        echo 'Ubuntu Python Test: Run nodes pool'
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+
+        echo 'Ubuntu Python Test: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
+
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo 'Ubuntu Python Test: Test'
+
+            sh '''
+                cd wrappers/python
+                python3.6 -m pip install -e .
+                pytest
+            '''
+        }
+    }
+    finally {
+        echo 'Ubuntu Python Test: Cleanup'
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (ignore) {
+        }
+        try {
+            if (poolInst) {
+                echo 'Ubuntu Python Test: stop pool'
+                poolInst.stop()
+            }
+        } catch (err) {
+            echo "Ubuntu Python Tests: error while stop pool ${err}"
+        }
+        try {
+            echo "Ubuntu Python Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (err) {
+            echo "Ubuntu Python Test: error while delete ${network_name} - ${err}"
+        }
+        step([$class: 'WsCleanup'])
+    }
+}
