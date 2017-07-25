@@ -1,4 +1,6 @@
+from indy import IndyError
 from indy import wallet
+from indy.error import ErrorCode
 
 from ..utils import storage
 
@@ -22,4 +24,28 @@ async def test_open_wallet_works():
     assert wallet_handle is not None
 
     await wallet.close_wallet(wallet_handle)
-    assert True
+
+
+@pytest.mark.asyncio
+async def test_open_wallet_works_for_config():
+    await wallet.create_wallet('pool1', 'wallet2', None, None, None)
+    wallet_handle = await wallet.open_wallet('wallet2', '{"freshness_time":1000}', None)
+    assert wallet_handle is not None
+
+    await wallet.close_wallet(wallet_handle)
+
+
+@pytest.mark.asyncio
+async def test_open_wallet_works_for_not_created_wallet():
+    with pytest.raises(IndyError) as e:
+        await wallet.open_wallet('wallet3', None, None)
+    assert ErrorCode.CommonIOError == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_open_wallet_works_for_not_created_wallet():
+    with pytest.raises(IndyError) as e:
+        await wallet.create_wallet('pool1', 'wallet_twice', None, None, None)
+        await wallet.open_wallet('wallet_twice', None, None)
+        await wallet.open_wallet('wallet_twice', None, None)
+    assert ErrorCode.WalletAlreadyOpenedError == e.value.error_code
