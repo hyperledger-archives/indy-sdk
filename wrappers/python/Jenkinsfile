@@ -63,7 +63,7 @@ def pythonTestUbuntu() {
             sh '''
                 cd wrappers/python
                 python3.6 -m pip install -e .
-                pytest
+                python3.6 -m pytest
             '''
         }
     }
