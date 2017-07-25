@@ -78,7 +78,7 @@ class MessageEvent(Event):
                      err,
                      message)
 
-        self.handle = handle,
+        self.handle = handle
 
         if err != ErrorCode.Success:
             self._error = IndyError(ErrorCode(err))
@@ -310,7 +310,6 @@ async def agent_add_identity(listener_handle: int,
 
 
 async def agent_remove_identity(listener_handle: int,
-                                pool_handle: int,
                                 wallet_handle: int,
                                 did: str) -> None:
     """
@@ -323,14 +322,12 @@ async def agent_remove_identity(listener_handle: int,
     After successfully rm_identity listener will stop to accept incoming connection to removed DID.
 
     :param listener_handle: listener handle (created by indy_agent_listen).
-    :param pool_handle: pool handle (create by open_pool_ledger)
     :param wallet_handle: wallet handle (created by open_wallet).
     :param did: DID of identity.
     """
     logger = logging.getLogger(__name__)
-    logger.debug("agent_remove_identity: >>> listener_handle: %r, pool_handle: %r, wallet_handle: %r, did: %r",
+    logger.debug("agent_remove_identity: >>> listener_handle: %r, wallet_handle: %r, did: %r",
                  listener_handle,
-                 pool_handle,
                  wallet_handle,
                  did)
 
@@ -339,13 +336,11 @@ async def agent_remove_identity(listener_handle: int,
         agent_remove_identity.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     c_listener_handle = c_int32(listener_handle)
-    c_pool_handle = c_int32(pool_handle)
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
 
     await do_call('indy_agent_remove_identity',
                   c_listener_handle,
-                  c_pool_handle,
                   c_wallet_handle,
                   c_did,
                   agent_remove_identity.cb)
