@@ -2,11 +2,8 @@ from indy import IndyError
 from indy import signus
 
 import pytest
-import logging
 
 from indy.error import ErrorCode
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio

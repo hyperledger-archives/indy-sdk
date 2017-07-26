@@ -10,9 +10,6 @@ from ..utils.pool import create_and_open_pool_ledger
 
 import json
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture
@@ -32,14 +29,10 @@ async def new_did(wallet_handle, pool_handle):
 async def test_verify_works_for_verkey_cached_in_wallet(pool_handle, wallet_handle):
     (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
                                                              '{"seed":"000000000000000000000000Trustee1"}')
-    identity_json = {
-        "did": did,
-        "verkey": ver_key
-    }
 
-    await signus.store_their_did(wallet_handle, json.dumps(identity_json))
+    await signus.store_their_did(wallet_handle, json.dumps({"did": did, "verkey": ver_key}))
 
-    message = {
+    message = json.dumps({
         "reqId": 1496822211362017764,
         "identifier": "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
         "operation": {
@@ -48,17 +41,15 @@ async def test_verify_works_for_verkey_cached_in_wallet(pool_handle, wallet_hand
             "verkey": "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
         },
         "signature": "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
-    }
+    })
 
-    valid = await signus.verify_signature(wallet_handle, pool_handle, did, json.dumps(message))
+    valid = await signus.verify_signature(wallet_handle, pool_handle, did, message)
     assert valid
 
 
 @pytest.mark.asyncio
 async def test_verify_works_for_get_verkey_from_ledger(pool_handle, wallet_handle, new_did):
-    identity_json = {"did": new_did}
-
-    await signus.store_their_did(wallet_handle, json.dumps(identity_json))
+    await signus.store_their_did(wallet_handle, json.dumps({"did": new_did}))
 
     message = '{"reqId":1496822211362017764,' \
               '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
@@ -69,9 +60,8 @@ async def test_verify_works_for_get_verkey_from_ledger(pool_handle, wallet_handl
 
 @pytest.mark.asyncio
 async def test_verify_works_for_expired_nym(pool_handle, cleanup_storage):
-    wallet_name = 'wallet2'
-    await wallet.create_wallet('pool_1', wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, '{"freshness_time":1}', None)
+    await wallet.create_wallet('pool_1', 'wallet2', None, None, None)
+    wallet_handle = await wallet.open_wallet('wallet2', '{"freshness_time":1}', None)
 
     (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                '{"seed":"000000000000000000000000Trustee1"}')
@@ -82,12 +72,7 @@ async def test_verify_works_for_expired_nym(pool_handle, cleanup_storage):
     nym_request = await ledger.build_nym_request(trustee_did, did, ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
-    identity_json = {
-        "did": did,
-        'verkey': ver_key
-    }
-
-    await signus.store_their_did(wallet_handle, json.dumps(identity_json))
+    await signus.store_their_did(wallet_handle, json.dumps({"did": did, 'verkey': ver_key}))
 
     message = '{"reqId":1496822211362017764,' \
               '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
@@ -104,8 +89,7 @@ async def test_verify_works_for_expired_nym(pool_handle, cleanup_storage):
 async def test_verify_works_for_invalid_wallet(pool_handle, wallet_handle, new_did):
     with pytest.raises(IndyError) as e:
         message = '{"reqId":1496822211362017764,' \
-              '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
-
+                  '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
         await signus.verify_signature(wallet_handle + 1, pool_handle, new_did, message)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
@@ -114,8 +98,7 @@ async def test_verify_works_for_invalid_wallet(pool_handle, wallet_handle, new_d
 async def test_verify_works_for_invalid_pool(pool_handle, wallet_handle, new_did):
     with pytest.raises(IndyError) as e:
         message = '{"reqId":1496822211362017764,' \
-              '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
-
+                  '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
         await signus.verify_signature(wallet_handle, pool_handle + 1, new_did, message)
     assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
 
@@ -124,14 +107,10 @@ async def test_verify_works_for_invalid_pool(pool_handle, wallet_handle, new_did
 async def test_verify_works_for_other_signer(pool_handle, wallet_handle, new_did):
     (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
                                                              '{"seed":"000000000000000000000000Steward1"}')
-    identity_json = {
-        "did": did,
-        "verkey": ver_key
-    }
 
-    await signus.store_their_did(wallet_handle, json.dumps(identity_json))
+    await signus.store_their_did(wallet_handle, json.dumps({"did": did, "verkey": ver_key}))
 
-    message = {
+    message = json.dumps({
         "reqId": 1496822211362017764,
         "identifier": "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
         "operation": {
@@ -140,9 +119,9 @@ async def test_verify_works_for_other_signer(pool_handle, wallet_handle, new_did
             "verkey": "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
         },
         "signature": "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"
-    }
+    })
 
-    valid = await signus.verify_signature(wallet_handle, pool_handle, did, json.dumps(message))
+    valid = await signus.verify_signature(wallet_handle, pool_handle, did, message)
     assert not valid
 
 
@@ -158,8 +137,7 @@ async def test_verify_works_for_invalid_message_format(pool_handle, wallet_handl
 @pytest.mark.asyncio
 async def test_verify_works_for_message_without_signature(pool_handle, wallet_handle, new_did):
     with pytest.raises(IndyError) as e:
-        message = '{"reqId":1496822211362017764}'
-        await signus.verify_signature(wallet_handle, pool_handle, new_did, message)
+        await signus.verify_signature(wallet_handle, pool_handle, new_did, '{"reqId":1496822211362017764}')
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
@@ -172,12 +150,10 @@ async def test_verify_works_for_get_nym_from_ledger_with_incompatible_wallet(cle
         (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                  '{"seed":"00000000000000000000000000000My1"}')
 
-        identity_json = {"did": did}
-
-        await signus.store_their_did(wallet_handle, json.dumps(identity_json))
+        await signus.store_their_did(wallet_handle, json.dumps({"did": did}))
 
         message = '{"reqId":1496822211362017764,' \
-              '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
+                  '"signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai"}'
 
         await signus.verify_signature(wallet_handle, pool_handle, did, message)
 
