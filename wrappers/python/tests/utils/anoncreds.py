@@ -74,7 +74,7 @@ def get_claim_req():
                            "ur": None}, "issuer_did": ISSUER_DID, "schema_seq_no": 1}
 
 
-def get_proof_req():
+def get_proof_req(predicate_value=18):
     return {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -90,7 +90,7 @@ def get_proof_req():
             "predicate1_uuid": {
                 "attr_name": "age",
                 "p_type": "GE",
-                "value": 18
+                "value": predicate_value
             }
         }
     }
