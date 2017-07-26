@@ -53,11 +53,11 @@ async def test_ledger_demo_works(cleanup_storage):
 
     # 8. Prepare and send NYM transaction
     nym_txn_req = await ledger.build_nym_request(their_did, my_did, None, None, None)
-    await ledger.sign_and_submit_request(pool_handle, their_wallet_handle, their_did, nym_txn_req.decode())
+    await ledger.sign_and_submit_request(pool_handle, their_wallet_handle, their_did, nym_txn_req)
 
     # 9. Prepare and send GET_NYM request
     get_nym_txn_req = await ledger.build_get_nym_request(their_did, my_did)
-    get_nym_txn_resp = await ledger.submit_request(pool_handle, get_nym_txn_req.decode())
+    get_nym_txn_resp = await ledger.submit_request(pool_handle, get_nym_txn_req)
 
     get_nym_txn_resp = json.loads(get_nym_txn_resp)
 

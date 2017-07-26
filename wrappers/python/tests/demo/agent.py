@@ -45,7 +45,7 @@ async def test_agent_demo_works(cleanup_storage):
 
     # 7. Prepare and send NYM transaction
     nym_txn_req = await ledger.build_nym_request(sender_did, listener_did, listener_verkey, None, None)
-    await ledger.sign_and_submit_request(pool_handle, sender_wallet_handle, sender_did, nym_txn_req.decode())
+    await ledger.sign_and_submit_request(pool_handle, sender_wallet_handle, sender_did, nym_txn_req)
 
     # 8. Prepare and send GET_NYM request
     endpoint = "127.0.0.1:5555"
@@ -58,7 +58,7 @@ async def test_agent_demo_works(cleanup_storage):
 
     # 8. Prepare and send Attrib request
     attrib_txn_req = await ledger.build_attrib_request(listener_did, listener_did, None, json.dumps(raw), None)
-    await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, listener_did, attrib_txn_req.decode())
+    await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, listener_did, attrib_txn_req)
 
     # 8. Start listener on endpoint
     listener_handle = await agent.agent_listen(endpoint)

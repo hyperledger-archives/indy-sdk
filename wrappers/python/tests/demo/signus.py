@@ -53,7 +53,7 @@ async def test_signus_demo_works(cleanup_storage):
     signed_msg = await signus.sign(their_wallet_handle, their_did, json.dumps(message))
 
     # 7. Their sign message
-    assert await signus.verify_signature(my_wallet_handle, 1, their_did, signed_msg.decode())
+    assert await signus.verify_signature(my_wallet_handle, 1, their_did, signed_msg)
 
     # 8. Close wallets
     await wallet.close_wallet(their_wallet_handle)
