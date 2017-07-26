@@ -1,59 +1,69 @@
 import json
-import logging
 
 import pytest
 
-from indy import signus, agent
-from ..utils import storage, wallet
-
-logging.basicConfig(level=logging.DEBUG)
-
-endpoint = "127.0.0.1:9701"
-
-
-@pytest.fixture
-def cleanup_storage():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
-# noinspection PyUnusedLocal
-@pytest.fixture
-async def wallet_with_identities(cleanup_storage):
-    wallet_handle = await wallet.create_and_open_wallet()
-    did, verkey, pk = await signus.create_and_store_my_did(wallet_handle, "{}")
-    await signus.store_their_did(wallet_handle, json.dumps({
-        "did": did,
-        "verkey": verkey,
-        "pk": pk,
-        "endpoint": endpoint}))
-
-    yield wallet_handle, did
-
-    await wallet.close_wallet(wallet_handle)
+from indy import signus, ledger, agent
+from tests.utils import wallet
 
 
 @pytest.mark.asyncio
-async def test_agent_connect_works(wallet_with_identities):
-    wallet_handle, did = wallet_with_identities
+async def test_agent_connect_works_for_remote_data(pool_handle,
+                                                   trustee1_seed):
+    endpoint = "127.0.0.1:9705"
+
+    listener_wallet_handle = await wallet.create_and_open_wallet(wallet_name="listener_wallet")
+    trustee_wallet_handle = await wallet.create_and_open_wallet(wallet_name="trustee_wallet")
+
+    listener_did, listener_verkey, listener_pk = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
+
+    trustee_did, trustee_verkey, trustee_pk = await signus.create_and_store_my_did(
+        trustee_wallet_handle,
+        json.dumps({
+            "seed": trustee1_seed
+        }))
+
+    nym_request = await ledger.build_nym_request(trustee_did, listener_did, listener_verkey, None, None)
+    await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, trustee_did, nym_request)
+
+    attrib_request = await ledger.build_attrib_request(
+        listener_did,
+        listener_did,
+        None,
+        json.dumps({
+            "endpoint": {
+                "ha": endpoint,
+                "verkey": listener_pk
+            }
+        }),
+        None)
+    await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, listener_did, attrib_request)
 
     listener_handle = await agent.agent_listen(endpoint)
-    assert listener_handle is not None
+    await agent.agent_add_identity(listener_handle, pool_handle, listener_wallet_handle, listener_did)
 
-    await agent.agent_add_identity(listener_handle, -1, wallet_handle, did)
-
-    connection_handle = await agent.agent_connect(0, wallet_handle, did, did)
+    sender_did = trustee_did
+    sender_wallet_handle = trustee_wallet_handle
+    connection_handle = await agent.agent_connect(pool_handle,
+                                                  sender_wallet_handle,
+                                                  sender_did,
+                                                  listener_did)
     assert connection_handle is not None
 
-    event = await agent.agent_wait_for_event([listener_handle, connection_handle])  # type: agent.ConnectionEvent
+    connection_event = await agent.agent_wait_for_event([listener_handle])  # type: agent.ConnectionEvent
 
-    assert type(event) is agent.ConnectionEvent
-    assert event.handle == listener_handle
-    assert event.sender_did == did
-    assert event.receiver_did == did
-    assert event.connection_handle is not None
+    assert type(connection_event) is agent.ConnectionEvent
+    assert connection_event.handle == listener_handle
+    assert connection_event.sender_did == sender_did
+    assert connection_event.receiver_did == listener_did
+    assert connection_event.connection_handle is not None
 
-    await agent.agent_close_connection(event.connection_handle)
     await agent.agent_close_connection(connection_handle)
+    await agent.agent_close_connection(connection_event.handle)
     await agent.agent_close_listener(listener_handle)
+    await wallet.close_wallet(listener_wallet_handle)
+    await wallet.close_wallet(trustee_wallet_handle)
+
+
+@pytest.mark.asyncio
+async def test_agent_connect_works_for_all_data_in_wallet_present(connection):
+    assert connection is not None
