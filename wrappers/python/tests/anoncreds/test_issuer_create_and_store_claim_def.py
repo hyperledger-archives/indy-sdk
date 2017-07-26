@@ -1,5 +1,6 @@
 from indy import wallet
 from indy.anoncreds import issuer_create_and_store_claim_def
+from indy.error import ErrorCode, IndyError
 
 from tests.utils import storage, anoncreds
 from tests.utils.wallet import create_and_open_wallet
@@ -36,3 +37,17 @@ async def test_issuer_create_and_store_claim_def_works(wallet_handle):
     assert len(claim_def_json['data']['primary']['rms']) > 0
     assert len(claim_def_json['data']['primary']['z']) > 0
     assert len(claim_def_json['data']['primary']['rctxt']) > 0
+
+
+@pytest.mark.asyncio
+async def test_issuer_create_and_store_claim_def_works_for_invalid_wallet(wallet_handle):
+    schema = anoncreds.get_gvt_schema_json(1)
+    invalid_wallet_handle = wallet_handle + 100
+
+    try:
+        await issuer_create_and_store_claim_def(
+            invalid_wallet_handle, anoncreds.ISSUER_DID, json.dumps(schema), None, False)
+        raise Exception("Failed")
+    except Exception as e:
+        assert type(IndyError(ErrorCode.WalletInvalidHandle)) == type(e) and \
+               IndyError(ErrorCode.WalletInvalidHandle).args == e.args
