@@ -10,15 +10,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture(autouse=True)
-def cleanup_storage():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
 @pytest.mark.asyncio
-async def test_close_wallet_works():
+async def test_close_wallet_works(cleanup_storage):
     wallet_name = 'wallet1'
     await wallet.create_wallet('pool1', wallet_name, None, None, None)
 
@@ -30,7 +23,7 @@ async def test_close_wallet_works():
 
 
 @pytest.mark.asyncio
-async def test_close_wallet_works_for_twice():
+async def test_close_wallet_works_for_twice(cleanup_storage):
     with pytest.raises(IndyError) as e:
         wallet_name = 'wallet_for_twice'
         await wallet.create_wallet('pool1', wallet_name, None, None, None)

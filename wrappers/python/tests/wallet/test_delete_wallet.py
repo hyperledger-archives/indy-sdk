@@ -10,15 +10,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture(autouse=True)
-def cleanup_storage():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
 @pytest.mark.asyncio
-async def test_delete_wallet_works():
+async def test_delete_wallet_works(cleanup_storage):
     wallet_name = 'wallet1'
     await wallet.create_wallet('pool1', wallet_name, None, None, None)
     await wallet.delete_wallet(wallet_name, None)
@@ -26,7 +19,7 @@ async def test_delete_wallet_works():
 
 
 @pytest.mark.asyncio
-async def test_delete_wallet_works_for_closed():
+async def test_delete_wallet_works_for_closed(cleanup_storage):
     wallet_name = 'wallet2'
     await wallet.create_wallet('pool1', wallet_name, None, None, None)
     wallet_handle = await wallet.open_wallet(wallet_name, None, None)
@@ -36,7 +29,7 @@ async def test_delete_wallet_works_for_closed():
 
 
 @pytest.mark.skip(reason="There is BUG in indy-sdk")
-async def test_delete_wallet_works_for_opened():
+async def test_delete_wallet_works_for_opened(cleanup_storage):
     with pytest.raises(IndyError) as e:
         wallet_name = 'wallet_for_opened'
         await wallet.create_wallet('pool1', wallet_name, None, None, None)
@@ -46,7 +39,7 @@ async def test_delete_wallet_works_for_opened():
 
 
 @pytest.mark.asyncio
-async def test_delete_wallet_works_for_twice():
+async def test_delete_wallet_works_for_twice(cleanup_storage):
     with pytest.raises(IndyError) as e:
         wallet_name = 'wallet_for_twice'
         await wallet.create_wallet('pool1', wallet_name, None, None, None)
@@ -56,7 +49,7 @@ async def test_delete_wallet_works_for_twice():
 
 
 @pytest.mark.asyncio
-async def test_delete_wallet_works_for_not_created():
+async def test_delete_wallet_works_for_not_created(cleanup_storage):
     with pytest.raises(IndyError) as e:
         wallet_name = 'wallet_not_created'
         await wallet.delete_wallet(wallet_name, None)
