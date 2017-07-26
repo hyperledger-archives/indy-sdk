@@ -2,39 +2,29 @@ from indy import agent
 from indy import ledger, signus, wallet, pool
 from indy.pool import open_pool_ledger
 
-from tests.utils import storage
-
 import pytest
-import logging
 import json
 
 from tests.utils.pool import create_genesis_txn_file
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 @pytest.mark.asyncio
 async def test_agent_demo_works(cleanup_storage):
-    pool_name = "pool"
-    listener_wallet_name = "listener_wallet"
-    sender_wallet_name = "sender_wallet"
-
     # 1. Create ledger config from genesis txn file
-    file_name = pool_name + '.txn'
-    path = create_genesis_txn_file(file_name, None)
+    path = create_genesis_txn_file('pool_1.txn', None)
     pool_config = json.dumps({"genesis_txn": str(path)})
-    await pool.create_pool_ledger_config(pool_name, pool_config)
+    await pool.create_pool_ledger_config('pool_1', pool_config)
 
     # 2. Open pool ledger
-    pool_handle = await open_pool_ledger(pool_name, None)
+    pool_handle = await open_pool_ledger('pool_1', None)
 
     # 3. Create and Open Listener Wallet. Gets wallet handle
-    await wallet.create_wallet(pool_name, listener_wallet_name, None, None, None)
-    listener_wallet_handle = await wallet.open_wallet(listener_wallet_name, None, None)
+    await wallet.create_wallet('pool_1', 'listener_wallet', None, None, None)
+    listener_wallet_handle = await wallet.open_wallet('listener_wallet', None, None)
 
     # 4. Create and Open Sender Wallet. Gets wallet handle
-    await wallet.create_wallet(pool_name, sender_wallet_name, None, None, None)
-    sender_wallet_handle = await wallet.open_wallet(sender_wallet_name, None, None)
+    await wallet.create_wallet('pool_1', 'sender_wallet', None, None, None)
+    sender_wallet_handle = await wallet.open_wallet('sender_wallet', None, None)
 
     # 5. Create Listener DID
     (listener_did, listener_verkey, listener_pk) = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
@@ -47,38 +37,36 @@ async def test_agent_demo_works(cleanup_storage):
     nym_txn_req = await ledger.build_nym_request(sender_did, listener_did, listener_verkey, None, None)
     await ledger.sign_and_submit_request(pool_handle, sender_wallet_handle, sender_did, nym_txn_req)
 
-    # 8. Prepare and send GET_NYM request
-    endpoint = "127.0.0.1:5555"
-    raw = {
+    # 8. Prepare and send Attrib request
+    raw = json.dumps({
         "endpoint": {
-            "ha": endpoint,
+            "ha": "127.0.0.1:5555",
             "verkey": listener_pk
         }
-    }
+    })
 
-    # 8. Prepare and send Attrib request
-    attrib_txn_req = await ledger.build_attrib_request(listener_did, listener_did, None, json.dumps(raw), None)
+    attrib_txn_req = await ledger.build_attrib_request(listener_did, listener_did, None, raw, None)
     await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, listener_did, attrib_txn_req)
 
-    # 8. Start listener on endpoint
-    listener_handle = await agent.agent_listen(endpoint)
+    # 9. Start listener on endpoint
+    listener_handle = await agent.agent_listen("127.0.0.1:5555")
 
-    # 9. Allow listener accept incoming connection for specific DID (listener_did)
+    # 10. Allow listener accept incoming connection for specific DID (listener_did)
     await agent.agent_add_identity(listener_handle, pool_handle, listener_wallet_handle, listener_did)
 
-    # 10. Initiate connection from sender to listener
+    # 11. Initiate connection from sender to listener
     connection_handle = await agent.agent_connect(pool_handle, sender_wallet_handle, sender_did, listener_did)
     event = await agent.agent_wait_for_event([listener_handle])
     inc_con_handle = event.connection_handle
 
-    # 11. Send test message from sender to listener
+    # 12. Send test message from sender to listener
     message = 'msg_from_sender_to_listener'
     await agent.agent_send(connection_handle, message)
 
     message_event = await agent.agent_wait_for_event([listener_handle, inc_con_handle])  # type: agent.MessageEvent
     assert message_event.message == message
 
-    # 12. Close connection, listener, wallets, pool
+    # 13. Close connection, listener, wallets, pool
     await agent.agent_close_listener(listener_handle)
     await agent.agent_close_connection(connection_handle)
 
