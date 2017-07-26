@@ -3,9 +3,6 @@ from indy import wallet
 from ..utils import storage
 
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture(autouse=True)

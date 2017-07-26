@@ -1,9 +1,6 @@
 from tests.utils import pool, storage
 from indy.pool import refresh_pool_ledger
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture(autouse=True)

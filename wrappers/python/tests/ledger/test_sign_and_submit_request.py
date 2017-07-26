@@ -2,9 +2,6 @@ from tests.utils.wallet import create_and_open_wallet
 from indy import wallet, signus, ledger
 from indy.error import ErrorCode, IndyError
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio

@@ -3,9 +3,6 @@ from indy.pool import close_pool_ledger, open_pool_ledger
 from indy.error import ErrorCode, IndyError
 
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio

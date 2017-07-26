@@ -2,9 +2,6 @@ from indy import signus
 
 import base58
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
