@@ -1,4 +1,3 @@
-from tests.utils import storage
 from indy import ledger
 from indy.error import *
 
@@ -9,15 +8,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
 @pytest.mark.asyncio
-async def test_build_attrib_request_works_for_raw_data():
+async def test_build_attrib_request_works_for_raw_data(cleanup_storage):
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "Th7MpTaRZVRYnPiabds81Y"
     raw = '{"endpoint":{"ha":"127.0.0.1:5555"}}'
@@ -36,7 +28,7 @@ async def test_build_attrib_request_works_for_raw_data():
 
 
 @pytest.mark.asyncio
-async def test_build_attrib_request_works_for_missed_attribute():
+async def test_build_attrib_request_works_for_missed_attribute(cleanup_storage):
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "Th7MpTaRZVRYnPiabds81Y"
 
