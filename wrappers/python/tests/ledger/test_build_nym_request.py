@@ -21,12 +21,9 @@ async def test_build_nym_request_works_for_invalid_identifier():
     identifier = "invalid_base58_identifier"
     dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.build_nym_request(identifier, dest, None, None, None)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.CommonInvalidStructure)) == type(e) and \
-               IndyError(ErrorCode.CommonInvalidStructure).args == e.args
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio

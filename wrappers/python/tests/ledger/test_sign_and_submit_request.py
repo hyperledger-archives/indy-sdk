@@ -47,13 +47,10 @@ async def test_sign_and_submit_request_works_for_invalid_pool_handle(wallet_hand
     nym_request = await ledger.build_nym_request(trustee_did, my_did, None, None, None)
     invalid_pool_handle = pool_handle + 1
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.sign_and_submit_request(invalid_pool_handle, wallet_handle, trustee_did,
                                              nym_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.PoolLedgerInvalidPoolHandle)) == type(e) and \
-               IndyError(ErrorCode.PoolLedgerInvalidPoolHandle).args == e.args
+    assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -64,13 +61,10 @@ async def test_sign_and_submit_request_works_for_invalid_wallet_handle(wallet_ha
     nym_request = await ledger.build_nym_request(trustee_did, my_did, None, None, None)
     invalid_wallet_handle = wallet_handle + 1
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.sign_and_submit_request(pool_handle, invalid_wallet_handle, trustee_did,
                                              nym_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.WalletInvalidHandle)) == type(e) and \
-               IndyError(ErrorCode.WalletInvalidHandle).args == e.args
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -81,11 +75,9 @@ async def test_sign_and_submit_request_works_for_incompatible_wallet_and_pool(po
                                                                '{"seed":"000000000000000000000000Trustee1"}')
     nym_request = await ledger.build_nym_request(trustee_did, my_did, None, None, None)
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did,
                                              nym_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.WalletIncompatiblePoolError)) == type(e) and \
-               IndyError(ErrorCode.WalletIncompatiblePoolError).args == e.args
+    assert ErrorCode.WalletIncompatiblePoolError == e.value.error_code
+
     await wallet.close_wallet(wallet_handle)
