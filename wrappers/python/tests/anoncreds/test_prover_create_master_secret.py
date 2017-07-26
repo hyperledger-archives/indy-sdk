@@ -16,10 +16,8 @@ async def test_prover_create_master_secret_works(init_common_wallet):
 async def test_prover_create_master_secret_works_invalid_wallet_handle(init_common_wallet):
     invalid_wallet_handle = init_common_wallet[0] + 100
 
-    try:
+    with pytest.raises(IndyError) as e:
         await prover_create_master_secret(invalid_wallet_handle, "master_secret_name")
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.WalletInvalidHandle)) == type(e) and \
-               IndyError(ErrorCode.WalletInvalidHandle).args == e.args
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code
+
 

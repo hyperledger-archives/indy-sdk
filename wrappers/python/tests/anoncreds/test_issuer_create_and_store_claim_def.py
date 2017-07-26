@@ -28,10 +28,7 @@ async def test_issuer_create_and_store_claim_def_works_for_invalid_wallet(wallet
     schema = anoncreds.get_gvt_schema_json(1)
     invalid_wallet_handle = wallet_handle + 100
 
-    try:
+    with pytest.raises(IndyError) as e:
         await issuer_create_and_store_claim_def(
             invalid_wallet_handle, anoncreds.ISSUER_DID, json.dumps(schema), None, False)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.WalletInvalidHandle)) == type(e) and \
-               IndyError(ErrorCode.WalletInvalidHandle).args == e.args
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code

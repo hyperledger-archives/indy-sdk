@@ -53,10 +53,8 @@ async def test_prover_get_claim_offers_works_for_no_results(init_common_wallet):
 async def test_prover_get_claim_offers_works_for_invalid_wallet_handle(init_common_wallet):
     invalid_wallet_handle = init_common_wallet[0] + 100
 
-    try:
+    with pytest.raises(IndyError) as e:
         await prover_get_claim_offers(invalid_wallet_handle, '{"schema_seq_no":1}')
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.WalletInvalidHandle)) == type(e) and \
-               IndyError(ErrorCode.WalletInvalidHandle).args == e.args
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code
+
 

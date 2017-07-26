@@ -51,7 +51,7 @@ async def init_common_wallet():
         return
 
     storage.cleanup()
-    wallet_handle = await wallet.create_and_open_wallet()
+    wallet_handle = await wallet.create_and_open_wallet(pool_name="pool_2", wallet_name="wallet_2")
     assert type(wallet_handle) is int
     claim_def = await anoncreds.prepare_common_wallet(wallet_handle)
 
