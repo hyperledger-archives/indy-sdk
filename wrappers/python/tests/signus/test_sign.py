@@ -1,27 +1,12 @@
-from indy import wallet, signus
-
-from ..utils import storage
-from ..utils.wallet import create_and_open_wallet
+from indy import IndyError
+from indy import signus
+from indy.error import ErrorCode
 
 import json
 import pytest
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
-@pytest.fixture
-async def wallet_handle():
-    handle = await create_and_open_wallet()
-    yield handle
-    await wallet.close_wallet(handle)
 
 
 @pytest.mark.asyncio
@@ -42,3 +27,29 @@ async def test_sign_works(wallet_handle):
 
     result = json.loads(await signus.sign(wallet_handle, did, json.dumps(message)))
     assert result['signature'] == expected_signature
+
+
+@pytest.mark.asyncio
+async def test_sign_works_for_unknown_did(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        message = {"reqId": 1496822211362017764}
+        await signus.sign(wallet_handle, '8wZcEriaNLNKtteJvx7f8i', json.dumps(message))
+    assert ErrorCode.WalletNotFoundError == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_sign_works_for_invalid_message_format(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        (did, _, _) = await signus.create_and_store_my_did(wallet_handle, '{}')
+        message = '"reqId":1495034346617224651'
+        await signus.sign(wallet_handle, did, message)
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_sign_works_for_invalid_handle(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        (did, _, _) = await signus.create_and_store_my_did(wallet_handle, '{}')
+        message = {"reqId": 1496822211362017764}
+        await signus.sign(wallet_handle + 1, did, json.dumps(message))
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code

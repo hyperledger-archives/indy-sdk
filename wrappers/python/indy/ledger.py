@@ -148,13 +148,15 @@ async def build_nym_request(submitter_did: str,
     c_alias = c_char_p(alias.encode('utf-8')) if alias is not None else None
     c_role = c_char_p(role.encode('utf-8')) if role is not None else None
 
-    res = await do_call('indy_build_nym_request',
+    nym_req = await do_call('indy_build_nym_request',
                         c_submitter_did,
                         c_target_did,
                         c_ver_key,
                         c_alias,
                         c_role,
                         build_nym_request.cb)
+
+    res = nym_req.decode()
 
     logger.debug("build_nym_request: <<< res: %s", res)
     return res

@@ -1,7 +1,6 @@
-from indy import wallet, signus
-
-from ..utils import storage
-from ..utils.wallet import create_and_open_wallet
+from indy import IndyError
+from indy import signus
+from indy.error import ErrorCode
 
 import pytest
 import logging
@@ -9,22 +8,45 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
+@pytest.mark.asyncio
+async def test_replace_keys_works(wallet_handle):
+    (did, ver_key, pk) = await signus.create_and_store_my_did(wallet_handle, "{}")
+    (new_ver_key, new_pk) = await signus.replace_keys(wallet_handle, did, "{}")
+    assert (new_ver_key != did) and (new_pk != pk)
 
 
-@pytest.fixture
-async def wallet_handle():
-    handle = await create_and_open_wallet()
-    yield handle
-    await wallet.close_wallet(handle)
+@pytest.mark.asyncio
+async def test_replace_keys_works_for_seed(wallet_handle):
+    (did, ver_key, pk) = await signus.create_and_store_my_did(wallet_handle, "{}")
+    (new_ver_key, new_pk) = await signus.replace_keys(wallet_handle, did, '{"seed": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}')
+    assert (new_ver_key != did) and (new_pk != pk)
+    assert 'CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW' == new_ver_key
+
+@pytest.mark.asyncio
+async def test_replace_keys_works_for_correct_crypto_type(wallet_handle):
+    (did, ver_key, pk) = await signus.create_and_store_my_did(wallet_handle, "{}")
+    (new_ver_key, new_pk) = await signus.replace_keys(wallet_handle, did, '{"crypto_type": "ed25519"}')
+    assert (new_ver_key != did) and (new_pk != pk)
+
+
+@pytest.mark.asyncio
+async def test_replace_keys_works_for_invalid_did(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        await signus.replace_keys(wallet_handle, 'invalid_base58_string', "{}")
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_replace_keys_works(wallet_handle):
-    (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
-    (new_did, new_ver_key) = await signus.replace_keys(wallet_handle, did, "{}")
-    assert (new_did != did) and (new_ver_key != ver_key)
+    with pytest.raises(IndyError) as e:
+        (did, _, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
+        await signus.replace_keys(wallet_handle + 1, did, "{}")
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_replace_keys_works_for_invalid_crypto_type(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        (did, _, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
+        await signus.replace_keys(wallet_handle, did, '{"crypto_type": "type"}')
+    assert ErrorCode.SignusUnknownCryptoError == e.value.error_code

@@ -1,28 +1,54 @@
-from indy import wallet, signus
-
-from ..utils import storage
-from ..utils.wallet import create_and_open_wallet
+from indy import IndyError
+from indy import signus
 
 import pytest
 import logging
 
+from indy.error import ErrorCode
+
 logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
-@pytest.fixture
-async def wallet_handle():
-    handle = await create_and_open_wallet()
-    yield handle
-    await wallet.close_wallet(handle)
 
 
 @pytest.mark.asyncio
 async def test_store_their_did_works(wallet_handle):
     await signus.store_their_did(wallet_handle, '{"did":"8wZcEriaNLNKtteJvx7f8i"}')
+
+
+@pytest.mark.asyncio
+async def test_store_their_did_works_for_invalid_json(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        await signus.store_their_did(wallet_handle, '{"field":"value"}')
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_store_their_did_works_for_invalid_handle(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        await signus.store_their_did(wallet_handle + 1, '{"did":"8wZcEriaNLNKtteJvx7f8i"}')
+    assert ErrorCode.WalletInvalidHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_store_their_did_works_with_verkey(wallet_handle):
+    await signus.store_their_did(wallet_handle, '{"did":"8wZcEriaNLNKtteJvx7f8i",'
+                                                ' "verkey": "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"}')
+
+
+@pytest.mark.asyncio
+async def test_store_their_did_works_without_did(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        await signus.store_their_did(wallet_handle, '{"verkey": "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"}')
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_store_their_did_works_for_correct_crypto_type(wallet_handle):
+    await signus.store_their_did(wallet_handle, '{"did":"8wZcEriaNLNKtteJvx7f8i", "crypto_type": "ed25519"}')
+
+
+@pytest.mark.asyncio
+async def test_store_their_did_works_for_invalid_did(wallet_handle):
+    with pytest.raises(IndyError) as e:
+        await signus.store_their_did(wallet_handle, '{"did": "invalid_base58_string"}')
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+
