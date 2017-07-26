@@ -13,15 +13,8 @@ from tests.utils.pool import create_genesis_txn_file
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
 @pytest.mark.asyncio
-async def test_agent_demo_works():
+async def test_agent_demo_works(cleanup_storage):
     pool_name = "pool"
     listener_wallet_name = "listener_wallet"
     sender_wallet_name = "sender_wallet"

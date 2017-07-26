@@ -10,15 +10,8 @@ import json
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
 @pytest.mark.asyncio
-async def test_signus_demo_works():
+async def test_signus_demo_works(cleanup_storage):
     pool_name = "create"
     my_wallet_name = "my_wallet"
     their_wallet_name = "their_wallet"
