@@ -412,7 +412,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn indy_delete_wallet_works_for_invalid_wallet_name() {
+        fn indy_delete_wallet_works_for_not_created() {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::delete_wallet("indy_delete_wallet_works_for_invalid_wallet_name");

@@ -50,9 +50,9 @@ public class CreateWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testCreateWalletWorksForEmptyName() throws Exception {
 
-		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam2));
+		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam3));
 
-		Wallet.createWallet("", "createWalletWorks", "default", null, null).get();
+		Wallet.createWallet("pool", "", "default", null, null).get();
 	}
 
 	@Test
