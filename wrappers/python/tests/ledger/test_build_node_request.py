@@ -27,12 +27,9 @@ async def test_build_node_request_works_for_missed_field_in_data_json():
         "client_port": 1
     }
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.build_node_request(identifier, destination, json.dumps(data))
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.CommonInvalidStructure)) == type(e) and \
-               IndyError(ErrorCode.CommonInvalidStructure).args == e.args
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
