@@ -165,7 +165,9 @@ async def sign(wallet_handle: int,
                         c_msg,
                         sign.cb)
 
-    logger.debug("sign: <<< res: %r", res)
+    res = res.decode()
+
+    logger.debug("sign: <<< res: %s", res)
     return res
 
 
