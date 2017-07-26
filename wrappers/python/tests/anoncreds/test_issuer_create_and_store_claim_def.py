@@ -1,29 +1,13 @@
-from indy import wallet
 from indy.anoncreds import issuer_create_and_store_claim_def
 from indy.error import ErrorCode, IndyError
 
-from tests.utils import storage, anoncreds
-from tests.utils.wallet import create_and_open_wallet
+from tests.utils import anoncreds
 
 import json
 import pytest
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
-@pytest.fixture
-async def wallet_handle():
-    handle = await create_and_open_wallet()
-    yield handle
-    await wallet.close_wallet(handle)
 
 
 @pytest.mark.asyncio

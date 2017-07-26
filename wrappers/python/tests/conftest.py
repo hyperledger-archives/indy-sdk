@@ -2,9 +2,14 @@ import logging
 
 import pytest
 
-from .utils import pool, storage, wallet
+from .utils import pool, storage, wallet, anoncreds
 
 logging.basicConfig(level=logging.DEBUG)
+WALLET = {
+    "opened": False,
+    "handle": None,
+    "claim_def": None
+}
 
 
 @pytest.fixture
@@ -35,3 +40,24 @@ async def pool_handle(cleanup_storage):
     assert type(pool_handle) is int
     yield pool_handle
     await pool.close_pool_ledger(pool_handle)
+
+
+# noinspection PyUnusedLocal
+@pytest.fixture
+async def init_common_wallet():
+    global WALLET
+    if WALLET["opened"]:
+        yield (WALLET["handle"], WALLET["claim_def"])
+        return
+
+    storage.cleanup()
+    wallet_handle = await wallet.create_and_open_wallet()
+    assert type(wallet_handle) is int
+    claim_def = await anoncreds.prepare_common_wallet(wallet_handle)
+
+    WALLET = {
+        "opened": True,
+        "handle": wallet_handle,
+        "claim_def": claim_def
+    }
+    yield (wallet_handle, claim_def)
