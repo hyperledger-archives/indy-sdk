@@ -25,7 +25,7 @@ async def sign_and_submit_request(pool_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("sign_and_submit_request: >>> pool_handle: %s, wallet_handle: %s, submitter_did: %s, request_json: %s",
+    logger.debug("sign_and_submit_request: >>> pool_handle: %r, wallet_handle: %r, submitter_did: %r, request_json: %r",
                  pool_handle,
                  wallet_handle,
                  submitter_did,
@@ -48,7 +48,7 @@ async def sign_and_submit_request(pool_handle: int,
                                    sign_and_submit_request.cb)
 
     res = request_result.decode()
-    logger.debug("sign_and_submit_request: <<< res: %s", res)
+    logger.debug("sign_and_submit_request: <<< res: %r", res)
     return res
 
 
@@ -64,7 +64,7 @@ async def submit_request(pool_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("submit_request: >>> pool_handle: %s, request_json: %s",
+    logger.debug("submit_request: >>> pool_handle: %r, request_json: %r",
                  pool_handle,
                  request_json)
 
@@ -81,7 +81,7 @@ async def submit_request(pool_handle: int,
                                    submit_request.cb)
 
     res = request_result.decode()
-    logger.debug("submit_request: <<< res: %s", res)
+    logger.debug("submit_request: <<< res: %r", res)
     return res
 
 
@@ -96,7 +96,7 @@ async def build_get_ddo_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_ddo_request: >>> submitter_did: %s, target_did: %s",
+    logger.debug("build_get_ddo_request: >>> submitter_did: %r, target_did: %r",
                  submitter_did,
                  target_did)
 
@@ -113,7 +113,7 @@ async def build_get_ddo_request(submitter_did: str,
                                  build_get_ddo_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_ddo_request: <<< res: %s", res)
+    logger.debug("build_get_ddo_request: <<< res: %r", res)
     return res
 
 
@@ -134,7 +134,7 @@ async def build_nym_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_nym_request: >>> submitter_did: %s, target_did: %s, ver_key: %s, alias: %s, role: %s",
+    logger.debug("build_nym_request: >>> submitter_did: %r, target_did: %r, ver_key: %r, alias: %r, role: %r",
                  submitter_did,
                  target_did,
                  ver_key,
@@ -160,7 +160,7 @@ async def build_nym_request(submitter_did: str,
                                  build_nym_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_nym_request: <<< res: %s", res)
+    logger.debug("build_nym_request: <<< res: %r", res)
     return res
 
 
@@ -181,7 +181,7 @@ async def build_attrib_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_attrib_request: >>> submitter_did: %s, target_did: %s, hash: %s, raw: %s, enc: %s",
+    logger.debug("build_attrib_request: >>> submitter_did: %r, target_did: %r, hash: %r, raw: %r, enc: %r",
                  submitter_did,
                  target_did,
                  xhash,
@@ -207,7 +207,7 @@ async def build_attrib_request(submitter_did: str,
                                  build_attrib_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_attrib_request: <<< res: %s", res)
+    logger.debug("build_attrib_request: <<< res: %r", res)
     return res
 
 
@@ -224,7 +224,7 @@ async def build_get_attrib_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_attrib_request: >>> submitter_did: %s, target_did: %s, data: %s",
+    logger.debug("build_get_attrib_request: >>> submitter_did: %r, target_did: %r, data: %r",
                  submitter_did,
                  target_did,
                  data)
@@ -244,7 +244,7 @@ async def build_get_attrib_request(submitter_did: str,
                                  build_get_attrib_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_attrib_request: <<< res: %s", res)
+    logger.debug("build_get_attrib_request: <<< res: %r", res)
     return res
 
 
@@ -259,7 +259,7 @@ async def build_get_nym_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_nym_request: >>> submitter_did: %s, target_did: %s",
+    logger.debug("build_get_nym_request: >>> submitter_did: %r, target_did: %r",
                  submitter_did,
                  target_did)
 
@@ -276,7 +276,7 @@ async def build_get_nym_request(submitter_did: str,
                                  build_get_nym_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_nym_request: <<< res: %s", res)
+    logger.debug("build_get_nym_request: <<< res: %r", res)
     return res
 
 
@@ -291,7 +291,7 @@ async def build_schema_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_schema_request: >>> submitter_did: %s, data: %s",
+    logger.debug("build_schema_request: >>> submitter_did: %r, data: %r",
                  submitter_did,
                  data)
 
@@ -308,7 +308,7 @@ async def build_schema_request(submitter_did: str,
                                  build_schema_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_schema_request: <<< res: %s", res)
+    logger.debug("build_schema_request: <<< res: %r", res)
     return res
 
 
@@ -325,7 +325,7 @@ async def build_get_schema_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %s, dest: %s, data: %s",
+    logger.debug("build_get_schema_request: >>> submitter_did: %r, dest: %r, data: %r",
                  submitter_did,
                  dest,
                  data)
@@ -345,7 +345,7 @@ async def build_get_schema_request(submitter_did: str,
                                  build_get_schema_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_schema_request: <<< res: %s", res)
+    logger.debug("build_get_schema_request: <<< res: %r", res)
     return res
 
 
@@ -364,7 +364,7 @@ async def build_claim_def_txn(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %s, xref: %s, signature_type: %s, data: %s",
+    logger.debug("build_get_schema_request: >>> submitter_did: %r, xref: %r, signature_type: %r, data: %r",
                  submitter_did,
                  xref,
                  signature_type,
@@ -387,7 +387,7 @@ async def build_claim_def_txn(submitter_did: str,
                                    build_claim_def_txn.cb)
 
     res = request_result.decode()
-    logger.debug("build_claim_def_txn: <<< res: %s", res)
+    logger.debug("build_claim_def_txn: <<< res: %r", res)
     return res
 
 
@@ -406,7 +406,7 @@ async def build_get_claim_def_txn(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_claim_def_txn: >>> submitter_did: %s, xref: %s, signature_type: %s, origin: %s",
+    logger.debug("build_get_claim_def_txn: >>> submitter_did: %r, xref: %r, signature_type: %r, origin: %r",
                  submitter_did,
                  xref,
                  signature_type,
@@ -429,7 +429,7 @@ async def build_get_claim_def_txn(submitter_did: str,
                                  build_get_claim_def_txn.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_claim_def_txn: <<< res: %s", res)
+    logger.debug("build_get_claim_def_txn: <<< res: %r", res)
     return res
 
 
@@ -446,7 +446,7 @@ async def build_node_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_node_request: >>> submitter_did: %s, target_did: %s, data: %s",
+    logger.debug("build_node_request: >>> submitter_did: %r, target_did: %r, data: %r",
                  submitter_did,
                  target_did,
                  data)
@@ -466,7 +466,7 @@ async def build_node_request(submitter_did: str,
                                  build_node_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_node_request: <<< res: %s", res)
+    logger.debug("build_node_request: <<< res: %r", res)
     return res
 
 
@@ -481,7 +481,7 @@ async def build_get_txn_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_txn_request: >>> submitter_did: %s, data: %s",
+    logger.debug("build_get_txn_request: >>> submitter_did: %r, data: %r",
                  submitter_did,
                  data)
 
@@ -498,5 +498,5 @@ async def build_get_txn_request(submitter_did: str,
                                  build_get_txn_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_txn_request: <<< res: %s", res)
+    logger.debug("build_get_txn_request: <<< res: %r", res)
     return res
