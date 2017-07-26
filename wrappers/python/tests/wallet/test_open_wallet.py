@@ -38,12 +38,12 @@ async def test_open_wallet_works_for_config():
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_not_created_wallet():
     with pytest.raises(IndyError) as e:
-        await wallet.open_wallet('wallet3', None, None)
+        await wallet.open_wallet('wallet_not_created', None, None)
     assert ErrorCode.CommonIOError == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_open_wallet_works_for_not_created_wallet():
+async def test_open_wallet_works_for_twice():
     with pytest.raises(IndyError) as e:
         await wallet.create_wallet('pool1', 'wallet_twice', None, None, None)
         await wallet.open_wallet('wallet_twice', None, None)
