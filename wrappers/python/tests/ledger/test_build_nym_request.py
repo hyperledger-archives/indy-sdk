@@ -42,7 +42,7 @@ async def test_build_nym_request_works_for_only_required_fields():
         }
     }
 
-    response = json.loads((await ledger.build_nym_request(identifier, destination, None, None, None)).decode())
+    response = json.loads((await ledger.build_nym_request(identifier, destination, None, None, None)))
     assert expected_response.items() <= response.items()
 
 
