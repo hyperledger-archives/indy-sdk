@@ -34,7 +34,7 @@ async def test_build_get_claim_def_request_works():
 
     response = json.loads((await ledger.build_get_claim_def_txn(
         identifier, _ref, signature_type, origin
-    )).decode())
+    )))
     assert expected_response.items() <= response.items()
 
 
