@@ -21,17 +21,24 @@ try {
         }
     }
 
-        if (!publishBranch) {
-            echo "${env.BRANCH_NAME}: skip publishing"
-            return
-        }
+    if (!publishBranch) {
+        echo "${env.BRANCH_NAME}: skip publishing"
+        return
+    }
 
-        // 2. PUBLISH DEB TO repo.evernym.com
-        stage('Publish DEB Files') {
-            node('ubuntu') {
-                publishDebFiles()
-            }
+    // 2. PUBLISH DEB TO repo.evernym.com
+    stage('Publish DEB Files') {
+        node('ubuntu') {
+            publishDebFiles()
         }
+    }
+
+     // 3. PUBLISH To Pypi
+    stage('Publish Pypi Files') {
+        node('ubuntu') {
+            publishToPypi()
+        }
+    }
 
 } catch (e) {
     currentBuild.result = "FAILED"
@@ -116,6 +123,36 @@ def publishDebFiles() {
 
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
                 sh "./wrappers/python/ci/deb-build-and-upload.sh $evernym_repo_key"
+            }
+        }
+    }
+    finally {
+        echo 'Publish Deb: Cleanup'
+        step([$class: 'WsCleanup'])
+    }
+}
+
+def publishToPypi() {
+    try {
+        echo 'Publish Deb files: Checkout csm'
+        checkout scm
+
+        echo 'Publish Deb: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
+
+        testEnv.inside('-u 0:0') {
+
+            withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
+                sh 'cp $credentialsFile ./wrappers/python/'
+
+                sh 'chmod -R 777 ./wrappers/python/ci'
+                sh "wrappers/python/ci/update-package-version.sh $env.BUILD_NUMBER"
+
+                sh '''
+                    cd wrappers/python
+                    python3.6 setup.py sdist
+                    python3.6 -m twine upload dist/* --config-file .pypirc
+                '''
             }
         }
     }
