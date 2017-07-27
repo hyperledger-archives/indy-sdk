@@ -15,7 +15,7 @@
 
 + (NSError *)openPoolLedgerWithName:(NSString *)name
                          poolConfig:(NSString *)config
-                         completion:(void (^)(NSError *error, IndyHandle handle)) handler;
+                         completion:(void (^)(NSError *error, IndyHandle poolHandle)) handler;
 
 + (NSError *)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
                               completion:(void (^)(NSError *error)) handler;

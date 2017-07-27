@@ -54,31 +54,22 @@
     
     // 3. Obtain trustee did
     NSString* trusteeDid = nil;
-    NSString* trusteeDidJson = [NSString stringWithFormat:@"{"\
-                                "\"seed\":\"000000000000000000000000Trustee1\"," \
-                                "\"cid\":true" \
-                                "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&trusteeDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
     // 4. Obtain my did
     NSString* myDid = nil;
-    NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"00000000000000000000000000000My1\"" \
-                           "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 5. Build nym request
@@ -127,32 +118,23 @@
     
     // 3. Obtain trustee did
     NSString *trusteeDid = nil;
-    NSString *trusteeDidJson = [NSString stringWithFormat:@"{"\
-                                "\"seed\":\"000000000000000000000000Trustee1\"," \
-                                "\"cid\":true" \
-                                "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&trusteeDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
     // 4. Obtain my did
     NSString *myDid = nil;
     NSString *myVerKey = nil;
-    NSString *myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"00000000000000000000000000000My1\"" \
-                           "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:&myVerKey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
     
@@ -226,28 +208,19 @@
     
     // 3. Obtain trustee did
     NSString *trusteeDid = nil;
-    NSString *trusteeDidJson = [NSString stringWithFormat:@"{"\
-                                "\"seed\":\"000000000000000000000000Trustee1\"," \
-                                "\"cid\":true"\
-                                "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&trusteeDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
     // 4. Obtain my did
     NSString *myDid = nil;
     NSString *myVerKey = nil;
-    NSString *myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"cid\":true"\
-                           "}"];
-    
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
+                                                          myDidJson:@"{\"cid\":true}"
                                                            outMyDid:&myDid
                                                         outMyVerkey:&myVerKey
                                                             outMyPk:nil];
@@ -350,13 +323,12 @@
     NSString *myDidJson = [NSString stringWithFormat:@"{"\
                            "\"seed\":\"00000000000000000000000000000My1\"" \
                            "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 5. Build nym request
@@ -438,7 +410,31 @@
     XCTAssertNotNil(getNymResponse, @"getNymResponse is nil!");
     XCTAssertFalse([getNymResponse isEqualToString:@""], @"getNymResponse is empty!");
     [TestUtils cleanupStorage];
+}
 
+- (void)testBuildNymRequestWorksForInvalidIdentifier
+{
+    NSString *identifier = @"invalid_base58_identifier";
+    NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+    
+    NSError *ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:identifier
+                                                                       targetDid:dest
+                                                                          verkey:nil
+                                                                           alias:nil
+                                                                            role:nil
+                                                                      outRequest:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildNymRequestWithSubmitterDid() returned wrong code");
+}
+
+- (void)testBuildGetNymRequestWorksForInvalidIdentifier
+{
+    NSString *identifier = @"invalid_base58_identifier";
+    NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+    
+    NSError *ret = [[LedgerUtils sharedInstance] buildGetNymRequestWithSubmitterDid:identifier
+                                                                          targetDid:dest
+                                                                         outRequest:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() returned wrong code");
 }
 
 @end

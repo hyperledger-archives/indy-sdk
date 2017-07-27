@@ -59,6 +59,9 @@
                   Identifier = "AgentHignCases/testSequence">
                </Test>
                <Test
+                  Identifier = "LedgerHignCases/testGetTxnRequestWorks">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorksForInvalidSeqNo">
                </Test>
                <Test
@@ -78,9 +81,6 @@
                </Test>
                <Test
                   Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
-               </Test>
-               <Test
-                  Identifier = "WalletMediumCases/testOpenWalletWorksForTwice">
                </Test>
             </SkippedTests>
          </TestableReference>

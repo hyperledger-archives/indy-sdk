@@ -29,17 +29,17 @@
 
 + (NSError *)openPoolLedgerWithName:(NSString *)name
                          poolConfig:(NSString *)config
-                         completion:(void (^)(NSError *error, IndyHandle handle)) handler
+                         completion:(void (^)(NSError *error, IndyHandle poolHandle)) handler
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_open_pool_ledger(handle,
-                                  [name UTF8String],
-                                  [config UTF8String],
-                                  IndyWrapperCommon3PHCallback
-                                 );
+                                [name UTF8String],
+                                [config UTF8String],
+                                IndyWrapperCommon3PHCallback
+                                );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];

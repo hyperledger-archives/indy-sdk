@@ -125,12 +125,11 @@
     [TestUtils cleanupStorage];
 }
 
-// TODO: This test is unfinished in Rust and ignored
 - (void)testOpenWalletWorksForTwice
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"indy_create_wallet_works";
-    NSString *walletName = @"wallet1";
+    NSString *walletName = @"indy_open_wallet_works_for_twice";
     NSError *ret;
     
     // 1. Create wallet
@@ -148,11 +147,10 @@
     
     
     // 3. Open wallet again
-    // TODO: Returns 0, not 111
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
                                                     config:nil
                                                  outHandle:nil];
-    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:openWalletWithName() failed");
+    XCTAssertEqual(ret.code, WalletAlreadyOpenedError, @"WalletUtils:openWalletWithName() failed");
     
     [TestUtils cleanupStorage];
 }
