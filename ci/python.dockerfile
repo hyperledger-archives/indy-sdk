@@ -8,7 +8,8 @@ RUN apt-get update && \
       apt-utils \
       software-properties-common \
       ruby-dev \
-      build-essential
+      build-essential \
+      git
 
 RUN add-apt-repository ppa:jonathonf/python-3.6
 
