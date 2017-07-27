@@ -209,8 +209,8 @@
     NSError *ret;
     
     ret = [IndyLedger buildSchemaRequestWithSubmitterDid:submitterDid
-                                                      data:data
-                                                completion:^(NSError *error, NSString *request)
+                                                    data:data
+                                              completion:^(NSError *error, NSString *request)
            {
                err = error;
                result = request;

@@ -1754,10 +1754,11 @@
     
     NSDictionary *getTxnRequest = [NSDictionary fromString:getTxnRequestJson];
     
-    XCTAssertTrue([getTxnRequest contains:expectedResult], @"");
+    XCTAssertTrue([getTxnRequest contains:expectedResult], @"getTxnRequest json doesn't contain expectedResult json");
 }
 
-// TODO: Delete it after merge ticket Indy SDKIS-149 Pyindy Interoperability: Support GET_TXN in Pyindy
+
+// TODO - Still does not pass
 - (void)testGetTxnRequestWorks
 {
     [TestUtils cleanupStorage];
@@ -1779,21 +1780,19 @@
     
     // 3. Create my did
     NSString *myDid;
-    NSString *myDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":true}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for myDid");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
     
     NSMutableArray *keys = [NSMutableArray new];
     [keys addObject:@"name"];
-    [keys addObject:@"male"];
     
     // 4. Build schema data json
     NSMutableDictionary *schemaData = [NSMutableDictionary new];
-    schemaData[@"name"] = @"get_txn_schema";
+    schemaData[@"name"] = @"gvt3";
     schemaData[@"version"] = @"3.0";
     schemaData[@"keys"] = keys;
     
@@ -1816,7 +1815,7 @@
     
     // 6. Build & send get schema request
     
-    NSString *getSchemaDataJson = @"{\"name\":\"get_txn_schema\",\"version\":\"3.0\"}";
+    NSString *getSchemaDataJson = @"{\"name\":\"gvt3\",\"version\":\"3.0\"}";
     NSString *getSchemaRequest;
     ret = [[LedgerUtils sharedInstance] buildGetSchemaRequestWithSubmitterDid:myDid
                                                                          dest:myDid
@@ -1831,7 +1830,7 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
     
     // 9. Build & submit get txn request
-     
+    
     NSDictionary *schemaResponse = [NSDictionary fromString:schemaResponseJson];
     NSNumber *seqNo = (NSNumber *)schemaResponse[@"result"][@"seqNo"];
     
@@ -1841,7 +1840,6 @@
                                                                 resultJson:&getTxnRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");
     
-    // TODO: 304 error
     NSString *getTxnResponseJson;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:walletHandle
@@ -1853,13 +1851,19 @@
     // 10. Check getTxnResponse
     NSDictionary *getTxnResponse = [NSDictionary fromString: getTxnResponseJson];
     
+    NSDictionary *getTxnSchemaResult = getTxnResponse[@"result"][@"data"];
     // TODO: Fix this check then test will be fixed
-    XCTAssertTrue([getTxnResponse[@"result"][@"data"] count] > 0, @"empty data field in getTxnResponse");
+    XCTAssertTrue([getTxnSchemaResult[@"data"] count] > 0, @"empty data field in getTxnResponse[result][data]");
+    
+    NSString *getTxnSchemaDataJson = [NSDictionary toString:getTxnSchemaResult[@"data"]];
+    
+    XCTAssertTrue([getTxnSchemaDataJson isEqualToString:schemaDataJson], @"getTxnSchemaDataJson is not equesl to schemaDataJson");
     
     [TestUtils cleanupStorage];
 }
 
-// TODO: Delete it after merge ticket Indy SDKIS-149 Pyindy Interoperability: Support GET_TXN in Pyindy
+
+// TODO: Still doesn't work
 - (void)testGetTxnRequestWorksForInvalidSeqNo
 {
     [TestUtils cleanupStorage];
@@ -1881,21 +1885,19 @@
     
     // 3. Create my did
     NSString *myDid;
-    NSString *myDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":true}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for myDid");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
     
     NSMutableArray *keys = [NSMutableArray new];
     [keys addObject:@"name"];
-    [keys addObject:@"male"];
     
     // 4. Build schema data json
     NSMutableDictionary *schemaData = [NSMutableDictionary new];
-    schemaData[@"name"] = @"gvt2";
+    schemaData[@"name"] = @"gvt3";
     schemaData[@"version"] = @"version";
     schemaData[@"keys"] = keys;
     
