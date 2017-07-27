@@ -8,7 +8,7 @@ key="$1"
 
 mkdir wrappers/python/debs
 
-version=$(grep -Po "(?<=version=')([0-9]|\.)*" setup.py)
+version=$(grep -Po "(?<=version=')([0-9]|\.)*" wrappers/python/setup.py)
 
 [ -z $key ] && exit 1
 [ -z $version ] && exit 2
