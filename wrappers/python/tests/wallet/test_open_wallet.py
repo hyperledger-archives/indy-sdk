@@ -2,12 +2,7 @@ from indy import IndyError
 from indy import wallet
 from indy.error import ErrorCode
 
-from ..utils import storage
-
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
@@ -21,8 +16,8 @@ async def test_open_wallet_works(cleanup_storage):
 
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_config(cleanup_storage):
-    await wallet.create_wallet('pool1', 'wallet2', None, None, None)
-    wallet_handle = await wallet.open_wallet('wallet2', '{"freshness_time":1000}', None)
+    await wallet.create_wallet('pool1', 'wallet1', None, None, None)
+    wallet_handle = await wallet.open_wallet('wallet1', '{"freshness_time":1000}', None)
     assert wallet_handle is not None
 
     await wallet.close_wallet(wallet_handle)

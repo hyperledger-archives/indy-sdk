@@ -2,12 +2,7 @@ from indy import IndyError
 from indy import wallet
 from indy.error import ErrorCode
 
-from ..utils import storage
-
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
