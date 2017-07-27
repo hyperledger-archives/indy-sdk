@@ -45,7 +45,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public async Task TestProverCreateAndStoreClaimReqWorksForClaimDoesNotCorrespondToClaimRequest()
+        public async Task TestIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimRequest()
         {
             InitCommonWallet();
 
@@ -63,7 +63,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public async Task TestProverCreateAndStoreClaimReqWorksForInvalidClaim()
+        public async Task TestIssuerCreateAndStoreClaimReqWorksForInvalidClaim()
         {
             InitCommonWallet();
 

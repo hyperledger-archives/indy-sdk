@@ -9,7 +9,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     public class CreateMyDidTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
-
+        private string _walletName = "signusWallet";
         private string _seed = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         private string _did = "8wZcEriaNLNKtteJvx7f8i";
         private string _expectedVerkey = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -18,15 +18,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestInitialize]
         public void CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", "signusWallet", "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync("signusWallet", null, null).Result;
+            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
+            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
         }
 
         [TestCleanup]
         public void DeleteWallet()
         {
             _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("signusWallet", null).Wait();
+            Wallet.DeleteWalletAsync(_walletName, null).Wait();
         }
         
         [TestMethod]
@@ -49,7 +49,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
             var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
             Assert.IsNotNull(result);
 
-            Assert.AreEqual("NcYxiDXkpYi6ov5FcYDi1e", result.Did);
+            var expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
+
+            Assert.AreEqual(expectedDid, result.Did);
             Assert.AreEqual(_expectedVerkey, result.VerKey);
         }
 

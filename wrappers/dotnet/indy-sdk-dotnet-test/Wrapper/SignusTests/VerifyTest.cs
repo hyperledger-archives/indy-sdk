@@ -9,6 +9,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     {
         private Pool _pool;
         private Wallet _wallet;
+        private string walletName = "signusWallet";
         private string _trusteeDid;
         private string _trusteeVerkey;
         private string _identityJson;
@@ -21,8 +22,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
 
             _pool = Pool.OpenPoolLedgerAsync(poolName, "{}").Result;
 
-            Wallet.CreateWalletAsync(poolName, "signusWallet", "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync("signusWallet", null, null).Result;
+            Wallet.CreateWalletAsync(poolName, walletName, "default", null, null).Wait();
+            _wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
             
             var json = "{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":false}";
 
@@ -37,7 +38,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         public void DeleteWallet()
         {
             _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("signusWallet", null).Wait();
+            Wallet.DeleteWalletAsync(walletName, null).Wait();
             _pool.CloseAsync().Wait();
         }
 
@@ -78,8 +79,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         public void TestVerifyWorksForGetVerkeyFromLedger()
         {
             CreateNewNymWithDidInLedger();
-            _identityJson = string.Format("{{\"did\":\"{0}\"}}", _newDid);
-            Signus.StoreTheirDidAsync(_wallet, _identityJson).Wait();
+            Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"did\":\"{0}\"}}", _newDid)).Wait();
 
             var msg = "{\"reqId\":1496822211362017764,\n" +
                 "\"signature\":\"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai\"}";

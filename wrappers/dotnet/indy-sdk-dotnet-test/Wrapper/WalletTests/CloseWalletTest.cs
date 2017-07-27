@@ -10,9 +10,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public void TestCloseWalletWorks()
         {
-            Wallet.CreateWalletAsync("default", "CloseAsyncWorks", "default", null, null).Wait();
+            var walletName = "closeWalletWorks";
+            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
 
-            var wallet = Wallet.OpenWalletAsync("CloseAsyncWorks", null, null).Result;
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             Assert.IsNotNull(wallet);
 
@@ -22,9 +23,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public async Task TestCloseWalletWorksForTwice()
         {
-            Wallet.CreateWalletAsync("default", "CloseAsyncWorksForTwice", "default", null, null).Wait();
+            var walletName = "closeWalletWorksForTwice";
 
-            var wallet = Wallet.OpenWalletAsync("CloseAsyncWorksForTwice", null, null).Result;
+            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             Assert.IsNotNull(wallet);
 
@@ -35,6 +38,19 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             );
 
             Assert.AreEqual(ErrorCode.WalletInvalidHandle, ex.ErrorCode);
+        }
+
+        [TestMethod]
+        public void TestCloseWalletWorksForPlugged()
+        {
+            var type = "inmem";
+            var walletName = "testCloseWalletWorksForPlugged";
+
+            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
+            Wallet.CreateWalletAsync("default", walletName, type, null, null).Wait();
+
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            wallet.CloseAsync().Wait();
         }
     }
 }

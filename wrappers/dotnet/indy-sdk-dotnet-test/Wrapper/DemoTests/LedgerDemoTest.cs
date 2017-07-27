@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 using System;
 
-namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
+namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 {
     [TestClass]
     public class LedgerDemoTest : IndyIntegrationTestBase

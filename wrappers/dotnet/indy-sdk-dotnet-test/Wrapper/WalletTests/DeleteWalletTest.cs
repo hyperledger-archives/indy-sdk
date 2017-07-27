@@ -10,34 +10,42 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public void TestDeleteWalletWorks()
         {
+            var poolName = "default";
+            var walletName = "deleteWalletWorks";
+            var type = "default";
 
-            Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorks", "default", null, null).Wait();
-            Wallet.DeleteWalletAsync("DeleteWalletAsyncWorks", null).Wait();
-            Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorks", "default", null, null).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
+            Wallet.DeleteWalletAsync(walletName, null).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
         }
 
         [TestMethod]
         public void TestDeleteWalletWorksForClosed()
         {
-            Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorksForClosed", null, null, null).Wait();
+            var poolName = "default";
+            var walletName = "deleteWalletWorks";
 
-            var wallet = Wallet.OpenWalletAsync("DeleteWalletAsyncWorksForClosed", null, null).Result;
+            Wallet.CreateWalletAsync(poolName, walletName, null, null, null).Wait();
+
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
             Assert.IsNotNull(wallet);
 
             wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForClosed", null).Wait();
-            Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorksForClosed", null, null, null).Wait();
+            Wallet.DeleteWalletAsync(walletName, null).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, null, null, null).Wait();
         }
 
         [TestMethod]
         [Ignore] //Bug in Indy
         public async Task TestDeleteWalletWorksForOpened()
         {
-            Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorksForOpened", null, null, null).Wait();
-            var wallet = Wallet.OpenWalletAsync("DeleteWalletAsyncWorksForOpened", null, null).Result;
+            var walletName = "deleteWalletWorksForOpened";
+
+            Wallet.CreateWalletAsync("default", walletName, null, null, null).Wait();
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForOpened", null)
+                Wallet.DeleteWalletAsync(walletName, null)
             );
 
             Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);            
@@ -46,18 +54,21 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public async Task TestDeleteWalletWorksForTwice()
         {
-            Wallet.CreateWalletAsync("default", "DeleteWalletAsyncWorksForTwice", null, null, null).Wait();
+            var walletName = "deleteWalletWorksForTwice";
 
-            var wallet = Wallet.OpenWalletAsync("DeleteWalletAsyncWorksForTwice", null, null).Result;
+
+            Wallet.CreateWalletAsync("default", walletName, null, null, null).Wait();
+
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             Assert.IsNotNull(wallet);
 
             wallet.CloseAsync().Wait();
 
-            Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null).Wait();
+            Wallet.DeleteWalletAsync(walletName, null).Wait();
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                 Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null)
+                 Wallet.DeleteWalletAsync(walletName, null)
             );
 
             Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
@@ -68,10 +79,23 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         public async Task TestDeleteWalletWorksForNotCreated()
         {
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForTwice", null)
+                Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForNotCreated", null)
             );
 
             Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
+        }
+
+        [TestMethod]
+        public void TestDeleteWalletWorksForPlugged()
+        {
+            var type = "inmem";
+            var poolName = "default";
+            var walletName = "wallet";
+
+            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
+            Wallet.DeleteWalletAsync(walletName, null).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
         }
     }
 }

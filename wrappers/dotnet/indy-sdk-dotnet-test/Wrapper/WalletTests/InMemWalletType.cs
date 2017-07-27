@@ -1,4 +1,5 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,8 +12,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
     public class InMemWalletType : WalletType
     {
-        private IDictionary<int, InMemWallet> _walletsByHandle = new ConcurrentDictionary<int, InMemWallet>();
-        private IDictionary<string, InMemWallet> _walletsByName = new ConcurrentDictionary<string, InMemWallet>();
+        private IDictionary<int, InMemWallet> _openWallets = new ConcurrentDictionary<int, InMemWallet>();
+        private IDictionary<string, InMemWallet> _configuredWallets = new ConcurrentDictionary<string, InMemWallet>();
 
         /// <summary>
         /// The next command handle to use.
@@ -30,24 +31,35 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         public override ErrorCode Create(string name, string config, string credentials)
         {
-            if (_walletsByName.ContainsKey(name))
+            if (_configuredWallets.ContainsKey(name))
                 return ErrorCode.WalletAlreadyExistsError;
 
-            _walletsByName.Add(name, new InMemWallet());
+            var freshnessDuration = TimeSpan.FromSeconds(1000);
+
+            if (!string.IsNullOrEmpty(config))
+            {
+                var configObj = JObject.Parse(config);
+                var configuredFreshness = configObj.Value<double?>("freshness_time");
+
+                if (configuredFreshness != null)
+                    freshnessDuration = TimeSpan.FromSeconds(configuredFreshness.Value);
+            }
+
+            _configuredWallets.Add(name, new InMemWallet(freshnessDuration));
             return ErrorCode.Success;
         }
 
         public override ErrorCode Delete(string name, string config, string credentials)
         {
-            if (!_walletsByName.ContainsKey(name))
+            if (!_configuredWallets.ContainsKey(name))
                 return ErrorCode.CommonInvalidState;
 
-            var wallet = _walletsByName[name];
+            var wallet = _configuredWallets[name];
 
             if (wallet.IsOpen)
                 return ErrorCode.CommonInvalidState;
 
-            _walletsByName.Remove(name);
+            _configuredWallets.Remove(name);
 
             return ErrorCode.Success;
         }
@@ -56,10 +68,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             walletHandle = -1;
 
-            if (!_walletsByName.ContainsKey(name))
+            if (!_configuredWallets.ContainsKey(name))
                 return ErrorCode.CommonInvalidState;
 
-            var wallet = _walletsByName[name];
+            var wallet = _configuredWallets[name];
 
             if (wallet.IsOpen)
                 return ErrorCode.WalletAlreadyOpenedError;
@@ -67,7 +79,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             wallet.IsOpen = true;
 
             walletHandle = GetNextWalletHandle();
-            _walletsByHandle.Add(walletHandle, wallet);
+            _openWallets.Add(walletHandle, wallet);
 
             return ErrorCode.Success;
         }
@@ -86,14 +98,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             }
             
             wallet.IsOpen = false;
-            _walletsByHandle.Remove(walletHandle);
+            _openWallets.Remove(walletHandle);
 
             return ErrorCode.Success;
         }
 
         protected override CustomWalletBase GetWalletByHandle(int handle)
         {
-            return _walletsByHandle[handle];
+            return _openWallets[handle];
         }
 
     }

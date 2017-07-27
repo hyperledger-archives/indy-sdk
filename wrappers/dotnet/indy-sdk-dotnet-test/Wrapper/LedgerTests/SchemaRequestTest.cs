@@ -11,6 +11,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private Pool _pool;
         private Wallet _wallet;
         private string _walletName = "ledgerWallet";
+        private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
 
         [TestInitialize]
         public void OpenPool()
@@ -33,16 +34,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public void TestBuildSchemaRequestWorks()
         {
-            var identifier = "Th7MpTaRZVRYnPiabds81Y";
             var data = "{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]}";
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"type\":\"101\"," +
                     "\"data\":\"{1}\"" +
-                    "}}", identifier, data);
+                    "}}", _identifier, data);
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(identifier, data).Result;
+            var schemaRequest = Ledger.BuildSchemaRequestAsync(_identifier, data).Result;
 
             Assert.IsTrue(schemaRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -50,7 +50,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public void TestBuildGetSchemaRequestWorks()
         {
-            var identifier = "Th7MpTaRZVRYnPiabds81Y";
             var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
@@ -58,15 +57,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"type\":\"107\"," +
                     "\"dest\":\"{1}\"," +
                     "\"data\":{2}" +
-                    "}}", identifier, identifier, data);
+                    "}}", _identifier, _identifier, data);
 
-            var getSchemaRequest = Ledger.BuildGetSchemaRequestAsync(identifier, identifier, data).Result;
+            var getSchemaRequest = Ledger.BuildGetSchemaRequestAsync(_identifier, _identifier, data).Result;
 
             Assert.IsTrue(getSchemaRequest.Contains(expectedResult));
         }
 
         [TestMethod]
-        public async Task TestSchemaRequestWorksWithoutSignature()
+        public async Task TestBuildSchemaRequestWorksWithoutSignature()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
             var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
@@ -85,7 +84,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
-        [TestMethod]
+        [TestMethod] //Name of this test is bad.
         public void TestSchemaRequestWorks()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
@@ -127,11 +126,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public async Task TestBuildSchemaRequestWorksForMissedFields()
         {
-            var identifier = "Th7MpTaRZVRYnPiabds81Y";
             var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Ledger.BuildSchemaRequestAsync(identifier, data)
+                Ledger.BuildSchemaRequestAsync(_identifier, data)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);

@@ -40,7 +40,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["attrs"]["attr1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 1);
+            Assert.AreEqual(1, claimsForAttribute1.Count);
         }
 
         [TestMethod]
@@ -60,7 +60,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["attrs"]["attr1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 0);
+            Assert.AreEqual(0, claimsForAttribute1.Count);
         }
 
         [TestMethod]
@@ -80,7 +80,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["predicates"]["predicate1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 1);
+            Assert.AreEqual(1, claimsForAttribute1.Count);
         }
 
         [TestMethod]
@@ -100,7 +100,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["predicates"]["predicate1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 0);
+            Assert.AreEqual(0, claimsForAttribute1.Count);
         }
 
         [TestMethod]
@@ -125,16 +125,16 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["attrs"]["attr1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 1);
+            Assert.AreEqual(1, claimsForAttribute1.Count);
 
             var claimsForAttribute2 = (JArray)claims["attrs"]["attr2_uuid"];
-            Assert.AreEqual(claimsForAttribute2.Count, 1);
+            Assert.AreEqual(1, claimsForAttribute2.Count);
 
             var claimsForPredicate1 = (JArray)claims["predicates"]["predicate1_uuid"];
-            Assert.AreEqual(claimsForPredicate1.Count, 1);
+            Assert.AreEqual(1, claimsForPredicate1.Count);
 
             var claimsForPredicate2 = (JArray)claims["predicates"]["predicate2_uuid"];
-            Assert.AreEqual(claimsForPredicate2.Count, 1);
+            Assert.AreEqual(1, claimsForPredicate2.Count);
         }
 
         [TestMethod]
@@ -153,8 +153,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
 
             var claims = JObject.Parse(claimsJson);
 
-            Assert.AreEqual(((JObject)claims["attrs"]).Count, 0);
-            Assert.AreEqual(((JObject)claims["predicates"]).Count, 0);
+            Assert.AreEqual(0, ((JObject)claims["attrs"]).Count);
+            Assert.AreEqual(0, ((JObject)claims["predicates"]).Count);
         }
 
         [TestMethod]
@@ -174,7 +174,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["attrs"]["attr1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 0);
+            Assert.AreEqual(0, claimsForAttribute1.Count);
         }
 
         [TestMethod]
@@ -194,7 +194,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["attrs"]["attr1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 1);
+            Assert.AreEqual(1, claimsForAttribute1.Count);
         }
 
         [TestMethod]
@@ -214,7 +214,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             var claims = JObject.Parse(claimsJson);
 
             var claimsForAttribute1 = (JArray)claims["predicates"]["predicate1_uuid"];
-            Assert.AreEqual(claimsForAttribute1.Count, 1);
+            Assert.AreEqual(1, claimsForAttribute1.Count);
         }
 
         [TestMethod]

@@ -9,18 +9,27 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
     public class RequestTest : IndyIntegrationTestBase
     {
         private Pool _pool;
-        private string _poolName;
+        private Wallet _wallet;
+        private string _walletName = "ledgerWallet";
 
         [TestInitialize]
         public void OpenPool()
         {
-            _poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(_poolName, null).Result;
+            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+
+            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
+            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+
         }
 
         [TestCleanup]
         public void ClosePool()
         {
+            _wallet.CloseAsync().Wait();
+            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+
+
             _pool.CloseAsync().Wait();
         }
 
@@ -50,37 +59,50 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public void TestSignAndSubmitRequestWorks()
         {
-            Wallet.CreateWalletAsync(_poolName, "ledgerWallet", "default", null, null).Wait();
-            var wallet = Wallet.OpenWalletAsync("ledgerWallet", null, null).Result;
-
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(wallet, trusteeDidJson).Result;
+            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidJson = "{\"seed\":\"00000000000000000000000000000My1\"}";
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(wallet, myDidJson).Result;
+            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
             var myDid = myDidResult.Did;
 
             var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null).Result;
-            var nymResponse = Ledger.SignAndSubmitRequestAsync(_pool, wallet, trusteeDid, nymRequest).Result;
+            var nymResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Result;
             Assert.IsNotNull(nymResponse);
+        }
+        [TestMethod]
+        public async Task TestSignAndSubmitRequestWorksForNotFoundSigner()
+        {
+            var trusteeDidJson = "{\"seed\":\"00000000000000000000UnknowSigner\"}";
 
-            wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("ledgerWallet", null).Wait();
+            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var signerDid = trusteeDidResult.Did;
+
+            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDid = myDidResult.Did;
+
+            var nymRequest = Ledger.BuildNymRequestAsync(signerDid, myDid, null, null, null).Result;            
+
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+               Ledger.SignAndSubmitRequestAsync(_pool, _wallet, signerDid, nymRequest)
+            );
+
+            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
         public async Task TestSignAndSubmitRequestWorksForIncompatibleWalletAndPool()
         {
-            Wallet.CreateWalletAsync("otherPoolName", "wallet", "default", null, null).Wait();
-            var wallet = Wallet.OpenWalletAsync("wallet", null, null).Result;
+            var walletName = "incompatibleWallet";
+
+            Wallet.CreateWalletAsync("otherPoolName", walletName, "default", null, null).Wait();
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
             var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(wallet, trusteeDidJson).Result;
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidJson = "{\"seed\":\"00000000000000000000000000000My1\"}";
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(wallet, myDidJson).Result;
+            var myDidResult = Signus.CreateAndStoreMyDidAsync(wallet, "{}").Result;
             var myDid = myDidResult.Did;
 
             var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null).Result;            
@@ -90,10 +112,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             );
 
             Assert.AreEqual(ErrorCode.WalletIncompatiblePoolError, ex.ErrorCode);
-
-            wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("wallet", null).Wait();
         }
-
     }
 }

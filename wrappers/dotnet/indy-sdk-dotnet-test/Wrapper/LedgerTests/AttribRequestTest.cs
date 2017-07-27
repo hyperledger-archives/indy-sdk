@@ -11,6 +11,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private Pool _pool;
         private Wallet _wallet;
         private string _walletName = "ledgerWallet";
+        private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
+        private string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+        private string _endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
+
 
         [TestInitialize]
         public void OpenPool()
@@ -33,18 +37,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public void TestBuildAttribRequestWorksForRawData()
         {
-            string identifier = "Th7MpTaRZVRYnPiabds81Y";
-            string dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-            string raw = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
-
             string expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"type\":\"100\"," +
                     "\"dest\":\"{1}\"," +
-                    "\"raw\":\"{{\"endpoint\":{{\"ha\":\"127.0.0.1:5555\"}}}}\"" +
-                    "}}", identifier, dest);
+                    "\"raw\":\"{1}\"" +
+                    "}}", _identifier, _dest, _endpoint);
 
-            string attribRequest = Ledger.BuildAttribRequestAsync(identifier, dest, null, raw, null).Result;
+            string attribRequest = Ledger.BuildAttribRequestAsync(_identifier, _dest, null, _endpoint, null).Result;
 
             Assert.IsTrue(attribRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -53,8 +53,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         public async Task TestBuildAttribRequestWorksForMissedAttribute()
         {
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Ledger.BuildAttribRequestAsync("Th7MpTaRZVRYnPiabds81Y",
-                "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4", null, null, null)
+                Ledger.BuildAttribRequestAsync(_identifier, _dest, null, null, null)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
@@ -63,8 +62,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public void TestBuildGetAttribRequestWorks()
         {
-            string identifier = "Th7MpTaRZVRYnPiabds81Y";
-            string dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
             string raw = "endpoint";
 
             string expectedResult = string.Format("\"identifier\":\"{0}\"," +
@@ -72,9 +69,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"type\":\"104\"," +
                     "\"dest\":\"{1}\"," +
                     "\"raw\":\"{2}\"" +
-                    "}}", identifier, dest, raw);
+                    "}}", _identifier, _dest, raw);
 
-            string attribRequest = Ledger.BuildGetAttribRequestAsync(identifier, dest, raw).Result;
+            string attribRequest = Ledger.BuildGetAttribRequestAsync(_identifier, _dest, raw).Result;
 
             Assert.IsTrue(attribRequest.Contains(expectedResult));
         }
@@ -87,8 +84,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
             var trusteeDid = trusteeDidResult.Did;
 
-            var endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
-            var attribRequest = Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, endpoint, null).Result;
+            var attribRequest = Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, _endpoint, null).Result;
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, attribRequest)
@@ -105,19 +101,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson).Result;
             var trusteeDid = trusteeDidResult.Did;
 
-            var myJson = "{\"seed\":\"00000000000000000000000000000My1\"}";
-
-           
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myJson).Result;
+            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
             var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null).Result;
             Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
 
-            var endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
-
-            var attribRequest = Ledger.BuildAttribRequestAsync(myDid, myDid, null, endpoint, null).Result;
+            var attribRequest = Ledger.BuildAttribRequestAsync(myDid, myDid, null, _endpoint, null).Result;
             Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, attribRequest).Wait();
 
             var getAttribRequest = Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint").Result;
@@ -125,17 +116,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var jsonObject = JObject.Parse(getAttribResponse);
 
-            Assert.AreEqual(endpoint, jsonObject["result"]["data"]);
+            Assert.AreEqual(_endpoint, jsonObject["result"]["data"]);
         }
 
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForInvalidIdentifier()
         {
-            var endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";  
-
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Ledger.BuildAttribRequestAsync("invalid_base58_identifier",
-                "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4", null, endpoint, null)
+                Ledger.BuildAttribRequestAsync("invalid_base58_identifier", _dest, null, _endpoint, null)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);

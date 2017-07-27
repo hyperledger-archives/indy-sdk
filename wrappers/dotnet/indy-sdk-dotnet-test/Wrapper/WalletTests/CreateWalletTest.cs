@@ -42,20 +42,31 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                 Wallet.CreateWalletAsync(string.Empty, "createWalletWorks", "default", null, null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonInvalidParam2, ex.ErrorCode);            
+            Assert.AreEqual(ErrorCode.CommonInvalidParam2, ex.ErrorCode);
         }
 
         [TestMethod]
         public async Task TestCreateWalletWorksForDuplicateName()
         {
+            var poolName = "default";
+            var walletName = "deleteWalletWorks";
+            var type = "default";
 
-            Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null)
+                Wallet.CreateWalletAsync(poolName, walletName, type, null, null)
             );
 
             Assert.AreEqual(ErrorCode.WalletAlreadyExistsError, ex.ErrorCode);
         }
+
+        [TestMethod]
+        public void TestCreateWalletWorksForPlugged()
+        {
+            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType(), false).Wait();
+            Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
+        }
+
     }
 }

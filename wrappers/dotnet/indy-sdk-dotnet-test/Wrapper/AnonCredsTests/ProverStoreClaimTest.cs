@@ -28,9 +28,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         {
             InitCommonWallet();
 
+            var proverWalletName = "proverWallet";
+            Wallet.CreateWalletAsync("default", proverWalletName, "default", null, null).Wait();
+            var proverWallet = Wallet.OpenWalletAsync(proverWalletName, null, null).Result;
+
+            AnonCreds.ProverCreateMasterSecretAsync(proverWallet, _masterSecretName).Wait();
+            
             var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 1);
 
-            var claimRequest = AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, _proverDid, claimOffer, _claimDef, _masterSecretName).Result;
+            var claimRequest = AnonCreds.ProverCreateAndStoreClaimReqAsync(proverWallet, _proverDid, claimOffer, _claimDef, _masterSecretName).Result;
 
             var claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
                     "                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -39,12 +45,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "        }";
 
             var createClaimResult = AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1).Result;
-            Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
-            AnonCreds.ProverStoreClaimAsync(_commonWallet, claimJson).Wait();
+            AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson).Wait();
+
+            proverWallet.CloseAsync().Wait();
+            Wallet.DeleteWalletAsync(proverWalletName, null).Wait();
         }
-        
+
         [TestMethod]
         public async Task TestProverStoreClaimWorksWithoutClaim()
         {

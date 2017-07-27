@@ -9,15 +9,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     public class ReplaceKeysTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
-
+        private string _walletName = "signusWallet";
         private string _did;
         private string _verKey;
 
         [TestInitialize]
         public void CreateWalletWithDid()
         {
-            Wallet.CreateWalletAsync("default", "signusWallet", "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync("signusWallet", null, null).Result;
+            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
+            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
 
             var result = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 
@@ -29,7 +29,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         public void DeleteWallet()
         {
             _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("signusWallet", null).Wait();
+            Wallet.DeleteWalletAsync(_walletName, null).Wait();
         }
         
         [TestMethod]

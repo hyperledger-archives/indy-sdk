@@ -34,7 +34,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             Assert.AreEqual(3, claimOffersArray.Count);
         }
 
-        [TestMethod] //Returned data formatting does not match asserts.
+        [TestMethod]
         public void TestsProverGetClaimOffersWorksForFilterByIssuer()
         {
             InitCommonWallet();
@@ -46,27 +46,27 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
 
             Assert.AreEqual(2, claimOffersArray.Count);
 
-            Assert.IsTrue(claimOffersArray.ToString().Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
-            Assert.IsTrue(claimOffersArray.ToString().Contains(string.Format(_claimOfferTemplate, _issuerDid, 2)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 2)));
         }
 
-        [TestMethod] //Returned data formatting does not match asserts.
+        [TestMethod] 
         public void TestsProverGetClaimOffersWorksForFilterBySchema()
         {
             InitCommonWallet();
 
-            var filter = string.Format("{{\"schema_seq_no\":\"{0}\"}}", _issuerDid);
+            var filter = string.Format("{{\"schema_seq_no\":{0}}}", 2);
 
             var claimOffers = AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter).Result;
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(2, claimOffersArray.Count);
 
-            Assert.IsTrue(claimOffersArray.ToString().Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
-            Assert.IsTrue(claimOffersArray.ToString().Contains(string.Format(_claimOfferTemplate, _issuerDid2, 2)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 2)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid2, 2)));
         }
 
-        [TestMethod] //Returned data formatting does not match asserts.
+        [TestMethod] 
         public void TestsProverGetClaimOffersWorksForFilterByIssuerAndSchema()
         {
             InitCommonWallet();
@@ -78,7 +78,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
 
             Assert.AreEqual(1, claimOffersArray.Count);
 
-            Assert.IsTrue(claimOffersArray.ToString().Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
         }
 
         [TestMethod]

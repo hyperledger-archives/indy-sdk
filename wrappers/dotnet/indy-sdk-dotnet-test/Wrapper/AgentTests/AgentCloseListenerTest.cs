@@ -11,7 +11,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
     public class AgentCloseListenerTest : AgentIntegrationTestBase
     {
 
-        private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
+        private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource;
 
 
         public class ListenerConnectionObserver : ConnectionObserver
@@ -29,6 +29,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         static AgentCloseListenerTest()
         {
             _incomingConnectionObserver = new ListenerConnectionObserver();
+        }
+
+        [TestInitialize]
+        public void Initialize()
+        {
+            _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
         }
 
 

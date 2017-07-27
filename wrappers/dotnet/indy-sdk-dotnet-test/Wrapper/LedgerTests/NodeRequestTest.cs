@@ -10,6 +10,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private Pool _pool;
         private Wallet _wallet;
         private string _walletName = "ledgerWallet";
+        private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
+        private string _dest = "Th7MpTaRZVRYnPiabds81Y";
 
         [TestInitialize]
         public void OpenPool()
@@ -32,8 +34,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public void TestBuildNodeRequestWorks()
         {
-            var identifier = "Th7MpTaRZVRYnPiabds81Y";
-            var dest = "Th7MpTaRZVRYnPiabds81Y";
             var data = "{\"node_ip\":\"10.0.0.100\"," +
                     "\"node_port\":910," +
                     "\"client_ip\":\"10.0.0.100\"," +
@@ -46,9 +46,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"type\":\"0\"," +
                     "\"dest\":\"{1}\"," +
                     "\"data\":{2}" +
-                    "}}", identifier, dest, data);
+                    "}}", _identifier, _dest, data);
 
-            var nodeRequest = Ledger.BuildNodeRequestAsync(identifier, dest, data).Result;
+            var nodeRequest = Ledger.BuildNodeRequestAsync(_identifier, _dest, data).Result;
 
             Assert.IsTrue(nodeRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -78,8 +78,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public async Task TestBuildNodeRequestWorksForWrongServiceType()
         {
-            var identifier = "Th7MpTaRZVRYnPiabds81Y";
-            var dest = "Th7MpTaRZVRYnPiabds81Y";
             var data = "{\"node_ip\":\"10.0.0.100\"," +
                     "\"node_port\":910," +
                     "\"client_ip\":\"10.0.0.100\"," +
@@ -88,7 +86,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"services\":[\"SERVICE\"]}";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Ledger.BuildNodeRequestAsync(identifier, dest, data)
+                Ledger.BuildNodeRequestAsync(_identifier, _dest, data)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
@@ -97,8 +95,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public async Task TestBuildNodeRequestWorksForMissedField()
         {
-            var identifier = "Th7MpTaRZVRYnPiabds81Y";
-            var dest = "Th7MpTaRZVRYnPiabds81Y";
             var data = "{\"node_ip\":\"10.0.0.100\"," +
                     "\"node_port\":910," +
                     "\"client_ip\":\"10.0.0.100\"," +
@@ -106,7 +102,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"services\":[\"VALIDATOR\"]}";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Ledger.BuildNodeRequestAsync(identifier, dest, data)
+                Ledger.BuildNodeRequestAsync(_identifier, _dest, data)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);

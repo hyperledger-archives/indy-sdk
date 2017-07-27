@@ -64,6 +64,24 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             wallet.CloseAsync().Wait();
         }
 
-        
+        [TestMethod]
+        public void TestRegisterWalletTypeWorks()
+        {
+            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType(), false).Wait();
+        }
+
+        [TestMethod]
+        public async Task TestRegisterWalletTypeDoesNotWorkForTwiceWithSameName()
+        {
+            var type = "inmem";
+
+            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
+
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                   Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), true)
+                );
+
+            Assert.AreEqual(ErrorCode.WalletTypeAlreadyRegisteredError, ex.ErrorCode);
+        }
     }
 }

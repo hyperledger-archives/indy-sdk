@@ -8,25 +8,28 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     public class StoreTheirDidTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
+        private string _walletName = "signusWallet";
+        private string _did = "8wZcEriaNLNKtteJvx7f8i";
+        private string _verkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
 
         [TestInitialize]
         public void CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", "signusWallet", "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync("signusWallet", null, null).Result;
+            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
+            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
         }
 
         [TestCleanup]
         public void DeleteWallet()
         {
             _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("signusWallet", null).Wait();
+            Wallet.DeleteWalletAsync(_walletName, null).Wait();
         }
         
         [TestMethod]
         public void TestStoreTheirDidWorks()
         {
-            Signus.StoreTheirDidAsync(_wallet, "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\"}").Wait();
+            Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"did\":\"{0}\"}}", _did)).Wait();
         }
 
         [TestMethod]
@@ -42,8 +45,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestMethod]
         public void TestStoreTheirDidWorksWithVerkey()
         {
-            var json = "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
-                "\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"}";
+            var json = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", _did, _verkey);
 
             Signus.StoreTheirDidAsync(_wallet, json).Wait();
         }
@@ -52,7 +54,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         public async Task TestStoreTheirDidWorksWithoutDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Signus.StoreTheirDidAsync(_wallet, "{\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"}")
+                Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"verkey\":\"{0}\"}}", _verkey))
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
@@ -61,9 +63,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestMethod]
         public void TestStoreTheirDidWorksForCorrectCryptoType()
         {
-            var json = "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
-                "\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\", " +
-                "\"crypto_type\": \"ed25519\"}";
+            var json = string.Format("{{\"did\":\"{0}\", " +
+                "\"verkey\":\"{1}\", " +
+                "\"crypto_type\": \"ed25519\"}}", _did, _verkey);
 
             Signus.StoreTheirDidAsync(_wallet, json).Wait();
         }
@@ -71,9 +73,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestMethod]
         public async Task TestStoreTheirDidWorksForInvalidCryptoType()
         {
-            var json = "{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", " +
-                "\"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\", " +
-                "\"crypto_type\": \"some_type\"}";
+            var json = string.Format("{{\"did\":\"{0}\", " +
+                "\"verkey\":\"{1}\", " +
+                "\"crypto_type\": \"some_type\"}}", _did, _verkey);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Signus.StoreTheirDidAsync(_wallet, json)

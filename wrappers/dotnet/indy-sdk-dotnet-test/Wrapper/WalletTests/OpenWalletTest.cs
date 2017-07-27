@@ -10,8 +10,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public void TestOpenWalletWorks()
         {
-            Wallet.CreateWalletAsync("default", "openWalletWorks", "default", null, null).Wait();
-            Wallet wallet = Wallet.OpenWalletAsync("openWalletWorks", null, null).Result;
+            var walletName = "openWalletWorks";
+
+            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+            Wallet wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             Assert.IsNotNull(wallet);
         }
@@ -19,8 +21,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public void TestOpenWalletWorksForConfig()
         {
-            Wallet.CreateWalletAsync("default", "openWalletWorksForConfig", "default", null, null).Wait();
-            Wallet wallet = Wallet.OpenWalletAsync("openWalletWorksForConfig", "{\"freshness_time\":1000}", null).Result;
+            var walletName = "openWalletWorksForConfig";
+
+            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+            Wallet wallet = Wallet.OpenWalletAsync(walletName, "{\"freshness_time\":1000}", null).Result;
 
             Assert.IsNotNull(wallet);
         }
@@ -38,12 +42,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public async Task TestOpenWalletWorksForTwice()
         {
-            Wallet.CreateWalletAsync("default", "openWalletWorksForTwice", "default", null, null).Wait();
+            var walletName = "openWalletWorksForTwice";
 
-            var wallet1 = Wallet.OpenWalletAsync("openWalletWorksForTwice", null, null).Result;
+            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+
+            var wallet1 = Wallet.OpenWalletAsync(walletName, null, null).Result;
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-               Wallet.OpenWalletAsync("openWalletWorksForTwice", null, null)
+               Wallet.OpenWalletAsync(walletName, null, null)
             );
 
             Assert.AreEqual(ErrorCode.WalletAlreadyOpenedError, ex.ErrorCode);
@@ -57,6 +63,19 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             );
 
             Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
+        }
+
+        [TestMethod]
+        public void TestOpenWalletWorksForPlugged()
+        {
+            var type = "inmem";
+            var poolName = "default";
+            var walletName = "testOpenWalletWorksForPlugged";
+
+            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
+            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
+            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            Assert.IsNotNull(wallet);
         }
     }
 }

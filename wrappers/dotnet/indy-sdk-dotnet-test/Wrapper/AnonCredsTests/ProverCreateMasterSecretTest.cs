@@ -40,23 +40,27 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name").Wait();
         }
 
-        [TestMethod] //Does this test do what it's supposed to?
-        public void TestProverCreateMasterSecretWorksForDuplicate()
+        [TestMethod] 
+        public async Task TestProverCreateMasterSecretWorksForDuplicate()
         {
-            AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name").Wait();
+            AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate").Wait();
+
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+               AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate")
+           );
+
+            Assert.AreEqual(ErrorCode.AnoncredsMasterSecretDuplicateNameError, ex.ErrorCode);
         }
 
         [TestMethod]
-        public async Task TestProverStoreClaimOfferWorksForInvalidIssuerDid()
+        public async Task TestProverCreateMasterSecretWorksForEmptyName()
         {
-            var claimOffer = "{\"issuer_did\":\"invalid_base58_string\",\"schema_seq_no\":1}";
-
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer)
+                AnonCreds.ProverStoreClaimOfferAsync(_wallet, "")
             );
 
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.CommonInvalidParam3, ex.ErrorCode);
         }
-        
+
     }
 }

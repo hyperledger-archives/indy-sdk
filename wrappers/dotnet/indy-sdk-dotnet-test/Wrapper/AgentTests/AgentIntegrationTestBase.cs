@@ -37,9 +37,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
             StorageUtils.CleanupStorage();
         }
 
-        public static MessageObserver _messageObserver = new ConnectionMessageObserver();
+        protected static MessageObserver _messageObserver = new ConnectionMessageObserver();
         protected static MessageObserver _messageObserverForIncoming = new ListenerMessageObserver();
-        public static ConnectionObserver _incomingConnectionObserver = new ListenerConnectionObserver();
+        protected static ConnectionObserver _incomingConnectionObserver = new ListenerConnectionObserver();
 
 
         private class ListenerMessageObserver : MessageObserver

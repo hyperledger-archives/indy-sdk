@@ -8,14 +8,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     public class SignTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
-
+        private string _walletName = "signusWallet";
         private string _did;
 
         [TestInitialize]
         public void CreateWalletWithDid()
         {
-            Wallet.CreateWalletAsync("default", "signusWallet", "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync("signusWallet", null, null).Result;
+            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
+            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
 
             var result = Signus.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}").Result;
 
@@ -26,7 +26,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         public void DeleteWallet()
         {
             _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("signusWallet", null).Wait();
+            Wallet.DeleteWalletAsync(_walletName, null).Wait();
         }
         
         [TestMethod]

@@ -46,7 +46,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Assert.IsTrue(getTxnRequest.Replace("\\", "").Contains(expectedResult));
         }
 
-        [TestMethod]
+        [TestMethod] //This test fails here and in the Java version.
         public void TestGetTxnRequestWorks()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
@@ -61,18 +61,17 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var schemaResponseObj = JObject.Parse(schemaResponse);
 
-            var seqNo = (int)schemaResponseObj["result"]["seqNo"];
+            var seqNo = schemaResponseObj["result"].Value<int>("seqNo");
 
             var getTxnRequest = Ledger.BuildGetTxnRequestAsync(did, seqNo).Result;
             var getTxnResponse = Ledger.SubmitRequestAsync(_pool, getTxnRequest).Result;
 
             var getTxnResponseObj = JObject.Parse(getTxnResponse);
 
-            var schemaTransaction = getTxnResponseObj["result"]["data"].ToString();
+            var schemaTransaction = getTxnResponseObj["result"].Value<string>("data");
             var schemaTransactionObj = JObject.Parse(schemaTransaction);
-            var receivedSchemaData = schemaTransactionObj["data"].ToString();
 
-            Assert.AreEqual(schemaData, receivedSchemaData);
+            Assert.AreEqual(schemaData, schemaTransactionObj.Value<string>("data"));
         }
 
         [TestMethod] 
