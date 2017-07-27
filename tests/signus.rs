@@ -124,9 +124,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            SignusUtils::replace_keys(wallet_handle, &my_did, "{}").unwrap();
+            let (new_verkey, _) = SignusUtils::replace_keys(wallet_handle, &my_did, "{}").unwrap();
+
+            assert!(new_verkey != my_verkey);
 
             TestUtils::cleanup_storage();
         }
@@ -304,7 +306,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
 
             let message = r#"{"reqId":1495034346617224651,}"#;
 
@@ -554,7 +556,22 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_replace_keys_works_for_not_invalid_crypto_type() {
+        fn indy_replace_keys_works_for_correct_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let (new_verkey, _) = SignusUtils::replace_keys(wallet_handle, &my_did, r#"{"crypto_type":"ed25519"}"#).unwrap();
+
+            assert!(my_verkey != new_verkey);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_works_for_invalid_crypto_type() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
@@ -650,7 +667,8 @@ mod medium_cases {
 
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let message = r#"1496822211362017764"#;
+            let message = r#""reqId":1496822211362017764,
+            "signature":"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai""#;
 
             let res = SignusUtils::verify(wallet_handle, pool_handle, &did, message);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);

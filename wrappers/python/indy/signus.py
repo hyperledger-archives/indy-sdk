@@ -84,13 +84,15 @@ async def replace_keys(wallet_handle: int,
     c_did = c_char_p(did.encode('utf-8'))
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
-    res = await do_call('indy_replace_keys',
+    verkey, pk = await do_call('indy_replace_keys',
                         c_wallet_handle,
                         c_did,
                         c_identity_json,
                         replace_keys.cb)
 
-    logger.debug("replace_keys: <<< res: %r", res)
+    res = (verkey.decode(), pk.decode())
+
+    logger.debug("replace_keys: <<< res: %s", res)
     return res
 
 
