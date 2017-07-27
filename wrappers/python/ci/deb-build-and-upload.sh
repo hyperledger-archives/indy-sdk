@@ -6,7 +6,7 @@ fi
 
 key="$1"
 
-mkdir wrappers/python/debs
+mkdir /home/indy/debs
 
 version=$(grep -Po "(?<=version=')([0-9]|\.)*" wrappers/python/setup.py)
 
@@ -27,7 +27,7 @@ in the INDY project instead...). Also, join us on Jira's Rocket.Chat at #indy-sd
     --exclude "*.pyc" \
     --exclude "*.pyo" \
     --maintainer "Hyperledger <hyperledger-indy@lists.hyperledger.org>" \
-    --package "wrappers/python/debs" \
+    --package "/home/indy/debs" \
     "wrappers/python"
 
 which sftp
@@ -36,6 +36,6 @@ cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/deb/python-indy-sdk
 mkdir /var/repository/repos/deb/python-indy-sdk/$version
 cd /var/repository/repos/deb/python-indy-sdk/$version
-put -r /var/lib/jenkins/workspace/wrappers/python/debs/python-indy-sdk_"$version"_amd64.deb
+put -r /home/indy/debs/python-indy-sdk_"$version"_amd64.deb
 ls -l /var/repository/repos/deb/python-indy-sdk/$version
 EOF
