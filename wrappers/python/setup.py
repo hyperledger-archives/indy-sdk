@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='indy-sdk',
     version='0.0.1',
-    packages=['indy'],
+    packages=['indy-sdk'],
     url='https://github.com/hyperledger/indy-sdk',
     license='MIT/Apache-2.0',
     author='Vyacheslav Gudkov',
