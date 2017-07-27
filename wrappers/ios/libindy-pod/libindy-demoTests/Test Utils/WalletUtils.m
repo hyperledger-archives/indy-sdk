@@ -211,32 +211,4 @@
     return err;
 }
 
-- (NSError*) walletSetSeqNo:(NSNumber *)seqNo
-                   forValue:(NSString *)value
-               walletHandle:(IndyHandle) walletHandle
-{
-    __block NSError *err = nil;
-    NSError *ret = nil;
-    
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[IndyWallet sharedInstance] walletSetSeqNo:seqNo
-                                               forValue:value
-                                           walletHandle:walletHandle
-                                             completion:^(NSError *error)
-           {
-               err = error;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    return err;
-}
-
-
 @end
