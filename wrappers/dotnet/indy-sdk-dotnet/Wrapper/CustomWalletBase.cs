@@ -19,7 +19,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
             get { return _valuePointers; }
         }
 
-        
         /// <summary>
         /// Sets a value in the wallet.
         /// </summary>

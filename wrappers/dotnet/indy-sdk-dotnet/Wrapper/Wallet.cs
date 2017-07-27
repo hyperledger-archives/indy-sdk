@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.LibIndy;
@@ -10,7 +11,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
     /// </summary>
     public sealed class Wallet : AsyncWrapperBase
     {
-        private static HashSet<WalletType> _registeredWalletTypes = new HashSet<WalletType>();
+        private static IDictionary<string, WalletType> _registeredWalletTypes = new ConcurrentDictionary<string, WalletType>();
+        private readonly object syncLock = new object();
 
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
@@ -30,13 +32,20 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// </summary>
         /// <param name="xType">The name of the custom time.</param>
         /// <param name="walletType">The type type.</param>
+        /// <param name="forceCreate">Whether or not an existing wallet with this type name should be replaced.</param>
         /// <returns>An asynchronous Task with no return value.</returns>
-        public static Task RegisterWalletTypeAsync(string xType, WalletType walletType)
+        public static Task RegisterWalletTypeAsync(string xType, WalletType walletType, bool forceCreate = false)
         {
-            _registeredWalletTypes.Add(walletType);
-
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            if (_registeredWalletTypes.ContainsKey(xType) && !forceCreate)
+            {
+                taskCompletionSource.SetResult(false);
+                return taskCompletionSource.Task;
+            }
+
+            _registeredWalletTypes[xType] = walletType;          
 
             var result = LibIndy.indy_register_wallet_type(
                 commandHandle,
