@@ -166,18 +166,16 @@ impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
 pub struct ClaimInfo {
     pub claim_uuid: String,
     pub attrs: HashMap<String, String>,
-    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub issuer_did: String
 }
 
 impl ClaimInfo {
     pub fn new(claim_uuid: String, attrs: HashMap<String, String>,
-               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
+               schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
-            revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
             issuer_did: issuer_did
         }
@@ -216,17 +214,15 @@ impl<'a> JsonDecodable<'a> for ClaimRequest {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimProof {
     pub proof: Proof,
-    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub issuer_did: String
 }
 
 impl ClaimProof {
-    pub fn new(proof: Proof, schema_seq_no: i32, issuer_did: String, revoc_reg_seq_no: Option<i32>) -> ClaimProof {
+    pub fn new(proof: Proof, schema_seq_no: i32, issuer_did: String) -> ClaimProof {
         ClaimProof {
             proof: proof,
             schema_seq_no: schema_seq_no,
-            revoc_reg_seq_no: revoc_reg_seq_no,
             issuer_did: issuer_did
         }
     }
@@ -357,18 +353,16 @@ impl<'a> JsonDecodable<'a> for ClaimInitData {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
-    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub signature: ClaimSignature,
     pub issuer_did: String
 }
 
 impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, revoc_reg_seq_no: Option<i32>,
+    pub fn new(claim: HashMap<String, Vec<String>>,
                signature: ClaimSignature, schema_seq_no: i32, issuer_did: String) -> ClaimJson {
         ClaimJson {
             claim: claim,
-            revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
             signature: signature,
             issuer_did: issuer_did

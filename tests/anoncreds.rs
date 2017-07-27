@@ -2149,7 +2149,7 @@ mod demos {
         let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &gvt_schema, None, false).unwrap();
 
         schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
-        claim_defs.insert(AnoncredsUtils::get_claim_def_id(issuer_did, gvt_schema_seq_no), gvt_claim_def_json.clone());
+        claim_defs.insert(AnoncredsUtils::get_composite_id(issuer_did, gvt_schema_seq_no), gvt_claim_def_json.clone());
 
         //4. Issuer create claim definition by xyz schema
         let xyz_schema_seq_no = 2;
@@ -2158,7 +2158,7 @@ mod demos {
         let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &xyz_schema, None, false).unwrap();
 
         schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
-        claim_defs.insert(AnoncredsUtils::get_claim_def_id(issuer_did, xyz_schema_seq_no), xyz_claim_def_json.clone());
+        claim_defs.insert(AnoncredsUtils::get_composite_id(issuer_did, xyz_schema_seq_no), xyz_claim_def_json.clone());
 
         //5. Prover create Master Secret for Issuer1
         let master_secret_name = "prover_master_secret_issuer";
@@ -2274,8 +2274,8 @@ mod demos {
                                    unique_claims[1].claim_uuid,
                                    schemas.get(&unique_claims[1].schema_seq_no).unwrap());
 
-        let claim_def_id1 = AnoncredsUtils::get_claim_def_id(&unique_claims[0].issuer_did, unique_claims[0].schema_seq_no);
-        let claim_def_id2 = AnoncredsUtils::get_claim_def_id(&unique_claims[1].issuer_did, unique_claims[1].schema_seq_no);
+        let claim_def_id1 = AnoncredsUtils::get_composite_id(&unique_claims[0].issuer_did, unique_claims[0].schema_seq_no);
+        let claim_def_id2 = AnoncredsUtils::get_composite_id(&unique_claims[1].issuer_did, unique_claims[1].schema_seq_no);
 
         let claim_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#,
                                       unique_claims[0].claim_uuid,

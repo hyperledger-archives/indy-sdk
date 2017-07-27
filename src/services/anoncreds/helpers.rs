@@ -121,7 +121,7 @@ pub fn bignum_to_group_element(num: &BigNumber) -> Result<GroupOrderElement, Com
     Ok(GroupOrderElement::from_bytes(&num.to_bytes()?)?)
 }
 
-pub fn get_claim_def_id(issuer_did: &str, schema_seq_no: i32) -> String {
+pub fn get_composite_id(issuer_did: &str, schema_seq_no: i32) -> String {
     issuer_did.to_string() + ":" + &schema_seq_no.to_string()
 }
 

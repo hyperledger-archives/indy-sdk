@@ -212,7 +212,6 @@ impl AnoncredsUtils {
                                              claim_req_json.as_ptr(),
                                              claim_json.as_ptr(),
                                              -1,
-                                             -1,
                                              cb);
 
         if err != ErrorCode::Success {
@@ -393,7 +392,7 @@ impl AnoncredsUtils {
         Ok(valid)
     }
 
-    pub fn get_claim_def_id(issuer_did: &str, schema_seq_no: i32) -> String {
+    pub fn get_composite_id(issuer_did: &str, schema_seq_no: i32) -> String {
         issuer_did.to_string() + ":" + &schema_seq_no.to_string()
     }
 

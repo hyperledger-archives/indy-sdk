@@ -416,8 +416,7 @@ impl Prover {
 
             let claim_proof = ClaimProof::new(proof,
                                               proof_claim.claim_json.schema_seq_no,
-                                              proof_claim.claim_json.issuer_did.clone(),
-                                              proof_claim.claim_json.revoc_reg_seq_no);
+                                              proof_claim.claim_json.issuer_did.clone());
 
             proofs.insert(proof_claim_uuid.clone(), claim_proof);
             attributes.insert(proof_claim_uuid.clone(), proof_claim.claim_json.claim.clone());
@@ -1549,17 +1548,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new("1".to_string(), attrs, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, None, 2, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new("2".to_string(), attrs, 2, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new("3".to_string(), attrs, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1634,7 +1633,6 @@ pub mod mocks {
     pub fn get_gvt_claims_json() -> ClaimJson {
         ClaimJson {
             claim: issuer::mocks::get_gvt_attributes(),
-            revoc_reg_seq_no: None,
             schema_seq_no: 1,
             signature: mocks::get_gvt_claims_object(),
             issuer_did: "did".to_string()
@@ -1644,7 +1642,6 @@ pub mod mocks {
     pub fn get_xyz_claims_json() -> ClaimJson {
         ClaimJson {
             claim: issuer::mocks::get_xyz_attributes(),
-            revoc_reg_seq_no: None,
             schema_seq_no: 2,
             signature: mocks::get_xyz_claims_object(),
             issuer_did: "did".to_string()
