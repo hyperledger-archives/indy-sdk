@@ -13,6 +13,8 @@ version=$(grep -Po "(?<=version=')([0-9]|\.)*" wrappers/python/setup.py)
 [ -z $key ] && exit 1
 [ -z $version ] && exit 2
 
+echo "Building...."
+
 fpm --input-type "python" \
     --output-type "deb" \
     --verbose \
@@ -30,7 +32,7 @@ in the INDY project instead...). Also, join us on Jira's Rocket.Chat at #indy-sd
     --package "/home/indy/debs" \
     "wrappers/python"
 
-which sftp
+echo "Uploading...."
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/deb/python-indy-sdk
