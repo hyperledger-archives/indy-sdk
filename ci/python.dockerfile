@@ -27,6 +27,8 @@ RUN gem install fpm
 ADD https://bootstrap.pypa.io/ez_setup.py .
 RUN python3.6
 
+RUN python3.6 -m pip install twine
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
