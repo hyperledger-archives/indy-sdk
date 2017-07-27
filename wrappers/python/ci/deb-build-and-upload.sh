@@ -27,8 +27,10 @@ in the INDY project instead...). Also, join us on Jira's Rocket.Chat at #indy-sd
     --exclude "*.pyc" \
     --exclude "*.pyo" \
     --maintainer "Hyperledger <hyperledger-indy@lists.hyperledger.org>" \
-    --package "/home/indy-sdk/wrappers/python/debs" \
-    "/home/indy-sdk/wrappers/python"
+    --package "wrappers/python/debs" \
+    "wrappers/python"
+
+which sftp
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/deb/python-indy-sdk
