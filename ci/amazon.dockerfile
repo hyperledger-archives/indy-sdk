@@ -6,12 +6,15 @@ RUN \
     yum clean all \
     && yum upgrade -y \
     && yum groupinstall -y "Development Tools" \
+    && yum install -y epel-release \
+    && yum-config-manager --enable epel \
     && yum install -y \
            wget \
            cmake \
            pkgconfig \
            openssl-devel \
            sqlite-devel \
+           libsodium-devel \
            spectool
 
 

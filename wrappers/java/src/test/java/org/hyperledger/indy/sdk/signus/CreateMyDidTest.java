@@ -38,6 +38,8 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 	private String did = "8wZcEriaNLNKtteJvx7f8i";
 	private String expectedVerkey = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 	private String existsCryptoType = "ed25519";
+	private String expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
+
 
 	@Test
 	public void testCreateMyDidWorksForEmptyJson() throws Exception {
@@ -61,7 +63,6 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 		assertNotNull(result);
 
-		String expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
 		assertEquals(expectedDid, result.getDid());
 		assertEquals(expectedVerkey, result.getVerkey());
 	}
@@ -95,10 +96,13 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 	public void testCreateMyDidWorksForCorrectCryptoType() throws Exception {
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, existsCryptoType, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, seed, existsCryptoType, null);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 		assertNotNull(result);
+
+		assertEquals(expectedDid, result.getDid());
+		assertEquals(expectedVerkey, result.getVerkey());
 	}
 
 	@Test
