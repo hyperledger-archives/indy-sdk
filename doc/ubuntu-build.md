@@ -9,7 +9,6 @@
       build-essential \
       pkg-config \
       cmake \
-      libzmq3-dev \
       libssl-dev \
       libsqlite3-dev \
       libsodium-dev

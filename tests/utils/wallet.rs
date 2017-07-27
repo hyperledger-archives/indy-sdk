@@ -3,7 +3,6 @@ use indy::api::wallet::{
     indy_register_wallet_type,
     indy_create_wallet,
     indy_open_wallet,
-    indy_wallet_set_seq_no_for_value,
     indy_delete_wallet,
     indy_close_wallet
 };
@@ -23,14 +22,14 @@ pub struct WalletUtils {}
 
 
 impl WalletUtils {
-    pub fn register_wallet_type(xtype: &str) -> Result<(), ErrorCode> {
+    pub fn register_wallet_type(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
         lazy_static! {
             static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
         }
 
         let mut wallets = REGISERED_WALLETS.lock().unwrap();
 
-        if wallets.contains(xtype) {
+        if wallets.contains(xtype) & !force_create {
             // as registering of plugged wallet with
             return Ok(())
         }
@@ -201,39 +200,6 @@ impl WalletUtils {
 
         Ok(wallet_handle)
     }
-
-    pub fn wallet_set_seq_no_for_value(wallet_handle: i32, value: &str, seq_no: i32) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-
-        let cb = Box::new(move |err| {
-            sender.send(err).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_wallet_set_seq_no_for_value_cb(cb);
-
-        let value = CString::new(value).unwrap();
-
-        let err =
-            indy_wallet_set_seq_no_for_value(command_handle,
-                                               wallet_handle,
-                                               value.as_ptr(),
-                                               seq_no,
-                                               cb);
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
-    }
-
 
     pub fn delete_wallet(wallet_name: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();

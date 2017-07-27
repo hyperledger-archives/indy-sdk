@@ -5,13 +5,31 @@ ARG uid=1000
 RUN apt-get update && \
     apt-get install -y \
       pkg-config \
-      libzmq3-dev \
       libssl-dev \
+      libgmp3-dev \
       curl \
       build-essential \
       libsqlite3-dev \
       libsodium-dev \
-      cmake
+      cmake \
+      git \
+      python3.5 \
+      python3-pip \
+      python-setuptools \
+      apt-transport-https \
+      ca-certificates \
+      debhelper \
+      wget
+
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
+RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
+RUN apt-get update -y && apt-get install -y \
+	python3-charm-crypto
+
+RUN pip3 install -U \
+	pip \
+	setuptools \
+	virtualenv
 
 ENV RUST_ARCHIVE=rust-1.16.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
@@ -32,4 +50,16 @@ USER indy
 
 RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
-WORKDIR /home/sovrin
+WORKDIR /home/indy
+
+RUN git clone https://github.com/hyperledger/indy-anoncreds.git
+RUN virtualenv -p python3.5 /home/indy/test
+RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/test/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
+RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/test/lib/python3.5/site-packages/charm
+USER root
+RUN ln -sf /home/indy/test/bin/python /usr/local/bin/python3
+RUN ln -sf /home/indy/test/bin/pip /usr/local/bin/pip3
+USER indy
+RUN pip3 install \
+	/home/indy/indy-anoncreds \
+	pytest

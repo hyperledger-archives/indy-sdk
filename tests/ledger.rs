@@ -37,8 +37,7 @@ use utils::types::{
     Reply,
     SchemaResult,
     GetTxnResult,
-    SchemaData,
-    Schema
+    SchemaData
 };
 use std::collections::{HashSet};
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
@@ -60,7 +59,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
 
@@ -80,8 +79,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
@@ -101,8 +100,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
@@ -121,9 +120,9 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config("pool1").unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool2", None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
@@ -145,7 +144,7 @@ mod high_cases {
                          "identifier":"Th7MpTaRZVRYnPiabds81Y",
                          "operation":{
                             "type":"105",
-                            "dest":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
+                            "dest":"Th7MpTaRZVRYnPiabds81Y"
                          },
                          "signature":"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"}"#;
 
@@ -156,9 +155,9 @@ mod high_cases {
                 result: GetNymReplyResult {
                     _type: "105".to_string(),
                     req_id: 1491566332010860,
-                    data: Some(r#"{"dest":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL","role":"2","verkey":null}"#.to_string()),
+                    data: Some(r#"{"dest":"Th7MpTaRZVRYnPiabds81Y","identifier":"V4SGRU86Z58d6TV7PBUe6f","role":"2","verkey":"~7TYfekw4GUagBnBVCqPjiC"}"#.to_string()),
                     identifier: "Th7MpTaRZVRYnPiabds81Y".to_string(),
-                    dest: "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4".to_string(),
+                    dest: "Th7MpTaRZVRYnPiabds81Y".to_string(),
                 }
             };
             let act_reply: Reply<GetNymReplyResult> = serde_json::from_str(resp.unwrap().as_str()).unwrap();
@@ -175,8 +174,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
@@ -257,7 +256,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
@@ -277,7 +276,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
 
@@ -297,8 +296,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
-            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
 
@@ -381,7 +380,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let attrib_request = LedgerUtils::build_attrib_request(&my_did.clone(),
                                                                    &my_did.clone(),
@@ -405,8 +404,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
-            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
@@ -470,7 +469,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
@@ -494,7 +493,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
@@ -530,9 +529,9 @@ mod high_cases {
         fn indy_build_node_request_works_for_correct_data_json() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
 
-            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
 
             let node_request = LedgerUtils::build_node_request(identifier, dest, data).unwrap();
             assert!(node_request.contains(expected_result));
@@ -548,7 +547,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Steward1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Steward1")).unwrap();
 
             let node_data = "{\"node_ip\":\"10.0.0.100\",\
                               \"node_port\":9710, \
@@ -576,8 +575,8 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
-            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let role = "STEWARD";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey), None, Some(role)).unwrap();
@@ -631,14 +630,14 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_claim_def_requests_works() {
+        fn indy_claim_def_request_works_without_signature() {
             TestUtils::cleanup_storage();
-            let pool_name = "indy_claim_def_requests_works";
+            let pool_name = "indy_claim_def_request_works_without_signature";
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
@@ -656,9 +655,52 @@ mod high_cases {
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
 
-            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e",
-                                                                                &serde_json::to_string(&get_schema_response.result).unwrap(), None, false).unwrap();
-            info!("claim_def_json {:}", claim_def_json);
+            let claim_def_json = AnoncredsUtils::get_gvt_claim_def();
+
+            let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
+            let claim_def_data = ClaimDefinitionData {
+                public_key: claim_def.data.public_key,
+                public_key_revocation: claim_def.data.public_key_revocation
+            };
+            let claim_def_data_json = serde_json::to_string(&claim_def_data).unwrap();
+
+            let claim_def_request = LedgerUtils::build_claim_def_txn(&my_did.clone(), get_schema_response.result.seq_no.unwrap(),
+                                                                     &claim_def.signature_type, &claim_def_data_json).unwrap();
+
+            let res = PoolUtils::send_request(pool_handle, &claim_def_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_claim_def_requests_works() {
+            TestUtils::cleanup_storage();
+            let pool_name = "indy_claim_def_requests_works";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let schema_data = "{\"name\":\"gvt2\",\
+                                \"version\":\"2.0\",\
+                                \"keys\": [\"name\", \"male\"]}";
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+
+            let get_schema_data = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+            let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did, get_schema_data).unwrap();
+            let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
+
+            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
+
+            let claim_def_json = AnoncredsUtils::get_gvt_claim_def();
 
             let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
             let claim_def_data = ClaimDefinitionData {
@@ -702,7 +744,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]//Delete it after merge https://github.com/hyperledger/indy-plenum/pull/265
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works() {
             TestUtils::cleanup_storage();
@@ -711,7 +752,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let mut keys: HashSet<String> = HashSet::new();
             keys.insert("name".to_string());
@@ -721,7 +762,7 @@ mod high_cases {
                 version: "3.0".to_string(),
                 keys: keys
             };
-            let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
+            let schema_data_json = serde_json::to_string(&schema_data).unwrap();
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
@@ -733,20 +774,21 @@ mod high_cases {
             let seq_no = schema_response.result.seq_no;
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, seq_no).unwrap();
-            let get_txn_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &get_txn_request).unwrap();
+            let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_txn_response.result.data.is_some());
 
-            let get_txn_schema: Schema = serde_json::from_str(&get_txn_response.result.data.unwrap()).unwrap();
+            let get_txn_schema_result: SchemaResult = serde_json::from_str(&get_txn_response.result.data).unwrap();
+            assert!(get_txn_schema_result.data.is_some());
 
-            assert_eq!(schema_data, get_txn_schema.data);
+            let get_txn_schema_data: SchemaData = serde_json::from_str(&get_txn_schema_result.data.unwrap()).unwrap();
+
+            assert_eq!(schema_data, get_txn_schema_data);
 
             TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[ignore]//Delete it after merge https://github.com/hyperledger/indy-plenum/pull/265
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works_for_invalid_seq_no() {
             TestUtils::cleanup_storage();
@@ -755,7 +797,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let mut keys: HashSet<String> = HashSet::new();
             keys.insert("name".to_string());
@@ -765,7 +807,7 @@ mod high_cases {
                 version: "3.0".to_string(),
                 keys: keys
             };
-            let schema_data_json  = serde_json::to_string(&schema_data).unwrap();
+            let schema_data_json = serde_json::to_string(&schema_data).unwrap();
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response).unwrap();
@@ -774,9 +816,9 @@ mod high_cases {
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&my_did, seq_no).unwrap();
 
-            let get_txn_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &get_txn_request).unwrap();
+            let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_txn_response.result.data.is_none());
+            assert_eq!(get_txn_response.result.data, "{}".to_string()); /* FIXME: unify with other GET_ transactions (data.is_none()) */
 
             TestUtils::cleanup_storage();
         }
@@ -798,12 +840,12 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let trustee_did = "trusteedid";
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
+            let signer_did = "Fjc4fCrwGxBq2BkqGs5wEu";
+            let nym_request = LedgerUtils::build_nym_request(&signer_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &signer_did, &nym_request);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
@@ -834,7 +876,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let request = r#"request"#;
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
@@ -856,8 +898,8 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
 
@@ -876,9 +918,9 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
-            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let role = "STEWARD";
             let alias = "some_alias";
@@ -912,7 +954,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{\"cid\":true}").unwrap();
 
@@ -939,7 +981,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (trustee_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee9","cid":true}"#).unwrap();
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, None).unwrap();
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
@@ -1004,7 +1046,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let attrib_request = LedgerUtils::build_attrib_request(&my_did.clone(),
                                                                    &my_did.clone(),
@@ -1050,7 +1092,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&my_did.clone(), &my_did.clone(), "some_attribute").unwrap();
 
@@ -1150,11 +1192,10 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My1"}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let get_schema_data = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
             let get_schema_request = LedgerUtils::build_get_schema_request(&my_did.clone(), &my_did.clone(), get_schema_data).unwrap();
-            ;
 
             let get_schema_response = PoolUtils::send_request(pool_handle, &get_schema_request).unwrap();
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
@@ -1171,7 +1212,7 @@ mod medium_cases {
         fn indy_build_node_request_works_for_missed_field_in_data_json() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
             assert!(res.is_err());
@@ -1182,7 +1223,7 @@ mod medium_cases {
         fn indy_build_node_request_works_for_wrong_service() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
             assert!(res.is_err());
@@ -1198,7 +1239,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
             let node_data = "{\"node_ip\":\"10.0.0.100\",\
                               \"node_port\":9710, \
@@ -1224,7 +1265,7 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Steward1","cid":true}"#).unwrap();
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Steward1")).unwrap();
 
             let node_data = "{\"node_ip\":\"10.0.0.100\",\
                               \"node_port\":9710, \

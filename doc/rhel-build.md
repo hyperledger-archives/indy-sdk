@@ -28,18 +28,7 @@
    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
    ```
-1. Build and install modern version of libzmq from sources:
 
-   ```
-   cd /tmp
-   wget https://github.com/zeromq/libzmq/releases/download/v4.2.2/zeromq-4.2.2.tar.gz
-   tar xfz zeromq-4.2.2.tar.gz && rm zeromq-4.2.2.tar.gz
-   cd /tmp/zeromq-4.2.2
-   ./configure
-   make
-   make install
-   rm -rf /tmp/zeromq-4.2.2
-   ```
 1. Checkout and build the library:
 
    ```

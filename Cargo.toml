@@ -1,5 +1,5 @@
 [package]
-name = "indy-sdk"
+name = "indy"
 version = "0.1.1"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
@@ -29,6 +29,7 @@ pair_milagro = ["milagro-crypto"]
 pair_amcl = ["amcl"]
 hash_openssl = ["openssl"]
 local_nodes_pool = []
+interoperability_tests = []
 
 [dependencies]
 amcl = { version = "0.1.0", optional = true }
@@ -47,7 +48,7 @@ serde_json = "1.0"
 serde_derive = "1.0"
 sodiumoxide = {version = "0.0.14", optional = true}
 time = "0.1.36"
-zmq-pw = "0.9.5"
+zmq-pw = "0.9.7"
 lazy_static = "0.2"
 byteorder = "1.0.0"
 [dependencies.uuid]

@@ -1,20 +1,13 @@
 package org.hyperledger.indy.sdk.signus;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import org.hyperledger.indy.sdk.IndyException;
-import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.IndyJava;
+import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters.CreateAndStoreMyDidJSONParameter;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.DecryptResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.SignResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.StoreTheirDidResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.VerifySignatureResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -29,233 +22,260 @@ public class Signus extends IndyJava.API {
 	}
 
 	/*
+	 * STATIC CALLBACKS
+	 */
+
+	private static Callback createAndStoreMyDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
+
+			CompletableFuture<CreateAndStoreMyDidResult> future = (CompletableFuture<CreateAndStoreMyDidResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey, pk);
+			future.complete(result);
+		}
+	};
+
+	private static Callback replaceKeysCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String verkey, String pk) {
+
+			CompletableFuture<ReplaceKeysResult> future = (CompletableFuture<ReplaceKeysResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			ReplaceKeysResult result = new ReplaceKeysResult(verkey, pk);
+			future.complete(result);
+		}
+	};
+
+	private static Callback storeTheirDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	private static Callback signCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String signature) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = signature;
+			future.complete(result);
+		}
+	};
+
+	private static Callback verifySignatureCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, boolean valid) {
+
+			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Boolean result = Boolean.valueOf(valid);
+			future.complete(result);
+		}
+	};
+
+	private static Callback encryptCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String encryptedMsg) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = encryptedMsg;
+			future.complete(result);
+		}
+	};
+
+	private static Callback decryptCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String decryptedMsg) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = decryptedMsg;
+			future.complete(result);
+		}
+	};
+
+	/*
 	 * STATIC METHODS
 	 */
 
-	public static Future<CreateAndStoreMyDidResult> createAndStoreMyDid(
+	public static CompletableFuture<CreateAndStoreMyDidResult> createAndStoreMyDid(
 			Wallet wallet,
-			CreateAndStoreMyDidJSONParameter didJson) throws IndyException {
+			String didJson) throws IndyException {
 
-		final CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey, pk);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_create_and_store_my_did(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
-				didJson == null ? null : didJson.toJson(),
-				callback);
+				didJson,
+				createAndStoreMyDidCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<ReplaceKeysResult> replaceKeys(
+	public static CompletableFuture<ReplaceKeysResult> replaceKeys(
 			Wallet wallet,
 			String did,
 			String identityJson) throws IndyException {
 
-		final CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String verkey, String pk) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				ReplaceKeysResult result = new ReplaceKeysResult(verkey, pk);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<ReplaceKeysResult>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_replace_keys(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				did,
 				identityJson,
-				callback);
+				replaceKeysCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<StoreTheirDidResult> storeTheirDid(
+	public static CompletableFuture<Void> storeTheirDid(
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
-		final CompletableFuture<StoreTheirDidResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				StoreTheirDidResult result = new StoreTheirDidResult();
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_store_their_did(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				identityJson,
-				callback);
+				storeTheirDidCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<SignResult> sign(
+	public static CompletableFuture<String> sign(
 			Wallet wallet,
 			String did,
 			String msg) throws IndyException {
 
-		final CompletableFuture<SignResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String signature) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				SignResult result = new SignResult(signature);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_sign(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				did,
 				msg,
-				callback);
+				signCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<VerifySignatureResult> verifySignature(
+	public static CompletableFuture<Boolean> verifySignature(
 			Wallet wallet,
 			Pool pool,
 			String did,
 			String signedMsg) throws IndyException {
 
-		final CompletableFuture<VerifySignatureResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, boolean valid) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				VerifySignatureResult result = new VerifySignatureResult(valid);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_verify_signature(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
 				poolHandle,
 				did,
 				signedMsg,
-				callback);
+				verifySignatureCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<EncryptResult> encrypt(
+	public static CompletableFuture<String> encrypt(
 			Wallet wallet,
+			Pool pool,
+			String myDid,
 			String did,
 			String msg) throws IndyException {
 
-		final CompletableFuture<EncryptResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String encryptedMsg) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				EncryptResult result = new EncryptResult(encryptedMsg);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_encrypt(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
+				poolHandle, 
+				myDid,
 				did,
 				msg,
-				callback);
+				encryptCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
-	public static Future<DecryptResult> decrypt(
+	public static CompletableFuture<String> decrypt(
 			Wallet wallet,
+			String myDid,
 			String did,
-			String encryptedMsg) throws IndyException {
+			String encryptedMsg,
+			String nonce) throws IndyException {
 
-		final CompletableFuture<DecryptResult> future = new CompletableFuture<> ();
-
-		Callback callback = new Callback() {
-
-			@SuppressWarnings("unused")
-			public void callback(int xcommand_handle, int err, String decryptedMsg) {
-
-				if (! checkCallback(future, xcommand_handle, err)) return;
-
-				DecryptResult result = new DecryptResult(decryptedMsg);
-				future.complete(result);
-			}
-		};
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_decrypt(
-				FIXED_COMMAND_HANDLE, 
+				commandHandle, 
 				walletHandle, 
+				myDid,
 				did,
 				encryptedMsg,
-				callback);
+				nonce,
+				decryptCb);
 
 		checkResult(result);
 

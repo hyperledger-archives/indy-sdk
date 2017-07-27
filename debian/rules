@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 #
 
-export PATH=/usr/local/bin:/usr/bin:/bin
+export PATH=/usr/local/bin:/usr/bin:/bin:/root/.cargo/bin
 
 %:
 	dh $@
