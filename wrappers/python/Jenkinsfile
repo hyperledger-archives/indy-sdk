@@ -108,7 +108,7 @@ def publishDebFiles() {
         checkout scm
 
         echo 'Publish Deb: Build docker image'
-        def testEnv = dockerHelpers.build(name, 'wrappers/python/ci/ubuntu.dockerfile ci')
+        def testEnv = dockerHelpers.build(name, 'ci/ubuntu.dockerfile ci')
 
         testEnv.inside('-u 0:0') {
 
