@@ -47,7 +47,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var connection = new Agent.Connection(connectionHandle);
             _connections.Add(connectionHandle, connection);
 
-            var messageObserver = RemoveMessageObserver(xCommandHandle);
+            connection.MessageObserver = RemoveMessageObserver(xCommandHandle);
 
             taskCompletionSource.SetResult(connection);
         };
