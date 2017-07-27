@@ -6,8 +6,7 @@ fi
 
 key="$1"
 
-cd /wrappers/python
-mkdir debs
+mkdir wrappers/python/debs
 
 version=$(grep -Po "(?<=version=')([0-9]|\.)*" setup.py)
 
