@@ -15,7 +15,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
 
-		Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -28,7 +28,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, "acWziYqKpYi6ov5FcYDi1e3", 1);
 
-		Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -41,7 +41,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 2);
 
-		Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -54,7 +54,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -67,6 +67,6 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
 
-		Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, "other_master_secret").get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, "other_master_secret").get();
 	}
 }

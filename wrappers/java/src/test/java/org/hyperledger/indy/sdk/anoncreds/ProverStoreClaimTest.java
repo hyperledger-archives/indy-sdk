@@ -21,7 +21,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
 
-		String claimRequest = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 
 		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -66,7 +66,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
 
-		Anoncreds.proverCreateClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 
 		String claimJson = "{\"claim\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
 				"            \"issuer_did\":1,\"\n" +
