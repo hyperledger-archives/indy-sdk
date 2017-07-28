@@ -117,28 +117,4 @@
     return [NSError errorFromIndyError: ret];
 }
 
-- (NSError *)walletSetSeqNo:(NSNumber *)seqNo
-                   forValue:(NSString *)value
-               walletHandle:(IndyHandle)walletHandle
-                 completion:(void (^)(NSError *error ))handler
-{
-    indy_error_t ret;
-    
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
-    
-    ret = indy_wallet_set_seq_no_for_value( handle,
-                                           walletHandle,
-                                           [value UTF8String],
-                                           [seqNo intValue],
-                                           IndyWrapperCommon2PCallback
-                                           );
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-    }
-    
-    return [NSError errorFromIndyError: ret];
-}
-
 @end

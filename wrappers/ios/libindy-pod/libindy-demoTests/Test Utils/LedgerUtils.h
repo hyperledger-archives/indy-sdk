@@ -21,6 +21,11 @@
                                     requestJson:(NSString *)requestJson
                                 outResponseJson:(NSString**)responseJson;
 
+- (NSError *)submitRequest:(NSString *)request
+            withPoolHandle:(IndyHandle)poolHandle
+                resultJson:(NSString**)resultJson;
+
+
 // MARK: - Nym request
 - (NSError *) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
                                     targetDid:(NSString *)targetDid

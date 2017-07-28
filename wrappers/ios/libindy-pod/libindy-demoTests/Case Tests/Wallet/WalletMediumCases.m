@@ -125,12 +125,11 @@
     [TestUtils cleanupStorage];
 }
 
-// TODO: This test is unfinished in Rust and ignored
 - (void)testOpenWalletWorksForTwice
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"indy_create_wallet_works";
-    NSString *walletName = @"wallet1";
+    NSString *walletName = @"indy_open_wallet_works_for_twice";
     NSError *ret;
     
     // 1. Create wallet
@@ -148,11 +147,10 @@
     
     
     // 3. Open wallet again
-    // TODO: Returns 0, not 111
     ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
                                                     config:nil
                                                  outHandle:nil];
-    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:openWalletWithName() failed");
+    XCTAssertEqual(ret.code, WalletAlreadyOpenedError, @"WalletUtils:openWalletWithName() failed");
     
     [TestUtils cleanupStorage];
 }
@@ -262,54 +260,6 @@
     ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"WalletUtils:deleteWalletWithName() returned wrong code");
     
-    [TestUtils cleanupStorage];
-}
-
-// MARK: - Set seqNo
-
-- (void)testWalletSetSeqNoWorksForNotExistsKey
-{
-    [TestUtils cleanupStorage];
-    NSString *poolName = @"indy_wallet_set_seqno_works_for_not_exists_key";
-    NSError *ret;
-    
-    // 1. create and open wallet
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName() failed");
-    
-    // 2. set seqNo
-    NSNumber *seqNo = @(1);
-    NSString *value = @"key";
-    ////TODO may be we must return WalletNotFound in case if key not exists in wallet
-    ret = [[WalletUtils sharedInstance] walletSetSeqNo:seqNo
-                                              forValue:value
-                                          walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:walletSetSeqNo() failed");
-    [TestUtils cleanupStorage];
-}
-
-- (void)testWalletSetSeqNoWorksForInvalidWallet
-{
-    [TestUtils cleanupStorage];
-    NSString *poolName = @"indy_wallet_set_seqno_works_for_invalid_wallet";
-    NSError *ret;
-    
-    // 1. create and open wallet
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName() failed");
-    
-    // 2. set seqNo
-    IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[WalletUtils sharedInstance] walletSetSeqNo:@(1)
-                                              forValue:@"key"
-                                          walletHandle:invalidWalletHandle];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"WalletUtils:walletSetSeqNoForValue() failed");
     [TestUtils cleanupStorage];
 }
 

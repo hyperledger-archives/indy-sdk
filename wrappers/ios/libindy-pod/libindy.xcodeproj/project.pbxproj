@@ -28,11 +28,13 @@
 		5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D11F1615BA00076592 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D21F1615BA00076592 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014D31F1615BA00076592 /* IndyWallet.mm */; };
+		99F99A270519250B16B8BC76 /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 432D733B8EBB5A088C4B4770 /* libPods-libindy.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3E08C01B1EB3336A000A73BA /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
+		432D733B8EBB5A088C4B4770 /* libPods-libindy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCallbacks.mm; sourceTree = "<group>"; };
 		5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libindy.a"; path = "Pods/../build/Debug-iphoneos/libPods-libindy.a"; sourceTree = "<group>"; };
 		5DF014BF1F1615BA00076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -65,6 +67,7 @@
 			files = (
 				5D2A3A4F1F164BD70003FE43 /* libPods-libindy.a in Frameworks */,
 				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
+				99F99A270519250B16B8BC76 /* libPods-libindy.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,6 +79,7 @@
 			children = (
 				5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */,
 				3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */,
+				432D733B8EBB5A088C4B4770 /* libPods-libindy.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
