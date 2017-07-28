@@ -22,6 +22,9 @@ public class IndyJava {
 	 * API
 	 */
 
+	/**
+	 * Common features for API classes.
+	 */
 	public static class API {
 
 		/*
@@ -31,11 +34,22 @@ public class IndyJava {
 		private static AtomicInteger atomicInteger = new AtomicInteger();
 		private static Map<Integer, CompletableFuture<?>> futures = new ConcurrentHashMap<Integer, CompletableFuture<?>>();
 
+		/**
+		 * Generates and returns a new command handle.
+		 * 
+		 * @return The new command handle.
+		 */
 		protected static int newCommandHandle() {
 
 			return Integer.valueOf(atomicInteger.incrementAndGet());
 		}
 
+		/**
+		 * Adds a future to track.
+		 * 
+		 * @param future The future to track.
+		 * @return The command handle the future is being tracked against.
+		 */
 		protected static int addFuture(CompletableFuture<?> future) {
 
 			int commandHandle = newCommandHandle();
@@ -45,6 +59,12 @@ public class IndyJava {
 			return commandHandle;
 		}
 
+		/**
+		 * Stops tracking the future associated with the provided command handle and returns it.
+		 * 
+		 * @param xcommand_handle The command handle for the future to stop tracking.
+		 * @return The future associated with the command handle.
+		 */
 		protected static CompletableFuture<?> removeFuture(int xcommand_handle) {
 
 			CompletableFuture<?> future = futures.remove(Integer.valueOf(xcommand_handle));
@@ -57,6 +77,13 @@ public class IndyJava {
 		 * ERROR CHECKING
 		 */
 
+		/**
+		 * Sets the provided future with an exception if the error code provided does not indicate success.
+		 * 
+		 * @param future The future.
+		 * @param err The error value to check.
+		 * @return true if the error code indeicated Success, otherwise false.
+		 */
 		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
@@ -65,12 +92,25 @@ public class IndyJava {
 			return true;
 		}
 
+		//TODO: Is this redundant?
+		/**
+		 * Throws an IndyException if the provided error code does not indicate success.
+		 * 
+		 * @param err The error code to check.
+		 * @throws IndyException Thrown if the error code does not indicate success.
+		 */
 		protected static void checkCallback(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
 			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
 		}
 
+		/**
+		 * Throws an IndyException if the provided error code does not indicate success.
+		 * 
+		 * @param err The error code to check.
+		 * @throws IndyException Thrown if the error code does not indicate success.
+		 */
 		protected static void checkResult(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
@@ -104,6 +144,9 @@ public class IndyJava {
 	 * JSON PARAMETER
 	 */
 
+	/**
+	 * Base class for parameter objects that return JSON.
+	 */
 	public abstract static class JsonParameter {
 
 		protected Map<String, Object> map = new HashMap<String, Object>();
@@ -112,6 +155,11 @@ public class IndyJava {
 		 * JSON CREATION
 		 */
 
+		/**
+		 * Converts the map of parameters to a JSON string.
+		 * 
+		 * @return The JSON string.
+		 */
 		public final String toJson() {
 
 			StringBuilder builder = new StringBuilder();
