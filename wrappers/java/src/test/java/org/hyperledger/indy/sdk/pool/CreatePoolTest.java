@@ -40,4 +40,16 @@ public class CreatePoolTest extends IndyIntegrationTest {
 				= new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(genesisTxnFile.getAbsolutePath());
 		Pool.createPoolLedgerConfig("", createPoolLedgerConfigJSONParameter.toJson()).get();
 	}
+
+	@Test
+	public void testCreatePoolWorksForTwice() throws Exception {
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerAlreadyExistsError));
+
+		File genesisTxnFile = PoolUtils.createGenesisTxnFile("genesis.txn");
+
+		PoolJSONParameters.CreatePoolLedgerConfigJSONParameter createPoolLedgerConfigJSONParameter
+				= new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(genesisTxnFile.getAbsolutePath());
+		Pool.createPoolLedgerConfig("pool1", createPoolLedgerConfigJSONParameter.toJson()).get();
+		Pool.createPoolLedgerConfig("pool1", createPoolLedgerConfigJSONParameter.toJson()).get();
+	}
 }

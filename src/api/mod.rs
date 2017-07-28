@@ -103,6 +103,9 @@ pub enum ErrorCode
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
 
+    // Attempt to create pool with name used for another exists pool
+    PoolLedgerAlreadyExistsError = 306,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
