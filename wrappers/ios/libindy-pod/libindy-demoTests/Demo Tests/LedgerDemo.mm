@@ -195,7 +195,7 @@
                                     "\"dest\":\"%@\","\
                                     "\"type\":\"1\"},"\
                                "\"reqId\":%d"
-                               "}", theirVerkey, myDid, [nymReqId intValue]];
+                               "}", theirDid, myDid, [nymReqId intValue]];
     
     // TODO:304 error . some issue with nymTxnRequest
     // 11. Send NYM request with signing
