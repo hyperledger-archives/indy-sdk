@@ -197,7 +197,6 @@
                                "\"reqId\":%d"
                                "}", theirDid, myDid, [nymReqId intValue]];
     
-    // TODO:304 error . some issue with nymTxnRequest
     // 11. Send NYM request with signing
     __block NSString *nymTxnResponse;
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];

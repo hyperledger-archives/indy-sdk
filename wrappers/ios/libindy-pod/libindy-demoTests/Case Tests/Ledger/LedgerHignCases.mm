@@ -1974,7 +1974,7 @@
     
     NSDictionary *getTxnSchemaResult = [NSDictionary fromString:getTxnResponse[@"result"][@"data"]];
     // TODO: For some reason data is "{" or null
-    XCTAssertNotNil(getTxnSchemaResult[@"data"] , @"getTxnSchemaResult[data] is nil");
+    XCTAssertTrue(getTxnSchemaResult[@"data"] != nil, @"getTxnSchemaResult[data] is nil");
     XCTAssertTrue([getTxnSchemaResult[@"data"] length] > 0, @"getTxnResponse[result][data] is empty");
     
     NSString *getTxnSchemaDataJson = [NSDictionary toString:getTxnSchemaResult[@"data"]];
@@ -2051,7 +2051,6 @@
                                                                 resultJson:&getTxnRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");
     
-    // TODO: 304 error
     NSString *getTxnResponseJson;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:walletHandle
