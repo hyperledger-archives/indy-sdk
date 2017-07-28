@@ -1973,7 +1973,8 @@
     NSDictionary *getTxnResponse = [NSDictionary fromString: getTxnResponseJson];
     
     NSDictionary *getTxnSchemaResult = [NSDictionary fromString:getTxnResponse[@"result"][@"data"]];
-    // TODO: For some reason data is null
+    // TODO: For some reason data is "{" or null
+    XCTAssertNotNil(getTxnSchemaResult[@"data"] , @"getTxnSchemaResult[data] is nil");
     XCTAssertTrue([getTxnSchemaResult[@"data"] length] > 0, @"getTxnResponse[result][data] is empty");
     
     NSString *getTxnSchemaDataJson = [NSDictionary toString:getTxnSchemaResult[@"data"]];
@@ -1982,7 +1983,6 @@
     
     [TestUtils cleanupStorage];
 }
-
 
 // TODO: Still doesn't work
 - (void)testGetTxnRequestWorksForInvalidSeqNo
@@ -2019,7 +2019,7 @@
     // 4. Build schema data json
     NSMutableDictionary *schemaData = [NSMutableDictionary new];
     schemaData[@"name"] = @"gvt3";
-    schemaData[@"version"] = @"version";
+    schemaData[@"version"] = @"3.0";
     schemaData[@"keys"] = keys;
     
     NSString *schemaDataJson = [NSDictionary toString:schemaData];
@@ -2064,7 +2064,7 @@
     NSDictionary *getTxnResponse = [NSDictionary fromString: getTxnResponseJson];
     
     // TODO: Fix this check then test will be fixed
-    XCTAssertTrue([getTxnResponse[@"result"][@"data"] count] > 0, @"empty data field in getTxnResponse");
+    XCTAssertNil(getTxnResponse[@"result"][@"data"], @"data field in getTxnResponse shall be nil");
     
     [TestUtils cleanupStorage];
 }

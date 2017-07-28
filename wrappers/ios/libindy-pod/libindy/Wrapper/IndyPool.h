@@ -26,5 +26,4 @@
 + (NSError *)deletePoolLedgerConfigWithName:(NSString *)name
                                  completion:(void (^)(NSError *error)) handler;
 
-
 @end

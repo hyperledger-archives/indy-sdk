@@ -320,9 +320,6 @@
     
     // 4. Obtain my did
     NSString *myDid = nil;
-    NSString *myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"00000000000000000000000000000My1\"" \
-                           "}"];
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
