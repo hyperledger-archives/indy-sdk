@@ -107,7 +107,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
-        [TestMethod] //Seems to fail unreliably; schema members do not maintain their order.  Test problem or underlying SDK isssue?
+        [TestMethod] 
         public void TestClaimDefRequestWorks()
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
@@ -159,7 +159,17 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Assert.AreEqual(expectedClaimDef["rctxt"], actualClaimDef["rctxt"]);
             Assert.AreEqual(expectedClaimDef["z"], actualClaimDef["z"]);
             Assert.AreEqual(expectedClaimDef["n"], actualClaimDef["n"]);
-            Assert.AreEqual(expectedClaimDef["r"].ToString(), actualClaimDef["r"].ToString());
+
+            //TODO: Check reworked asserts are correct.
+            //JSON.NET does not guarantee the order of nodes in an object when serialized so the original test failed.
+
+            var expectedR = (JObject)expectedClaimDef["r"];
+            var actualR = (JObject)actualClaimDef["r"];
+
+            Assert.AreEqual(expectedR.Value<string>("age"), actualR.Value<string>("age"));
+            Assert.AreEqual(expectedR.Value<string>("sex"), actualR.Value<string>("sex"));
+            Assert.AreEqual(expectedR.Value<string>("height"), actualR.Value<string>("height"));
+            Assert.AreEqual(expectedR.Value<string>("name"), actualR.Value<string>("name"));
         }
 
         [TestMethod]

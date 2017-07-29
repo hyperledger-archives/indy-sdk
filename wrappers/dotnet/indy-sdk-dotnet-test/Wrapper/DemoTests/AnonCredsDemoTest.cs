@@ -156,7 +156,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
         }
 
         [TestMethod]
-        public void TestAnonCredsWorksForMultiplyIssuerSingleProver()
+        public void TestAnonCredsWorksForMultipleIssuerSingleProver()
         {
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
             var issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -289,7 +289,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                                                                    \"predicate2_uuid\":\"{3}\"}}\n" +
                     "                                        }}", claimUuidForAttr1, claimUuidForAttr2, claimUuidForPredicate1, claimUuidForPredicate2);
 
-            var schemasJson = string.Format("{{\"{0}\":{1}, \"{2}\":{3}}{", claimUuidForAttr1, gvtSchemaJson, claimUuidForAttr2, xyzSchemaJson);
+            var schemasJson = string.Format("{{\"{0}\":{1}, \"{2}\":{3}}}", claimUuidForAttr1, gvtSchemaJson, claimUuidForAttr2, xyzSchemaJson);
             var claimDefsJson = string.Format("{{\"{0}\":{1}, \"{2}\":{3}}}", claimUuidForAttr1, gvtClaimDef, claimUuidForAttr2, xyzClaimDef);
 
             var revocRegsJson = "{}";
@@ -549,7 +549,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, claimDef);
             var revocRegsJson = "{}";
 
-
+            //TODO: Not sure why this call is failing...
             var proofJson = AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
                     masterSecret, claimDefsJson, revocRegsJson).Result;
 

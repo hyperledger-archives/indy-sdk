@@ -34,14 +34,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Wallet.DeleteWalletAsync(_walletName, null).Wait();
         }
 
-        [TestMethod]
+        [TestMethod] //TODO: Determine why this is failing.
         public void TestBuildAttribRequestWorksForRawData()
         {
             string expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"type\":\"100\"," +
                     "\"dest\":\"{1}\"," +
-                    "\"raw\":\"{1}\"" +
+                    "\"raw\":\"{2}\"" +
                     "}}", _identifier, _dest, _endpoint);
 
             string attribRequest = Ledger.BuildAttribRequestAsync(_identifier, _dest, null, _endpoint, null).Result;
