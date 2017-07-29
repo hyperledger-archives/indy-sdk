@@ -13,6 +13,10 @@ import com.sun.jna.Callback;
 /**
  * ledger.rs API
  */
+
+/**
+ * Functionality related to the ledger.
+ */
 public class Ledger extends IndyJava.API {
 
 	private Ledger() {
@@ -23,6 +27,9 @@ public class Ledger extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
+	/**
+	 * Callback used when signAndSubmitRequest completes.
+	 */
 	private static Callback signAndSubmitRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -36,6 +43,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when submitRequest completes.
+	 */
 	private static Callback submitRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -49,6 +59,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildGetDdoRequest completes.
+	 */
 	private static Callback buildGetDdoRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -62,6 +75,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildNymRequest completes.
+	 */
 	private static Callback buildNymRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -75,6 +91,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildAttribRequest completes.
+	 */
 	private static Callback buildAttribRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -88,6 +107,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildGetAttribRequest completes.
+	 */
 	private static Callback buildGetAttribRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -101,6 +123,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildGetNymRequest completes.
+	 */
 	private static Callback buildGetNymRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -114,6 +139,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildSchemaRequest completes.
+	 */
 	private static Callback buildSchemaRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -127,6 +155,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildGetSchemaRequest completes.
+	 */
 	private static Callback buildGetSchemaRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -140,6 +171,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildClaimDefTxn completes.
+	 */
 	private static Callback buildClaimDefTxnCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -153,6 +187,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildGetClaimDefTxn completes.
+	 */
 	private static Callback buildGetClaimDefTxnCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -166,6 +203,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildNodeRequest completes.
+	 */
 	private static Callback buildNodeRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -179,6 +219,9 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildGetTxnRequest completes.
+	 */
 	public static Callback buildGetTxnRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -196,6 +239,16 @@ public class Ledger extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
+	/**
+	 * Signs and submits request message to validator pool.
+	 * 
+	 * @param pool A Pool.
+	 * @param wallet A Wallet.
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param requestJson Request data json.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> signAndSubmitRequest(
 			Pool pool,
 			Wallet wallet,
@@ -221,6 +274,14 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
+	 * 
+	 * @param pool The Pool to publish to.
+	 * @param requestJson Request data json.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> submitRequest(
 			Pool pool,
 			String requestJson) throws IndyException {
@@ -241,10 +302,17 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a request to get a DDO.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildGetDdoRequest(
 			String submitterDid,
-			String targetDid,
-			String requestJson) throws IndyException {
+			String targetDid) throws IndyException {
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -260,6 +328,17 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a NYM request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @param verkey verification key
+	 * @param alias alias
+	 * @param role Role of a user NYM record
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildNymRequest(
 			String submitterDid,
 			String targetDid,
@@ -284,6 +363,17 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds an ATTRIB request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @param hash Hash of attribute data
+	 * @param raw represented as json, where key is attribute name and value is it's value
+	 * @param enc Encrypted attribute data
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildAttribRequest(
 			String submitterDid,
 			String targetDid,
@@ -308,6 +398,15 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a GET_ATTRIB request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @param data name (attribute name)
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildGetAttribRequest(
 			String submitterDid,
 			String targetDid,
@@ -328,6 +427,14 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a GET_NYM request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildGetNymRequest(
 			String submitterDid,
 			String targetDid) throws IndyException {
@@ -346,6 +453,14 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a SCHEMA request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param data name, version, type, attr_names (ip, port, keys)
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildSchemaRequest(
 			String submitterDid,
 			String data) throws IndyException {
@@ -364,6 +479,15 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a GET_SCHEMA request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param dest Id of Identity stored in secured Wallet.
+	 * @param data name, version
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildGetSchemaRequest(
 			String submitterDid,
 			String dest,
@@ -384,6 +508,16 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds an CLAIM_DEF request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param xref Seq. number of schema
+	 * @param signatureType signature type (only CL supported now)
+	 * @param data components of a key in json: N, R, S, Z
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildClaimDefTxn(
 			String submitterDid,
 			int xref,
@@ -406,6 +540,16 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a GET_CLAIM_DEF request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param xref Seq. number of schema
+	 * @param signatureType signature type (only CL supported now)
+	 * @param origin issuer did
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildGetClaimDefTxn(
 			String submitterDid,
 			int xref,
@@ -428,6 +572,15 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a NODE request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @param data id of a target NYM record
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildNodeRequest(
 			String submitterDid,
 			String targetDid,
@@ -448,6 +601,14 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a GET_TXN request.
+	 * 
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param data seq_no of transaction in ledger
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> buildGetTxnRequest(
 			String submitterDid,
 			int data) throws IndyException {

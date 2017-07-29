@@ -66,18 +66,17 @@
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
                                                                     outMyPk:&listenerPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for listener");
     
     // 5. create trustee did
     
     NSString *trusteeDid;
-    NSString *trusteeDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":true}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:trusteeWalletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret =[[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:trusteeWalletHandle
+                                                                      seed:@"000000000000000000000000Trustee1"
+                                                                  outMyDid:&trusteeDid
+                                                               outMyVerkey:nil
+                                                                   outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
     
     // 6. Build nym request for listener
     NSString *listenerNymRequest;
