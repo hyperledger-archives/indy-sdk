@@ -47,5 +47,4 @@
                                nonce:(NSString *)nonce
                           completion:(void (^)(NSError *error, NSString *decryptedMsg)) handler;
 
-
 @end

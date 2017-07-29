@@ -28,8 +28,4 @@
 
 - (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle;
 
-- (NSError*) walletSetSeqNo:(NSNumber *)seqNo
-                   forValue:(NSString *)value
-               walletHandle:(IndyHandle) walletHandle;
-
 @end
