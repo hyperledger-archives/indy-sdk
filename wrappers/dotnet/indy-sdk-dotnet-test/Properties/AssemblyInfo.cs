@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("indy-sdk-dotnet-test")]
+[assembly: AssemblyTitle("Tests for Hyperledger Indy SDK .NET Wrapper")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("indy-sdk-dotnet-test")]
+[assembly: AssemblyProduct("Hyperledger Indy")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
