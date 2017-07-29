@@ -3,7 +3,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.Wrapper.Agent;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
@@ -14,44 +13,28 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         private static TaskCompletionSource<string> serverToClientMsgFuture = new TaskCompletionSource<string>();
         private static TaskCompletionSource<string> clientToServerMsgFuture = new TaskCompletionSource<string>();
 
-        private class ListenerMessageObserver : MessageObserver
-        {
-            public void OnMessage(Agent.Connection connection, string message)
+        private new static MessageReceivedHandler _messageObserver = (Connection connection, string message) =>
             {
                 Console.WriteLine("Received message '" + message + "' on connection " + connection);
 
                 serverToClientMsgFuture.SetResult(message);
-            }
-        }
+            };
 
-        private class ConnectionMessageObserver : MessageObserver
-        {
-            public void OnMessage(Agent.Connection connection, string message)
+        private new static MessageReceivedHandler _messageObserverForIncoming = (Connection connection, string message) =>
             {
                 Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
 
                 clientToServerMsgFuture.SetResult(message);
-            }
-        }
+            };
 
-        private class ListenerConnectionObserver : ConnectionObserver
-        {
-            public MessageObserver OnConnection(Agent.Listener listener, Agent.Connection connection, string senderDid, string receiverDid)
+        private new static ConnectionOpenedHandler _incomingConnectionObserver = (Listener listener, Connection connection, string senderDid, string receiverDid) =>
             {
                 Console.WriteLine("New connection " + connection);
 
                 serverToClientConnectionFuture.SetResult(connection);
 
                 return _messageObserverForIncoming;
-            }
-        }
-
-        static AgentSendTest()
-        {
-            _messageObserver = new ListenerMessageObserver();
-            _messageObserverForIncoming = new ConnectionMessageObserver();
-            _incomingConnectionObserver = new ListenerConnectionObserver();
-        }
+            };
 
         [TestMethod]
         public void TestAgentSendWorks()

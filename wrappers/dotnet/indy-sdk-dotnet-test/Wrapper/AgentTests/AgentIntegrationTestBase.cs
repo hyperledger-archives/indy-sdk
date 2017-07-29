@@ -1,7 +1,7 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
+using static Indy.Sdk.Dotnet.Wrapper.Agent;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
@@ -11,6 +11,23 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         protected static Pool _pool;
         protected string _poolName;
         private string _walletName = "agentWallet";
+
+        protected static MessageReceivedHandler _messageObserver = (connection, message) =>
+        {
+            Console.WriteLine("Received message '" + message + "' on connection " + connection);
+        };
+        
+        protected static MessageReceivedHandler _messageObserverForIncoming = (connection, message) =>
+        {
+            Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
+        };
+
+        protected static ConnectionOpenedHandler _incomingConnectionObserver = (listener, connection, senderDid, receiverDid) =>
+        {
+            Console.WriteLine("New connection " + connection);
+
+            return _messageObserverForIncoming;
+        };
 
         [TestInitialize]
         public void SetUp()
@@ -35,37 +52,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 
             _pool.CloseAsync().Wait();
             StorageUtils.CleanupStorage();
-        }
-
-        protected static MessageObserver _messageObserver = new ConnectionMessageObserver();
-        protected static MessageObserver _messageObserverForIncoming = new ListenerMessageObserver();
-        protected static ConnectionObserver _incomingConnectionObserver = new ListenerConnectionObserver();
-
-
-        private class ListenerMessageObserver : MessageObserver
-        {
-            public void OnMessage(Agent.Connection connection, string message)
-            {
-                Console.WriteLine("Received message '" + message + "' on connection " + connection);
-            }
-        }
-
-        private class ConnectionMessageObserver : MessageObserver
-        {
-            public void OnMessage(Agent.Connection connection, string message)
-            {
-                Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
-            }
-        }
-
-        private class ListenerConnectionObserver : ConnectionObserver
-        {
-            public MessageObserver OnConnection(Agent.Listener listener, Agent.Connection connection, string senderDid, string receiverDid)
-            {
-                Console.WriteLine("New connection " + connection);
-
-                return _messageObserverForIncoming;
-            }
-        }
+        }        
     }
 }

@@ -1,18 +1,33 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 using System;
+using System.Threading.Tasks;
+using static Indy.Sdk.Dotnet.Wrapper.Agent;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 {
     [TestClass]
     public class AgentDemoTest : IndyIntegrationTestBase
     {
-        private static MessageObserver _messageObserver = new MyMessageObserver();
-        private static MessageObserver _messageObserverForIncoming = new MyIncomingMessageObserver();
-        private static ConnectionObserver _incomingConnectionObserver = new MyIncomingConnectionObserver();
+        private static MessageReceivedHandler _messageObserver = (Connection connection, string message) =>
+        {
+            Console.WriteLine("Received message '" + message + "' on connection " + connection);
+        };
+
+        private static MessageReceivedHandler _messageObserverForIncoming = (Connection connection, string message) =>
+        {
+            Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
+
+            _clientToServerMsgFuture.SetResult(message);
+        };
+
+        private static ConnectionOpenedHandler _incomingConnectionObserver = (Listener listener, Connection connection, string senderDid, string receiverDid) =>
+        {
+            Console.WriteLine("New connection " + connection);
+
+            return _messageObserverForIncoming;
+        };
+
         private static TaskCompletionSource<string> _clientToServerMsgFuture = new TaskCompletionSource<string>();
 
         [TestMethod]
@@ -88,35 +103,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             //16. Close Pool
             pool.CloseAsync().Wait();
-        }
-
-        //Implentations of observers.
-        private class MyMessageObserver : MessageObserver
-        {
-            public void OnMessage(Agent.Connection connection, string message)
-            {
-                Console.WriteLine("Received message '" + message + "' on connection " + connection);
-            }
-        }
-
-        private class MyIncomingMessageObserver : MessageObserver
-        {
-            public void OnMessage(Agent.Connection connection, string message)
-            {
-                Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
-
-                _clientToServerMsgFuture.SetResult(message);
-            }
-        }
-
-        private class MyIncomingConnectionObserver : ConnectionObserver
-        {
-            public MessageObserver OnConnection(Agent.Listener listener, Agent.Connection connection, string senderDid, string receiverDid)
-            {
-                Console.WriteLine("New connection " + connection);
-
-                return _messageObserverForIncoming;
-            }
-        }
+        }        
     }
 }

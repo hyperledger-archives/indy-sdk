@@ -1,9 +1,8 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 using System;
+using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 {

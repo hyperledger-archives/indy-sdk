@@ -35,6 +35,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             {
                 activeListener.AddIdentityAsync(_pool, _wallet, didResult.Did).Wait();
             }
-            }
+        }
     }
 }
