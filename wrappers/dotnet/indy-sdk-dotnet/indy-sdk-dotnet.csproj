@@ -53,7 +53,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Wrapper\Agent.cs" />
-    <Compile Include="Wrapper\AgentObservers.cs" />
     <Compile Include="Wrapper\AnonCredsResults.cs" />
     <Compile Include="Wrapper\AnonCreds.cs" />
     <Compile Include="ErrorCode.cs" />

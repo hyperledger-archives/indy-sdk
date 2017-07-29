@@ -3,40 +3,28 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.Wrapper.Agent;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
     public class AgentCloseListenerTest : AgentIntegrationTestBase
     {
-
         private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource;
 
-
-        public class ListenerConnectionObserver : ConnectionObserver
-        {
-            public MessageObserver OnConnection(Listener listener, Connection connection, string senderDid, string receiverDid)
+        private new static ConnectionOpenedHandler _incomingConnectionObserver = (listener, connection, senderDid, receiverDid) =>
             {
                 Console.WriteLine("New connection " + connection);
 
                 _serverToClientConnectionTaskCompletionSource.SetResult(connection);
 
                 return _messageObserverForIncoming;
-            }
-        }
-
-        static AgentCloseListenerTest()
-        {
-            _incomingConnectionObserver = new ListenerConnectionObserver();
-        }
+            };
 
         [TestInitialize]
         public void Initialize()
         {
             _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
         }
-
 
         [TestMethod]
         public async Task TestAgentCloseConnectionWorksForOutgoing()

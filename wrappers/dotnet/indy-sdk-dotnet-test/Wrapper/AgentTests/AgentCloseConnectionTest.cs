@@ -3,34 +3,28 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.Wrapper.Agent;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
     public class AgentCloseConnectionTest : AgentIntegrationTestBase
     {
+        private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource;
 
-        private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
-
-
-        public class ListenerConnectionObserver : ConnectionObserver
+        private new static ConnectionOpenedHandler _incomingConnectionObserver = (listener, connection, senderDid, receiverDid) =>
         {
-            public MessageObserver OnConnection(Listener listener, Connection connection, string senderDid, string receiverDid)
-            {
-                Console.WriteLine("New connection " + connection);
+            Console.WriteLine("New connection " + connection);
 
-                _serverToClientConnectionTaskCompletionSource.SetResult(connection);
+            _serverToClientConnectionTaskCompletionSource.SetResult(connection);
 
-                return _messageObserverForIncoming;
-            }
-        }
+            return _messageObserverForIncoming;
+        };
 
-        static AgentCloseConnectionTest()
+        [TestInitialize]
+        public void Initialize()
         {
-            _incomingConnectionObserver = new ListenerConnectionObserver();
+            _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
         }
-
 
         [TestMethod]
         public async Task TestAgentCloseConnectionWorksForOutgoing()
@@ -87,7 +81,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
-
 
     }
 }

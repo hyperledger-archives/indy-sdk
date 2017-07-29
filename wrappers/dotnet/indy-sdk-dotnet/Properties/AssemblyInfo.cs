@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ClassLibrary2")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Hyperledger Indy SDK .NET Wrapper")]
+[assembly: AssemblyDescription("A .NET wrapper for the Hyperledger Indy SDK")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ClassLibrary2")]
+[assembly: AssemblyProduct("Hyperledger Indy")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

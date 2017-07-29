@@ -1,10 +1,8 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.Agent;
-using static Indy.Sdk.Dotnet.Wrapper.AgentObservers;
+
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
 {
