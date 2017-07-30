@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibIndy;
+using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -25,7 +25,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use for functions that don't return a value.
         /// </summary>
-        protected static NoValueDelegate _noValueCallback = (xCommandHandle, err) =>
+        internal static NoValueDelegate _noValueCallback = (xCommandHandle, err) =>
         {
             var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
 

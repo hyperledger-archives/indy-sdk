@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibIndy;
+using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -104,7 +104,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<CreateAndStoreMyDidResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_create_and_store_my_did(
+            var commandResult = IndyNativeMethods.indy_create_and_store_my_did(
                 commandHandle,
                 wallet.Handle,
                 didJson,
@@ -127,7 +127,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<ReplaceKeysResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_replace_keys(
+            var commandResult = IndyNativeMethods.indy_replace_keys(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -150,7 +150,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_store_their_did(
+            var commandResult = IndyNativeMethods.indy_store_their_did(
                 commandHandle,
                 wallet.Handle,
                 identityJson,
@@ -173,7 +173,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_sign(
+            var commandResult = IndyNativeMethods.indy_sign(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -199,7 +199,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_verify_signature(
+            var commandResult = IndyNativeMethods.indy_verify_signature(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
@@ -227,7 +227,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_encrypt(
+            var commandResult = IndyNativeMethods.indy_encrypt(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
@@ -255,7 +255,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var commandResult = LibIndy.indy_decrypt(
+            var commandResult = IndyNativeMethods.indy_decrypt(
                 commandHandle,
                 wallet.Handle,
                 my_did,

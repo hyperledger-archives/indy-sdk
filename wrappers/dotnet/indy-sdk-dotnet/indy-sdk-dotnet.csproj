@@ -60,7 +60,7 @@
     <Compile Include="IndyException.cs" />
     <Compile Include="Wrapper\AsyncWrapperBase.cs" />
     <Compile Include="Wrapper\Ledger.cs" />
-    <Compile Include="LibIndy.cs" />
+    <Compile Include="IndyNativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Wrapper\Pool.cs" />
     <Compile Include="Wrapper\SignusResults.cs" />

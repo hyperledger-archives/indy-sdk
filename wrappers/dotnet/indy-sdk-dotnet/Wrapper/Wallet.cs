@@ -2,18 +2,20 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibIndy;
+using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
     /// <summary>
     /// Basic wrapper API for Wallet functions.
     /// </summary>
-    public sealed class Wallet : AsyncWrapperBase
+    public sealed class Wallet : AsyncWrapperBase, IDisposable
     {
+        /// <summary>
+        /// Wallet type registrations by type name.
+        /// </summary>
         private static IDictionary<string, WalletType> _registeredWalletTypes = new ConcurrentDictionary<string, WalletType>();
-        private readonly object syncLock = new object();
-
+        
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
@@ -47,7 +49,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             _registeredWalletTypes[xType] = walletType;          
 
-            var result = LibIndy.indy_register_wallet_type(
+            var result = IndyNativeMethods.indy_register_wallet_type(
                 commandHandle,
                 xType,
                 walletType.CreateCallback,
@@ -80,7 +82,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_create_wallet(
+            var result = IndyNativeMethods.indy_create_wallet(
                 commandHandle,
                 poolName,
                 name,
@@ -107,7 +109,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_open_wallet(
+            var result = IndyNativeMethods.indy_open_wallet(
                 commandHandle,
                 name,
                 runtimeConfig,
@@ -130,7 +132,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_close_wallet(
+            var result = IndyNativeMethods.indy_close_wallet(
                 commandHandle,
                 handle,
                 _noValueCallback);
@@ -151,7 +153,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_delete_wallet(
+            var result = IndyNativeMethods.indy_delete_wallet(
                 commandHandle,
                 name,
                 credentials,
@@ -174,7 +176,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_wallet_set_seq_no_for_value(
+            var result = IndyNativeMethods.indy_wallet_set_seq_no_for_value(
                 commandHandle,
                 walletHandle,
                 walletKey,
@@ -185,6 +187,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             return taskCompletionSource.Task;
         }
+
+        private bool _isOpen = true;
 
         /// <summary>
         /// Gets the SDK handle for the Wallet instance.
@@ -206,6 +210,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asyncronous Task with no return value.</returns>
         public Task CloseAsync()
         {
+            _isOpen = false;
             return CloseWalletAsync(this.Handle);
         }
 
@@ -217,6 +222,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         public Task SetSeqNoForValueAsync(string walletKey)
         {
             return WalletSetSeqNoForValueAsync(this.Handle, walletKey);
+        }
+
+        /// <summary>
+        /// Disposes of resources.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_isOpen)
+                CloseAsync().Wait();
         }
     }
 }    
