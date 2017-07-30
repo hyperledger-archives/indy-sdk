@@ -7,7 +7,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
     /// <summary>
     /// Wrapper class for pool functions.
     /// </summary>
-    public sealed class Pool : AsyncWrapperBase
+    public sealed class Pool : AsyncWrapperBase, IDisposable
     {
         /// <summary>
         /// Callback to use when a pool open command has completed.
@@ -131,6 +131,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
+        private bool _isOpen = true;
+
         /// <summary>
         /// Gets the handle for the pool.
         /// </summary>
@@ -160,7 +162,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         public Task CloseAsync()
         {
+            _isOpen = false;
             return ClosePoolLedgerAsync(this.Handle);
+        }
+
+        /// <summary>
+        /// Disposes of resources.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_isOpen)
+                CloseAsync().Wait();
         }
     }
 }

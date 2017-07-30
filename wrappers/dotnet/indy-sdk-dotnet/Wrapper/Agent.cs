@@ -39,7 +39,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// Map of listener handles to listeners.
         /// </summary>
         private static IDictionary<IntPtr, Listener> _listeners = new ConcurrentDictionary<IntPtr, Listener>();
-        
+
         /// <summary>
         /// Map of command handles to message observers.
         /// </summary>
@@ -49,7 +49,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// Map of command handles to connection observers.
         /// </summary>
         private static IDictionary<int, ConnectionOpenedHandler> _connectionOpenedHandlers = new ConcurrentDictionary<int, ConnectionOpenedHandler>();
-                
+
         /// <summary>
         /// Callback to use when an outgoing connection is established.
         /// </summary>
@@ -94,7 +94,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         {
             var taskCompletionSource = RemoveTaskCompletionSource<Listener>(xCommandHandle);
 
-            if(!CheckCallback(taskCompletionSource, err))
+            if (!CheckCallback(taskCompletionSource, err))
                 return;
 
             Debug.Assert(!_listeners.ContainsKey(listenerHandle));
@@ -125,7 +125,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             _connections.Add(connectionHandle, connection);
 
             var handler = listener.ConnectionOpenedHandler;
-            connection.MessageReceivedHandler = handler(listener, connection, senderDid, receiverDid);          
+            connection.MessageReceivedHandler = handler(listener, connection, senderDid, receiverDid);
         };
 
         /// <summary>
@@ -377,12 +377,18 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// A connection to an agent.
         /// </summary>
-        public class Connection
+        public class Connection : IDisposable
         {
+            private bool _isOpen = true;
+
             /// <summary>
             /// Gets the handle for the connection.
             /// </summary>
             public IntPtr Handle { get; }
+
+            /// <summary>
+            /// Gets/sets the handler to use when a message is received on the connection.
+            /// </summary>
             internal MessageReceivedHandler MessageReceivedHandler { get; set; }
 
             /// <summary>
@@ -410,20 +416,35 @@ namespace Indy.Sdk.Dotnet.Wrapper
             /// <returns>An asynchronous task that returns no value.</returns>
             public Task CloseAsync() 
             {
-                return Agent.AgentCloseConnectionAsync(this);
+                _isOpen = false;
+                return Agent.AgentCloseConnectionAsync(this);                
+            }
+
+            /// <summary>
+            /// Disposes of resources used by the connection.
+            /// </summary>
+            public void Dispose()
+            {
+                if(_isOpen)
+                    CloseAsync().Wait();
             }
         }
 
         /// <summary>
         /// A listener that can receive connections from an agent.
         /// </summary>
-        public class Listener
+        public class Listener : IDisposable
         {
+            private bool _isOpen = true;
+
             /// <summary>
             /// Gets the handle for the listener.
             /// </summary>
             public IntPtr Handle { get; }
 
+            /// <summary>
+            /// Gets/sets the handler to use when a connection is opened.
+            /// </summary>
             internal ConnectionOpenedHandler ConnectionOpenedHandler { get; set; }
 
             /// <summary>
@@ -464,7 +485,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
             /// <returns>An asynchronous task that returns no value.</returns>
             public Task CloseAsync()
             {
-                return Agent.AgentCloseListenerAsync(this);
+                _isOpen = false;
+                return Agent.AgentCloseListenerAsync(this);                
+            }
+
+            /// <summary>
+            /// Disposes of resources used by the listener.
+            /// </summary>
+            public void Dispose()
+            {
+                if(_isOpen)
+                    CloseAsync().Wait();
             }
         }
     }

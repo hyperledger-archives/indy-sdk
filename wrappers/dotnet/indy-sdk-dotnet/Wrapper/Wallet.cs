@@ -9,7 +9,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
     /// <summary>
     /// Basic wrapper API for Wallet functions.
     /// </summary>
-    public sealed class Wallet : AsyncWrapperBase
+    public sealed class Wallet : AsyncWrapperBase, IDisposable
     {
         /// <summary>
         /// Wallet type registrations by type name.
@@ -188,6 +188,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
+        private bool _isOpen = true;
+
         /// <summary>
         /// Gets the SDK handle for the Wallet instance.
         /// </summary>
@@ -208,6 +210,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asyncronous Task with no return value.</returns>
         public Task CloseAsync()
         {
+            _isOpen = false;
             return CloseWalletAsync(this.Handle);
         }
 
@@ -219,6 +222,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         public Task SetSeqNoForValueAsync(string walletKey)
         {
             return WalletSetSeqNoForValueAsync(this.Handle, walletKey);
+        }
+
+        /// <summary>
+        /// Disposes of resources.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_isOpen)
+                CloseAsync().Wait();
         }
     }
 }    
