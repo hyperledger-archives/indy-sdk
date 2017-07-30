@@ -13,7 +13,7 @@ namespace Indy.Sdk.Dotnet
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        public delegate void NoValueDelegate(int command_handle, int err);
+        internal delegate void NoValueDelegate(int command_handle, int err);
         
 
         // pool.rs
@@ -56,7 +56,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="pool_handle">The handle for the opened pool.</param>
-        public delegate void OpenPoolLedgerResultDelegate(int command_handle, int err, IntPtr pool_handle);
+        internal delegate void OpenPoolLedgerResultDelegate(int command_handle, int err, IntPtr pool_handle);
 
         /// <summary>
         /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -105,7 +105,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="name">The name of the wallet.</param>
         /// <param name="config">The configuration of the wallet.</param>
         /// <param name="credentials">The credentials for the wallet.</param>
-        public delegate ErrorCode WalletTypeCreateDelegate(string name, string config, string credentials);
+        internal delegate ErrorCode WalletTypeCreateDelegate(string name, string config, string credentials);
 
         /// <summary>
         /// Delegate for the function called back to when a wallet of a custom type is opened.
@@ -115,7 +115,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="runtimeConfig">The runtime configuration for the wallet.</param>
         /// <param name="credentials">The credentials of the wallet.</param>
         /// <param name="walletHandle">A handle to use when tracking the wallet instance.</param>
-        public delegate ErrorCode WalletTypeOpenDelegate(string name, string config, string runtimeConfig, string credentials, ref int walletHandle);
+        internal delegate ErrorCode WalletTypeOpenDelegate(string name, string config, string runtimeConfig, string credentials, ref int walletHandle);
 
         /// <summary>
         /// Delegate for the function called back to when value is set on a wallet of a custom type.
@@ -123,7 +123,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
         /// <param name="key">The key of the value to set.</param>
         /// <param name="value">The value to set.</param>
-        public delegate ErrorCode WalletTypeSetDelegate(int walletHandle, string key, string value);
+        internal delegate ErrorCode WalletTypeSetDelegate(int walletHandle, string key, string value);
 
         /// <summary>
         /// Delegate for the function called back to when value is requested from a wallet of a custom type.
@@ -131,7 +131,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
         /// <param name="key">The key of the value to get.</param>
         /// <param name="valuePtr">The pointer to the value associated with the key.</param>
-        public delegate ErrorCode WalletTypeGetDelegate(int walletHandle, string key, ref IntPtr valuePtr);
+        internal delegate ErrorCode WalletTypeGetDelegate(int walletHandle, string key, ref IntPtr valuePtr);
 
         /// <summary>
         /// Delegate for the function called back to when an unexpired value is requested from a wallet of a custom type.
@@ -139,7 +139,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
         /// <param name="key">The key of the value to get.</param>
         /// <param name="valuePtr">The pointer to the value associated with the key.</param>
-        public delegate ErrorCode WalletTypeGetNotExpiredDelegate(int walletHandle, string key, ref IntPtr valuePtr);
+        internal delegate ErrorCode WalletTypeGetNotExpiredDelegate(int walletHandle, string key, ref IntPtr valuePtr);
 
         /// <summary>
         /// Delegate for the function called back to when an list of values is requested from a wallet of a custom type.
@@ -147,13 +147,13 @@ namespace Indy.Sdk.Dotnet
         /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
         /// <param name="keyPrefix">The key prefix for the values requested.</param>
         /// <param name="valuesJsonPtr">The pointer to the values associated with the key prefix.</param>
-        public delegate ErrorCode WalletTypeListDelegate(int walletHandle, string keyPrefix, ref IntPtr valuesJsonPtr);
+        internal delegate ErrorCode WalletTypeListDelegate(int walletHandle, string keyPrefix, ref IntPtr valuesJsonPtr);
 
         /// <summary>
         /// Delegate for the function called back to when a wallet of a custom type is closed.
         /// </summary>
         /// <param name="walletHandle">The handle of the wallet instance the action is being performed on.</param>
-        public delegate ErrorCode WalletTypeCloseDelegate(int walletHandle);
+        internal delegate ErrorCode WalletTypeCloseDelegate(int walletHandle);
 
         /// <summary>
         /// Delegate for the function called back to when a wallet of a custom type is deleted.
@@ -161,14 +161,14 @@ namespace Indy.Sdk.Dotnet
         /// <param name="name">The name of the wallet being deleted</param>
         /// <param name="config">The configuration of the wallet.</param>
         /// <param name="credentials">The credentials of the wallet.</param>
-        public delegate ErrorCode WalletTypeDeleteDelegate(string name, string config, string credentials);
+        internal delegate ErrorCode WalletTypeDeleteDelegate(string name, string config, string credentials);
 
         /// <summary>
         /// Delegate for the function called back to when a value in a  wallet of a custom type is freed.
         /// </summary>
         /// <param name="walletHandle">The handle of the wallet the action is being performed on.</param>
         /// <param name="valuePtr">A pointer to the value to be freed.</param>
-        public delegate ErrorCode WalletTypeFreeDelegate(int walletHandle, IntPtr valuePtr);
+        internal delegate ErrorCode WalletTypeFreeDelegate(int walletHandle, IntPtr valuePtr);
 
 
         /// <summary>
@@ -202,12 +202,12 @@ namespace Indy.Sdk.Dotnet
         internal static extern int indy_open_wallet(int command_handle, string name, string runtime_config, string credentials, OpenWalletResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_open_pool_ledger function.
+        /// Delegate for the function called back to by the sovrin_open_wallet function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="wallet_handle">The handle for the opened wallet.</param>
-        public delegate void OpenWalletResultDelegate(int command_handle, int err, IntPtr wallet_handle);
+        internal delegate void OpenWalletResultDelegate(int command_handle, int err, IntPtr wallet_handle);
 
         /// <summary>
         /// Closes opened wallet and frees allocated resources.
@@ -250,7 +250,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="request_result_json">The result data.</param>
-        public delegate void SubmitRequestResultDelegate(int command_handle, int err, string request_result_json);
+        internal delegate void SubmitRequestResultDelegate(int command_handle, int err, string request_result_json);
 
         /// <summary>
         /// Delegate for callbacks used by functions that build requests destined for the ledger.
@@ -258,7 +258,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="request_json">The request that can be signed and submitted to the ledger.</param>
-        public delegate void BuildRequestResultDelegate(int command_handle, int err, string request_json);
+        internal delegate void BuildRequestResultDelegate(int command_handle, int err, string request_json);
 
         /// <summary>
         /// Signs and submits request message to validator pool.
@@ -440,7 +440,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="did">The created DID.</param>
         /// <param name="verkey">The verification key for the signature.</param>
         /// <param name="pk">The public key for decryption.</param>
-        public delegate void CreateAndStoreMyDidResultDelegate(int command_handle, int err, string did, string verkey, string pk);
+        internal delegate void CreateAndStoreMyDidResultDelegate(int command_handle, int err, string did, string verkey, string pk);
 
         /// <summary>
         /// Generates new keys (signing and encryption keys) for an existing
@@ -462,7 +462,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="verkey">The key for verification of signature.</param>
         /// <param name="pk">The public key for decryption.</param>
-        public delegate void ReplaceKeysResultDelegate(int command_handle, int err, string verkey, string pk);
+        internal delegate void ReplaceKeysResultDelegate(int command_handle, int err, string verkey, string pk);
 
         /// <summary>
         /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -494,7 +494,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="signature">a signature string</param>
-        public delegate void SignResultDelegate(int command_handle, int err, string signature);
+        internal delegate void SignResultDelegate(int command_handle, int err, string signature);
 
         /// <summary>
         /// Verify a signature created by a key associated with a DID.
@@ -515,7 +515,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="valid">true if the signature is valid, otherwise false</param>
-        public delegate void VerifySignatureResultDelegate(int command_handle, int err, bool valid);
+        internal delegate void VerifySignatureResultDelegate(int command_handle, int err, bool valid);
 
         /// <summary>
         /// Encrypts a message by a public key associated with a DID.
@@ -538,7 +538,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="encrypted_msg">The encrypted message.</param>
         /// <param name="nonce">The nonce</param>
-        public delegate void EncryptResultDelegate(int command_handle, int err, string encrypted_msg, string nonce);
+        internal delegate void EncryptResultDelegate(int command_handle, int err, string encrypted_msg, string nonce);
 
         /// <summary>
         /// Decrypts a message encrypted by a public key associated with my DID.
@@ -560,7 +560,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="decrypted_msg">The decrypted message.</param>
-        public delegate void DecryptResultDelegate(int command_handle, int err, string decrypted_msg);
+        internal delegate void DecryptResultDelegate(int command_handle, int err, string decrypted_msg);
 
         // anoncreds.rs
 
@@ -584,7 +584,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_def_json">claim definition json containing information about signature type, schema and issuer's public key.</param>
-        public delegate void IssuerCreateAndStoreClaimDefResultDelegate(int command_handle, int err, string claim_def_json);
+        internal delegate void IssuerCreateAndStoreClaimDefResultDelegate(int command_handle, int err, string claim_def_json);
 
         /// <summary>
         /// Create a new revocation registry for the given claim definition.
@@ -606,7 +606,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_json">Revoc registry json</param>
         /// <param name="revoc_reg_uuid">Unique number identifying the revocation registry in the wallet</param>
-        public delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int command_handle, int err, string revoc_reg_json, string revoc_reg_uuid);
+        internal delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int command_handle, int err, string revoc_reg_json, string revoc_reg_uuid);
 
         /// <summary>
         /// Signs a given claim for the given user by a given key (claim def).
@@ -630,7 +630,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="revoc_reg_update_json">Revocation registry update json with a newly issued claim</param>
         /// <param name="xclaim_json">Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
         /// used for issuance</param>
-        public delegate void IssuerCreateClaimResultDelegate(int command_handle, int err, string revoc_reg_update_json, string xclaim_json);
+        internal delegate void IssuerCreateClaimResultDelegate(int command_handle, int err, string revoc_reg_update_json, string xclaim_json);
 
         /// <summary>
         /// Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -650,7 +650,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_update_json">Revocation registry update json with a revoked claim</param>
-        public delegate void IssuerRevokeClaimResultDelegate(int command_handle, int err, string revoc_reg_update_json);
+        internal delegate void IssuerRevokeClaimResultDelegate(int command_handle, int err, string revoc_reg_update_json);
 
         /// <summary>
         /// Stores a claim offer from the given issuer in a secure storage.
@@ -680,7 +680,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_offers_json">A json with a list of claim offers for the filter.</param>
-        public delegate void ProverGetClaimOffersResultDelegate(int command_handle, int err, string claim_offers_json);
+        internal delegate void ProverGetClaimOffersResultDelegate(int command_handle, int err, string claim_offers_json);
 
         /// <summary>
         /// Creates a master secret with a given name and stores it in the wallet.
@@ -713,7 +713,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claim_req_json">Claim request json.</param>
-        public delegate void ProverCreateAndStoreClaimReqResultDelegate(int command_handle, int err, string claim_req_json);
+        internal delegate void ProverCreateAndStoreClaimReqResultDelegate(int command_handle, int err, string claim_req_json);
 
         /// <summary>
         /// Updates the claim by a master secret and stores in a secure wallet.
@@ -743,7 +743,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claims_json">claims json</param>
-        public delegate void ProverGetClaimsResultDelegate(int command_handle, int err, string claims_json);
+        internal delegate void ProverGetClaimsResultDelegate(int command_handle, int err, string claims_json);
 
         /// <summary>
         /// Gets human readable claims matching the given proof request.
@@ -762,7 +762,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="claims_json">json with claims for the given pool request.</param>
-        public delegate void ProverGetClaimsForProofResultDelegate(int command_handle, int err, string claims_json);
+        internal delegate void ProverGetClaimsForProofResultDelegate(int command_handle, int err, string claims_json);
 
         /// <summary>
         /// Creates a proof according to the given proof request
@@ -786,7 +786,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="proof_json">Proof json.</param>
-        public delegate void ProverCreateProofResultDelegate(int command_handle, int err, string proof_json);
+        internal delegate void ProverCreateProofResultDelegate(int command_handle, int err, string proof_json);
 
         /// <summary>
         /// Verifies a proof (of multiple claim).
@@ -808,7 +808,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="valid">true if the proof is valid, otherwise false</param>
-        public delegate void VerifierVerifyProofResultDelegate(int command_handle, int err, bool valid);
+        internal delegate void VerifierVerifyProofResultDelegate(int command_handle, int err, bool valid);
 
         // agent.rs
 
@@ -818,7 +818,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="connection_handle">The handle for the connection the message was recevied on.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="message">The received message.</param>
-        public delegate void AgentMessageReceivedDelegate(IntPtr connection_handle, int err, string message);
+        internal delegate void AgentMessageReceivedDelegate(IntPtr connection_handle, int err, string message);
         
         /// <summary>
         /// Establishes agent to agent connection.
@@ -833,14 +833,14 @@ namespace Indy.Sdk.Dotnet
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_connect(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string sender_did, string receiver_did, AgentConnectionEstablishedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
-        
+
         /// <summary>
         /// Delegate for Agent callbacks that return a connection.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="connectionHandle">The handle to the connection.</param>
-        public delegate void AgentConnectionEstablishedDelegate(int command_handle, int err, IntPtr connectionHandle);
+        internal delegate void AgentConnectionEstablishedDelegate(int command_handle, int err, IntPtr connectionHandle);
 
         /// <summary>
         /// Starts listening for agent connections.
@@ -860,7 +860,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="listenerHandle">The handle to the listener.</param>
-        public delegate void AgentListenerCreatedDelegate(int command_handle, int err, IntPtr listenerHandle);
+        internal delegate void AgentListenerCreatedDelegate(int command_handle, int err, IntPtr listenerHandle);
 
         /// <summary>
         /// Delegate for when an agent listener receives a connection.
@@ -870,7 +870,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="connection_handle">Connection handle to use for messages sending and mapping of incomming messages to to this connection.</param>
         /// <param name="sender_did">Id of sender Identity stored in secured Wallet.</param>
         /// <param name="reciever_did">Id of receiver Identity.</param>
-        public delegate void AgentListenerConnectionEstablishedDelegate(IntPtr listener_handle, int err, IntPtr connection_handle, string sender_did, string reciever_did);
+        internal delegate void AgentListenerConnectionEstablishedDelegate(IntPtr listener_handle, int err, IntPtr connection_handle, string sender_did, string reciever_did);
 
         /// <summary>
         /// Add identity to listener.
