@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibIndy;
+using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -33,7 +33,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_create_pool_ledger_config(
+            var result = IndyNativeMethods.indy_create_pool_ledger_config(
                 commandHandle,
                 configName,
                 config,
@@ -55,7 +55,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_delete_pool_ledger_config(
+            var result = IndyNativeMethods.indy_delete_pool_ledger_config(
                 commandHandle,
                 configName,
                 _noValueCallback
@@ -77,7 +77,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<Pool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_open_pool_ledger(
+            var result = IndyNativeMethods.indy_open_pool_ledger(
                 commandHandle,
                 configName,
                 config,
@@ -99,7 +99,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_refresh_pool_ledger(
+            var result = IndyNativeMethods.indy_refresh_pool_ledger(
                 commandHandle,
                 poolHandle,
                 _noValueCallback
@@ -120,7 +120,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_close_pool_ledger(
+            var result = IndyNativeMethods.indy_close_pool_ledger(
                 commandHandle,
                 poolHandle,
                 _noValueCallback

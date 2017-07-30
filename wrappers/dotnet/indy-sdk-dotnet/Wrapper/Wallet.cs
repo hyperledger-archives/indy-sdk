@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibIndy;
+using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -49,7 +49,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             _registeredWalletTypes[xType] = walletType;          
 
-            var result = LibIndy.indy_register_wallet_type(
+            var result = IndyNativeMethods.indy_register_wallet_type(
                 commandHandle,
                 xType,
                 walletType.CreateCallback,
@@ -82,7 +82,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_create_wallet(
+            var result = IndyNativeMethods.indy_create_wallet(
                 commandHandle,
                 poolName,
                 name,
@@ -109,7 +109,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_open_wallet(
+            var result = IndyNativeMethods.indy_open_wallet(
                 commandHandle,
                 name,
                 runtimeConfig,
@@ -132,7 +132,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_close_wallet(
+            var result = IndyNativeMethods.indy_close_wallet(
                 commandHandle,
                 handle,
                 _noValueCallback);
@@ -153,7 +153,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_delete_wallet(
+            var result = IndyNativeMethods.indy_delete_wallet(
                 commandHandle,
                 name,
                 credentials,
@@ -176,7 +176,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_wallet_set_seq_no_for_value(
+            var result = IndyNativeMethods.indy_wallet_set_seq_no_for_value(
                 commandHandle,
                 walletHandle,
                 walletKey,

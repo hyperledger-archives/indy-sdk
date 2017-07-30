@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.LibIndy;
+using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
 {
@@ -219,7 +219,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
             AddMessageReceivedHandler(commandHandle, messageReceivedHandler);
 
-            var result = LibIndy.indy_agent_connect(
+            var result = IndyNativeMethods.indy_agent_connect(
                 commandHandle,
                 pool.Handle,
                 wallet.Handle,
@@ -245,7 +245,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
             AddConnectionOpenedHandler(commandHandle, connectionOpenedHandler);
 
-            var result = LibIndy.indy_agent_listen(
+            var result = IndyNativeMethods.indy_agent_listen(
                 commandHandle,
                 endpoint,
                 _listenerCreatedCallback,
@@ -270,7 +270,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_agent_add_identity(
+            var result = IndyNativeMethods.indy_agent_add_identity(
                 commandHandle,
                 listener.Handle,
                 pool.Handle,
@@ -296,7 +296,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_agent_remove_identity(
+            var result = IndyNativeMethods.indy_agent_remove_identity(
                 commandHandle,
                 listener.Handle,
                 wallet.Handle,
@@ -320,7 +320,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_agent_send(
+            var result = IndyNativeMethods.indy_agent_send(
                 commandHandle,
                 connection.Handle,
                 message,
@@ -342,7 +342,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_agent_close_connection(
+            var result = IndyNativeMethods.indy_agent_close_connection(
                 commandHandle,
                 connection.Handle,
                 _noValueCallback
@@ -363,7 +363,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            var result = LibIndy.indy_agent_close_listener(
+            var result = IndyNativeMethods.indy_agent_close_listener(
                 commandHandle,
                 listener.Handle,
                 _noValueCallback
@@ -377,7 +377,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// A connection to an agent.
         /// </summary>
-        public class Connection : IDisposable
+        public sealed class Connection : IDisposable
         {
             private bool _isOpen = true;
 
@@ -433,7 +433,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// A listener that can receive connections from an agent.
         /// </summary>
-        public class Listener : IDisposable
+        public sealed class Listener : IDisposable
         {
             private bool _isOpen = true;
 

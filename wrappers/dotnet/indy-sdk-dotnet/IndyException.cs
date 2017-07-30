@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace Indy.Sdk.Dotnet
 {
     /// <summary>
     /// Exception indicating a problem originating from Sovrin.
     /// </summary>
-    public class IndyException : Exception
+    [Serializable]
+    public sealed class IndyException : Exception
     {
         /// <summary>
         /// Intializes a new SovrinException with a message and error code.
@@ -34,6 +36,16 @@ namespace Indy.Sdk.Dotnet
         /// <summary>
         /// Gets the error code for the exception.
         /// </summary>
-        public ErrorCode ErrorCode { get; }
+        public ErrorCode ErrorCode { get; private set; }
+
+        /// <summary>
+        /// Gets object data for ISerializable.
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="context"></param>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+        }
     }
 }
