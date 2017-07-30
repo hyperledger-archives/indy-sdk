@@ -21,6 +21,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             "\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
 
         [TestMethod]
+        [Ignore]
         public void Test()
         {
             Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType()).Wait();

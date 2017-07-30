@@ -11,9 +11,11 @@ namespace Indy.Sdk.Dotnet.Wrapper
     /// </summary>
     public sealed class Wallet : AsyncWrapperBase
     {
+        /// <summary>
+        /// Wallet type registrations by type name.
+        /// </summary>
         private static IDictionary<string, WalletType> _registeredWalletTypes = new ConcurrentDictionary<string, WalletType>();
-        private readonly object syncLock = new object();
-
+        
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
