@@ -94,7 +94,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public async Task TestProverCreateProofWorksForInvalidRequestedClaimsJson()
+        public async Task TestProverGetClaimOffersWorksForInvalidFilterJson()
         {
             InitCommonWallet();
 
