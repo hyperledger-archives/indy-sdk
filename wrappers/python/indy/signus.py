@@ -30,7 +30,7 @@ async def create_and_store_my_did(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("create_and_store_my_did: >>> wallet_handle: %s, did_json: %s",
+    logger.debug("create_and_store_my_did: >>> wallet_handle: %r, did_json: %r",
                  wallet_handle,
                  did_json)
 
@@ -48,7 +48,7 @@ async def create_and_store_my_did(wallet_handle: int,
 
     res = (did.decode(), verkey.decode(), pk.decode())
 
-    logger.debug("create_and_store_my_did: <<< res: %s", res)
+    logger.debug("create_and_store_my_did: <<< res: %r", res)
     return res
 
 
@@ -71,7 +71,7 @@ async def replace_keys(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("replace_keys: >>> wallet_handle: %s, did: %s, identity_json: %s",
+    logger.debug("replace_keys: >>> wallet_handle: %r, did: %r, identity_json: %r",
                  wallet_handle,
                  did,
                  identity_json)
@@ -114,7 +114,7 @@ async def store_their_did(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("store_their_did: >>> wallet_handle: %s, identity_json: %s",
+    logger.debug("store_their_did: >>> wallet_handle: %r, identity_json: %r",
                  wallet_handle,
                  identity_json)
 
@@ -130,7 +130,7 @@ async def store_their_did(wallet_handle: int,
                         c_identity_json,
                         store_their_did.cb)
 
-    logger.debug("store_their_did: <<< res: %s", res)
+    logger.debug("store_their_did: <<< res: %r", res)
     return res
 
 
@@ -148,7 +148,7 @@ async def sign(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("sign: >>> wallet_handle: %s, did: %s, msg: %s",
+    logger.debug("sign: >>> wallet_handle: %r, did: %r, msg: %r",
                  wallet_handle,
                  did,
                  msg)
@@ -193,7 +193,7 @@ async def verify_signature(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("verify_signature: >>> wallet_handle: %s, pool_handle: %s, did: %s, signed_msg: %s",
+    logger.debug("verify_signature: >>> wallet_handle: %r, pool_handle: %r, did: %r, signed_msg: %r",
                  wallet_handle,
                  pool_handle,
                  did,
@@ -215,7 +215,7 @@ async def verify_signature(wallet_handle: int,
                         c_signed_msg,
                         verify_signature.cb)
 
-    logger.debug("verify_signature: <<< res: %s", res)
+    logger.debug("verify_signature: <<< res: %r", res)
     return res
 
 
@@ -241,7 +241,7 @@ async def encrypt(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("encrypt: >>> wallet_handle: %s, pool_handle: %s, my_did: %s, did: %s, msg: %s",
+    logger.debug("encrypt: >>> wallet_handle: %r, pool_handle: %r, my_did: %r, did: %r, msg: %r",
                  wallet_handle,
                  pool_handle,
                  my_did,
@@ -266,7 +266,7 @@ async def encrypt(wallet_handle: int,
                         c_msg,
                         encrypt.cb)
 
-    logger.debug("encrypt: <<< res: %s", res)
+    logger.debug("encrypt: <<< res: %r", res)
     return res
 
 
@@ -289,7 +289,7 @@ async def decrypt(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("decrypt: >>> wallet_handle: %s, my_did: %s, did: %s, encrypted_msg: %s, nonce: %s",
+    logger.debug("decrypt: >>> wallet_handle: %r, my_did: %r, did: %r, encrypted_msg: %r, nonce: %r",
                  wallet_handle,
                  my_did,
                  did,
@@ -314,5 +314,5 @@ async def decrypt(wallet_handle: int,
                         c_nonce,
                         decrypt.cb)
 
-    logger.debug("decrypt: <<< res: %s", res)
+    logger.debug("decrypt: <<< res: %r", res)
     return res
