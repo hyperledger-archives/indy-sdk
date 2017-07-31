@@ -526,8 +526,9 @@ fn anoncreds_demo_works() {
                                  issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, revoc_reg_update_json, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     info!("xclaim_json {:?}", xclaim_json);
+    info!("revoc_reg_update_json {:?}", revoc_reg_update_json);
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover process and store Claim
@@ -574,9 +575,8 @@ fn anoncreds_demo_works() {
 
     let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
     let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-    let revoc_regs_jsons = "{}";
-    // TODO: uncomment this for revocation part
-    //    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+
+    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
 
     // 9. Prover create Proof for Proof Request
     let err =

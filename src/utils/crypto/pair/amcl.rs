@@ -113,7 +113,7 @@ impl PointG1 {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let mut r = self.point;
-        let mut vec = vec![0;32];
+        let mut vec = vec![0; MODBYTES*4];
         r.tobytes(&mut vec);
         Ok(vec)
     }
@@ -234,7 +234,7 @@ impl PointG2 {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let mut point = self.point;
-        let mut vec = vec![0; 32];
+        let mut vec = vec![0; MODBYTES*4];
         point.tobytes(&mut vec);
         Ok(vec)
     }
@@ -477,7 +477,10 @@ impl Pair {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
-        unimplemented!();
+        let mut r = self.pair;
+        let mut vec = vec![0; MODBYTES*16];
+        r.tobytes(&mut vec);
+        Ok(vec)
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<Pair, CommonError> {
