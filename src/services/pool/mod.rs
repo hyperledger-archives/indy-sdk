@@ -578,7 +578,7 @@ impl PoolService {
         };
 
         if path.as_path().exists() {
-            return Err(PoolError::AlreadyExists(format!("Pool config file with name \"{}\" already exists", name)));
+            return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;

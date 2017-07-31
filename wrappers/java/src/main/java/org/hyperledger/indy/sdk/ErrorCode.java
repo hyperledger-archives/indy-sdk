@@ -95,7 +95,7 @@ public enum ErrorCode {
 	// Attempt to send transaction without the necessary privileges
 	LedgerSecurityError(305),
 
-	// Attempt to create pool with name used for another exists pool
+	// Attempt to create pool ledger config with name used for another existing pool
 	PoolLedgerConfigAlreadyExistsError(306),
 
 	// Crypto errors
