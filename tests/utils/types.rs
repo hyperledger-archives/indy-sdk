@@ -123,7 +123,7 @@ pub struct GetTxnResult {
     pub seq_no: Option<i32>,
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: String
+    pub data: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
