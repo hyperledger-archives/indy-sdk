@@ -104,7 +104,7 @@
     
     // 2. get claim offer json
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
-                                                                       schemaSeqNo:@(1)];
+                                                                      schemaSeqNo:@(1)];
     
     // 3. Store claim offer
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:walletHandle
