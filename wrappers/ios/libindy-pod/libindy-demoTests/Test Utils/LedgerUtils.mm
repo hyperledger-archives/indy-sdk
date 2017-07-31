@@ -60,13 +60,43 @@
     return err;
 }
 
+- (NSError *)submitRequest:(NSString *)request
+            withPoolHandle:(IndyHandle)poolHandle
+                resultJson:(NSString**)resultJson
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+    NSError *ret;
+    
+    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
+                                      requestJSON:request
+                                       completion:^(NSError* error, NSString *resultJson)
+           {
+               err = error;
+               outJson = resultJson;
+               [completionExpectation fulfill];
+           }];
+  
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    if (resultJson){ *resultJson = outJson; }
+    
+    return err;
+}
+
 // MARK: Build nym request
 
-- (NSError *) buildNymRequestWithSubmitterDid:(NSString*) submitterDid
-                                    targetDid:(NSString*) targetDid
-                                       verkey:(NSString*) verkey
-                                        alias:(NSString*) alias
-                                         role:(NSString*) role
+- (NSError *) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                    targetDid:(NSString *)targetDid
+                                       verkey:(NSString *)verkey
+                                        alias:(NSString *)alias
+                                         role:(NSString *)role
                                    outRequest:(NSString**)resultJson;
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -75,11 +105,11 @@
     NSError *ret;
     
     ret = [IndyLedger buildNymRequestWithSubmitterDid:submitterDid
-                                              targetDID:targetDid
-                                                 verkey:verkey
-                                                  alias:alias
-                                                   role:role
-                                             completion:^(NSError *error, NSString *json)
+                                            targetDID:targetDid
+                                               verkey:verkey
+                                                alias:alias
+                                                 role:role
+                                           completion:^(NSError *error, NSString *json)
            {
                err = error;
                outJson = json;
@@ -109,8 +139,8 @@
     NSError *ret;
     
     ret = [IndyLedger buildGetNymRequestWithSubmitterDid:submitterDid
-                                                 targetDID:targetDid
-                                                completion:^(NSError *error, NSString *json)
+                                               targetDID:targetDid
+                                              completion:^(NSError *error, NSString *json)
     {
         err = error;
         outJson = json;
@@ -144,11 +174,11 @@
     NSError *ret;
     
     ret = [IndyLedger buildAttribRequestWithSubmitterDid:submitterDid
-                                                 targetDID:targetDid
-                                                      hash:hash
-                                                       raw:raw
-                                                       enc:enc
-                                                completion:^(NSError* error, NSString* requestJson)
+                                               targetDID:targetDid
+                                                    hash:hash
+                                                     raw:raw
+                                                     enc:enc
+                                              completion:^(NSError* error, NSString* requestJson)
            {
                err = error;
                outJson = requestJson;
@@ -178,9 +208,9 @@
     NSError *ret;
     
     ret = [IndyLedger buildGetAttribRequestWithSubmitterDid:submitterDid
-                                                    targetDID:targetDid
-                                                         data:data
-                                                   completion:^(NSError *error, NSString *request)
+                                                  targetDID:targetDid
+                                                       data:data
+                                                 completion:^(NSError *error, NSString *request)
     {
         err = error;
         outRequest = request;
@@ -209,8 +239,8 @@
     NSError *ret;
     
     ret = [IndyLedger buildSchemaRequestWithSubmitterDid:submitterDid
-                                                      data:data
-                                                completion:^(NSError *error, NSString *request)
+                                                    data:data
+                                              completion:^(NSError *error, NSString *request)
            {
                err = error;
                result = request;
