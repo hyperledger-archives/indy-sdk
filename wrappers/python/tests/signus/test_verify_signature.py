@@ -82,7 +82,7 @@ async def test_verify_works_for_expired_nym(pool_handle, cleanup_storage):
     valid = await signus.verify_signature(wallet_handle, pool_handle, did, message)
     assert valid
 
-    wallet.close_wallet(wallet_handle)
+    await wallet.close_wallet(wallet_handle)
 
 
 @pytest.mark.asyncio
