@@ -1,9 +1,5 @@
 from .storage import indy_home_path, indy_temp_path, cleanup
 
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-
 
 def test_storage_utils_indy_home_path_works():
     home_path = indy_home_path()
