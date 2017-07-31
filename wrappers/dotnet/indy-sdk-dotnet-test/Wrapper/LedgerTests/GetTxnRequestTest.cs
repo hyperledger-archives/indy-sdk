@@ -96,9 +96,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var getTxnResponseObj = JObject.Parse(getTxnResponse);
 
-            var schemaTransaction = getTxnResponseObj["result"]["data"].ToString();
-
-            Assert.AreEqual("{}", schemaTransaction.ToString());
+            Assert.IsFalse(getTxnResponseObj["result"]["data"].HasValues);
         }
     }
 }
