@@ -36,7 +36,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        [Ignore] //Bug in Indy
+        [Ignore] //TODO: Remove ignore when bug in Indy fixed.
         public async Task TestDeleteWalletWorksForOpened()
         {
             var walletName = "deleteWalletWorksForOpened";

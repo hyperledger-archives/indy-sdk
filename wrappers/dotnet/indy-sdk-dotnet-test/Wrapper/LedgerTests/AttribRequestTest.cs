@@ -34,7 +34,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             Wallet.DeleteWalletAsync(_walletName, null).Wait();
         }
 
-        [TestMethod] //TODO: Determine why this is failing.
+        [TestMethod]
         public void TestBuildAttribRequestWorksForRawData()
         {
             string expectedResult = string.Format("\"identifier\":\"{0}\"," +

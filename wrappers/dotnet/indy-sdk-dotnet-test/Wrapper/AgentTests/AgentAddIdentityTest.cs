@@ -2,7 +2,7 @@
 using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
+namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
     public class AgentAddIdentityTest : AgentIntegrationTestBase
