@@ -145,7 +145,7 @@ async def test_verify_works_for_message_without_signature(pool_handle, wallet_ha
 async def test_verify_works_for_get_nym_from_ledger_with_incompatible_wallet(cleanup_storage):
     with pytest.raises(IndyError) as e:
         pool_handle = await create_and_open_pool_ledger("pool_name")
-        wallet_handle = await create_and_open_wallet("other_pool_name")
+        wallet_handle = await create_and_open_wallet(pool_name="other_pool_name", wallet_name="incompatible_wallet")
 
         (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                  '{"seed":"00000000000000000000000000000My1"}')
