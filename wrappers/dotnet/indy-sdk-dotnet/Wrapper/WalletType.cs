@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
@@ -157,7 +158,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
                 
-                valuePtr = Marshal.StringToHGlobalAnsi(value);
+                valuePtr = MarshalToUnmanaged(value);
                 wallet.ValuePointers.Add(valuePtr);
 
                 return ErrorCode.Success;
@@ -187,7 +188,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
 
-                valuePtr = Marshal.StringToHGlobalAnsi(value);
+                valuePtr = MarshalToUnmanaged(value);
                 wallet.ValuePointers.Add(valuePtr);
 
                 return ErrorCode.Success;
@@ -217,7 +218,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
 
-                valuesJsonPtr = Marshal.StringToHGlobalAnsi(value);
+                valuesJsonPtr = MarshalToUnmanaged(value);
                 wallet.ValuePointers.Add(valuesJsonPtr);
 
                 return ErrorCode.Success;
@@ -285,6 +286,21 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 return ErrorCode.CommonInvalidState;
             }
 
+        }
+
+        /// <summary>
+        /// Marshals a string to unmanaged memory.
+        /// </summary>
+        /// <param name="value">The string value to marshal.</param>
+        /// <returns>A pointer to the unmanaged memory.</returns>
+        private IntPtr MarshalToUnmanaged(string value)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(value); // not null terminated
+            Array.Resize(ref buffer, buffer.Length + 1);
+            buffer[buffer.Length - 1] = 0; // terminating 0
+            IntPtr unmanagedMemoryPtr = Marshal.AllocHGlobal(buffer.Length);
+            Marshal.Copy(buffer, 0, unmanagedMemoryPtr, buffer.Length);
+            return unmanagedMemoryPtr;
         }
 
         /// <summary>
