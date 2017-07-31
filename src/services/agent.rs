@@ -1094,7 +1094,7 @@ mod tests {
             };
 
             let server_keys = zmq::CurveKeyPair::new().unwrap();
-            let endpoint = "0.0.0.0:9700".to_string();
+            let endpoint = "127.0.0.1:9700".to_string();
             agent_worker.try_start_listen(0, endpoint.clone()).unwrap();
             assert_eq!(agent_worker.agent_listeners.len(), 1);
             agent_worker.agent_listeners[0].socket
@@ -1102,6 +1102,7 @@ mod tests {
 
             let msg = "msg";
             let sock = zmq::Context::new().socket(zmq::SocketType::DEALER).unwrap();
+            sock.set_linger(0).unwrap();
             let kp = zmq::CurveKeyPair::new().unwrap();
             sock.set_curve_publickey(&kp.public_key).unwrap();
             sock.set_curve_secretkey(&kp.secret_key).unwrap();
@@ -1109,7 +1110,10 @@ mod tests {
             sock.set_protocol_version(zmq::make_proto_version(1, 1)).unwrap();
             sock.connect(format!("tcp://{}", endpoint).as_str()).unwrap();
             sock.send(msg, 0).unwrap();
-            agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
+
+            let poll_result = agent_worker.agent_listeners[0].socket.poll(zmq::POLLIN, 1000).unwrap();
+            assert_eq!(poll_result, 1);
+
             agent_worker.agent_listeners[0].socket.recv_bytes(zmq::DONTWAIT).unwrap(); //ignore identity
             let act_msg = agent_worker.agent_listeners[0].socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
             assert_eq!(act_msg, msg);

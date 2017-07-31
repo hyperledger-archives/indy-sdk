@@ -324,7 +324,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_verkey_cached_in_wallet";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
@@ -355,7 +355,7 @@ mod high_cases {
 
             let pool_name = "indy_verify_works_for_get_verkey_from_ledger";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
@@ -382,7 +382,7 @@ mod high_cases {
 
             let pool_name = "indy_verify_works_for_expired_nym";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             WalletUtils::create_wallet(pool_name, "wallet1", None, None).unwrap();
             let wallet_handle = WalletUtils::open_wallet("wallet1", Some(r#"{"freshness_time":1}"#)).unwrap();
 
@@ -411,7 +411,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_invalid_wallet_handle";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let message = r#"{
@@ -431,7 +431,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_invalid_pool_handle";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let message = r#"{
@@ -451,7 +451,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_other_signer";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"000000000000000000000000Trustee1"}"#).unwrap();
@@ -642,7 +642,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_invalid_message";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
@@ -663,7 +663,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_message_without_signature";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (did, verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
@@ -688,7 +688,7 @@ mod medium_cases {
 
             let pool_name = "indy_verify_works_for_get_nym_from_ledger_with_incompatible_wallet";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet("other_pool_name", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
@@ -711,7 +711,7 @@ mod medium_cases {
 
             let pool_name = "indy_verify_works_for_get_ledger_not_found_nym";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"0000000000000000000000000000Fake"}"#).unwrap();
@@ -734,7 +734,7 @@ mod medium_cases {
 
             let pool_name = "indy_verify_works_for_no_nym_in_wallet";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
