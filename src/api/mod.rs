@@ -104,7 +104,7 @@ pub enum ErrorCode
     LedgerSecurityError = 305,
 
     // Attempt to create pool with name used for another exists pool
-    PoolLedgerAlreadyExistsError = 306,
+    PoolLedgerConfigAlreadyExistsError = 306,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,

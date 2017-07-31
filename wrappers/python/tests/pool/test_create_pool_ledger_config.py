@@ -22,6 +22,6 @@ async def test_create_pool_ledger_config_works_for_twice(cleanup_storage):
 
         await pool.create_pool_ledger_config('pool_1', pool_config)
         await pool.create_pool_ledger_config('pool_1', pool_config)
-    assert ErrorCode.PoolLedgerAlreadyExistsError == e.value.error_code
+    assert ErrorCode.PoolLedgerConfigAlreadyExistsError == e.value.error_code
 
 

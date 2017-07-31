@@ -43,7 +43,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreatePoolWorksForTwice() throws Exception {
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerAlreadyExistsError));
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerConfigAlreadyExistsError));
 
 		File genesisTxnFile = PoolUtils.createGenesisTxnFile("genesis.txn");
 

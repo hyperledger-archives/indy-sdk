@@ -25,7 +25,7 @@ impl fmt::Display for PoolError {
             PoolError::InvalidHandle(ref description) => write!(f, "Invalid Handle: {}", description),
             PoolError::Rejected(ref description) => write!(f, "Rejected by pool: {}", description),
             PoolError::Terminate => write!(f, "Pool work terminated"),
-            PoolError::AlreadyExists(ref description) => write!(f, "Pool already exists {}", description),
+            PoolError::AlreadyExists(ref description) => write!(f, "Pool ledger config already exists {}", description),
             PoolError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -81,7 +81,7 @@ impl ToErrorCode for PoolError {
             PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
             PoolError::Rejected(ref description) => ErrorCode::LedgerInvalidTransaction,
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
-            PoolError::AlreadyExists(ref description) => ErrorCode::PoolLedgerAlreadyExistsError,
+            PoolError::AlreadyExists(ref description) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
             PoolError::CommonError(ref err) => err.to_error_code()
         }
     }
