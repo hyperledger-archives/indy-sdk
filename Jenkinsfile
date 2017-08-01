@@ -15,6 +15,7 @@ try {
 
         def tests = [:]
 
+        //Libindy ubuntu tests
         tests['ubuntu-test'] = {
             node('ubuntu') {
                 stage('Ubuntu Test') {
@@ -23,6 +24,7 @@ try {
             }
         }
 
+        //Libindy red hat tests
         tests['redhat-test'] = {
             node('ubuntu') {
                 stage('RedHat Test') {
@@ -31,6 +33,7 @@ try {
             }
         }
 
+        //Java wrapper ubuntu tests
         tests['ubuntu-java-test'] = {
             node('ubuntu') {
                 stage('Ubuntu Java Test') {
@@ -39,6 +42,7 @@ try {
             }
         }
 
+        //Python wrapper ubuntu tests
         tests['ubuntu-python-test'] = {
             node('ubuntu') {
                 stage('Ubuntu Python Test') {
@@ -130,14 +134,14 @@ def testPipeline(file, env_name, run_interoperability_tests, network_name) {
 
            try {
                 if (run_interoperability_tests) {
-                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
-                }
-                else {
-                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
-                }
-               /* TODO FIXME restore after xunit will be fixed
-               sh 'RUST_TEST_THREADS=1 cargo test-xunit'
-                */
+                                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
+                                }
+                                else {
+                                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                                }
+                               /* TODO FIXME restore after xunit will be fixed
+                               sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                                */
            }
            finally {
                /* TODO FIXME restore after xunit will be fixed
