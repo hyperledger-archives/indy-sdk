@@ -27,7 +27,7 @@ import static org.junit.Assert.assertNotNull;
 public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	private Pool pool;
 	private Wallet issuerWallet;

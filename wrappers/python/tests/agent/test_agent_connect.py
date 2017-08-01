@@ -23,7 +23,7 @@ async def test_agent_connect_works_for_remote_data(pool_handle,
         }))
 
     nym_request = await ledger.build_nym_request(trustee_did, listener_did, listener_verkey, None, None)
-    await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, trustee_did, nym_request)
+    await ledger.sign_and_submit_request(pool_handle, trustee_wallet_handle, trustee_did, nym_request)
 
     attrib_request = await ledger.build_attrib_request(
         listener_did,
@@ -58,7 +58,7 @@ async def test_agent_connect_works_for_remote_data(pool_handle,
     assert connection_event.connection_handle is not None
 
     await agent.agent_close_connection(connection_handle)
-    await agent.agent_close_connection(connection_event.handle)
+    await agent.agent_close_connection(connection_event.connection_handle)
     await agent.agent_close_listener(listener_handle)
     await wallet.close_wallet(listener_wallet_handle)
     await wallet.close_wallet(trustee_wallet_handle)
