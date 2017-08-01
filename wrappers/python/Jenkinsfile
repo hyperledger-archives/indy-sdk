@@ -122,7 +122,7 @@ def publishDebFiles() {
             sh 'chmod -R 777 wrappers/python/ci'
 
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./wrappers/python/ci/deb-build-and-upload.sh $evernym_repo_key"
+                sh "./wrappers/python/ci/deb-build-and-upload.sh $evernym_repo_key $env.BUILD_NUMBER"
             }
         }
     }
