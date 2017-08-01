@@ -12,8 +12,6 @@ mkdir -p /usr/src/rpm/SOURCES/
 
 version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | tr -d '" ')
 
-sed -i -E "s/version = \"([0-9,.]+).*\"/version = \"\1-$number\"/" Cargo.toml
-
 [ -z $version ] && exit 1
 [ -z $commit ] && exit 2
 [ -z $key ] && exit 3
