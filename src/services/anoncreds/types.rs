@@ -325,6 +325,13 @@ impl ClaimSignature {
             non_revocation_claim: non_revocation_claim
         }
     }
+
+    pub fn clone(&self) -> Result<ClaimSignature, CommonError> {
+        Ok(ClaimSignature {
+            primary_claim: self.primary_claim.clone()?,
+            non_revocation_claim: self.non_revocation_claim.clone()
+        })
+    }
 }
 
 impl JsonEncodable for ClaimSignature {}
@@ -367,6 +374,15 @@ impl ClaimJson {
             signature: signature,
             issuer_did: issuer_did
         }
+    }
+
+    pub fn clone(&self) -> Result<ClaimJson, CommonError> {
+        Ok(ClaimJson {
+            claim: self.claim.clone(),
+            schema_seq_no: self.schema_seq_no,
+            signature: self.signature.clone()?,
+            issuer_did: self.issuer_did.clone()
+        })
     }
 }
 
@@ -659,6 +675,15 @@ impl PrimaryClaim {
             e: e,
             v: v
         }
+    }
+
+    pub fn clone(&self) -> Result<PrimaryClaim, CommonError> {
+        Ok(PrimaryClaim {
+            m2: self.m2.clone()?,
+            a: self.a.clone()?,
+            e: self.e.clone()?,
+            v: self.v.clone()?
+        })
     }
 }
 

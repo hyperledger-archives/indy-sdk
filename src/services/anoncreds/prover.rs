@@ -1340,6 +1340,8 @@ pub mod mocks {
     use std::iter::FromIterator;
     use services::anoncreds::types::SignatureTypes;
 
+    pub const PROVER_DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {
         NonRevocProofCList::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
                                 PointG1::new().unwrap(), PointG1::new().unwrap(),
