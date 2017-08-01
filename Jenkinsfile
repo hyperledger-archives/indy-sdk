@@ -110,19 +110,45 @@ try {
     }
 }
 
+def openPool(env_name, network_name){
+    echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
+    sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+
+    echo "${env_name} Test: Build docker image for nodes pool"
+    def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
+    echo "${env_name} Test: Run nodes pool"
+    return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+}
+
+def closePool(env_name, network_name, poolInst){
+    echo "${env_name} Test: Cleanup"
+    try {
+        sh "docker network inspect ${network_name}"
+    } catch (error) {
+        echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
+    }
+    try {
+        echo "${env_name} Test: stop pool"
+        poolInst.stop()
+    } catch (error) {
+        echo "${env_name} Tests: error while stop pool ${error}"
+    }
+    try {
+        echo "${env_name} Test: remove pool network ${network_name}"
+        sh "docker network rm ${network_name}"
+    } catch (error) {
+        echo "${env_name} Test: error while delete ${network_name} - ${error}"
+    }
+    step([$class: 'WsCleanup'])
+}
+
 def testPipeline(file, env_name, run_interoperability_tests, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
-        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
-
-        echo "${env_name} Test: Build docker image for nodes pool"
-        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
-        echo "${env_name} Test: Run nodes pool"
-        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+        poolInst = openPool(env_name, network_name)
 
         echo "${env_name} Test: Build docker image"
         def testEnv = dockerHelpers.build(name, file)
@@ -134,14 +160,14 @@ def testPipeline(file, env_name, run_interoperability_tests, network_name) {
 
            try {
                 if (run_interoperability_tests) {
-                                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
-                                }
-                                else {
-                                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
-                                }
-                               /* TODO FIXME restore after xunit will be fixed
-                               sh 'RUST_TEST_THREADS=1 cargo test-xunit'
-                                */
+                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
+                }
+                else {
+                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                }
+                /* TODO FIXME restore after xunit will be fixed
+                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
+                */
            }
            finally {
                /* TODO FIXME restore after xunit will be fixed
@@ -151,56 +177,34 @@ def testPipeline(file, env_name, run_interoperability_tests, network_name) {
         }
     }
     finally {
-        echo "${env_name} Test: Cleanup"
-        try {
-            sh "docker network inspect ${network_name}"
-        } catch (err) {
-            echo "${env_name} Tests: error while inspect network ${network_name} - ${err}"
-        }
-        try {
-            echo "${env_name} Test: stop pool"
-            poolInst.stop()
-        } catch (err) {
-            echo "${env_name} Tests: error while stop pool ${err}"
-        }
-        try {
-            echo "${env_name} Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name}"
-        } catch (err) {
-            echo "${env_name} Test: error while delete ${network_name} - ${err}"
-        }
-        step([$class: 'WsCleanup'])
+        closePool(env_name, network_name, poolInst)
     }
 }
 
 def testUbuntu() {
-    testPipeline("ci/ubuntu.dockerfile ci", "Ubuntu", true, "ubuntu_pool_network")
+    testPipeline("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
 }
 
 def testRedHat() {
-    testPipeline("ci/amazon.dockerfile ci", "RedHat", false, "red_hat_pool_network")
+    testPipeline("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
 }
 
 def javaTestUbuntu() {
     def poolInst
-    def network_name = "java_pool_network"
+    def network_name = "pool_network"
+    def env_name = "Ubuntu Java"
+
     try {
-        echo 'Ubuntu Java Test: Checkout csm'
+        echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        echo "Ubuntu Java Test: Create docker network (${network_name}) for nodes pool and test image"
-        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+        poolInst = openPool("Ubuntu Java", network_name)
 
-        echo 'Ubuntu Java Test: Build docker image for nodes pool'
-        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
-        echo 'Ubuntu Java Test: Run nodes pool'
-        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
-
-        echo 'Ubuntu Java Test: Build docker image'
+        echo "${env_name} Test: Build docker image"
         def testEnv = dockerHelpers.build(name, 'ci/java.dockerfile ci')
 
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo 'Ubuntu Java Test: Test'
+            echo "${env_name} Test: Test"
 
             sh '''
                 cd wrappers/java
@@ -209,49 +213,25 @@ def javaTestUbuntu() {
         }
     }
     finally {
-        echo 'Ubuntu Java Test: Cleanup'
-        try {
-            sh "docker network inspect ${network_name}"
-        } catch (ignore) {
-        }
-        try {
-            if (poolInst) {
-                echo 'Ubuntu Java Test: stop pool'
-                poolInst.stop()
-            }
-        } catch (err) {
-            echo "Ubuntu Java Tests: error while stop pool ${err}"
-        }
-        try {
-            echo "Ubuntu Java Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name}"
-        } catch (err) {
-            echo "Ubuntu Java Test: error while delete ${network_name} - ${err}"
-        }
-        step([$class: 'WsCleanup'])
+        closePool(env_name, network_name, poolInst)
     }
 }
 
 def pythonTestUbuntu() {
     def poolInst
-    def network_name = "python_pool_network"
+    def network_name = "pool_network"
+    def env_name = "Ubuntu Python"
     try {
-        echo 'Ubuntu Python Test: Checkout csm'
+        echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        echo "Ubuntu Python Test: Create docker network (${network_name}) for nodes pool and test image"
-        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+        poolInst = openPool(env_name, network_name)
 
-        echo 'Ubuntu Python Test: Build docker image for nodes pool'
-        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
-        echo 'Ubuntu Python Test: Run nodes pool'
-        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
-
-        echo 'Ubuntu Python Test: Build docker image'
+        echo "${env_name} Test: Build docker image"
         def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
 
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo 'Ubuntu Python Test: Test'
+            echo "${env_name} Test: Test"
 
             sh '''
                 cd wrappers/python
@@ -261,25 +241,7 @@ def pythonTestUbuntu() {
         }
     }
     finally {
-        echo "Ubuntu Python Test: Cleanup"
-        try {
-            sh "docker network inspect ${network_name}"
-        } catch (err) {
-            echo "Ubuntu Python Tests: error while inspect network ${network_name} - ${err}"
-        }
-        try {
-            echo "Ubuntu Python Test: stop pool"
-            poolInst.stop()
-        } catch (err) {
-            echo "Ubuntu Python Tests: error while stop pool ${err}"
-        }
-        try {
-            echo "Ubuntu Python Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name}"
-        } catch (err) {
-            echo "Ubuntu Python Test: error while delete ${network_name} - ${err}"
-        }
-        step([$class: 'WsCleanup'])
+        closePool(env_name, network_name, poolInst)
     }
 }
 
