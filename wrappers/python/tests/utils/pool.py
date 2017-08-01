@@ -30,6 +30,13 @@ def create_genesis_txn_file(file_name, predefined_data=None):
     return path
 
 
+def create_default_pool_config(pool_name):
+    file_name = pool_name + '.txn'
+    path = indy_temp_path().joinpath(file_name)
+
+    return {"genesis_txn": str(path)}
+
+
 async def create_and_open_pool_ledger(name="pool_1"):
     await create_pool_ledger_config(name)
     pool_handle = await pool.open_pool_ledger(name, "")

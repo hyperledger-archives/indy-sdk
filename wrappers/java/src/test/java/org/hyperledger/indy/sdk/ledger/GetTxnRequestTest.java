@@ -104,7 +104,6 @@ public class GetTxnRequestTest extends IndyIntegrationTest {
 
 		JSONObject getTxnResponseObj = new JSONObject(getTxnResponse);
 
-		String schemaTransaction = getTxnResponseObj.getJSONObject("result").getString("data");
-		assertEquals("{}", schemaTransaction);
+		assertTrue(getTxnResponseObj.getJSONObject("result").isNull("data"));
 	}
 }

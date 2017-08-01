@@ -82,9 +82,6 @@
                <Test
                   Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
                </Test>
-               <Test
-                  Identifier = "WalletMediumCases/testOpenWalletWorksForTwice">
-               </Test>
             </SkippedTests>
          </TestableReference>
       </Testables>

@@ -115,7 +115,7 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
-	private static Callback proverCreateClaimReqCb = new Callback() {
+	private static Callback proverCreateAndStoreClaimReqCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String claim_req_json) {
@@ -357,7 +357,7 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<String> proverCreateClaimReq(
+	public static CompletableFuture<String> proverCreateAndStoreClaimReq(
 			Wallet wallet,
 			String proverDid,
 			String claimOfferJson,
@@ -376,7 +376,7 @@ public class Anoncreds extends IndyJava.API {
 				claimOfferJson,
 				claimDefJson,
 				masterSecretName,
-				proverCreateClaimReqCb);
+				proverCreateAndStoreClaimReqCb);
 
 		checkResult(result);
 

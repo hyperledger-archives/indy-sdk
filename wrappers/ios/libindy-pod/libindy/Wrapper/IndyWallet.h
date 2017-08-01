@@ -64,9 +64,4 @@
                       credentials:(NSString *)credentials
                        completion:(void (^)(NSError *error ))handler;
 
-- (NSError *)walletSetSeqNo:(NSNumber *)seqNo
-                   forValue:(NSString *)value
-               walletHandle:(IndyHandle)walletHandle
-                 completion:(void (^)(NSError *error ))handler;
-
 @end

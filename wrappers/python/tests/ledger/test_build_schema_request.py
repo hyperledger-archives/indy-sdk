@@ -1,22 +1,11 @@
-from tests.utils import storage
 from indy import ledger
 
 import json
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
 
 
 @pytest.mark.asyncio
-async def test_build_schema_requests_works_for_correct_data_json():
+async def test_build_schema_requests_works_for_correct_data_json(cleanup_storage):
     identifier = "identifier"
     data = '{"name":"name", "version":"1.0", "keys":["name","male"]}'
 
