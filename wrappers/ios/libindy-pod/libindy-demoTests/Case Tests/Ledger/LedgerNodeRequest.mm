@@ -95,18 +95,12 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000Trustee1\"," \
-                           "\"cid\":true"\
-                           "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build schema request
@@ -161,18 +155,12 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000Steward1\"," \
-                           "\"cid\":true"\
-                           "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
-    
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Steward1"
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build schema request
@@ -191,7 +179,7 @@
                                                               resultJson:&nodeRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNodeRequestWithSubmitterDid() failed");
     XCTAssertNotNil(nodeRequest, @"nodeRequest is nil!");
-    // TODO: 110 error
+    
     // 5. Sign and submit request
     NSString *nodeResponse = nil;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle

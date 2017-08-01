@@ -1,39 +1,12 @@
-from tests.utils import pool, storage
-from tests.utils.wallet import create_and_open_wallet
-from indy import ledger, wallet, signus
-from indy.pool import close_pool_ledger
+from indy import ledger, signus
 from indy.error import ErrorCode, IndyError
 
 import json
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
-
-
-@pytest.fixture
-async def wallet_handle():
-    handle = await create_and_open_wallet()
-    yield handle
-    await wallet.close_wallet(handle)
-
-
-@pytest.fixture
-async def pool_handle():
-    handle = await pool.create_and_open_pool_ledger("pool_1")
-    yield handle
-    await close_pool_ledger(handle)
 
 
 @pytest.mark.asyncio
-async def test_submit_request_works(pool_handle):
+async def test_submit_request_works(cleanup_storage, pool_handle):
     request = {
         "reqId": 1491566332010860,
         "identifier": "Th7MpTaRZVRYnPiabds81Y",
@@ -66,12 +39,10 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     invalid_pool_handle = pool_handle + 1
-    try:
+
+    with pytest.raises(IndyError) as e:
         await ledger.submit_request(invalid_pool_handle, get_nym_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.PoolLedgerInvalidPoolHandle)) == type(e) and \
-               IndyError(ErrorCode.PoolLedgerInvalidPoolHandle).args == e.args
+    assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -80,12 +51,10 @@ async def test_send_nym_request_works_without_signature(pool_handle, wallet_hand
                                                           '{"seed":"00000000000000000000000000000My1"}')
 
     nym_request = await ledger.build_nym_request(my_did, my_did, None, None, None)
-    try:
+
+    with pytest.raises(IndyError) as e:
         await ledger.submit_request(pool_handle, nym_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
-               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
+    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -120,12 +89,9 @@ async def test_send_attrib_request_works_without_signature(pool_handle, wallet_h
 
     attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.submit_request(pool_handle, attrib_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
-               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
+    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -157,12 +123,9 @@ async def test_send_schema_request_works_without_signature(pool_handle, wallet_h
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.submit_request(pool_handle, schema_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
-               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
+    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -207,12 +170,9 @@ async def test_send_node_request_works_without_signature(pool_handle, wallet_han
 
     node_request = await ledger.build_node_request(my_did, my_did, json.dumps(node_data))
 
-    try:
+    with pytest.raises(IndyError) as e:
         await ledger.submit_request(pool_handle, node_request)
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.LedgerInvalidTransaction)) == type(e) and \
-               IndyError(ErrorCode.LedgerInvalidTransaction).args == e.args
+    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -317,4 +277,4 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
 
     get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
-    assert get_txn_response['result']['data'] == "{}"
+    assert not get_txn_response['result']['data']

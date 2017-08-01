@@ -26,7 +26,7 @@ async def create_wallet(pool_name: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("create_wallet: >>> pool_name: %s, name: %s, xtype: %s, config: %s, credentials: %s",
+    logger.debug("create_wallet: >>> pool_name: %r, name: %r, xtype: %r, config: %r, credentials: %r",
                  pool_name,
                  name,
                  xtype,
@@ -75,7 +75,7 @@ async def open_wallet(name: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("open_wallet: >>> name: %s, runtime_config: %s, credentials: %s",
+    logger.debug("open_wallet: >>> name: %r, runtime_config: %r, credentials: %r",
                  name,
                  runtime_config,
                  credentials)
@@ -94,7 +94,7 @@ async def open_wallet(name: str,
                         c_credentials,
                         open_wallet.cb)
 
-    logger.debug("open_wallet: <<< res: %s", res)
+    logger.debug("open_wallet: <<< res: %r", res)
     return res
 
 
@@ -138,7 +138,7 @@ async def delete_wallet(name: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("delete_wallet: >>> name: %s, credentials: %s",
+    logger.debug("delete_wallet: >>> name: %r, credentials: %r",
                  name,
                  credentials)
 

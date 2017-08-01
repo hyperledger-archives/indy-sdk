@@ -87,7 +87,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-        3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
+		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D13F6C41F161E800024DFB3 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
 		5D13F6C51F161E800024DFB3 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
@@ -358,9 +359,9 @@
 			isa = PBXGroup;
 			children = (
 				DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */,
-				146E9B9A01FCC8388694FC0B /* Pods-libindy-demo.release.xcconfig */,
 				F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */,
 				ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */,
+				2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -757,7 +758,7 @@
 		};
 		3E2A7FA91EC36187006194EC /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 146E9B9A01FCC8388694FC0B /* Pods-libindy-demo.release.xcconfig */;
+			baseConfigurationReference = 2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;

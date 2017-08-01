@@ -23,12 +23,12 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_issuer_create_and_store_claim_def(handle,
-                                                   walletHandle,
-                                                   [issuerDid UTF8String],
-                                                   [schema UTF8String],
-                                                   [signatureType UTF8String],
-                                                   (indy_bool_t) createNonRevoc,
-                                                   IndyWrapperCommon3PSCallback);
+                                                 walletHandle,
+                                                 [issuerDid UTF8String],
+                                                 [schema UTF8String],
+                                                 [signatureType UTF8String],
+                                                 (indy_bool_t) createNonRevoc,
+                                                 IndyWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -48,11 +48,11 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_issuer_create_and_store_revoc_reg(handle,
-                                                   walletHandle,
-                                                   [issuerDid UTF8String],
-                                                   [seqNo intValue],
-                                                   [maxClaimNum intValue],
-                                                   IndyWrapperCommon4PCallback);
+                                                 walletHandle,
+                                                 [issuerDid UTF8String],
+                                                 [seqNo intValue],
+                                                 [maxClaimNum intValue],
+                                                 IndyWrapperCommon4PCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -73,13 +73,13 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_issuer_create_claim(handle,
-                                     walletHandle,
-                                     [reqJSON UTF8String],
-                                     [claimJSON UTF8String],
-                                     seqNo ? [seqNo intValue] : -1,
-                                     revocIndex ? [revocIndex intValue] : -1,
-                                     IndyWrapperCommon4PCallback
-                                    );
+                                   walletHandle,
+                                   [reqJSON UTF8String],
+                                   [claimJSON UTF8String],
+                                   seqNo ? [seqNo intValue] : -1,
+                                   revocIndex ? [revocIndex intValue] : -1,
+                                   IndyWrapperCommon4PCallback
+                                   );
 
     if( ret != Success )
     {
@@ -99,11 +99,11 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_issuer_revoke_claim(handle,
-                                     walletHandle,
-                                     [revocSeqNo intValue],
-                                     [revocIndex intValue],
-                                     IndyWrapperCommon3PSCallback
-                                    );
+                                   walletHandle,
+                                   [revocSeqNo intValue],
+                                   [revocIndex intValue],
+                                   IndyWrapperCommon3PSCallback
+                                   );
     
     if( ret != Success )
     {
@@ -122,10 +122,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_store_claim_offer(handle,
-                                          walletHandle,
-                                          [json UTF8String],
-                                          IndyWrapperCommon2PCallback
-                                         );
+                                        walletHandle,
+                                        [json UTF8String],
+                                        IndyWrapperCommon2PCallback
+                                        );
     
     if( ret != Success )
     {
@@ -144,10 +144,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_get_claim_offers(handle,
-                                         walletHandle,
-                                         [json UTF8String],
-                                         IndyWrapperCommon3PSCallback
-                                        );
+                                       walletHandle,
+                                       [json UTF8String],
+                                       IndyWrapperCommon3PSCallback
+                                       );
     
     if( ret != Success )
     {
@@ -166,10 +166,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_create_master_secret(handle,
-                                             walletHandle,
-                                             [name UTF8String],
-                                             IndyWrapperCommon2PCallback
-                                            );
+                                           walletHandle,
+                                           [name UTF8String],
+                                           IndyWrapperCommon2PCallback
+                                           );
 
     if( ret != Success )
     {
@@ -191,13 +191,13 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
     ret = indy_prover_create_and_store_claim_req(handle,
-                                                   walletHandle,
-                                                   [prover UTF8String],
-                                                   [offerJson UTF8String],
-                                                   [claimJson UTF8String],
-                                                   [name UTF8String],
-                                                   IndyWrapperCommon3PSCallback
-                                                  );
+                                                 walletHandle,
+                                                 [prover UTF8String],
+                                                 [offerJson UTF8String],
+                                                 [claimJson UTF8String],
+                                                 [name UTF8String],
+                                                 IndyWrapperCommon3PSCallback
+                                                 );
     
     if( ret != Success )
     {
@@ -216,10 +216,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_store_claim(handle,
-                                    walletHandle,
-                                    [claimsJson UTF8String],
-                                    IndyWrapperCommon2PCallback
-                                   );
+                                  walletHandle,
+                                  [claimsJson UTF8String],
+                                  IndyWrapperCommon2PCallback
+                                  );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -237,10 +237,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_get_claims(handle,
-                                   walletHandle,
-                                   [json UTF8String],
-                                   IndyWrapperCommon3PSCallback
-                                  );
+                                 walletHandle,
+                                 [json UTF8String],
+                                 IndyWrapperCommon3PSCallback
+                                 );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -258,10 +258,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_get_claims_for_proof_req(handle,
-                                                 walletHandle,
-                                                 [json UTF8String],
-                                                 IndyWrapperCommon3PSCallback
-                                                );
+                                               walletHandle,
+                                               [json UTF8String],
+                                               IndyWrapperCommon3PSCallback
+                                               );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -284,15 +284,15 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_prover_create_proof(handle,
-                                     walletHandle,
-                                     [reqJSON UTF8String],
-                                     [claimsJSON UTF8String],
-                                     [schemasJSON UTF8String],
-                                     [name UTF8String],
-                                     [claimDefsJSON UTF8String],
-                                     [revocJSON UTF8String],
-                                     IndyWrapperCommon3PSCallback
-                                    );
+                                   walletHandle,
+                                   [reqJSON UTF8String],
+                                   [claimsJSON UTF8String],
+                                   [schemasJSON UTF8String],
+                                   [name UTF8String],
+                                   [claimDefsJSON UTF8String],
+                                   [revocJSON UTF8String],
+                                   IndyWrapperCommon3PSCallback
+                                   );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -313,20 +313,19 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
 
     ret = indy_verifier_verify_proof(handle,
-                                       [proofReqJSON UTF8String],
-                                       [proofJSON UTF8String],
-                                       [schemasJSON UTF8String],
-                                       [claimDefsJSON UTF8String],
-                                       [revocJSON UTF8String],
-                                       IndyWrapperCommon3PBCallback
-                                      );
+                                     [proofReqJSON UTF8String],
+                                     [proofJSON UTF8String],
+                                     [schemasJSON UTF8String],
+                                     [claimDefsJSON UTF8String],
+                                     [revocJSON UTF8String],
+                                     IndyWrapperCommon3PBCallback
+                                     );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
     }
     
     return [NSError errorFromIndyError: ret];
-
 }
 
 @end

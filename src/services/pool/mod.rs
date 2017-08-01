@@ -578,7 +578,7 @@ impl PoolService {
         };
 
         if path.as_path().exists() {
-            return Err(PoolError::NotCreated("Already created".to_string()));
+            return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
@@ -619,7 +619,7 @@ impl PoolService {
         for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
-                return Err(PoolError::InvalidHandle("Already opened".to_string()));
+                return Err(PoolError::InvalidHandle("Pool with same name already opened".to_string()));
             }
         }
 
@@ -634,7 +634,7 @@ impl PoolService {
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.pools.try_borrow().map_err(CommonError::from)?
-            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .send_tx(cmd_id, json)?;
         Ok(cmd_id)
     }
@@ -642,7 +642,7 @@ impl PoolService {
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.pools.try_borrow_mut().map_err(CommonError::from)?
-            .remove(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .remove(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .close(cmd_id)
             .map(|()| cmd_id)
     }
@@ -650,14 +650,14 @@ impl PoolService {
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.pools.try_borrow_mut().map_err(CommonError::from)?
-            .get(&handle).ok_or(PoolError::InvalidHandle("No pool with requested handle".to_string()))?
+            .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .refresh(cmd_id)
             .map(|()| cmd_id)
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
         self.pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
-            Err(PoolError::InvalidHandle("Doesn't exists".to_string())),
+            Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
             |pool: &Pool| Ok(pool.name.clone()))
     }
 }

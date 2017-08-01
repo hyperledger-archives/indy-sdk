@@ -295,7 +295,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
             let res = PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str()));
 
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerConfigAlreadyExistsError);
 
             TestUtils::cleanup_storage();
         }

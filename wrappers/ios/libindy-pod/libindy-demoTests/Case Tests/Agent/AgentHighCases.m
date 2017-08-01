@@ -138,13 +138,12 @@
     
      // 5. Obtain trustee Did
     NSString *trusteeDid;
-    NSString *trusteeDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":true}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:trusteeWalletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for trusteeDid");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:trusteeWalletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&trusteeDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trusteeDid");
     
     // 6. Build nym request
     NSString *listenerNymJson;

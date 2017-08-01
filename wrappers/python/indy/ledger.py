@@ -25,7 +25,7 @@ async def sign_and_submit_request(pool_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("sign_and_submit_request: >>> pool_handle: %s, wallet_handle: %s, submitter_did: %s, request_json: %s",
+    logger.debug("sign_and_submit_request: >>> pool_handle: %r, wallet_handle: %r, submitter_did: %r, request_json: %r",
                  pool_handle,
                  wallet_handle,
                  submitter_did,
@@ -40,14 +40,15 @@ async def sign_and_submit_request(pool_handle: int,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_request_json = c_char_p(request_json.encode('utf-8'))
 
-    res = await do_call('indy_sign_and_submit_request',
-                        c_pool_handle,
-                        c_wallet_handle,
-                        c_submitter_did,
-                        c_request_json,
-                        sign_and_submit_request.cb)
+    request_result = await do_call('indy_sign_and_submit_request',
+                                   c_pool_handle,
+                                   c_wallet_handle,
+                                   c_submitter_did,
+                                   c_request_json,
+                                   sign_and_submit_request.cb)
 
-    logger.debug("sign_and_submit_request: <<< res: %s", res)
+    res = request_result.decode()
+    logger.debug("sign_and_submit_request: <<< res: %r", res)
     return res
 
 
@@ -63,7 +64,7 @@ async def submit_request(pool_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("submit_request: >>> pool_handle: %s, request_json: %s",
+    logger.debug("submit_request: >>> pool_handle: %r, request_json: %r",
                  pool_handle,
                  request_json)
 
@@ -74,12 +75,13 @@ async def submit_request(pool_handle: int,
     c_pool_handle = c_int32(pool_handle)
     c_request_json = c_char_p(request_json.encode('utf-8'))
 
-    res = await do_call('indy_submit_request',
-                        c_pool_handle,
-                        c_request_json,
-                        submit_request.cb)
+    request_result = await do_call('indy_submit_request',
+                                   c_pool_handle,
+                                   c_request_json,
+                                   submit_request.cb)
 
-    logger.debug("submit_request: <<< res: %s", res)
+    res = request_result.decode()
+    logger.debug("submit_request: <<< res: %r", res)
     return res
 
 
@@ -94,7 +96,7 @@ async def build_get_ddo_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_ddo_request: >>> submitter_did: %s, target_did: %s",
+    logger.debug("build_get_ddo_request: >>> submitter_did: %r, target_did: %r",
                  submitter_did,
                  target_did)
 
@@ -105,12 +107,13 @@ async def build_get_ddo_request(submitter_did: str,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
 
-    res = await do_call('indy_build_get_ddo_request',
-                        c_submitter_did,
-                        c_target_did,
-                        build_get_ddo_request.cb)
+    request_json = await do_call('indy_build_get_ddo_request',
+                                 c_submitter_did,
+                                 c_target_did,
+                                 build_get_ddo_request.cb)
 
-    logger.debug("build_get_ddo_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_get_ddo_request: <<< res: %r", res)
     return res
 
 
@@ -131,7 +134,7 @@ async def build_nym_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_nym_request: >>> submitter_did: %s, target_did: %s, ver_key: %s, alias: %s, role: %s",
+    logger.debug("build_nym_request: >>> submitter_did: %r, target_did: %r, ver_key: %r, alias: %r, role: %r",
                  submitter_did,
                  target_did,
                  ver_key,
@@ -148,15 +151,16 @@ async def build_nym_request(submitter_did: str,
     c_alias = c_char_p(alias.encode('utf-8')) if alias is not None else None
     c_role = c_char_p(role.encode('utf-8')) if role is not None else None
 
-    res = await do_call('indy_build_nym_request',
-                        c_submitter_did,
-                        c_target_did,
-                        c_ver_key,
-                        c_alias,
-                        c_role,
-                        build_nym_request.cb)
+    request_json = await do_call('indy_build_nym_request',
+                                 c_submitter_did,
+                                 c_target_did,
+                                 c_ver_key,
+                                 c_alias,
+                                 c_role,
+                                 build_nym_request.cb)
 
-    logger.debug("build_nym_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_nym_request: <<< res: %r", res)
     return res
 
 
@@ -177,7 +181,7 @@ async def build_attrib_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_attrib_request: >>> submitter_did: %s, target_did: %s, hash: %s, raw: %s, enc: %s",
+    logger.debug("build_attrib_request: >>> submitter_did: %r, target_did: %r, hash: %r, raw: %r, enc: %r",
                  submitter_did,
                  target_did,
                  xhash,
@@ -194,15 +198,16 @@ async def build_attrib_request(submitter_did: str,
     c_raw = c_char_p(raw.encode('utf-8')) if raw is not None else None
     c_enc = c_char_p(enc.encode('utf-8')) if enc is not None else None
 
-    res = await do_call('indy_build_attrib_request',
-                        c_submitter_did,
-                        c_target_did,
-                        c_hash,
-                        c_raw,
-                        c_enc,
-                        build_attrib_request.cb)
+    request_json = await do_call('indy_build_attrib_request',
+                                 c_submitter_did,
+                                 c_target_did,
+                                 c_hash,
+                                 c_raw,
+                                 c_enc,
+                                 build_attrib_request.cb)
 
-    logger.debug("build_attrib_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_attrib_request: <<< res: %r", res)
     return res
 
 
@@ -219,7 +224,7 @@ async def build_get_attrib_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_attrib_request: >>> submitter_did: %s, target_did: %s, data: %s",
+    logger.debug("build_get_attrib_request: >>> submitter_did: %r, target_did: %r, data: %r",
                  submitter_did,
                  target_did,
                  data)
@@ -232,13 +237,14 @@ async def build_get_attrib_request(submitter_did: str,
     c_target_did = c_char_p(target_did.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    res = await do_call('indy_build_get_attrib_request',
-                        c_submitter_did,
-                        c_target_did,
-                        c_data,
-                        build_get_attrib_request.cb)
+    request_json = await do_call('indy_build_get_attrib_request',
+                                 c_submitter_did,
+                                 c_target_did,
+                                 c_data,
+                                 build_get_attrib_request.cb)
 
-    logger.debug("build_get_attrib_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_get_attrib_request: <<< res: %r", res)
     return res
 
 
@@ -253,7 +259,7 @@ async def build_get_nym_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_nym_request: >>> submitter_did: %s, target_did: %s",
+    logger.debug("build_get_nym_request: >>> submitter_did: %r, target_did: %r",
                  submitter_did,
                  target_did)
 
@@ -264,12 +270,13 @@ async def build_get_nym_request(submitter_did: str,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
 
-    res = await do_call('indy_build_get_nym_request',
-                        c_submitter_did,
-                        c_target_did,
-                        build_get_nym_request.cb)
+    request_json = await do_call('indy_build_get_nym_request',
+                                 c_submitter_did,
+                                 c_target_did,
+                                 build_get_nym_request.cb)
 
-    logger.debug("build_get_nym_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_get_nym_request: <<< res: %r", res)
     return res
 
 
@@ -284,7 +291,7 @@ async def build_schema_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_schema_request: >>> submitter_did: %s, data: %s",
+    logger.debug("build_schema_request: >>> submitter_did: %r, data: %r",
                  submitter_did,
                  data)
 
@@ -295,12 +302,13 @@ async def build_schema_request(submitter_did: str,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    res = await do_call('indy_build_schema_request',
-                        c_submitter_did,
-                        c_data,
-                        build_schema_request.cb)
+    request_json = await do_call('indy_build_schema_request',
+                                 c_submitter_did,
+                                 c_data,
+                                 build_schema_request.cb)
 
-    logger.debug("build_schema_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_schema_request: <<< res: %r", res)
     return res
 
 
@@ -317,7 +325,7 @@ async def build_get_schema_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %s, dest: %s, data: %s",
+    logger.debug("build_get_schema_request: >>> submitter_did: %r, dest: %r, data: %r",
                  submitter_did,
                  dest,
                  data)
@@ -330,13 +338,14 @@ async def build_get_schema_request(submitter_did: str,
     c_dest = c_char_p(dest.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    res = await do_call('indy_build_get_schema_request',
-                        c_submitter_did,
-                        c_dest,
-                        c_data,
-                        build_get_schema_request.cb)
+    request_json = await do_call('indy_build_get_schema_request',
+                                 c_submitter_did,
+                                 c_dest,
+                                 c_data,
+                                 build_get_schema_request.cb)
 
-    logger.debug("build_get_schema_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_get_schema_request: <<< res: %r", res)
     return res
 
 
@@ -355,7 +364,7 @@ async def build_claim_def_txn(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %s, xref: %s, signature_type: %s, data: %s",
+    logger.debug("build_get_schema_request: >>> submitter_did: %r, xref: %r, signature_type: %r, data: %r",
                  submitter_did,
                  xref,
                  signature_type,
@@ -370,14 +379,15 @@ async def build_claim_def_txn(submitter_did: str,
     c_signature_type = c_char_p(signature_type.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    res = await do_call('indy_build_claim_def_txn',
-                        c_submitter_did,
-                        c_xref,
-                        c_signature_type,
-                        c_data,
-                        build_claim_def_txn.cb)
+    request_result = await do_call('indy_build_claim_def_txn',
+                                   c_submitter_did,
+                                   c_xref,
+                                   c_signature_type,
+                                   c_data,
+                                   build_claim_def_txn.cb)
 
-    logger.debug("build_claim_def_txn: <<< res: %s", res)
+    res = request_result.decode()
+    logger.debug("build_claim_def_txn: <<< res: %r", res)
     return res
 
 
@@ -396,7 +406,7 @@ async def build_get_claim_def_txn(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_claim_def_txn: >>> submitter_did: %s, xref: %s, signature_type: %s, origin: %s",
+    logger.debug("build_get_claim_def_txn: >>> submitter_did: %r, xref: %r, signature_type: %r, origin: %r",
                  submitter_did,
                  xref,
                  signature_type,
@@ -411,14 +421,15 @@ async def build_get_claim_def_txn(submitter_did: str,
     c_signature_type = c_char_p(signature_type.encode('utf-8'))
     c_origin = c_char_p(origin.encode('utf-8'))
 
-    res = await do_call('indy_build_get_claim_def_txn',
-                        c_submitter_did,
-                        c_xref,
-                        c_signature_type,
-                        c_origin,
-                        build_get_claim_def_txn.cb)
+    request_json = await do_call('indy_build_get_claim_def_txn',
+                                 c_submitter_did,
+                                 c_xref,
+                                 c_signature_type,
+                                 c_origin,
+                                 build_get_claim_def_txn.cb)
 
-    logger.debug("build_get_claim_def_txn: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_get_claim_def_txn: <<< res: %r", res)
     return res
 
 
@@ -435,7 +446,7 @@ async def build_node_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_node_request: >>> submitter_did: %s, target_did: %s, data: %s",
+    logger.debug("build_node_request: >>> submitter_did: %r, target_did: %r, data: %r",
                  submitter_did,
                  target_did,
                  data)
@@ -448,13 +459,14 @@ async def build_node_request(submitter_did: str,
     c_target_did = c_char_p(target_did.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    res = await do_call('indy_build_node_request',
-                        c_submitter_did,
-                        c_target_did,
-                        c_data,
-                        build_node_request.cb)
+    request_json = await do_call('indy_build_node_request',
+                                 c_submitter_did,
+                                 c_target_did,
+                                 c_data,
+                                 build_node_request.cb)
 
-    logger.debug("build_node_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_node_request: <<< res: %r", res)
     return res
 
 
@@ -469,7 +481,7 @@ async def build_get_txn_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_txn_request: >>> submitter_did: %s, data: %s",
+    logger.debug("build_get_txn_request: >>> submitter_did: %r, data: %r",
                  submitter_did,
                  data)
 
@@ -480,10 +492,11 @@ async def build_get_txn_request(submitter_did: str,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_data = c_int32(data)
 
-    res = await do_call('indy_build_get_txn_request',
-                        c_submitter_did,
-                        c_data,
-                        build_get_txn_request.cb)
+    request_json = await do_call('indy_build_get_txn_request',
+                                 c_submitter_did,
+                                 c_data,
+                                 build_get_txn_request.cb)
 
-    logger.debug("build_get_txn_request: <<< res: %s", res)
+    res = request_json.decode()
+    logger.debug("build_get_txn_request: <<< res: %r", res)
     return res

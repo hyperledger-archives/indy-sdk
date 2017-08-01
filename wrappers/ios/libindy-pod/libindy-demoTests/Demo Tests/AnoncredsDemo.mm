@@ -79,21 +79,6 @@
     NSMutableDictionary *claimDef = [NSMutableDictionary dictionaryWithDictionary:[NSDictionary fromString:claimDefJSON]];
     claimDef[@"seqNo"] = claimDefSeqNo;
     
-//    // 4. Create relationship between claim_def_seq_no and claim_def_uuid in wallet
-//    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-//    
-//    ret = [[IndyWallet sharedInstance] walletSetSeqNo:  [NSNumber numberWithInteger: [claimDefSeqNo intValue]]
-//                                              forHandle:  walletHandle
-//                                                 andKey:  claimDefUUID
-//                                             completion: ^(NSError *error)
-//           {
-//               XCTAssertEqual(error.code, Success, "walletSetSeqNo got error in completion");
-//               [completionExpectation fulfill];
-//           }];
-//    
-//    XCTAssertEqual(ret.code, Success, @"walletSetSeqNo() failed!");
-//    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
     // 5. Prover create Master Secret
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     

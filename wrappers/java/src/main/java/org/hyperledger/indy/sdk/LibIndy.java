@@ -14,6 +14,9 @@ public abstract class LibIndy {
 	 * Native library interface
 	 */
 
+	/**
+	 * JNA method signatures for calling SDK function.
+	 */
 	public interface API extends Library {
 
 		// pool.rs
@@ -103,16 +106,29 @@ public abstract class LibIndy {
 		}
 	}
 
+	/**
+	 * Initializes the API with the path to the C-Callable library.
+	 * 
+	 * @param file The path to the C-Callable library.
+	 */
 	public static void init(File file) {
 
 		api = Native.loadLibrary(file.getAbsolutePath(), API.class);
 	}
 
+	/**
+	 * Initializes the API with the default library.
+	 */
 	public static void init() {
 
 		api = Native.loadLibrary(LIBRARY_NAME, API.class);
 	}
 
+	/**
+	 * Indicates whether or not the API has been initialized.
+	 * 
+	 * @return true if the API is initialize, otherwise false.
+	 */
 	public static boolean isInitialized() {
 
 		return api != null;
