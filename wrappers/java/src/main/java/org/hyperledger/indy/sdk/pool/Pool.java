@@ -11,6 +11,10 @@ import com.sun.jna.Callback;
 /**
  * pool.rs API
  */
+
+/**
+ * High level wrapper around SDK Pool functionality.
+ */
 public class Pool extends IndyJava.API {
 
 	private final int poolHandle;
@@ -20,6 +24,11 @@ public class Pool extends IndyJava.API {
 		this.poolHandle = poolHandle;
 	}
 
+	/**
+	 * Gets the handle for the pool instance.
+	 * 
+	 * @return The handle for the pool instance.
+	 */
 	public int getPoolHandle() {
 
 		return this.poolHandle;
@@ -29,6 +38,9 @@ public class Pool extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
+	/**
+	 * Callback used when createPoolLedgerConfig completes.
+	 */
 	private static Callback createPoolLedgerConfigCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -42,6 +54,9 @@ public class Pool extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when openPoolLedger completes.
+	 */
 	private static Callback openPoolLedgerCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -57,6 +72,9 @@ public class Pool extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when refreshPoolLedger completes.
+	 */
 	private static Callback refreshPoolLedgerCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -70,6 +88,9 @@ public class Pool extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when closePoolLedger completes.
+	 */
 	private static Callback closePoolLedgerCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -83,6 +104,9 @@ public class Pool extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when deletePoolLedgerConfig completes.
+	 */
 	private static Callback deletePoolLedgerConfigCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -100,6 +124,14 @@ public class Pool extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
+	/**
+	 * Creates a new local pool ledger configuration that can be used later to connect pool nodes.
+	 * 
+	 * @param configName Name of the pool ledger configuration.
+	 * @param config Pool configuration json. if NULL, then default config will be used.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Void> createPoolLedgerConfig(
 			String configName,
 			String config) throws IndyException {
@@ -118,6 +150,14 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Opens pool ledger and performs connecting to pool nodes.
+	 * 
+	 * @param configName Name of the pool ledger configuration.
+	 * @param config Runtime pool configuration json. If NULL, then default config will be used.
+	 * @return A future that resolves to an opened Pool instance.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Pool> openPoolLedger(
 			String configName,
 			String config) throws IndyException {
@@ -136,6 +176,13 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Refreshes a local copy of a pool ledger and updates pool nodes connections.
+	 * 
+	 * @param pool The pool to refresh.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	private static CompletableFuture<Void> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
@@ -154,6 +201,13 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Closes opened pool ledger, opened nodes connections and frees allocated resources.
+	 * 
+	 * @param pool The pool to close.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	private static CompletableFuture<Void> closePoolLedger(
 			Pool pool) throws IndyException {
 
@@ -172,6 +226,13 @@ public class Pool extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Deletes created pool ledger configuration.
+	 * 
+	 * @param configName Name of the pool ledger configuration to delete.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Void> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
@@ -192,12 +253,24 @@ public class Pool extends IndyJava.API {
 	 * INSTANCE METHODS
 	 */
 
+	/**
+	 * Refreshes a local copy of a pool ledger and updates pool nodes connections.
+	 * 
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public CompletableFuture<Void> refreshPoolLedger(
 			) throws IndyException {
 
 		return refreshPoolLedger(this);
 	}
 
+	/**
+	 * Closes opened pool ledger, opened nodes connections and frees allocated resources.
+	 * 
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public CompletableFuture<Void> closePoolLedger(
 			) throws IndyException {
 

@@ -14,6 +14,9 @@ import com.sun.jna.Callback;
 /**
  * wallet.rs API
  */
+/**
+ * High level wrapper for wallet SDK functions.
+ */
 public class Wallet extends IndyJava.API {
 
 	private final int walletHandle;
@@ -23,6 +26,11 @@ public class Wallet extends IndyJava.API {
 		this.walletHandle = walletHandle;
 	}
 
+	/**
+	 * Gets the handle for the wallet.
+	 * 
+	 * @return The handle for the wallet.
+	 */
 	public int getWalletHandle() {
 
 		return this.walletHandle;
@@ -32,6 +40,9 @@ public class Wallet extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
+	/**
+	 * Callback used when registerWalletType completes.
+	 */
 	private static Callback registerWalletTypeCb = new Callback() {
 
 		@SuppressWarnings({ "unused", "unchecked" })
@@ -45,6 +56,9 @@ public class Wallet extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when createWallet completes.
+	 */
 	private static Callback createWalletCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -58,6 +72,9 @@ public class Wallet extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when openWallet completes.
+	 */
 	private static Callback openWalletCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -73,6 +90,9 @@ public class Wallet extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when closeWallet completes.
+	 */
 	private static Callback closeWalletCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -86,6 +106,9 @@ public class Wallet extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when deleteWallet completes.
+	 */
 	private static Callback deleteWalletCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -105,6 +128,16 @@ public class Wallet extends IndyJava.API {
 
 	private static final List<String> REGISERED_WALLETS = Collections.synchronizedList(new ArrayList<String>());
 
+	/**
+	 * Registers custom wallet implementation.
+	 * 
+	 * @param xtype Wallet type name.
+	 * @param walletType An instance of a WalletType subclass
+	 * @param forceCreate Allows a new registration with the same name as a previous registration if true.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 * @throws InterruptedException Thrown...???
+	 */
 	public static CompletableFuture<Void> registerWalletType(
 			String xtype,
 			WalletType walletType,
@@ -143,6 +176,17 @@ public class Wallet extends IndyJava.API {
 		}
 	}
 
+	/**
+	 * Creates a new secure wallet with the given unique name.
+	 * 
+	 * @param poolName Name of the pool that corresponds to this wallet.
+	 * @param name Name of the wallet.
+	 * @param xtype Type of the wallet. Defaults to 'default'.
+	 * @param config Wallet configuration json. List of supported keys are defined by wallet type.
+	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public static CompletableFuture<Void> createWallet(
 			String poolName,
 			String name,
@@ -167,6 +211,15 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Opens the wallet with specific name.
+	 * 
+	 * @param name Name of the wallet.
+	 * @param runtimeConfig Runtime wallet configuration json. if NULL, then default runtime_config will be used.
+	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public static CompletableFuture<Wallet> openWallet(
 			String name,
 			String runtimeConfig,
@@ -187,6 +240,13 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Closes the specified open wallet and frees allocated resources.
+	 * 
+	 * @param wallet The wallet to close.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	private static CompletableFuture<Void> closeWallet(
 			Wallet wallet) throws IndyException {
 
@@ -205,6 +265,14 @@ public class Wallet extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Deletes an existing wallet.
+	 * 
+	 * @param name Name of the wallet to delete.
+	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public static CompletableFuture<Void> deleteWallet(
 			String name,
 			String credentials) throws IndyException {
@@ -227,6 +295,12 @@ public class Wallet extends IndyJava.API {
 	 * INSTANCE METHODS
 	 */
 
+	/**
+	 * Closes the wallet and frees allocated resources.
+	 * 
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public CompletableFuture<Void> closeWallet(
 			) throws IndyException {
 

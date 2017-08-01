@@ -491,13 +491,12 @@
     // 3. create did
     NSString *did;
     NSString *verKey;
-    NSString *didJson = @"{\"seed\":\"000000000000000000000000Trustee1\"}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:didJson
-                                                           outMyDid:&did
-                                                        outMyVerkey:&verKey
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&did
+                                                                outMyVerkey:&verKey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     XCTAssertTrue(did, @"invalid did");
     XCTAssertTrue(verKey, @"invalid verKey");
     
@@ -553,25 +552,23 @@
     
     // 3. trustee did
     NSString *trusteeDid;
-    NSString *trusteeDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&trusteeDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
     // 4. my did
     NSString *myDid;
     NSString *myVerKey;
-    NSString *myDidJson = @"{\"seed\":\"00000000000000000000000000000My1\"}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"00000000000000000000000000000My1"
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:&myVerKey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     XCTAssertTrue(myVerKey, @"invalid verkey");
     
@@ -646,25 +643,23 @@
     
     // 4. trustee did
     NSString *trusteeDid;
-    NSString *trusteeDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\", \"cid\":true}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:trusteeDidJson
-                                                           outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&trusteeDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
     // 5. my did
     NSString *myDid;
     NSString *myVerKey;
-    NSString *myDidJson = @"{\"seed\":\"00000000000000000000000000000My1\"}";
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:@"00000000000000000000000000000My1"
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:&myVerKey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     XCTAssertTrue(myVerKey, @"invalid verkey");
     

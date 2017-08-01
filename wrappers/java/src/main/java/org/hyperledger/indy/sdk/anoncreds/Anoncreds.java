@@ -14,6 +14,10 @@ import com.sun.jna.Callback;
 /**
  * anoncreds.rs API
  */
+
+/**
+ * Functionality for anonymous credentials
+ */
 public class Anoncreds extends IndyJava.API {
 
 	private Anoncreds() {
@@ -24,6 +28,9 @@ public class Anoncreds extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
+	/**
+	 * Callback used when issuerCreateAndStoreClaimDef completes.
+	 */
 	private static Callback issuerCreateAndStoreClaimDefCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -37,6 +44,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when issuerCreateAndStoreRevocReg completes.
+	 */
 	private static Callback issuerCreateAndStoreRevocRegCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -50,6 +60,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when issuerCreateClaim completes.
+	 */
 	private static Callback issuerCreateClaimCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -63,6 +76,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when issuerRevokeClaim completes.
+	 */
 	private static Callback issuerRevokeClaimCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -76,6 +92,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverStoreClaimOffer completes.
+	 */
 	private static Callback proverStoreClaimOfferCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -89,6 +108,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverGetClaimOffers completes.
+	 */
 	private static Callback proverGetClaimOffersCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -102,6 +124,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverCreateMasterSecret completes.
+	 */
 	private static Callback proverCreateMasterSecretCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -115,7 +140,11 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
-	private static Callback proverCreateClaimReqCb = new Callback() {
+	
+	/**
+	 * Callback used when proverCreateAndStoreClaimReq completes.
+	 */
+	private static Callback proverCreateAndStoreClaimReqCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String claim_req_json) {
@@ -128,6 +157,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverStoreClaim completes.
+	 */
 	private static Callback proverStoreClaimCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -141,6 +173,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverGetClaims completes.
+	 */
 	private static Callback proverGetClaimsCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -154,6 +189,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverGetClaimsForProofReq completes.
+	 */
 	private static Callback proverGetClaimsForProofReqCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -167,6 +205,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when proverCreateProof completes.
+	 */
 	private static Callback proverCreateProofCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -180,6 +221,9 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when verifierVerifyProof completes.
+	 */
 	private static Callback verifierVerifyProofCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -199,6 +243,17 @@ public class Anoncreds extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
+	/**
+	 * Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
+	 * 
+	 * @param wallet The wallet.
+	 * @param issuerDid The DID of the issuer.
+	 * @param schemaJson The JSON schema for the claim.
+	 * @param signatureType The signature type.
+	 * @param createNonRevoc Whether or not to create a non-revokable claim definition.
+	 * @return A future resolving to a JSON string containing the claim definition.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> issuerCreateAndStoreClaimDef(
 			Wallet wallet,
 			String issuerDid,
@@ -225,6 +280,16 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Create a new revocation registry for the given claim definition
+	 * 
+	 * @param wallet The wallet.
+	 * @param issuerDid	The DID of the issuer.
+	 * @param schemaSeqNo The sequence number of the schema to use.
+	 * @param maxClaimNum The maximum claim numbber.
+	 * @return A future resolving to a JSON string containing the revocation registry.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
 			String issuerDid,
@@ -249,6 +314,17 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Signs a given claim for the given user by a given key (claim def).
+	 * 
+	 * @param wallet The wallet.
+	 * @param claimReqJson  a claim request with a blinded secret
+	 * @param claimJson a claim containing attribute values for each of requested attribute names.
+	 * @param revocRegSeqNo (Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger
+	 * @param userRevocIndex index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
+	 * @return A future resolving to a revocation registry update json with a newly issued claim
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<IssuerCreateClaimResult> issuerCreateClaim(
 			Wallet wallet,
 			String claimReqJson, 
@@ -275,6 +351,15 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Revokes a user identified by a revoc_id in a given revoc-registry.
+	 * 
+	 * @param wallet A wallet.
+	 * @param revocRegSeqNo seq no of a revocation registry transaction in Ledger
+	 * @param userRevocIndex index of the user in the revocation registry
+	 * @return A future resolving to a revocation registry update json with a revoked claim
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> issuerRevokeClaim(
 			Wallet wallet,
 			int revocRegSeqNo, 
@@ -297,6 +382,14 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Stores a claim offer from the given issuer in a secure storage.
+	 * 
+	 * @param wallet A wallet.
+	 * @param claimOfferJson claim offer as a json containing information about the issuer and a claim
+	 * @return A future that does not resolve any value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Void> proverStoreClaimOffer(
 			Wallet wallet,
 			String claimOfferJson) throws IndyException {
@@ -317,6 +410,14 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Gets all stored claim offers (see prover_store_claim_offer).
+	 * 
+	 * @param wallet A wallet.
+	 * @param filterJson optional filter to get claim offers for specific Issuer, claim_def or schema only only
+	 * @return A future that resolves to a json with a list of claim offers for the filter.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> proverGetClaimOffers(
 			Wallet wallet,
 			String filterJson) throws IndyException {
@@ -337,6 +438,14 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Creates a master secret with a given name and stores it in the wallet.
+	 * 
+	 * @param wallet A wallet.
+	 * @param masterSecretName a new master secret name.
+	 * @return A future that does not resolve any value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Void> proverCreateMasterSecret(
 			Wallet wallet,
 			String masterSecretName) throws IndyException {
@@ -357,7 +466,18 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<String> proverCreateClaimReq(
+	/**
+	 * Creates a clam request json for the given claim offer and stores it in a secure wallet.
+	 * 
+	 * @param wallet A wallet.
+	 * @param proverDid The DID of the prover.
+	 * @param claimOfferJson claim offer as a json containing information about the issuer and a claim
+	 * @param claimDefJson claim definition json associated with issuer_did and schema_seq_no in the claim_offer
+	 * @param masterSecretName the name of the master secret stored in the wallet
+	 * @return A future that resolves to a claim request json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> proverCreateAndStoreClaimReq(
 			Wallet wallet,
 			String proverDid,
 			String claimOfferJson,
@@ -376,13 +496,21 @@ public class Anoncreds extends IndyJava.API {
 				claimOfferJson,
 				claimDefJson,
 				masterSecretName,
-				proverCreateClaimReqCb);
+				proverCreateAndStoreClaimReqCb);
 
 		checkResult(result);
 
 		return future;
 	}
 
+	/**
+	 * Updates the claim by a master secret and stores in a secure wallet.
+	 * 
+	 * @param wallet A Wallet.
+	 * @param claim The claim to store.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Void> proverStoreClaim(
 			Wallet wallet,
 			String claim) throws IndyException {
@@ -403,6 +531,14 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Gets human readable claims according to the filter.
+	 * 
+	 * @param wallet A wallet.
+	 * @param filter filter for claims
+	 * @return A future that resolves to a claims json
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> proverGetClaims(
 			Wallet wallet,
 			String filter) throws IndyException {
@@ -423,6 +559,14 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Gets human readable claims matching the given proof request.
+	 * 
+	 * @param wallet A wallet.
+	 * @param proofRequest proof request json
+	 * @return A future that resolves to a json with claims for the given pool request.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> proverGetClaimsForProofReq(
 			Wallet wallet,
 			String proofRequest) throws IndyException {
@@ -443,6 +587,19 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Creates a proof according to the given proof request.
+	 * 
+	 * @param wallet A wallet.
+	 * @param proofRequest proof request json as come from the verifier
+	 * @param requestedClaims either a claim or self-attested attribute for each requested attribute
+	 * @param schemas all schema jsons participating in the proof request
+	 * @param masterSecret the name of the master secret stored in the wallet
+	 * @param claimDefs all claim definition jsons participating in the proof request
+	 * @param revocRegs all revocation registry jsons participating in the proof request
+	 * @return A future resolving to a Proof json
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> proverCreateProof(
 			Wallet wallet,
 			String proofRequest,
@@ -473,6 +630,17 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Verifies a proof (of multiple claim).
+	 * 
+	 * @param proofRequest initial proof request as sent by the verifier
+	 * @param proof proof json
+	 * @param schemas all schema jsons participating in the proof
+	 * @param claimDefs all claim definition jsons participating in the proof
+	 * @param revocRegs all revocation registry jsons participating in the proof
+	 * @return A future resolving to true if signature is valid, otherwise false.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Boolean> verifierVerifyProof(
 			String proofRequest,
 			String proof,
