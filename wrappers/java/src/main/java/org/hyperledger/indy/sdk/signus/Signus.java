@@ -15,6 +15,10 @@ import com.sun.jna.Callback;
 /**
  * signus.rs API
  */
+
+/**
+ * High level wrapper around signus SDK functions.
+ */
 public class Signus extends IndyJava.API {
 
 	private Signus() {
@@ -25,6 +29,9 @@ public class Signus extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
+	/**
+	 * Callback used when createAndStoreMyDid completes.
+	 */
 	private static Callback createAndStoreMyDidCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -38,6 +45,9 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when replaceKeys completes.
+	 */
 	private static Callback replaceKeysCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -51,6 +61,9 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when storeTheirDid completes.
+	 */
 	private static Callback storeTheirDidCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -64,6 +77,9 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when sign completes.
+	 */
 	private static Callback signCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -77,6 +93,9 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when verifySignature completes.
+	 */
 	private static Callback verifySignatureCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -90,6 +109,9 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when encrypt completes.
+	 */
 	private static Callback encryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -103,6 +125,9 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when decrypt completes.
+	 */
 	private static Callback decryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -120,6 +145,14 @@ public class Signus extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
+	/**
+	 * Creates keys (signing and encryption keys) for a new DID owned by the caller.
+	 * 
+	 * @param wallet The wallet.
+	 * @param didJson Identity information as json.
+	 * @return A future that resolves to a CreateAndStoreMyDidResult instance.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<CreateAndStoreMyDidResult> createAndStoreMyDid(
 			Wallet wallet,
 			String didJson) throws IndyException {
@@ -140,6 +173,15 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Generated new signing and encryption keys for an existing DID owned by the caller.
+	 * 
+	 * @param wallet The wallet.
+	 * @param did The DID
+	 * @param identityJson identity information as json.
+	 * @return A future that resolves to a ReplaceKeysResult instance.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */	
 	public static CompletableFuture<ReplaceKeysResult> replaceKeys(
 			Wallet wallet,
 			String did,
@@ -162,6 +204,14 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Saves their DID for a pairwise connection in a secured Wallet so that it can be used to verify transaction.
+	 * 
+	 * @param wallet The wallet.
+	 * @param identityJson Identity information as json.
+	 * @return A future that does not resolve any value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Void> storeTheirDid(
 			Wallet wallet,
 			String identityJson) throws IndyException {
@@ -182,6 +232,15 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Signs a message by a signing key associated with my DID. The DID with a signing key.
+	 * 
+	 * @param wallet The wallet.
+	 * @param did signing DID
+	 * @param msg a message to be signed
+	 * @return A future that resolves to a a signature string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> sign(
 			Wallet wallet,
 			String did,
@@ -204,6 +263,16 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Verify a signature created by a key associated with a DID.
+	 * 
+	 * @param wallet The wallet.
+	 * @param pool The pool.
+	 * @param did DID that signed the message
+	 * @param signedMsg message
+	 * @return A future that resolves to true if signature is valid, otherwise false.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<Boolean> verifySignature(
 			Wallet wallet,
 			Pool pool,
@@ -229,6 +298,17 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Encrypts a message by a public key associated with a DID.
+	 * 
+	 * @param wallet The wallet.
+	 * @param pool The pool.
+	 * @param myDid encrypting DID
+	 * @param did encrypting DID
+	 * @param msg a message to be signed
+	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> encrypt(
 			Wallet wallet,
 			Pool pool,
@@ -256,6 +336,17 @@ public class Signus extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Decrypts a message encrypted by a public key associated with my DID.
+	 * 
+	 * @param wallet The wallet.
+	 * @param myDid DID
+	 * @param did DID that signed the message
+	 * @param encryptedMsg encrypted message
+	 * @param nonce nonce that encrypted message
+	 * @return A future that resolves to a JSON string containing the decrypted message.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> decrypt(
 			Wallet wallet,
 			String myDid,
