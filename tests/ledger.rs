@@ -778,7 +778,7 @@ mod high_cases {
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
 
-            let get_txn_schema_result: SchemaResult = serde_json::from_str(&get_txn_response.result.data).unwrap();
+            let get_txn_schema_result: SchemaResult = serde_json::from_str(&get_txn_response.result.data.unwrap()).unwrap();
             assert!(get_txn_schema_result.data.is_some());
 
             let get_txn_schema_data: SchemaData = serde_json::from_str(&get_txn_schema_result.data.unwrap()).unwrap();
@@ -818,7 +818,7 @@ mod high_cases {
 
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert_eq!(get_txn_response.result.data, "{}".to_string()); /* FIXME: unify with other GET_ transactions (data.is_none()) */
+            assert!(get_txn_response.result.data.is_none());
 
             TestUtils::cleanup_storage();
         }

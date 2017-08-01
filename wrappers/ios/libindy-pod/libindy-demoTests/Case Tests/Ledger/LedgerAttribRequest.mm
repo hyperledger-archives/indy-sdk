@@ -54,15 +54,11 @@
     
     // 3. Obtain my did
     NSString *myDid = nil;
-    NSString *myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"00000000000000000000000000000My1\"" \
-                           "}"];
-    
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                          myDidJson:myDidJson
-                                                           outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
@@ -70,8 +66,8 @@
     
     NSString *attribRequest;
     NSString *raw = @"{"\
-                    "\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}"\
-                    "}";
+    "\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}"\
+    "}";
     ret = [[LedgerUtils sharedInstance] buildAttribRequestWithSubmitterDid:myDid
                                                                  targetDid:myDid
                                                                       hash:nil
@@ -202,6 +198,30 @@
     XCTAssertFalse([getAttribResponse isEqualToString:@""], @"getAttribResponse is empty!");
     
     [TestUtils cleanupStorage];
+}
+
+- (void)testBuildAttribRequestWorksForInvalidIdentifier
+{
+    NSString *identifier = @"invalid_base58_identifier";
+    
+    NSError *ret = [[LedgerUtils sharedInstance] buildAttribRequestWithSubmitterDid:identifier
+                                                                          targetDid:identifier
+                                                                               hash:nil
+                                                                                raw:@"{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}"
+                                                                                enc:nil
+                                                                         resultJson:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure,@"LedgerUtils::buildAttribRequestWithSubmitterDid returned wrong error code");
+}
+
+- (void)testBuildGetAttribRequestWorksForInvalidIdentifier
+{
+    NSString *identifier = @"invalid_base58_identifier";
+    
+    NSError *ret = [[LedgerUtils sharedInstance] buildGetAttribRequestWithSubmitterDid:identifier
+                                                                             targetDid:identifier
+                                                                                  data:@"endpoint"
+                                                                            resultJson:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure,@"LedgerUtils::buildGetAttribRequestWithSubmitterDid returned wrong error code");
 }
 
 @end
