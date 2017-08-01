@@ -31,6 +31,22 @@ try {
             }
         }
 
+        tests['ubuntu-java-test'] = {
+            node('ubuntu') {
+                stage('Ubuntu Java Test') {
+                    javaTestUbuntu()
+                }
+            }
+        }
+
+        tests['ubuntu-python-test'] = {
+            node('ubuntu') {
+                stage('Ubuntu Python Test') {
+                    pythonTestUbuntu()
+                }
+            }
+        }
+
         parallel(tests)
     }
 
@@ -39,27 +55,39 @@ try {
         return
     }
 
-    // 2. PUBLISH TO Cargo
-    stage('Publish to Cargo') {
-        node('ubuntu') {
-            publishToCargo()
-        }
-    }
+    stage('Publish') {
 
-    // 3. PUBLISH RPMS TO repo.evernym.com
-    stage('Publish RPM Files') {
-        node('ubuntu') {
-            publishRpmFiles()
-        }
-    }
+        def publishSteps = [:]
 
-    // 4. PUBLISH DEB TO repo.evernym.com
-    stage('Publish DEB Files') {
-        node('ubuntu') {
-            publishDebFiles()
+        // 2. PUBLISH TO Cargo
+        publishSteps['cargo'] = {
+            node('ubuntu') {
+                stage('Publish to Cargo') {
+                     publishToCargo()
+                }
+            }
         }
-    }
 
+        // 3. PUBLISH RPMS TO repo.evernym.com
+        publishSteps['rpm-files'] = {
+            node('ubuntu') {
+                stage('Publish RPM Files') {
+                     publishRpmFiles()
+                }
+            }
+        }
+
+        // 4. PUBLISH DEB TO repo.evernym.com
+        publishSteps['deb-files'] = {
+            node('ubuntu') {
+                stage('Publish DEB Files') {
+                     publishDebFiles()
+                }
+            }
+        }
+
+        parallel(publishSteps)
+    }
 } catch (e) {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
@@ -148,6 +176,108 @@ def testUbuntu() {
 
 def testRedHat() {
     testPipeline("ci/amazon.dockerfile ci", "RedHat", false)
+}
+
+def javaTestUbuntu() {
+    def poolInst
+    def network_name = "pool_network"
+    try {
+        echo 'Ubuntu Java Test: Checkout csm'
+        checkout scm
+
+        echo "Ubuntu Java Test: Create docker network (${network_name}) for nodes pool and test image"
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+
+        echo 'Ubuntu Java Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
+        echo 'Ubuntu Java Test: Run nodes pool'
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+
+        echo 'Ubuntu Java Test: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/java.dockerfile ci')
+
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo 'Ubuntu Java Test: Test'
+
+            sh '''
+                cd wrappers/java
+                mvn clean test
+            '''
+        }
+    }
+    finally {
+        echo 'Ubuntu Java Test: Cleanup'
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (ignore) {
+        }
+        try {
+            if (poolInst) {
+                echo 'Ubuntu Java Test: stop pool'
+                poolInst.stop()
+            }
+        } catch (err) {
+            echo "Ubuntu Java Tests: error while stop pool ${err}"
+        }
+        try {
+            echo "Ubuntu Java Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (err) {
+            echo "Ubuntu Java Test: error while delete ${network_name} - ${err}"
+        }
+        step([$class: 'WsCleanup'])
+    }
+}
+
+def pythonTestUbuntu() {
+    def poolInst
+    def network_name = "pool_network"
+    try {
+        echo 'Ubuntu Python Test: Checkout csm'
+        checkout scm
+
+        echo "Ubuntu Python Test: Create docker network (${network_name}) for nodes pool and test image"
+        sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
+
+        echo 'Ubuntu Python Test: Build docker image for nodes pool'
+        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
+        echo 'Ubuntu Python Test: Run nodes pool'
+        poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
+
+        echo 'Ubuntu Python Test: Build docker image'
+        def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
+
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo 'Ubuntu Python Test: Test'
+
+            sh '''
+                cd wrappers/python
+                python3.6 -m pip install -e .
+                python3.6 -m pytest
+            '''
+        }
+    }
+    finally {
+        echo "Ubuntu Python Test: Cleanup"
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (err) {
+            echo "Ubuntu Python Tests: error while inspect network ${network_name} - ${err}"
+        }
+        try {
+            echo "Ubuntu Python Test: stop pool"
+            poolInst.stop()
+        } catch (err) {
+            echo "Ubuntu Python Tests: error while stop pool ${err}"
+        }
+        try {
+            echo "Ubuntu Python Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (err) {
+            echo "Ubuntu Python Test: error while delete ${network_name} - ${err}"
+        }
+        step([$class: 'WsCleanup'])
+    }
 }
 
 def publishToCargo() {
