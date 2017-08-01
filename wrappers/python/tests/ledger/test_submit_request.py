@@ -277,4 +277,4 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
 
     get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
-    assert get_txn_response['result']['data'] == "{}"
+    assert not get_txn_response['result']['data']

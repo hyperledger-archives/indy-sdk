@@ -15,7 +15,7 @@ public class AnoncredsIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	static Wallet wallet;
 	static String claimDef;
