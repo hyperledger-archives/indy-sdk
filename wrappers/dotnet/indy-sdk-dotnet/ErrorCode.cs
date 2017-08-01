@@ -156,6 +156,12 @@
         /// </summary>
         LedgerSecurityError = 305,
 
+        /// <summary>
+        /// Attempt to create pool ledger config with name used for another existing pool
+        /// </summary>
+        PoolLedgerConfigAlreadyExistsError = 306,
+
+
         // Crypto errors
 
         /// <summary>

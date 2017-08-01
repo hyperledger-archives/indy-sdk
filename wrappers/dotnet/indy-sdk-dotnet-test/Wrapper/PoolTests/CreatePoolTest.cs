@@ -50,5 +50,25 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
 
             Assert.AreEqual(ErrorCode.CommonInvalidParam2, ex.ErrorCode);
         }
+
+        [TestMethod]
+        public async Task TestCreatePoolWorksForTwice()
+        {
+
+            var genesisTxnFile = PoolUtils.CreateGenesisTxnFile("genesis.txn");
+
+            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
+
+            var configJson = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
+
+
+            Pool.CreatePoolLedgerConfigAsync("pool1", configJson).Wait();
+
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                Pool.CreatePoolLedgerConfigAsync("pool1", configJson)
+            );
+
+            Assert.AreEqual(ErrorCode.PoolLedgerConfigAlreadyExistsError, ex.ErrorCode);
+        }
     }
 }
