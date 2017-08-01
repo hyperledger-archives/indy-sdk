@@ -2,112 +2,55 @@
 
 @Library('SovrinHelpers') _
 
-name = 'indy-sdk'
-def err
-def publishBranch = (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel')
-
 try {
+    testing()
+    publishing()
+    notifyingSuccess()
+} catch (err) {
+    notifyingFailure(err)
+}
 
-// ALL BRANCHES: master, devel, PRs
-
-    // 1. TEST
-    stage('Test') {
-
-        def tests = [:]
-
-        //Libindy ubuntu tests
-        tests['ubuntu-test'] = {
-            node('ubuntu') {
-                stage('Ubuntu Test') {
-                    testUbuntu()
-                }
-            }
-        }
-
-        //Libindy red hat tests
-        tests['redhat-test'] = {
-            node('ubuntu') {
-                stage('RedHat Test') {
-                    testRedHat()
-                }
-            }
-        }
-
-        //Java wrapper ubuntu tests
-        tests['ubuntu-java-test'] = {
-            node('ubuntu') {
-                stage('Ubuntu Java Test') {
-                    javaTestUbuntu()
-                }
-            }
-        }
-
-        //Python wrapper ubuntu tests
-        tests['ubuntu-python-test'] = {
-            node('ubuntu') {
-                stage('Ubuntu Python Test') {
-                    pythonTestUbuntu()
-                }
-            }
-        }
-
-        parallel(tests)
+def testing(){
+    stage('Testing') {
+         parallel([
+             'libindy-ubuntu-test': { libindyUbuntuTesting() },
+             'libindy-redhat-test': { libindyRedHatTesting() },
+             'java-ubuntu-test': { javaUbuntuTesting() },
+             'python-ubuntu-test': { pythonUbuntuTesting() }
+         ])
     }
+}
 
-    if (!publishBranch) {
-        echo "${env.BRANCH_NAME}: skip publishing"
-        return
+def publishing(){
+    stage('Publishing') {
+        if (env.BRANCH_NAME != 'master') {
+            echo "${env.BRANCH_NAME}: skip publishing"
+            return
+        }
+
+        parallel([
+            'liblindy-to-cargo': { publishingLibindyToCargo() },
+            'libindy-rpm-files': { publishingLibindyRpmFiles() },
+            'libindy-deb-files': { publishLibindyDebFiles() }
+        ])
     }
+}
 
-    stage('Publish') {
-
-        def publishSteps = [:]
-
-        // 2. PUBLISH TO Cargo
-        publishSteps['cargo'] = {
-            node('ubuntu') {
-                stage('Publish to Cargo') {
-                     publishToCargo()
-                }
+def notifyingSuccess(){
+    if (env.BRANCH_NAME == 'master') {
+        currentBuild.result = "SUCCESS"
+            node('ubuntu-master') {
+                sendNotification.success('indy-sdk')
             }
-        }
-
-        // 3. PUBLISH RPMS TO repo.evernym.com
-        publishSteps['rpm-files'] = {
-            node('ubuntu') {
-                stage('Publish RPM Files') {
-                     publishRpmFiles()
-                }
-            }
-        }
-
-        // 4. PUBLISH DEB TO repo.evernym.com
-        publishSteps['deb-files'] = {
-            node('ubuntu') {
-                stage('Publish DEB Files') {
-                     publishDebFiles()
-                }
-            }
-        }
-
-        parallel(publishSteps)
     }
-} catch (e) {
+}
+
+def notifyingFailure(err){
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
-        sendNotification.fail([slack: publishBranch])
+        sendNotification.fail([slack: env.BRANCH_NAME == 'master'])
     }
-    err = e
-} finally {
-    if (err) {
-        throw err
-    }
-    currentBuild.result = "SUCCESS"
-    if (publishBranch) {
-        node('ubuntu-master') {
-            sendNotification.success(name)
-        }
-    }
+    throw err
 }
 
 def openPool(env_name, network_name){
@@ -142,7 +85,7 @@ def closePool(env_name, network_name, poolInst){
     step([$class: 'WsCleanup'])
 }
 
-def testPipeline(file, env_name, run_interoperability_tests, network_name) {
+def libindyTest(file, env_name, run_interoperability_tests, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -151,7 +94,7 @@ def testPipeline(file, env_name, run_interoperability_tests, network_name) {
         poolInst = openPool(env_name, network_name)
 
         echo "${env_name} Test: Build docker image"
-        def testEnv = dockerHelpers.build(name, file)
+        def testEnv = dockerHelpers.build('libindy', file)
 
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
            echo "${env_name} Test: Test"
@@ -181,145 +124,173 @@ def testPipeline(file, env_name, run_interoperability_tests, network_name) {
     }
 }
 
-def testUbuntu() {
-    testPipeline("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
-}
-
-def testRedHat() {
-    testPipeline("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
-}
-
-def javaTestUbuntu() {
-    def poolInst
-    def network_name = "pool_network"
-    def env_name = "Ubuntu Java"
-
-    try {
-        echo "${env_name} Test: Checkout csm"
-        checkout scm
-
-        poolInst = openPool("Ubuntu Java", network_name)
-
-        echo "${env_name} Test: Build docker image"
-        def testEnv = dockerHelpers.build(name, 'ci/java.dockerfile ci')
-
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo "${env_name} Test: Test"
-
-            sh '''
-                cd wrappers/java
-                mvn clean test
-            '''
+def libindyUbuntuTesting() {
+    node('ubuntu') {
+        stage('Ubuntu Test') {
+            libindyTest("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
         }
     }
-    finally {
-        closePool(env_name, network_name, poolInst)
-    }
 }
 
-def pythonTestUbuntu() {
-    def poolInst
-    def network_name = "pool_network"
-    def env_name = "Ubuntu Python"
-    try {
-        echo "${env_name} Test: Checkout csm"
-        checkout scm
-
-        poolInst = openPool(env_name, network_name)
-
-        echo "${env_name} Test: Build docker image"
-        def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
-
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo "${env_name} Test: Test"
-
-            sh '''
-                cd wrappers/python
-                python3.6 -m pip install -e .
-                python3.6 -m pytest
-            '''
+def libindyRedHatTesting() {
+    node('ubuntu') {
+        stage('RedHat Test') {
+            libindyTest("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
         }
     }
-    finally {
-        closePool(env_name, network_name, poolInst)
-    }
 }
 
-def publishToCargo() {
-    try {
-        echo 'Publish to Cargo: Checkout csm'
-        checkout scm
+def javaUbuntuTesting() {
+    node('ubuntu') {
+        stage('Ubuntu Java Test') {
+            def poolInst
+            def network_name = "pool_network"
+            def env_name = "Ubuntu Java"
 
-        echo 'Publish to Cargo: Build docker image'
-        def testEnv = dockerHelpers.build(name)
+            try {
+                echo "${env_name} Test: Checkout csm"
+                checkout scm
 
-        testEnv.inside {
-            echo 'Update version'
+                poolInst = openPool("Ubuntu Java", network_name)
 
-            sh 'chmod -R 777 ci'
-            sh "ci/update-package-version.sh $env.BUILD_NUMBER"
+                echo "${env_name} Test: Build docker image"
+                def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
 
-            withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
-                sh 'cargo login $SECRET'
+                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                    echo "${env_name} Test: Test"
+
+                    sh '''
+                        cd wrappers/java
+                        mvn clean test
+                    '''
+                }
             }
-
-            sh 'cargo package --allow-dirty'
-
-            sh 'cargo publish --allow-dirty'
-        }
-    }
-    finally {
-        echo 'Publish to cargo: Cleanup'
-        step([$class: 'WsCleanup'])
-    }
-}
-
-def publishRpmFiles() {
-    try {
-        echo 'Publish Rpm files: Checkout csm'
-        checkout scm
-
-        echo 'Publish Rpm: Build docker image'
-        def testEnv = dockerHelpers.build(name, 'ci/amazon.dockerfile ci')
-
-        testEnv.inside('-u 0:0') {
-
-            commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-
-            sh 'chmod -R 777 ci'
-
-            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+            finally {
+                closePool(env_name, network_name, poolInst)
             }
         }
     }
-    finally {
-        echo 'Publish RPM: Cleanup'
-        step([$class: 'WsCleanup'])
-    }
 }
 
-def publishDebFiles() {
-    try {
-        echo 'Publish Deb files: Checkout csm'
-        checkout scm
+def pythonUbuntuTesting() {
+    node('ubuntu') {
+        stage('Ubuntu Python Test') {
+            def poolInst
+            def network_name = "pool_network"
+            def env_name = "Ubuntu Python"
+            try {
+                echo "${env_name} Test: Checkout csm"
+                checkout scm
 
-        echo 'Publish Deb: Build docker image'
-        def testEnv = dockerHelpers.build(name)
+                poolInst = openPool(env_name, network_name)
 
-        testEnv.inside('-u 0:0') {
+                echo "${env_name} Test: Build docker image"
+                def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-            commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                    echo "${env_name} Test: Test"
 
-            sh 'chmod -R 777 ci'
-
-            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                    sh '''
+                        cd wrappers/python
+                        python3.6 -m pip install -e .
+                        python3.6 -m pytest
+                    '''
+                }
+            }
+            finally {
+                closePool(env_name, network_name, poolInst)
             }
         }
     }
-    finally {
-        echo 'Publish Deb: Cleanup'
-        step([$class: 'WsCleanup'])
+}
+
+def publishingLibindyToCargo() {
+    node('ubuntu') {
+        stage('Publish to Cargo') {
+            try {
+                echo 'Publish to Cargo: Checkout csm'
+                checkout scm
+
+                echo 'Publish to Cargo: Build docker image'
+                def testEnv = dockerHelpers.build('indy-sdk')
+
+                testEnv.inside {
+                    echo 'Update version'
+
+                    sh 'chmod -R 777 ci'
+                    sh "ci/update-package-version.sh $env.BUILD_NUMBER"
+
+                    withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
+                        sh 'cargo login $SECRET'
+                    }
+
+                    sh 'cargo package --allow-dirty'
+
+                    sh 'cargo publish --allow-dirty'
+                }
+            }
+            finally {
+                echo 'Publish to cargo: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def publishingLibindyRpmFiles() {
+    node('ubuntu') {
+        stage('Publish RPM Files') {
+            try {
+                echo 'Publish Rpm files: Checkout csm'
+                checkout scm
+
+                echo 'Publish Rpm: Build docker image'
+                def testEnv = dockerHelpers.build('indy-sdk', 'ci/amazon.dockerfile ci')
+
+                testEnv.inside('-u 0:0') {
+
+                    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+                    sh 'chmod -R 777 ci'
+
+                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                        sh "./ci/rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                    }
+                }
+            }
+            finally {
+                echo 'Publish RPM: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def publishLibindyDebFiles() {
+    node('ubuntu') {
+        stage('Publish DEB Files') {
+            try {
+                echo 'Publish Deb files: Checkout csm'
+                checkout scm
+
+                echo 'Publish Deb: Build docker image'
+                def testEnv = dockerHelpers.build('indy-sdk')
+
+                testEnv.inside('-u 0:0') {
+
+                    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+                    sh 'chmod -R 777 ci'
+
+                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                        sh "./ci/deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                    }
+                }
+            }
+            finally {
+                echo 'Publish Deb: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
     }
 }
