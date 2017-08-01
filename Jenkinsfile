@@ -132,9 +132,6 @@ def testPipeline(file, env_name, run_interoperability_tests, network_name) {
                 if (run_interoperability_tests) {
                     sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
                 }
-                else {
-                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
-                }
                /* TODO FIXME restore after xunit will be fixed
                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                 */
