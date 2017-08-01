@@ -175,7 +175,7 @@ impl WalletUtils {
             return Err(err);
         }
 
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let err = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
