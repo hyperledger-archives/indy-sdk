@@ -106,9 +106,8 @@ try {
     }
 }
 
-def testPipeline(file, env_name, run_interoperability_tests) {
+def testPipeline(file, env_name, run_interoperability_tests, network_name) {
     def poolInst
-    def network_name = "pool_network"
     try {
         echo "${env_name} Test: Checkout csm"
         checkout scm
@@ -171,16 +170,16 @@ def testPipeline(file, env_name, run_interoperability_tests) {
 }
 
 def testUbuntu() {
-    testPipeline("ci/ubuntu.dockerfile ci", "Ubuntu", true)
+    testPipeline("ci/ubuntu.dockerfile ci", "Ubuntu", true, "ubuntu_pool_network")
 }
 
 def testRedHat() {
-    testPipeline("ci/amazon.dockerfile ci", "RedHat", false)
+    testPipeline("ci/amazon.dockerfile ci", "RedHat", false, "red_hat_pool_network")
 }
 
 def javaTestUbuntu() {
     def poolInst
-    def network_name = "pool_network"
+    def network_name = "java_pool_network"
     try {
         echo 'Ubuntu Java Test: Checkout csm'
         checkout scm
@@ -231,7 +230,7 @@ def javaTestUbuntu() {
 
 def pythonTestUbuntu() {
     def poolInst
-    def network_name = "pool_network"
+    def network_name = "python_pool_network"
     try {
         echo 'Ubuntu Python Test: Checkout csm'
         checkout scm
@@ -291,10 +290,8 @@ def publishToCargo() {
         testEnv.inside {
             echo 'Update version'
 
-            def suffix = env.BRANCH_NAME == 'master' ? env.BUILD_NUMBER : 'devel-' + env.BUILD_NUMBER;
-
             sh 'chmod -R 777 ci'
-            sh "ci/update-package-version.sh $suffix"
+            sh "ci/update-package-version.sh $env.BUILD_NUMBER"
 
             withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
                 sh 'cargo login $SECRET'
@@ -326,7 +323,7 @@ def publishRpmFiles() {
             sh 'chmod -R 777 ci'
 
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/rpm-build-and-upload.sh $commit $evernym_repo_key"
+                sh "./ci/rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
             }
         }
     }
@@ -351,7 +348,7 @@ def publishDebFiles() {
             sh 'chmod -R 777 ci'
 
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/deb-build-and-upload.sh $commit $evernym_repo_key"
+                sh "./ci/deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
             }
         }
     }
