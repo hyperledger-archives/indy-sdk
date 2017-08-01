@@ -159,6 +159,9 @@ public enum ErrorCode {
 	 */
 	LedgerSecurityError(305),
 
+	// Attempt to create pool ledger config with name used for another existing pool
+	PoolLedgerConfigAlreadyExistsError(306),
+
 	// Crypto errors
 
 	/**
