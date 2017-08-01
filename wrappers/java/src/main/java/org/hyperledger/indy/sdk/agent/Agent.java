@@ -15,6 +15,10 @@ import com.sun.jna.Callback;
 /**
  * agent.rs API
  */
+
+/**
+ * Agent related functionality.
+ */
 public class Agent extends IndyJava.API {
 
 	private static Map<Integer, Agent.Connection> connections = new ConcurrentHashMap<Integer, Agent.Connection>();
@@ -31,6 +35,12 @@ public class Agent extends IndyJava.API {
 	private static Map<Integer, AgentObservers.MessageObserver> messageObserver = new ConcurrentHashMap<Integer, AgentObservers.MessageObserver>();
 	private static Map<Integer, AgentObservers.ConnectionObserver> connectionObservers = new ConcurrentHashMap<Integer, AgentObservers.ConnectionObserver>();
 
+	/**
+	 * Adds a message observer to track against the specified command handle.
+	 * 
+	 * @param commandHandle The command handle to track against.
+	 * @param messageObserver	The message observer to track.
+	 */
 	private static void addMessageObserver(int commandHandle, AgentObservers.MessageObserver messageObserver) {
 
 		assert(! Agent.messageObserver.containsKey(commandHandle));
@@ -38,6 +48,12 @@ public class Agent extends IndyJava.API {
 
 	}
 
+	/**
+	 * Removes a message observer from tracking.
+	 * 
+	 * @param xcommand_handle The command handle the message observer is tracked against.
+	 * @return The message observer.
+	 */
 	private static AgentObservers.MessageObserver removeMessageObserver(int xcommand_handle) {
 
 		AgentObservers.MessageObserver future = messageObserver.remove(xcommand_handle);
@@ -46,6 +62,12 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Adds a connection observer to track against the specified command handle.
+	 * 
+	 * @param commandHandle The command handle to track against.
+	 * @param connectionObserver The connection observer to track.
+	 */
 	private static void addConnectionObserver(int commandHandle, AgentObservers.ConnectionObserver connectionObserver) {
 
 		assert(! connectionObservers.containsKey(commandHandle));
@@ -53,6 +75,12 @@ public class Agent extends IndyJava.API {
 
 	}
 
+	/**
+	 * Removes a connection observer from tracking.
+	 * 
+	 * @param xcommand_handle The command handle the connection observer is tracked against.
+	 * @return The connection observer.
+	 */
 	private static AgentObservers.ConnectionObserver removeConnectionObserver(int xcommand_handle) {
 
 		AgentObservers.ConnectionObserver future = connectionObservers.remove(xcommand_handle);
@@ -65,6 +93,9 @@ public class Agent extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
+	/**
+	 * Callback used when an outgoing connection is established.
+	 */
 	private static Callback agentConnectConnectionCb = new Callback() {
 
 		@SuppressWarnings("unused")
@@ -83,6 +114,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when am outgoing connection receives a message.
+	 */
 	private static Callback agentConnectMessageCb = new Callback() {
 
 		@SuppressWarnings("unused")
@@ -98,6 +132,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when a listener is ready to accept connections.
+	 */
 	private static Callback agentListenListenerCb = new Callback() {
 
 		@SuppressWarnings("unused")
@@ -116,6 +153,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when a listener receives an incoming connection.
+	 */
 	private static Callback agentListenConnectionCb = new Callback() {
 
 		@SuppressWarnings("unused")
@@ -135,6 +175,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when a listener connection receives a message.
+	 */
 	private static Callback agentListenMessageCb = new Callback() {
 
 		@SuppressWarnings("unused")
@@ -150,6 +193,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when an identity is added to a listener.
+	 */
 	private static Callback agentAddIdentityCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -162,6 +208,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when an identity is removed from a listener.
+	 */
 	private static Callback agentRemoveIdentityCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -174,6 +223,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when a message is sent.
+	 */
 	private static Callback agentSendCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -186,6 +238,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when a connection is closed.
+	 */
 	private static Callback agentCloseConnectionCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -198,6 +253,9 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when a listener is closed.
+	 */
 	private static Callback agentCloseListenerCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -214,6 +272,17 @@ public class Agent extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
+	/**
+	 * Establishes an outgoing connection.
+	 * 
+	 * @param pool The pool.
+	 * @param wallet The wallet.
+	 * @param senderDid The sender DID.
+	 * @param receiverDid The receiver DID.
+	 * @param messageObserver The message observer that will be notified when a message is received on the connection.
+	 * @return A future that resolves to a Connection.
+	 * @throws IndyException Thrown if a failure occurs when calling the SDK.
+	 */
 	public static CompletableFuture<Connection> agentConnect(
 			Pool pool,
 			Wallet wallet,
@@ -242,6 +311,14 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Starts a listener that listens for incoming connections.
+	 * 
+	 * @param endpoint The endpoint on which the listener should listen for connections.
+	 * @param connectionObserver An observer that will be notified when new incoming connections are established.
+	 * @return A future that resolves to a listener.
+	 * @throws IndyException Thrown if an error occurs when calling the SDK.
+	 */
 	public static CompletableFuture<Listener> agentListen(
 			String endpoint,
 			AgentObservers.ConnectionObserver connectionObserver) throws IndyException {
@@ -262,6 +339,16 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Adds an identity to the specified listener.
+	 * 
+	 * @param listener The listener to add the identity to.
+	 * @param pool The pool.
+	 * @param wallet The wallet.
+	 * @param did The DID of the identity to add.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 */
 	public static CompletableFuture<Void> agentAddIdentity(
 			Agent.Listener listener,
 			Pool pool,
@@ -288,6 +375,15 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Removes an identity from the specified listener.
+	 * 
+	 * @param listener The listener to remove the identity from.
+	 * @param wallet The wallet.
+	 * @param did The DID of the identity to remove.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 */
 	public static CompletableFuture<Void> agentRemoveIdentity(
 			Agent.Listener listener,
 			Wallet wallet,
@@ -311,6 +407,14 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Sends a message to the specified connection.
+	 * 
+	 * @param connection The connection to send the message to.
+	 * @param message The message to send.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 */
 	public static CompletableFuture<Void> agentSend(
 			Agent.Connection connection,
 			String message) throws IndyException {
@@ -331,6 +435,13 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Closes the provided connection.
+	 * 
+	 * @param connection The connection to close. 
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 */
 	public static CompletableFuture<Void> agentCloseConnection(
 			Agent.Connection connection) throws IndyException {
 
@@ -351,6 +462,13 @@ public class Agent extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Closes the specified listener.
+	 * 
+	 * @param listener The listener to close.
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 */
 	public static CompletableFuture<Void> agentCloseListener(
 			Agent.Listener listener) throws IndyException {
 
@@ -375,6 +493,9 @@ public class Agent extends IndyJava.API {
 	 * NESTED CLASSES WITH INSTANCE METHODS
 	 */
 
+	/**
+	 * Listens for incoming connections.
+	 */
 	public static class Listener {
 
 		private final int listenerHandle;
@@ -385,27 +506,58 @@ public class Agent extends IndyJava.API {
 			this.listenerHandle = listenerHandle;
 		}
 
+		/**
+		 * Gets the handle of the listener.
+		 * 
+		 * @return The handle of the listener.
+		 */
 		public int getListenerHandle() {
 
 			return this.listenerHandle;
 		}
 
+		/**
+		 * Adds an identity to the listener.
+		 * 
+		 * @param pool The pool.
+		 * @param wallet The wallet.
+		 * @param did The DID of the identity to add.
+		 * @return A future that does not resolve a value.
+		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 */
 		public CompletableFuture<Void> agentAddIdentity(Pool pool, Wallet wallet, String did) throws IndyException {
 
 			return Agent.agentAddIdentity(this, pool, wallet, did);
 		}
 
+		/**
+		 * Removes an identity from the listener.
+		 * 
+		 * @param wallet The wallet.
+		 * @param did The DID of the identity to remove.
+		 * @return A future that does not resolve a value.
+		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 */
 		public CompletableFuture<Void> agentRemoveIdentity(Wallet wallet, String did) throws IndyException {
 
 			return Agent.agentRemoveIdentity(this, wallet, did);
 		}
 
+		/**
+		 * Closes the listener.
+		 * 
+		 * @return A future that does not resolve a value.
+		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 */
 		public CompletableFuture<Void> agentCloseListener() throws IndyException {
 
 			return Agent.agentCloseListener(this);
 		}
 	}
 
+	/**
+	 * A connection between two agents.
+	 */
 	public static class Connection {
 
 		private final int connectionHandle;
@@ -416,16 +568,34 @@ public class Agent extends IndyJava.API {
 			this.connectionHandle = connectionHandle;
 		}
 
+		/**
+		 * Gets the handle of the connection.
+		 * 
+		 * @return The handle of the connection.
+		 */
 		public int getConnectionHandle() {
 
 			return this.connectionHandle;
 		}
 
+		/**
+		 * Sends a message on the connection.
+		 * 
+		 * @param message The message to send.
+		 * @return A future that does not resolve a value.
+		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 */
 		public CompletableFuture<Void> agentSend(String message) throws IndyException {
 
 			return Agent.agentSend(this, message);
 		}
 
+		/**
+		 * Closes the connection.
+		 * 
+		 * @return A future that does not resolve a value.
+		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 */
 		public CompletableFuture<Void> agentCloseConnection() throws IndyException {
 
 			return Agent.agentCloseConnection(this);
