@@ -39,9 +39,9 @@ def publishing(){
 def notifyingSuccess(){
     if (env.BRANCH_NAME == 'master') {
         currentBuild.result = "SUCCESS"
-            node('ubuntu-master') {
-                sendNotification.success('indy-sdk')
-            }
+        node('ubuntu-master') {
+            sendNotification.success('indy-sdk')
+        }
     }
 }
 
@@ -218,7 +218,7 @@ def publishingLibindyToCargo() {
                     echo 'Update version'
 
                     sh 'chmod -R 777 ci'
-                    sh "ci/update-package-version.sh $env.BUILD_NUMBER"
+                    sh "ci/libindy-update-package-version.sh $env.BUILD_NUMBER"
 
                     withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
                         sh 'cargo login $SECRET'
@@ -254,7 +254,7 @@ def publishingLibindyRpmFiles() {
                     sh 'chmod -R 777 ci'
 
                     withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                        sh "./ci/libindy-rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
                     }
                 }
             }
@@ -283,7 +283,7 @@ def publishLibindyDebFiles() {
                     sh 'chmod -R 777 ci'
 
                     withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                        sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
                     }
                 }
             }
