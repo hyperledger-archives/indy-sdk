@@ -7,7 +7,7 @@ from indy import signus, agent
 
 @pytest.fixture
 async def endpoint():
-    return "127.0.0.1:9701"
+    return "127.0.0.1:9700"
 
 
 @pytest.fixture

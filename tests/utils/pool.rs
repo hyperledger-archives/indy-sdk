@@ -8,22 +8,109 @@ use indy::api::ledger::indy_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
+use utils::json::JsonEncodable;
 use utils::timeout::TimeoutUtils;
+
 
 use std::fs;
 use std::ffi::CString;
 use std::io::Write;
 #[cfg(feature = "local_nodes_pool")]
 use std::ptr::null;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
+
+#[derive(Serialize, Deserialize)]
+struct PoolConfig {
+    pub genesis_txn: String
+}
+
+impl JsonEncodable for PoolConfig {}
 
 pub struct PoolUtils {}
 
 impl PoolUtils {
-    pub fn create_pool_ledger_config(pool_name: &str, nodes: Option<String>, pool_config: Option<String>, gen_txn_file_name: Option<&str>) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
+    pub fn create_genesis_txn_file(pool_name: &str,
+                                   txn_file_data: &str,
+                                   txn_file_path: Option<&Path>) -> PathBuf {
+        let txn_file_path = txn_file_path.map_or(
+            EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str()),
+            |path| path.to_path_buf());
 
+        if !txn_file_path.parent().unwrap().exists() {
+            fs::DirBuilder::new()
+                .recursive(true)
+                .create(txn_file_path.parent().unwrap()).unwrap();
+        }
+
+        let mut f = fs::File::create(txn_file_path.as_path()).unwrap();
+        f.write_all(txn_file_data.as_bytes()).unwrap();
+        f.flush().unwrap();
+        f.sync_all().unwrap();
+
+        txn_file_path
+    }
+
+    pub fn create_genesis_txn_file_for_test_pool(pool_name: &str,
+                                                 nodes_count: Option<u8>,
+                                                 txn_file_path: Option<&Path>) -> PathBuf {
+        let nodes_count = nodes_count.unwrap_or(4);
+        assert!(nodes_count > 0 && nodes_count <= 4);
+
+        let test_pool_ip = EnvironmentUtils::test_pool_ip();
+
+        let node_txns = vec![
+            format!("{{\"data\":{{\"alias\":\"Node1\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"alias\":\"Node2\",\"client_ip\":\"{}\",\"client_port\":9704,\"node_ip\":\"{}\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]}},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"alias\":\"Node3\",\"client_ip\":\"{}\",\"client_port\":9706,\"node_ip\":\"{}\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]}},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"alias\":\"Node4\",\"client_ip\":\"{}\",\"client_port\":9708,\"node_ip\":\"{}\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]}},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip)];
+
+        let txn_file_data = node_txns[0..(nodes_count as usize)].join("\n");
+
+        error!("--> {} {} {} {:?}", pool_name, nodes_count, txn_file_data, txn_file_path);
+
+        PoolUtils::create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
+    }
+
+    pub fn create_genesis_txn_file_for_test_pool_with_invalid_nodes(pool_name: &str,
+                                                                    txn_file_path: Option<&Path>) -> PathBuf {
+        let test_pool_ip = EnvironmentUtils::test_pool_ip();
+
+        let node_txns = vec![
+            format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9704,\"node_ip\":\"{}\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]}},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9706,\"node_ip\":\"{}\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]}},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9708,\"node_ip\":\"{}\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]}},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip)];
+
+        let txn_file_data = node_txns.join("\n");
+        PoolUtils::create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
+    }
+
+    pub fn create_genesis_txn_file_for_test_pool_with_wrong_alias(pool_name: &str,
+                                                                  txn_file_path: Option<&Path>) -> PathBuf {
+        let test_pool_ip = EnvironmentUtils::test_pool_ip();
+
+        let node_txns = vec![
+            format!("{{\"data\":{{\"alias\":\"Node1\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"alias\":\"Node2\",\"client_ip\":\"{}\",\"client_port\":9704,\"node_ip\":\"{}\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]}},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"alias\":\"Node3\",\"client_ip\":\"{}\",\"client_port\":9706,\"node_ip\":\"{}\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]}},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("{{\"data\":{{\"alias\":\"ALIAS_NODE\",\"client_ip\":\"{}\",\"client_port\":9708,\"node_ip\":\"{}\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]}},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip)];
+
+        let txn_file_data = node_txns.join("\n");
+        PoolUtils::create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
+    }
+
+    // Note that to be config valid it assumes genesis txt file is already exists
+    pub fn pool_config_json(txn_file_path: &Path) -> String {
+        PoolConfig {
+            genesis_txn: txn_file_path.to_string_lossy().to_string()
+        }
+            .to_json()
+            .unwrap()
+    }
+
+    pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
             sender.send(err).unwrap();
@@ -31,15 +118,13 @@ impl PoolUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
-        PoolUtils::create_genesis_txn_file(gen_txn_file_name.unwrap_or(format!("{}.txn", pool_name).as_str()), nodes);
-        let pool_config = pool_config.unwrap_or(PoolUtils::create_default_pool_config(pool_name));
-        let pool_config = CString::new(pool_config).unwrap();
         let pool_name = CString::new(pool_name).unwrap();
+        let pool_config_str = pool_config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_create_pool_ledger_config(command_handle,
-                                                   pool_name.as_ptr(),
-                                                   pool_config.as_ptr(),
-                                                   cb);
+                                                 pool_name.as_ptr(),
+                                                 if pool_config.is_some() { pool_config_str.as_ptr() } else { null() },
+                                                 cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -69,15 +154,15 @@ impl PoolUtils {
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_open_pool_ledger(command_handle,
-                                          pool_name.as_ptr(),
-                                          if config.is_some() { config_str.as_ptr() } else { null() },
-                                          cb);
+                                        pool_name.as_ptr(),
+                                        if config.is_some() { config_str.as_ptr() } else { null() },
+                                        cb);
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        let (err, pool_handle) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, pool_handle) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -86,8 +171,10 @@ impl PoolUtils {
         Ok(pool_handle)
     }
 
-    pub fn create_and_open_pool_ledger_config(pool_name: &str) -> Result<i32, ErrorCode> {
-        PoolUtils::create_pool_ledger_config(pool_name, None, None, None)?;
+    pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+        let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+        let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+        PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str()))?;
         PoolUtils::open_pool_ledger(pool_name, None)
     }
 
@@ -130,7 +217,9 @@ impl PoolUtils {
         let (cmd_id, cb) = CallbackUtils::closure_to_delete_pool_ledger_config_cb(Box::new(
             move |res| sender.send(res).unwrap()));
 
-        let res = indy_delete_pool_ledger_config(cmd_id, CString::new(pool_name).unwrap().as_ptr(), cb);
+        let pool_name = CString::new(pool_name).unwrap();
+
+        let res = indy_delete_pool_ledger_config(cmd_id, pool_name.as_ptr(), cb);
         if res != ErrorCode::Success {
             return Err(res)
         }
@@ -150,9 +239,9 @@ impl PoolUtils {
         let (command_handle, callback) = CallbackUtils::closure_to_send_tx_cb(cb_send);
 
         let err = indy_submit_request(command_handle,
-                                        pool_handle,
-                                        req.as_ptr(),
-                                        callback);
+                                      pool_handle,
+                                      req.as_ptr(),
+                                      callback);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -165,35 +254,6 @@ impl PoolUtils {
         }
 
         Ok(resp)
-    }
-
-    pub fn create_genesis_txn_file(txn_file_name: &str, predefined_data: Option<String>) -> PathBuf {
-        let path = EnvironmentUtils::tmp_file_path(txn_file_name);
-
-        if !path.parent().unwrap().exists() {
-            fs::DirBuilder::new()
-                .recursive(true)
-                .create(path.parent().unwrap()).unwrap();
-        }
-
-        let mut f = fs::File::create(path.clone()).unwrap();
-        let data = format!("{}\n{}\n{}\n{}\n",
-                           "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"10.0.0.2\",\"client_port\":9702,\"node_ip\":\"10.0.0.2\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
-                           "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"10.0.0.2\",\"client_port\":9704,\"node_ip\":\"10.0.0.2\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
-                           "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"10.0.0.2\",\"client_port\":9706,\"node_ip\":\"10.0.0.2\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
-                           "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"10.0.0.2\",\"client_port\":9708,\"node_ip\":\"10.0.0.2\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
-
-        let data = predefined_data.unwrap_or(data);
-
-        f.write_all(data.as_bytes()).unwrap();
-        f.flush().unwrap();
-        f.sync_all().unwrap();
-        path
-    }
-
-    pub fn create_default_pool_config(pool_name: &str) -> String {
-        let txn_file_path = EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str());
-        format!("{{\"genesis_txn\": \"{}\"}}", txn_file_path.to_string_lossy())
     }
 
     pub fn get_req_id() -> u64 {
