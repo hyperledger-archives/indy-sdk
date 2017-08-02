@@ -249,6 +249,18 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_delete_pool_ledger_config_works_for_closed() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "indy_delete_pool_ledger_config_works_for_closed";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+            PoolUtils::delete(pool_name).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 }
 
@@ -362,6 +374,72 @@ mod medium_cases {
 
             let res = PoolUtils::open_pool_ledger(name, Some(config));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod close {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_close_pool_ledger_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "indy_close_pool_ledger_works_for_invalid_handle";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+
+            let pool_handle = pool_handle + 1;
+            let res = PoolUtils::close(pool_handle);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod delete {
+        use super::*;
+
+        #[test]
+        fn indy_delete_pool_ledger_config_works_for_not_created() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "indy_delete_pool_ledger_config_works_for_invalid_name";
+            let res = PoolUtils::delete(pool_name);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_delete_pool_ledger_config_works_for_twice() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "indy_delete_pool_ledger_config_works_for_twice";
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+            PoolUtils::delete(pool_name).unwrap();
+            let res = PoolUtils::delete(pool_name);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod refresh {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_refresh_pool_ledger_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("indy_refresh_pool_ledger_works_for_invalid_handle").unwrap();
+
+            let pool_handle = pool_handle + 1;
+            let res = PoolUtils::refresh(pool_handle);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             TestUtils::cleanup_storage();
         }
