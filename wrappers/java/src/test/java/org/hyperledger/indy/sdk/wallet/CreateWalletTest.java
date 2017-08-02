@@ -18,12 +18,8 @@ public class CreateWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreateWalletWorksForPlugged() throws Exception {
-		WalletTypeInmem.getInstance().clear();
-
-		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance(), false).get();
+		Wallet.registerWalletType("inmem", new InMemWalletType(), false).get();
 		Wallet.createWallet("default", "createWalletWorks", "default", null, null).get();
-
-		WalletTypeInmem.getInstance().clear();
 	}
 
 	@Test
