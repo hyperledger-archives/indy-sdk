@@ -330,7 +330,7 @@ def publishingPythonWrapperDebFiles() {
                dir('wrappers/python'){
 
                    echo 'Publish Python Wrapper Deb: Build docker image'
-                   def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
+                   def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
                    testEnv.inside('-u 0:0') {
                        sh 'chmod -R 777 ci'
@@ -357,7 +357,7 @@ def publishingPythonWrapperToPipy() {
                checkout scm
 
                echo 'Publish Deb: Build docker image'
-               def testEnv = dockerHelpers.build(name, 'ci/python.dockerfile ci')
+               def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
                testEnv.inside('-u 0:0') {
 
