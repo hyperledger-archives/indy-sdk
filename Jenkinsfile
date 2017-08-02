@@ -89,7 +89,7 @@ def testPipeline(file, env_name, run_interoperability_tests) {
         sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
         echo "${env_name} Test: Build docker image for nodes pool"
-        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci')
+        def poolEnv = dockerHelpers.build('indy_pool', 'ci/indy-pool.dockerfile ci', '--build-arg pool_ip=10.0.0.2')
         echo "${env_name} Test: Run nodes pool"
         poolInst = poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 
@@ -103,10 +103,10 @@ def testPipeline(file, env_name, run_interoperability_tests) {
 
            try {
                 if (run_interoperability_tests) {
-                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test --features "interoperability_tests"'
+                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "interoperability_tests"'
                 }
                 else {
-                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 cargo test'
+                    sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
                 }
                /* TODO FIXME restore after xunit will be fixed
                sh 'RUST_TEST_THREADS=1 cargo test-xunit'
