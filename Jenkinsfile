@@ -14,9 +14,9 @@ def testing(){
     stage('Testing') {
          parallel([
              'libindy-ubuntu-test': { libindyUbuntuTesting() },
-             'libindy-redhat-test': { libindyRedHatTesting() },
-             'java-ubuntu-test': { javaUbuntuTesting() },
-             'python-ubuntu-test': { pythonUbuntuTesting() }
+             'libindy-redhat-test': { libindyRedHatTesting() }, 
+             'java-ubuntu-test': { javaWrapperUbuntuTesting() }, 
+             'python-ubuntu-test': { pythonWrapperUbuntuTesting() }  
          ])
     }
 }
@@ -91,9 +91,11 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        poolInst = openPool(env_name, network_name)
+        sh "cp -r ci libindy"
 
         dir('libindy'){
+            poolInst = openPool(env_name, network_name)
+
             echo "${env_name} Test: Build docker image"
             def testEnv = dockerHelpers.build('libindy', file)
 
@@ -142,7 +144,7 @@ def libindyRedHatTesting() {
     }
 }
 
-def javaUbuntuTesting() {
+def javaWrapperUbuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Java Test') {
             def poolInst
@@ -153,18 +155,19 @@ def javaUbuntuTesting() {
                 echo "${env_name} Test: Checkout csm"
                 checkout scm
 
-                poolInst = openPool("Ubuntu Java", network_name)
+                sh "cp -r ci wrappers/java"
 
-                echo "${env_name} Test: Build docker image"
-                def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
+                dir('wrappers/java'){
+                    poolInst = openPool("Ubuntu Java", network_name)
 
-                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                    echo "${env_name} Test: Test"
+                    echo "${env_name} Test: Build docker image"
+                    def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
 
-                    sh '''
-                        cd wrappers/java
-                        mvn clean test
-                    '''
+                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                        echo "${env_name} Test: Test"
+
+                        sh "mvn clean test"
+                    }
                 }
             }
             finally {
@@ -174,7 +177,7 @@ def javaUbuntuTesting() {
     }
 }
 
-def pythonUbuntuTesting() {
+def pythonWrapperUbuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Python Test') {
             def poolInst
@@ -184,19 +187,23 @@ def pythonUbuntuTesting() {
                 echo "${env_name} Test: Checkout csm"
                 checkout scm
 
-                poolInst = openPool(env_name, network_name)
+                sh "cp -r ci wrappers/python"
 
-                echo "${env_name} Test: Build docker image"
-                def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+                dir('wrappers/python'){
 
-                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                    echo "${env_name} Test: Test"
+                    poolInst = openPool(env_name, network_name)
 
-                    sh '''
-                        cd wrappers/python
-                        python3.6 -m pip install -e .
-                        python3.6 -m pytest
-                    '''
+                    echo "${env_name} Test: Build docker image"
+                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+
+                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                        echo "${env_name} Test: Test"
+
+                        sh '''
+                            python3.6 -m pip install -e .
+                            python3.6 -m pytest
+                        '''
+                    }
                 }
             }
             finally {
@@ -213,22 +220,26 @@ def publishingLibindyToCargo() {
                 echo 'Publish to Cargo: Checkout csm'
                 checkout scm
 
-                echo 'Publish to Cargo: Build docker image'
-                def testEnv = dockerHelpers.build('indy-sdk')
+                sh "cp -r ci libindy"
 
-                testEnv.inside {
-                    echo 'Update version'
+                dir('libindy'){
+                    echo 'Publish to Cargo: Build docker image'
+                    def testEnv = dockerHelpers.build('indy-sdk')
 
-                    sh 'chmod -R 777 ci'
-                    sh "ci/libindy-update-package-version.sh $env.BUILD_NUMBER"
+                    testEnv.inside {
+                        echo 'Update version'
 
-                    withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
-                        sh 'cargo login $SECRET'
+                        sh 'chmod -R 777 ci'
+                        sh "ci/libindy-update-package-version.sh $env.BUILD_NUMBER"
+
+                        withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
+                            sh 'cargo login $SECRET'
+                        }
+
+                        sh 'cargo package --allow-dirty'
+
+                        sh 'cargo publish --allow-dirty'
                     }
-
-                    sh 'cargo package --allow-dirty'
-
-                    sh 'cargo publish --allow-dirty'
                 }
             }
             finally {
@@ -246,17 +257,21 @@ def publishingLibindyRpmFiles() {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
 
-                echo 'Publish Rpm: Build docker image'
-                def testEnv = dockerHelpers.build('indy-sdk', 'ci/amazon.dockerfile ci')
+                sh "cp -r ci libindy"
 
-                testEnv.inside('-u 0:0') {
+                dir('libindy'){
+                    echo 'Publish Rpm: Build docker image'
+                    def testEnv = dockerHelpers.build('indy-sdk', 'ci/amazon.dockerfile ci')
 
-                    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                    testEnv.inside('-u 0:0') {
 
-                    sh 'chmod -R 777 ci'
+                        commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
-                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/libindy-rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                        sh 'chmod -R 777 ci'
+
+                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                            sh "./ci/libindy-rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                        }
                     }
                 }
             }
@@ -275,17 +290,21 @@ def publishLibindyDebFiles() {
                 echo 'Publish Deb files: Checkout csm'
                 checkout scm
 
-                echo 'Publish Deb: Build docker image'
-                def testEnv = dockerHelpers.build('indy-sdk')
+                sh "cp -r ci libindy"
 
-                testEnv.inside('-u 0:0') {
+                dir('libindy'){
+                    echo 'Publish Deb: Build docker image'
+                    def testEnv = dockerHelpers.build('indy-sdk')
 
-                    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                    testEnv.inside('-u 0:0') {
 
-                    sh 'chmod -R 777 ci'
+                        commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
-                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                        sh 'chmod -R 777 ci'
+
+                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                            sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                        }
                     }
                 }
             }
