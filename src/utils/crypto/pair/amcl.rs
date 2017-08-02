@@ -31,12 +31,12 @@ use self::serde::de::{Deserialize, Deserializer, Visitor, Error as DError};
 use std::fmt;
 
 fn random_mod_order() -> Result<BIG, CommonError> {
-    let mut seed = vec![0; MODBYTES*2];
+    let mut seed = vec![0; MODBYTES];
     let mut os_rng = OsRng::new().unwrap();
     os_rng.fill_bytes(&mut seed.as_mut_slice());
     let mut rng = RAND::new();
     rng.clean();
-    rng.seed(MODBYTES*2, &seed);
+    rng.seed(MODBYTES, &seed);
     Ok(BIG::randomnum(&BIG::new_ints(&CURVE_ORDER), &mut rng))
 }
 
@@ -362,7 +362,7 @@ impl GroupOrderElement {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
         let mut bn = self.bn;
-        let mut vec: [u8; MODBYTES*2] = [0; MODBYTES*2];
+        let mut vec: [u8; MODBYTES] = [0; MODBYTES];
         bn.tobytes(&mut vec);
         Ok(vec.to_vec())
     }
@@ -370,8 +370,8 @@ impl GroupOrderElement {
     pub fn from_bytes(b: &[u8]) -> Result<GroupOrderElement, CommonError> {
         let mut vec = b.to_vec();
         let len = vec.len();
-        if len < MODBYTES*2 {
-            let diff = MODBYTES*2 - len;
+        if len < MODBYTES {
+            let diff = MODBYTES - len;
             let mut result = vec![0; diff];
             result.append(&mut vec);
             return Ok(
@@ -547,6 +547,14 @@ mod tests {
     #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct TestPairStructure {
         field: Pair
+    }
+
+    #[test]
+    fn from_bytes_to_bytes_works_for_group_order_element() {
+        let vec = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 221, 243, 243, 0, 77, 170, 65, 179, 245, 119, 182, 251, 185, 78, 98, 172, 55, 2, 233, 88, 37, 108, 222, 13, 114, 25, 200, 43, 193, 165, 197];
+        let bytes = GroupOrderElement::from_bytes(&vec).unwrap();
+        let result = bytes.to_bytes().unwrap();
+        assert_eq!(vec, result);
     }
 
     #[test]

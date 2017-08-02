@@ -488,6 +488,7 @@ impl JsonEncodable for NonRevocProofXList {}
 
 impl<'a> JsonDecodable<'a> for NonRevocProofXList {}
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NonRevocProofTauList {
     pub t1: PointG1,
     pub t2: PointG1,

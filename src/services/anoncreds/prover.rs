@@ -1052,6 +1052,50 @@ mod tests {
         assert_eq!("2909377521678119520977157959638852346549039931868195250658890196374980817755318676413066648981533034386605143040798380729872705956567376032225961933326117009011908374020093877002895162468521578763395678346621437225972600951965633549602979234732083149655058280123465723210167346545435946648092301500495871307611941306714133444462666462818882418100633983906555894992078138873969482714430788917034883079579778040749973092160959984323579215740942468398437958324399647532773947797685551797171537348210954088256282790659454179075257593928991997283548069103317735700818358235857780570873678690413979416837309542554490385517111819905278234351454124245103700468051202549165577210724696681231918320110736784038063606140146272860", proof.r.get("DELTA").unwrap().to_dec().unwrap());
         assert_eq!("44263308381149662900948673540609137605123483577985225626015193605421446490850432944403510911593807877995566074607735765400382861784877744789798777017960357051684400364048124004882741408393303775593487691064638002920853960645913535484864749193831701910596138125770720981871270085109534802728387292108961395671973015447681340852592012638839948998301809908713998541365956149792695654874324699264455657573099688614830144400409479952124271239106111005380360397720399778640177093636911827538708829123941248898780310301607124559838851222069991204870155414077086348071171421803569856093007812236846764361931252088960485440158830117131468627609450498244887243402854104282374544935516477360120294987311548247220633388905908551822949252630925854555366381978721601629564425954576926076828495554017163967076851067453147787769115012365426065129174495136", proof.alpha.to_dec().unwrap());
     }
+
+    #[test]
+    fn test_c_and_tau_list() {
+        let issuer = Issuer::new();
+        let prover = Prover::new();
+
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
+            issuer::mocks::ISSUER_DID, issuer::mocks::get_gvt_schema(), None, true).unwrap();
+
+        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            5, issuer::mocks::ISSUER_DID, 1).unwrap();
+
+        let master_secret = prover.generate_master_secret().unwrap();
+
+        let (claim_request, claim_init_data, revocation_claim_init_data) = prover.create_claim_request(
+            claim_definition.clone().unwrap().data.public_key,
+            claim_definition.clone().unwrap().data.public_key_revocation,
+            master_secret, mocks::PROVER_DID).unwrap();
+
+        let revocation_registry_ref_cell = RefCell::new(revocation_registry.clone());
+
+        let claim_signature = issuer.create_claim(
+            &claim_definition, &claim_definition_private, &Some(revocation_registry_ref_cell),
+            &Some(revocation_registry_private), &claim_request,
+            &issuer::mocks::get_gvt_attributes(), None).unwrap();
+
+        let non_revocation_claim = claim_signature.clone().unwrap().non_revocation_claim.unwrap();
+        let c_list_params = Prover::_gen_c_list_params(&non_revocation_claim).unwrap();
+        println!("c_list: {:?}", c_list_params);
+        let proof_c_list = Prover::_create_c_list_values(
+            &non_revocation_claim, &c_list_params,
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()).unwrap();
+        println!("proof_c_list: {:?}", proof_c_list);
+        let proof_tau_list = Issuer::_create_tau_list_values(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            &revocation_registry.clone().accumulator, &c_list_params, &proof_c_list).unwrap();
+        println!("proof_tau_list: {:?}", proof_tau_list);
+        let proof_tau_list_calc = Issuer::_create_tau_list_expected_values(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            &revocation_registry.clone().accumulator, &revocation_registry.clone().acc_pk,
+            &proof_c_list).unwrap();
+        println!("proof_tau_list_calc: {:?}", proof_tau_list_calc);
+    }
 }
 
 #[cfg(test)]
