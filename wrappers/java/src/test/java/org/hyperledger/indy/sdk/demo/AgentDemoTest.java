@@ -15,12 +15,18 @@ import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 
 public class AgentDemoTest extends IndyIntegrationTest {
+
+	@Rule
+	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
 	@Test
 	public void testAgentDemo() throws Exception {

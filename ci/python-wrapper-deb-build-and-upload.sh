@@ -9,7 +9,7 @@ number="$2"
 
 mkdir /home/indy/debs
 
-version=$(grep -Po "(?<=version=')([0-9]|\.)*" wrappers/python/setup.py)
+version=$(grep -Po "(?<=version=')([0-9]|\.)*" setup.py)
 
 [ -z $key ] && exit 1
 [ -z $version ] && exit 2
@@ -31,7 +31,7 @@ in the INDY project instead...). Also, join us on Jira's Rocket.Chat at #indy-sd
     --exclude "*.pyo" \
     --maintainer "Hyperledger <hyperledger-indy@lists.hyperledger.org>" \
     --package "/home/indy/debs" \
-    "wrappers/python"
+    .
 
 echo "Uploading...."
 

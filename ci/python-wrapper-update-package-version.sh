@@ -6,6 +6,4 @@ fi
 
 suffix="$1"
 
-cd wrappers/python
-
-sed -i -E "s/version='([0-9,.]+).*/version='\1-$suffix',/" setup.py
+sed -i -E "s/version='([0-9,.]+).*/version='\1-$suffix',/" wrappers/python/setup.py

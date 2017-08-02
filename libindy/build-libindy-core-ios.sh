@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh 
 
 export PKG_CONFIG_ALLOW_CROSS=1
 export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
@@ -45,3 +45,4 @@ EOF
 
 echo "Cleanup temporary directory: $WORK_DIR"
 rm -rf "$WORK_DIR"
+
