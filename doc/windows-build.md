@@ -68,7 +68,7 @@ Checkout https://github.com/evernym/libzmq-pw repository.
 
 ## openssl-sys workaround
 
-When your windows build fails complaining on gdi32.lib you should edit
+If your windows build fails complaining on gdi32.lib you should edit
 
 ```
   ~/.cargo/registry/src/github.com-*/openssl-sys-*/build.rs
@@ -83,3 +83,24 @@ and add
 to the end of main() function.
 
 Then try to rebuild whole project.
+
+## Run integration tests
+
+* Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
+ 
+  ```     
+  docker build -f ci/indy-pool.dockerfile -t indy_pool .
+  docker run -itd -p 9701-9709:9701-9709 indy_pool
+  ```          
+ 
+  Please note that this port mapping between container and local host requires
+  latest Docker for Windows (linux containers) and windows system with Hyper-V support.
+  
+  If you use some Docker distribution based on Virtual Box you can use Virtual Box's 
+  port forwarding future to map 9701-9709 container ports to local 9701-9709 ports.
+ 
+* Run tests
+  
+  ```
+  RUST_TEST_THREADS=1 cargo test
+  ```
