@@ -1,24 +1,14 @@
 from indy.anoncreds import verifier_verify_proof
 from indy.error import ErrorCode, IndyError
 
-from tests.utils import storage, anoncreds
+from tests.utils import anoncreds
 
 import json
 import pytest
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture(autouse=True)
-def before_after_each():
-    storage.cleanup()
-    yield
-    storage.cleanup()
 
 
 @pytest.mark.asyncio
-async def test_verifier_verify_proof_works_for_correct_proof():
+async def test_verifier_verify_proof_works_for_correct_proof(cleanup_storage):
     proof_req = anoncreds.get_proof_req()
     claim_def = anoncreds.get_claim_def()
 
@@ -171,7 +161,7 @@ async def test_verifier_verify_proof_works_for_correct_proof():
 
 
 @pytest.mark.asyncio
-async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_request():
+async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_request(cleanup_storage):
     proof_req = anoncreds.get_proof_req(180)
     claim_def = anoncreds.get_claim_def()
 
@@ -319,7 +309,7 @@ async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_requ
 
 
 @pytest.mark.asyncio
-async def test_verifier_verify_proof_works_for_wrong_proof():
+async def test_verifier_verify_proof_works_for_wrong_proof(cleanup_storage):
     proof_req = anoncreds.get_proof_req()
     claim_def = anoncreds.get_claim_def()
 

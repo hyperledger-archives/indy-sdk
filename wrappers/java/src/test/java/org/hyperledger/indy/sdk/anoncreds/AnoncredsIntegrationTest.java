@@ -15,7 +15,7 @@ public class AnoncredsIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	static Wallet wallet;
 	static String claimDef;
@@ -62,7 +62,7 @@ public class AnoncredsIntegrationTest {
 
 		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
 
-		String claimRequest = Anoncreds.proverCreateClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
 
 		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +

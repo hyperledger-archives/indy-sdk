@@ -27,7 +27,7 @@ import static org.junit.Assert.assertNotNull;
 public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	private Pool pool;
 	private Wallet issuerWallet;
@@ -99,7 +99,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//8. Prover create ClaimReq
 		String proverDid = "BzfFCYk";
-		String claimReq = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
+		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
 		assertNotNull(claimReq);
 
 		//9. Issuer create Claim
@@ -236,7 +236,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//8. Prover create ClaimReq for GVT Claim Offer
 		String proverDid = "BzfFCYk";
-		String gvtClaimReq = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
+		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
 
 		//9. Issuer create Claim
 		String gvtClaimAttributesJson = "{\n" +
@@ -253,7 +253,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson).get();
 
 		//11. Prover create ClaimReq for GVT Claim Offer
-		String xyzClaimReq = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
+		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
 
 		//12. Issuer create Claim
 		String xyzClaimAttributesJson = "{\n" +
@@ -389,7 +389,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//7. Prover create ClaimReq for GVT Claim Offer
 		String proverDid = "BzfFCYk";
-		String gvtClaimReq = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
+		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
 
 		//8. Issuer create Claim
 		String gvtClaimAttributesJson = "{\n" +
@@ -406,7 +406,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson).get();
 
 		//10. Prover create ClaimReq for GVT Claim Offer
-		String xyzClaimReq = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
+		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
 
 		//11. Issuer create Claim
 		String xyzClaimAttributesJson = "{\n" +
@@ -514,7 +514,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//5. Prover create ClaimReq
 		String proverDid = "BzfFCYk";
-		String claimReq = Anoncreds.proverCreateClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
+		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
 		assertNotNull(claimReq);
 
 		//6. Issuer create Claim

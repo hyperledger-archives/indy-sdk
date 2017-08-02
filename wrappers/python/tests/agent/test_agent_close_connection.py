@@ -13,12 +13,9 @@ async def test_agent_close_connection_works_for_outgoing(listener_with_identity)
 
     await agent.agent_close_connection(connection_handle)
 
-    try:
+    with pytest.raises(IndyError) as e:
         await agent.agent_send(connection_handle, "msg")
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.CommonInvalidStructure)) == type(e) \
-               and IndyError(ErrorCode.CommonInvalidStructure).args == e.args
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -35,11 +32,8 @@ async def test_agent_close_connection_works_for_incoming(listener_with_identity)
 
     await agent.agent_close_connection(event.connection_handle)
 
-    try:
+    with pytest.raises(IndyError) as e:
         await agent.agent_send(event.connection_handle, "msg")
-        raise Exception("Failed")
-    except Exception as e:
-        assert type(IndyError(ErrorCode.CommonInvalidStructure)) == type(e) \
-               and IndyError(ErrorCode.CommonInvalidStructure).args == e.args
-    finally:
-        await agent.agent_close_connection(connection_handle)
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+
+    await agent.agent_close_connection(connection_handle)

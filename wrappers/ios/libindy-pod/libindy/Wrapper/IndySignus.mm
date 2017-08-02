@@ -19,9 +19,9 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_create_and_store_my_did( handle,
-                                          walletHandle,
-                                          [didJson UTF8String],
-                                          IndyWrapperCommon5PCallback );
+                                       walletHandle,
+                                       [didJson UTF8String],
+                                       IndyWrapperCommon5PCallback );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -41,11 +41,11 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_replace_keys( handle,
-                               walletHandle,
-                               [did UTF8String],
-                               [json UTF8String],
-                               IndyWrapperCommon4PCallback
-                              );
+                            walletHandle,
+                            [did UTF8String],
+                            [json UTF8String],
+                            IndyWrapperCommon4PCallback
+                            );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -63,10 +63,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_store_their_did( handle,
-                                  walletHandle,
-                                  [json UTF8String],
-                                  IndyWrapperCommon2PCallback
-                                );
+                               walletHandle,
+                               [json UTF8String],
+                               IndyWrapperCommon2PCallback
+                               );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -85,11 +85,11 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_sign( handle,
-                       walletHandle,
-                       [did UTF8String],
-                       [msg UTF8String],
-                       IndyWrapperCommon3PSCallback
-                     );
+                    walletHandle,
+                    [did UTF8String],
+                    [msg UTF8String],
+                    IndyWrapperCommon3PSCallback
+                    );
     
     if( ret != Success )
     {
@@ -110,11 +110,11 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_verify_signature(handle,
-                                  walletHandle,
-                                  poolHandle,
-                                  [did UTF8String],
-                                  [signature UTF8String],
-                                  IndyWrapperCommon3PBCallback);
+                                walletHandle,
+                                poolHandle,
+                                [did UTF8String],
+                                [signature UTF8String],
+                                IndyWrapperCommon3PBCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -135,13 +135,13 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_encrypt( handle,
-                          walletHandle,
-                          poolHandle,
-                          [myDid UTF8String],
-                          [did UTF8String],
-                          [msg UTF8String],
-                          IndyWrapperCommon4PCallback
-                        );
+                       walletHandle,
+                       poolHandle,
+                       [myDid UTF8String],
+                       [did UTF8String],
+                       [msg UTF8String],
+                       IndyWrapperCommon4PCallback
+                       );
     
     if( ret != Success )
     {
@@ -163,13 +163,13 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_decrypt( handle,
-                          walletHandle,
-                          [myDid UTF8String],
-                          [did UTF8String],
-                          [msg UTF8String],
-                          [nonce UTF8String],
-                          IndyWrapperCommon3PSCallback
-                        );
+                       walletHandle,
+                       [myDid UTF8String],
+                       [did UTF8String],
+                       [msg UTF8String],
+                       [nonce UTF8String],
+                       IndyWrapperCommon3PSCallback
+                       );
     
     if( ret != Success )
     {
