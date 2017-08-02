@@ -33,8 +33,8 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool("pool_create", None, None);
-            let pool_confog = PoolUtils::pool_config_json(txn_file_path.as_path());
-            PoolUtils::create_pool_ledger_config("pool_create", Some(pool_confog.as_str())).unwrap();
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap();
 
             TestUtils::cleanup_storage();
         }
