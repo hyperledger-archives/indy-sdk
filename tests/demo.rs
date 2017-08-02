@@ -128,11 +128,13 @@ fn agent_demo_works() {
     let (agent_send_command_handle, agent_send_callback) = CallbackUtils::closure_to_agent_send_cb(agent_send_cb);
 
     // 1. Create ledger config from genesis txn file
-    PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
-    let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
+    let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+    let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+    let c_pool_config = CString::new(pool_config).unwrap();
+
     let err = indy_create_pool_ledger_config(create_command_handle,
                                              c_pool_name.as_ptr(),
-                                             pool_config.as_ptr(),
+                                             c_pool_config.as_ptr(),
                                              create_callback);
     assert_eq!(err, ErrorCode::Success);
     let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
@@ -658,11 +660,13 @@ fn ledger_demo_works() {
     let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
 
     // 1. Create ledger config from genesis txn file
-    PoolUtils::create_genesis_txn_file(format!("{}.txn", pool_name).as_str(), None);
-    let pool_config = CString::new(PoolUtils::create_default_pool_config(pool_name)).unwrap();
+    let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+    let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+    let c_pool_config = CString::new(pool_config).unwrap();
+
     let err = indy_create_pool_ledger_config(create_command_handle,
                                              c_pool_name.as_ptr(),
-                                             pool_config.as_ptr(),
+                                             c_pool_config.as_ptr(),
                                              create_callback);
     assert_eq!(err, ErrorCode::Success);
     let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();

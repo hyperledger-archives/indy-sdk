@@ -36,7 +36,7 @@ mod high_cases {
         TestUtils::cleanup_storage();
         let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-        let endpoint = "127.0.0.1:9701";
+        let endpoint = "127.0.0.1:9700";
 
         let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
         AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
@@ -45,6 +45,7 @@ mod high_cases {
 
         AgentUtils::connect(0, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
+        AgentUtils::close_listener(listener_handle).unwrap();
         TestUtils::cleanup_storage();
     }
 
@@ -56,9 +57,9 @@ mod high_cases {
         fn indy_agent_connect_works_for_remote_data() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("indy_agent_connect_works_for_remote_data").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("indy_agent_connect_works_for_remote_data").unwrap();
 
-            let endpoint = "127.0.0.1:9710";
+            let endpoint = "127.0.0.1:9700";
             let listener_wallet = WalletUtils::create_and_open_wallet("indy_agent_connect_works_for_remote_data", None).unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("indy_agent_connect_works_for_remote_data", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
@@ -80,6 +81,7 @@ mod high_cases {
 
             AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
 
@@ -91,7 +93,7 @@ mod high_cases {
 
             let seed: Option<&str> = Some("sovrin_agent_connect_works_for_a");
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
-            let endpoint = "127.0.0.1:9702";
+            let endpoint = "127.0.0.1:9700";
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
@@ -131,11 +133,12 @@ mod high_cases {
 
             let seed: Option<&str> = Some("sovrin_agent_listen_works_for_al");
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, seed).unwrap();
-            let endpoint = "127.0.0.1:9703";
+            let endpoint = "127.0.0.1:9700";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
 
-            AgentUtils::listen(endpoint, None, None).unwrap();
+            let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -148,7 +151,7 @@ mod high_cases {
         fn indy_agent_add_identity_works() {
             TestUtils::cleanup_storage();
 
-            let endpoint = "127.0.0.1:9711";
+            let endpoint = "127.0.0.1:9700";
             let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
@@ -167,6 +170,7 @@ mod high_cases {
             sock.poll(zmq::POLLIN, 100).unwrap();
             assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
 
@@ -174,7 +178,7 @@ mod high_cases {
         fn indy_agent_add_identity_works_for_multiply_keys() {
             TestUtils::cleanup_storage();
 
-            let endpoint = "127.0.0.1:9714";
+            let endpoint = "127.0.0.1:9700";
             let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
@@ -198,6 +202,7 @@ mod high_cases {
                 assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
             }
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -210,7 +215,7 @@ mod high_cases {
         fn indy_agent_rm_identity_works() {
             TestUtils::cleanup_storage();
 
-            let endpoint = "127.0.0.1:9713";
+            let endpoint = "127.0.0.1:9700";
             let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
 
@@ -238,6 +243,7 @@ mod high_cases {
             assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap_err(), zmq::Error::EAGAIN);
             sock.disconnect(format!("tcp://{}", endpoint).as_str()).unwrap();
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -254,7 +260,7 @@ mod high_cases {
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool4", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "127.0.0.1:9704";
+            let endpoint = "127.0.0.1:9700";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
             let listener_handle = AgentUtils::listen(endpoint,
                                                      Some(Box::new(move |_, conn_handle| {
@@ -279,6 +285,7 @@ mod high_cases {
             AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap();
             assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), server_msg);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -291,7 +298,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "127.0.0.1:9705";
+            let endpoint = "127.0.0.1:9700";
 
             let listener_handle = AgentUtils::listen(endpoint, None, None).unwrap();
             AgentUtils::add_identity(listener_handle, -1, wallet_handle, did.as_str()).unwrap();
@@ -303,6 +310,7 @@ mod high_cases {
             AgentUtils::close_connection(conn_handle).unwrap();
             assert_eq!(AgentUtils::send(conn_handle, "").unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
 
@@ -313,7 +321,7 @@ mod high_cases {
             let (wait_conn_send, wait_conn_recv) = channel();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool4", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "127.0.0.1:9706";
+            let endpoint = "127.0.0.1:9700";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
             let listener_handle = AgentUtils::listen(endpoint,
                                                      Some(Box::new(move |_, conn_handle| {
@@ -329,6 +337,7 @@ mod high_cases {
             let server_msg = "msg_from_server";
             assert_eq!(AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -343,7 +352,7 @@ mod high_cases {
             let (wait_conn_send, wait_conn_recv) = channel();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool8", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "127.0.0.1:9708";
+            let endpoint = "127.0.0.1:9700";
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), endpoint).unwrap();
             let listener_handle = AgentUtils::listen(endpoint,
                                                      Some(Box::new(move |_, conn_handle| {
@@ -374,9 +383,9 @@ mod medium_cases {
         fn indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger_config("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid").unwrap();
 
-            let endpoint = "127.0.0.1:9712";
+            let endpoint = "127.0.0.1:9700";
             let listener_wallet = WalletUtils::create_and_open_wallet("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("indy_agent_add_identity_works_for_incoming_connection_require_ledger_request_but_pool_handle_is_invalid", None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
@@ -410,6 +419,7 @@ mod medium_cases {
 
             assert_eq!(AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap_err(), ErrorCode::CommonInvalidState);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -424,7 +434,7 @@ mod medium_cases {
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool6", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "127.0.0.1:9707";
+            let endpoint = "127.0.0.1:9700";
             let listener_handle = AgentUtils::listen(endpoint, None,
                                                      Some(Box::new(move |_, msg| {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
@@ -439,6 +449,7 @@ mod medium_cases {
             AgentUtils::send(conn_handle, client_msg).unwrap();
             assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -453,7 +464,7 @@ mod medium_cases {
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool9", None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let endpoint = "127.0.0.1:9709";
+            let endpoint = "127.0.0.1:9700";
             let listener_handle = AgentUtils::listen(endpoint, None,
                                                      Some(Box::new(move |_, msg| {
                                                          wait_msg_from_cli_send.send(msg).unwrap();
