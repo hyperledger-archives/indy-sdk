@@ -1,6 +1,6 @@
-from indy import IndyError
-from indy import wallet
-from indy.error import ErrorCode
+from indysdk import IndyError
+from indysdk import wallet
+from indysdk.error import ErrorCode
 
 import pytest
 

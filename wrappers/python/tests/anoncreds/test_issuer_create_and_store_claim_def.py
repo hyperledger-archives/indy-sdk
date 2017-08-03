@@ -1,5 +1,5 @@
-from indy.anoncreds import issuer_create_and_store_claim_def
-from indy.error import ErrorCode, IndyError
+from indysdk.anoncreds import issuer_create_and_store_claim_def
+from indysdk.error import ErrorCode, IndyError
 
 from tests.utils import anoncreds
 

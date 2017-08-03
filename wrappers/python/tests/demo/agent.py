@@ -1,6 +1,6 @@
-from indy import agent
-from indy import ledger, signus, wallet, pool
-from indy.pool import open_pool_ledger
+from indysdk import agent
+from indysdk import ledger, signus, wallet, pool
+from indysdk.pool import open_pool_ledger
 
 import pytest
 import json

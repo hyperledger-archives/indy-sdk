@@ -1,6 +1,6 @@
 from tests.utils.wallet import create_and_open_wallet
-from indy import wallet, signus, ledger
-from indy.error import ErrorCode, IndyError
+from indysdk import wallet, signus, ledger
+from indysdk.error import ErrorCode, IndyError
 import pytest
 
 

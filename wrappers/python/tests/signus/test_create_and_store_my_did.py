@@ -1,8 +1,8 @@
 import json
 
-from indy import IndyError
-from indy import signus
-from indy.error import ErrorCode
+from indysdk import IndyError
+from indysdk import signus
+from indysdk.error import ErrorCode
 
 import base58
 import pytest

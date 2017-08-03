@@ -1,4 +1,4 @@
-from indy import anoncreds
+from indysdk import anoncreds
 
 import json
 

@@ -1,5 +1,5 @@
-from indy.anoncreds import prover_get_claim_offers
-from indy.error import ErrorCode, IndyError
+from indysdk.anoncreds import prover_get_claim_offers
+from indysdk.error import ErrorCode, IndyError
 
 from tests.utils import anoncreds
 

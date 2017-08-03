@@ -1,10 +1,10 @@
 from distutils.core import setup
 
 setup(
-    name='indy-sdk',
+    name='indysdk',
     version='0.0.1',
-    packages=['indy-sdk'],
-    url='https://github.com/hyperledger/indy-sdk',
+    packages=['indysdk'],
+    url='https://github.com/hyperledger/indy_sdk',
     license='MIT/Apache-2.0',
     author='Vyacheslav Gudkov',
     author_email='vyacheslav.gudkov@dsr-company.com',

@@ -1,6 +1,6 @@
-from indy import IndyError
-from indy import wallet
-from indy.error import ErrorCode
+from indysdk import IndyError
+from indysdk import wallet
+from indysdk.error import ErrorCode
 
 import pytest
 
@@ -21,7 +21,7 @@ async def test_delete_wallet_works_for_closed(cleanup_storage):
     await wallet.create_wallet('pool1', 'wallet_1', None, None, None)
 
 
-@pytest.mark.skip(reason="There is BUG in indy-sdk")
+@pytest.mark.skip(reason="There is BUG in indy_sdk")
 async def test_delete_wallet_works_for_opened(cleanup_storage):
     with pytest.raises(IndyError) as e:
         await wallet.create_wallet('pool1', 'wallet_for_opened', None, None, None)

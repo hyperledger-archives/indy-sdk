@@ -1,5 +1,5 @@
-from indy.anoncreds import prover_create_and_store_claim_req
-from indy.error import ErrorCode, IndyError
+from indysdk.anoncreds import prover_create_and_store_claim_req
+from indysdk.error import ErrorCode, IndyError
 
 from tests.utils import anoncreds
 

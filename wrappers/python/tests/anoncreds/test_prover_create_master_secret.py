@@ -1,5 +1,5 @@
-from indy.anoncreds import prover_create_master_secret
-from indy.error import ErrorCode, IndyError
+from indysdk.anoncreds import prover_create_master_secret
+from indysdk.error import ErrorCode, IndyError
 
 import pytest
 

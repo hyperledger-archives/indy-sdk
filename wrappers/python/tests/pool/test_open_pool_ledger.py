@@ -1,6 +1,6 @@
 from tests.utils import pool
-from indy.pool import open_pool_ledger
-from indy.error import ErrorCode, IndyError
+from indysdk.pool import open_pool_ledger
+from indysdk.error import ErrorCode, IndyError
 
 import pytest
 

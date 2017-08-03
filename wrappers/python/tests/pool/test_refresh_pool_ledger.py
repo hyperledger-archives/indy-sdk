@@ -1,5 +1,5 @@
 from tests.utils import pool
-from indy.pool import refresh_pool_ledger
+from indysdk.pool import refresh_pool_ledger
 import pytest
 
 
