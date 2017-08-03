@@ -1061,8 +1061,8 @@ mod tests {
                 data: NodeData {
                     alias: "n1".to_string(),
                     services: Vec::new(),
-                    client_port: 9801,
-                    client_ip: "127.0.0.1".to_string(),
+                    client_port: 9701,
+                    client_ip: "0.0.0.0".to_string(),
                     node_ip: "".to_string(),
                     node_port: 0,
                 },

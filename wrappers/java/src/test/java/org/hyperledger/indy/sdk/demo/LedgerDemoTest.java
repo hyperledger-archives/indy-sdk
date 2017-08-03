@@ -10,12 +10,19 @@ import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class LedgerDemoTest extends IndyIntegrationTest {
+
+	@Rule
+	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
 	@Test
 	public void testLedgerDemo() throws Exception {
