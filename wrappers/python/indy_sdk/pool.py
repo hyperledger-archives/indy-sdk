@@ -21,7 +21,7 @@ async def create_pool_ledger_config(config_name: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("create_pool_ledger_config: >>> config_name: %s, config: %s",
+    logger.debug("create_pool_ledger_config: >>> config_name: %r, config: %r",
                  config_name,
                  config)
 
@@ -37,7 +37,7 @@ async def create_pool_ledger_config(config_name: str,
                         c_config,
                         create_pool_ledger_config.cb)
 
-    logger.debug("create_pool_ledger_config: <<< res: %s", res)
+    logger.debug("create_pool_ledger_config: <<< res: %r", res)
     return res
 
 
@@ -65,7 +65,7 @@ async def open_pool_ledger(config_name: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("open_pool_ledger: >>> config_name: %s, config: %s",
+    logger.debug("open_pool_ledger: >>> config_name: %r, config: %r",
                  config_name,
                  config)
 
@@ -81,7 +81,7 @@ async def open_pool_ledger(config_name: str,
                         c_config,
                         open_pool_ledger.cb)
 
-    logger.debug("open_pool_ledger: <<< res: %s", res)
+    logger.debug("open_pool_ledger: <<< res: %r", res)
     return res
 
 
@@ -94,7 +94,7 @@ async def refresh_pool_ledger(handle: int) -> None:
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("refresh_pool_ledger: >>> config_name: %s",
+    logger.debug("refresh_pool_ledger: >>> config_name: %r",
                  handle)
 
     if not hasattr(refresh_pool_ledger, "cb"):
@@ -107,7 +107,7 @@ async def refresh_pool_ledger(handle: int) -> None:
                         c_handle,
                         refresh_pool_ledger.cb)
 
-    logger.debug("refresh_pool_ledger: <<< res: %s", res)
+    logger.debug("refresh_pool_ledger: <<< res: %r", res)
     return res
 
 
@@ -120,7 +120,7 @@ async def close_pool_ledger(handle: int) -> None:
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("close_pool_ledger: >>> config_name: %s",
+    logger.debug("close_pool_ledger: >>> config_name: %r",
                  handle)
 
     if not hasattr(close_pool_ledger, "cb"):
@@ -133,7 +133,7 @@ async def close_pool_ledger(handle: int) -> None:
                         c_handle,
                         close_pool_ledger.cb)
 
-    logger.debug("close_pool_ledger: <<< res: %s", res)
+    logger.debug("close_pool_ledger: <<< res: %r", res)
     return res
 
 
@@ -146,7 +146,7 @@ async def delete_pool_ledger_config(config_name: str) -> None:
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("delete_pool_ledger_config: >>> config_name: %s",
+    logger.debug("delete_pool_ledger_config: >>> config_name: %r",
                  config_name)
 
     if not hasattr(delete_pool_ledger_config, "cb"):
@@ -159,5 +159,5 @@ async def delete_pool_ledger_config(config_name: str) -> None:
                         c_config_name,
                         delete_pool_ledger_config.cb)
 
-    logger.debug("delete_pool_ledger_config: <<< res: %s", res)
+    logger.debug("delete_pool_ledger_config: <<< res: %r", res)
     return res

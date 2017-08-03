@@ -4,7 +4,7 @@ setup(
     name='indy_sdk',
     version='0.0.1',
     packages=['indy_sdk'],
-    url='https://github.com/hyperledger/indy_sdk',
+    url='https://github.com/hyperledger/indy-sdk',
     license='MIT/Apache-2.0',
     author='Vyacheslav Gudkov',
     author_email='vyacheslav.gudkov@dsr-company.com',
