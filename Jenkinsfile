@@ -15,8 +15,8 @@ def testing(){
          parallel([
              'libindy-ubuntu-test': { libindyUbuntuTesting() },
              'libindy-redhat-test': { libindyRedHatTesting() }, 
-             'java-ubuntu-test': { javaWrapperUbuntuTesting() }, 
-             'python-ubuntu-test': { pythonWrapperUbuntuTesting() }  
+             //'java-ubuntu-test': { javaWrapperUbuntuTesting() },
+             'python-ubuntu-test': { pythonWrapperUbuntuTesting() }
          ])
     }
 }
