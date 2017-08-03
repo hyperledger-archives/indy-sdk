@@ -10,9 +10,16 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.TimeUnit;
 
 public class SignusDemoTest extends IndyIntegrationTest {
+
+	@Rule
+	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
 	@Test
 	public void testSignusDemo() throws Exception {
