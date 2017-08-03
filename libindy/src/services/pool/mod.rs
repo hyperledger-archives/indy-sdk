@@ -10,7 +10,7 @@ use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
 use self::serde_json::Value;
 use std::cell::RefCell;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
@@ -374,7 +374,8 @@ impl PoolWorker {
             let cmd_s = String::from_utf8(cmd[0].clone())
                 .map_err(|err|
                     CommonError::InvalidState("Invalid command received".to_string()))?;
-            let id = if cmd.len() > 1 { LittleEndian::read_i32(cmd[1].as_slice()) } else { -1 };
+            let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
+                .unwrap_or(-1);
             if "exit".eq(cmd_s.as_str()) {
                 actions.push(ZMQLoopAction::Terminate(id));
             } else if "refresh".eq(cmd_s.as_str()) {
@@ -404,15 +405,15 @@ impl PoolWorker {
 
     fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        let mut mt = MerkleTree::from_vec(Vec::new())?;
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
-        let f = fs::File::open(p)?;
+        let f = fs::File::open(p).map_err(map_err_trace!())?;
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
-            let line: String = line?;
-            mt.append(line)?;
+            let line: String = line.map_err(map_err_trace!())?;
+            mt.append(line).map_err(map_err_trace!())?;
         }
         Ok(mt)
     }
@@ -486,14 +487,13 @@ impl Drop for Pool {
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
 
-        if let Err(e) = self.cmd_sock.send("exit".as_bytes(), zmq::DONTWAIT) {
-            //TODO
-            error!("Send exit command failed, err {}", e);
+        if let Err(err) = self.cmd_sock.send("exit".as_bytes(), zmq::DONTWAIT) {
+            warn!("Can't send exit command to pool worker thread (may be already finished) {}", err);
         }
 
-        info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
         if let Some(worker) = self.worker.take() {
+            info!(target: target.as_str(), "Drop wait worker");
             worker.join().unwrap();
         }
         info!(target: target.as_str(), "Drop finished");
@@ -829,6 +829,35 @@ mod tests {
     }
 
     #[test]
+    fn pool_drop_works_for_after_close() {
+        use utils::logger::LoggerUtils;
+        use utils::test::TestUtils;
+        use std::time;
+
+        TestUtils::cleanup_storage();
+        LoggerUtils::init();
+
+        fn drop_test() {
+            let pool_name = "pool_drop_works";
+
+            // create minimal fs config stub before Pool::new()
+            let mut pool_path = EnvironmentUtils::pool_path(pool_name);
+            fs::create_dir_all(&pool_path).unwrap();
+            pool_path.push(pool_name);
+            pool_path.set_extension("txn"); //empty genesis txns file - pool will not try to connect to somewhere
+            fs::File::create(pool_path).unwrap();
+
+            let pool = Pool::new(pool_name, -1).unwrap();
+            thread::sleep(time::Duration::from_secs(1));
+            pool.close(-1).unwrap();
+            thread::sleep(time::Duration::from_secs(1));
+        }
+
+        drop_test();
+        TestUtils::cleanup_storage();
+    }
+
+    #[test]
     fn pool_send_tx_works() {
         let name = "test";
         let zmq_ctx = zmq::Context::new();
@@ -868,7 +897,7 @@ mod tests {
                                "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"192.168.1.35\",\"client_port\":9706,\"node_ip\":\"192.168.1.35\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
                                "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"192.168.1.35\",\"client_port\":9708,\"node_ip\":\"192.168.1.35\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
         let pool_name = "test";
-        let mut path = ::utils::environment::EnvironmentUtils::pool_path(pool_name);
+        let mut path = EnvironmentUtils::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();
         path.push(pool_name);
         path.set_extension("txn");
