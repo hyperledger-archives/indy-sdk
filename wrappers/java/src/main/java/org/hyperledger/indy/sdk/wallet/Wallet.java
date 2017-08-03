@@ -1,8 +1,8 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.hyperledger.indy.sdk.IndyException;
@@ -126,7 +126,7 @@ public class Wallet extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	private static final List<String> REGISERED_WALLETS = Collections.synchronizedList(new ArrayList<String>());
+	private static final Map<String, WalletType> REGISERED_WALLET_TYPES = Collections.synchronizedMap(new HashMap<String, WalletType>());
 
 	/**
 	 * Registers custom wallet implementation.
@@ -143,18 +143,17 @@ public class Wallet extends IndyJava.API {
 			WalletType walletType,
 			Boolean forceCreate) throws IndyException, InterruptedException {
 
-		synchronized (REGISERED_WALLETS) {
+		synchronized (REGISERED_WALLET_TYPES) {
 			CompletableFuture<Void> future = new CompletableFuture<Void>();
 			int commandHandle = addFuture(future);
 
 
-			if (REGISERED_WALLETS.contains(xtype) && ! forceCreate) {
+			if (REGISERED_WALLET_TYPES.containsKey(xtype) && ! forceCreate) {
 				future.complete(null);
 				return future;
 			}
 
-
-			REGISERED_WALLETS.add(xtype);
+			REGISERED_WALLET_TYPES.put(xtype, walletType);
 
 			int result = LibIndy.api.indy_register_wallet_type(
 					commandHandle,
