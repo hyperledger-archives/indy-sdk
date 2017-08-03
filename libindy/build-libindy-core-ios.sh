@@ -1,7 +1,7 @@
 #!/bin/sh 
 
 export PKG_CONFIG_ALLOW_CROSS=1
-export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
+export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
 export EVERNYM_REPO_KEY=~/Documents/EvernymRepo
 export LIBINDY_POD_VERSION=0.0.3
 export POD_FILE_NAME=libindy-core-ios.tar.gz
@@ -22,6 +22,7 @@ fi
 echo "Packing...\n\n"
 
 cp include/*.h $WORK_DIR
+cd ../
 cp target/universal/debug/libindy.a $WORK_DIR
 CUR_DIR=`pwd`
 cd $WORK_DIR

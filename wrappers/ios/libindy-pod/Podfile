@@ -1,5 +1,5 @@
 source 'https://github.com/CocoaPods/Specs.git'
-source 'https://github.com/hyperledger/indy-sdk.git'
+source 'https://github.com/anastasia-tarasova/indy-sdk.git'
 platform :ios, '10.2'
 
 workspace 'libindy.xcworkspace'
@@ -7,8 +7,8 @@ workspace 'libindy.xcworkspace'
 #use_frameworks!
 
 def appPods
-    pod 'libsodium',"1.0.12"
-    pod 'libzmq-pw',"4.2.2"
+    pod 'libsodium'
+    pod 'libzmq-pw'
     pod 'OpenSSL'
     pod 'milagro', "3.0.0"
     pod 'libindy-core', "0.1.1"
