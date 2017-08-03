@@ -366,8 +366,9 @@ public abstract class WalletType {
 	 * @return A pointer to the native memory containing the marshalled value.
 	 */
 	private Pointer marshalToNative(String value) {
-		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-		Pointer pointer = new Memory(bytes.length + 1);
+		byte[] bytes = Native.toByteArray(value, "UTF-8");
+		long nativeAddress = Native.malloc(bytes.length);
+		Pointer pointer = new Pointer(nativeAddress);
 		pointer.write(0, bytes, 0, bytes.length);
 		pointer.setByte(bytes.length, (byte) 0);
 		return pointer;
