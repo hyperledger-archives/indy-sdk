@@ -89,9 +89,12 @@ public abstract class WalletType {
 			try
 			{
             	CustomWalletBase wallet = getWalletByHandle(handle);
-            	
+            	            	
             	StringByReference resultString = new StringByReference();
                 ErrorCode result = wallet.get(key, resultString);
+                
+                if(result != ErrorCode.Success)
+                	return result.value();
                 
                 Pointer marshalledValue = marshalToNative(resultString.getValue());
                 value_ptr.setPointer(marshalledValue);
@@ -120,6 +123,9 @@ public abstract class WalletType {
             	StringByReference resultString = new StringByReference();
                 ErrorCode result = wallet.getNotExpired(key, resultString);
                 
+                if(result != ErrorCode.Success)
+                	return result.value();
+                
                 Pointer marshalledValue = marshalToNative(resultString.getValue());
                 value_ptr.setPointer(marshalledValue);
                 		
@@ -146,6 +152,9 @@ public abstract class WalletType {
             	
             	StringByReference resultString = new StringByReference();
                 ErrorCode result = wallet.list(key_prefix, resultString);
+                
+                if(result != ErrorCode.Success)
+                	return result.value();
                 
                 Pointer marshalledValue = marshalToNative(resultString.getValue());
                 values_json_ptr.setPointer(marshalledValue);
