@@ -89,12 +89,12 @@ impl WalletUtils {
 
         let err =
             indy_create_wallet(command_handle,
-                                 pool_name.as_ptr(),
-                                 wallet_name.as_ptr(),
-                                 if xtype.is_some() { xtype_str.as_ptr() } else { null() },
-                                 if config.is_some() { config_str.as_ptr() } else { null() },
-                                 null(),
-                                 cb);
+                               pool_name.as_ptr(),
+                               wallet_name.as_ptr(),
+                               if xtype.is_some() { xtype_str.as_ptr() } else { null() },
+                               if config.is_some() { config_str.as_ptr() } else { null() },
+                               null(),
+                               cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -123,10 +123,10 @@ impl WalletUtils {
 
         let err =
             indy_open_wallet(command_handle,
-                               wallet_name.as_ptr(),
-                               if config.is_some() { config_str.as_ptr() } else { null() },
-                               null(),
-                               cb);
+                             wallet_name.as_ptr(),
+                             if config.is_some() { config_str.as_ptr() } else { null() },
+                             null(),
+                             cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -164,12 +164,12 @@ impl WalletUtils {
 
         let err =
             indy_create_wallet(command_handle,
-                                 pool_name.as_ptr(),
-                                 wallet_name.as_ptr(),
-                                 xtype.as_ptr(),
-                                 null(),
-                                 null(),
-                                 cb);
+                               pool_name.as_ptr(),
+                               wallet_name.as_ptr(),
+                               xtype.as_ptr(),
+                               null(),
+                               null(),
+                               cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -183,10 +183,10 @@ impl WalletUtils {
 
         let err =
             indy_open_wallet(open_command_handle,
-                               wallet_name.as_ptr(),
-                               null(),
-                               null(),
-                               open_cb);
+                             wallet_name.as_ptr(),
+                             null(),
+                             null(),
+                             open_cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -214,9 +214,9 @@ impl WalletUtils {
 
         let err =
             indy_delete_wallet(command_handle,
-                                 wallet_name.as_ptr(),
-                                 null(),
-                                 cb);
+                               wallet_name.as_ptr(),
+                               null(),
+                               cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -243,8 +243,8 @@ impl WalletUtils {
 
         let err =
             indy_close_wallet(command_handle,
-                                wallet_handle,
-                                cb);
+                              wallet_handle,
+                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
