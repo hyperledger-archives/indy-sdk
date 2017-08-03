@@ -25,7 +25,7 @@ public class IndyIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
+	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
 	private static Boolean isWalletRegistered = false;
 

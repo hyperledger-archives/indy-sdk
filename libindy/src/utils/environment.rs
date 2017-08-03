@@ -46,6 +46,10 @@ impl EnvironmentUtils {
         path.push(file_name);
         path
     }
+
+    pub fn test_pool_ip() -> String {
+        env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string())
+    }
 }
 
 #[cfg(test)]
@@ -119,4 +123,12 @@ mod tests {
         assert!(path.to_string_lossy().contains("indy"));
         assert!(path.to_string_lossy().contains("test.txt"));
     }
+
+    #[test]
+    fn test_pool_ip_works() {
+        let pool_ip = EnvironmentUtils::test_pool_ip();
+        assert!(!pool_ip.is_empty());
+    }
+
+
 }
