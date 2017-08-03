@@ -8,7 +8,7 @@ workspace 'libindy.xcworkspace'
 
 def appPods
     pod 'libsodium'
-    pod 'libzmq-pw'
+    pod 'libzmq-pw',"4.2.2"
     pod 'OpenSSL'
     pod 'milagro', "3.0.0"
     pod 'libindy-core', "0.1.1"
