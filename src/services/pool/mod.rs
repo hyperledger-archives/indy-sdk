@@ -485,7 +485,7 @@ impl Drop for Pool {
     fn drop(&mut self) {
         let target = format!("pool{}", self.name);
         info!(target: target.as_str(), "Drop started");
-        self.cmd_sock.send("exit".as_bytes(), 0).expect("send exit command"); //TODO
+        self.cmd_sock.send("exit".as_bytes(), zmq::DONTWAIT).expect("send exit command"); //TODO
         info!(target: target.as_str(), "Drop wait worker");
         // Option worker type and this kludge is workaround for rust
         if let Some(worker) = self.worker.take() {
