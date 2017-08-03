@@ -1,5 +1,5 @@
-from indysdk.anoncreds import prover_get_claims_for_proof_req
-from indysdk.error import ErrorCode, IndyError
+from indy_sdk.anoncreds import prover_get_claims_for_proof_req
+from indy_sdk.error import ErrorCode, IndyError
 
 import json
 import pytest

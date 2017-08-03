@@ -335,8 +335,10 @@ def publishingPythonWrapperDebFiles() {
                    testEnv.inside('-u 0:0') {
                        sh 'chmod -R 777 ci'
 
+                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+
                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                           sh "./ci/python-wrapper-deb-build-and-upload.sh $evernym_repo_key $env.BUILD_NUMBER"
+                           sh "./ci/python-wrapper-deb-build-and-upload.sh $evernym_repo_key"
                        }
                    }
                }
@@ -363,12 +365,12 @@ def publishingPythonWrapperToPipy() {
 
                    withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                        sh 'cp $credentialsFile ./wrappers/python/'
-                       sh 'chmod -R 777 ci'
-
-                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+                       sh "cp -r ci wrappers/python"
 
                        sh '''
                            cd wrappers/python
+                           chmod -R 777 ci
+                           ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER
                            python3.6 setup.py sdist
                            python3.6 -m twine upload dist/* --config-file .pypirc
                        '''

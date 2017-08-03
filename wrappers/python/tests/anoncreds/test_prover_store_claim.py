@@ -1,6 +1,6 @@
-from indysdk.anoncreds import prover_create_and_store_claim_req, prover_store_claim,\
+from indy_sdk.anoncreds import prover_create_and_store_claim_req, prover_store_claim,\
     prover_create_master_secret, issuer_create_claim
-from indysdk.error import ErrorCode, IndyError
+from indy_sdk.error import ErrorCode, IndyError
 
 from tests.utils import anoncreds
 

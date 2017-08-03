@@ -1,5 +1,5 @@
-from indysdk import ledger
-from indysdk.error import *
+from indy_sdk import ledger
+from indy_sdk.error import *
 
 import json
 import pytest

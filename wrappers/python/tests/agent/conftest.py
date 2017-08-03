@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from indysdk import signus, agent
+from indy_sdk import signus, agent
 
 
 @pytest.fixture

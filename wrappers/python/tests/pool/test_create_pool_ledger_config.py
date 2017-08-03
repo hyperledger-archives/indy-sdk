@@ -1,5 +1,5 @@
 from tests.utils import pool, storage
-from indysdk.error import ErrorCode, IndyError
+from indy_sdk.error import ErrorCode, IndyError
 
 import pytest
 

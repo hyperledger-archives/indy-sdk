@@ -1,9 +1,9 @@
 import asyncio
 
-from indysdk import IndyError
-from indysdk import ledger
-from indysdk import wallet, signus
-from indysdk.error import ErrorCode
+from indy_sdk import IndyError
+from indy_sdk import ledger
+from indy_sdk import wallet, signus
+from indy_sdk.error import ErrorCode
 
 from ..utils.wallet import create_and_open_wallet
 from ..utils.pool import create_and_open_pool_ledger

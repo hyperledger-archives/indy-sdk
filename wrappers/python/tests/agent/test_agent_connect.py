@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from indysdk import signus, ledger, agent
+from indy_sdk import signus, ledger, agent
 from tests.utils import wallet
 
 

@@ -1,5 +1,5 @@
-from indysdk.anoncreds import verifier_verify_proof
-from indysdk.error import ErrorCode, IndyError
+from indy_sdk.anoncreds import verifier_verify_proof
+from indy_sdk.error import ErrorCode, IndyError
 
 from tests.utils import anoncreds
 

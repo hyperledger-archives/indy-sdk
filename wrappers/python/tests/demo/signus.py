@@ -1,4 +1,4 @@
-from indysdk import signus, wallet
+from indy_sdk import signus, wallet
 
 import pytest
 import json

@@ -1,7 +1,7 @@
 import pytest
 
-from indysdk import agent, IndyError
-from indysdk.error import ErrorCode
+from indy_sdk import agent, IndyError
+from indy_sdk.error import ErrorCode
 
 
 @pytest.mark.asyncio

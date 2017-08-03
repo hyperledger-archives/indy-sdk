@@ -1,5 +1,5 @@
-from indysdk import ledger, signus
-from indysdk.error import ErrorCode, IndyError
+from indy_sdk import ledger, signus
+from indy_sdk.error import ErrorCode, IndyError
 
 import json
 import pytest

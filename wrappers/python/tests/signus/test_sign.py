@@ -1,6 +1,6 @@
-from indysdk import IndyError
-from indysdk import signus
-from indysdk.error import ErrorCode
+from indy_sdk import IndyError
+from indy_sdk import signus
+from indy_sdk.error import ErrorCode
 
 import json
 import pytest

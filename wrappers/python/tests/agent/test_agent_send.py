@@ -1,6 +1,6 @@
 import pytest
 
-from indysdk import agent
+from indy_sdk import agent
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-from indysdk import wallet
+from indy_sdk import wallet
 
 async def create_and_open_wallet(pool_name="pool_1", wallet_name="wallet_1"):
     await wallet.create_wallet(pool_name, wallet_name, None, None, None)

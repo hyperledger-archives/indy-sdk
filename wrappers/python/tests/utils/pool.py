@@ -1,5 +1,5 @@
 from .storage import indy_temp_path, create_temp_dir
-from indysdk import pool
+from indy_sdk import pool
 
 import json
 

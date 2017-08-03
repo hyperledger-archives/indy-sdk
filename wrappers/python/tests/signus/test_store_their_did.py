@@ -1,9 +1,9 @@
-from indysdk import IndyError
-from indysdk import signus
+from indy_sdk import IndyError
+from indy_sdk import signus
 
 import pytest
 
-from indysdk.error import ErrorCode
+from indy_sdk.error import ErrorCode
 
 
 @pytest.mark.asyncio

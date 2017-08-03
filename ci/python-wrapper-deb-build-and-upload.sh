@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
 if [ "$1" = "--help" ] ; then
-  echo "Usage: $0 <key> $1 <number>"
+  echo "Usage: $0 <key>"
 fi
 
 key="$1"
-number="$2"
 
 mkdir /home/indy/debs
 
-version=$(grep -Po "(?<=version=')([0-9]|\.)*" setup.py)
+version=$(grep -Po "(?<=version=')([0-9]|\.|-)*" setup.py)
 
 [ -z $key ] && exit 1
 [ -z $version ] && exit 2
@@ -37,8 +36,8 @@ echo "Uploading...."
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/deb/python-indy-sdk
-mkdir /var/repository/repos/deb/python-indy-sdk/$version-$number
-cd /var/repository/repos/deb/python-indy-sdk/$version-$number
+mkdir /var/repository/repos/deb/python-indy-sdk/$version
+cd /var/repository/repos/deb/python-indy-sdk/$version
 put -r /home/indy/debs/python-indy-sdk_"$version"_amd64.deb
-ls -l /var/repository/repos/deb/python-indy-sdk/$version-$number
+ls -l /var/repository/repos/deb/python-indy-sdk/$version
 EOF
