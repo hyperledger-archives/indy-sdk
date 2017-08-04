@@ -20,7 +20,7 @@ cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/deb/indy-sdk
 mkdir /var/repository/repos/deb/indy-sdk/$version-$number
 cd /var/repository/repos/deb/indy-sdk/$version-$number
-put -r /var/lib/jenkins/workspace/indy-sdk-dev_"$version"_amd64.deb
-put -r /var/lib/jenkins/workspace/indy-sdk_"$version"_amd64.deb
+put -r ../indy-sdk-dev_"$version"_amd64.deb
+put -r ../indy-sdk_"$version"_amd64.deb
 ls -l /var/repository/repos/deb/indy-sdk/$version-$number
 EOF
