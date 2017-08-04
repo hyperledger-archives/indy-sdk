@@ -97,7 +97,7 @@ public abstract class WalletType {
                 	return result.value();
                 
                 Pointer marshalledValue = marshalToNative(resultString.getValue());
-                value_ptr.setPointer(marshalledValue);
+                value_ptr.setValue(marshalledValue);
                 		
                 return result.value();  
 			}
@@ -127,7 +127,7 @@ public abstract class WalletType {
                 	return result.value();
                 
                 Pointer marshalledValue = marshalToNative(resultString.getValue());
-                value_ptr.setPointer(marshalledValue);
+                value_ptr.setValue(marshalledValue);
                 		
                 return result.value();  
 			}
@@ -157,7 +157,7 @@ public abstract class WalletType {
                 	return result.value();
                 
                 Pointer marshalledValue = marshalToNative(resultString.getValue());
-                values_json_ptr.setPointer(marshalledValue);
+                values_json_ptr.setValue(marshalledValue);
                 		
                 return result.value();  
 			}
@@ -367,10 +367,8 @@ public abstract class WalletType {
 	 */
 	private Pointer marshalToNative(String value) {
 		byte[] bytes = Native.toByteArray(value, "UTF-8");
-		long nativeAddress = Native.malloc(bytes.length);
-		Pointer pointer = new Pointer(nativeAddress);
+		Pointer pointer = new Pointer(Native.malloc(bytes.length));
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte) 0);
 		return pointer;
 	}
 	
