@@ -788,10 +788,10 @@ impl Prover {
         let r_prime_prime_prime = GroupOrderElement::new()?;
         let o = GroupOrderElement::new()?;
         let o_prime = GroupOrderElement::new()?;
-        let m = rho.add_mod(&claim.c)?;
-        let m_prime = r.add_mod(&r_prime_prime)?;
-        let t = o.add_mod(&claim.c)?;
-        let t_prime = o_prime.add_mod(&r_prime_prime)?;
+        let m = rho.mul_mod(&claim.c)?;
+        let m_prime = r.mul_mod(&r_prime_prime)?;
+        let t = o.mul_mod(&claim.c)?;
+        let t_prime = o_prime.mul_mod(&r_prime_prime)?;
         let m2 = GroupOrderElement::from_bytes(&claim.m2.to_bytes()?)?;
 
         Ok(NonRevocProofXList::new(rho, r, r_prime, r_prime_prime, r_prime_prime_prime, o, o_prime,
@@ -859,7 +859,7 @@ impl Prover {
 
         for (x, y) in init_proof.tau_list_params.as_list()?.iter().zip(init_proof.c_list_params.as_list()?.iter()) {
             x_list.push(x.sub_mod(
-                &ch_num_z.add_mod(&y)?
+                &ch_num_z.mul_mod(&y)?
             )?);
         }
 
