@@ -1,13 +1,7 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.wallet.WalletType.StringByReference;
-
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
 
 /**
  * All custom wallets must inherit from this base class.

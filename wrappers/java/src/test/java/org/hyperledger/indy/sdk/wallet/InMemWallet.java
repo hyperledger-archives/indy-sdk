@@ -8,8 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.wallet.WalletType.StringByReference;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class InMemWallet implements CustomWallet {
 
