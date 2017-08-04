@@ -12,16 +12,7 @@ import com.sun.jna.Pointer;
 /**
  * All custom wallets must inherit from this base class.
  */
-public abstract class CustomWalletBase implements AutoCloseable {
-
-	/// <summary>
-    /// Pointers to values that have been allocated to unmanaged memory by the wallet.
-    /// </summary>
-    private List<Pointer> valuePointers = new ArrayList<Pointer>();
-    
-    public List<Pointer> getValuePointers(){
-    	return valuePointers;
-    }
+public interface CustomWallet {
 
 	/**
 	 * Sets a value on a wallet instance.
@@ -31,7 +22,7 @@ public abstract class CustomWalletBase implements AutoCloseable {
 	 * @param value The value to set.
 	 * @return An ErrorCode indicating the outcome.
 	 */
-	public abstract ErrorCode set(String key, String value);
+	ErrorCode set(String key, String value);
 	
 	/**
 	 * Gets a value from a wallet instance.
@@ -41,7 +32,7 @@ public abstract class CustomWalletBase implements AutoCloseable {
 	 * @param resultString A result object to containthe value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
-	public abstract ErrorCode get(String key, StringByReference resultString);
+	ErrorCode get(String key, StringByReference resultString);
 	
 	/**
 	 * Gets an unexpired value from a wallet instance.
@@ -51,7 +42,7 @@ public abstract class CustomWalletBase implements AutoCloseable {
 	 * @param resultString A result object to containthe value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
-	public abstract ErrorCode getNotExpired(String key, StringByReference resultString);
+	ErrorCode getNotExpired(String key, StringByReference resultString);
 	
 	/**
 	 * Gets a list of values optionally filtered by key.
@@ -61,21 +52,5 @@ public abstract class CustomWalletBase implements AutoCloseable {
 	 * @param resultString A result object to containthe value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
-	public abstract ErrorCode list(String keyPrefix, StringByReference resultString);
-    
-	
-	/**
-	 * Closes the wallet.
-	 */
-	@Override
-	public void close() throws Exception {
-		//Free any outstanding handles.
-        for (int i = valuePointers.size() - 1; i >= 0; i--)
-        {
-        	Pointer valuePointer = valuePointers.get(i);
-        	Native.free(Pointer.nativeValue(valuePointer));
-            valuePointers.remove(i);
-        }
-	}
-
+	ErrorCode list(String keyPrefix, StringByReference resultString);   
 }

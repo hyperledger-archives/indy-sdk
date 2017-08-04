@@ -19,7 +19,7 @@ public class InMemWalletType extends WalletType {
     }
     
     @Override
-    protected CustomWalletBase getWalletByHandle(int handle) {
+    protected CustomWallet getWalletByHandle(int handle) {
     	return openWallets.get(handle);
     }    
 	

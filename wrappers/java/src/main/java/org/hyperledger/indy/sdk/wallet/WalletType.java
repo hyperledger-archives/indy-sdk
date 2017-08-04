@@ -68,7 +68,7 @@ public abstract class WalletType {
 			
             try
 			{
-            	CustomWalletBase wallet = getWalletByHandle(handle);
+            	CustomWallet wallet = getWalletByHandle(handle);
                 return wallet.set(key, value).value();  
 			}
 			catch(Exception e)
@@ -88,7 +88,7 @@ public abstract class WalletType {
 
 			try
 			{
-            	CustomWalletBase wallet = getWalletByHandle(handle);
+            	CustomWallet wallet = getWalletByHandle(handle);
             	            	
             	StringByReference resultString = new StringByReference();
                 ErrorCode result = wallet.get(key, resultString);
@@ -118,7 +118,7 @@ public abstract class WalletType {
 			
 			try
 			{
-            	CustomWalletBase wallet = getWalletByHandle(handle);
+            	CustomWallet wallet = getWalletByHandle(handle);
             	
             	StringByReference resultString = new StringByReference();
                 ErrorCode result = wallet.getNotExpired(key, resultString);
@@ -148,7 +148,7 @@ public abstract class WalletType {
 
 			try
 			{
-            	CustomWalletBase wallet = getWalletByHandle(handle);
+            	CustomWallet wallet = getWalletByHandle(handle);
             	
             	StringByReference resultString = new StringByReference();
                 ErrorCode result = wallet.list(key_prefix, resultString);
@@ -215,12 +215,8 @@ public abstract class WalletType {
 		public int callback(int wallet_handle, Pointer value) {
 
 			try
-			{       
-				CustomWalletBase wallet = getWalletByHandle(wallet_handle);
-				
+			{       			
 				Native.free(Pointer.nativeValue(value));
-				List<Pointer> walletPointers = wallet.getValuePointers();
-				walletPointers.remove(value);
             	return ErrorCode.Success.value();  
 			}
 			catch(Exception e)
@@ -357,7 +353,7 @@ public abstract class WalletType {
 	 * @param handle The handle of the open wallet.
 	 * @return The wallet instance associated with the handle.
 	 */
-	protected abstract CustomWalletBase getWalletByHandle(int handle);
+	protected abstract CustomWallet getWalletByHandle(int handle);
 	
 	/**
 	 * Marshals a string value to unmanaged memory and returns a pointer to the native memory.

@@ -10,7 +10,7 @@ import org.hyperledger.indy.sdk.wallet.WalletType.StringByReference;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class InMemWallet extends CustomWalletBase {
+public class InMemWallet implements CustomWallet {
 
 	private static Map<String, WalletRecord> records = new ConcurrentHashMap<String, WalletRecord>();	
 	private int freshnessDuration;
