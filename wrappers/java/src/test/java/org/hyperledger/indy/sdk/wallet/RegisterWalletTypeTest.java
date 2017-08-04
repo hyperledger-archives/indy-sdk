@@ -8,6 +8,7 @@ import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.json.JSONArray;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -55,6 +56,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 	
 	@Test
+	@Ignore
 	public void customWalletWorkoutTest() throws Exception { 
 		
 		StorageUtils.cleanupStorage();
