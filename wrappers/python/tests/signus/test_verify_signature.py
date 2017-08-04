@@ -1,15 +1,14 @@
 import asyncio
+import json
+
+import pytest
 
 from indy import IndyError
 from indy import ledger
-from indy import wallet, signus
+from indy import signus
 from indy.error import ErrorCode
-
-from ..utils.wallet import create_and_open_wallet
 from ..utils.pool import create_and_open_pool_ledger
-
-import json
-import pytest
+from ..utils.wallet import create_and_open_wallet
 
 
 @pytest.fixture
@@ -59,10 +58,8 @@ async def test_verify_works_for_get_verkey_from_ledger(pool_handle, wallet_handl
 
 
 @pytest.mark.asyncio
-async def test_verify_works_for_expired_nym(pool_handle, cleanup_storage):
-    await wallet.create_wallet('pool_1', 'wallet2', None, None, None)
-    wallet_handle = await wallet.open_wallet('wallet2', '{"freshness_time":1}', None)
-
+@pytest.mark.parametrize("wallet_runtime_config", ['{"freshness_time":1}'])
+async def test_verify_works_for_expired_nym(wallet_handle, pool_handle, wallet_runtime_config):
     (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                '{"seed":"000000000000000000000000Trustee1"}')
 
@@ -81,8 +78,6 @@ async def test_verify_works_for_expired_nym(pool_handle, cleanup_storage):
 
     valid = await signus.verify_signature(wallet_handle, pool_handle, did, message)
     assert valid
-
-    await wallet.close_wallet(wallet_handle)
 
 
 @pytest.mark.asyncio

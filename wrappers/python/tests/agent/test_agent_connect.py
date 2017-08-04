@@ -8,10 +8,11 @@ from tests.utils import wallet
 
 @pytest.mark.asyncio
 async def test_agent_connect_works_for_remote_data(endpoint,
+                                                   pool_name,
                                                    pool_handle,
                                                    trustee1_seed):
-    listener_wallet_handle = await wallet.create_and_open_wallet(wallet_name="listener_wallet")
-    trustee_wallet_handle = await wallet.create_and_open_wallet(wallet_name="trustee_wallet")
+    listener_wallet_handle = await wallet.create_and_open_wallet(pool_name, "listener_wallet")
+    trustee_wallet_handle = await wallet.create_and_open_wallet(pool_name, "trustee_wallet")
 
     listener_did, listener_verkey, listener_pk = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
 

@@ -59,7 +59,7 @@ def wallet_type():
 
 
 @pytest.fixture
-def wallet_cleanup():
+def wallet_config_cleanup():
     logger = logging.getLogger(__name__)
     logger.debug("wallet_cleanup: >>>")
 
@@ -71,12 +71,12 @@ def wallet_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-async def wallet(pool_name, wallet_name, wallet_type, wallet_cleanup, cleanup_storage):
+async def wallet_config(pool_name, wallet_name, wallet_type, wallet_config_cleanup, cleanup_storage):
     logger = logging.getLogger(__name__)
-    logger.debug("wallet: >>> pool_name: %r, wallet_type: %r, wallet_cleanup: %r, cleanup_storage: %r",
+    logger.debug("wallet: >>> pool_name: %r, wallet_type: %r, wallet_config_cleanup: %r, cleanup_storage: %r",
                  pool_name,
                  wallet_type,
-                 wallet_cleanup,
+                 wallet_config,
                  cleanup_storage)
 
     logger.debug("wallet: Creating wallet")
@@ -86,9 +86,20 @@ async def wallet(pool_name, wallet_name, wallet_type, wallet_cleanup, cleanup_st
     yield
 
     logger.debug("wallet: Deleting wallet")
-    await wallet.delete_wallet(wallet_name, None) if wallet_cleanup else None
+    await wallet.delete_wallet(wallet_name, None) if wallet_config_cleanup else None
 
     logger.debug("wallet: <<<")
+
+
+@pytest.fixture
+def wallet_runtime_config():
+    logger = logging.getLogger(__name__)
+    logger.debug("wallet_runtime_config: >>>")
+
+    res = None
+
+    logger.debug("wallet_runtime_config: <<< res: %r", res)
+    return res
 
 
 @pytest.fixture
@@ -102,15 +113,18 @@ def wallet_handle_cleanup():
     return res
 
 
-async def wallet_handle(wallet_name, wallet, wallet_handle_cleanup):
+@pytest.fixture
+async def wallet_handle(wallet_name, wallet_config, wallet_runtime_config, wallet_handle_cleanup):
     logger = logging.getLogger(__name__)
-    logger.debug("wallet_handle: >>> wallet_name: %r, wallet: %r, wallet_handle_cleanup: %r",
-                 wallet_name,
-                 wallet,
-                 wallet_handle_cleanup)
+    logger.debug(
+        "wallet_handle: >>> wallet_name: %r, wallet_config: %r, wallet_runtime_config: %r, wallet_handle_cleanup: %r",
+        wallet_name,
+        wallet_config,
+        wallet_runtime_config,
+        wallet_handle_cleanup)
 
     logger.debug("wallet_handle: Opening wallet")
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    wallet_handle = await wallet.open_wallet(wallet_name, wallet_runtime_config, None)
     assert type(wallet_handle) is int
 
     logger.debug("wallet_handle: yield %r", wallet_handle)

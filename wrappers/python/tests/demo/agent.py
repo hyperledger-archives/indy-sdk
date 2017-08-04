@@ -5,13 +5,13 @@ from indy.pool import open_pool_ledger
 import pytest
 import json
 
-from tests.utils.pool import create_genesis_txn_file
+from tests.utils.pool import create_genesis_txn_file_for_test_pool
 
 
 @pytest.mark.asyncio
 async def test_agent_demo_works(cleanup_storage):
     # 1. Create ledger config from genesis txn file
-    path = create_genesis_txn_file('pool_1.txn', None)
+    path = create_genesis_txn_file_for_test_pool('pool_1')
     pool_config = json.dumps({"genesis_txn": str(path)})
     await pool.create_pool_ledger_config('pool_1', pool_config)
 
