@@ -73,22 +73,22 @@ def wallet_config_cleanup():
 @pytest.fixture
 async def wallet_config(pool_name, wallet_name, wallet_type, wallet_config_cleanup, cleanup_storage):
     logger = logging.getLogger(__name__)
-    logger.debug("wallet: >>> pool_name: %r, wallet_type: %r, wallet_config_cleanup: %r, cleanup_storage: %r",
+    logger.debug("wallet_config: >>> pool_name: %r, wallet_type: %r, wallet_config_cleanup: %r, cleanup_storage: %r",
                  pool_name,
                  wallet_type,
                  wallet_config,
                  cleanup_storage)
 
-    logger.debug("wallet: Creating wallet")
+    logger.debug("wallet_config: Creating wallet")
     await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None)
 
-    logger.debug("wallet: yield")
+    logger.debug("wallet_config: yield")
     yield
 
-    logger.debug("wallet: Deleting wallet")
+    logger.debug("wallet_config: Deleting wallet")
     await wallet.delete_wallet(wallet_name, None) if wallet_config_cleanup else None
 
-    logger.debug("wallet: <<<")
+    logger.debug("wallet_config: <<<")
 
 
 @pytest.fixture
