@@ -1,29 +1,20 @@
-import json
+import pytest
 
-from tests.utils import pool as pool_utils
 from indy import pool
 from indy.error import ErrorCode, IndyError
 
-import pytest
 
-
+# noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_delete_pool_ledger_config_works(cleanup_storage):
-    await pool.create_pool_ledger_config(
-        "pool_1",
-        json.dumps({
-            "genesis_txn": str(pool_utils.create_genesis_txn_file_for_test_pool("pool_1"))
-        }))
-
-    await pool.delete_pool_ledger_config("pool_1")
+@pytest.mark.parametrize("pool_ledger_config_cleanup", [False])
+async def test_delete_pool_ledger_config_works(pool_name, pool_ledger_config, pool_ledger_config_cleanup):
+    await pool.delete_pool_ledger_config(pool_name)
 
 
+# noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_delete_pool_ledger_config_works_for_opened(cleanup_storage):
-    pool_handle = await pool_utils.create_and_open_pool_ledger("pool_1")
-
+async def test_delete_pool_ledger_config_works_for_opened(pool_name, pool_handle):
     with pytest.raises(IndyError) as e:
-        await pool.delete_pool_ledger_config("pool_1")
+        await pool.delete_pool_ledger_config(pool_name)
 
     assert ErrorCode.CommonInvalidState == e.value.error_code
-    await pool.close_pool_ledger(pool_handle)
