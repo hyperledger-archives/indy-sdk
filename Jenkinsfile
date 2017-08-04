@@ -258,13 +258,13 @@ def publishingLibindyRpmFiles() {
 
                 sh "cp -r ci libindy"
 
+                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
                 dir('libindy') {
                     echo 'Publish Rpm: Build docker image'
                     def testEnv = dockerHelpers.build('indy-sdk', 'ci/amazon.dockerfile ci')
 
                     testEnv.inside('-u 0:0') {
-
-                        commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
                         sh 'chmod -R 777 ci'
 
@@ -290,14 +290,15 @@ def publishLibindyDebFiles() {
                 checkout scm
 
                 sh "cp -r ci libindy"
+                sh "cp -r debian libindy"
+
+                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
                 dir('libindy') {
                     echo 'Publish Deb: Build docker image'
                     def testEnv = dockerHelpers.build('indy-sdk')
 
                     testEnv.inside('-u 0:0') {
-
-                        commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
                         sh 'chmod -R 777 ci'
 
