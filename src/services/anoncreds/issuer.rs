@@ -437,7 +437,7 @@ impl Issuer {
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
                 .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.m)?)?
                 .mul(&Pair::pair(&pk_r.h1, &pk_r.h_cap)?.pow(&params.m2)?)?
-                .mul(&Pair::pair(&pk_r.h2, &pk_r.h_cap)?.pow(&params.s)?)?)?.inverse()?;
+                .mul(&Pair::pair(&pk_r.h2, &pk_r.h_cap)?.pow(&params.s)?)?.inverse()?)?;
         let t4 = Pair::pair(&pk_r.htilde, &accumulator.acc)?
             .pow(&params.r)?
             .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.h_cap)?.pow(&params.r_prime)?)?;
