@@ -52,8 +52,8 @@ rm -rf ${RPM_BUILD_ROOT}
 install -dm0755 $RPM_BUILD_ROOT/%{_includedir}/indy
 install -dm0755 $RPM_BUILD_ROOT/%{_libdir}
 cp -a libindy/include/*.h $RPM_BUILD_ROOT/%{_includedir}/indy/
-install -Dm0644 target/release/libindy.a $RPM_BUILD_ROOT/%{_libdir}/libindy.a
-install -Dm0644 target/release/libindy.so $RPM_BUILD_ROOT/%{_libdir}/libindy.so
+install -Dm0644 libindy/target/release/libindy.a $RPM_BUILD_ROOT/%{_libdir}/libindy.a
+install -Dm0644 libindy/target/release/libindy.so $RPM_BUILD_ROOT/%{_libdir}/libindy.so
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
