@@ -22,7 +22,6 @@ fi
 echo "Packing...\n\n"
 
 cp include/*.h $WORK_DIR
-cd ../
 cp target/universal/debug/libindy.a $WORK_DIR
 CUR_DIR=`pwd`
 cd $WORK_DIR
