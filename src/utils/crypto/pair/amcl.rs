@@ -16,6 +16,7 @@ use self::amcl::ecp::ECP;
 use self::amcl::ecp2::ECP2;
 use self::amcl::fp12::FP12;
 use self::amcl::fp2::FP2;
+use self::amcl::fp::FP;
 use self::amcl::pair::{ate, g1mul, g2mul, gtpow, fexp};
 use self::amcl::rand::RAND;
 
@@ -674,6 +675,15 @@ mod tests {
         let p = PointG1::new_inf().unwrap();
         let q = PointG1::new().unwrap();
         let result = p.add(&q).unwrap();
+        assert_eq!(q, result);
+    }
+
+    #[test]
+    fn point_g1_infinity_test2() {
+        let p = PointG1::new().unwrap();
+        let inf = p.sub(&p).unwrap();
+        let q = PointG1::new().unwrap();
+        let result = inf.add(&q).unwrap();
         assert_eq!(q, result);
     }
 
