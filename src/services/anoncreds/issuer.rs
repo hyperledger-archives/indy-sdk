@@ -476,6 +476,9 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use services::anoncreds::prover;
+    use services::anoncreds::prover::Prover;
+    use services::anoncreds::types::ClaimJson;
 
     #[test]
     fn generate_keys_works() {
@@ -564,6 +567,53 @@ mod tests {
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
         let result = BigNumber::from_dec("18970881790876593286488783486386867538450674270137197011105008151201183300028283403854725282778638150217936721942434319741164063687946275930536223863520768657672755664180955901543160149915323325151339912941454195063854083578091043058101001054089316795088554097754632405106453701959655043761308676687984722831097067744306280339099944309055300662730322057853217855619342132319369757252485139011180518031078822262681093763592682724354563150664662385847044702450408149239372444565988153918412684418519832197112374827438788434448252992414094101094582772269873015514685057917124494501480003311040042093731740782916169155664").unwrap();
         assert_eq!(result, Issuer::_sign(&public_key, &secret_key, &context_attribute, &attributes, &v, &u, &e).unwrap());
+    }
+
+    #[test]
+    fn test_init_non_revoc_claim() {
+        let issuer = Issuer::new();
+        let prover = Prover::new();
+
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
+            mocks::ISSUER_DID, mocks::get_gvt_schema(), None, true).unwrap();
+
+        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            5, mocks::ISSUER_DID, 1).unwrap();
+
+        let master_secret = prover.generate_master_secret().unwrap();
+
+        let (claim_request, claim_init_data, revocation_claim_init_data) = prover.create_claim_request(
+            claim_definition.clone().unwrap().data.public_key,
+            claim_definition.clone().unwrap().data.public_key_revocation,
+            master_secret, prover::mocks::PROVER_DID).unwrap();
+
+        let revocation_registry_ref_cell = RefCell::new(revocation_registry.clone());
+
+        let claim_signature = issuer.create_claim(
+            &claim_definition, &claim_definition_private, &Some(revocation_registry_ref_cell),
+            &Some(revocation_registry_private), &claim_request,
+            &mocks::get_gvt_attributes(), None).unwrap();
+
+        let non_revocation_claim = claim_signature.clone().unwrap().non_revocation_claim.unwrap();
+        let old_v = non_revocation_claim.borrow().vr_prime_prime;
+
+        let claim_json = ClaimJson::new(
+            mocks::get_gvt_attributes(), claim_signature, 1,
+            mocks::ISSUER_DID.to_string());
+
+        let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
+
+        prover.process_claim(&claim_json_ref_cell, claim_init_data,
+                             revocation_claim_init_data.clone(),
+                             Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
+                             Some(revocation_registry));
+
+        let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
+        let new_v = non_revocation_claim.borrow().vr_prime_prime;
+
+        let vr_prime = revocation_claim_init_data.unwrap().v_prime;
+        assert_eq!(old_v.add_mod(&vr_prime).unwrap(), new_v);
     }
 }
 
