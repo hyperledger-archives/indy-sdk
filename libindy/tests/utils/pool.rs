@@ -67,8 +67,6 @@ impl PoolUtils {
 
         let txn_file_data = node_txns[0..(nodes_count as usize)].join("\n");
 
-        error!("--> {} {} {} {:?}", pool_name, nodes_count, txn_file_data, txn_file_path);
-
         PoolUtils::create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
     }
 

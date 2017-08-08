@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_schema_requests_works_for_correct_data_json(cleanup_storage):
+async def test_build_schema_requests_works_for_correct_data_json():
     identifier = "identifier"
     data = '{"name":"name", "version":"1.0", "keys":["name","male"]}'
 

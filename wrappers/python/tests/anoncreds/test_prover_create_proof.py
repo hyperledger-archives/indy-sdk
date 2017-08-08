@@ -1,21 +1,22 @@
 from indy.anoncreds import prover_get_claims_for_proof_req, prover_create_proof, prover_get_claims
 from indy.error import ErrorCode, IndyError
 
-from tests.utils import anoncreds
-
 import json
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_prover_create_proof_works(init_common_wallet):
+async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt_schema, master_secret_name,
+                                         schema_seq_no):
+    claim_def_json, = prepopulated_wallet
+
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
             "attr1_uuid": {
-                "schema_seq_no": 1,
+                "schema_seq_no": schema_seq_no,
                 "name": "name"
             }
         },
@@ -28,9 +29,10 @@ async def test_prover_create_proof_works(init_common_wallet):
         }
     }
 
-    claims = json.loads(await prover_get_claims_for_proof_req(init_common_wallet[0], json.dumps(proof_req)))
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
     claim_for_attr = claims['attrs']['attr1_uuid'][0]['claim_uuid']
     claim_for_predicate = claims['predicates']['predicate1_uuid'][0]['claim_uuid']
+
     requested_claims = {
         "self_attested_attributes": {},
         "requested_attrs": {
@@ -42,29 +44,33 @@ async def test_prover_create_proof_works(init_common_wallet):
     }
 
     schemas = {
-        claim_for_attr: anoncreds.get_gvt_schema_json(1)
+        claim_for_attr: gvt_schema
     }
 
     claim_defs = {
-        claim_for_attr: json.loads(init_common_wallet[1])
+        claim_for_attr: json.loads(claim_def_json)
     }
 
-    await prover_create_proof(init_common_wallet[0], json.dumps(proof_req), json.dumps(requested_claims),
-                              json.dumps(schemas), anoncreds.COMMON_MASTER_SECRET_NAME,
+    await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_claims),
+                              json.dumps(schemas), master_secret_name,
                               json.dumps(claim_defs), "{}")
 
 
 @pytest.mark.asyncio
-async def test_prover_create_proof_works_for_using_not_satisfy_claim(init_common_wallet):
-    claims = json.loads(await prover_get_claims(init_common_wallet[0], "{}"))
+async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_handle, prepopulated_wallet, gvt_schema,
+                                                                     master_secret_name,
+                                                                     schema_seq_no):
+    claim_def_json, = prepopulated_wallet
+    claims = json.loads(await prover_get_claims(wallet_handle, "{}"))
     claim_uuid = claims[0]['claim_uuid']
+
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
             "attr1_uuid": {
-                "schema_seq_no": 1,
+                "schema_seq_no": schema_seq_no,
                 "name": "some_attr"
             }
         },
@@ -82,29 +88,34 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(init_common
     }
 
     schemas = {
-        claim_uuid: anoncreds.get_gvt_schema_json(1)
+        claim_uuid: gvt_schema
     }
 
     claim_defs = {
-        claim_uuid: json.loads(init_common_wallet[1])
+        claim_uuid: json.loads(claim_def_json)
     }
 
     with pytest.raises(IndyError) as e:
-        await prover_create_proof(init_common_wallet[0], json.dumps(proof_req), json.dumps(requested_claims),
-                                  json.dumps(schemas), anoncreds.COMMON_MASTER_SECRET_NAME,
+        await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_claims),
+                                  json.dumps(schemas), master_secret_name,
                                   json.dumps(claim_defs), "{}")
+
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_prover_create_proof_works_for_invalid_wallet_handle(init_common_wallet):
+async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet, gvt_schema,
+                                                                   master_secret_name,
+                                                                   schema_seq_no):
+    claim_def_json, = prepopulated_wallet
+
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
             "attr1_uuid": {
-                "schema_seq_no": 1,
+                "schema_seq_no": schema_seq_no,
                 "name": "name"
             }
         },
@@ -117,9 +128,10 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(init_common_w
         }
     }
 
-    claims = json.loads(await prover_get_claims_for_proof_req(init_common_wallet[0], json.dumps(proof_req)))
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
     claim_for_attr = claims['attrs']['attr1_uuid'][0]['claim_uuid']
     claim_for_predicate = claims['predicates']['predicate1_uuid'][0]['claim_uuid']
+
     requested_claims = {
         "self_attested_attributes": {},
         "requested_attrs": {
@@ -131,17 +143,18 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(init_common_w
     }
 
     schemas = {
-        claim_for_attr: anoncreds.get_gvt_schema_json(1)
+        claim_for_attr: gvt_schema
     }
 
     claim_defs = {
-        claim_for_attr: json.loads(init_common_wallet[1])
+        claim_for_attr: json.loads(claim_def_json)
     }
 
-    invalid_wallet_handle = init_common_wallet[0] + 100
+    invalid_wallet_handle = wallet_handle + 100
 
     with pytest.raises(IndyError) as e:
         await prover_create_proof(invalid_wallet_handle, json.dumps(proof_req), json.dumps(requested_claims),
-                                  json.dumps(schemas), anoncreds.COMMON_MASTER_SECRET_NAME,
+                                  json.dumps(schemas), master_secret_name,
                                   json.dumps(claim_defs), "{}")
+
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

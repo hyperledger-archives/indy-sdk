@@ -15,7 +15,7 @@ public class AgentConnectTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentConnectWorksForRemoteData() throws Exception {
-		String endpoint = "127.0.0.1:9705";
+		String endpoint = "127.0.0.1:9605";
 		String listenerWalletName = "listenerWallet";
 		String trusteeWalletName = "trusteeWallet";
 
@@ -60,7 +60,7 @@ public class AgentConnectTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentConnectWorksForAllDataInWalletPresent() throws Exception {
-		String endpoint = "127.0.0.1:9706";
+		String endpoint = "127.0.0.1:9606";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 

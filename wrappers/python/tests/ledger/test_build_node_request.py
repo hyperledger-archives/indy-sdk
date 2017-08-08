@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_node_request_works_for_missed_field_in_data_json(cleanup_storage):
+async def test_build_node_request_works_for_missed_field_in_data_json():
     identifier = "identifier"
     destination = "destination"
     data = {
@@ -22,7 +22,7 @@ async def test_build_node_request_works_for_missed_field_in_data_json(cleanup_st
 
 
 @pytest.mark.asyncio
-async def test_build_node_request_works_for_correct_data_json(cleanup_storage):
+async def test_build_node_request_works_for_correct_data_json():
     identifier = "identifier"
     destination = "destination"
     data = {
