@@ -30,8 +30,8 @@ use utils::wallet::WalletUtils;
 
 use std::sync::mpsc::RecvTimeoutError;
 
-static ENDPOINT: &str = "127.0.0.1:9700";
-static TRUSTEE_SEED: &str = "000000000000000000000000Trustee1";
+static ENDPOINT: &'static str = "127.0.0.1:9700";
+static TRUSTEE_SEED: &'static str = "000000000000000000000000Trustee1";
 
 mod high_cases {
     use super::*;
@@ -68,6 +68,7 @@ mod high_cases {
 
             let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
             let trustee_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(trustee_wallet, Some(TRUSTEE_SEED)).unwrap();
             let sender_did = trustee_did.clone();
@@ -192,7 +193,6 @@ mod high_cases {
             AgentUtils::add_identity(listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
 
             SignusUtils::store_their_did_from_parts(sender_wallet, listener_did.as_str(), listener_pk.as_str(), listener_verkey.as_str(), ENDPOINT).unwrap();
-
 
             AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
