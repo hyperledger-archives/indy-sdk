@@ -16,7 +16,6 @@ use self::amcl::ecp::ECP;
 use self::amcl::ecp2::ECP2;
 use self::amcl::fp12::FP12;
 use self::amcl::fp2::FP2;
-use self::amcl::fp::FP;
 use self::amcl::pair::{ate, g1mul, g2mul, gtpow, fexp};
 use self::amcl::rand::RAND;
 
@@ -526,7 +525,6 @@ impl<'a> Deserialize<'a> for Pair {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::logger::LoggerUtils;
 
     extern crate serde_json;
 
