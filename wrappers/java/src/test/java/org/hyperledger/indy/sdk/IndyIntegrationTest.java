@@ -49,8 +49,8 @@ public class IndyIntegrationTest {
 	public void tearDown() throws IOException {
 		openedPools.forEach(pool -> {
 			try {
-				pool.closePoolLedger();
-			} catch (IndyException ignore) {
+				pool.closePoolLedger().get();
+			} catch (IndyException | InterruptedException | ExecutionException ignore) {
 			}
 		});
 		openedPools.clear();
