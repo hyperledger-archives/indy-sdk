@@ -10,11 +10,12 @@
 
 @implementation NSDictionary (JSON)
 
+// WARNING: - PrettyPrinted flag is not suitable to configure JSON as RUST argument right now. Wait for fix and return it.
 + (NSString*) toString:(NSDictionary*) dict
 {
     NSError *error;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dict
-                                                       options:NSJSONWritingPrettyPrinted
+                                                       options:kNilOptions
                                                          error:&error];
     
     if (!jsonData)

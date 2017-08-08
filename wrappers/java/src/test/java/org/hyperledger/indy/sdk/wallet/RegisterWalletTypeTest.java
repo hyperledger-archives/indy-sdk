@@ -9,6 +9,8 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.junit.Assert.assertTrue;
+
 
 public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
@@ -16,7 +18,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 	public void testRegisterWalletTypeWorks() throws Exception {
 		WalletTypeInmem.getInstance().clear();
 
-		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance(), false).get();
+		assertTrue(true);
 
 		WalletTypeInmem.getInstance().clear();
 	}
@@ -27,9 +29,6 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletTypeAlreadyRegisteredError));
 
-		String type = "inmem";
-
-		Wallet.registerWalletType(type, WalletTypeInmem.getInstance(), false).get();
-		Wallet.registerWalletType(type, WalletTypeInmem.getInstance(), true).get();
+		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance()).get();
 	}
 }
