@@ -1,5 +1,5 @@
-from indy import IndyError
-from indy import wallet
+from indy_sdk import IndyError
+from indy_sdk import wallet
 from indy.error import ErrorCode
 >>>>>>> master
 

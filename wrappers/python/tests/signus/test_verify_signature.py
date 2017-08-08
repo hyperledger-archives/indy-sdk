@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from indy import IndyError, ledger, signus, wallet
+from indy_sdk import IndyError, ledger, signus, wallet
 from indy.error import ErrorCode
 
 

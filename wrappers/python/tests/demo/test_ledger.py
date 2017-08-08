@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from indy import ledger, signus, wallet, pool
+from indy_sdk import ledger, signus, wallet, pool
 
 
 # noinspection PyUnusedLocal

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from indy import anoncreds
+from indy_sdk import anoncreds
 from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_name as x_wallet_name, \
     wallet_type as x_wallet_type, wallet_runtime_config as x_wallet_runtime_config, \
     xwallet_cleanup as x_xwallet_cleanup, wallet_handle_cleanup as x_wallet_handle_cleanup, \

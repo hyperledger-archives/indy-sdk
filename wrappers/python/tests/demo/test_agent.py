@@ -1,4 +1,4 @@
-from indy import agent, ledger, signus, pool, wallet
+from indy_sdk import agent, ledger, signus, pool, wallet
 
 import pytest
 import json

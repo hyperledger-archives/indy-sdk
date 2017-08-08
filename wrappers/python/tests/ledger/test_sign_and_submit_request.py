@@ -1,6 +1,6 @@
 import json
 
-from indy import wallet, signus, ledger
+from indy_sdk import wallet, signus, ledger
 from indy.error import ErrorCode, IndyError
 import pytest
 

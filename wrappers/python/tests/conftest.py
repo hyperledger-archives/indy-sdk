@@ -9,7 +9,7 @@ from tempfile import gettempdir
 
 import pytest
 
-from indy import wallet, pool, signus, ledger
+from indy_sdk import wallet, pool, signus, ledger
 
 logging.basicConfig(level=logging.DEBUG)
 
