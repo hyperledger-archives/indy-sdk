@@ -200,7 +200,7 @@ def pythonWrapperUbuntuTesting() {
 
                         sh '''
                             python3.6 -m pip install -e .
-                            python3.6 -m pytest
+                            TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
                         '''
                     }
                 }
