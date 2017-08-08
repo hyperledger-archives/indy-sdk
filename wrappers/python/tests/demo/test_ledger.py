@@ -1,28 +1,26 @@
-from indy_sdk import ledger, signus, wallet, pool
-from indy_sdk.pool import open_pool_ledger
-
-import pytest
 import json
 
-from tests.utils.pool import create_genesis_txn_file
+import pytest
+
+from indy import ledger, signus, wallet, pool
 
 
+# noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_ledger_demo_works(cleanup_storage):
+async def test_ledger_demo_works(pool_name, pool_genesis_txn_path, seed_trustee1, pool_genesis_txn_file, path_home):
     # 1. Create ledger config from genesis txn file
-    path = create_genesis_txn_file('pool_1.txn', None)
-    pool_config = json.dumps({"genesis_txn": str(path)})
-    await pool.create_pool_ledger_config('pool_1', pool_config)
+    pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
+    await pool.create_pool_ledger_config(pool_name, pool_config)
 
     # 2. Open pool ledger
-    pool_handle = await open_pool_ledger('pool_1', None)
+    pool_handle = await pool.open_pool_ledger(pool_name, None)
 
     # 3. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet('pool_1', 'my_wallet', None, None, None)
+    await wallet.create_wallet(pool_name, 'my_wallet', None, None, None)
     my_wallet_handle = await wallet.open_wallet('my_wallet', None, None)
 
     # 4. Create Their Wallet and Get Wallet Handle
-    await wallet.create_wallet('pool_1', 'their_wallet', None, None, None)
+    await wallet.create_wallet(pool_name, 'their_wallet', None, None, None)
     their_wallet_handle = await wallet.open_wallet('their_wallet', None, None)
 
     # 5. Create My DID
@@ -30,7 +28,7 @@ async def test_ledger_demo_works(cleanup_storage):
 
     # 6. Create Their DID from Trustee1 seed
     (their_did, their_verkey, their_pk) = \
-        await signus.create_and_store_my_did(their_wallet_handle, '{"seed":"000000000000000000000000Trustee1"}')
+        await signus.create_and_store_my_did(their_wallet_handle, json.dumps({"seed": seed_trustee1}))
 
     # 7. Store Their DID
     their_identity_json = json.dumps({

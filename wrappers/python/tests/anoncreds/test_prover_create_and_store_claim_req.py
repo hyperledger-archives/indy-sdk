@@ -1,67 +1,70 @@
 from indy_sdk.anoncreds import prover_create_and_store_claim_req
 from indy_sdk.error import ErrorCode, IndyError
 
-from tests.utils import anoncreds
-
 import json
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_prover_create_and_store_claim_req_works(init_common_wallet):
-    schema_seq_no = 1
-    prover_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-    claim_offer_json = anoncreds.get_claim_offer(anoncreds.ISSUER_DID, schema_seq_no)
-    claim_req_json = json.loads(await prover_create_and_store_claim_req(init_common_wallet[0], prover_did,
-                                                                        json.dumps(claim_offer_json),
-                                                                        init_common_wallet[1],
-                                                                        anoncreds.COMMON_MASTER_SECRET_NAME))
-    assert claim_req_json['schema_seq_no'] == schema_seq_no
-    assert claim_req_json['issuer_did'] == anoncreds.ISSUER_DID
-    assert len(claim_req_json['blinded_ms']['u']) > 0
+async def test_prover_create_and_store_claim_req_works(wallet_handle, prepopulated_wallet, issuer_did, prover_did,
+                                                       claim_offer_issuer_1_json, schema_seq_no,
+                                                       master_secret_name):
+    claim_def_json, = prepopulated_wallet
+    claim_req = json.loads(await prover_create_and_store_claim_req(wallet_handle, prover_did,
+                                                                   claim_offer_issuer_1_json,
+                                                                   claim_def_json,
+                                                                   master_secret_name))
+    assert claim_req['schema_seq_no'] == schema_seq_no
+    assert claim_req['issuer_did'] == issuer_did
+    assert len(claim_req['blinded_ms']['u']) > 0
 
 
 @pytest.mark.asyncio
-async def test_prover_create_and_store_claim_req_works_for_invalid_wallet(init_common_wallet):
-    schema_seq_no = 1
-    prover_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-    invalid_wallet_handle = init_common_wallet[0] + 100
-    claim_offer_json = anoncreds.get_claim_offer(anoncreds.ISSUER_DID, schema_seq_no)
+async def test_prover_create_and_store_claim_req_works_for_invalid_wallet(wallet_handle, prepopulated_wallet,
+                                                                          prover_did,
+                                                                          claim_offer_issuer_1_json,
+                                                                          master_secret_name):
+    claim_def_json, = prepopulated_wallet
+    invalid_wallet_handle = wallet_handle + 100
 
     with pytest.raises(IndyError) as e:
         await prover_create_and_store_claim_req(invalid_wallet_handle, prover_did,
-                                                json.dumps(claim_offer_json),
-                                                init_common_wallet[1],
-                                                anoncreds.COMMON_MASTER_SECRET_NAME)
+                                                claim_offer_issuer_1_json,
+                                                claim_def_json,
+                                                master_secret_name)
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_issuer_did(init_common_wallet):
-    schema_seq_no = 1
-    prover_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-    claim_offer_json = anoncreds.get_claim_offer("NcYxiDXkpYi6ov5FcYDi1e3", schema_seq_no)
+async def test_prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_issuer_did(
+        wallet_handle, prepopulated_wallet,
+        prover_did,
+        claim_offer_issuer_2_1_json,
+        master_secret_name):
+    claim_def_json, = prepopulated_wallet
 
     with pytest.raises(IndyError) as e:
-        await prover_create_and_store_claim_req(init_common_wallet[0], prover_did,
-                                                json.dumps(claim_offer_json),
-                                                init_common_wallet[1],
-                                                anoncreds.COMMON_MASTER_SECRET_NAME)
+        await prover_create_and_store_claim_req(wallet_handle, prover_did,
+                                                claim_offer_issuer_2_1_json,
+                                                claim_def_json,
+                                                master_secret_name)
 
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_schema_seq_no(init_common_wallet):
-    schema_seq_no = 2
-    prover_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-    claim_offer_json = anoncreds.get_claim_offer(anoncreds.ISSUER_DID, schema_seq_no)
+async def test_prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_schema_seq_no(
+        wallet_handle, prepopulated_wallet,
+        prover_did,
+        claim_offer_issuer_2_json,
+        master_secret_name):
+    claim_def_json, = prepopulated_wallet
 
     with pytest.raises(IndyError) as e:
-        await prover_create_and_store_claim_req(init_common_wallet[0], prover_did,
-                                                json.dumps(claim_offer_json),
-                                                init_common_wallet[1],
-                                                anoncreds.COMMON_MASTER_SECRET_NAME)
+        await prover_create_and_store_claim_req(wallet_handle, prover_did,
+                                                claim_offer_issuer_2_json,
+                                                claim_def_json,
+                                                master_secret_name)
 
     assert ErrorCode.CommonInvalidStructure == e.value.error_code

@@ -10,7 +10,7 @@ public class AgentRemoveIdentityTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentRemoveIdentityWorks() throws Exception {
-		String endpoint = "127.0.0.1:9708";
+		String endpoint = "127.0.0.1:9608";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 

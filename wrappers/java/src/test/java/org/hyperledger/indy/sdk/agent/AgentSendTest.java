@@ -50,7 +50,7 @@ public class AgentSendTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentSendWorksForAllDataInWalletPresent() throws Exception {
-		String endpoint = "127.0.0.1:9709";
+		String endpoint = "127.0.0.1:9609";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 

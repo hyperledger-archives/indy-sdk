@@ -1,14 +1,15 @@
-from indy_sdk import anoncreds, wallet
+from indy import anoncreds, wallet
 
 import pytest
 import json
 
 
+# noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_anoncreds_demo_works(cleanup_storage):
+async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
     # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet('pool_1', 'wallet_1', None, None, None)
-    wallet_handle = await wallet.open_wallet('wallet_1', None, None)
+    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
 
     # 2. Issuer create Claim Definition for Schema
     schema = {

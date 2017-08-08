@@ -8,7 +8,7 @@ import java.io.File;
 public class InitHelper {
 	public static void init() {
 
-		if (!LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy.so"));
+		if (!LibIndy.isInitialized()) LibIndy.init(new File("./lib/libindy"));
 
 	}
 }

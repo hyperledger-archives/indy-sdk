@@ -6,11 +6,6 @@ from indy_sdk import signus, agent
 
 
 @pytest.fixture
-async def endpoint():
-    return "127.0.0.1:9700"
-
-
-@pytest.fixture
 async def wallet_with_identity(wallet_handle, endpoint):
     did, verkey, pk = await signus.create_and_store_my_did(wallet_handle, "{}")
     await signus.store_their_did(wallet_handle,

@@ -15,6 +15,7 @@ async def test_agent_close_connection_works_for_outgoing(listener_with_identity)
 
     with pytest.raises(IndyError) as e:
         await agent.agent_send(connection_handle, "msg")
+
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
@@ -34,6 +35,7 @@ async def test_agent_close_connection_works_for_incoming(listener_with_identity)
 
     with pytest.raises(IndyError) as e:
         await agent.agent_send(event.connection_handle, "msg")
+
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
     await agent.agent_close_connection(connection_handle)

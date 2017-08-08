@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_get_txn_request_works(cleanup_storage):
+async def test_build_get_txn_request_works():
     identifier = "identifier"
     data = 1
     expected_response = {

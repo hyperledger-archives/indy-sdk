@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_attrib_request_works_for_raw_data(cleanup_storage):
+async def test_build_attrib_request_works_for_raw_data():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "Th7MpTaRZVRYnPiabds81Y"
     raw = '{"endpoint":{"ha":"127.0.0.1:5555"}}'
@@ -25,7 +25,7 @@ async def test_build_attrib_request_works_for_raw_data(cleanup_storage):
 
 
 @pytest.mark.asyncio
-async def test_build_attrib_request_works_for_missed_attribute(cleanup_storage):
+async def test_build_attrib_request_works_for_missed_attribute():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "Th7MpTaRZVRYnPiabds81Y"
 

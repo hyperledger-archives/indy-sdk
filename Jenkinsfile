@@ -167,7 +167,7 @@ def javaWrapperUbuntuTesting() {
                     testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                         echo "${env_name} Test: Test"
 
-                        sh "mvn clean test"
+                        sh "TEST_POOL_IP=10.0.0.2 mvn clean test"
                     }
                 }
             }
@@ -202,7 +202,7 @@ def pythonWrapperUbuntuTesting() {
 
                         sh '''
                             python3.6 -m pip install -e .
-                            python3.6 -m pytest
+                            TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
                         '''
                     }
                 }

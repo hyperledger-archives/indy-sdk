@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_nym_request_works_for_invalid_identifier(cleanup_storage):
+async def test_build_nym_request_works_for_invalid_identifier():
     identifier = "invalid_base58_identifier"
     dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
 
@@ -16,7 +16,7 @@ async def test_build_nym_request_works_for_invalid_identifier(cleanup_storage):
 
 
 @pytest.mark.asyncio
-async def test_build_nym_request_works_for_only_required_fields(cleanup_storage):
+async def test_build_nym_request_works_for_only_required_fields():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
 
@@ -33,7 +33,7 @@ async def test_build_nym_request_works_for_only_required_fields(cleanup_storage)
 
 
 @pytest.mark.asyncio
-async def test_build_nym_request_works_with_option_fields(cleanup_storage):
+async def test_build_nym_request_works_with_option_fields():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
     ver_key = "Anfh2rjAcxkE249DcdsaQl"
