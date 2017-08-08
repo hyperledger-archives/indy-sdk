@@ -1,12 +1,12 @@
+import asyncio
 import json
 import logging
-from distutils import dirname
 from os import environ, makedirs
+from os.path import dirname
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
 
-import asyncio
 import pytest
 
 from indy import wallet, pool, signus, ledger
