@@ -2,38 +2,103 @@ import json
 import logging
 from distutils import dirname
 from os import environ, makedirs
+from pathlib import Path
+from shutil import rmtree
+from tempfile import gettempdir
 
+import asyncio
 import pytest
 
-from indy import wallet, pool
-from tests.utils import storage as storage_utils
+from indy import wallet, pool, signus, ledger
 
 logging.basicConfig(level=logging.DEBUG)
 
 
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop()
+    yield loop
+    loop.close()
+
+
 @pytest.fixture
-def trustee1_seed():
+def seed_trustee1():
     logger = logging.getLogger(__name__)
-    logger.debug("trustee1_seed: >>>")
+    logger.debug("seed_trustee1: >>>")
 
     res = "000000000000000000000000Trustee1"
 
-    logger.debug("trustee1_seed: <<< res: %r", res)
+    logger.debug("seed_trustee1: <<< res: %r", res)
     return res
 
 
 @pytest.fixture
-def cleanup_storage():
+def seed_steward1():
     logger = logging.getLogger(__name__)
-    logger.debug("cleanup_storage: >>>")
+    logger.debug("seed_trustee1: >>>")
 
-    storage_utils.cleanup()
+    res = "000000000000000000000000Steward1"
 
-    logger.debug("cleanup_storage: yield")
-    yield
+    logger.debug("seed_trustee1: <<< res: %r", res)
+    return res
 
-    storage_utils.cleanup()
-    logger.debug("cleanup_storage: <<<")
+
+@pytest.fixture
+def seed_my1():
+    logger = logging.getLogger(__name__)
+    logger.debug("seed_my1: >>>")
+
+    res = "00000000000000000000000000000My1"
+
+    logger.debug("seed_my1: <<< res: %r", res)
+    return res
+
+
+@pytest.fixture
+async def endpoint():
+    return "127.0.0.1:9700"
+
+
+@pytest.fixture
+def path_temp():
+    logger = logging.getLogger(__name__)
+    logger.debug("path_temp: >>>")
+
+    path = Path(gettempdir()).joinpath("indy")
+
+    if path.exists():
+        logger.debug("path_temp: Cleanup tmp path: %s", path)
+        rmtree(str(path))
+
+    logger.debug("path_temp: yield: %r", path)
+    yield path
+
+    if path.exists():
+        logger.debug("path_temp: Cleanup tmp path: %s", path)
+        rmtree(str(path))
+
+    logger.debug("path_temp: <<<")
+
+
+@pytest.fixture
+def path_home() -> Path:
+    logger = logging.getLogger(__name__)
+    logger.debug("path_home: >>>")
+
+    path = Path.home().joinpath(".indy")
+
+    if path.exists():
+        logger.debug("path_home: Cleanup home path: %r", path)
+        rmtree(str(path))
+
+    logger.debug("path_home: yield: %r", path)
+    yield path
+
+    if path.exists():
+        logger.debug("path_home: Cleanup home path: %r", path)
+        rmtree(str(path))
+
+    logger.debug("path_home: <<<")
 
 
 @pytest.fixture
@@ -59,7 +124,18 @@ def wallet_type():
 
 
 @pytest.fixture
-def wallet_config_cleanup():
+def wallet_config():
+    logger = logging.getLogger(__name__)
+    logger.debug("wallet_config: >>>")
+
+    res = None
+
+    logger.debug("wallet_config: <<< res: %r", res)
+    return res
+
+
+@pytest.fixture
+def xwallet_cleanup():
     logger = logging.getLogger(__name__)
     logger.debug("wallet_cleanup: >>>")
 
@@ -71,24 +147,24 @@ def wallet_config_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-async def wallet_config(pool_name, wallet_name, wallet_type, wallet_config_cleanup, cleanup_storage):
+async def xwallet(pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
     logger = logging.getLogger(__name__)
-    logger.debug("wallet_config: >>> pool_name: %r, wallet_type: %r, wallet_config_cleanup: %r, cleanup_storage: %r",
+    logger.debug("xwallet: >>> pool_name: %r, wallet_type: %r, xwallet_cleanup: %r, path_home: %r",
                  pool_name,
                  wallet_type,
-                 wallet_config,
-                 cleanup_storage)
+                 xwallet,
+                 path_home)
 
-    logger.debug("wallet_config: Creating wallet")
+    logger.debug("xwallet: Creating wallet")
     await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None)
 
-    logger.debug("wallet_config: yield")
+    logger.debug("xwallet: yield")
     yield
 
-    logger.debug("wallet_config: Deleting wallet")
-    await wallet.delete_wallet(wallet_name, None) if wallet_config_cleanup else None
+    logger.debug("xwallet: Deleting wallet")
+    await wallet.delete_wallet(wallet_name, None) if xwallet_cleanup else None
 
-    logger.debug("wallet_config: <<<")
+    logger.debug("xwallet: <<<")
 
 
 @pytest.fixture
@@ -114,12 +190,12 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture
-async def wallet_handle(wallet_name, wallet_config, wallet_runtime_config, wallet_handle_cleanup):
+async def wallet_handle(wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
     logger = logging.getLogger(__name__)
     logger.debug(
-        "wallet_handle: >>> wallet_name: %r, wallet_config: %r, wallet_runtime_config: %r, wallet_handle_cleanup: %r",
+        "wallet_handle: >>> wallet_name: %r, xwallet: %r, wallet_runtime_config: %r, wallet_handle_cleanup: %r",
         wallet_name,
-        wallet_config,
+        xwallet,
         wallet_runtime_config,
         wallet_handle_cleanup)
 
@@ -194,12 +270,12 @@ def pool_genesis_txn_data(pool_genesis_txn_count, pool_ip):
 
 
 @pytest.fixture
-def pool_genesis_txn_path(pool_name):
+def pool_genesis_txn_path(pool_name, path_temp):
     logger = logging.getLogger(__name__)
     logger.debug("pool_genesis_txn_path: >>> pool_name: %r",
                  pool_name)
 
-    res = storage_utils.indy_temp_path().joinpath("{}.txn".format(pool_name))
+    res = path_temp.joinpath("{}.txn".format(pool_name))
 
     logger.debug("pool_genesis_txn_path: <<< res: %r", res)
     return res
@@ -207,12 +283,11 @@ def pool_genesis_txn_path(pool_name):
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-def pool_genesis_txn_file(pool_genesis_txn_path, pool_genesis_txn_data, cleanup_storage):
+def pool_genesis_txn_file(pool_genesis_txn_path, pool_genesis_txn_data):
     logger = logging.getLogger(__name__)
-    logger.debug("pool_genesis_txn_file: >>> pool_genesis_txn_path: %r, pool_genesis_txn_data: %r, cleanup_storage: %r",
+    logger.debug("pool_genesis_txn_file: >>> pool_genesis_txn_path: %r, pool_genesis_txn_data: %r",
                  pool_genesis_txn_path,
-                 pool_genesis_txn_data,
-                 cleanup_storage)
+                 pool_genesis_txn_data)
 
     makedirs(dirname(pool_genesis_txn_path))
 
@@ -229,14 +304,16 @@ def pool_ledger_config_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-async def pool_ledger_config(pool_name, pool_genesis_txn_path, pool_genesis_txn_file, pool_ledger_config_cleanup):
+async def pool_ledger_config(pool_name, pool_genesis_txn_path, pool_genesis_txn_file, pool_ledger_config_cleanup,
+                             path_home):
     logger = logging.getLogger(__name__)
     logger.debug("pool_ledger_config: >>> pool_name: %r, pool_genesis_txn_path: %r, pool_genesis_txn_file: %r,"
-                 " pool_ledger_config_cleanup: %r",
+                 " pool_ledger_config_cleanup: %r, path_home: %r",
                  pool_name,
                  pool_genesis_txn_path,
                  pool_genesis_txn_file,
-                 pool_ledger_config_cleanup)
+                 pool_ledger_config_cleanup,
+                 path_home)
 
     logger.debug("pool_ledger_config: Creating pool ledger config")
     await pool.create_pool_ledger_config(
@@ -297,3 +374,30 @@ async def pool_handle(pool_name, pool_ledger_config, pool_config, pool_handle_cl
     await pool.close_pool_ledger(pool_handle) if pool_handle_cleanup else None
 
     logger.debug("pool_handle: <<<")
+
+
+@pytest.fixture
+async def identity_trustee1(wallet_handle, seed_trustee1):
+    (trustee_did, trustee_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                                            json.dumps({"seed": seed_trustee1}))
+    yield (trustee_did, trustee_verkey)
+
+
+@pytest.fixture
+async def identity_steward1(wallet_handle, seed_steward1):
+    (steward_did, steward_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                                            json.dumps({"seed": seed_steward1}))
+    yield (steward_did, steward_verkey)
+
+
+@pytest.fixture
+async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, ):
+    (trustee_did, trustee_verkey) = identity_trustee1
+
+    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                                  json.dumps({"seed": seed_my1}))
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
+    yield (my_did, my_verkey)

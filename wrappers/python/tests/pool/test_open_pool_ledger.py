@@ -9,13 +9,11 @@ from indy.error import ErrorCode, IndyError
     [(2, None), (3, None), (4, None), (4, '{"refreshOnOpen": true}')])
 @pytest.mark.asyncio
 async def test_open_pool_ledger_works(pool_handle):
-    assert pool_handle is not None
+    pass
 
 
 @pytest.mark.asyncio
 async def test_open_pool_ledger_works_for_twice(pool_name, pool_config, pool_handle):
-    assert pool_handle is not None
-
     with pytest.raises(IndyError) as e:
         await pool.open_pool_ledger(pool_name, pool_config)
 

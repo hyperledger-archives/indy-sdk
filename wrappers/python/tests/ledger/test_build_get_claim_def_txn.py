@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_get_claim_def_request_works(cleanup_storage):
+async def test_build_get_claim_def_request_works():
     identifier = "identifier"
     _ref = 1
     signature_type = "signature_type"
@@ -28,7 +28,7 @@ async def test_build_get_claim_def_request_works(cleanup_storage):
 
 
 @pytest.mark.asyncio
-async def test_build_claim_def_request_works_for_correct_data_json(cleanup_storage):
+async def test_build_claim_def_request_works_for_correct_data_json():
     identifier = "identifier"
     signature_type = "CL"
     schema_seq_no = 1

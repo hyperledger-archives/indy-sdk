@@ -7,8 +7,8 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_sign_works(wallet_handle):
-    (did, _, _) = await signus.create_and_store_my_did(wallet_handle, '{"seed":"000000000000000000000000Trustee1"}')
+async def test_sign_works(wallet_handle, seed_trustee1):
+    (did, _, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
 
     message = json.dumps({
         "reqId": 1496822211362017764,

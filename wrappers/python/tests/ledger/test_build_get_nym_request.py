@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_get_nym_request_works(cleanup_storage):
+async def test_build_get_nym_request_works():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
 
