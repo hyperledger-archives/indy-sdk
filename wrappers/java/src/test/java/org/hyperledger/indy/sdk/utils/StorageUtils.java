@@ -16,6 +16,7 @@ public class StorageUtils {
 
 	public static void cleanupStorage() throws IOException {
 		System.out.println("cleanupStorage >>");
+		Thread.dumpStack();
 
 		File tmpDir = new File(getTmpPath());
 		File homeDir = new File(getIndyHomePath());
