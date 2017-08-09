@@ -1,6 +1,6 @@
 import pytest
 
-from indy_sdk import agent, IndyError
+from indy import agent, IndyError
 from indy_sdk.error import ErrorCode
 
 

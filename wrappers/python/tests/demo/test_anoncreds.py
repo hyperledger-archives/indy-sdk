@@ -1,4 +1,4 @@
-from indy_sdk import anoncreds, wallet
+from indy import anoncreds, wallet
 
 import pytest
 import json

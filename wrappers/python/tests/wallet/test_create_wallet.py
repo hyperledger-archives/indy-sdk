@@ -1,6 +1,6 @@
 import pytest
 
-from indy_sdk import wallet
+from indy import wallet
 from indy.error import IndyError, ErrorCode
 from ..conftest import wallet_name
 

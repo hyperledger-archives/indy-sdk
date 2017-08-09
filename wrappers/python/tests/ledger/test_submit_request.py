@@ -1,4 +1,4 @@
-from indy_sdk import ledger, signus
+from indy import ledger, signus
 from indy_sdk.error import ErrorCode, IndyError
 
 import json

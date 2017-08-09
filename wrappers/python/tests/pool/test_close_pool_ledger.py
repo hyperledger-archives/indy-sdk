@@ -1,4 +1,4 @@
-from indy_sdk import pool
+from indy import pool
 from indy.error import ErrorCode, IndyError
 
 import pytest

@@ -1,7 +1,7 @@
 import json
 
-from indy_sdk import IndyError
-from indy_sdk import signus
+from indy import IndyError
+from indy import signus
 from indy_sdk.error import ErrorCode
 
 import base58

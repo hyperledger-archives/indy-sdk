@@ -1,5 +1,5 @@
-from indy_sdk import IndyError
-from indy_sdk import signus
+from indy import IndyError
+from indy import signus
 
 import pytest
 

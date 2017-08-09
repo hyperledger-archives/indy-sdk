@@ -9,6 +9,8 @@ key="$1"
 mkdir /home/indy/debs
 
 version=$(grep -Po "(?<=version=')([0-9]|\.|-)*" setup.py)
+license=$(grep -Po "(?<=license=').[^\']*" setup.py)
+description=$(grep -Po "(?<=description=').[^\']*" setup.py)
 
 [ -z $key ] && exit 1
 [ -z $version ] && exit 2
@@ -20,11 +22,9 @@ fpm --input-type "python" \
     --verbose \
     --architecture "amd64" \
     --name "python-indy-sdk" \
-    --license "Apache License 2.0" \
+    --license license \
     --python-package-name-prefix "python3" \
-    --directories "This is the official SDK for Hyperledger Indy, which provides a distributed-ledger-based foundation for self-sovereign identity. The major artifact of the SDK is a c-callable library; there are
-also convenience wrappers for various programming languages. All bugs, stories, and backlog for this project are managed through Hyperledger's Jira in project IS (note that regular Indy tickets are
-in the INDY project instead...). Also, join us on Jira's Rocket.Chat at #indy-sdk to discuss." \
+    --directories description \
     --python-bin "/usr/bin/python3.6" \
     --exclude "*.pyc" \
     --exclude "*.pyo" \
@@ -41,3 +41,4 @@ cd /var/repository/repos/deb/python-indy-sdk/$version
 put -r /home/indy/debs/python-indy-sdk_"$version"_amd64.deb
 ls -l /var/repository/repos/deb/python-indy-sdk/$version
 EOF
+

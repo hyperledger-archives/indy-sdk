@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from indy_sdk import signus, ledger, agent, wallet
+from indy import signus, ledger, agent, wallet
 
 
 @pytest.mark.asyncio

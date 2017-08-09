@@ -1,4 +1,4 @@
-from indy_sdk import ledger
+from indy import ledger
 
 import json
 import pytest
