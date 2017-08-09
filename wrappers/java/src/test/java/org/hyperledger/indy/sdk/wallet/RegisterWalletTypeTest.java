@@ -1,6 +1,5 @@
 package org.hyperledger.indy.sdk.wallet;
 
-
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
@@ -19,7 +18,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
-
 
 public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
@@ -40,8 +38,8 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance()).get();
 	}
-	
-	
+
+
 	static Wallet wallet;
 	static String claimDef;
 	String masterSecretName = "master_secret_name";
@@ -57,16 +55,16 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 			"\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
 	@Rule
 	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
-	
+
 	@Test
 	@Ignore
 	public void customWalletWorkoutTest() throws Exception { 
-		
+
 		StorageUtils.cleanupStorage();
 
 		String walletName = "inmemWorkoutWallet";
 		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance());
-		
+
 		Wallet.createWallet("default", walletName, "inmem", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
 
