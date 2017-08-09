@@ -29,7 +29,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public async Task TestAgentCloseConnectionWorksForOutgoing()
         {
-            var endpoint = "127.0.0.1:9903";
+            var endpoint = "127.0.0.1:9603";
 
             var myDid = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 
@@ -56,7 +56,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public async Task TestAgentCloseConnectionWorksForIncoming()
         {
-            var endpoint = "127.0.0.1:9913";
+            var endpoint = "127.0.0.1:9613";
 
             var myDid = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 

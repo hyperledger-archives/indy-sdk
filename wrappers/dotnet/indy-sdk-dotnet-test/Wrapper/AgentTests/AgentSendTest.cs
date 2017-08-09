@@ -39,7 +39,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentSendWorks()
         {
-            var endpoint = "127.0.0.1:9909";
+            var endpoint = "127.0.0.1:9609";
 
             var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 

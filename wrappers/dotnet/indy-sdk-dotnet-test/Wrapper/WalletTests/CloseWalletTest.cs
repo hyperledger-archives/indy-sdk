@@ -46,7 +46,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             var type = "inmem";
             var walletName = "testCloseWalletWorksForPlugged";
 
-            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
             Wallet.CreateWalletAsync("default", walletName, type, null, null).Wait();
 
             var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
