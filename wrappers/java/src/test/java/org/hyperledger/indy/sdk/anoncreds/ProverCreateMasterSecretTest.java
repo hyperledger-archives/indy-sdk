@@ -22,8 +22,8 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 
 	@After
 	public void deleteWallet() throws Exception {
-		this.wallet.closeWallet();
-		Wallet.deleteWallet(walletName, null);
+		this.wallet.closeWallet().get();
+		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	@Test
