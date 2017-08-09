@@ -63,7 +63,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		StorageUtils.cleanupStorage();
 
 		String walletName = "inmemWorkoutWallet";
-		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance(), false);
+		Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance());
 		
 		Wallet.createWallet("default", walletName, "inmem", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
