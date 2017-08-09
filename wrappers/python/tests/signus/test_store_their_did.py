@@ -3,7 +3,7 @@ from indy import signus
 
 import pytest
 
-from indy_sdk.error import ErrorCode
+from indy.error import ErrorCode
 
 
 @pytest.mark.asyncio

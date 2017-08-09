@@ -2,7 +2,7 @@ import pytest
 
 from indy.anoncreds import prover_create_and_store_claim_req, prover_store_claim, \
     prover_create_master_secret, issuer_create_claim
-from indy_sdk.error import ErrorCode, IndyError
+from indy.error import ErrorCode, IndyError
 
 
 @pytest.mark.asyncio

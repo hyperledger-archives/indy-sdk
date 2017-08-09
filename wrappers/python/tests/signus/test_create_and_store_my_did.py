@@ -2,7 +2,7 @@ import json
 
 from indy import IndyError
 from indy import signus
-from indy_sdk.error import ErrorCode
+from indy.error import ErrorCode
 
 import base58
 import pytest
