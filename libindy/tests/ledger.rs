@@ -184,6 +184,82 @@ mod high_cases {
         }
     }
 
+    mod sign_request {
+        use super::*;
+
+        #[test]
+        fn indy_sign_request_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let message = r#"{
+                "reqId":1496822211362017764,
+                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "operation":{
+                    "type":"1",
+                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
+                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                }
+            }"#;
+
+            let expected_signature = r#""signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW""#;
+
+            let msg = LedgerUtils::sign_request(wallet_handle, &my_did, message).unwrap();
+            assert!(msg.contains(expected_signature));
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_sign_works_for_unknow_signer() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let message = r#"{"reqId":1495034346617224651}"#;
+
+            let res = LedgerUtils::sign_request(wallet_handle, "did", message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_sign_request_works_for_invalid_message_format() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
+
+            let message = r#"1495034346617224651"#;
+
+            let res = LedgerUtils::sign_request(wallet_handle, &my_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_sign_request_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
+
+            let message = r#"{"reqId":1495034346617224651}"#;
+
+            let res = LedgerUtils::sign_request(wallet_handle + 1, &my_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod nym_requests {
         use super::*;
 

@@ -1057,7 +1057,7 @@ fn signus_demo_works() {
                   sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, signed_msg) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     info!("signature {:?}", signed_msg);
     assert_eq!(ErrorCode::Success, err);
 
@@ -1067,7 +1067,8 @@ fn signus_demo_works() {
                               my_wallet_handle,
                               1,
                               CString::new(their_did).unwrap().as_ptr(),
-                              CString::new(signed_msg).unwrap().as_ptr(),
+                              CString::new(message).unwrap().as_ptr(),
+                              CString::new(signature).unwrap().as_ptr(),
                               verify_callback);
 
     assert_eq!(ErrorCode::Success, err);

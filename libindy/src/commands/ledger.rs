@@ -1,5 +1,10 @@
+extern crate serde_json;
+
+use self::serde_json::Value;
+
 use errors::common::CommonError;
 use errors::pool::PoolError;
+use errors::signus::SignusError;
 use errors::indy::IndyError;
 
 use services::anoncreds::AnoncredsService;
@@ -15,7 +20,10 @@ use super::utils::check_wallet_and_pool_handles_consistency;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::error::Error;
 use std::rc::Rc;
+
+use utils::crypto::signature_serializer::serialize_signature;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -32,6 +40,11 @@ pub enum LedgerCommand {
         i32, // cmd_id
         Result<String, PoolError>, // result json or error
     ),
+    SignRequest(
+        i32, // wallet handle
+        String, // submitter did
+        String, // request json
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetDdoRequest(
         String, // submitter did
         String, // target did
@@ -133,6 +146,10 @@ impl LedgerCommandExecutor {
                     .expect("Expect callback to process ack command")
                     (result.map_err(IndyError::from));
             }
+            LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
+                info!(target: "ledger_command_executor", "SignRequest command received");
+                self.sign_request(wallet_handle, &submitter_did, &request_json, cb);
+            }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
                 self.build_get_ddo_request(&submitter_did, &target_did, cb);
@@ -211,7 +228,24 @@ impl LedgerCommandExecutor {
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
 
-        let signed_request = self.signus_service.sign(&my_did, request_json)?;
+        let mut request: Value = serde_json::from_str(request_json)
+            .map_err(|err|
+                IndyError::SignusError(SignusError::CommonError(
+                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description())))))?;
+
+        if !request.is_object() {
+            return Err(IndyError::SignusError(SignusError::CommonError(
+                CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
+        }
+        let serialized_request = serialize_signature(request.clone())?;
+        let signature = self.signus_service.sign(&my_did, &serialized_request)?;
+
+        request["signature"] = Value::String(signature);
+        let signed_request: String = serde_json::to_string(&request)
+            .map_err(|err|
+                IndyError::SignusError(SignusError::CommonError(
+                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description())))))?;
+
         Ok(signed_request)
     }
 
@@ -224,6 +258,14 @@ impl LedgerCommandExecutor {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(IndyError::PoolError(err))); }
         };
+    }
+
+    fn sign_request(&self,
+                    wallet_handle: i32,
+                    submitter_did: &str,
+                    request_json: &str,
+                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self._sign_request(wallet_handle, submitter_did, request_json))
     }
 
     fn build_get_ddo_request(&self,
