@@ -15,15 +15,12 @@ public class StorageUtils {
 	}
 
 	public static void cleanupStorage() throws IOException {
-		System.out.println("cleanupStorage >>");
-		Thread.dumpStack();
 
 		File tmpDir = new File(EnvironmentUtils.getTmpPath());
 		File homeDir = new File(EnvironmentUtils.getIndyHomePath());
 
 		StorageUtils.cleanDirectory(tmpDir);
 		StorageUtils.cleanDirectory(homeDir);
-		System.out.println("cleanupStorage <<");
 	}
 
 }

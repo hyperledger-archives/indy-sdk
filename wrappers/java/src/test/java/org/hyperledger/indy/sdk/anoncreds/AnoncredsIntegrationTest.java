@@ -40,10 +40,8 @@ public class AnoncredsIntegrationTest {
 	}
 
 	void initCommonWallet() throws Exception {
-		System.out.println("initCommonWallet >>");
 
 		if (walletOpened) {
-			System.out.println("initCommonWallet << already opened");
 			return;
 		}
 
@@ -78,6 +76,5 @@ public class AnoncredsIntegrationTest {
 		Anoncreds.proverStoreClaim(wallet, claimJson).get();
 
 		walletOpened = true;
-		System.out.println("initCommonWallet << opened");
 	}
 }
