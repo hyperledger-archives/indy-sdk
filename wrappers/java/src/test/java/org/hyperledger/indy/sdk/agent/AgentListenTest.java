@@ -10,7 +10,7 @@ public class AgentListenTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentListenWorksForAllDataInWalletPresent() throws Exception {
-		String endpoint = "127.0.0.1:9707";
+		String endpoint = "127.0.0.1:9607";
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "sovrin_agent_connect_works_for_a", null, null);

@@ -10,7 +10,7 @@ public class AgentAddIdentityTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentAddIdentityWorks() throws Exception {
-		String endpoint = "127.0.0.1:9701";
+		String endpoint = "127.0.0.1:9601";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
@@ -21,7 +21,7 @@ public class AgentAddIdentityTest extends AgentIntegrationTest {
 
 	@Test
 	public void testAgentAddIdentityWorksForMultiplyKeys() throws Exception {
-		String endpoint = "127.0.0.1:9702";
+		String endpoint = "127.0.0.1:9602";
 
 		SignusResults.CreateAndStoreMyDidResult myDid1 = Signus.createAndStoreMyDid(wallet, "{}").get();
 		SignusResults.CreateAndStoreMyDidResult myDid2 = Signus.createAndStoreMyDid(wallet, "{}").get();

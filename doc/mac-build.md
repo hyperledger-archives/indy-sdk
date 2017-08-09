@@ -19,11 +19,11 @@
    ```
 4. Setup OPENSSL_DIR variable: path to installed openssl library
    ```
-   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
+   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
    ```
 5. Checkout and build the library:
    ```
    git clone https://github.com/hyperledger/indy-sdk.git
-   cd ./indy-sdk
+   cd ./indy-sdk/libindy
    cargo build
    ```
