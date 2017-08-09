@@ -1,1 +1,1 @@
-from indy_sdk.error import IndyError
+from indy.error import IndyError
