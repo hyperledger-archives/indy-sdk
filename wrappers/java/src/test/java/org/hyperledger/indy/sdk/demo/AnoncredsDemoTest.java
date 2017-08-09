@@ -59,7 +59,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		proverWallet.closeWallet().get();
 		Wallet.deleteWallet("proverWallet", null).get();
 
-		pool.closePoolLedger();
+		pool.closePoolLedger().get();
 	}
 
 	@Test

@@ -142,19 +142,24 @@ impl DefaultWalletType {
 
 impl WalletType for DefaultWalletType {
     fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
+        trace!("DefaultWalletType.create >> {}, with config {:?} and credentials {:?}", name, config, credentials);
         let path = _db_path(name);
         if path.exists() {
+            trace!("DefaultWalletType.create << path exists");
             return Err(WalletError::AlreadyExists(name.to_string()))
         }
 
-        _open_connection(name)?
-            .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])?;
+        _open_connection(name).map_err(map_err_trace!())?
+            .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])
+            .map_err(map_err_trace!())?;
+        trace!("DefaultWalletType.create <<");
         Ok(())
     }
 
     fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
+        trace!("DefaultWalletType.delete {}, with config {:?} and credentials {:?}", name, config, credentials);
         // FIXME: parse and implement credentials!!!
-        Ok(fs::remove_file(_db_path(name))?)
+        Ok(fs::remove_file(_db_path(name)).map_err(map_err_trace!())?)
     }
 
     fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
