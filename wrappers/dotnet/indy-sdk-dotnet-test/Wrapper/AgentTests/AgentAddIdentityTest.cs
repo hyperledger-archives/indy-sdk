@@ -10,7 +10,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentAddIdentityWorks()
         {
-            var endpoint = "127.0.0.1:9901";
+            var endpoint = "127.0.0.1:9601";
 
             var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 
@@ -22,7 +22,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentAddIdentityWorksForMultiplyKeys()
         {
-            var endpoint = "127.0.0.1:9902";
+            var endpoint = "127.0.0.1:9602";
 
             var myDid1 = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
             var myDid2 = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;

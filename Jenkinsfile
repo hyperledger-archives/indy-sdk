@@ -29,9 +29,11 @@ def publishing() {
         }
 
         parallel([
-                'liblindy-to-cargo': { publishingLibindyToCargo() },
-                'libindy-rpm-files': { publishingLibindyRpmFiles() },
-                'libindy-deb-files': { publishLibindyDebFiles() }
+            'liblindy-to-cargo': { publishingLibindyToCargo() },
+            'libindy-rpm-files': { publishingLibindyRpmFiles() },
+            'libindy-deb-files': { publishingLibindyDebFiles() },
+            'python-wrapper-deb-files': { publishingPythonWrapperDebFiles() },
+            'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
         ])
     }
 }
@@ -214,7 +216,7 @@ def pythonWrapperUbuntuTesting() {
 
 def publishingLibindyToCargo() {
     node('ubuntu') {
-        stage('Publish to Cargo') {
+        stage('Publish Libindy to Cargo') {
             try {
                 echo 'Publish to Cargo: Checkout csm'
                 checkout scm
@@ -251,7 +253,7 @@ def publishingLibindyToCargo() {
 
 def publishingLibindyRpmFiles() {
     node('ubuntu') {
-        stage('Publish RPM Files') {
+        stage('Publish Libindy RPM Files') {
             try {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
@@ -282,9 +284,9 @@ def publishingLibindyRpmFiles() {
     }
 }
 
-def publishLibindyDebFiles() {
+def publishingLibindyDebFiles() {
     node('ubuntu') {
-        stage('Publish DEB Files') {
+        stage('Publish Libindy DEB Files') {
             try {
                 echo 'Publish Deb files: Checkout csm'
                 checkout scm
@@ -314,4 +316,72 @@ def publishLibindyDebFiles() {
             }
         }
     }
+}
+
+def publishingPythonWrapperDebFiles() {
+   node('ubuntu') {
+       stage('Publish Python Wrapper DEB Files') {
+           try {
+               echo 'Publish Python Wrapper Deb files: Checkout csm'
+               checkout scm
+
+               sh "cp -r ci wrappers/python"
+
+               dir('wrappers/python'){
+
+                   echo 'Publish Python Wrapper Deb: Build docker image'
+                   def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+
+                   testEnv.inside('-u 0:0') {
+                       sh 'chmod -R 777 ci'
+
+                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+
+                       withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                           sh "./ci/python-wrapper-deb-build-and-upload.sh $evernym_repo_key"
+                       }
+                   }
+               }
+           }
+           finally {
+               echo 'Publish Python Wrapper Deb: Cleanup'
+               step([$class: 'WsCleanup'])
+           }
+       }
+   }
+}
+
+def publishingPythonWrapperToPipy() {
+   node('ubuntu') {
+       stage('Publish Python Wrapper To Pipy') {
+           try {
+               echo 'Publish Deb files: Checkout csm'
+               checkout scm
+
+               echo 'Publish Deb: Build docker image'
+               def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+
+               testEnv.inside('-u 0:0') {
+
+                   withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
+                       sh 'cp $credentialsFile ./wrappers/python/'
+                       sh "cp -r ci wrappers/python"
+
+                       sh "chmod -R 777 ci"
+                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+
+                       sh '''
+                           cd wrappers/python
+                           python3.6 setup.py sdist
+                           python3.6 -m twine upload dist/* --config-file .pypirc
+                       '''
+                   }
+               }
+           }
+           finally {
+               echo 'Publish Deb: Cleanup'
+               step([$class: 'WsCleanup'])
+           }
+       }
+   }
 }

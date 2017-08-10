@@ -92,7 +92,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             var poolName = "default";
             var walletName = "wallet";
 
-            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
             Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
             Wallet.DeleteWalletAsync(walletName, null).Wait();
             Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
