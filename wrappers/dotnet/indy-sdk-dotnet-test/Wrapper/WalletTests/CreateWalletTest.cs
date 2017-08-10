@@ -64,7 +64,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         [TestMethod]
         public void TestCreateWalletWorksForPlugged()
         {
-            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType(), false).Wait();
             Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
         }
 
