@@ -140,10 +140,9 @@ def libindyWindowsTesting() {
                 bat "docker -H $INDY_SDK_SERVER_IP create --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 dir('libindy') {
+                    echo "Windows Test: Download prebuilt dependencies"
                     bat 'wget -O prebuilt.zip "https://www.dsr-company.com/fm.php?Download=1&FileToDL=indy_prebuilt_deps.zip"'
                     bat 'unzip prebuilt.zip -d prebuilt'
-
-                    bat "cargo update"
 
                     withEnv([
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
@@ -151,9 +150,14 @@ def libindyWindowsTesting() {
                             "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH"
+                            "PATH=$USERPROFILE\\.cargo\\bin;$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                            "RUST_TEST_THREADS=1",
+                            "RUST_LOG=trace",
+                            "RUST_BACKTRACE=1",
+                            "POOL_TEST_IP=$INDY_SDK_SERVER_IP"
                     ]) {
-                        bat "cargo build"
+                        bat "cargo update"
+                        bat "cargo test"
                     }
                 }
             } finally {
