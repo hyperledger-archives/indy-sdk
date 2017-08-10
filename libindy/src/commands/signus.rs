@@ -16,7 +16,7 @@ use std::rc::Rc;
 use std::str;
 use std::cell::RefCell;
 
-use commands::ledger::{LedgerCommand};
+use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
@@ -266,7 +266,7 @@ impl SignusCommandExecutor {
             let signed_msg = signed_msg.to_string();
             let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
             if get_nym_request.is_err() {
-                return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))))
+                return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))));
             }
             let get_nym_request = get_nym_request.unwrap();
             let cb_id: i32 = SequenceUtils::get_next_id();
@@ -301,7 +301,7 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    return cb(Err(IndyError::SignusError(SignusError::CommonError(CommonError::InvalidStructure(format!("Invalid their did json"))))))
+                    return cb(Err(IndyError::SignusError(SignusError::CommonError(CommonError::InvalidStructure(format!("Invalid their did json"))))));
                 }
 
                 let their_did: TheirDid = their_did.unwrap();
@@ -326,13 +326,13 @@ impl SignusCommandExecutor {
                 let cb = cbs.remove(&cb_id);
 
                 if cb.is_none() {
-                    return error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                    return error!("Can't process Signus::VerifySignatureGetNymAck for handle {} - appropriate callback not found!", cb_id);
                 }
                 let cb = cb.unwrap();
 
                 match result {
-                    Ok(their_did_json) =>
-                        cb(self._verify_signature_get_nym_ack(wallet_handle, &their_did_json, signed_msg)),
+                    Ok(get_nym_response) =>
+                        cb(self._verify_signature_get_nym_ack(wallet_handle, &get_nym_response, signed_msg)),
                     Err(err) => cb(Err(err))
                 }
             }
@@ -340,10 +340,7 @@ impl SignusCommandExecutor {
         }
     }
 
-    fn _verify_signature_get_nym_ack(&self,
-                                     wallet_handle: i32,
-                                     get_nym_response: &str,
-                                     signed_msg: &str) -> Result<bool, IndyError> {
+    fn _get_their_did_from_nym(&self, get_nym_response: &str, wallet_handle: i32) -> Result<TheirDid, IndyError> {
         let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
             .map_err(map_err_trace!())
             .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
@@ -363,6 +360,15 @@ impl SignusCommandExecutor {
                     format!("Can't serialize TheirDid: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
+
+        return Ok(their_did);
+    }
+
+    fn _verify_signature_get_nym_ack(&self,
+                                     wallet_handle: i32,
+                                     get_nym_response: &str,
+                                     signed_msg: &str) -> Result<bool, IndyError> {
+        let their_did = self._get_their_did_from_nym(get_nym_response, wallet_handle)?;
         self.signus_service.verify(&their_did, &signed_msg)
             .map_err(map_err_trace!())
             .map_err(|err| IndyError::SignusError(err))
@@ -375,11 +381,16 @@ impl SignusCommandExecutor {
                did: &str,
                msg: &str,
                cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let load_public_key_from_ledger = move |cb| {
+        let load_public_key_from_ledger = move |cb: Box<Fn(Result<(String, String), IndyError>)>| {
             let msg = msg.to_string();
             let my_did = my_did.to_string();
-            let get_nym_request = "".to_string(); //TODO add build_nym_request function in ledger service
+            let did = did.to_string();
             let cb_id: i32 = SequenceUtils::get_next_id();
+            let get_nym_request = self.ledger_service.build_get_nym_request(&my_did, &did);
+            if get_nym_request.is_err() {
+                return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))));
+            }
+            let get_nym_request = get_nym_request.unwrap();
 
             match self.encrypt_callbacks.try_borrow_mut() {
                 Ok(mut encrypt_callbacks) => {
@@ -393,8 +404,8 @@ impl SignusCommandExecutor {
                                 CommandExecutor::instance()
                                     .send(Command::Signus(SignusCommand::EncryptGetNymAck(
                                         wallet_handle,
-                                        msg.clone(),
                                         my_did.clone(),
+                                        msg.clone(),
                                         cb_id,
                                         result
                                     ))).unwrap();
@@ -414,19 +425,19 @@ impl SignusCommandExecutor {
             Ok(their_did_json) => {
                 let their_did = TheirDid::from_json(&their_did_json);
                 if their_did.is_err() {
-                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid their did json")))))
+                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid their did json")))));
                 }
                 let their_did: TheirDid = their_did.unwrap();
 
                 let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did));
                 if my_did_json.is_err() {
-                    return cb(Err(IndyError::WalletError(WalletError::NotFound(format!("My Did not found")))))
+                    return cb(Err(IndyError::WalletError(WalletError::NotFound(format!("My Did not found")))));
                 }
                 let my_did_json = my_did_json.unwrap();
 
                 let my_did = MyDid::from_json(&my_did_json);
                 if my_did.is_err() {
-                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid my did json")))))
+                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid my did json")))));
                 }
                 let my_did: MyDid = my_did.unwrap();
 
@@ -451,13 +462,13 @@ impl SignusCommandExecutor {
                 let cb = cbs.remove(&cb_id);
 
                 if cb.is_none() {
-                    return error!("Can't process Signus::EncryptGetNymAck for handle {} - appropriate callback not found!", cb_id)
+                    return error!("Can't process Signus::EncryptGetNymAck for handle {} - appropriate callback not found!", cb_id);
                 }
                 let cb = cb.unwrap();
 
                 match result {
-                    Ok(their_did_json) =>
-                        cb(self._encrypt_get_nym_ack(wallet_handle, my_did, &their_did_json, msg)),
+                    Ok(get_nym_response) =>
+                        cb(self._encrypt_get_nym_ack(wallet_handle, my_did, &get_nym_response, msg)),
                     Err(err) => cb(Err(err))
                 }
             }
@@ -468,16 +479,14 @@ impl SignusCommandExecutor {
     fn _encrypt_get_nym_ack(&self,
                             wallet_handle: i32,
                             my_did: &str,
-                            their_did_json: &str,
+                            get_nym_response: &str,
                             msg: &str) -> Result<(String, String), IndyError> {
-        let my_did = MyDid::from_json(&my_did)
+        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
+        let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
-            .map_err(|_| CommonError::InvalidState(format!("Invalid my did json")))?;
-        let their_did = TheirDid::from_json(&their_did_json)
-            .map_err(map_err_trace!())
-            .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
+            .map_err(|_| CommonError::InvalidState((format!("Invalid my did json"))))?;
 
-        self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
+        let their_did = self._get_their_did_from_nym(get_nym_response, wallet_handle)?;
 
         self.signus_service.encrypt(&my_did, &their_did, &msg)
             .map_err(map_err_trace!())

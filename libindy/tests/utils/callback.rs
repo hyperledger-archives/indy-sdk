@@ -147,9 +147,9 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                                   Option<extern fn(command_handle: i32,
-                                                                                                                                    err: ErrorCode,
-                                                                                                                                    claim_def_json: *const c_char)>) {
+                                                                                                           Option<extern fn(command_handle: i32,
+                                                                                                                            err: ErrorCode,
+                                                                                                                            claim_def_json: *const c_char)>) {
         lazy_static! {
             static ref CREATE_CLAIM_DEFINITION_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
@@ -169,8 +169,8 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_register_wallet_type_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                  Option<extern fn(command_handle: i32,
-                                                                                                   err: ErrorCode)>) {
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode)>) {
         lazy_static! {
             static ref REFISTER_WALLET_TYPE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -677,8 +677,8 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_agent_rm_identity_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                       Option<extern fn(command_handle: i32,
-                                                                                                        err: ErrorCode)>) {
+                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                       err: ErrorCode)>) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -845,5 +845,51 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(replace_keys_callback))
+    }
+
+    pub fn closure_to_encrypt_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             encrypted_msg: *const c_char,
+                                                                                                             nonce: *const c_char)>) {
+        lazy_static! {
+            static ref ENCRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn encrypt_callback(command_handle: i32, err: ErrorCode, encrypted_msg: *const c_char, nonce: *const c_char) {
+            let mut callbacks = ENCRYPT_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let encrypted_msg = unsafe { CStr::from_ptr(encrypted_msg).to_str().unwrap().to_string() };
+            let nonce = unsafe { CStr::from_ptr(nonce).to_str().unwrap().to_string() };
+            cb(err, encrypted_msg, nonce)
+        }
+
+        let mut callbacks = ENCRYPT_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(encrypt_callback))
+    }
+
+    pub fn closure_to_decrypt_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                 Option<extern fn(command_handle: i32,
+                                                                                                  err: ErrorCode,
+                                                                                                  decrypted_msg: *const c_char)>) {
+        lazy_static! {
+            static ref DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg: *const c_char) {
+            let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let decrypted_msg = unsafe { CStr::from_ptr(decrypted_msg).to_str().unwrap().to_string() };
+            cb(err, decrypted_msg)
+        }
+
+        let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_decrypt_callback))
     }
 }
