@@ -141,9 +141,10 @@ def libindyWindowsTesting() {
 
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://www.dsr-company.com/fm.php?Download=1&FileToDL=indy_prebuilt_deps.zip"'
+                    bat 'wget -O prebuilt.zip "https://www.dsr-company.com/fm.php?Download=1&FileToDL=indy_prebuilt_deps.zip"' /* FIXME: use repo.evernym.com */
                     bat 'unzip prebuilt.zip -d prebuilt'
 
+                    echo "Windows Test: Build"
                     withEnv([
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
@@ -151,12 +152,20 @@ def libindyWindowsTesting() {
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "PATH=$USERPROFILE\\.cargo\\bin;$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                            "RUST_BACKTRACE=1"
+                    ]) {
+                        bat "cargo update"
+                        bat "cargo test --no-run"
+                    }
+
+                    echo "Windows Test: Run tests"
+                    withEnv([
+                            "PATH=$USERPROFILE\\.cargo\\bin;$PATH", /* FIXME: fix rust/cargo installation and remove it */
                             "RUST_TEST_THREADS=1",
                             "RUST_LOG=trace",
                             "RUST_BACKTRACE=1",
                             "POOL_TEST_IP=$INDY_SDK_SERVER_IP"
                     ]) {
-                        bat "cargo update"
                         bat "cargo test"
                     }
                 }
