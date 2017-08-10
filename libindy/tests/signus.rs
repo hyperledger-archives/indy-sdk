@@ -275,6 +275,8 @@ mod high_cases {
             let signature = SignusUtils::sign(wallet_handle, &my_did, message).unwrap();
             assert_eq!(expected_signature, signature);
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -288,6 +290,8 @@ mod high_cases {
 
             let res = SignusUtils::sign(wallet_handle, "did", message);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -305,6 +309,8 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::sign(invalid_wallet_handle, &my_did, message);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -333,6 +339,9 @@ mod high_cases {
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &did, message, signature).unwrap();
             assert!(valid);
 
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -360,6 +369,9 @@ mod high_cases {
 
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature).unwrap();
             assert!(valid);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -391,6 +403,9 @@ mod high_cases {
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &message, signature).unwrap();
             assert!(valid);
 
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -409,6 +424,9 @@ mod high_cases {
             let res = SignusUtils::verify(invalid_wallet_handle, pool_handle, "did", message, signature);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -426,6 +444,9 @@ mod high_cases {
             let invalid_pool_handle = pool_handle + 1;
             let res = SignusUtils::verify(wallet_handle, invalid_pool_handle, "did", message, signature);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -453,6 +474,9 @@ mod high_cases {
 
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &other_did, message, &signature).unwrap();
             assert!(!valid);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -627,6 +651,9 @@ mod medium_cases {
             let res = SignusUtils::verify(wallet_handle, pool_handle, &did, message, signature);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -649,6 +676,9 @@ mod medium_cases {
 
             let res = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -673,6 +703,9 @@ mod medium_cases {
             let res = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState); //TODO maybe we need add LedgerNotFound error
 
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -696,6 +729,9 @@ mod medium_cases {
 
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature).unwrap();
             assert!(valid);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

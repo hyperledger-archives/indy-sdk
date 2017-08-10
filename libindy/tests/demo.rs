@@ -1058,7 +1058,7 @@ fn signus_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("signature {:?}", signed_msg);
+    info!("signature {:?}", signature);
     assert_eq!(ErrorCode::Success, err);
 
     // 9. I Verify message

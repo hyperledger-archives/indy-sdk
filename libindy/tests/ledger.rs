@@ -210,6 +210,8 @@ mod high_cases {
             let msg = LedgerUtils::sign_request(wallet_handle, &my_did, message).unwrap();
             assert!(msg.contains(expected_signature));
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -223,6 +225,8 @@ mod high_cases {
 
             let res = LedgerUtils::sign_request(wallet_handle, "did", message);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -240,6 +244,8 @@ mod high_cases {
             let res = LedgerUtils::sign_request(wallet_handle, &my_did, message);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -255,6 +261,8 @@ mod high_cases {
 
             let res = LedgerUtils::sign_request(wallet_handle + 1, &my_did, message);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
