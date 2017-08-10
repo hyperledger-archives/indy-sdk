@@ -495,9 +495,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -520,7 +520,7 @@ mod high_cases {
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), Some(r#"{\"pk\":\"12212\"}"#), None).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -546,7 +546,7 @@ mod high_cases {
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), Some(r#"{\"pk\":\"12212\"}"#), None).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -571,7 +571,7 @@ mod high_cases {
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
             let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), Some(r#"{\"pk\":\"12212\"}"#), None).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), None, None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -597,9 +597,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -622,9 +622,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -650,9 +650,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -676,13 +676,13 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
-            let (my_did, my_verkey, my_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, my_did, my_verkey, my_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, my_did, my_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -705,9 +705,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
@@ -728,9 +728,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
@@ -1043,9 +1043,9 @@ mod medium_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -1067,9 +1067,9 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("other_pool", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
+            let identity_json = format!(r#"{{"did":"{}"}}"#, their_did);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
@@ -1114,9 +1114,9 @@ mod medium_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
@@ -1181,9 +1181,9 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
-            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
