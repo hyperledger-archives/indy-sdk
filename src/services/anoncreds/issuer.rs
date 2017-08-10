@@ -202,11 +202,11 @@ impl Issuer {
 
     pub fn create_claim(&self, claim_definition: &ClaimDefinition,
                         claim_definition_private: &ClaimDefinitionPrivate,
-                        revocation_registry: &Option<RefCell<RevocationRegistry>>,
+                        revocation_registry: &Option<RevocationRegistry>,
                         revocation_registry_private: &Option<RevocationRegistryPrivate>,
                         claim_request: &ClaimRequest,
                         attributes: &HashMap<String, Vec<String>>,
-                        user_revoc_index: Option<i32>) -> Result<ClaimSignature, AnoncredsError> {
+                        user_revoc_index: Option<i32>) -> Result<(ClaimSignature, Option<Accumulator>), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer create claim for schema {} -> start", claim_definition.schema_seq_no);
         let context_attribute = Issuer::_generate_context_attribute(claim_definition.schema_seq_no,
                                                                     &claim_request.prover_did)?;
@@ -220,12 +220,13 @@ impl Issuer {
                 attributes)?;
 
         let mut non_revocation_claim: Option<RefCell<NonRevocationClaim>> = None;
+        let mut updated_accumulator: Option<Accumulator> = None;
         if let (Some(ref pk_r), Some(ref sk_r),
             &Some(ref revoc_reg), &Some(ref revoc_reg_priv), Some(ref ur)) = (claim_definition.data.public_key_revocation.clone(),
                                                                               claim_definition_private.secret_key_revocation.clone(),
                                                                               revocation_registry, revocation_registry_private,
                                                                               claim_request.ur) {
-            let (claim, timestamp) = Issuer::_issue_non_revocation_claim(
+            let (claim, timestamp, accumulator) = Issuer::_issue_non_revocation_claim(
                 &revoc_reg,
                 &pk_r,
                 &sk_r,
@@ -237,13 +238,14 @@ impl Issuer {
                 user_revoc_index
             )?;
             non_revocation_claim = Some(RefCell::new(claim));
+            updated_accumulator = Some(accumulator);
         };
 
         info!(target: "anoncreds_service", "Issuer create claim for schema {} -> done", claim_definition.schema_seq_no);
-        Ok(ClaimSignature {
+        Ok((ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
-        })
+        }, updated_accumulator))
     }
 
     fn _generate_context_attribute(accumulator_id: i32, prover_did: &str) -> Result<BigNumber, CommonError> {
@@ -319,18 +321,18 @@ impl Issuer {
         Ok(a)
     }
 
-    fn _issue_non_revocation_claim(revocation_registry: &RefCell<RevocationRegistry>, pk_r: &RevocationPublicKey,
+    fn _issue_non_revocation_claim(revocation_registry: &RevocationRegistry, pk_r: &RevocationPublicKey,
                                    sk_r: &RevocationSecretKey, g: &HashMap<i32, PointG1>,
                                    g_dash: &HashMap<i32, PointG2>, sk_accum: &AccumulatorSecretKey,
                                    context_attribute: &BigNumber,
                                    ur: &PointG1, seq_number: Option<i32>) ->
-                                   Result<(NonRevocationClaim, i64), AnoncredsError> {
+                                   Result<(NonRevocationClaim, i64, Accumulator), AnoncredsError> {
         info!(target: "anoncreds_service", "Issuer issue non-revocation claim -> start");
-        let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
+        let mut accumulator = revocation_registry.accumulator.clone();
 
         if accumulator.is_full() {
             return Err(AnoncredsError::AccumulatorIsFull(
-                format!("issuer_did: {} schema_seq_no: {}", revocation_registry.borrow().issuer_did, revocation_registry.borrow().schema_seq_no))
+                format!("issuer_did: {} schema_seq_no: {}", revocation_registry.issuer_did, revocation_registry.schema_seq_no))
             )
         }
 
@@ -379,12 +381,12 @@ impl Issuer {
 
         let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
-
         info!(target: "anoncreds_service", "Issuer issue non-revocation claim -> done");
         Ok(
             (
                 NonRevocationClaim::new(sigma, c, vr_prime_prime, witness, g_i.clone(), i, m2),
-                timestamp
+                timestamp,
+                accumulator
             )
         )
     }
@@ -429,9 +431,12 @@ impl Issuer {
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
                                    params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CommonError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
-        let t2 = proof_c.e.mul(&params.c)?
+        let mut t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
+        if t2.is_inf()? {
+            t2 = PointG1::new_inf()?;
+        }
         let t3 = Pair::pair(&proof_c.a, &pk_r.h_cap)?.pow(&params.c)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.r)?)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
@@ -442,9 +447,12 @@ impl Issuer {
             .pow(&params.r)?
             .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.h_cap)?.pow(&params.r_prime)?)?;
         let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
-        let t6 = proof_c.d.mul(&params.r_prime_prime)?
+        let mut t6 = proof_c.d.mul(&params.r_prime_prime)?
             .add(&pk_r.g.mul(&params.m_prime.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t_prime.mod_neg()?)?)?;
+        if t6.is_inf()? {
+            t6 = PointG1::new_inf()?;
+        }
         let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.h_cap)?.pow(&params.r_prime_prime)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.m_prime.mod_neg()?)?)?
             .mul(&Pair::pair(&pk_r.htilde, &proof_c.s)?.pow(&params.r)?)?;
@@ -577,7 +585,7 @@ mod tests {
         let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
             mocks::ISSUER_DID, mocks::get_gvt_schema(), None, true).unwrap();
 
-        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+        let (mut revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
             5, mocks::ISSUER_DID, 1).unwrap();
 
@@ -588,10 +596,8 @@ mod tests {
             claim_definition.clone().unwrap().data.public_key_revocation,
             master_secret, prover::mocks::PROVER_DID).unwrap();
 
-        let revocation_registry_ref_cell = RefCell::new(revocation_registry.clone());
-
-        let claim_signature = issuer.create_claim(
-            &claim_definition, &claim_definition_private, &Some(revocation_registry_ref_cell),
+        let (claim_signature, updated_accumulator) = issuer.create_claim(
+            &claim_definition, &claim_definition_private, &Some(revocation_registry.clone()),
             &Some(revocation_registry_private), &claim_request,
             &mocks::get_gvt_attributes(), None).unwrap();
 
@@ -604,6 +610,7 @@ mod tests {
 
         let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
 
+        revocation_registry.accumulator = updated_accumulator.unwrap();
         prover.process_claim(&claim_json_ref_cell, claim_init_data,
                              revocation_claim_init_data.clone(),
                              Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),

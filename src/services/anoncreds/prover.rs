@@ -1072,29 +1072,36 @@ mod tests {
             claim_definition.clone().unwrap().data.public_key_revocation,
             master_secret, mocks::PROVER_DID).unwrap();
 
-        let revocation_registry_ref_cell = RefCell::new(revocation_registry.clone());
-
-        let claim_signature = issuer.create_claim(
-            &claim_definition, &claim_definition_private, &Some(revocation_registry_ref_cell),
-            &Some(revocation_registry_private), &claim_request,
+        let (claim_signature, updated_accumulator) = issuer.create_claim(
+            &claim_definition, &claim_definition_private.clone().unwrap(), &Some(revocation_registry.clone()),
+            &Some(revocation_registry_private.clone()), &claim_request,
             &issuer::mocks::get_gvt_attributes(), None).unwrap();
 
-        let non_revocation_claim = claim_signature.clone().unwrap().non_revocation_claim.unwrap();
+        let claim_json = ClaimJson::new(
+            issuer::mocks::get_gvt_attributes(), claim_signature, 1,
+            issuer::mocks::ISSUER_DID.to_string());
+
+        let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
+
+        prover.process_claim(&claim_json_ref_cell, claim_init_data,
+                             revocation_claim_init_data.clone(),
+                             Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
+                             Some(revocation_registry.clone()));
+
+        let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
+
         let c_list_params = Prover::_gen_c_list_params(&non_revocation_claim).unwrap();
-        println!("c_list: {:?}", c_list_params);
         let proof_c_list = Prover::_create_c_list_values(
             &non_revocation_claim, &c_list_params,
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()).unwrap();
-        println!("proof_c_list: {:?}", proof_c_list);
         let proof_tau_list = Issuer::_create_tau_list_values(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            &revocation_registry.clone().accumulator, &c_list_params, &proof_c_list).unwrap();
-        println!("proof_tau_list: {:?}", proof_tau_list);
+            &updated_accumulator.clone().unwrap(), &c_list_params, &proof_c_list).unwrap();
         let proof_tau_list_calc = Issuer::_create_tau_list_expected_values(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            &revocation_registry.clone().accumulator, &revocation_registry.clone().acc_pk,
+            &updated_accumulator.unwrap(), &revocation_registry.clone().acc_pk,
             &proof_c_list).unwrap();
-        println!("proof_tau_list_calc: {:?}", proof_tau_list_calc);
+        assert_eq!(proof_tau_list.as_slice().unwrap(), proof_tau_list_calc.as_slice().unwrap());
     }
 }
 

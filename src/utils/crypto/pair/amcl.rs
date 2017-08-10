@@ -67,6 +67,11 @@ impl PointG1 {
         })
     }
 
+    pub fn is_inf(&self) -> Result<bool, CommonError> {
+        let mut r = self.point;
+        Ok(r.is_infinity())
+    }
+
     pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         let mut bn = e.bn;

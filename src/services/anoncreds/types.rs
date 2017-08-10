@@ -305,6 +305,13 @@ impl ClaimDefinitionPrivate {
             secret_key_revocation: secret_key_revocation
         }
     }
+
+    pub fn clone(&self) -> Result<ClaimDefinitionPrivate, CommonError> {
+        Ok(ClaimDefinitionPrivate {
+            secret_key: self.secret_key.clone()?,
+            secret_key_revocation: self.secret_key_revocation.clone()
+        })
+    }
 }
 
 impl JsonEncodable for ClaimDefinitionPrivate {}
@@ -1190,6 +1197,13 @@ impl SecretKey {
             p: p,
             q: q
         }
+    }
+
+    pub fn clone(&self) -> Result<SecretKey, CommonError> {
+        Ok(SecretKey {
+            p: self.p.clone()?,
+            q: self.q.clone()?
+        })
     }
 }
 
