@@ -90,7 +90,7 @@ extern "C" {
     /// Ledger*
     /// Crypto*
 
-    extern indy_error_t indy_sign_and_submit_request(indy_handle_t command_handle,
+    extern indy_error_t indy_sign_request(indy_handle_t command_handle,
                                                          indy_handle_t wallet_handle,
                                                          const char *    submitter_did,
                                                          const char *    request_json,
