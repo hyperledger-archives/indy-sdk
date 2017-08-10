@@ -164,7 +164,7 @@ def libindyWindowsTesting() {
                             "RUST_TEST_THREADS=1",
                             "RUST_LOG=trace",
                             "RUST_BACKTRACE=1",
-                            "POOL_TEST_IP=$INDY_SDK_SERVER_IP"
+                            "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                     ]) {
                         bat "cargo test"
                     }
