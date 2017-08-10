@@ -483,6 +483,269 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod encrypt {
+        use super::*;
+
+        #[test]
+        fn indy_encrypt_works_for_pk_cached_in_wallet() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let (en, n) = SignusUtils::encrypt(wallet_handle, pool_handle, &my_did, &their_did, message).unwrap();
+            print!("en{} --- n-{}", en, n);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_get_pk_from_ledger() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), Some(r#"{\"pk\":\"12212\"}"#), None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let identity_json = format!(r#"{{"did":"{}"}}"#, their_did);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            SignusUtils::encrypt(wallet_handle, pool_handle, &trustee_did, &their_did, message).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_get_nym_from_ledger() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), Some(r#"{\"pk\":\"12212\"}"#), None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            SignusUtils::encrypt(wallet_handle, pool_handle, &trustee_did, &their_did, message).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_expired_nym() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+
+            WalletUtils::create_wallet("pool_1", "wallet1", None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet("wallet1", Some(r#"{"freshness_time":1}"#)).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &their_did.clone(), Some(&their_verkey), Some(r#"{\"pk\":\"12212\"}"#), None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            thread::sleep(time::Duration::from_secs(2));
+
+            SignusUtils::encrypt(wallet_handle, pool_handle, &trustee_did, &their_did, message).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            let res = SignusUtils::encrypt(invalid_wallet_handle, pool_handle, &my_did, &their_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_invalid_pool_handle() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let invalid_pool_handle = pool_handle + 1;
+            let res = SignusUtils::encrypt(wallet_handle, invalid_pool_handle, &my_did, &their_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod decrypt {
+        use super::*;
+
+        #[test]
+        fn indy_decrypt_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "Dd3vSQgDdADJGoxb6BPcWU6wkEMqSeFwv";
+
+            let decrypted_message = SignusUtils::decrypt(wallet_handle, &my_did, &their_did, &encrypted_message, &nonce).unwrap();
+
+            assert_eq!(message, decrypted_message);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_decrypt_works_for_other_coder() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, my_verkey, my_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, my_did, my_verkey, my_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let (encrypted_message, nonce) = SignusUtils::encrypt(wallet_handle, pool_handle, &my_did, &my_did, &message).unwrap();
+
+            let res = SignusUtils::decrypt(wallet_handle, &my_did, &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_decrypt_works_for_nonce_not_correspond_message() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "acS2SQgDdfE3Goxa1AhcWCa4kEMqSelv7";
+
+            let res = SignusUtils::decrypt(wallet_handle, &my_did, &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_decrypt_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "Dd3vSQgDdADJGoxb6BPcWU6wkEMqSeFwv";
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            let res = SignusUtils::decrypt(invalid_wallet_handle, &my_did, &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
@@ -747,7 +1010,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_verify_works_for_no_nym_in_wallet() {
+        fn indy_verify_works_for_get_nym_from_ledger() {
             TestUtils::cleanup_storage();
 
             let pool_name = "indy_verify_works_for_no_nym_in_wallet";
@@ -766,6 +1029,171 @@ mod medium_cases {
 
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &message).unwrap();
             assert!(valid);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod encrypt {
+        use super::*;
+
+        #[test]
+        fn indy_encrypt_works_for_unknow_my_did() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let res = SignusUtils::encrypt(wallet_handle, pool_handle, "BzfFCYk", &their_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_get_nym_from_ledger_with_incompatible_pool() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("other_pool", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, their_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let res = SignusUtils::encrypt(wallet_handle, pool_handle, &my_did, &their_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_encrypt_works_for_not_found_nym() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (their_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let message = r#"{"reqId":1496822211362017764}"#;
+
+            let res = SignusUtils::encrypt(wallet_handle, pool_handle, &my_did, &their_did, message);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod decrypt {
+        use super::*;
+
+        #[test]
+        fn indy_decrypt_works_for_unknown_my_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "Dd3vSQgDdADJGoxb6BPcWU6wkEMqSeFwv";
+
+            let res = SignusUtils::decrypt(wallet_handle, "BzfFCYk", &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_decrypt_works_for_unknown_coder_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
+            let (their_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "Dd3vSQgDdADJGoxb6BPcWU6wkEMqSeFwv";
+
+            let res = SignusUtils::decrypt(wallet_handle, &my_did, &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_decrypt_works_for_saved_coder_nym_without_pk() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
+            let (their_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}"}}"#, their_did);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "Dd3vSQgDdADJGoxb6BPcWU6wkEMqSeFwv";
+
+            let res = SignusUtils::decrypt(wallet_handle, &my_did, &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_decrypt_works_for_invalid_nonce() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
+            let (their_did, their_verkey, their_pk) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "pk":"{}"}}"#, their_did, their_verkey, their_pk);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
+            let nonce = "acS2SQg";
+
+            let res = SignusUtils::decrypt(wallet_handle, &my_did, &their_did, &encrypted_message, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

@@ -344,8 +344,8 @@ pub  extern fn indy_decrypt(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Decrypt(
             wallet_handle,
-            did,
             my_did,
+            did,
             encrypted_msg,
             nonce,
             Box::new(move |result| {
