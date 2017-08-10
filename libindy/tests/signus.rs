@@ -503,7 +503,6 @@ mod high_cases {
             let message = r#"{"reqId":1496822211362017764}"#;
 
             let (en, n) = SignusUtils::encrypt(wallet_handle, pool_handle, &my_did, &their_did, message).unwrap();
-            print!("en{} --- n-{}", en, n);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
