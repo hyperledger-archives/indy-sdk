@@ -9,44 +9,33 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     {
         private Wallet _wallet;
         private string _walletName = "signusWallet";
-        private string _did;
 
         [TestInitialize]
-        public void CreateWalletWithDid()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
-
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}").Result;
-
-            _did = result.Did;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
-            _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await _wallet.CloseAsync();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
         
         [TestMethod]
-        public void TestSignWorks()
+        public async Task TestSignWorks()
         {
-            var msg = "{\n" +
-                "                \"reqId\":1496822211362017764,\n" +
-                "                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-                "                \"operation\":{\n" +
-                "                    \"type\":\"1\",\n" +
-                "                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
-                "                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
-                "                }\n" +
-                "            }";
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}");
+            var did = result.Did;
+            
+            var msg = "{\"reqId\":1496822211362017764}";
+            
+            var expectedSignature = "R4Rj68n4HZosQqEc3oMUbQh7MtG8tH7WmXE2Mok8trHJ67CrzyqahZn5ziJy4nebRtq6Qi6fVH9JkvVCM85XjFa";
+            var signedMessage = Signus.SignAsync(_wallet, did, msg).Result;
 
-            var expectedSignature = "\"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"";
-
-            var signedMessage = Signus.SignAsync(_wallet, _did, msg).Result;
-
-            Assert.IsTrue(signedMessage.Contains(expectedSignature));
+            Assert.AreEqual(expectedSignature, signedMessage);
         }
 
         [TestMethod]
@@ -59,18 +48,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
             );
 
             Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
-        }
-
-        [TestMethod]
-        public async Task TestSignWorksForInvalidMessageFormat()
-        {
-            var msg = "reqId:1495034346617224651";
-
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Signus.SignAsync(_wallet, _did, msg)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
-        }
+        }       
     }
 }

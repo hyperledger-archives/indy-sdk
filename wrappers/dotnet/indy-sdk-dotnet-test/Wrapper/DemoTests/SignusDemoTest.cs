@@ -48,11 +48,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "        }\n" +
                     "    }";
 
-            var signedMessage = Signus.SignAsync(theirWallet, theirDid, msg).Result;
-            Assert.IsNotNull(signedMessage);
+            var signature = Signus.SignAsync(theirWallet, theirDid, msg).Result;
+            Assert.IsNotNull(signature);
 
             // 8. I verify message
-            Boolean valid = Signus.VerifySignatureAsync(myWallet, pool, theirDid, signedMessage).Result;
+            Boolean valid = Signus.VerifySignatureAsync(myWallet, pool, theirDid, msg, signature).Result;
             Assert.IsTrue(valid);
 
             // 9. Close and delete My Wallet
