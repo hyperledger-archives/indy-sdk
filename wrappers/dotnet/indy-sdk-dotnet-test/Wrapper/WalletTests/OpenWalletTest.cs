@@ -72,7 +72,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             var poolName = "default";
             var walletName = "testOpenWalletWorksForPlugged";
 
-            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
             Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
             var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
             Assert.IsNotNull(wallet);

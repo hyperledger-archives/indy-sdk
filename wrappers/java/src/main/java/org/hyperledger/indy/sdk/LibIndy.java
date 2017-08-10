@@ -5,6 +5,7 @@ import java.io.File;
 import com.sun.jna.Callback;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
 
 public abstract class LibIndy {
 
@@ -110,7 +111,19 @@ public abstract class LibIndy {
 	/**
 	 * Initializes the API with the path to the C-Callable library.
 	 * 
-	 * @param file The path to the C-Callable library.
+	 * @param path The path to the directory containing the C-Callable library file.
+	 */
+	public static void init(String searchPath) {
+
+		NativeLibrary.addSearchPath(LIBRARY_NAME, searchPath);
+		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+	}
+
+	/**
+	 * Initializes the API with the path to the C-Callable library.
+	 * Warning: This is not platform-independent.
+	 *
+	 * @param file The absolute path to the C-Callable library file.
 	 */
 	public static void init(File file) {
 

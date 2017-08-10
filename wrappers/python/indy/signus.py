@@ -92,7 +92,7 @@ async def replace_keys(wallet_handle: int,
 
     res = (verkey.decode(), pk.decode())
 
-    logger.debug("replace_keys: <<< res: %s", res)
+    logger.debug("replace_keys: <<< res: %r", res)
     return res
 
 
@@ -169,7 +169,7 @@ async def sign(wallet_handle: int,
 
     res = res.decode()
 
-    logger.debug("sign: <<< res: %s", res)
+    logger.debug("sign: <<< res: %r", res)
     return res
 
 

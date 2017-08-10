@@ -9,7 +9,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentRemoveIdentityWorks()
         {
-            var endpoint = "127.0.0.1:9908";
+            var endpoint = "127.0.0.1:9608";
 
             var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 
