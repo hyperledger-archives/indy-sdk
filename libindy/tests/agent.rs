@@ -562,9 +562,9 @@ mod medium_cases {
             LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet, trustee_did.as_str(),
                                                  listener_nym_json.as_str()).unwrap();
 
-            let listener_attrib_json = LedgerUtils::build_attrib_request(listener_did.as_str(), listener_did.as_str(), None,
-                                                                         Some(format!("{{\"endpoint\":{{\"verkey\":\"{}\"}}}}", listener_pub_key).as_str()),
-                                                                         None).unwrap();
+            let invalid_attrib_data = format!("{{\"endpoint\":{{\"verkey\":\"{}\"}}}}", listener_pub_key);
+            let listener_attrib_json = LedgerUtils::build_attrib_request(listener_did.as_str(), listener_did.as_str(),
+                                                                         None, Some(invalid_attrib_data.as_str()), None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, listener_wallet, listener_did.as_str(),
                                                  listener_attrib_json.as_str()).unwrap();
 
@@ -580,34 +580,6 @@ mod medium_cases {
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
 
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_agent_connect_works_for_local_data_without_pub_key() {
-            TestUtils::cleanup_storage();
-
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-
-            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let (listener_did, listener_ver_key, _) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
-            let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
-
-            SignusUtils::store_their_did(sender_wallet, &format!("{{\"did\":\"{}\", \"verkey\":\"{}\"}}", listener_did, listener_ver_key)).unwrap();
-
-            let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
-            AgentUtils::add_identity(listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
-
-            let res = AgentUtils::connect(pool_handle, sender_wallet,
-                                          sender_did.as_str(), listener_did.as_str(), None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            AgentUtils::close_listener(listener_handle).unwrap();
-            WalletUtils::close_wallet(listener_wallet).unwrap();
-            WalletUtils::close_wallet(sender_wallet).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -697,7 +669,7 @@ mod medium_cases {
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("agent_pool_2", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("other_pool", None).unwrap();
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
@@ -729,7 +701,7 @@ mod medium_cases {
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
             AgentUtils::add_identity(listener_handle, pool_handle, wallet_handle, did.as_str()).unwrap();
 
-            let res = AgentUtils::connect(pool_handle, wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e",
+            let res = AgentUtils::connect(pool_handle, wallet_handle, "unknownDid",
                                           did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
@@ -891,10 +863,10 @@ mod medium_cases {
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
             AgentUtils::add_identity(listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
 
-            AgentUtils::connect(pool_handle, sender_wallet,sender_did.as_str(), listener_did.as_str(), None).unwrap();
+            AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
 
             let res = AgentUtils::connect_hang_up_expected(pool_handle, sender_wallet,
-                                          sender_did.as_str(), listener_did.as_str());
+                                                           sender_did.as_str(), listener_did.as_str());
             assert_eq!(res.unwrap_err(), RecvTimeoutError::Timeout);
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -951,7 +923,7 @@ mod medium_cases {
             AgentUtils::add_identity(listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
 
             let res = AgentUtils::connect(pool_handle, sender_wallet,
-                                                           sender_did.as_str(), listener_did.as_str(), None);
+                                          sender_did.as_str(), listener_did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -1053,7 +1025,7 @@ mod medium_cases {
 
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
-            let res = AgentUtils::add_identity(listener_handle, 1, wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e");
+            let res = AgentUtils::add_identity(listener_handle, 1, wallet_handle, "unknownDid");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -1234,7 +1206,7 @@ mod medium_cases {
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             AgentUtils::add_identity(listener_handle, 0, wallet_handle, did.as_str()).unwrap();
 
-            let res = AgentUtils::rm_identity(listener_handle, wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e");
+            let res = AgentUtils::rm_identity(listener_handle, wallet_handle, "unknownDid");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -1343,41 +1315,7 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore] //TODO There is BUG
-        fn indy_agent_send_works_for_closed_listener_outgoing_connection() {
-            TestUtils::cleanup_storage();
-            
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-
-            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (listener_did, listener_verkey, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
-            let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
-
-            SignusUtils::store_their_did_from_parts(sender_wallet, listener_did.as_str(),
-                                                    listener_pub_key.as_str(), listener_verkey.as_str(), ENDPOINT).unwrap();
-
-            let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
-
-            AgentUtils::add_identity(listener_handle, pool_handle, listener_wallet, listener_did.as_str()).unwrap();
-
-            let cli_to_srv_connect_id = AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap();
-
-            AgentUtils::close_listener(listener_handle).unwrap();
-
-            let res = AgentUtils::send(cli_to_srv_connect_id, CLIENT_MESSAGE);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            WalletUtils::close_wallet(listener_wallet).unwrap();
-            WalletUtils::close_wallet(sender_wallet).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[ignore] //Question
+        #[ignore] //[IS-282] Close all incoming connections associated with DID after call remove_identity
         fn indy_agent_send_works_for_removed_identity() {
             TestUtils::cleanup_storage();
 
