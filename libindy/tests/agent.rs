@@ -30,8 +30,11 @@ use utils::wallet::WalletUtils;
 
 use std::sync::mpsc::RecvTimeoutError;
 
+static POOL: &'static str = "pool_1";
 static ENDPOINT: &'static str = "127.0.0.1:9700";
 static TRUSTEE_SEED: &'static str = "000000000000000000000000Trustee1";
+static CLIENT_MESSAGE: &'static str = "msg_from_client";
+static SERVER_MESSAGE: &'static str = "msg_from_server";
 
 mod high_cases {
     use super::*;
@@ -39,8 +42,8 @@ mod high_cases {
     #[test]
     fn indy_agent_listen_works_with_indy_agent_connect() {
         TestUtils::cleanup_storage();
-        
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
+
+        let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
         let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
         let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
@@ -64,10 +67,10 @@ mod high_cases {
         fn indy_agent_connect_works_for_remote_data() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(trustee_wallet, Some(TRUSTEE_SEED)).unwrap();
@@ -100,11 +103,11 @@ mod high_cases {
         fn indy_agent_connect_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).expect("create wallet");
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).expect("create wallet");
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("sovrin_agent_connect_works_for_a")).unwrap();
 
-            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), "127.0.0.1:9701").unwrap();
 
             //FIXME temporary code: replace by indy_agent_listen
             thread::spawn(move || {
@@ -113,7 +116,7 @@ mod high_cases {
                 let socket: zmq::Socket = zmq::Context::new().socket(zmq::SocketType::ROUTER).unwrap();
                 socket.set_curve_server(true).unwrap();
                 socket.add_curve_keypair([public_key, secret_key].concat().as_slice()).unwrap();
-                socket.bind(format!("tcp://{}", ENDPOINT).as_str()).unwrap();
+                socket.bind(format!("tcp://{}", "127.0.0.1:9701").as_str()).unwrap();
                 socket.poll(zmq::POLLIN, -1).unwrap();
                 let identity = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 let msg = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
@@ -140,10 +143,10 @@ mod high_cases {
         fn indy_agent_listen_works_for_all_data_in_wallet_present() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, listener_verkey, listener_pk) = SignusUtils::create_and_store_my_did(listener_wallet, Some(TRUSTEE_SEED)).unwrap();
             let (sender_did, sender_ver_key, sender_pub_key) = SignusUtils::create_and_store_my_did(sender_wallet, None).unwrap();
@@ -169,10 +172,10 @@ mod high_cases {
         fn indy_agent_listen_works_for_get_sender_data_from_ledger() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let trustee_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (trustee_did, trustee_verkey, trustee_pk) = SignusUtils::create_and_store_my_did(trustee_wallet, Some(TRUSTEE_SEED)).unwrap();
             let (sender_did, sender_ver_key, sender_pub_key) = SignusUtils::create_and_store_my_did(sender_wallet, None).unwrap();
@@ -210,11 +213,11 @@ mod high_cases {
 
             let msg = "New Connection";
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).expect("create wallet");
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).expect("create wallet");
 
-            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("sovrin_agent_listen_works_for_al")).unwrap();
+            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
 
             let (wait_conn_send, wait_conn_recv) = channel();
@@ -242,17 +245,15 @@ mod high_cases {
         fn indy_agent_listen_works_for_passed_on_msg_callback() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("sovrin_agent_listen_works_for_al")).unwrap();
+            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
 
             let (wait_msg_send, wait_msg_recv) = channel();
-
-            let msg = "message";
-
+            
             let listener_handle = AgentUtils::listen(ENDPOINT,
                                                      None,
                                                      Some(Box::new(move |_, msg| {
@@ -263,9 +264,9 @@ mod high_cases {
 
             let conn_handle = AgentUtils::connect(pool_handle, wallet_handle, did.as_str(), did.as_str(), None).unwrap();
 
-            AgentUtils::send(conn_handle, msg).unwrap();
+            AgentUtils::send(conn_handle, CLIENT_MESSAGE).unwrap();
 
-            assert_eq!(wait_msg_recv.recv_timeout(TimeoutUtils::medium_timeout()).unwrap(), msg);
+            assert_eq!(wait_msg_recv.recv_timeout(TimeoutUtils::medium_timeout()).unwrap(), CLIENT_MESSAGE);
 
             AgentUtils::close_listener(listener_handle).unwrap();
             AgentUtils::close_connection(conn_handle).unwrap();
@@ -284,7 +285,7 @@ mod high_cases {
         fn indy_agent_add_identity_works() {
             TestUtils::cleanup_storage();
 
-            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
+            let receiver_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
@@ -303,6 +304,8 @@ mod high_cases {
             assert_eq!(sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), "NOT_CONNECTED");
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(receiver_wallet).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -310,7 +313,7 @@ mod high_cases {
         fn indy_agent_add_identity_works_for_multiply_keys() {
             TestUtils::cleanup_storage();
 
-            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
+            let receiver_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (receiver_did1, _, receiver_pk1) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
@@ -334,6 +337,8 @@ mod high_cases {
             }
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(receiver_wallet).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
@@ -346,7 +351,7 @@ mod high_cases {
         fn indy_agent_rm_identity_works() {
             TestUtils::cleanup_storage();
 
-            let receiver_wallet = WalletUtils::create_and_open_wallet("ignore", None).unwrap();
+            let receiver_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (receiver_did, _, receiver_pk) = SignusUtils::create_and_store_my_did(receiver_wallet, None).unwrap();
@@ -374,6 +379,8 @@ mod high_cases {
             sock.disconnect(format!("tcp://{}", ENDPOINT).as_str()).unwrap();
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(receiver_wallet).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
@@ -388,7 +395,7 @@ mod high_cases {
             let (wait_conn_send, wait_conn_recv) = channel();
             let (wait_msg_from_srv_send, wait_msg_from_srv_recv) = channel();
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
@@ -405,17 +412,16 @@ mod high_cases {
                                                                 wait_msg_from_srv_send.send(msg).unwrap();
                                                             }))).unwrap();
             let srv_to_cli_connect_id = wait_conn_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-            let client_msg = "msg_from_client";
-            let server_msg = "msg_from_server";
 
-            info!("Sending message from client to server");
-            AgentUtils::send(cli_to_srv_connect_id, client_msg).unwrap();
-            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
-            info!("Sending message from server to client");
-            AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap();
-            assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), server_msg);
+            AgentUtils::send(cli_to_srv_connect_id, CLIENT_MESSAGE).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), CLIENT_MESSAGE);
+
+            AgentUtils::send(srv_to_cli_connect_id, SERVER_MESSAGE).unwrap();
+            assert_eq!(wait_msg_from_srv_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), SERVER_MESSAGE);
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
@@ -426,7 +432,7 @@ mod high_cases {
         #[test]
         fn indy_agent_close_connection_works_for_outgoing() {
             TestUtils::cleanup_storage();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool3", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
@@ -440,6 +446,8 @@ mod high_cases {
             assert_eq!(AgentUtils::send(conn_handle, "").unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -448,7 +456,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool4", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
@@ -463,10 +471,11 @@ mod high_cases {
 
             AgentUtils::close_connection(srv_to_cli_connect_id).unwrap();
 
-            let server_msg = "msg_from_server";
-            assert_eq!(AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_eq!(AgentUtils::send(srv_to_cli_connect_id, SERVER_MESSAGE).unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
@@ -479,7 +488,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let (wait_conn_send, wait_conn_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool8", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
@@ -494,8 +503,9 @@ mod high_cases {
 
             AgentUtils::close_listener(listener_handle).unwrap();
 
-            let server_msg = "msg_from_server";
-            assert_eq!(AgentUtils::send(srv_to_cli_connect_id, server_msg).unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_eq!(AgentUtils::send(srv_to_cli_connect_id, SERVER_MESSAGE).unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -512,10 +522,10 @@ mod medium_cases {
         fn indy_agent_connect_works_for_unknow_listener() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, _, _) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, None).unwrap();
@@ -526,10 +536,10 @@ mod medium_cases {
             let res = AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -538,10 +548,10 @@ mod medium_cases {
         fn indy_agent_connect_works_for_invalid_remote_data() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(trustee_wallet, Some(TRUSTEE_SEED)).unwrap();
             let sender_did = trustee_did.clone();
@@ -565,10 +575,11 @@ mod medium_cases {
                                           sender_did.as_str(), listener_did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
+
 
             TestUtils::cleanup_storage();
         }
@@ -577,10 +588,10 @@ mod medium_cases {
         fn indy_agent_connect_works_for_local_data_without_pub_key() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (listener_did, listener_ver_key, _) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
 
@@ -593,10 +604,10 @@ mod medium_cases {
                                           sender_did.as_str(), listener_did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -604,11 +615,11 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_expired_key_in_wallet() {
             TestUtils::cleanup_storage();
-            
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
 
@@ -628,10 +639,10 @@ mod medium_cases {
                                                            sender_did.as_str(), listener_did.as_str());
             assert_eq!(res.unwrap_err(), RecvTimeoutError::Timeout);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -639,11 +650,11 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_expired_key_in_ledger() {
             TestUtils::cleanup_storage();
-            
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let trustee_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let trustee_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(trustee_wallet, Some(TRUSTEE_SEED)).unwrap();
             let sender_did = trustee_did.clone();
@@ -672,10 +683,10 @@ mod medium_cases {
                                                            sender_did.as_str(), listener_did.as_str());
             assert_eq!(res.unwrap_err(), RecvTimeoutError::Timeout);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -683,8 +694,8 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_incompatible_wallet_and_pool() {
             TestUtils::cleanup_storage();
-            
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
             let wallet_handle = WalletUtils::create_and_open_wallet("agent_pool_2", None).unwrap();
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -696,9 +707,9 @@ mod medium_cases {
                                           did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -706,10 +717,10 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_unknown_sender_did() {
             TestUtils::cleanup_storage();
-            
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(),
@@ -722,9 +733,9 @@ mod medium_cases {
                                           did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -732,8 +743,8 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_invalid_listener() {
             TestUtils::cleanup_storage();
-            
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -752,8 +763,8 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_closed_listener() {
             TestUtils::cleanup_storage();
-            
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -777,8 +788,8 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_connect_without_add_identity() {
             TestUtils::cleanup_storage();
-            
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -801,7 +812,7 @@ mod medium_cases {
         fn indy_agent_connect_works_for_connect_after_remove_identity() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).expect("create wallet");
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).expect("create wallet");
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -826,13 +837,13 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_passed_callback() {
             TestUtils::cleanup_storage();
-            
+
             let (wait_msg_send, wait_msg_recv) = channel();
             let (wait_conn_send, wait_conn_recv) = channel();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
@@ -853,10 +864,8 @@ mod medium_cases {
 
             let conn_handle = wait_conn_recv.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
-            let msg = "message";
-            AgentUtils::send(conn_handle, msg).unwrap();
-
-            assert_eq!(wait_msg_recv.recv_timeout(TimeoutUtils::medium_timeout()).unwrap(), msg);
+            AgentUtils::send(conn_handle, CLIENT_MESSAGE).unwrap();
+            assert_eq!(wait_msg_recv.recv_timeout(TimeoutUtils::medium_timeout()).unwrap(), CLIENT_MESSAGE);
 
             AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -868,11 +877,11 @@ mod medium_cases {
         #[test]
         fn indy_agent_connect_works_for_twice() {
             TestUtils::cleanup_storage();
-            
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
 
@@ -888,10 +897,10 @@ mod medium_cases {
                                           sender_did.as_str(), listener_did.as_str());
             assert_eq!(res.unwrap_err(), RecvTimeoutError::Timeout);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -928,10 +937,10 @@ mod medium_cases {
         fn indy_agent_listen_works_for_reject_unknow_sender() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("agent_pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("agent_pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (listener_did, listener_ver_key, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, None).unwrap();
 
@@ -945,10 +954,10 @@ mod medium_cases {
                                                            sender_did.as_str(), listener_did.as_str(), None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            AgentUtils::close_listener(listener_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -957,10 +966,10 @@ mod medium_cases {
         fn indy_agent_listen_works_for_reject_expired_saved_sender_data() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, listener_verkey, listener_pk) = SignusUtils::create_and_store_my_did(listener_wallet, Some(TRUSTEE_SEED)).unwrap();
             let (sender_did, sender_ver_key, sender_pub_key) = SignusUtils::create_and_store_my_did(sender_wallet, None).unwrap();
@@ -1029,6 +1038,10 @@ mod medium_cases {
             assert_eq!(AgentUtils::connect(pool_handle, sender_wallet, sender_did.as_str(), listener_did.as_str(), None).unwrap_err(), ErrorCode::CommonInvalidState);
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(listener_wallet).unwrap();
+            WalletUtils::close_wallet(sender_wallet).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -1036,7 +1049,7 @@ mod medium_cases {
         fn indy_agent_add_identity_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
@@ -1053,7 +1066,7 @@ mod medium_cases {
         fn indy_agent_add_identity_works_for_invalid_listener_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (receiver_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -1073,7 +1086,7 @@ mod medium_cases {
         fn indy_agent_add_identity_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1092,7 +1105,7 @@ mod medium_cases {
         fn indy_agent_add_identity_works_for_two_did_on_same_listener() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1111,7 +1124,7 @@ mod medium_cases {
         fn indy_agent_add_identity_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (receiver_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1130,7 +1143,7 @@ mod medium_cases {
         fn indy_agent_add_identity_works_after_remove() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1154,7 +1167,7 @@ mod medium_cases {
         fn indy_agent_rm_identity_works_for_invalid_listener_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1174,7 +1187,7 @@ mod medium_cases {
         fn indy_agent_rm_identity_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (receiver_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1195,7 +1208,7 @@ mod medium_cases {
         fn indy_agent_rm_identity_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1215,7 +1228,7 @@ mod medium_cases {
         fn indy_agent_rm_identity_works_for_unknown_receiver_did() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let listener_handle = AgentUtils::listen(ENDPOINT, None, None).unwrap();
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1238,7 +1251,7 @@ mod medium_cases {
         fn indy_agent_send_works_for_invalid_connection_handle() {
             TestUtils::cleanup_storage();
             
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -1252,7 +1265,7 @@ mod medium_cases {
                                                         did.as_str(), None).unwrap();
             let invalid_connection_handle = connection_handle + 100;
 
-            let res = AgentUtils::send(invalid_connection_handle, "msg");
+            let res = AgentUtils::send(invalid_connection_handle, CLIENT_MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -1265,7 +1278,7 @@ mod medium_cases {
         fn indy_agent_send_works_for_closed_connection() {
             TestUtils::cleanup_storage();
             
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
@@ -1280,7 +1293,7 @@ mod medium_cases {
 
             AgentUtils::close_connection(connection_handle).unwrap();
 
-            let res = AgentUtils::send(connection_handle, "msg");
+            let res = AgentUtils::send(connection_handle, CLIENT_MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             AgentUtils::close_listener(listener_handle).unwrap();
@@ -1295,10 +1308,10 @@ mod medium_cases {
 
             let (wait_conn_send, wait_conn_recv) = channel();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, listener_verkey, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();//TODO QUESTION
@@ -1319,7 +1332,7 @@ mod medium_cases {
 
             AgentUtils::close_listener(listener_handle).unwrap();
 
-            let res = AgentUtils::send(srv_to_cli_connect_id, "srv_to_cli_msg");
+            let res = AgentUtils::send(srv_to_cli_connect_id, SERVER_MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(listener_wallet).unwrap();
@@ -1334,10 +1347,10 @@ mod medium_cases {
         fn indy_agent_send_works_for_closed_listener_outgoing_connection() {
             TestUtils::cleanup_storage();
             
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, listener_verkey, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
@@ -1353,7 +1366,7 @@ mod medium_cases {
 
             AgentUtils::close_listener(listener_handle).unwrap();
 
-            let res = AgentUtils::send(cli_to_srv_connect_id, "cli_to_srv_msg");
+            let res = AgentUtils::send(cli_to_srv_connect_id, CLIENT_MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(listener_wallet).unwrap();
@@ -1370,10 +1383,10 @@ mod medium_cases {
 
             let (wait_conn_send, wait_conn_recv) = channel();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("pool_1").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let listener_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
-            let sender_wallet = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let listener_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (listener_did, listener_verkey, listener_pub_key) = SignusUtils::create_and_store_my_did(listener_wallet, None).unwrap();
             let (sender_did, _, _) = SignusUtils::create_and_store_my_did(sender_wallet, Some(TRUSTEE_SEED)).unwrap();
@@ -1394,9 +1407,10 @@ mod medium_cases {
 
             AgentUtils::rm_identity(listener_handle, listener_wallet, listener_did.as_str()).unwrap();
 
-            let res = AgentUtils::send(srv_to_cli_connect_id, "srv_to_cli_msg");
+            let res = AgentUtils::send(srv_to_cli_connect_id, SERVER_MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
+            AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(listener_wallet).unwrap();
             WalletUtils::close_wallet(sender_wallet).unwrap();
             PoolUtils::close(pool_handle).unwrap();
@@ -1414,7 +1428,7 @@ mod medium_cases {
 
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
@@ -1429,9 +1443,8 @@ mod medium_cases {
 
             assert_eq!(AgentUtils::close_connection(conn_handle + 100).unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            let client_msg = "msg_from_cli_to_srv";
-            AgentUtils::send(conn_handle, client_msg).unwrap();
-            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
+            AgentUtils::send(conn_handle, CLIENT_MESSAGE).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), CLIENT_MESSAGE);
 
             AgentUtils::close_listener(listener_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1443,7 +1456,7 @@ mod medium_cases {
         fn indy_agent_close_connection_works_for_twice() {
             TestUtils::cleanup_storage();
             
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), ENDPOINT).unwrap();
@@ -1473,7 +1486,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let (wait_msg_from_cli_send, wait_msg_from_cli_recv) = channel();
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool9", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key): (String, String, String) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let listener_handle = AgentUtils::listen(ENDPOINT, None,
@@ -1487,11 +1500,11 @@ mod medium_cases {
             let incorrect_listener_handle = conn_handle;
             assert_eq!(AgentUtils::close_listener(incorrect_listener_handle).unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            let client_msg = "msg_from_cli_to_srv";
-            AgentUtils::send(conn_handle, client_msg).unwrap();
-            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), client_msg);
+            AgentUtils::send(conn_handle, CLIENT_MESSAGE).unwrap();
+            assert_eq!(wait_msg_from_cli_recv.recv_timeout(TimeoutUtils::short_timeout()).unwrap(), CLIENT_MESSAGE);
 
             AgentUtils::close_listener(listener_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1500,7 +1513,7 @@ mod medium_cases {
         fn indy_agent_close_listener_works_for_twice() {
             TestUtils::cleanup_storage();
             
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool_1", None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(),
