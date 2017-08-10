@@ -136,7 +136,7 @@ def libindyWindowsTesting() {
 
             try {
                 echo "Windows Test: Run Indy pool"
-                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f indy-sdk/ci/indy-pool.dockerfile -t indy_pool indy-sdk/ci"
+                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
                 bat "docker -H $INDY_SDK_SERVER_IP create --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 dir('libindy') {
@@ -144,8 +144,6 @@ def libindyWindowsTesting() {
                     bat 'unzip prebuilt.zip -d prebuilt'
 
                     bat "cargo update"
-
-                    echo "$WORKSPACE"
 
                     withEnv([
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
@@ -161,9 +159,13 @@ def libindyWindowsTesting() {
             } finally {
                 try {
                     bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
-                } finally {
-                    bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
+                } catch (ignore) {
                 }
+                try {
+                    bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
+                } catch (ignore) {
+                }
+                step([$class: 'WsCleanup'])
             }
         }
     }
