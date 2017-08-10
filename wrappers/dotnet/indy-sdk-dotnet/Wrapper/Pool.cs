@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
@@ -21,7 +24,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
 
             taskCompletionSource.SetResult(new Pool(handle));
         };
-        
+
         /// <summary>
         /// Creates a new pool configuration.
         /// </summary>
@@ -113,16 +116,16 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Closes a pool.
         /// </summary>
-        /// <param name="poolHandle">The handle of the pool to close.</param>
+        /// <param name="pool">The pool to close.</param>
         /// <returns>An asynchronous Task with no return value.</returns>
-        private static Task ClosePoolLedgerAsync(IntPtr poolHandle)
+        private static Task ClosePoolLedgerAsync(Pool pool)
         {
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var result = IndyNativeMethods.indy_close_pool_ledger(
                 commandHandle,
-                poolHandle,
+                pool.Handle,
                 _noValueCallback
                 );
 
@@ -131,7 +134,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
-        private bool _isOpen = true;
+        private readonly object _syncRoot = new Object();
+        private bool _closeRequested = false;
 
         /// <summary>
         /// Gets the handle for the pool.
@@ -162,17 +166,41 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <returns>An asynchronous Task with no return value.</returns>
         public Task CloseAsync()
         {
-            _isOpen = false;
-            return ClosePoolLedgerAsync(this.Handle);
+            lock (_syncRoot)
+            {
+                var result = ClosePoolLedgerAsync(this);                
+                _closeRequested = true;
+                return result;
+            }
         }
 
         /// <summary>
         /// Disposes of resources.
         /// </summary>
-        public void Dispose()
+        public async void Dispose()
         {
-            if (_isOpen)
-                CloseAsync().Wait();
+            lock (_syncRoot)
+            {
+                if (_closeRequested)
+                    return;
+            }
+
+            await CloseAsync();
+            GC.SuppressFinalize(this);
+        }        
+
+        /// <summary>
+        /// Cleans up on finalize.
+        /// </summary>
+        ~Pool()
+        {
+            lock (_syncRoot)
+            {
+                if (_closeRequested)
+                    return;
+            }
+
+            CloseAsync();
         }
     }
 }
