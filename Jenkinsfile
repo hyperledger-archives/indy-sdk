@@ -367,10 +367,11 @@ def publishingPythonWrapperToPipy() {
                        sh 'cp $credentialsFile ./wrappers/python/'
                        sh "cp -r ci wrappers/python"
 
+                       sh "chmod -R 777 ci"
+                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+
                        sh '''
                            cd wrappers/python
-                           chmod -R 777 ci
-                           ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER
                            python3.6 setup.py sdist
                            python3.6 -m twine upload dist/* --config-file .pypirc
                        '''
