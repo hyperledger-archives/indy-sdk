@@ -137,7 +137,7 @@ def libindyWindowsTesting() {
             try {
                 echo "Windows Test: Run Indy pool"
                 bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
-                bat "docker -H $INDY_SDK_SERVER_IP create --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
