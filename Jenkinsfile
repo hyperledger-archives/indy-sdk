@@ -80,6 +80,11 @@ def closePool(env_name, network_name, poolInst) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
     try {
+        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
+    } catch (error) {
+        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+    }
+    try {
         echo "${env_name} Test: remove pool network ${network_name}"
         sh "docker network rm ${network_name}"
     } catch (error) {
