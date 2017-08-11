@@ -4,6 +4,7 @@ use indy::api::ErrorCode;
 use indy::api::ledger::{
     indy_sign_and_submit_request,
     indy_submit_request,
+    indy_sign_request,
     indy_build_get_ddo_request,
     indy_build_attrib_request,
     indy_build_get_attrib_request,
@@ -73,9 +74,41 @@ impl LedgerUtils {
 
         let err =
             indy_submit_request(command_handle,
-                                  pool_handle,
-                                  request_json.as_ptr(),
-                                  cb);
+                                pool_handle,
+                                request_json.as_ptr(),
+                                cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_result_json)
+    }
+
+    pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_result_json| {
+            sender.send((err, request_result_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_sign_request_cb(cb);
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let request_json = CString::new(request_json).unwrap();
+
+        let err =
+            indy_sign_request(command_handle,
+                              wallet_handle,
+                              submitter_did.as_ptr(),
+                              request_json.as_ptr(),
+                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
