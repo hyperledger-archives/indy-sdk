@@ -258,13 +258,15 @@ async def encrypt(wallet_handle: int,
     c_did = c_char_p(did.encode('utf-8'))
     c_msg = c_char_p(msg.encode('utf-8'))
 
-    res = await do_call('indy_encrypt',
+    encrypted_message, nonce = await do_call('indy_encrypt',
                         c_wallet_handle,
                         c_pool_handle,
                         c_my_did,
                         c_did,
                         c_msg,
                         encrypt.cb)
+
+    res = (encrypted_message.decode(), nonce.decode())
 
     logger.debug("encrypt: <<< res: %r", res)
     return res
@@ -306,7 +308,7 @@ async def decrypt(wallet_handle: int,
     c_encrypted_msg = c_char_p(encrypted_msg.encode('utf-8'))
     c_nonce = c_char_p(nonce.encode('utf-8'))
 
-    res = await do_call('indy_decrypt',
+    decrypted_message = await do_call('indy_decrypt',
                         c_wallet_handle,
                         c_my_did,
                         c_did,
@@ -314,5 +316,7 @@ async def decrypt(wallet_handle: int,
                         c_nonce,
                         decrypt.cb)
 
-    logger.debug("decrypt: <<< res: %r", res)
-    return res
+    decrypted_message = decrypted_message.decode()
+
+    logger.debug("decrypt: <<< res: %r", decrypted_message)
+    return decrypted_message
