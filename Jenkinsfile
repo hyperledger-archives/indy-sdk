@@ -105,7 +105,6 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
                 sh 'chmod -R 777 /home/indy/'
-                sh 'cargo update'
 
                 try {
                     if (run_interoperability_tests) {
@@ -156,7 +155,6 @@ def libindyWindowsTesting() {
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                             "RUST_BACKTRACE=1"
                     ]) {
-                        bat "cargo update"
                         bat "cargo test --no-run"
                     }
 
