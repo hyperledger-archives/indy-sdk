@@ -894,26 +894,6 @@ mod medium_cases {
         }
     }
 
-    mod sign {
-        use super::*;
-
-        #[test]
-        fn indy_sign_works_for_invalid_message() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
-
-            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
-
-            let message = r#"1495034346617224651"#;
-
-            let res = SignusUtils::sign(wallet_handle, &my_did, message);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            TestUtils::cleanup_storage();
-        }
-    }
-
     mod verify {
         use super::*;
 
