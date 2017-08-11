@@ -357,13 +357,12 @@ extern "C" {
                                                                          const char*     request_json)
                                                    );
 
-    /// Builds a NODE request.
+    /// Builds a GET_TXN request.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
-    /// target_did: Id of Identity stored in secured Wallet.
-    /// data: id of a target NYM record
+    /// data: seq_no of transaction in ledger
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns

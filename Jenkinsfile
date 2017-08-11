@@ -13,10 +13,11 @@ try {
 def testing() {
     stage('Testing') {
         parallel([
-                'libindy-ubuntu-test': { libindyUbuntuTesting() },
-                'libindy-redhat-test': { libindyRedHatTesting() },
-                'java-ubuntu-test'   : { javaWrapperUbuntuTesting() },
-                'python-ubuntu-test' : { pythonWrapperUbuntuTesting() }
+                'libindy-ubuntu-test' : { libindyUbuntuTesting() },
+                'libindy-windows-test': { libindyWindowsTesting() },
+                'libindy-redhat-test' : { libindyRedHatTesting() },
+                'java-ubuntu-test'    : { javaWrapperUbuntuTesting() },
+                'python-ubuntu-test'  : { pythonWrapperUbuntuTesting() }
         ])
     }
 }
@@ -126,6 +127,61 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
     }
     finally {
         closePool(env_name, network_name, poolInst)
+    }
+}
+
+def libindyWindowsTesting() {
+    node('win2016') {
+        stage('Windows Test') {
+            echo "Windows Test: Checkout scm"
+            checkout scm
+
+            try {
+                echo "Windows Test: Run Indy pool"
+                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
+                bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                dir('libindy') {
+                    echo "Windows Test: Download prebuilt dependencies"
+                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
+                    bat 'unzip prebuilt.zip -d prebuilt'
+
+                    echo "Windows Test: Build"
+                    withEnv([
+                            "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                            "RUST_BACKTRACE=1"
+                    ]) {
+                        bat "cargo update"
+                        bat "cargo test --no-run"
+                    }
+
+                    echo "Windows Test: Run tests"
+                    withEnv([
+                            "RUST_TEST_THREADS=1",
+                            "RUST_LOG=trace",
+                            "RUST_BACKTRACE=1",
+                            "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                    ]) {
+                        bat "cargo test"
+                    }
+                }
+            } finally {
+                try {
+                    bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
+                } catch (ignore) {
+                }
+                try {
+                    bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
+                } catch (ignore) {
+                }
+                step([$class: 'WsCleanup'])
+            }
+        }
     }
 }
 
@@ -367,10 +423,11 @@ def publishingPythonWrapperToPipy() {
                        sh 'cp $credentialsFile ./wrappers/python/'
                        sh "cp -r ci wrappers/python"
 
+                       sh "chmod -R 777 ci"
+                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+
                        sh '''
                            cd wrappers/python
-                           chmod -R 777 ci
-                           ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER
                            python3.6 setup.py sdist
                            python3.6 -m twine upload dist/* --config-file .pypirc
                        '''
