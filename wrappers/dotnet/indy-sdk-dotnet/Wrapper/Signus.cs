@@ -51,6 +51,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             taskCompletionSource.SetResult(signature);
         };
 
+
         /// <summary>
         /// Gets the callback to use when the command for VerifySignatureAsync has completed.
         /// </summary>
@@ -186,15 +187,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
+
         /// <summary>
         /// Verifies a signed message.
         /// </summary>
         /// <param name="wallet">The wallet containing the DID of the signed message.</param>
         /// <param name="pool">The ledger pool to verify the message against.</param>
         /// <param name="did">The did the message is associated with.</param>
-        /// <param name="signedMsg">The signed message to verify.</param>
+        /// <param name="msg">The message to verify.</param>
+        /// <param name="signature">The signature to verify.</param>
         /// <returns>An asynchronous task that returns true if the message is valid, otherwise false.</returns>
-        public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, string signedMsg)
+        public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, string msg, string signature)
         {
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -204,7 +207,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 wallet.Handle,
                 pool.Handle,
                 did,
-                signedMsg,
+                msg,
+                signature,
                 _verifySignatureCallback
                 );
 

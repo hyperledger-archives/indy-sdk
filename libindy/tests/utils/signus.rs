@@ -1,5 +1,5 @@
-use std::sync::mpsc::{channel};
-use std::ffi::{CString};
+use std::sync::mpsc::channel;
+use std::ffi::CString;
 
 use indy::api::signus::{
     indy_sign,
@@ -198,7 +198,7 @@ impl SignusUtils {
         Ok((my_verkey, my_pk))
     }
 
-    pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, signed_msg: &str) -> Result<bool, ErrorCode> {
+    pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, msg: &str, signature: &str) -> Result<bool, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, valid| {
@@ -208,15 +208,17 @@ impl SignusUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_verify_signature_cb(cb);
 
         let did = CString::new(did).unwrap();
-        let signed_msg = CString::new(signed_msg).unwrap();
+        let msg = CString::new(msg).unwrap();
+        let signature = CString::new(signature).unwrap();
 
         let err =
             indy_verify_signature(command_handle,
-                                    wallet_handle,
-                                    pool_handle,
-                                    did.as_ptr(),
-                                    signed_msg.as_ptr(),
-                                    cb);
+                                  wallet_handle,
+                                  pool_handle,
+                                  did.as_ptr(),
+                                  msg.as_ptr(),
+                                  signature.as_ptr(),
+                                  cb);
 
         if err != ErrorCode::Success {
             return Err(err);

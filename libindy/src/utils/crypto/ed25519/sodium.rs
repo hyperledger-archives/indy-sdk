@@ -49,7 +49,7 @@ impl ED25519 {
 
     pub fn create_key_pair_for_signature(seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError> {
         if seed.is_some() && seed.unwrap().len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid seed")))
+            return Err(CommonError::InvalidStructure(format!("Invalid seed")));
         }
 
         let (public_key, private_key) =
@@ -66,7 +66,7 @@ impl ED25519 {
 
     pub fn sign(private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         if private_key.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid sign key")))
+            return Err(CommonError::InvalidStructure(format!("Invalid sign key")));
         }
 
         let mut pr_key: [u8; 64] = [0; 64];
@@ -80,11 +80,11 @@ impl ED25519 {
 
     pub fn verify(public_key: &[u8], doc: &[u8], sign: &[u8]) -> Result<bool, CommonError> {
         if sign.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid signature")))
+            return Err(CommonError::InvalidStructure(format!("Invalid signature")));
         }
 
         if public_key.len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid verkey")))
+            return Err(CommonError::InvalidStructure(format!("Invalid verkey")));
         }
 
         let mut signature: [u8; 64] = [0; 64];
@@ -99,7 +99,7 @@ impl ED25519 {
 
     pub fn sk_to_curve25519(sk: &[u8]) -> Result<Vec<u8>, CommonError> {
         if sk.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid signkey")))
+            return Err(CommonError::InvalidStructure(format!("Invalid signkey")));
         }
 
         let mut from: [u8; 64] = [0; 64];
@@ -113,7 +113,7 @@ impl ED25519 {
 
     pub fn vk_to_curve25519(pk: &[u8]) -> Result<Vec<u8>, CommonError> {
         if pk.len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid verkey")))
+            return Err(CommonError::InvalidStructure(format!("Invalid verkey")));
         }
 
         let mut from: [u8; 32] = [0; 32];

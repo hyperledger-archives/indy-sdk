@@ -260,6 +260,8 @@ namespace Indy.Sdk.Dotnet
         /// <param name="request_json">The request that can be signed and submitted to the ledger.</param>
         internal delegate void BuildRequestResultDelegate(int command_handle, int err, string request_json);
 
+        
+
         /// <summary>
         /// Signs and submits request message to validator pool.
         /// </summary>
@@ -283,7 +285,27 @@ namespace Indy.Sdk.Dotnet
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_submit_request(int command_handle, IntPtr pool_handle, string request_json, SubmitRequestResultDelegate cb);
+        
+        /// <summary>
+        /// Signs a request.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handle.</param>
+        /// <param name="submitter_did">The DID of the submitter.</param>
+        /// <param name="request_json">The request to sign.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestResultDelegate cb);
 
+        /// <summary>
+        /// Delegate for callbacks used by functions that sign requests.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="signed_request_json">The signed request data.</param>
+        internal delegate void SignRequestResultDelegate(int command_handle, int err, string signed_request_json);
+        
         /// <summary>
         /// Builds a request to get a DDO.
         /// </summary>
@@ -503,11 +525,12 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="pool_handle">pool handle.</param>
         /// <param name="did">DID that signed the message</param>
-        /// <param name="signed_msg">The signed message</param>
+        /// <param name="msg">The message</param>
+        /// <param name="signature">The signature.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, string signed_msg, VerifySignatureResultDelegate cb);
+        internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, string msg, string signature, VerifySignatureResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_verify_signature function.
