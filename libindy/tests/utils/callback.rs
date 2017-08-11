@@ -892,4 +892,26 @@ impl CallbackUtils {
 
         (command_handle, Some(closure_to_decrypt_callback))
     }
+
+    pub fn closure_to_sign_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode,
+                                                                                                          signed_request_json: *const c_char)>) {
+        lazy_static! {
+            static ref SIGN_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_sign_request_callback(command_handle: i32, err: ErrorCode, signed_request_json: *const c_char) {
+            let mut callbacks = SIGN_REQUEST_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let signed_request_json = unsafe { CStr::from_ptr(signed_request_json).to_str().unwrap().to_string() };
+            cb(err, signed_request_json)
+        }
+
+        let mut callbacks = SIGN_REQUEST_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_sign_request_callback))
+    }
 }

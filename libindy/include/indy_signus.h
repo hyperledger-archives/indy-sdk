@@ -148,6 +148,7 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// pool_handle: pool handle.
     /// did: DID that signed the message
+    /// msg: message
     /// signature: a signature to be verified
     /// cb: Callback that takes command result as parameter.
     ///
@@ -165,7 +166,8 @@ extern "C" {
                                                   indy_handle_t pool_handle,
                                                   
                                                   const char *    did,
-                                                  const char *    signed_msg,
+                                                  const char *    msg,
+                                                  const char *    signature,
 
                                                   void           (*cb)(indy_handle_t xcommand_handle,
                                                                        indy_error_t  err,
