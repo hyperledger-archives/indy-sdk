@@ -46,6 +46,8 @@ pub struct PointG1 {
 }
 
 impl PointG1 {
+
+    /// Creates new random PointG1
     pub fn new() -> Result<PointG1, CommonError> {
         // generate random point from the group G1
         let point_x = BIG::new_ints(&CURVE_GX);
@@ -59,6 +61,7 @@ impl PointG1 {
         })
     }
 
+    /// Creates new infinity PointG1
     pub fn new_inf() -> Result<PointG1, CommonError> {
         let mut r = ECP::new();
         r.inf();
@@ -67,11 +70,13 @@ impl PointG1 {
         })
     }
 
+    /// Checks infinity
     pub fn is_inf(&self) -> Result<bool, CommonError> {
         let mut r = self.point;
         Ok(r.is_infinity())
     }
 
+    /// PointG1 ^ GroupOrderElement
     pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         let mut bn = e.bn;
@@ -80,6 +85,7 @@ impl PointG1 {
         })
     }
 
+    /// PointG1 * PointG1
     pub fn add(&self, q: &PointG1) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         let mut point = q.point;
@@ -89,6 +95,7 @@ impl PointG1 {
         })
     }
 
+    /// PointG1 / PointG1
     pub fn sub(&self, q: &PointG1) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         let mut point = q.point;
@@ -98,6 +105,7 @@ impl PointG1 {
         })
     }
 
+    /// 1 / PointG1
     pub fn neg(&self) -> Result<PointG1, CommonError> {
         let mut r = self.point;
         r.neg();
@@ -172,6 +180,7 @@ pub struct PointG2 {
 }
 
 impl PointG2 {
+    /// Creates new random PointG2
     pub fn new() -> Result<PointG2, CommonError> {
         let point_xa = BIG::new_ints(&CURVE_PXA);
         let point_xb = BIG::new_ints(&CURVE_PXB);
@@ -190,6 +199,7 @@ impl PointG2 {
         })
     }
 
+    /// Creates new infinity PointG2
     pub fn new_inf() -> Result<PointG2, CommonError> {
         let mut point = ECP2::new();
         point.inf();
@@ -199,6 +209,7 @@ impl PointG2 {
         })
     }
 
+    /// PointG2 * PointG2
     pub fn add(&self, q: &PointG2) -> Result<PointG2, CommonError> {
         let mut r = self.point;
         let mut point = q.point;
@@ -209,6 +220,7 @@ impl PointG2 {
         })
     }
 
+    /// PointG2 / PointG2
     pub fn sub(&self, q: &PointG2) -> Result<PointG2, CommonError> {
         let mut r = self.point;
         let mut point = q.point;
@@ -219,6 +231,7 @@ impl PointG2 {
         })
     }
 
+    /// PointG2 ^ GroupOrderElement
     pub fn mul(&self, e: &GroupOrderElement) -> Result<PointG2, CommonError> {
         let mut r = self.point;
         let mut bn = e.bn;
@@ -294,6 +307,7 @@ impl GroupOrderElement {
         })
     }
 
+    /// (GroupOrderElement ^ GroupOrderElement) mod GroupOrder
     pub fn pow_mod(&self, e: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         let mut base = self.bn;
         let mut pow = e.bn;
@@ -302,6 +316,7 @@ impl GroupOrderElement {
         })
     }
 
+    /// (GroupOrderElement + GroupOrderElement) mod GroupOrder
     pub fn add_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         let mut sum = self.bn;
         sum.add(&r.bn);
@@ -311,6 +326,7 @@ impl GroupOrderElement {
         })
     }
 
+    /// (GroupOrderElement - GroupOrderElement) mod GroupOrder
     pub fn sub_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         //need to use modneg if sub is negative
         let mut diff = self.bn;
@@ -330,6 +346,7 @@ impl GroupOrderElement {
 
     }
 
+    /// (GroupOrderElement * GroupOrderElement) mod GroupOrder
     pub fn mul_mod(&self, r: &GroupOrderElement) -> Result<GroupOrderElement, CommonError> {
         let mut base = self.bn;
         let mut r = r.bn;
@@ -338,6 +355,7 @@ impl GroupOrderElement {
         })
     }
 
+    /// 1 / GroupOrderElement
     pub fn inverse(&self) -> Result<GroupOrderElement, CommonError> {
         let mut bn = self.bn;
         bn.invmodp(&BIG::new_ints(&CURVE_ORDER));
@@ -347,6 +365,7 @@ impl GroupOrderElement {
         })
     }
 
+    /// - GroupOrderElement mod GroupOrder
     pub fn mod_neg(&self) -> Result<GroupOrderElement, CommonError> {
         let mut r = self.bn;
         r = BIG::modneg(&mut r, &BIG::new_ints(&CURVE_ORDER));
@@ -433,6 +452,7 @@ pub struct Pair {
 }
 
 impl Pair {
+    /// e(PointG1, PointG2)
     pub fn pair(p: &PointG1, q: &PointG2) -> Result<Pair, CommonError> {
         let mut p_new = *p;
         let mut q_new = *q;
@@ -444,6 +464,7 @@ impl Pair {
         })
     }
 
+    /// e() * e()
     pub fn mul(&self, b: &Pair) -> Result<Pair, CommonError> {
         let mut base = self.pair;
         let mut b = b.pair;
@@ -454,6 +475,7 @@ impl Pair {
         })
     }
 
+    /// e() ^ GroupOrderElement
     pub fn pow(&self, b: &GroupOrderElement) -> Result<Pair, CommonError> {
         let mut base = self.pair;
         let mut b = b.bn;
@@ -463,6 +485,7 @@ impl Pair {
         })
     }
 
+    /// 1 / e()
     pub fn inverse(&self) -> Result<Pair, CommonError> {
         let mut r = self.pair;
         r.conj();
