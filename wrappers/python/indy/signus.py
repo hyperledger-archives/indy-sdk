@@ -176,7 +176,8 @@ async def sign(wallet_handle: int,
 async def verify_signature(wallet_handle: int,
                            pool_handle: int,
                            did: str,
-                           signed_msg: str) -> bool:
+                           msg: str,
+                           signature: str) -> bool:
     """
     Verify a signature created by a key associated with a DID.
     If a secure wallet doesn't contain a verkey associated with the given DID,
@@ -188,7 +189,8 @@ async def verify_signature(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param pool_handle: pool handle.
     :param did: DID that signed the message
-    :param signed_msg: message
+    :param msg: message
+    :param signature: a signature to be verified
     :return: valid: true - if signature is valid, false - otherwise
     """
 
@@ -197,7 +199,8 @@ async def verify_signature(wallet_handle: int,
                  wallet_handle,
                  pool_handle,
                  did,
-                 signed_msg)
+                 msg,
+                 signature)
 
     if not hasattr(verify_signature, "cb"):
         logger.debug("verify_signature: Creating callback")
@@ -206,13 +209,15 @@ async def verify_signature(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_pool_handle = c_int32(pool_handle)
     c_did = c_char_p(did.encode('utf-8'))
-    c_signed_msg = c_char_p(signed_msg.encode('utf-8'))
+    c_msg = c_char_p(msg.encode('utf-8'))
+    c_signature = c_char_p(signature.encode('utf-8'))
 
     res = await do_call('indy_verify_signature',
                         c_wallet_handle,
                         c_pool_handle,
                         c_did,
-                        c_signed_msg,
+                        c_msg,
+                        c_signature,
                         verify_signature.cb)
 
     logger.debug("verify_signature: <<< res: %r", res)

@@ -7,6 +7,7 @@ import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -62,11 +63,11 @@ public class SignusDemoTest extends IndyIntegrationTest {
 				"        }\n" +
 				"    }";
 
-		String signedMessage = Signus.sign(theirWallet, theirDid, msg).get();
-		assertNotNull(signedMessage);
+		String signature = Signus.sign(theirWallet, theirDid, msg).get();
+		assertNotNull(signature);
 
 		// 8. I verify message
-		Boolean valid = Signus.verifySignature(myWallet, pool, theirDid, signedMessage).get();
+		Boolean valid = Signus.verifySignature(myWallet, pool, theirDid, msg, signature).get();
 		assertTrue(valid);
 
 		// 9. Close and delete My Wallet

@@ -41,10 +41,10 @@ async def test_signus_demo_works(pool_name, seed_trustee1, path_home):
         }
     })
 
-    signed_msg = await signus.sign(their_wallet_handle, their_did, message)
+    signature = await signus.sign(their_wallet_handle, their_did, message)
 
     # 7. Their sign message
-    assert await signus.verify_signature(my_wallet_handle, 1, their_did, signed_msg)
+    assert await signus.verify_signature(my_wallet_handle, 1, their_did, message, signature)
 
     # 8. Close wallets
     await wallet.close_wallet(their_wallet_handle)

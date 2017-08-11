@@ -43,7 +43,7 @@ impl JsonEncodable for MyKyesInfo {}
 
 impl<'a> JsonDecodable<'a> for MyKyesInfo {}
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDid {
     pub did: String,
     pub crypto_type: String,
