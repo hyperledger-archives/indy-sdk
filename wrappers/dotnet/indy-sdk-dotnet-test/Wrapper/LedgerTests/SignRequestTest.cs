@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
+namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
     [TestClass]
     public class SignRequestTest : IndyIntegrationTestBase
@@ -49,7 +49,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
 
             var signedMessage = await Ledger.SignRequestAsync(_wallet, _did, msg);
 
-            Assert.AreEqual(expectedSignature, signedMessage);
+            Assert.IsTrue(signedMessage.Contains(expectedSignature));
         }
 
         [TestMethod]

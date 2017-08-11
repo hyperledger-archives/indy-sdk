@@ -33,7 +33,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
             var msg = "{\"reqId\":1496822211362017764}";
             
             var expectedSignature = "R4Rj68n4HZosQqEc3oMUbQh7MtG8tH7WmXE2Mok8trHJ67CrzyqahZn5ziJy4nebRtq6Qi6fVH9JkvVCM85XjFa";
-            var signedMessage = Signus.SignAsync(_wallet, did, msg).Result;
+            var signedMessage = await Signus.SignAsync(_wallet, did, msg);      
 
             Assert.AreEqual(expectedSignature, signedMessage);
         }
