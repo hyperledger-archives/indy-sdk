@@ -12,7 +12,7 @@ impl ED25519Signus {
 }
 
 impl CryptoType for ED25519Signus {
-    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
+    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         ED25519::encrypt(private_key, public_key, doc, nonce)
     }
 

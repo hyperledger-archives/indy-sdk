@@ -19,7 +19,7 @@ use std::str;
 const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
-    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8>;
+    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn gen_nonce(&self) -> Vec<u8>;
     fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
@@ -155,7 +155,7 @@ impl SignusService {
         let secret_key = Base58::decode(&my_did.sk)?;
         let public_key = Base58::decode(&public_key)?;
 
-        let encrypted_doc = signus.encrypt(&secret_key, &public_key, &doc.as_bytes(), &nonce);
+        let encrypted_doc = signus.encrypt(&secret_key, &public_key, &doc.as_bytes(), &nonce)?;
         let encrypted_doc = Base58::encode(&encrypted_doc);
         let nonce = Base58::encode(&nonce);
 
