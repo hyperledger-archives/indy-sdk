@@ -14,7 +14,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 
             var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
 

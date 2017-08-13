@@ -1,41 +1,12 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.Agent;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
     public class AgentSendTest : AgentIntegrationTestBase
     {
-        private static TaskCompletionSource<Connection> serverToClientConnectionFuture = new TaskCompletionSource<Connection>();
-        private static TaskCompletionSource<string> serverToClientMsgFuture = new TaskCompletionSource<string>();
-        private static TaskCompletionSource<string> clientToServerMsgFuture = new TaskCompletionSource<string>();
-
-        private new static MessageReceivedHandler _messageObserver = (Connection connection, string message) =>
-            {
-                Console.WriteLine("Received message '" + message + "' on connection " + connection);
-
-                serverToClientMsgFuture.SetResult(message);
-            };
-
-        private new static MessageReceivedHandler _messageObserverForIncoming = (Connection connection, string message) =>
-            {
-                Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
-
-                clientToServerMsgFuture.SetResult(message);
-            };
-
-        private new static ConnectionOpenedHandler _incomingConnectionObserver = (Listener listener, Connection connection, string senderDid, string receiverDid) =>
-            {
-                Console.WriteLine("New connection " + connection);
-
-                serverToClientConnectionFuture.SetResult(connection);
-
-                return _messageObserverForIncoming;
-            };
-
         [TestMethod]
         public async Task TestAgentSendWorks()
         {
@@ -47,23 +18,28 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
             await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var listener = await AgentListener.ListenAsync(endpoint);
+            await listener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
 
-            await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
+            var clientConnection = await AgentConnection.ConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did);
 
-            var clientToServerConnection = await Agent.AgentConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did, _messageObserver);
+            var connectionEvent = await listener.WaitForConnection();
+            var serverConnection = connectionEvent.Connection;
 
             var clientToServerMessage = "msg_from_client";
             var serverToClientMessage = "msg_from_server";
 
-            await clientToServerConnection.SendAsync(clientToServerMessage);
+            await clientConnection.SendAsync(clientToServerMessage);
 
-            Assert.AreEqual(clientToServerMessage, await clientToServerMsgFuture.Task);
+            var serverMessageEvent = await serverConnection.WaitForMessage();
 
-            var serverToClientConnection = await serverToClientConnectionFuture.Task;
-            await serverToClientConnection.SendAsync(serverToClientMessage);
+            Assert.AreEqual(clientToServerMessage, serverMessageEvent.Message);
 
-            Assert.AreEqual(serverToClientMessage, await serverToClientMsgFuture.Task);
+            await serverConnection.SendAsync(serverToClientMessage);
+
+            var clientMessageEvent = await clientConnection.WaitForMessage();
+
+            Assert.AreEqual(serverToClientMessage, clientMessageEvent.Message);
         }
     }
 }

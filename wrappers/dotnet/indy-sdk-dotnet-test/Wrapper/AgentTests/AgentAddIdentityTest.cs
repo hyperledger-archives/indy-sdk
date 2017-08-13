@@ -1,5 +1,4 @@
-﻿using Indy.Sdk.Dotnet.Test.Wrapper.AgentTests;
-using Indy.Sdk.Dotnet.Wrapper;
+﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
@@ -15,7 +14,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 
             var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
         }
@@ -30,7 +29,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 
             CreateAndStoreMyDidResult[] didResults = { myDid1, myDid2 };
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             foreach (var didResult in didResults)
             {

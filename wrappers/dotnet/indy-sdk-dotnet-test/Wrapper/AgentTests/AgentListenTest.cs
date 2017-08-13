@@ -20,7 +20,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
             await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            await AgentListener.ListenAsync(endpoint);
         }
     }
 }
