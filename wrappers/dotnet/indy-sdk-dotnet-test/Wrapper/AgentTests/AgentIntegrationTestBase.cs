@@ -12,23 +12,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         protected string _poolName;
         private string _walletName = "agentWallet";
 
-        protected static MessageReceivedHandler _messageObserver = (connection, message) =>
-        {
-            Console.WriteLine("Received message '" + message + "' on connection " + connection);
-        };
-        
-        protected static MessageReceivedHandler _messageObserverForIncoming = (connection, message) =>
-        {
-            Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
-        };
-
-        protected static ConnectionOpenedHandler _incomingConnectionObserver = (listener, connection, senderDid, receiverDid) =>
-        {
-            Console.WriteLine("New connection " + connection);
-
-            return _messageObserverForIncoming;
-        };
-
         [TestInitialize]
         public void SetUp()
         {
