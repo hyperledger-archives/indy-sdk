@@ -1,86 +1,69 @@
-﻿//using Indy.Sdk.Dotnet.Wrapper;
-//using Microsoft.VisualStudio.TestTools.UnitTesting;
-//using System;
-//using System.Threading.Tasks;
-//using static Indy.Sdk.Dotnet.Wrapper.Agent;
+﻿using Indy.Sdk.Dotnet.Wrapper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
-//namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
-//{
-//    [TestClass]
-//    public class AgentCloseConnectionTest : AgentIntegrationTestBase
-//    {
-//        private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource;
+namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
+{
+    [TestClass]
+    public class AgentCloseConnectionTest : AgentIntegrationTestBase
+    {
+        [TestMethod]
+        public async Task TestAgentCloseConnectionWorksForOutgoing()
+        {
+            var endpoint = "127.0.0.1:9603";
 
-//        private new static ConnectionOpenedHandler _incomingConnectionObserver = (listener, connection, senderDid, receiverDid) =>
-//        {
-//            Console.WriteLine("New connection " + connection);
+            var myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-//            _serverToClientConnectionTaskCompletionSource.SetResult(connection);
+            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
+                    myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
 
-//            return _messageObserverForIncoming;
-//        };
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-//        [TestInitialize]
-//        public void Initialize()
-//        {
-//            _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
-//        }
+            var activeListener = await Agent.AgentListenAsync(endpoint);
 
-//        [TestMethod]
-//        public async Task TestAgentCloseConnectionWorksForOutgoing()
-//        {
-//            var endpoint = "127.0.0.1:9603";
+            await activeListener.AddIdentityAsync(_pool, _wallet, myDid.Did);
 
-//            var myDid = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var connection = await Agent.AgentConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
 
-//            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
-//                    myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
+            await connection.CloseAsync();
 
-//            Signus.StoreTheirDidAsync(_wallet, identityJson).Wait();
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                connection.SendAsync("msg")
+            );
 
-//            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+        }
 
-//            activeListener.AddIdentityAsync(_pool, _wallet, myDid.Did).Wait();
+        [TestMethod]
+        public async Task TestAgentCloseConnectionWorksForIncoming()
+        {
+            var endpoint = "127.0.0.1:9613";
 
-//            var connection = Agent.AgentConnectAsync(_pool, _wallet, myDid.Did, myDid.Did, _messageObserver).Result;
+            var myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-//            connection.CloseAsync().Wait();
+            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
+                    myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
 
-//            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-//                connection.SendAsync("msg")
-//            );
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-//            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
-//        }
+            var activeListener = await Agent.AgentListenAsync(endpoint);
 
-//        [TestMethod]
-//        public async Task TestAgentCloseConnectionWorksForIncoming()
-//        {
-//            var endpoint = "127.0.0.1:9613";
+            await activeListener.AddIdentityAsync(_pool, _wallet, myDid.Did);
 
-//            var myDid = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var connection = await Agent.AgentConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
 
-//            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
-//                    myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
+            var connectionEvent = await activeListener.WaitForConnection();
+            var serverToClientConnection = connectionEvent.Connection;
 
-//            Signus.StoreTheirDidAsync(_wallet, identityJson).Wait();
-
-//            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
-
-//            activeListener.AddIdentityAsync(_pool, _wallet, myDid.Did).Wait();
-
-//            var connection = Agent.AgentConnectAsync(_pool, _wallet, myDid.Did, myDid.Did, _messageObserver).Result;
-
-//            var serverToClientConnection = _serverToClientConnectionTaskCompletionSource.Task.Result;
-//            serverToClientConnection.CloseAsync().Wait();
+            await serverToClientConnection.CloseAsync();
 
 
-//            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-//                serverToClientConnection.SendAsync("msg")
-//            );
+            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+                serverToClientConnection.SendAsync("msg")
+            );
 
-//            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
-//        }
+            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+        }
 
-//    }
-//}
+    }
+}

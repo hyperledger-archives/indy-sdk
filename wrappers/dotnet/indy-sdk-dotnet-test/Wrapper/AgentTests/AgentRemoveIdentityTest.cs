@@ -1,23 +1,24 @@
-﻿//using Indy.Sdk.Dotnet.Wrapper;
-//using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Indy.Sdk.Dotnet.Wrapper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
-//namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
-//{
-//    [TestClass]
-//    public class AgentRemoveIdentityTest : AgentIntegrationTestBase
-//    {
-//        [TestMethod]
-//        public void TestAgentRemoveIdentityWorks()
-//        {
-//            var endpoint = "127.0.0.1:9608";
+namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
+{
+    [TestClass]
+    public class AgentRemoveIdentityTest : AgentIntegrationTestBase
+    {
+        [TestMethod]
+        public async Task TestAgentRemoveIdentityWorks()
+        {
+            var endpoint = "127.0.0.1:9608";
 
-//            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-//            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+            var activeListener = await Agent.AgentListenAsync(endpoint);
 
-//            activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did).Wait();
+            await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
 
-//            activeListener.RemoveIdentityAsync(_wallet, myDidResult.Did).Wait();
-//        }
-//    }
-//}
+            await activeListener.RemoveIdentityAsync(_wallet, myDidResult.Did);
+        }
+    }
+}

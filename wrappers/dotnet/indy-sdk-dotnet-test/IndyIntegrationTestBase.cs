@@ -1,5 +1,4 @@
-﻿using Indy.Sdk.Dotnet.Test.Wrapper.WalletTests;
-using Indy.Sdk.Dotnet.Wrapper;
+﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Threading.Tasks;
