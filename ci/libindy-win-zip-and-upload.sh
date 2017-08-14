@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: $0 <commit> $1 <key> $2 <number>"
@@ -19,8 +19,8 @@ cd indy-sdk-zip
 cp -r libindy/include .
 mkdir lib
 cp libindy/target/release/*.dll lib/
-zip ../indy-sdk_"$version".zip ./include/* ./lib/*
 cd ..
+powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('indy-sdk-zip', 'indy-sdk_${version}.zip'); }"
 rm -rf ./indy-sdk-zip
 
 echo "-mkdir /var/repository/repos/deb/windows-bins/" >> upload.sh
