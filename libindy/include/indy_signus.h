@@ -115,7 +115,8 @@ extern "C" {
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
     /// did: signing DID
-    /// msg: a message to be signed
+    /// raw_data: a message to be signed
+    /// raw_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -129,11 +130,13 @@ extern "C" {
     extern indy_error_t indy_sign(indy_handle_t command_handle,
                                       indy_handle_t wallet_handle,
                                       const char *    did,
-                                      const char *    msg,
-                                      
+                                      raw_data: *const c_void,
+                                      raw_len: size_t,
+
                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                            indy_error_t  err,
-                                                           const char* signature)
+                                                           const u8 * signature,
+                                                           indy_uint32_t   msg_len)
                                      );
     
     /// Verify a signature created by a key associated with a DID.
@@ -166,8 +169,10 @@ extern "C" {
                                                   indy_handle_t pool_handle,
                                                   
                                                   const char *    did,
-                                                  const char *    msg,
-                                                  const char *    signature,
+                                                  const u8 *      msg,
+                                                  indy_uint32_t   msg_len,
+                                                  const u8 *      signature,
+                                                  indy_uint32_t   signature_len,
 
                                                   void           (*cb)(indy_handle_t xcommand_handle,
                                                                        indy_error_t  err,

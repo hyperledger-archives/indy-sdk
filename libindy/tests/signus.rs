@@ -270,9 +270,9 @@ mod high_cases {
 
             let message = r#"{"reqId":1496822211362017764}"#;
 
-            let expected_signature = r#"R4Rj68n4HZosQqEc3oMUbQh7MtG8tH7WmXE2Mok8trHJ67CrzyqahZn5ziJy4nebRtq6Qi6fVH9JkvVCM85XjFa"#;
+            let expected_signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190, 90, 60, 142, 23, 16, 240, 189, 129, 45, 148, 245, 8, 102, 95, 95, 249, 100, 89, 41, 227, 213, 25, 100, 1, 232, 188, 245, 235, 186, 21, 52, 176, 236, 11, 99, 70, 155, 159, 89, 215, 197, 239, 138, 5];
 
-            let signature = SignusUtils::sign(wallet_handle, &my_did, message).unwrap();
+            let signature = SignusUtils::sign(wallet_handle, &my_did, &message.as_bytes().to_vec()).unwrap();
             assert_eq!(expected_signature, signature);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -288,7 +288,7 @@ mod high_cases {
 
             let message = r#"{"reqId":1495034346617224651}"#;
 
-            let res = SignusUtils::sign(wallet_handle, "did", message);
+            let res = SignusUtils::sign(wallet_handle, "did", &message.as_bytes().to_vec());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -307,7 +307,7 @@ mod high_cases {
             let message = r#"{"reqId":1495034346617224651,}"#;
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = SignusUtils::sign(invalid_wallet_handle, &my_did, message);
+            let res = SignusUtils::sign(invalid_wallet_handle, &my_did, &message.as_bytes().to_vec());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -334,9 +334,9 @@ mod high_cases {
 
             let message = r#"{"reqId":1496822211362017764}"#;
 
-            let signature = "R4Rj68n4HZosQqEc3oMUbQh7MtG8tH7WmXE2Mok8trHJ67CrzyqahZn5ziJy4nebRtq6Qi6fVH9JkvVCM85XjFa";
+            let signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190, 90, 60, 142, 23, 16, 240, 189, 129, 45, 148, 245, 8, 102, 95, 95, 249, 100, 89, 41, 227, 213, 25, 100, 1, 232, 188, 245, 235, 186, 21, 52, 176, 236, 11, 99, 70, 155, 159, 89, 215, 197, 239, 138, 5];
 
-            let valid = SignusUtils::verify(wallet_handle, pool_handle, &did, message, signature).unwrap();
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &did, &message.as_bytes().to_vec(), &signature).unwrap();
             assert!(valid);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -361,13 +361,12 @@ mod high_cases {
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
             let identity_json = format!(r#"{{"did":"{}"}}"#, my_did);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-
-            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature).unwrap();
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &message.as_bytes().to_vec(), &signature).unwrap();
             assert!(valid);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -396,11 +395,11 @@ mod high_cases {
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
             thread::sleep(time::Duration::from_secs(2));
 
-            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &message, signature).unwrap();
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &message.as_bytes().to_vec(), &signature).unwrap();
             assert!(valid);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -418,10 +417,11 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = SignusUtils::verify(invalid_wallet_handle, pool_handle, "did", message, signature);
+            let res = SignusUtils::verify(invalid_wallet_handle, pool_handle, "did",
+                                          &message.as_bytes().to_vec(), &signature);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -439,10 +439,11 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
             let invalid_pool_handle = pool_handle + 1;
-            let res = SignusUtils::verify(wallet_handle, invalid_pool_handle, "did", message, signature);
+            let res = SignusUtils::verify(wallet_handle, invalid_pool_handle, "did",
+                                          &message.as_bytes().to_vec(), &signature);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -470,9 +471,10 @@ mod high_cases {
 
             let message = r#"{"reqId":1496822211362017764}"#;
 
-            let signature = SignusUtils::sign(wallet_handle, &did, message).unwrap();
+            let signature = SignusUtils::sign(wallet_handle, &did, &message.as_bytes().to_vec()).unwrap();
 
-            let valid = SignusUtils::verify(wallet_handle, pool_handle, &other_did, message, &signature).unwrap();
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &other_did,
+                                            &message.as_bytes().to_vec(), &signature).unwrap();
             assert!(!valid);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -633,7 +635,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn indy_verify_works_for_invalid_signature_string() {
+        fn indy_verify_works_for_invalid_signature() {
             TestUtils::cleanup_storage();
             let pool_name = "indy_verify_works_for_invalid_message";
 
@@ -646,9 +648,10 @@ mod medium_cases {
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let message = r#""reqId":1496822211362017764"#;
-            let signature = "tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr";
+            let signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190];
 
-            let res = SignusUtils::verify(wallet_handle, pool_handle, &did, message, signature);
+            let res = SignusUtils::verify(wallet_handle, pool_handle, &did,
+                                          &message.as_bytes().to_vec(), &signature);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -669,12 +672,13 @@ mod medium_cases {
             let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("00000000000000000000000000000My1")).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
             let identity_json = format!(r#"{{"did":"{}"}}"#, my_did);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let res = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature);
+            let res = SignusUtils::verify(wallet_handle, pool_handle, &my_did,
+                                          &message.as_bytes().to_vec(), &signature);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -695,12 +699,13 @@ mod medium_cases {
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"0000000000000000000000000000Fake"}"#).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
             let identity_json = format!(r#"{{"did":"{}"}}"#, my_did);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let res = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature);
+            let res = SignusUtils::verify(wallet_handle, pool_handle, &my_did,
+                                          &message.as_bytes().to_vec(), &signature);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState); //TODO maybe we need add LedgerNotFound error
 
             PoolUtils::close(pool_handle).unwrap();
@@ -725,9 +730,9 @@ mod medium_cases {
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let message = r#"{"reqId":1496822211362017764}"#;
-            let signature = "4Pwx83PGrDNPa1wonqLnQkzBEeFwMt8a8AKM3s86RMTW2ty6XV8Zk98Tg4UfYYXoEs3cCp4wUxGNvAfvurUDb24A";
+            let signature: Vec<u8> = vec![169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
-            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, message, signature).unwrap();
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &my_did, &message.as_bytes().to_vec(), &signature).unwrap();
             assert!(valid);
 
             PoolUtils::close(pool_handle).unwrap();

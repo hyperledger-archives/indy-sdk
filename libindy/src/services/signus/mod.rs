@@ -105,7 +105,7 @@ impl SignusService {
         Ok(their_did)
     }
 
-    pub fn sign(&self, my_did: &MyDid, doc: &str) -> Result<String, SignusError> {
+    pub fn sign(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(
                 SignusError::UnknownCryptoError(
@@ -116,13 +116,12 @@ impl SignusService {
 
         let sign_key = Base58::decode(&my_did.signkey)?;
 
-        let signature = signus.sign(&sign_key, doc.as_bytes())?;
-        let signature = Base58::encode(&signature);
+        let signature = signus.sign(&sign_key, doc)?;
 
         Ok(signature)
     }
 
-    pub fn verify(&self, their_did: &TheirDid, msg: &str, signature: &str) -> Result<bool, SignusError> {
+    pub fn verify(&self, their_did: &TheirDid, msg: &[u8], signature: &[u8]) -> Result<bool, SignusError> {
         if !self.crypto_types.contains_key(their_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to verify message with unknown crypto: {}", their_did.crypto_type)));
         }
@@ -134,7 +133,7 @@ impl SignusService {
             None => return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain verkey: {}", their_did.did))))
         };
 
-        Ok(signus.verify(&verkey, msg.as_bytes(), &Base58::decode(signature)?)?)
+        Ok(signus.verify(&verkey, msg, signature)?)
     }
 
     pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &str) -> Result<(String, String), SignusError> {
@@ -259,7 +258,7 @@ mod tests {
 
         let my_did = service.create_my_did(&did_info).unwrap();
 
-        service.sign(&my_did, message).unwrap();
+        service.sign(&my_did, &message.as_bytes().to_vec()).unwrap();
     }
 
     #[test]
@@ -282,7 +281,7 @@ mod tests {
                                 "verkey".to_string(),
                                 "signkey".to_string());
 
-        assert!(service.sign(&my_did, message).is_err());
+        assert!(service.sign(&my_did, &message.as_bytes().to_vec()).is_err());
     }
 
     #[test]
@@ -302,7 +301,7 @@ mod tests {
 
         let my_did = service.create_my_did(&did_info).unwrap();
 
-        let signature = service.sign(&my_did, message).unwrap();
+        let signature = service.sign(&my_did, &message.as_bytes().to_vec()).unwrap();
 
         let their_did = TheirDid {
             did: "sw2SA2jCbsiq2kfns".to_string(),
@@ -312,7 +311,7 @@ mod tests {
             verkey: Some(my_did.verkey)
         };
 
-        let valid = service.verify(&their_did, &message, &signature).unwrap();
+        let valid = service.verify(&their_did, &message.as_bytes().to_vec(), &signature).unwrap();
         assert!(valid);
     }
 
@@ -333,7 +332,7 @@ mod tests {
 
         let my_did = service.create_my_did(&did_info).unwrap();
 
-        let signature = service.sign(&my_did, message).unwrap();
+        let signature = service.sign(&my_did, &message.as_bytes().to_vec()).unwrap();
 
         let their_did = TheirDid {
             did: "sw2SA2jCbsiq2kfns".to_string(),
@@ -343,7 +342,7 @@ mod tests {
             verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
-        let valid = service.verify(&their_did, &message, &signature).unwrap();
+        let valid = service.verify(&their_did, &message.as_bytes().to_vec(), &signature).unwrap();
         assert_eq!(false, valid);
     }
 

@@ -1,3 +1,5 @@
+extern crate libc;
+
 use std::sync::mpsc::channel;
 use std::ffi::CString;
 
@@ -16,7 +18,7 @@ use utils::timeout::TimeoutUtils;
 pub struct SignusUtils {}
 
 impl SignusUtils {
-    pub fn sign(wallet_handle: i32, their_did: &str, msg: &str) -> Result<String, ErrorCode> {
+    pub fn sign(wallet_handle: i32, their_did: &str, msg: &Vec<u8>) -> Result<Vec<u8>, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, signature| {
@@ -26,14 +28,14 @@ impl SignusUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_sign_cb(cb);
 
         let their_did = CString::new(their_did).unwrap();
-        let msg = CString::new(msg).unwrap();
 
         let err =
             indy_sign(command_handle,
-                        wallet_handle,
-                        their_did.as_ptr(),
-                        msg.as_ptr(),
-                        cb);
+                      wallet_handle,
+                      their_did.as_ptr(),
+                      msg.as_ptr() as *const libc::c_void,
+                      msg.len(),
+                      cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -198,7 +200,7 @@ impl SignusUtils {
         Ok((my_verkey, my_pk))
     }
 
-    pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, msg: &str, signature: &str) -> Result<bool, ErrorCode> {
+    pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, msg: &Vec<u8>, signature: &Vec<u8>) -> Result<bool, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, valid| {
@@ -208,16 +210,16 @@ impl SignusUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_verify_signature_cb(cb);
 
         let did = CString::new(did).unwrap();
-        let msg = CString::new(msg).unwrap();
-        let signature = CString::new(signature).unwrap();
 
         let err =
             indy_verify_signature(command_handle,
                                   wallet_handle,
                                   pool_handle,
                                   did.as_ptr(),
-                                  msg.as_ptr(),
-                                  signature.as_ptr(),
+                                  msg.as_ptr() as *const libc::c_void,
+                                  msg.len(),
+                                  signature.as_ptr() as *const libc::c_void,
+                                  signature.len(),
                                   cb);
 
         if err != ErrorCode::Success {

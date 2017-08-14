@@ -2,7 +2,7 @@ extern crate libc;
 
 use indy::api::ErrorCode;
 
-use self::libc::c_char;
+use self::libc::{c_char, c_void};
 use std::ffi::CStr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -474,18 +474,18 @@ impl CallbackUtils {
         (command_handle, Some(store_their_did_callback))
     }
 
-    pub fn closure_to_sign_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
+    pub fn closure_to_sign_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>)
                               -> (i32,
                                   Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                   signature: *const c_char)>) {
+                                                   signature_raw: *const c_void, signature_len: usize)>) {
         lazy_static! {
-            static ref SIGN_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
+            static ref SIGN_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
         }
 
-        extern "C" fn sign_callback(command_handle: i32, err: ErrorCode, signature: *const c_char) {
+        extern "C" fn sign_callback(command_handle: i32, err: ErrorCode, signature_raw: *const c_void, signature_len: usize) {
             let mut callbacks = SIGN_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            let signature = unsafe { CStr::from_ptr(signature).to_str().unwrap().to_string() };
+            let signature: Vec<u8> = unsafe { Vec::from_raw_parts(signature_raw as *mut u8, signature_len as usize, signature_len as usize)};
             cb(err, signature);
         }
 
