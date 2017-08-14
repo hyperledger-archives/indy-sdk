@@ -23,8 +23,8 @@ zip ../indy-sdk_"$version".zip ./include/* ./lib/*
 cd ..
 rm -rf ./indy-sdk-zip
 
-echo "mkdir /var/repository/repos/deb/windows-bins/" >> upload.sh
-echo "mkdir /var/repository/repos/deb/windows-bins/indy-sdk" >> upload.sh
+echo "-mkdir /var/repository/repos/deb/windows-bins/" >> upload.sh
+echo "-mkdir /var/repository/repos/deb/windows-bins/indy-sdk" >> upload.sh
 echo "mkdir /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number" >> upload.sh
 echo "cd /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number" >> upload.sh
 echo "put -r indy-sdk_"$version".zip" >> upload.sh
