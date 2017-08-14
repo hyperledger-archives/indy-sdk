@@ -16,9 +16,9 @@ version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit
 
 mkdir indy-sdk-zip
 cd indy-sdk-zip
-cp -r libindy/include .
+cp -r ../libindy/include .
 mkdir lib
-cp libindy/target/release/*.dll lib/
+cp ../libindy/target/release/*.dll lib/
 cd ..
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('indy-sdk-zip', 'indy-sdk_${version}.zip'); }"
 rm -rf ./indy-sdk-zip
