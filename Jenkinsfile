@@ -33,6 +33,7 @@ def publishing() {
                 'liblindy-to-cargo'       : { publishingLibindyToCargo() },
                 'libindy-rpm-files'       : { publishingLibindyRpmFiles() },
                 'libindy-deb-files'       : { publishingLibindyDebFiles() },
+                'libindy-win-files'       : { publishingLibindyWinFiles() },
                 'python-wrapper-deb-files': { publishingPythonWrapperDebFiles() },
                 'python-wrapper-to-pipy'  : { publishingPythonWrapperToPipy() }
         ])
@@ -375,6 +376,46 @@ def publishingLibindyDebFiles() {
             }
             finally {
                 echo 'Publish Deb: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def publishingLibindyWinFiles() {
+    node('win2016') {
+        stage('Publish Libindy Windows Files') {
+            try {
+                echo 'Publish Windows files: Checkout csm'
+                checkout scm
+
+                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+                dir('libindy') {
+                    echo "Publish Windows files: Download prebuilt dependencies"
+                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
+                    bat 'unzip prebuilt.zip -d prebuilt'
+
+                    echo "Publish Windows files: Build"
+                    withEnv([
+                            "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                            "RUST_BACKTRACE=1"
+                    ]) {
+                        bat "cargo build --release"
+                    }
+                }
+
+                withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                    sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BUILD_NUMBER"
+                }
+            }
+            finally {
+                echo 'Publish Windows files: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
