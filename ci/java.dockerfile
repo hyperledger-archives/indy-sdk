@@ -11,7 +11,7 @@ RUN apt-get install -y \
       gdebi \
       apt-utils
 
-ADD https://repo.evernym.com/deb/indy-sdk/0.1.1-7/indy-sdk_0.1.1_amd64.deb .
+ADD https://repo.evernym.com/deb/indy-sdk/0.1.1-116/indy-sdk_0.1.1_amd64.deb .
 
 RUN gdebi -n indy-sdk_0.1.1_amd64.deb
 

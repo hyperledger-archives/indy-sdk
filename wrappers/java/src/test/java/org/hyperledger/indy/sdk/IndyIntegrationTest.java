@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class IndyIntegrationTest {
 
 	public static final String TRUSTEE_SEED = "000000000000000000000000Trustee1";
+	public static final String MY1_SEED = "00000000000000000000000000000My1";
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();

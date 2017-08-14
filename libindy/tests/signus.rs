@@ -114,6 +114,8 @@ mod high_cases {
 
             SignusUtils::create_my_did(wallet_handle, r#"{"crypto_type":"ed25519"}"#).unwrap();
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -916,7 +918,6 @@ mod medium_cases {
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
-
 
             TestUtils::cleanup_storage();
         }
