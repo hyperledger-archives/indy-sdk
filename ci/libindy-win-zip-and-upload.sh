@@ -23,11 +23,11 @@ cd ..
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('indy-sdk-zip', 'indy-sdk_${version}.zip'); }"
 rm -rf ./indy-sdk-zip
 
-echo "-mkdir /var/repository/repos/deb/windows-bins/" >> upload.sh
-echo "-mkdir /var/repository/repos/deb/windows-bins/indy-sdk" >> upload.sh
-echo "mkdir /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number" >> upload.sh
-echo "cd /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number" >> upload.sh
-echo "put -r indy-sdk_"$version".zip" >> upload.sh
-echo "ls -l /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number" >> upload.sh
-
-sftp -v -oStrictHostKeyChecking=no -i $key -b upload.sh repo@192.168.11.111
+cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
+-mkdir /var/repository/repos/deb/windows-bins
+-mkdir /var/repository/repos/deb/windows-bins/indy-sdk
+mkdir /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number
+cd /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number
+put -r indy-sdk_"$version".zip
+ls -l /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number
+EOF
