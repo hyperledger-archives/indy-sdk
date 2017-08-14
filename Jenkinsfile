@@ -411,7 +411,7 @@ def publishingLibindyWinFiles() {
                 }
 
                 withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                    sh "./ci/libindy-win-zip-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                    sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BUILD_NUMBER"
                 }
             }
             finally {
