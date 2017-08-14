@@ -270,7 +270,8 @@ public class Signus extends IndyJava.API {
 	 * @param wallet The wallet.
 	 * @param pool The pool.
 	 * @param did DID that signed the message
-	 * @param signedMsg message
+	 * @param msg message
+	 * @param signature a signature to be verified
 	 * @return A future that resolves to true if signature is valid, otherwise false.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -278,7 +279,8 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			Pool pool,
 			String did,
-			String signedMsg) throws IndyException {
+			String msg,
+			String signature) throws IndyException {
 
 		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
@@ -291,7 +293,8 @@ public class Signus extends IndyJava.API {
 				walletHandle, 
 				poolHandle,
 				did,
-				signedMsg,
+				msg,
+				signature,
 				verifySignatureCb);
 
 		checkResult(result);

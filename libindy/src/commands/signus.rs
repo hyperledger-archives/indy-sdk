@@ -47,11 +47,13 @@ pub enum SignusCommand {
         i32, // wallet handle
         i32, // pool_handle,
         String, // did
-        String, // signed message
+        String, // message
+        String, // signature
         Box<Fn(Result<bool, IndyError>) + Send>),
     VerifySignatureGetNymAck(
         i32, // wallet handle
-        String, // signed message
+        String, // message
+        String, // signature
         i32, //callback id
         Result<String, IndyError>) /* result json or error)*/,
     Encrypt(
@@ -123,13 +125,13 @@ impl SignusCommandExecutor {
                 info!(target: "signus_command_executor", "Sign command received");
                 self.sign(wallet_handle, &did, &msg, cb);
             }
-            SignusCommand::VerifySignature(wallet_handle, pool_handle, did, signed_msg, cb) => {
+            SignusCommand::VerifySignature(wallet_handle, pool_handle, did, msg, signature, cb) => {
                 info!(target: "signus_command_executor", "VerifySignature command received");
-                self.verify_signature(wallet_handle, pool_handle, &did, &signed_msg, cb);
+                self.verify_signature(wallet_handle, pool_handle, &did, &msg, &signature, cb);
             }
-            SignusCommand::VerifySignatureGetNymAck(wallet_handle, signed_msg, cb_id, result) => {
+            SignusCommand::VerifySignatureGetNymAck(wallet_handle, msg, signature, cb_id, result) => {
                 info!(target: "signus_command_executor", "VerifySignatureGetNymAck command received");
-                self.verify_signature_get_nym_ack(wallet_handle, &signed_msg, cb_id, result);
+                self.verify_signature_get_nym_ack(wallet_handle, &msg, &signature, cb_id, result);
             }
             SignusCommand::Encrypt(wallet_handle, pool_handle, my_did, did, msg, cb) => {
                 info!(target: "signus_command_executor", "Encrypt command received");
@@ -260,10 +262,12 @@ impl SignusCommandExecutor {
                         wallet_handle: i32,
                         pool_handle: i32,
                         did: &str,
-                        signed_msg: &str,
+                        msg: &str,
+                        signature: &str,
                         cb: Box<Fn(Result<bool, IndyError>) + Send>) {
         let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, IndyError>)>| {
-            let signed_msg = signed_msg.to_string();
+            let msg = msg.to_string();
+            let signature = signature.to_string();
             let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
             if get_nym_request.is_err() {
                 return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))));
@@ -286,7 +290,8 @@ impl SignusCommandExecutor {
                                 CommandExecutor::instance()
                                     .send(Command::Signus(SignusCommand::VerifySignatureGetNymAck(
                                         wallet_handle,
-                                        signed_msg.clone(),
+                                        msg.clone(),
+                                        signature.clone(),
                                         cb_id,
                                         result
                                     ))).unwrap();
@@ -307,7 +312,7 @@ impl SignusCommandExecutor {
                 let their_did: TheirDid = their_did.unwrap();
 
                 match their_did.verkey {
-                    Some(_) => cb(self.signus_service.verify(&their_did, signed_msg).map_err(|err| IndyError::SignusError(err))),
+                    Some(_) => cb(self.signus_service.verify(&their_did, msg, signature).map_err(|err| IndyError::SignusError(err))),
                     None => load_verkey_from_ledger(cb)
                 }
             }
@@ -318,7 +323,8 @@ impl SignusCommandExecutor {
 
     fn verify_signature_get_nym_ack(&self,
                                     wallet_handle: i32,
-                                    signed_msg: &str,
+                                    msg: &str,
+                                    signature: &str,
                                     cb_id: i32,
                                     result: Result<String, IndyError>) {
         match self.verify_callbacks.try_borrow_mut() {
@@ -332,7 +338,7 @@ impl SignusCommandExecutor {
 
                 match result {
                     Ok(get_nym_response) =>
-                        cb(self._verify_signature_get_nym_ack(wallet_handle, &get_nym_response, signed_msg)),
+                        cb(self._verify_signature_get_nym_ack(wallet_handle, &get_nym_response, msg, signature)),
                     Err(err) => cb(Err(err))
                 }
             }
@@ -367,9 +373,10 @@ impl SignusCommandExecutor {
     fn _verify_signature_get_nym_ack(&self,
                                      wallet_handle: i32,
                                      get_nym_response: &str,
-                                     signed_msg: &str) -> Result<bool, IndyError> {
+                                     msg: &str,
+                                     signature: &str) -> Result<bool, IndyError> {
         let their_did = self._get_their_did_from_nym(get_nym_response, wallet_handle)?;
-        self.signus_service.verify(&their_did, &signed_msg)
+        self.signus_service.verify(&their_did, msg, signature)
             .map_err(map_err_trace!())
             .map_err(|err| IndyError::SignusError(err))
     }
