@@ -61,12 +61,12 @@ pub enum SignusCommand {
         i32, // pool handle
         String, // my_did
         String, // did
-        String, // msg
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Vec<u8>, // msg
+        Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>),
     EncryptGetNymAck(
         i32, // wallet handle
         String, // my_did
-        String, // msg
+        Vec<u8>, // msg
         i32, //cb_id
         Result<String, IndyError> //result
     ),
@@ -74,9 +74,9 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // my_did
         String, // did
-        String, // encrypted msg
-        String, // nonce
-        Box<Fn(Result<String, IndyError>) + Send>)
+        Vec<u8>, // encrypted msg
+        Vec<u8>, // nonce
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>)
 }
 
 pub struct SignusCommandExecutor {
@@ -86,7 +86,7 @@ pub struct SignusCommandExecutor {
     signus_service: Rc<SignusService>,
     ledger_service: Rc<LedgerService>,
     verify_callbacks: RefCell<HashMap<i32, Box<Fn(Result<bool, IndyError>)>>>,
-    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(String, String), IndyError>)>>>,
+    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>>>,
 
 }
 
@@ -388,10 +388,10 @@ impl SignusCommandExecutor {
                pool_handle: i32,
                my_did: &str,
                did: &str,
-               msg: &str,
-               cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let load_public_key_from_ledger = move |cb: Box<Fn(Result<(String, String), IndyError>)>| {
-            let msg = msg.to_string();
+               msg: &[u8],
+               cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>) {
+        let load_public_key_from_ledger = move |cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>| {
+            let msg = msg.to_owned();
             let my_did = my_did.to_string();
             let did = did.to_string();
             let cb_id: i32 = SequenceUtils::get_next_id();
@@ -463,7 +463,7 @@ impl SignusCommandExecutor {
     fn encrypt_get_nym_ack(&self,
                            wallet_handle: i32,
                            my_did: &str,
-                           msg: &str,
+                           msg: &[u8],
                            cb_id: i32,
                            result: Result<String, IndyError>) {
         match self.encrypt_callbacks.try_borrow_mut() {
@@ -489,7 +489,7 @@ impl SignusCommandExecutor {
                             wallet_handle: i32,
                             my_did: &str,
                             get_nym_response: &str,
-                            msg: &str) -> Result<(String, String), IndyError> {
+                            msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -506,7 +506,7 @@ impl SignusCommandExecutor {
                 wallet_handle: i32,
                 my_did: &str,
                 did: &str,
-                msg: &str) -> Result<(String, String), IndyError> {
+                msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -526,9 +526,9 @@ impl SignusCommandExecutor {
                wallet_handle: i32,
                my_did: &str,
                did: &str,
-               encrypted_msg: &str,
-               nonce: &str,
-               cb: Box<Fn(Result<String, IndyError>) + Send>) {
+               encrypted_msg: &[u8],
+               nonce: &[u8],
+               cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         cb(self._decrypt(wallet_handle, my_did, did, encrypted_msg, nonce));
     }
 
@@ -536,8 +536,8 @@ impl SignusCommandExecutor {
                 wallet_handle: i32,
                 my_did: &str,
                 did: &str,
-                encrypted_msg: &str,
-                nonce: &str) -> Result<String, IndyError> {
+                encrypted_msg: &[u8],
+                nonce: &[u8]) -> Result<Vec<u8>, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())

@@ -115,8 +115,8 @@ extern "C" {
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
     /// did: signing DID
-    /// raw_data: a message to be signed
-    /// raw_len: a message length
+    /// message_raw: a pointer to first byte of message to be signed
+    /// message_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -130,13 +130,13 @@ extern "C" {
     extern indy_error_t indy_sign(indy_handle_t command_handle,
                                       indy_handle_t wallet_handle,
                                       const char *    did,
-                                      raw_data: *const c_void,
-                                      raw_len: size_t,
+                                      message_raw: *const indy_u8_t,
+                                      message_len: indy_u32_t,
 
                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                            indy_error_t  err,
-                                                           const u8 * signature,
-                                                           indy_uint32_t   msg_len)
+                                                           const indy_u8_t * signature_raw,
+                                                           indy_u32_t   signature_len)
                                      );
     
     /// Verify a signature created by a key associated with a DID.
@@ -151,8 +151,10 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// pool_handle: pool handle.
     /// did: DID that signed the message
-    /// msg: message
-    /// signature: a signature to be verified
+    /// message_raw: a pointer to first byte of message to be signed
+    /// message_len: a message length
+    /// signature_raw: a a pointer to first byte of signature to be verified
+    /// signature_len: a signature length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -169,10 +171,10 @@ extern "C" {
                                                   indy_handle_t pool_handle,
                                                   
                                                   const char *    did,
-                                                  const u8 *      msg,
-                                                  indy_uint32_t   msg_len,
-                                                  const u8 *      signature,
-                                                  indy_uint32_t   signature_len,
+                                                  const indy_u8_t *      message_raw,
+                                                  indy_u32_t   message_len,
+                                                  const indy_u8_t *      signature_raw,
+                                                  indy_u32_t   signature_len,
 
                                                   void           (*cb)(indy_handle_t xcommand_handle,
                                                                        indy_error_t  err,
@@ -191,7 +193,8 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// my_did: encrypting DID
     /// did: encrypting DID
-    /// msg: a message to be signed
+    /// message_raw: a pointer to first byte of message that to be encrypted
+    /// message_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -208,12 +211,15 @@ extern "C" {
                                          indy_handle_t pool_handle,
                                          const char *    my_did,
                                          const char *    did,
-                                         const char *    msg,
+                                         const indy_u8_t *      message_raw,
+                                         indy_u32_t   message_len,
                                          
                                          void           (*cb)(indy_handle_t xcommand_handle,
                                                               indy_error_t  err,
-                                                              const char*     encrypted_msg,
-                                                              const char*     nonce)
+                                                              const indy_u8_t * encrypted_msg_raw,
+                                                              indy_u32_t   encrypted_msg_len,
+                                                              const indy_u8_t * nonce_raw,
+                                                              indy_u32_t   nonce_len)
                                        );
 
     /// Decrypts a message encrypted by a public key associated with my DID.
@@ -225,12 +231,14 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// my_did: DID
     /// did: DID that signed the message
-    /// encrypted_msg: encrypted message
-    /// nonce: nonce that encrypted message
+    /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
+    /// encrypted_msg_len: a message length
+    /// nonce_raw: a pointer to first byte of nonce that encrypted message
+    /// nonce_len: a nonce length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// decrypted message
+    /// a decrypted message
     ///
     /// #Errors
     /// Common*
@@ -241,12 +249,15 @@ extern "C" {
                                          indy_handle_t wallet_handle,
                                          const char *    my_did,
                                          const char *    did,
-                                         const char *    encrypted_msg,
-                                         const char *    nonce,
-                                         
+                                         const indy_u8_t *      encrypted_msg_raw,
+                                         indy_u32_t   encrypted_msg_len,
+                                         const indy_u8_t *      nonce_raw,
+                                         indy_u32_t   nonce_len,
+
                                          void           (*cb)(indy_handle_t xcommand_handle,
                                                               indy_error_t  err,
-                                                              const char*     decrypted_msg)
+                                                              const indy_u8_t * decrypted_msg_raw,
+                                                              indy_u32_t   decrypted_msg_len)
                                         );    
 
 #ifdef __cplusplus
