@@ -23,6 +23,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::rc::Rc;
 
+use utils::crypto::base58::Base58;
+
 use utils::crypto::signature_serializer::serialize_signature;
 
 pub enum LedgerCommand {
@@ -238,9 +240,9 @@ impl LedgerCommandExecutor {
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
         }
         let serialized_request = serialize_signature(request.clone())?;
-        let signature = self.signus_service.sign(&my_did, &serialized_request)?;
+        let signature = self.signus_service.sign(&my_did, &serialized_request.as_bytes().to_vec())?;
 
-        request["signature"] = Value::String(signature);
+        request["signature"] = Value::String(Base58::encode(&signature));
         let signed_request: String = serde_json::to_string(&request)
             .map_err(|err|
                 IndyError::SignusError(SignusError::CommonError(

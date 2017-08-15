@@ -40,20 +40,20 @@ pub enum SignusCommand {
     Sign(
         i32, // wallet handle
         String, // did
-        String, // msg
-        Box<Fn(Result<String, IndyError>) + Send>),
+        Vec<u8>, // msg
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
     //TODO divide on two commands
     VerifySignature(
         i32, // wallet handle
         i32, // pool_handle,
         String, // did
-        String, // message
-        String, // signature
+        Vec<u8>, // msg
+        Vec<u8>, // signature
         Box<Fn(Result<bool, IndyError>) + Send>),
     VerifySignatureGetNymAck(
         i32, // wallet handle
-        String, // message
-        String, // signature
+        Vec<u8>, // message
+        Vec<u8>, // signature
         i32, //callback id
         Result<String, IndyError>) /* result json or error)*/,
     Encrypt(
@@ -61,12 +61,12 @@ pub enum SignusCommand {
         i32, // pool handle
         String, // my_did
         String, // did
-        String, // msg
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Vec<u8>, // msg
+        Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>),
     EncryptGetNymAck(
         i32, // wallet handle
         String, // my_did
-        String, // msg
+        Vec<u8>, // msg
         i32, //cb_id
         Result<String, IndyError> //result
     ),
@@ -74,9 +74,9 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // my_did
         String, // did
-        String, // encrypted msg
-        String, // nonce
-        Box<Fn(Result<String, IndyError>) + Send>)
+        Vec<u8>, // encrypted msg
+        Vec<u8>, // nonce
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>)
 }
 
 pub struct SignusCommandExecutor {
@@ -86,7 +86,7 @@ pub struct SignusCommandExecutor {
     signus_service: Rc<SignusService>,
     ledger_service: Rc<LedgerService>,
     verify_callbacks: RefCell<HashMap<i32, Box<Fn(Result<bool, IndyError>)>>>,
-    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(String, String), IndyError>)>>>,
+    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>>>,
 
 }
 
@@ -240,15 +240,15 @@ impl SignusCommandExecutor {
     fn sign(&self,
             wallet_handle: i32,
             did: &str,
-            msg: &str,
-            cb: Box<Fn(Result<String, IndyError>) + Send>) {
+            msg: &[u8],
+            cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         cb(self._sign(wallet_handle, did, msg));
     }
 
     fn _sign(&self,
              wallet_handle: i32,
              did: &str,
-             msg: &str) -> Result<String, IndyError> {
+             msg: &[u8]) -> Result<Vec<u8>, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -262,12 +262,12 @@ impl SignusCommandExecutor {
                         wallet_handle: i32,
                         pool_handle: i32,
                         did: &str,
-                        msg: &str,
-                        signature: &str,
+                        msg: &[u8],
+                        signature: &[u8],
                         cb: Box<Fn(Result<bool, IndyError>) + Send>) {
         let load_verkey_from_ledger = move |cb: Box<Fn(Result<bool, IndyError>)>| {
-            let msg = msg.to_string();
-            let signature = signature.to_string();
+            let msg = msg.to_owned();
+            let signature = signature.to_owned();
             let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
             if get_nym_request.is_err() {
                 return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))));
@@ -323,8 +323,8 @@ impl SignusCommandExecutor {
 
     fn verify_signature_get_nym_ack(&self,
                                     wallet_handle: i32,
-                                    msg: &str,
-                                    signature: &str,
+                                    msg: &[u8],
+                                    signature: &[u8],
                                     cb_id: i32,
                                     result: Result<String, IndyError>) {
         match self.verify_callbacks.try_borrow_mut() {
@@ -346,7 +346,9 @@ impl SignusCommandExecutor {
         }
     }
 
+
     fn _get_their_did_from_nym(&self, get_nym_response: &str, wallet_handle: i32) -> Result<TheirDid, IndyError> {
+
         let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
             .map_err(map_err_trace!())
             .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
@@ -373,8 +375,8 @@ impl SignusCommandExecutor {
     fn _verify_signature_get_nym_ack(&self,
                                      wallet_handle: i32,
                                      get_nym_response: &str,
-                                     msg: &str,
-                                     signature: &str) -> Result<bool, IndyError> {
+                                     msg: &[u8],
+                                     signature: &[u8]) -> Result<bool, IndyError> {
         let their_did = self._get_their_did_from_nym(get_nym_response, wallet_handle)?;
         self.signus_service.verify(&their_did, msg, signature)
             .map_err(map_err_trace!())
@@ -386,10 +388,10 @@ impl SignusCommandExecutor {
                pool_handle: i32,
                my_did: &str,
                did: &str,
-               msg: &str,
-               cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let load_public_key_from_ledger = move |cb: Box<Fn(Result<(String, String), IndyError>)>| {
-            let msg = msg.to_string();
+               msg: &[u8],
+               cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>) {
+        let load_public_key_from_ledger = move |cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>| {
+            let msg = msg.to_owned();
             let my_did = my_did.to_string();
             let did = did.to_string();
             let cb_id: i32 = SequenceUtils::get_next_id();
@@ -461,7 +463,7 @@ impl SignusCommandExecutor {
     fn encrypt_get_nym_ack(&self,
                            wallet_handle: i32,
                            my_did: &str,
-                           msg: &str,
+                           msg: &[u8],
                            cb_id: i32,
                            result: Result<String, IndyError>) {
         match self.encrypt_callbacks.try_borrow_mut() {
@@ -487,7 +489,7 @@ impl SignusCommandExecutor {
                             wallet_handle: i32,
                             my_did: &str,
                             get_nym_response: &str,
-                            msg: &str) -> Result<(String, String), IndyError> {
+                            msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -504,7 +506,7 @@ impl SignusCommandExecutor {
                 wallet_handle: i32,
                 my_did: &str,
                 did: &str,
-                msg: &str) -> Result<(String, String), IndyError> {
+                msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -524,9 +526,9 @@ impl SignusCommandExecutor {
                wallet_handle: i32,
                my_did: &str,
                did: &str,
-               encrypted_msg: &str,
-               nonce: &str,
-               cb: Box<Fn(Result<String, IndyError>) + Send>) {
+               encrypted_msg: &[u8],
+               nonce: &[u8],
+               cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         cb(self._decrypt(wallet_handle, my_did, did, encrypted_msg, nonce));
     }
 
@@ -534,8 +536,8 @@ impl SignusCommandExecutor {
                 wallet_handle: i32,
                 my_did: &str,
                 did: &str,
-                encrypted_msg: &str,
-                nonce: &str) -> Result<String, IndyError> {
+                encrypted_msg: &[u8],
+                nonce: &[u8]) -> Result<Vec<u8>, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
