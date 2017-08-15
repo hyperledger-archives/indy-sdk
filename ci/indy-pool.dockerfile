@@ -26,9 +26,9 @@ RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.lis
 RUN useradd -ms /bin/bash -u $uid sovrin
 
 RUN apt-get update -y && apt-get install -y \
-	indy-plenum=1.0.82 \
+	indy-plenum=1.0.95 \
 	indy-anoncreds=1.0.25 \
-	indy-node=1.0.84
+	indy-node=1.0.105
 
 RUN echo '[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
