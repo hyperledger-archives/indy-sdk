@@ -1050,8 +1050,8 @@ fn signus_demo_works() {
         }
     }"#;
 
-    let message_ptr = message.as_bytes().as_ptr() as *const u8;
-    let message_len = message.as_bytes().len() as u32;
+    let message_ptr = message.as_ptr() as *const u8;
+    let message_len = message.len() as u32;
 
     let err =
         indy_sign(sign_command_handle,

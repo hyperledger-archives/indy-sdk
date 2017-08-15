@@ -33,15 +33,15 @@ extern "C" {
     /// Crypto*
     
     extern indy_error_t indy_create_and_store_my_did(indy_handle_t command_handle,
-                                                         indy_handle_t wallet_handle,
-                                                         const char *    did_json,
-                                                         
-                                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err,
-                                                                              const char*     did,
-                                                                              const char*     verkey,
-                                                                              const char*     pk)
-                                                        );
+                                                     indy_handle_t wallet_handle,
+                                                     const char *  did_json,
+
+                                                     void          (*cb)(indy_handle_t  xcommand_handle,
+                                                                          indy_error_t  err,
+                                                                          const char*   did,
+                                                                          const char*   verkey,
+                                                                          const char*   pk)
+                                                    );
 
     /// Generated new keys (signing and encryption keys) for an existing
     /// DID (owned by the caller of the library).
@@ -66,15 +66,15 @@ extern "C" {
     /// Crypto*
 
     extern indy_error_t indy_replace_keys(indy_handle_t command_handle,
-                                              indy_handle_t wallet_handle,
-                                              const char *    did,
-                                              const char *    identity_json,
-                                              
-                                              void           (*cb)(indy_handle_t xcommand_handle,
-                                                                   indy_error_t  err,
-                                                                   const char*     verkey,
-                                                                   const char*     pk)
-                                             );
+                                          indy_handle_t wallet_handle,
+                                          const char *  did,
+                                          const char *  identity_json,
+
+                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                               indy_error_t  err,
+                                                               const char*   verkey,
+                                                               const char*   pk)
+                                         );
 
     /// Saves their DID for a pairwise connection in a secured Wallet,
     /// so that it can be used to verify transaction.
@@ -101,12 +101,12 @@ extern "C" {
     /// Crypto*
 
     extern indy_error_t indy_store_their_did(indy_handle_t command_handle,
-                                                 indy_handle_t wallet_handle,
-                                                 const char *    identity_json,
-                                                 
-                                                 void           (*cb)(indy_handle_t xcommand_handle,
-                                                                      indy_error_t  err)
-                                                );
+                                             indy_handle_t wallet_handle,
+                                             const char *  identity_json,
+
+                                             void           (*cb)(indy_handle_t xcommand_handle,
+                                                                  indy_error_t  err)
+                                            );
 
     /// Signs a message by a signing key associated with my DID. The DID with a signing key
     /// must be already created and stored in a secured wallet (see create_and_store_my_identity)
@@ -127,17 +127,17 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     
-    extern indy_error_t indy_sign(indy_handle_t command_handle,
-                                      indy_handle_t wallet_handle,
-                                      const char *    did,
-                                      const indy_u8_t *      message_raw,
-                                      indy_u32_t   message_len,
+    extern indy_error_t indy_sign(indy_handle_t      command_handle,
+                                  indy_handle_t      wallet_handle,
+                                  const char *       did,
+                                  const indy_u8_t *  message_raw,
+                                  indy_u32_t         message_len,
 
-                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                           indy_error_t  err,
-                                                           const indy_u8_t * signature_raw,
-                                                           indy_u32_t   signature_len)
-                                     );
+                                  void           (*cb)(indy_handle_t    xcommand_handle,
+                                                       indy_error_t     err,
+                                                       const indy_u8_t* signature_raw,
+                                                       indy_u32_t       signature_len)
+                                 );
     
     /// Verify a signature created by a key associated with a DID.
     /// If a secure wallet doesn't contain a verkey associated with the given DID,
@@ -166,20 +166,20 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     
-    extern indy_error_t indy_verify_signature(indy_handle_t command_handle,
-                                                  indy_handle_t wallet_handle,
-                                                  indy_handle_t pool_handle,
-                                                  
-                                                  const char *    did,
-                                                  const indy_u8_t *      message_raw,
-                                                  indy_u32_t   message_len,
-                                                  const indy_u8_t *      signature_raw,
-                                                  indy_u32_t   signature_len,
+    extern indy_error_t indy_verify_signature(indy_handle_t      command_handle,
+                                              indy_handle_t      wallet_handle,
+                                              indy_handle_t      pool_handle,
 
-                                                  void           (*cb)(indy_handle_t xcommand_handle,
-                                                                       indy_error_t  err,
-                                                                       indy_bool_t   valid )
-                                                 );
+                                              const char *       did,
+                                              const indy_u8_t *  message_raw,
+                                              indy_u32_t         message_len,
+                                              const indy_u8_t *  signature_raw,
+                                              indy_u32_t         signature_len,
+
+                                              void           (*cb)(indy_handle_t xcommand_handle,
+                                                                   indy_error_t  err,
+                                                                   indy_bool_t   valid )
+                                             );
 
     /// Encrypts a message by a public key associated with a DID.
     /// If a secure wallet doesn't contain a public key associated with the given DID,
@@ -206,21 +206,21 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     
-    extern indy_error_t indy_encrypt(indy_handle_t command_handle,
-                                         indy_handle_t wallet_handle,
-                                         indy_handle_t pool_handle,
-                                         const char *    my_did,
-                                         const char *    did,
-                                         const indy_u8_t *      message_raw,
-                                         indy_u32_t   message_len,
-                                         
-                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                              indy_error_t  err,
-                                                              const indy_u8_t * encrypted_msg_raw,
-                                                              indy_u32_t   encrypted_msg_len,
-                                                              const indy_u8_t * nonce_raw,
-                                                              indy_u32_t   nonce_len)
-                                       );
+    extern indy_error_t indy_encrypt(indy_handle_t      command_handle,
+                                     indy_handle_t      wallet_handle,
+                                     indy_handle_t      pool_handle,
+                                     const char *       my_did,
+                                     const char *       did,
+                                     const indy_u8_t *  message_raw,
+                                     indy_u32_t         message_len,
+
+                                     void           (*cb)(indy_handle_t     xcommand_handle,
+                                                          indy_error_t      err,
+                                                          const indy_u8_t* encrypted_msg_raw,
+                                                          indy_u32_t        encrypted_msg_len,
+                                                          const indy_u8_t*  nonce_raw,
+                                                          indy_u32_t        nonce_len)
+                                   );
 
     /// Decrypts a message encrypted by a public key associated with my DID.
     /// The DID with a secret key must be already created and
@@ -245,20 +245,20 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     
-    extern indy_error_t indy_decrypt(indy_handle_t command_handle,
-                                         indy_handle_t wallet_handle,
-                                         const char *    my_did,
-                                         const char *    did,
-                                         const indy_u8_t *      encrypted_msg_raw,
-                                         indy_u32_t   encrypted_msg_len,
-                                         const indy_u8_t *      nonce_raw,
-                                         indy_u32_t   nonce_len,
+    extern indy_error_t indy_decrypt(indy_handle_t      command_handle,
+                                     indy_handle_t      wallet_handle,
+                                     const char *       my_did,
+                                     const char *       did,
+                                     const indy_u8_t*   encrypted_msg_raw,
+                                     indy_u32_t         encrypted_msg_len,
+                                     const indy_u8_t*   nonce_raw,
+                                     indy_u32_t         nonce_len,
 
-                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                              indy_error_t  err,
-                                                              const indy_u8_t * decrypted_msg_raw,
-                                                              indy_u32_t   decrypted_msg_len)
-                                        );    
+                                     void           (*cb)(indy_handle_t     xcommand_handle,
+                                                          indy_error_t      err,
+                                                          const indy_u8_t*  decrypted_msg_raw,
+                                                          indy_u32_t        decrypted_msg_len)
+                                    );
 
 #ifdef __cplusplus
 }

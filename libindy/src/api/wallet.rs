@@ -29,35 +29,35 @@ use self::libc::c_char;
 /// Error code
 #[no_mangle]
 pub extern fn indy_register_wallet_type(command_handle: i32,
-                                          xtype: *const c_char,
-                                          create: Option<extern fn(name: *const c_char,
-                                                                   config: *const c_char,
-                                                                   credentials: *const c_char) -> ErrorCode>,
-                                          open: Option<extern fn(name: *const c_char,
+                                        xtype: *const c_char,
+                                        create: Option<extern fn(name: *const c_char,
                                                                  config: *const c_char,
-                                                                 runtime_config: *const c_char,
-                                                                 credentials: *const c_char,
-                                                                 handle: *mut i32) -> ErrorCode>,
-                                          set: Option<extern fn(handle: i32,
-                                                                key: *const c_char,
-                                                                value: *const c_char) -> ErrorCode>,
-                                          get: Option<extern fn(handle: i32,
-                                                                key: *const c_char,
-                                                                value_ptr: *mut *const c_char) -> ErrorCode>,
-                                          get_not_expired: Option<extern fn(handle: i32,
-                                                                            key: *const c_char,
-                                                                            value_ptr: *mut *const c_char) -> ErrorCode>,
-                                          list: Option<extern fn(handle: i32,
-                                                                 key_prefix: *const c_char,
-                                                                 values_json_ptr: *mut *const c_char) -> ErrorCode>,
-                                          close: Option<extern fn(handle: i32) -> ErrorCode>,
-                                          delete: Option<extern fn(name: *const c_char,
-                                                                   config: *const c_char,
-                                                                   credentials: *const c_char) -> ErrorCode>,
-                                          free: Option<extern fn(wallet_handle: i32,
-                                                                 value: *const c_char) -> ErrorCode>,
-                                          cb: Option<extern fn(xcommand_handle: i32,
-                                                               err: ErrorCode)>) -> ErrorCode {
+                                                                 credentials: *const c_char) -> ErrorCode>,
+                                        open: Option<extern fn(name: *const c_char,
+                                                               config: *const c_char,
+                                                               runtime_config: *const c_char,
+                                                               credentials: *const c_char,
+                                                               handle: *mut i32) -> ErrorCode>,
+                                        set: Option<extern fn(handle: i32,
+                                                              key: *const c_char,
+                                                              value: *const c_char) -> ErrorCode>,
+                                        get: Option<extern fn(handle: i32,
+                                                              key: *const c_char,
+                                                              value_ptr: *mut *const c_char) -> ErrorCode>,
+                                        get_not_expired: Option<extern fn(handle: i32,
+                                                                          key: *const c_char,
+                                                                          value_ptr: *mut *const c_char) -> ErrorCode>,
+                                        list: Option<extern fn(handle: i32,
+                                                               key_prefix: *const c_char,
+                                                               values_json_ptr: *mut *const c_char) -> ErrorCode>,
+                                        close: Option<extern fn(handle: i32) -> ErrorCode>,
+                                        delete: Option<extern fn(name: *const c_char,
+                                                                 config: *const c_char,
+                                                                 credentials: *const c_char) -> ErrorCode>,
+                                        free: Option<extern fn(wallet_handle: i32,
+                                                               value: *const c_char) -> ErrorCode>,
+                                        cb: Option<extern fn(xcommand_handle: i32,
+                                                             err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(xtype, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(open, ErrorCode::CommonInvalidParam4);
@@ -111,12 +111,12 @@ pub extern fn indy_register_wallet_type(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_create_wallet(command_handle: i32,
-                                   pool_name: *const c_char,
-                                   name: *const c_char,
-                                   xtype: *const c_char,
-                                   config: *const c_char,
-                                   credentials: *const c_char,
-                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                 pool_name: *const c_char,
+                                 name: *const c_char,
+                                 xtype: *const c_char,
+                                 config: *const c_char,
+                                 credentials: *const c_char,
+                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(pool_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(xtype, ErrorCode::CommonInvalidParam4);
@@ -163,10 +163,10 @@ pub extern fn indy_create_wallet(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_open_wallet(command_handle: i32,
-                                 name: *const c_char,
-                                 runtime_config: *const c_char,
-                                 credentials: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
+                               name: *const c_char,
+                               runtime_config: *const c_char,
+                               credentials: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam4);
@@ -200,8 +200,8 @@ pub extern fn indy_open_wallet(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_close_wallet(command_handle: i32,
-                                  handle: i32,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                handle: i32,
+                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
@@ -231,9 +231,9 @@ pub extern fn indy_close_wallet(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_delete_wallet(command_handle: i32,
-                                   name: *const c_char,
-                                   credentials: *const c_char,
-                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                 name: *const c_char,
+                                 credentials: *const c_char,
+                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);

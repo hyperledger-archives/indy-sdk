@@ -39,19 +39,19 @@ extern "C" {
 /// - message: Received message.
 
 extern indy_error_t indy_agent_connect(indy_handle_t command_handle,
-                                           indy_handle_t pool_handle,
-                                           indy_handle_t wallet_handle,
-                                           const char *    sender_did,
-                                           const char *    receiver_did,
+                                       indy_handle_t pool_handle,
+                                       indy_handle_t wallet_handle,
+                                       const char *  sender_did,
+                                       const char *  receiver_did,
 
-                                           void  (*connection_cb)(indy_handle_t xcommand_handle,
-                                                                  indy_error_t  err,
-                                                                  indy_handle_t connection_handle),
-                                           
-                                           void     (*message_cb)(indy_handle_t xconnection_handle,
-                                                                  indy_error_t  err,
-                                                                  const char *    message)
-                                           );
+                                       void  (*connection_cb)(indy_handle_t xcommand_handle,
+                                                              indy_error_t  err,
+                                                              indy_handle_t connection_handle),
+
+                                       void     (*message_cb)(indy_handle_t xconnection_handle,
+                                                              indy_error_t  err,
+                                                              const char *  message)
+                                       );
 
 /// Starts listening of agent connections.
 ///
@@ -92,22 +92,22 @@ extern indy_error_t indy_agent_connect(indy_handle_t command_handle,
 /// - message: Received message.
 
 extern indy_error_t indy_agent_listen(indy_handle_t command_handle,
-                                          const char *    endpoint,
+                                      const char *  endpoint,
 
-                                          void     (*listener_cb)(indy_handle_t xcommand_handle,
-                                                                  indy_error_t  err,
-                                                                  indy_handle_t listener_handle),
+                                      void     (*listener_cb)(indy_handle_t xcommand_handle,
+                                                              indy_error_t  err,
+                                                              indy_handle_t listener_handle),
 
-                                          void   (*connection_cb)(indy_handle_t xlistener_handle,
-                                                                  indy_error_t  err,
-                                                                  indy_handle_t connection_handle,
-                                                                  const char *    sender_did,
-                                                                  const char *    receiver_did),
+                                      void   (*connection_cb)(indy_handle_t xlistener_handle,
+                                                              indy_error_t  err,
+                                                              indy_handle_t connection_handle,
+                                                              const char *  sender_did,
+                                                              const char *  receiver_did),
 
-                                          void      (*message_cb)(indy_handle_t xconnection_handle,
-                                                                  indy_error_t  err,
-                                                                  const char *    message)
-                                          );
+                                      void      (*message_cb)(indy_handle_t xconnection_handle,
+                                                              indy_error_t  err,
+                                                              const char *  message)
+                                      );
 
 /// Add identity to listener.
 ///
@@ -135,14 +135,14 @@ extern indy_error_t indy_agent_listen(indy_handle_t command_handle,
 /// - err: Error code
 
 extern indy_error_t indy_agent_add_identity(indy_handle_t command_handle,
-                                                indy_handle_t listener_handle,
-                                                indy_handle_t pool_handle,
-                                                indy_handle_t wallet_handle,
-                                                const char *    did,
+                                            indy_handle_t listener_handle,
+                                            indy_handle_t pool_handle,
+                                            indy_handle_t wallet_handle,
+                                            const char *  did,
 
-                                                void (*add_identity_cb)(indy_handle_t xcommand_handle,
-                                                                        indy_error_t  err)
-                                                );
+                                            void (*add_identity_cb)(indy_handle_t xcommand_handle,
+                                                                    indy_error_t  err)
+                                            );
 
 /// Remove identity from listener.
 ///
@@ -169,13 +169,13 @@ extern indy_error_t indy_agent_add_identity(indy_handle_t command_handle,
 /// - err: Error code
 
 extern indy_error_t indy_agent_remove_identity(indy_handle_t command_handle,
-                                                   indy_handle_t listener_handle,
-                                                   indy_handle_t wallet_handle,
-                                                   const char *    did,
+                                               indy_handle_t listener_handle,
+                                               indy_handle_t wallet_handle,
+                                               const char *  did,
 
-                                                   void (*rm_identity_cb)(indy_handle_t xcommand_handle,
-                                                                          indy_error_t  err)
-                                                   );
+                                               void (*rm_identity_cb)(indy_handle_t xcommand_handle,
+                                                                      indy_error_t  err)
+                                               );
 
 /// Sends message to connected agent.
 ///
@@ -197,12 +197,12 @@ extern indy_error_t indy_agent_remove_identity(indy_handle_t command_handle,
 /// #Errors
 
 extern indy_error_t indy_agent_send(indy_handle_t command_handle,
-                                        indy_handle_t connection_handle,
-                                        const char *    message,
+                                    indy_handle_t connection_handle,
+                                    const char *  message,
 
-                                        void     (*cb)(indy_handle_t xcommand_handle,
-                                                       indy_error_t  err)
-                                       );
+                                    void     (*cb)(indy_handle_t xcommand_handle,
+                                                   indy_error_t  err)
+                                   );
 
 /// Closes agent connection.
 ///
@@ -222,11 +222,11 @@ extern indy_error_t indy_agent_send(indy_handle_t command_handle,
 /// #Errors
 
 extern indy_error_t indy_agent_close_connection(indy_handle_t command_handle,
-                                                    indy_handle_t connection_handle,
+                                                indy_handle_t connection_handle,
 
-                                                    void     (*cb)(indy_handle_t xcommand_handle,
-                                                                   indy_error_t  err)
-                                                    );
+                                                void     (*cb)(indy_handle_t xcommand_handle,
+                                                               indy_error_t  err)
+                                                );
 
 
 /// Closes listener and stops listening for agent connections.
@@ -247,11 +247,11 @@ extern indy_error_t indy_agent_close_connection(indy_handle_t command_handle,
 /// #Errors
 
 extern indy_error_t indy_agent_close_listener(indy_handle_t command_handle,
-                                                  indy_handle_t listener_handle,
+                                              indy_handle_t listener_handle,
 
-                                                  void     (*cb)(indy_handle_t xcommand_handle,
-                                                                 indy_error_t  err)
-                                                  );
+                                              void     (*cb)(indy_handle_t xcommand_handle,
+                                                             indy_error_t  err)
+                                              );
 
 #ifdef __cplusplus
 }
