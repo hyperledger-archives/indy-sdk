@@ -130,8 +130,8 @@ extern "C" {
     extern indy_error_t indy_sign(indy_handle_t command_handle,
                                       indy_handle_t wallet_handle,
                                       const char *    did,
-                                      message_raw: *const indy_u8_t,
-                                      message_len: indy_u32_t,
+                                      const indy_u8_t *      message_raw,
+                                      indy_u32_t   message_len,
 
                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                            indy_error_t  err,

@@ -196,7 +196,7 @@ pub  extern fn indy_sign(command_handle: i32,
             message_raw,
             Box::new(move |result| {
                 let (err, signature) = result_to_err_code_1!(result, Vec::new());
-                let (signature_raw, signature_len) = vec_to_pointer(signature);
+                let (signature_raw, signature_len) = vec_to_pointer(&signature);
                 cb(command_handle, err, signature_raw, signature_len)
             })
         )));
@@ -312,8 +312,8 @@ pub  extern fn indy_encrypt(command_handle: i32,
             message_raw,
             Box::new(move |result| {
                 let (err, encrypted_msg, nonce) = result_to_err_code_2!(result, Vec::new(), Vec::new());
-                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(encrypted_msg);
-                let (nonce_raw, nonce_len) = vec_to_pointer(nonce);
+                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                let (nonce_raw, nonce_len) = vec_to_pointer(&nonce);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len)
             })
         )));
@@ -369,7 +369,7 @@ pub  extern fn indy_decrypt(command_handle: i32,
             nonce_raw,
             Box::new(move |result| {
                 let (err, decrypted_msg) = result_to_err_code_1!(result, Vec::new());
-                let (decrypted_msg_raw, decrypted_msg_len) = vec_to_pointer(decrypted_msg);
+                let (decrypted_msg_raw, decrypted_msg_len) = vec_to_pointer(&decrypted_msg);
                 cb(command_handle, err, decrypted_msg_raw, decrypted_msg_len)
             })
         )));
