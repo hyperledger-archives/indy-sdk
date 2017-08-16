@@ -1,7 +1,6 @@
 cargo-registry
 target
 build
-Cargo.lock
 .idea
 .venv
 .cache

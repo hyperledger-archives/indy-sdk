@@ -9,7 +9,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentConnectWorksForRemoteData()
         {
-            var endpoint = "127.0.0.1:9905";
+            var endpoint = "127.0.0.1:9605";
             var listenerWalletName = "listenerWallet";
             var trusteeWalletName = "trusteeWallet";
 
@@ -54,7 +54,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentConnectWorksForAllDataInWalletPresent()
         {
-            var endpoint = "127.0.0.1:9906";
+            var endpoint = "127.0.0.1:9606";
 
             var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
 

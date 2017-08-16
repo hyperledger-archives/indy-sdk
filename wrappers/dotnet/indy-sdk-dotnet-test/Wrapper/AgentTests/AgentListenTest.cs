@@ -9,7 +9,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         [TestMethod]
         public void TestAgentListenWorks()
         {
-            var endpoint = "127.0.0.1:9907";
+            var endpoint = "127.0.0.1:9607";
 
             var didJson = "{\"seed\":\"sovrin_agent_connect_works_for_a\"}";
        

@@ -1,5 +1,5 @@
 source 'https://github.com/CocoaPods/Specs.git'
-source 'https://github.com/anastasia-tarasova/indy-sdk.git'
+source 'https://github.com/hyperledger/indy-sdk.git'
 platform :ios, '10.2'
 
 workspace 'libindy.xcworkspace'

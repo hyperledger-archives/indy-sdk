@@ -1,41 +1,153 @@
-from indy import anoncreds
-
 import json
 
-ISSUER_DID = "NcYxiDXkpYi6ov5FcYDi1e"
-COMMON_SCHEMA_SEQ_NO = 1
-COMMON_MASTER_SECRET_NAME = "common_master_secret_name"
-COMMON_MASTER_SECRET_NAME_1 = "common_master_secret_name_1"
-COMMON_MASTER_SECRET_NAME_2 = "common_master_secret_name_2"
+import pytest
+
+from indy import anoncreds
+from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_name as x_wallet_name, \
+    wallet_type as x_wallet_type, wallet_runtime_config as x_wallet_runtime_config, \
+    xwallet_cleanup as x_xwallet_cleanup, wallet_handle_cleanup as x_wallet_handle_cleanup, \
+    wallet_handle as x_wallet_handle, \
+    xwallet as x_xwallet
 
 
-async def prepare_common_wallet(wallet_handle):
-    schema = get_gvt_schema_json(1)
-    claim_def_json = await anoncreds.issuer_create_and_store_claim_def(
-        wallet_handle, ISSUER_DID, json.dumps(schema), None, False)
-
-    claim_offer_json_1 = get_claim_offer(ISSUER_DID, 1)
-    claim_offer_json_2 = get_claim_offer(ISSUER_DID, 2)
-    claim_offer_json_3 = get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 2)
-    await anoncreds.prover_store_claim_offer(wallet_handle, json.dumps(claim_offer_json_1))
-    await anoncreds.prover_store_claim_offer(wallet_handle, json.dumps(claim_offer_json_2))
-    await anoncreds.prover_store_claim_offer(wallet_handle, json.dumps(claim_offer_json_3))
-    await anoncreds.prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET_NAME)
-
-    claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, "HEJ9gvWX64wW7UD", json.dumps(claim_offer_json_1), claim_def_json, COMMON_MASTER_SECRET_NAME)
-    (_, claim_json) = await anoncreds.issuer_create_claim(
-        wallet_handle, claim_req, json.dumps(get_gvt_claim_json()), -1, -1)
-    await anoncreds.prover_store_claim(wallet_handle, claim_json)
-
-    return claim_def_json
+@pytest.fixture(scope="module")
+def path_home():
+    # noinspection PyTypeChecker
+    for i in x_path_home():
+        yield i
 
 
-def get_claim_offer(issuer_did, schema_seq_no):
+@pytest.fixture(scope="module")
+async def pool_name():
+    yield x_pool_name()
+
+
+@pytest.fixture(scope="module")
+def wallet_name():
+    return x_wallet_name()
+
+
+@pytest.fixture(scope="module")
+def wallet_type():
+    return x_wallet_type()
+
+
+@pytest.fixture(scope="module")
+def wallet_runtime_config():
+    return x_wallet_runtime_config()
+
+
+@pytest.fixture(scope="module")
+def xwallet_cleanup():
+    return x_xwallet_cleanup()
+
+
+# noinspection PyUnusedLocal
+@pytest.fixture(scope="module")
+async def xwallet(pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
+    # noinspection PyTypeChecker
+    async for i in x_xwallet(pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
+        yield i
+
+
+@pytest.fixture(scope="module")
+def wallet_handle_cleanup():
+    return x_wallet_handle_cleanup()
+
+
+@pytest.fixture(scope="module")
+async def wallet_handle(wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
+    # noinspection PyTypeChecker
+    async for i in x_wallet_handle(wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
+        yield i
+
+
+@pytest.fixture(scope="module")
+def issuer_did():
+    return "NcYxiDXkpYi6ov5FcYDi1e"
+
+
+@pytest.fixture(scope="module")
+def issuer_did_2():
+    return "NcYxiDXkpYi6ov5FcYDi1e3"
+
+
+@pytest.fixture(scope="module")
+def prover_did():
+    return "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
+
+
+@pytest.fixture(scope="module")
+def schema_seq_no():
+    return 1
+
+
+@pytest.fixture(scope="module")
+def schema_seq_no_2():
+    return 2
+
+
+@pytest.fixture(scope="module")
+def master_secret_name():
+    return "common_master_secret_name"
+
+
+@pytest.fixture(scope="module")
+def master_secret_name_1():
+    return "common_master_secret_name_1"
+
+
+@pytest.fixture(scope="module")
+def master_secret_name_2():
+    return "common_master_secret_name_2"
+
+
+def claim_offer(issuer_did, schema_seq_no):
     return {"issuer_did": issuer_did, "schema_seq_no": schema_seq_no}
 
 
-def get_gvt_schema_json(schema_seq_no: int):
+@pytest.fixture(scope="module")
+def claim_offer_issuer_1(issuer_did, schema_seq_no):
+    return claim_offer(issuer_did, schema_seq_no)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_issuer_1_json(claim_offer_issuer_1):
+    return json.dumps(claim_offer_issuer_1)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_issuer_2_1(issuer_did_2, schema_seq_no):
+    return claim_offer(issuer_did_2, schema_seq_no)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_issuer_2_1_json(claim_offer_issuer_2_1):
+    return json.dumps(claim_offer_issuer_2_1)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_issuer_2(issuer_did, schema_seq_no_2):
+    return claim_offer(issuer_did, schema_seq_no_2)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_issuer_2_json(claim_offer_issuer_2):
+    return json.dumps(claim_offer_issuer_2)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_prover_2(prover_did, schema_seq_no_2):
+    return claim_offer(prover_did, schema_seq_no_2)
+
+
+@pytest.fixture(scope="module")
+def claim_offer_prover_2_json(claim_offer_prover_2):
+    return json.dumps(claim_offer_prover_2)
+
+
+@pytest.fixture(scope="module")
+def gvt_schema(schema_seq_no: int):
     return {
         "seqNo": schema_seq_no,
         "data": {
@@ -46,7 +158,18 @@ def get_gvt_schema_json(schema_seq_no: int):
     }
 
 
-def get_gvt_claim_json():
+@pytest.fixture(scope="module")
+def gvt_schema_json(gvt_schema):
+    return json.dumps(gvt_schema)
+
+
+@pytest.fixture(scope="module")
+def gvt_schema_json(gvt_schema):
+    return json.dumps(gvt_schema)
+
+
+@pytest.fixture(scope="module")
+def gvt_claim():
     return {
         "sex": ["male", "5944657099558967239210949258394887428692050081607692519917050011144233115103"],
         "name": ["Alex", "1139481716457488690172217916278103335"],
@@ -55,14 +178,26 @@ def get_gvt_claim_json():
     }
 
 
-def get_xyz_claim_json():
+@pytest.fixture(scope="module")
+def gvt_claim_json(gvt_claim):
+    return json.dumps(gvt_claim)
+
+
+@pytest.fixture(scope="module")
+def xyz_claim():
     return {
         "status": ["partial", "51792877103171595686471452153480627530895"],
         "period": ["8", "8"]
     }
 
 
-def get_claim_req():
+@pytest.fixture(scope="module")
+def xyz_claim_json(xyz_claim):
+    return json.dumps(xyz_claim)
+
+
+@pytest.fixture(scope="module")
+def claim_req(issuer_did, schema_seq_no):
     return {"blinded_ms": {"prover_did": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                            "u": "541727375645293327107242131390489410830131768916446771173223218236303087346206273292"
                                 "275918450941006362568297619591573147842939390451766213271549909084590728218268187187"
@@ -72,10 +207,21 @@ def get_claim_req():
                                 "072614465677317118141888367033373659867254296561952756168465435357073642154989807508"
                                 "60746440672050640048215761507774996460985293327604627646056062013419674090094698841"
                                 "792968543317468164175921100038",
-                           "ur": None}, "issuer_did": ISSUER_DID, "schema_seq_no": 1}
+                           "ur": None}, "issuer_did": issuer_did, "schema_seq_no": schema_seq_no}
 
 
-def get_proof_req(predicate_value=18):
+@pytest.fixture(scope="module")
+def claim_req_json(claim_req):
+    return json.dumps(claim_req)
+
+
+@pytest.fixture(scope="module")
+def predicate_value():
+    return 18
+
+
+@pytest.fixture(scope="module")
+def proof_req(predicate_value):
     return {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -97,11 +243,17 @@ def get_proof_req(predicate_value=18):
     }
 
 
-def get_claim_def():
+@pytest.fixture(scope="module")
+def proof_req_json(proof_req):
+    return json.dumps(proof_req)
+
+
+@pytest.fixture(scope="module")
+def claim_def(issuer_did):
     return {
         "ref": 1,
         "signature_type": "CL",
-        "origin": ISSUER_DID,
+        "origin": issuer_did,
         "data": {
             "primary": {
                 "n": "94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957",
@@ -119,3 +271,31 @@ def get_claim_def():
             "revocation": None
         }
     }
+
+
+@pytest.fixture(scope="module")
+def claim_def_json(claim_def):
+    return json.dumps(claim_def)
+
+
+@pytest.fixture(scope="module")
+async def prepopulated_wallet(wallet_handle, gvt_schema_json, gvt_claim_json, issuer_did,
+                              master_secret_name, claim_offer_issuer_1_json, claim_offer_issuer_2_json,
+                              claim_offer_prover_2_json):
+    claim_def_json = await anoncreds.issuer_create_and_store_claim_def(
+        wallet_handle, issuer_did, gvt_schema_json, None, False)
+
+    await anoncreds.prover_store_claim_offer(wallet_handle, claim_offer_issuer_1_json)
+    await anoncreds.prover_store_claim_offer(wallet_handle, claim_offer_issuer_2_json)
+    await anoncreds.prover_store_claim_offer(wallet_handle, claim_offer_prover_2_json)
+
+    await anoncreds.prover_create_master_secret(wallet_handle, master_secret_name)
+
+    claim_req = await anoncreds.prover_create_and_store_claim_req(
+        wallet_handle, "HEJ9gvWX64wW7UD", claim_offer_issuer_1_json, claim_def_json, master_secret_name)
+
+    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1, -1)
+
+    await anoncreds.prover_store_claim(wallet_handle, claim_json)
+
+    return claim_def_json,

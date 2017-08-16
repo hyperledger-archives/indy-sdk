@@ -24,16 +24,24 @@ extern {
 pub struct ED25519 {}
 
 impl ED25519 {
-    pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8> {
-        box_::seal(
+    pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
+        if nonce.len() != 24 {
+            return Err(CommonError::InvalidStructure(format!("Invalid nonce")))
+        }
+
+        Ok(box_::seal(
             doc,
             &box_::Nonce(ED25519::_clone_into_array(nonce)),
             &box_::PublicKey(ED25519::_clone_into_array(public_key)),
             &box_::SecretKey(ED25519::_clone_into_array(private_key))
-        )
+        ))
     }
 
     pub fn decrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
+        if nonce.len() != 24 {
+            return Err(CommonError::InvalidStructure(format!("Invalid nonce")))
+        }
+
         box_::open(
             doc,
             &box_::Nonce(ED25519::_clone_into_array(nonce)),
@@ -49,7 +57,7 @@ impl ED25519 {
 
     pub fn create_key_pair_for_signature(seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError> {
         if seed.is_some() && seed.unwrap().len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid seed")))
+            return Err(CommonError::InvalidStructure(format!("Invalid seed")));
         }
 
         let (public_key, private_key) =
@@ -66,7 +74,7 @@ impl ED25519 {
 
     pub fn sign(private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         if private_key.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid sign key")))
+            return Err(CommonError::InvalidStructure(format!("Invalid sign key")));
         }
 
         let mut pr_key: [u8; 64] = [0; 64];
@@ -80,11 +88,11 @@ impl ED25519 {
 
     pub fn verify(public_key: &[u8], doc: &[u8], sign: &[u8]) -> Result<bool, CommonError> {
         if sign.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid signature")))
+            return Err(CommonError::InvalidStructure(format!("Invalid signature")));
         }
 
         if public_key.len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid verkey")))
+            return Err(CommonError::InvalidStructure(format!("Invalid verkey")));
         }
 
         let mut signature: [u8; 64] = [0; 64];
@@ -99,7 +107,7 @@ impl ED25519 {
 
     pub fn sk_to_curve25519(sk: &[u8]) -> Result<Vec<u8>, CommonError> {
         if sk.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid signkey")))
+            return Err(CommonError::InvalidStructure(format!("Invalid signkey")));
         }
 
         let mut from: [u8; 64] = [0; 64];
@@ -113,7 +121,7 @@ impl ED25519 {
 
     pub fn vk_to_curve25519(pk: &[u8]) -> Result<Vec<u8>, CommonError> {
         if pk.len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid verkey")))
+            return Err(CommonError::InvalidStructure(format!("Invalid verkey")));
         }
 
         let mut from: [u8; 32] = [0; 32];
@@ -155,12 +163,12 @@ mod tests {
         let bob_pk = ED25519::vk_to_curve25519(&bob_ver_key).unwrap();
         let bob_sk = ED25519::sk_to_curve25519(&bob_sign_key).unwrap();
 
-        let bob_encrypted_text = ED25519::encrypt(&bob_sk, &alice_pk, &text, &nonce);
+        let bob_encrypted_text = ED25519::encrypt(&bob_sk, &alice_pk, &text, &nonce).unwrap();
         let bob_decrypt_result = ED25519::decrypt(&alice_sk, &bob_pk, &bob_encrypted_text, &nonce);
         assert!(bob_decrypt_result.is_ok());
         assert_eq!(text, bob_decrypt_result.unwrap());
 
-        let alice_encrypted_text = ED25519::encrypt(&alice_sk, &bob_pk, &text, &nonce);
+        let alice_encrypted_text = ED25519::encrypt(&alice_sk, &bob_pk, &text, &nonce).unwrap();
         let alice_decrypted_text = ED25519::decrypt(&bob_sk, &alice_pk, &alice_encrypted_text, &nonce);
         assert!(alice_decrypted_text.is_ok());
         assert_eq!(text, alice_decrypted_text.unwrap());

@@ -27,40 +27,40 @@ extern "C" {
     
 
     extern indy_error_t indy_register_wallet_type(indy_handle_t  command_handle,
-                                                      const char* xtype,
-                                                      indy_error_t (*createFn)(const char* name,
-                                                                                 const char* config,
-                                                                                 const char* credentials),
-                                                      
-                                                      indy_error_t (*openFn)(const char* name,
-                                                                               const char* config,
-                                                                               const char* runtime_config,
-                                                                               const char* credentials,
-                                                                               indy_handle_t* handle),
-                                                      
-                                                      indy_error_t (*setFn)(indy_handle_t handle,
-                                                                              const char* key,
-                                                                              const char* value),
-                                                      
-                                                      indy_error_t (*getFn)(indy_handle_t handle,
-                                                                              const char* key,
-                                                                              const char *const *value_ptr),
+                                                  const char*    xtype,
+                                                  indy_error_t (*createFn)(const char* name,
+                                                                             const char* config,
+                                                                             const char* credentials),
 
-                                                      indy_error_t (*getNotExiredFn)(indy_handle_t handle,
-                                                                              const char* key,
-                                                                              const char *const *value_ptr),
+                                                  indy_error_t (*openFn)(const char* name,
+                                                                           const char* config,
+                                                                           const char* runtime_config,
+                                                                           const char* credentials,
+                                                                           indy_handle_t* handle),
 
-                                                      indy_error_t (*listFn)(indy_handle_t handle,
-                                                                              const char* key,
-                                                                              const char *const *values_json_ptr),
+                                                  indy_error_t (*setFn)(indy_handle_t handle,
+                                                                          const char* key,
+                                                                          const char* value),
 
-                                                      indy_error_t (*closeFn)(indy_handle_t handle),
-                                                      indy_error_t (*deleteFn)(const char* name,
-                                                                                 const char* config,
-                                                                                 const char* credentials),
+                                                  indy_error_t (*getFn)(indy_handle_t handle,
+                                                                          const char* key,
+                                                                          const char *const *value_ptr),
 
-                                                      indy_error_t (*freeFn)(indy_handle_t handle, const char* str)
-                                                      );
+                                                  indy_error_t (*getNotExiredFn)(indy_handle_t handle,
+                                                                          const char* key,
+                                                                          const char *const *value_ptr),
+
+                                                  indy_error_t (*listFn)(indy_handle_t handle,
+                                                                          const char* key,
+                                                                          const char *const *values_json_ptr),
+
+                                                  indy_error_t (*closeFn)(indy_handle_t handle),
+                                                  indy_error_t (*deleteFn)(const char* name,
+                                                                             const char* config,
+                                                                             const char* credentials),
+
+                                                  indy_error_t (*freeFn)(indy_handle_t handle, const char* str)
+                                                  );
 
     /// Creates a new secure wallet with the given unique name.
     ///
@@ -82,13 +82,13 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_create_wallet(indy_handle_t  command_handle,
-                                               const char*      pool_name,
-                                               const char*      name,
-                                               const char*      xtype,
-                                               const char*      config,
-                                               const char*      credentials,
-                                               void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                              );
+                                           const char*    pool_name,
+                                           const char*    name,
+                                           const char*    xtype,
+                                           const char*    config,
+                                           const char*    credentials,
+                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                          );
     /// Opens the wallet with specific name.
     ///
     /// Wallet with corresponded name must be previously created with indy_create_wallet method.
@@ -112,11 +112,11 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_open_wallet(indy_handle_t  command_handle,
-                                             const char*      name,
-                                             const char*      runtime_config,
-                                             const char*      credentials,
-                                             void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
-                                            );
+                                         const char*    name,
+                                         const char*    runtime_config,
+                                         const char*    credentials,
+                                         void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
+                                        );
 
     /// Closes opened wallet and frees allocated resources.
     ///
@@ -131,9 +131,9 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_close_wallet(indy_handle_t  command_handle,
-                                              indy_handle_t  handle,
-                                              void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                             );
+                                          indy_handle_t  handle,
+                                          void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                         );
 
     /// Deletes created wallet.
     ///
@@ -150,10 +150,10 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_delete_wallet(indy_handle_t  command_handle,
-                                               const char*      name,
-                                               const char*      credentials,
-                                               void            (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                              );
+                                           const char*    name,
+                                           const char*    credentials,
+                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                          );
 
 #ifdef __cplusplus
 }

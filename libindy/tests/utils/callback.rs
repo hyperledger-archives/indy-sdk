@@ -7,6 +7,7 @@ use std::ffi::CStr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
+use std::slice;
 
 
 lazy_static! {
@@ -147,9 +148,9 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_issuer_create_claim_definition_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                                   Option<extern fn(command_handle: i32,
-                                                                                                                                    err: ErrorCode,
-                                                                                                                                    claim_def_json: *const c_char)>) {
+                                                                                                           Option<extern fn(command_handle: i32,
+                                                                                                                            err: ErrorCode,
+                                                                                                                            claim_def_json: *const c_char)>) {
         lazy_static! {
             static ref CREATE_CLAIM_DEFINITION_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
@@ -169,8 +170,8 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_register_wallet_type_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                  Option<extern fn(command_handle: i32,
-                                                                                                   err: ErrorCode)>) {
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode)>) {
         lazy_static! {
             static ref REFISTER_WALLET_TYPE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -474,19 +475,19 @@ impl CallbackUtils {
         (command_handle, Some(store_their_did_callback))
     }
 
-    pub fn closure_to_sign_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
+    pub fn closure_to_sign_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>)
                               -> (i32,
                                   Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                   signature: *const c_char)>) {
+                                                   signature_raw: *const u8, signature_len: u32)>) {
         lazy_static! {
-            static ref SIGN_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
+            static ref SIGN_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
         }
 
-        extern "C" fn sign_callback(command_handle: i32, err: ErrorCode, signature: *const c_char) {
+        extern "C" fn sign_callback(command_handle: i32, err: ErrorCode, signature_raw: *const u8, signature_len: u32) {
             let mut callbacks = SIGN_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            let signature = unsafe { CStr::from_ptr(signature).to_str().unwrap().to_string() };
-            cb(err, signature);
+            let signature = unsafe { slice::from_raw_parts(signature_raw, signature_len as usize) };
+            cb(err, signature.to_vec());
         }
 
         let mut callbacks = SIGN_CALLBACKS.lock().unwrap();
@@ -677,8 +678,8 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_agent_rm_identity_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                       Option<extern fn(command_handle: i32,
-                                                                                                        err: ErrorCode)>) {
+                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                       err: ErrorCode)>) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -845,5 +846,73 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(replace_keys_callback))
+    }
+
+    pub fn closure_to_encrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send>) -> (i32,
+                                                                                              Option<extern fn(command_handle: i32,
+                                                                                                               err: ErrorCode,
+                                                                                                               encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
+                                                                                                               nonce_raw: *const u8, nonce_len: u32)>) {
+        lazy_static! {
+            static ref ENCRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn encrypt_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32, nonce_raw: *const u8, nonce_len: u32) {
+            let mut callbacks = ENCRYPT_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
+            let nonce = unsafe { slice::from_raw_parts(nonce_raw, nonce_len as usize) };
+            cb(err, encrypted_msg.to_vec(), nonce.to_vec());
+        }
+
+        let mut callbacks = ENCRYPT_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(encrypt_callback))
+    }
+
+    pub fn closure_to_decrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                     Option<extern fn(command_handle: i32,
+                                                                                                      err: ErrorCode,
+                                                                                                      decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+            let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
+            cb(err, decrypted_msg.to_vec())
+        }
+
+        let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_decrypt_callback))
+    }
+
+    pub fn closure_to_sign_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode,
+                                                                                                          signed_request_json: *const c_char)>) {
+        lazy_static! {
+            static ref SIGN_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_sign_request_callback(command_handle: i32, err: ErrorCode, signed_request_json: *const c_char) {
+            let mut callbacks = SIGN_REQUEST_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let signed_request_json = unsafe { CStr::from_ptr(signed_request_json).to_str().unwrap().to_string() };
+            cb(err, signed_request_json)
+        }
+
+        let mut callbacks = SIGN_REQUEST_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_sign_request_callback))
     }
 }

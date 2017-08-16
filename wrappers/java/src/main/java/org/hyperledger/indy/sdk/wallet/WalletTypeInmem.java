@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 
-import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
@@ -68,13 +67,14 @@ public class WalletTypeInmem extends WalletType {
 		WalletInmem wallet = this.walletsByHandle.get(handle);
 		if (wallet == null) return ErrorCode.CommonInvalidState;
 
+		if (! wallet.values.containsKey(key)) return ErrorCode.WalletNotFoundError;
+
 		String value = wallet.values.get(key);
 
-		byte[] bytes = Native.toByteArray(value);
-		Pointer pointer = new Memory(bytes.length + 1);
+		byte[] bytes = Native.toByteArray(value, "UTF-8");
+		Pointer pointer = new Pointer(Native.malloc(bytes.length));
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte) 0);
-		valuePtr.setPointer(pointer);
+		valuePtr.setValue(pointer);
 		return ErrorCode.Success;
 	}
 
@@ -84,13 +84,14 @@ public class WalletTypeInmem extends WalletType {
 		WalletInmem wallet = this.walletsByHandle.get(handle);
 		if (wallet == null) return ErrorCode.CommonInvalidState;
 
+		if (! wallet.values.containsKey(key)) return ErrorCode.WalletNotFoundError;
+
 		String value = wallet.values.get(key);
 
-		byte[] bytes = Native.toByteArray(value);
-		Pointer pointer = new Memory(bytes.length + 1);
+		byte[] bytes = Native.toByteArray(value, "UTF-8");
+		Pointer pointer = new Pointer(Native.malloc(bytes.length));
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte) 0);
-		valuePtr.setPointer(pointer);
+		valuePtr.setValue(pointer);
 		return ErrorCode.Success;
 	}
 
@@ -115,11 +116,10 @@ public class WalletTypeInmem extends WalletType {
 
 		builder.append("]");
 
-		byte[] bytes = Native.toByteArray(builder.toString());
-		Pointer pointer = new Memory(bytes.length + 1);
+		byte[] bytes = Native.toByteArray(builder.toString(), "UTF-8");
+		Pointer pointer = new Pointer(Native.malloc(bytes.length));
 		pointer.write(0, bytes, 0, bytes.length);
-		pointer.setByte(bytes.length, (byte) 0);
-		valuesJsonPtr.setPointer(pointer);
+		valuesJsonPtr.setValue(pointer);
 		return ErrorCode.Success;
 	}
 

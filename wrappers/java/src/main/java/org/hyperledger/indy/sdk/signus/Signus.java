@@ -8,6 +8,7 @@ import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysResult;
+import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -115,12 +116,12 @@ public class Signus extends IndyJava.API {
 	private static Callback encryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String encryptedMsg) {
+		public void callback(int xcommand_handle, int err, String encryptedMsg, String nonce) {
 
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			CompletableFuture<EncryptResult> future = (CompletableFuture<EncryptResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			String result = encryptedMsg;
+			EncryptResult result = new EncryptResult(encryptedMsg, nonce);
 			future.complete(result);
 		}
 	};
@@ -269,7 +270,8 @@ public class Signus extends IndyJava.API {
 	 * @param wallet The wallet.
 	 * @param pool The pool.
 	 * @param did DID that signed the message
-	 * @param signedMsg message
+	 * @param msg message
+	 * @param signature a signature to be verified
 	 * @return A future that resolves to true if signature is valid, otherwise false.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -277,7 +279,8 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			Pool pool,
 			String did,
-			String signedMsg) throws IndyException {
+			String msg,
+			String signature) throws IndyException {
 
 		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
@@ -290,7 +293,8 @@ public class Signus extends IndyJava.API {
 				walletHandle, 
 				poolHandle,
 				did,
-				signedMsg,
+				msg,
+				signature,
 				verifySignatureCb);
 
 		checkResult(result);
@@ -309,14 +313,14 @@ public class Signus extends IndyJava.API {
 	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> encrypt(
+	public static CompletableFuture<EncryptResult> encrypt(
 			Wallet wallet,
 			Pool pool,
 			String myDid,
 			String did,
 			String msg) throws IndyException {
 
-		CompletableFuture<String> future = new CompletableFuture<String>();
+		CompletableFuture<EncryptResult> future = new CompletableFuture<EncryptResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();

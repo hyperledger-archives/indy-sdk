@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_submit_request_works(cleanup_storage, pool_handle):
+async def test_submit_request_works(pool_handle):
     request = {
         "reqId": 1491566332010860,
         "identifier": "Th7MpTaRZVRYnPiabds81Y",
@@ -33,9 +33,8 @@ async def test_submit_request_works(cleanup_storage, pool_handle):
 
 
 @pytest.mark.asyncio
-async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"000000000000000000000000Trustee1"}')
+async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identity_my1):
+    (my_did, _) = identity_my1
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     invalid_pool_handle = pool_handle + 1
@@ -46,9 +45,8 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, wallet_
 
 
 @pytest.mark.asyncio
-async def test_send_nym_request_works_without_signature(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"00000000000000000000000000000My1"}')
+async def test_send_nym_request_works_without_signature(pool_handle, identity_my1):
+    (my_did, _) = identity_my1
 
     nym_request = await ledger.build_nym_request(my_did, my_did, None, None, None)
 
@@ -58,9 +56,8 @@ async def test_send_nym_request_works_without_signature(pool_handle, wallet_hand
 
 
 @pytest.mark.asyncio
-async def test_send_get_nym_request_works(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"000000000000000000000000Trustee1"}')
+async def test_send_get_nym_request_works(pool_handle, identity_trustee1):
+    (my_did, _) = identity_trustee1
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
 
@@ -69,23 +66,22 @@ async def test_send_get_nym_request_works(pool_handle, wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_nym_requests_works(pool_handle, wallet_handle):
-    (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                               '{"seed":"000000000000000000000000Trustee1"}')
-    (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                   '{"seed":"00000000000000000000000000000My1"}')
+async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_ver_key) = identity_my1
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
+
     assert response['result']['data'] is not None
 
 
 @pytest.mark.asyncio
-async def test_send_attrib_request_works_without_signature(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"00000000000000000000000000000My1"}')
+async def test_send_attrib_request_works_without_signature(pool_handle, identity_my1):
+    (my_did, _) = identity_my1
 
     attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
@@ -95,25 +91,26 @@ async def test_send_attrib_request_works_without_signature(pool_handle, wallet_h
 
 
 @pytest.mark.asyncio
-async def test_attrib_requests_works(pool_handle, wallet_handle):
-    (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                               '{"seed":"000000000000000000000000Trustee1"}')
-    (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                   '{"seed":"00000000000000000000000000000My1"}')
+async def test_attrib_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_ver_key) = identity_my1
+
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
     attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
+
     get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, "endpoint")
     response = json.loads(await ledger.submit_request(pool_handle, get_attrib_request))
+
     assert response['result']['data'] is not None
 
 
 @pytest.mark.asyncio
-async def test_send_schema_request_works_without_signature(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"00000000000000000000000000000My1"}')
+async def test_send_schema_request_works_without_signature(pool_handle, identity_my1):
+    (my_did, _) = identity_my1
 
     schema_data = {
         "name": "gvt2",
@@ -129,11 +126,9 @@ async def test_send_schema_request_works_without_signature(pool_handle, wallet_h
 
 
 @pytest.mark.asyncio
-async def test_schema_requests_works(pool_handle, wallet_handle):
-    (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                               '{"seed":"000000000000000000000000Trustee1"}')
-    (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                   '{"seed":"00000000000000000000000000000My1"}')
+async def test_schema_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_ver_key) = identity_my1
 
     schema_data = {
         "name": "gvt2",
@@ -143,21 +138,23 @@ async def test_schema_requests_works(pool_handle, wallet_handle):
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
+
     get_schema_data = {
         "name": "gvt2",
         "version": "2.0"
     }
     get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
     response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
+
     assert response['result']['data'] is not None
 
 
 @pytest.mark.asyncio
-async def test_send_node_request_works_without_signature(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"00000000000000000000000000000My1"}')
+async def test_send_node_request_works_without_signature(pool_handle, identity_my1):
+    (my_did, _) = identity_my1
 
     node_data = {
         "node_ip": "10.0.0.100",
@@ -176,11 +173,9 @@ async def test_send_node_request_works_without_signature(pool_handle, wallet_han
 
 
 @pytest.mark.asyncio
-async def test_claim_def_requests_works(pool_handle, wallet_handle):
-    (trustee_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                               '{"seed":"000000000000000000000000Trustee1"}')
-    (my_did, my_ver_key, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                   '{"seed":"00000000000000000000000000000My1"}')
+async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_ver_key) = identity_my1
 
     schema_data = {
         "name": "gvt2",
@@ -231,9 +226,8 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_get_txn_request_works(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"000000000000000000000000Trustee1"}')
+async def test_get_txn_request_works(pool_handle, wallet_handle, identity_trustee1):
+    (my_did, _) = identity_trustee1
 
     schema_data = json.dumps({
         "name": "gvt3",
@@ -259,9 +253,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle):
-    (my_did, _, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                          '{"seed":"000000000000000000000000Trustee1"}')
+async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle, identity_trustee1):
+    (my_did, _) = identity_trustee1
 
     schema_data = json.dumps({
         "name": "gvt3",

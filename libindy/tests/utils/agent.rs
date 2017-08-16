@@ -14,6 +14,7 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
+use std::sync::mpsc::RecvTimeoutError;
 
 pub struct AgentUtils {}
 
@@ -45,6 +46,22 @@ impl AgentUtils {
         CallbackUtils::closure_map_ids(cb_id, conn_handle);
 
         Ok(conn_handle)
+    }
+
+    pub fn connect_hang_up_expected(pool_handle: i32, wallet_handle: i32, sender_did: &str, receiver_did: &str) -> Result<(ErrorCode, i32), RecvTimeoutError> {
+        let (sender, receiver) = channel();
+        let closure = Box::new(move |err, connection_handle| { sender.send((err, connection_handle)).unwrap(); });
+        let (cmd_connect, cb) = CallbackUtils::closure_to_agent_connect_cb(closure);
+        let (_, msg_cb) = CallbackUtils::closure_to_agent_message_cb(Box::new(move |conn_handle, err, msg| {
+            info!("On connection {} received (with error {:?}) agent message (SRV->CLI): {}", conn_handle, err, msg);
+        }));
+
+        indy_agent_connect(cmd_connect, pool_handle, wallet_handle,
+                           CString::new(sender_did).unwrap().as_ptr(),
+                           CString::new(receiver_did).unwrap().as_ptr(),
+                           cb, msg_cb);
+
+        receiver.recv_timeout(TimeoutUtils::short_timeout())
     }
 
     pub fn listen(endpoint: &str,

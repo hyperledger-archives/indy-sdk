@@ -32,15 +32,15 @@ extern "C" {
     /// Crypto*
     
     extern indy_error_t indy_sign_and_submit_request(indy_handle_t command_handle,
-                                                         indy_handle_t pool_handle,
-                                                         indy_handle_t wallet_handle,
-                                                         const char *    submitter_did,
-                                                         const char *    request_json,
-                                                     
-                                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err,
-                                                                              const char*     request_result_json)
-                                                         );
+                                                     indy_handle_t pool_handle,
+                                                     indy_handle_t wallet_handle,
+                                                     const char *  submitter_did,
+                                                     const char *  request_json,
+
+                                                     void           (*cb)(indy_handle_t xcommand_handle,
+                                                                          indy_error_t  err,
+                                                                          const char*   request_result_json)
+                                                     );
     
     /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
     ///
@@ -60,13 +60,46 @@ extern "C" {
     /// Ledger*
     
     extern indy_error_t indy_submit_request(indy_handle_t command_handle,
-                                                indy_handle_t pool_handle,
-                                                const char *    request_json,
-                                                         
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err,
-                                                                     const char*     request_result_json)
-                                               );
+                                            indy_handle_t pool_handle,
+                                            const char *  request_json,
+
+                                            void           (*cb)(indy_handle_t xcommand_handle,
+                                                                 indy_error_t  err,
+                                                                 const char*   request_result_json)
+                                           );
+
+
+    /// Signs request message.
+    ///
+    /// Adds submitter information to passed request json, signs it with submitter
+    /// sign key (see wallet_sign).
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// wallet_handle: wallet handle (created by open_wallet).
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// request_json: Request data json.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Signed request json.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+
+    extern indy_error_t indy_sign_request(indy_handle_t command_handle,
+                                         indy_handle_t  wallet_handle,
+                                         const char *   submitter_did,
+                                         const char *   request_json,
+
+                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                              indy_error_t  err,
+                                                              const char*   signed_request_json)
+                                         );
+
 
     /// Builds a request to get a DDO.
     ///
@@ -83,13 +116,13 @@ extern "C" {
     /// Common*
     
     extern indy_error_t indy_build_get_ddo_request(indy_handle_t command_handle,
-                                                       const char *    submitter_did,
-                                                       const char *    target_did,
+                                                   const char *  submitter_did,
+                                                   const char *  target_did,
 
-                                                       void           (*cb)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t  err,
-                                                                            const char*     request_result_json)
-                                                      );
+                                                   void           (*cb)(indy_handle_t xcommand_handle,
+                                                                        indy_error_t  err,
+                                                                        const char*   request_result_json)
+                                                  );
     
     /// Builds a NYM request.
     ///
@@ -109,16 +142,16 @@ extern "C" {
     /// Common*
 
     extern indy_error_t indy_build_nym_request(indy_handle_t command_handle,
-                                                   const char *    submitter_did,
-                                                   const char *    target_did,
-                                                   const char *    verkey,
-                                                   const char *    alias,
-                                                   const char *    role,
-                                                   
-                                                   void           (*cb)(indy_handle_t xcommand_handle,
-                                                                        indy_error_t  err,
-                                                                        const char*     request_json)
-                                                  );
+                                               const char *  submitter_did,
+                                               const char *  target_did,
+                                               const char *  verkey,
+                                               const char *  alias,
+                                               const char *  role,
+
+                                               void           (*cb)(indy_handle_t xcommand_handle,
+                                                                    indy_error_t  err,
+                                                                    const char*   request_json)
+                                              );
 
     /// Builds an ATTRIB request.
     ///
@@ -138,16 +171,16 @@ extern "C" {
     /// Common*
 
     extern indy_error_t indy_build_attrib_request(indy_handle_t command_handle,
-                                                      const char *    submitter_did,
-                                                      const char *    target_did,
-                                                      const char *    hash,
-                                                      const char *    raw,
-                                                      const char *    enc,
-                                                   
-                                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                                           indy_error_t  err,
-                                                                           const char*     request_json)
-                                                      );
+                                                  const char *  submitter_did,
+                                                  const char *  target_did,
+                                                  const char *  hash,
+                                                  const char *  raw,
+                                                  const char *  enc,
+
+                                                  void           (*cb)(indy_handle_t xcommand_handle,
+                                                                       indy_error_t  err,
+                                                                       const char*   request_json)
+                                                  );
 
     /// Builds a GET_ATTRIB request.
     ///
@@ -165,14 +198,14 @@ extern "C" {
     /// Common*
     
     extern indy_error_t indy_build_get_attrib_request(indy_handle_t command_handle,
-                                                          const char *    submitter_did,
-                                                          const char *    target_did,
-                                                          const char *    data,
-                                                      
-                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                               indy_error_t  err,
-                                                                               const char*     request_json)
-                                                         );
+                                                      const char *  submitter_did,
+                                                      const char *  target_did,
+                                                      const char *  data,
+
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
+                                                                           const char*   request_json)
+                                                     );
 
     /// Builds a GET_NYM request.
     ///
@@ -189,13 +222,13 @@ extern "C" {
     /// Common*
 
     extern indy_error_t indy_build_get_nym_request(indy_handle_t command_handle,
-                                                       const char *    submitter_did,
-                                                       const char *    target_did,
-                                                      
-                                                       void           (*cb)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t  err,
-                                                                            const char*     request_json)
-                                                      );
+                                                   const char *  submitter_did,
+                                                   const char *  target_did,
+
+                                                   void           (*cb)(indy_handle_t xcommand_handle,
+                                                                        indy_error_t  err,
+                                                                        const char*   request_json)
+                                                  );
 
     /// Builds a SCHEMA request.
     ///
@@ -212,13 +245,13 @@ extern "C" {
     /// Common*
 
     extern indy_error_t indy_build_schema_request(indy_handle_t command_handle,
-                                                      const char *    submitter_did,
-                                                      const char *    data,
+                                                  const char *  submitter_did,
+                                                  const char *  data,
 
-                                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                                           indy_error_t  err,
-                                                                           const char*     request_json)
-                                                     );
+                                                  void           (*cb)(indy_handle_t xcommand_handle,
+                                                                       indy_error_t  err,
+                                                                       const char*   request_json)
+                                                 );
 
     /// Builds a GET_SCHEMA request.
     ///
@@ -236,14 +269,14 @@ extern "C" {
     /// Common*
     
     extern indy_error_t indy_build_get_schema_request(indy_handle_t command_handle,
-                                                          const char *    submitter_did,
-                                                          const char *    dest,
-                                                          const char *    data,
+                                                      const char *  submitter_did,
+                                                      const char *  dest,
+                                                      const char *  data,
 
-                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                               indy_error_t  err,
-                                                                               const char*     request_json)
-                                                         );
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
+                                                                           const char*   request_json)
+                                                     );
     
     /// Builds an CLAIM_DEF request.
     ///
@@ -262,15 +295,15 @@ extern "C" {
     /// Common*
     
     extern indy_error_t indy_build_claim_def_txn(indy_handle_t command_handle,
-                                                     const char *    submitter_did,
-                                                     const char *    xref,
-                                                     const char *    signature_type,
-                                                     const char *    data,
+                                                 const char *  submitter_did,
+                                                 const char *  xref,
+                                                 const char *  signature_type,
+                                                 const char *  data,
 
-                                                     void           (*cb)(indy_handle_t xcommand_handle,
-                                                                          indy_error_t  err,
-                                                                          const char*     request_json)
-                                                     );
+                                                 void           (*cb)(indy_handle_t xcommand_handle,
+                                                                      indy_error_t  err,
+                                                                      const char*   request_json)
+                                                 );
     
     /// Builds a GET_CLAIM_DEF request.
     ///
@@ -289,14 +322,14 @@ extern "C" {
     /// Common*
 
      extern indy_error_t indy_build_get_claim_def_txn(indy_handle_t command_handle,
-                                                          const char *    submitter_did,
-                                                          const char *    xref,
-                                                          const char *    signature_type,
-                                                          const char *    origin,
-                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                               indy_error_t  err,
-                                                                               const char*     request_json)
-                                                          );
+                                                      const char *  submitter_did,
+                                                      const char *  xref,
+                                                      const char *  signature_type,
+                                                      const char *  origin,
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
+                                                                           const char*   request_json)
+                                                      );
 
 
     /// Builds a NODE request.
@@ -315,22 +348,21 @@ extern "C" {
     /// Common*
     
     extern indy_error_t indy_build_node_request(indy_handle_t command_handle,
-                                                    const char *    submitter_did,
-                                                    const char *    target_did,
-                                                    const char *    data,
-                                                         
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*     request_json)
-                                                   );
+                                                const char *  submitter_did,
+                                                const char *  target_did,
+                                                const char *  data,
 
-    /// Builds a NODE request.
+                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                     indy_error_t  err,
+                                                                     const char*   request_json)
+                                               );
+
+    /// Builds a GET_TXN request.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
-    /// target_did: Id of Identity stored in secured Wallet.
-    /// data: id of a target NYM record
+    /// data: seq_no of transaction in ledger
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -340,12 +372,12 @@ extern "C" {
     /// Common*
 
     extern indy_error_t indy_build_get_txn_request(indy_handle_t command_handle,
-                                                    const char *    submitter_did,
-                                                    indy_i32_t    data,
+                                                   const char *  submitter_did,
+                                                   indy_i32_t    data,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*     request_json)
+                                                   void           (*cb)(indy_handle_t xcommand_handle,
+                                                                        indy_error_t  err,
+                                                                        const char*   request_json)
                                                    );
     
 #ifdef __cplusplus

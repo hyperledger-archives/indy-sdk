@@ -16,12 +16,10 @@ version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit
 [ -z $commit ] && exit 2
 [ -z $key ] && exit 3
 
-cd ci
-
 sed \
 	-e "s|@commit@|$commit|g" \
 	-e "s|@version@|$version.$commit|g" \
-	indy-sdk.spec.in >indy-sdk.spec
+	ci/indy-sdk.spec.in >indy-sdk.spec
 
 chown root.root indy-sdk.spec
 

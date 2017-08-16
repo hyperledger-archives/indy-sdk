@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class IndyIntegrationTest {
 
 	public static final String TRUSTEE_SEED = "000000000000000000000000Trustee1";
+	public static final String MY1_SEED = "00000000000000000000000000000My1";
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
@@ -29,18 +30,14 @@ public class IndyIntegrationTest {
 
 	private static Boolean isWalletRegistered = false;
 
-	@BeforeClass
-	public static void registerWallet() throws IndyException, InterruptedException, ExecutionException {
+	@Before
+	public void setUp() throws IOException, InterruptedException, ExecutionException, IndyException {
+		InitHelper.init();
+		StorageUtils.cleanupStorage();
 		if (!isWalletRegistered){
 			Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance()).get();
 		}
 		isWalletRegistered = true;
-	}
-
-	@Before
-	public void setUp() throws IOException {
-		InitHelper.init();
-		StorageUtils.cleanupStorage();
 	}
 
 	protected HashSet<Pool> openedPools = new HashSet<>();
@@ -49,8 +46,8 @@ public class IndyIntegrationTest {
 	public void tearDown() throws IOException {
 		openedPools.forEach(pool -> {
 			try {
-				pool.closePoolLedger();
-			} catch (IndyException ignore) {
+				pool.closePoolLedger().get();
+			} catch (IndyException | InterruptedException | ExecutionException ignore) {
 			}
 		});
 		openedPools.clear();

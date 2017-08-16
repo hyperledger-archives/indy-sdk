@@ -65,9 +65,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
+        [Ignore] //Not a valid test since the wallet type is registered on init!
         public void TestRegisterWalletTypeWorks()
         {
-            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType(), false).Wait();
+            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType()).Wait();
         }
 
         [TestMethod]
@@ -75,10 +76,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             var type = "inmem";
 
-            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
-
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                   Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), true)
+                   Wallet.RegisterWalletTypeAsync(type, new InMemWalletType())
                 );
 
             Assert.AreEqual(ErrorCode.WalletTypeAlreadyRegisteredError, ex.ErrorCode);
