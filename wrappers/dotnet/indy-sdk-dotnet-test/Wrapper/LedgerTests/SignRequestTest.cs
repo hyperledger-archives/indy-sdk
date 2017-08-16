@@ -28,7 +28,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestCleanup]
         public async Task DeleteWallet()
         {
-            await _wallet.CloseAsync();
+            if(_wallet != null)
+                await _wallet.CloseAsync();
+
             await Wallet.DeleteWalletAsync(_walletName, null);
         }
 

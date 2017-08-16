@@ -38,9 +38,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestCleanup]
         public void DeleteWallet()
         {
-            _wallet.CloseAsync().Wait();
+            if(_pool != null)
+                _pool.CloseAsync().Wait();
+
+            if (_wallet != null)
+                _wallet.CloseAsync().Wait();
+
             Wallet.DeleteWalletAsync(walletName, null).Wait();
-            _pool.CloseAsync().Wait();
+           
         }
 
         private void CreateNewNymWithDidInLedger()

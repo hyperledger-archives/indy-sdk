@@ -26,11 +26,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestCleanup]
         public void ClosePool()
         {
-            _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            if (_pool != null)
+                _pool.CloseAsync().Wait();
 
+            if (_wallet != null)
+                _wallet.CloseAsync().Wait();
 
-            _pool.CloseAsync().Wait();
+            Wallet.DeleteWalletAsync(_walletName, null).Wait();;
         }
 
         [TestMethod]
