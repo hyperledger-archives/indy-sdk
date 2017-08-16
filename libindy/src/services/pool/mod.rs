@@ -912,7 +912,7 @@ mod tests {
         let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 4, "test restored MT size");
-        assert_eq!(merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
+        assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
     }
 
     #[test]
@@ -920,7 +920,7 @@ mod tests {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
         let mut merkle_tree: MerkleTree = MerkleTree::from_vec(Vec::new()).unwrap();
-        merkle_tree.append(gt.to_json().unwrap()).unwrap();
+        merkle_tree.append(gt.to_msg_pack().unwrap()).unwrap();
 
         pw.connect_to_known_nodes(Some(&merkle_tree)).unwrap();
 
@@ -1046,7 +1046,7 @@ mod tests {
     fn catchup_handler_start_catchup_works() {
         let mut ch: CatchupHandler = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
+        ch.merkle_tree.append(gt.to_msg_pack().unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);
