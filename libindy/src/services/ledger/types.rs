@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use services::anoncreds::types::{PublicKey, RevocationPublicKey};
 use utils::json::{JsonEncodable, JsonDecodable};
 use services::ledger::constants::{
@@ -144,11 +146,11 @@ impl JsonEncodable for GetAttribOperation {}
 pub struct SchemaOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: String
+    pub data: SchemaOperationData,
 }
 
 impl SchemaOperation {
-    pub fn new(data: String) -> SchemaOperation {
+    pub fn new(data: SchemaOperationData) -> SchemaOperation {
         SchemaOperation {
             data: data,
             _type: SCHEMA.to_string()
@@ -162,7 +164,7 @@ impl JsonEncodable for SchemaOperation {}
 pub struct SchemaOperationData {
     name: String,
     version: String,
-    keys: Vec<String>
+    attr_names: Vec<String>
 }
 
 impl SchemaOperationData {
@@ -170,7 +172,7 @@ impl SchemaOperationData {
         SchemaOperationData {
             name: name,
             version: version,
-            keys: keys
+            attr_names: keys
         }
     }
 }
@@ -234,14 +236,14 @@ impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
 pub struct ClaimDefOperation {
     #[serde(rename = "ref")]
     pub _ref: i32,
-    pub data: String,
+    pub data: ClaimDefOperationData,
     #[serde(rename = "type")]
     pub _type: String,
     pub signature_type: String
 }
 
 impl ClaimDefOperation {
-    pub fn new(_ref: i32, signature_type: String, data: String) -> ClaimDefOperation {
+    pub fn new(_ref: i32, signature_type: String, data: ClaimDefOperationData) -> ClaimDefOperation {
         ClaimDefOperation {
             _ref: _ref,
             signature_type: signature_type,
@@ -256,6 +258,7 @@ impl JsonEncodable for ClaimDefOperation {}
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
     pub primary: PublicKey,
+    #[serde(serialize_with = "empty_map_instead_of_null")] //FIXME
     pub revocation: Option<RevocationPublicKey>
 }
 
@@ -268,6 +271,19 @@ impl ClaimDefOperationData {
     }
 }
 
+//FIXME workaround for ledger: serialize required dictionary as empty instead of using null
+extern crate serde;
+use self::serde::Serializer;
+use self::serde::ser::SerializeMap;
+fn empty_map_instead_of_null<S>(x: &Option<RevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
+    where S: Serializer {
+    if let &Some(ref x) = x {
+        s.serialize_some(&x)
+    } else {
+        s.serialize_map(None)?.end()
+    }
+}
+//FIXME
 
 impl JsonEncodable for ClaimDefOperationData {}
 
