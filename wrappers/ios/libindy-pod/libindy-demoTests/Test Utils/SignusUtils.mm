@@ -26,24 +26,24 @@
 }
 - (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                          theirDid:(NSString *)theirDid
-                          message:(NSString *)message
-                     outSignature:(NSString **)signature
+                          message:(NSData *)message
+                     outSignature:(NSData **)signature
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    __block NSString *signSignature = nil;
     NSError *ret;
 
-    
+
     ret = [IndySignus signWithWalletHandle:walletHandle
-                                         did:theirDid
-                                         msg:message
-                                  completion:^(NSError *error, NSString *blockSignature)
-    {
-        err = error;
-        signSignature = blockSignature;
-        [completionExpectation fulfill];
-    }];
+                                       did:theirDid
+                                   message:message
+                                completion:^(NSError *error, NSData *blockSignature)
+           {
+               err = error;
+               if (signature) { *signature = blockSignature; }
+               [completionExpectation fulfill];
+           }];
+
     
     if( ret.code != Success)
     {
@@ -51,8 +51,6 @@
     }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
-    if (signature) { *signature = signSignature; }
     
     return err;
 }
@@ -239,24 +237,25 @@
 - (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
                          poolHandle:(IndyHandle)poolHandle
                                 did:(NSString *)did
-                          signature:(NSString *)signature
+                            message:(NSData *)message
+                          signature:(NSData *)signature
                         outVerified:(BOOL *)verified
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    __block BOOL outVerified;
     NSError *ret;
     
     ret = [IndySignus verifySignatureWithWalletHandle:walletHandle
-                                             poolHandle:poolHandle
-                                                    did:did
-                                              signature:signature
-                                             completion:^(NSError *error, BOOL valid)
-    {
-        err = error;
-        outVerified = valid;
-        [completionExpectation fulfill];
-    }];
+                                           poolHandle:poolHandle
+                                                  did:did
+                                              message:message
+                                            signature:signature
+                                           completion:^(NSError *error, BOOL valid)
+                                                {
+                                                   err = error;
+                                                    if (verified) { *verified = valid; }
+                                                   [completionExpectation fulfill];
+                                               }];
     
     if( ret.code != Success)
     {
@@ -264,8 +263,6 @@
     }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    if (verified) { *verified = outVerified; }
     
     return err;
 }

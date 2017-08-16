@@ -16,8 +16,8 @@
 
 - (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                          theirDid:(NSString *)theirDid
-                          message:(NSString *)message
-                     outSignature:(NSString **)signature;
+                          message:(NSData *)message
+                     outSignature:(NSData **)signature;
 
 - (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
@@ -49,6 +49,7 @@
 - (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
                          poolHandle:(IndyHandle)poolHandle
                                 did:(NSString *)did
-                          signature:(NSString *)signature
+                            message:(NSData *)message
+                          signature:(NSData *)signature
                         outVerified:(BOOL *)verified;
 @end
