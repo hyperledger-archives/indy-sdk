@@ -73,7 +73,7 @@
         /// </summary>
         /// <param name="encryptedMsg">The encrypted message.</param>
         /// <param name="nonce">The nonce.</param>
-        internal EncryptResult(string encryptedMsg, string nonce)
+        internal EncryptResult(byte[] encryptedMsg, byte[] nonce)
         {
             EncryptedMsg = encryptedMsg;
             Nonce = nonce;
@@ -82,12 +82,12 @@
         /// <summary>
         /// Gets the encrypted message.
         /// </summary>
-        public string EncryptedMsg { get; }
+        public byte[] EncryptedMsg { get; }
 
         /// <summary>
         /// Gets the nonce.
         /// </summary>
-        public string Nonce { get; }
+        public byte[] Nonce { get; }
 
     }
 }

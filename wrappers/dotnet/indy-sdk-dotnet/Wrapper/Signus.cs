@@ -72,14 +72,20 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptResultDelegate _encryptCallback = (xCommandHandle, err, encryptedMsg, nonce) =>
+        private static EncryptResultDelegate _encryptCallback = (xCommandHandle, err, encrypted_msg_raw, encrypted_msg_len, nonce, nonce_len) =>
         {
             var taskCompletionSource = RemoveTaskCompletionSource<EncryptResult>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new EncryptResult(encryptedMsg, nonce);
+            var encryptedMessageBytes = new byte[encrypted_msg_len];
+            Marshal.Copy(encrypted_msg_raw, encryptedMessageBytes, 0, encrypted_msg_len);
+
+            var nonceBytes = new byte[nonce_len];
+            Marshal.Copy(nonce, nonceBytes, 0, nonce_len);
+
+            var callbackResult = new EncryptResult(encryptedMessageBytes, nonceBytes);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -87,14 +93,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
-        private static DecryptResultDelegate _decryptCallback = (xCommandHandle, err, decryptedMsg) =>
+        private static DecryptResultDelegate _decryptCallback = (xCommandHandle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(decryptedMsg);
+            var decryptedMsgBytes = new byte[decrypted_msg_len];
+            Marshal.Copy(decrypted_msg_raw, decryptedMsgBytes, 0, decrypted_msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
         };
 
         
@@ -233,7 +242,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="did">The did to encrypt for.</param>
         /// <param name="msg">The message to encrypt.</param>
         /// <returns>An asynchronous task that returns an EncryptResult.</returns>
-        public static Task<EncryptResult> EncryptAsync(Wallet wallet, Pool pool, string my_did, string did, string msg)
+        public static Task<EncryptResult> EncryptAsync(Wallet wallet, Pool pool, string my_did, string did, byte[] msg)
         {
             var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -245,6 +254,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 my_did,
                 did,
                 msg,
+                msg.Length,
                 _encryptCallback);
 
             CheckResult(commandResult);
@@ -261,9 +271,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="encryptedMsg">The message to decrypt.</param>
         /// <param name="nonce">The nonce.</param>
         /// <returns>An asynchronous task that returns the decrypted message.</returns>
-        public static Task<string> DecryptAsync(Wallet wallet, string my_did, string did, string encryptedMsg, string nonce)
+        public static Task<byte[]> DecryptAsync(Wallet wallet, string my_did, string did, byte[] encryptedMsg, byte[] nonce)
         {
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_decrypt(
@@ -272,7 +282,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 my_did,
                 did,
                 encryptedMsg,
+                encryptedMsg.Length,
                 nonce,
+                nonce.Length,
                 _decryptCallback
                 );
 

@@ -552,20 +552,23 @@ namespace Indy.Sdk.Dotnet
         /// <param name="pool_handle"></param>
         /// <param name="my_did">encrypting DID</param>
         /// <param name="did">encrypting DID (??)</param>
-        /// <param name="msg">encrypting DID</param>
+        /// <param name="msg_raw">The message to encrypt.</param>
+        /// <param name="msg_len">The length of the message byte array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, string msg, EncryptResultDelegate cb);
+        internal static extern int indy_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, byte[] msg_raw, int msg_len, EncryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_encrypt function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="encrypted_msg">The encrypted message.</param>
-        /// <param name="nonce">The nonce</param>
-        internal delegate void EncryptResultDelegate(int command_handle, int err, string encrypted_msg, string nonce);
+        /// <param name="encrypted_msg_raw">The encrypted message as an array of bytes.</param>
+        /// <param name="encrypted_msg_len">The length of the encrypted message byte array.</param>
+        /// <param name="nonce_raw">The nonce as an array of bytes.</param>
+        /// <param name="nonce_len">The length of the nonce byte array.</param>
+        internal delegate void EncryptResultDelegate(int command_handle, int err, IntPtr encrypted_msg_raw, int encrypted_msg_len, IntPtr nonce_raw, int nonce_len);
 
         /// <summary>
         /// Decrypts a message encrypted by a public key associated with my DID.
@@ -574,20 +577,23 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="my_did">DID</param>
         /// <param name="did">DID that signed the message</param>
-        /// <param name="encrypted_msg">encrypted message</param>
-        /// <param name="nonce">nonce that encrypted message</param>
+        /// <param name="encrypted_msg_raw">encrypted message as a byte array.</param>
+        /// <param name="encrypted_msg_len">The length of the message byte array.</param>
+        /// <param name="nonce_raw">nonce that encrypted message as a byte array.</param>
+        /// <param name="nonce_len">The length of the nonce byte array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, string encrypted_msg, string nonce, DecryptResultDelegate cb);
+        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_decrypt function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="decrypted_msg">The decrypted message.</param>
-        internal delegate void DecryptResultDelegate(int command_handle, int err, string decrypted_msg);
+        /// <param name="decrypted_msg_raw">The decrypted message as an array of bytes.</param>
+        /// <param name="decrypted_msg_len">The length of the decrypted message byte array.</param>
+        internal delegate void DecryptResultDelegate(int command_handle, int err, IntPtr decrypted_msg_raw, int decrypted_msg_len);
 
         // anoncreds.rs
 
