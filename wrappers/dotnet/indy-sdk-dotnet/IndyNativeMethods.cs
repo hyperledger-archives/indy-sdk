@@ -504,19 +504,21 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="did">signing DID</param>
-        /// <param name="msg">a message to be signed</param>
+        /// <param name="msg_raw">The message to be signed.</param>
+        /// <param name="msg_len">The length of the message array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_sign(int command_handle, IntPtr wallet_handle, string did, string msg, SignResultDelegate cb);
+        internal static extern int indy_sign(int command_handle, IntPtr wallet_handle, string did, byte[] msg_raw, int msg_len, SignResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_sign function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="signature">a signature string</param>
-        internal delegate void SignResultDelegate(int command_handle, int err, string signature);
+        /// <param name="signature_raw">The raw signature bytes.</param>
+        /// <param name="signature_len">The length of the signature byte array.</param>
+        internal delegate void SignResultDelegate(int command_handle, int err, IntPtr signature_raw, int signature_len);
 
         /// <summary>
         /// Verify a signature created by a key associated with a DID.
@@ -525,12 +527,14 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="pool_handle">pool handle.</param>
         /// <param name="did">DID that signed the message</param>
-        /// <param name="msg">The message</param>
-        /// <param name="signature">The signature.</param>
+        /// <param name="msg_raw">The message</param>
+        /// <param name="msg_len">The length of the message array.</param>
+        /// <param name="signature_raw">The signature.</param>
+        /// <param name="signature_len">The length of the signature array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, string msg, string signature, VerifySignatureResultDelegate cb);
+        internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, byte[] msg_raw, int msg_len, byte[] signature_raw, int signature_len, VerifySignatureResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_verify_signature function.

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
@@ -41,14 +42,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for SignAsync has completed.
         /// </summary>
-        private static SignResultDelegate _signCallback = (xCommandHandle, err, signature) =>
+        private static SignResultDelegate _signCallback = (xCommandHandle, err, signature_raw, signature_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(signature);
+            var bytes = new byte[signature_len];
+            Marshal.Copy(signature_raw, bytes, 0, signature_len);
+
+            taskCompletionSource.SetResult(bytes);
         };
 
 
@@ -169,9 +173,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="did">The did to sign with.</param>
         /// <param name="msg">The message to sign.</param>
         /// <returns>An asynchronous task that returns the signed message.</returns>
-        public static Task<string> SignAsync(Wallet wallet, string did, string msg)
+        public static Task<byte[]> SignAsync(Wallet wallet, string did, byte[] msg)
         {
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_sign(
@@ -179,6 +183,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 wallet.Handle,
                 did,
                 msg,
+                msg.Length,
                 _signCallback
                 );
 
@@ -197,7 +202,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="msg">The message to verify.</param>
         /// <param name="signature">The signature to verify.</param>
         /// <returns>An asynchronous task that returns true if the message is valid, otherwise false.</returns>
-        public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, string msg, string signature)
+        public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, byte[] msg, byte[]signature)
         {
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -208,7 +213,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 pool.Handle,
                 did,
                 msg,
+                msg.Length,
                 signature,
+                signature.Length,
                 _verifySignatureCallback
                 );
 
