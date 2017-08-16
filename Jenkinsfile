@@ -30,11 +30,12 @@ def publishing() {
         }
 
         parallel([
-            'liblindy-to-cargo': { publishingLibindyToCargo() },
-            'libindy-rpm-files': { publishingLibindyRpmFiles() },
-            'libindy-deb-files': { publishingLibindyDebFiles() },
-            'python-wrapper-deb-files': { publishingPythonWrapperDebFiles() },
-            'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
+                'liblindy-to-cargo'       : { publishingLibindyToCargo() },
+                'libindy-rpm-files'       : { publishingLibindyRpmFiles() },
+                'libindy-deb-files'       : { publishingLibindyDebFiles() },
+                'libindy-win-files'       : { publishingLibindyWinFiles() },
+                'python-wrapper-deb-files': { publishingPythonWrapperDebFiles() },
+                'python-wrapper-to-pipy'  : { publishingPythonWrapperToPipy() }
         ])
     }
 }
@@ -80,6 +81,11 @@ def closePool(env_name, network_name, poolInst) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
     try {
+        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
+    } catch (error) {
+        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+    }
+    try {
         echo "${env_name} Test: remove pool network ${network_name}"
         sh "docker network rm ${network_name}"
     } catch (error) {
@@ -105,14 +111,17 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
                 sh 'chmod -R 777 /home/indy/'
-                sh 'cargo update'
 
                 try {
+                    def features_args = ""
                     if (run_interoperability_tests) {
-                        sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "interoperability_tests"'
-                    } else {
-                        sh 'RUST_BACKTRACE=1 RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+                        features_args = '--features "interoperability_tests"'
                     }
+                    echo "${env_name} Test: Build"
+                    sh "RUST_BACKTRACE=1 cargo test $features_args --no-run"
+
+                    echo "${env_name} Test: Run tests"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $features_args"
                     /* TODO FIXME restore after xunit will be fixed
                     sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                     */
@@ -156,7 +165,6 @@ def libindyWindowsTesting() {
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                             "RUST_BACKTRACE=1"
                     ]) {
-                        bat "cargo update"
                         bat "cargo test --no-run"
                     }
 
@@ -258,7 +266,7 @@ def pythonWrapperUbuntuTesting() {
 
                         sh '''
                             python3.6 -m pip install -e .
-                            TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
+                            RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
                         '''
                     }
                 }
@@ -374,70 +382,110 @@ def publishingLibindyDebFiles() {
     }
 }
 
+def publishingLibindyWinFiles() {
+    node('win2016') {
+        stage('Publish Libindy Windows Files') {
+            try {
+                echo 'Publish Windows files: Checkout csm'
+                checkout scm
+
+                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+                dir('libindy') {
+                    echo "Publish Windows files: Download prebuilt dependencies"
+                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
+                    bat 'unzip prebuilt.zip -d prebuilt'
+
+                    echo "Publish Windows files: Build"
+                    withEnv([
+                            "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                            "RUST_BACKTRACE=1"
+                    ]) {
+                        bat "cargo build --release"
+                    }
+                }
+
+                withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                    sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BUILD_NUMBER"
+                }
+            }
+            finally {
+                echo 'Publish Windows files: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
 def publishingPythonWrapperDebFiles() {
-   node('ubuntu') {
-       stage('Publish Python Wrapper DEB Files') {
-           try {
-               echo 'Publish Python Wrapper Deb files: Checkout csm'
-               checkout scm
+    node('ubuntu') {
+        stage('Publish Python Wrapper DEB Files') {
+            try {
+                echo 'Publish Python Wrapper Deb files: Checkout csm'
+                checkout scm
 
-               sh "cp -r ci wrappers/python"
+                sh "cp -r ci wrappers/python"
 
-               dir('wrappers/python'){
+                dir('wrappers/python') {
 
-                   echo 'Publish Python Wrapper Deb: Build docker image'
-                   def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+                    echo 'Publish Python Wrapper Deb: Build docker image'
+                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                   testEnv.inside('-u 0:0') {
-                       sh 'chmod -R 777 ci'
+                    testEnv.inside('-u 0:0') {
+                        sh 'chmod -R 777 ci'
 
-                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+                        sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
 
-                       withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                           sh "./ci/python-wrapper-deb-build-and-upload.sh $evernym_repo_key"
-                       }
-                   }
-               }
-           }
-           finally {
-               echo 'Publish Python Wrapper Deb: Cleanup'
-               step([$class: 'WsCleanup'])
-           }
-       }
-   }
+                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                            sh "./ci/python-wrapper-deb-build-and-upload.sh $evernym_repo_key"
+                        }
+                    }
+                }
+            }
+            finally {
+                echo 'Publish Python Wrapper Deb: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
 }
 
 def publishingPythonWrapperToPipy() {
-   node('ubuntu') {
-       stage('Publish Python Wrapper To Pipy') {
-           try {
-               echo 'Publish Deb files: Checkout csm'
-               checkout scm
+    node('ubuntu') {
+        stage('Publish Python Wrapper To Pipy') {
+            try {
+                echo 'Publish Deb files: Checkout csm'
+                checkout scm
 
-               echo 'Publish Deb: Build docker image'
-               def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+                echo 'Publish Deb: Build docker image'
+                def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-               testEnv.inside('-u 0:0') {
+                testEnv.inside('-u 0:0') {
 
-                   withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
-                       sh 'cp $credentialsFile ./wrappers/python/'
-                       sh "cp -r ci wrappers/python"
+                    withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
+                        sh 'cp $credentialsFile ./wrappers/python/'
+                        sh "cp -r ci wrappers/python"
 
-                       sh "chmod -R 777 ci"
-                       sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+                        sh "chmod -R 777 ci"
+                        sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
 
-                       sh '''
+                        sh '''
                            cd wrappers/python
                            python3.6 setup.py sdist
                            python3.6 -m twine upload dist/* --config-file .pypirc
                        '''
-                   }
-               }
-           }
-           finally {
-               echo 'Publish Deb: Cleanup'
-               step([$class: 'WsCleanup'])
-           }
-       }
-   }
+                    }
+                }
+            }
+            finally {
+                echo 'Publish Deb: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
 }

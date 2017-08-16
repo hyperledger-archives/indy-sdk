@@ -58,10 +58,10 @@ public abstract class LibIndy {
 		public int indy_create_and_store_my_did(int command_handle, int wallet_handle, String did_json, Callback cb);
 		public int indy_replace_keys(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
-		public int indy_sign(int command_handle, int wallet_handle, String did, String msg, Callback cb);
-		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, String msg, String signature, Callback cb);
-		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, String msg, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, String encrypted_msg, String nonce, Callback cb);
+		public int indy_sign(int command_handle, int wallet_handle, String did, byte[] msg, int msg_len, Callback cb);
+		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, byte[] msg, int msg_len, byte[] signature, int signature_len, Callback cb);
+		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, byte[] msg, int msg_len, Callback cb);
+		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, byte[] encrypted_msg, int encrypted_msg_len, byte[] nonce, int nonce_len, Callback cb);
 
 		// anoncreds.rs
 

@@ -1049,16 +1049,20 @@ fn signus_demo_works() {
             "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
         }
     }"#;
+
+    let message_ptr = message.as_ptr() as *const u8;
+    let message_len = message.len() as u32;
+
     let err =
         indy_sign(sign_command_handle,
                   their_wallet_handle,
                   CString::new(their_did.clone()).unwrap().as_ptr(),
-                  CString::new(message.clone()).unwrap().as_ptr(),
+                  message_ptr,
+                  message_len,
                   sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("signature {:?}", signature);
     assert_eq!(ErrorCode::Success, err);
 
     // 9. I Verify message
@@ -1067,8 +1071,10 @@ fn signus_demo_works() {
                               my_wallet_handle,
                               1,
                               CString::new(their_did).unwrap().as_ptr(),
-                              CString::new(message).unwrap().as_ptr(),
-                              CString::new(signature).unwrap().as_ptr(),
+                              message_ptr,
+                              message_len,
+                              signature.as_ptr() as *const u8,
+                              signature.len() as u32,
                               verify_callback);
 
     assert_eq!(ErrorCode::Success, err);
