@@ -26,7 +26,7 @@ public class EncryptTest extends IndyIntegrationTest {
 	private String did;
 	private String verkey;
 	private String walletName = "signusWallet";
-	private String msg = "{\"reqId\":1496822211362017764}";
+	private byte[] msg = "{\"reqId\":1496822211362017764}".getBytes();
 
 	@Before
 	public void before() throws Exception {
