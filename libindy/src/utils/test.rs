@@ -25,6 +25,7 @@ impl TestUtils {
     }
 }
 
+#[cfg(test)]
 macro_rules! assert_match {
     ($pattern:pat, $var:expr) => (
         assert!(match $var {
