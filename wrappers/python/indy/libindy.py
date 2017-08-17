@@ -34,11 +34,16 @@ def do_call(name: str, *args):
     return future
 
 
-def create_cb(cb_type: CFUNCTYPE):
+def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     logger = logging.getLogger(__name__)
     logger.debug("create_cb: >>> cb_type: %s", cb_type)
 
-    res = cb_type(_indy_callback)
+    def _cb(command_handle: int, err: int, *args):
+        if transform_fn:
+            args = transform_fn(*args)
+        _indy_callback(command_handle, err, *args)
+
+    res = cb_type(_cb)
 
     logger.debug("create_cb: <<< res: %s", res)
     return res
