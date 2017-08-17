@@ -56,7 +56,6 @@
     <Compile Include="Wrapper\AnonCredsResults.cs" />
     <Compile Include="Wrapper\AnonCreds.cs" />
     <Compile Include="ErrorCode.cs" />
-    <Compile Include="IndyConstants.cs" />
     <Compile Include="IndyException.cs" />
     <Compile Include="Wrapper\AsyncWrapperBase.cs" />
     <Compile Include="Wrapper\Ledger.cs" />
