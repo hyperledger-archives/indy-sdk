@@ -22,13 +22,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestCleanup]
         public void DeleteWallet()
         {
-            try
-            {
+            if(_wallet != null)
                 _wallet.CloseAsync().Wait();
+
                 Wallet.DeleteWalletAsync(_walletName, null).Wait();
-            }
-            catch (Exception)
-            { }
         }
 
        

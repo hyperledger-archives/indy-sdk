@@ -34,13 +34,18 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
         [TestCleanup]
         public void DeleteWallet()
         {
-            _issuerWallet.CloseAsync().Wait();
+            if(_issuerWallet != null)
+                _issuerWallet.CloseAsync().Wait();
+
             Wallet.DeleteWalletAsync("issuerWallet", null).Wait();
 
-            _proverWallet.CloseAsync().Wait();
+            if(_proverWallet != null)
+                _proverWallet.CloseAsync().Wait();
+
             Wallet.DeleteWalletAsync("proverWallet", null).Wait();
 
-            _pool.CloseAsync().Wait();
+            if(_pool != null)
+                _pool.CloseAsync().Wait();
         }
 
 
