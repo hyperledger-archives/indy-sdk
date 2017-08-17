@@ -11,13 +11,11 @@ Pull requests welcome!
 
 ### How to build
 
-- Clone indy-sdk repo from https://github.com/hyperledger/indy-sdk
+- Install native "indy" library:
+	Ubuntu:  https://repo.evernym.com/rpm/indy-sdk/ 
+	Windows: https://repo.evernym.com/deb/windows-bins/indy-sdk/
 
-- Build the native "indy" library:
-```
-	cargo build
-```
-- Then copy the resulting `libindy.so` to `/usr/lib/`.
+- Clone indy-sdk repo from https://github.com/hyperledger/indy-sdk
 
 - Move to python wrapper directory 
 ```
@@ -25,7 +23,7 @@ Pull requests welcome!
 ```
 - Create virtual env if you want
 
-- install dependencies with pip install
+- Install dependencies with pip install
 
 Then run
 
