@@ -362,14 +362,14 @@
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[SignusUtils pool]
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
     
     // 2. create my did
     NSString *myDid;
-    NSString *myDidJson = [NSString stringWithFormat:@"{\"seed\":\"%@\"}",[SignusUtils mySeed]];
+    NSString *myDidJson = [NSString stringWithFormat:@"{\"seed\":\"%@\"}",[TestUtils mySeed]];
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
@@ -382,9 +382,9 @@
     NSData *signature;
     ret = [[SignusUtils sharedInstance] signWithWalletHandle:walletHandle
                                                     theirDid:myDid
-                                                     message:[SignusUtils message]
+                                                     message:[TestUtils message]
                                                 outSignature:&signature];
-    XCTAssertTrue([signature isEqualToData:[SignusUtils signature]], @"SignusUtils::signWithWalletHandle() failed. Signature is not verified");
+    XCTAssertTrue([signature isEqualToData:[TestUtils signature]], @"SignusUtils::signWithWalletHandle() failed. Signature is not verified");
     
     [TestUtils cleanupStorage];
 }
@@ -396,7 +396,7 @@
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[SignusUtils pool]
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
@@ -404,7 +404,7 @@
     NSData *signature;
     ret = [[SignusUtils sharedInstance] signWithWalletHandle:walletHandle
                                                     theirDid:@"did"
-                                                     message:[SignusUtils message]
+                                                     message:[TestUtils message]
                                                 outSignature:&signature];
     XCTAssertEqual(ret.code, WalletNotFoundError, @"SignusUtils::signWithWalletHandle() returned wrong error");
     
@@ -418,7 +418,7 @@
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[SignusUtils pool]
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
@@ -437,7 +437,7 @@
     IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[SignusUtils sharedInstance] signWithWalletHandle:invalidWalletHandle
                                                     theirDid:myDid
-                                                     message:[SignusUtils message]
+                                                     message:[TestUtils message]
                                                 outSignature:&signature];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils::signWithWalletHandle() returned wrong code");
     
@@ -452,7 +452,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -473,7 +473,7 @@
     NSString *did;
     NSString *verKey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verKey
                                                                     outMyPk:nil];
@@ -492,8 +492,8 @@
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:walletHandle
                                                     poolHandle:poolHandle
                                                            did:did
-                                                       message:[SignusUtils message]
-                                                     signature:[SignusUtils signature]
+                                                       message:[TestUtils message]
+                                                     signature:[TestUtils signature]
                                                    outVerified:&verified];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::verifyWithWalletHandle() failed");
     XCTAssertTrue(verified, @"verifying failed");
@@ -508,7 +508,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -528,7 +528,7 @@
     // 3. trustee did
     NSString *trusteeDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -539,7 +539,7 @@
     NSString *myDid;
     NSString *myVerKey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:&myVerKey
                                                                     outMyPk:nil];
@@ -576,8 +576,8 @@
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:walletHandle
                                                     poolHandle:poolHandle
                                                            did:myDid
-                                                       message:[SignusUtils message]
-                                                     signature:[SignusUtils signature]
+                                                       message:[TestUtils message]
+                                                     signature:[TestUtils signature]
                                                    outVerified:&verified];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::verifyWithWalletHandle() failed");
     XCTAssertTrue(verified, @"verifying failed");
@@ -592,7 +592,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     NSString *walletName = @"wallet1";
     
     // 1. Create and open pool ledger config, get pool handle
@@ -620,7 +620,7 @@
     // 4. trustee did
     NSString *trusteeDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -631,7 +631,7 @@
     NSString *myDid;
     NSString *myVerKey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:&myVerKey
                                                                     outMyPk:nil];
@@ -668,8 +668,8 @@
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:walletHandle
                                                     poolHandle:poolHandle
                                                            did:myDid
-                                                       message:[SignusUtils message]
-                                                     signature:[SignusUtils signature]
+                                                       message:[TestUtils message]
+                                                     signature:[TestUtils signature]
                                                    outVerified:&verified];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::verifyWithWalletHandle() failed");
     XCTAssertTrue(verified, @"verifying failed");
@@ -685,7 +685,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -709,8 +709,8 @@
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:invalidWalletHandle
                                                     poolHandle:poolHandle
                                                            did:@"did"
-                                                       message:[SignusUtils message]
-                                                     signature:[SignusUtils signature]
+                                                       message:[TestUtils message]
+                                                     signature:[TestUtils signature]
                                                    outVerified:&verified];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils::verifyWithWalletHandle() failed");
     
@@ -724,7 +724,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -747,8 +747,8 @@
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:walletHandle
                                                     poolHandle:invalidPoolHandle
                                                            did:@"did"
-                                                       message:[SignusUtils message]
-                                                     signature:[SignusUtils signature]
+                                                       message:[TestUtils message]
+                                                     signature:[TestUtils signature]
                                                    outVerified:&verified];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"SignusUtils::verifyWithWalletHandle() failed");
     
@@ -762,7 +762,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -782,7 +782,7 @@
     // 3. my did
     NSString *did;
     NSString *verKey;
-    NSString *didJson = [NSString stringWithFormat:@"{\"seed\":\"%@\"}", [SignusUtils trusteeSeed]];
+    NSString *didJson = [NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils trusteeSeed]];
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:didJson
                                                            outMyDid:&did
@@ -818,7 +818,7 @@
     NSData *signature;
     ret = [[SignusUtils sharedInstance] signWithWalletHandle:walletHandle
                                                     theirDid:did
-                                                     message:[SignusUtils message]
+                                                     message:[TestUtils message]
                                                 outSignature:&signature];
     
     // 8. verify
@@ -827,7 +827,7 @@
     ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:walletHandle
                                                     poolHandle:poolHandle
                                                            did:otherDid
-                                                       message:[SignusUtils message]
+                                                       message:[TestUtils message]
                                                      signature:signature
                                                    outVerified:&isValid];
     XCTAssertTrue(isValid, @"SignusUtils::verifyWithWalletHandle failed. Signature is not valid");
@@ -844,7 +844,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -864,7 +864,7 @@
     // 3. my did
     NSString *myDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -876,7 +876,7 @@
     NSString *theirDid;
     NSString *theirVerkey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey
                                                                     outMyPk:nil];
@@ -895,7 +895,7 @@
                                                      poolHandle:poolHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::encryptWithWalletHandle() failed");
@@ -910,7 +910,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -930,7 +930,7 @@
     // 3. trustee did
     NSString *trusteeDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -977,7 +977,7 @@
                                                      poolHandle:poolHandle
                                                           myDid:trusteeDid
                                                             did:theirDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::encryptWithWalletHandle() failed");
@@ -993,7 +993,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -1013,7 +1013,7 @@
     // 3. trustee did
     NSString *trusteeDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1060,7 +1060,7 @@
                                                      poolHandle:poolHandle
                                                           myDid:trusteeDid
                                                             did:theirDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::encryptWithWalletHandle() failed");
@@ -1076,7 +1076,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     NSString *walletName = @"wallet1";
     
     // 1. Create and open pool ledger config, get pool handle
@@ -1104,7 +1104,7 @@
     // 4. trustee did
     NSString *trusteeDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1151,7 +1151,7 @@
                                                      poolHandle:poolHandle
                                                           myDid:trusteeDid
                                                             did:theirDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::encryptWithWalletHandle() failed");
@@ -1168,7 +1168,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -1188,7 +1188,7 @@
     // 3. my did
     NSString *myDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1200,7 +1200,7 @@
     NSString *theirDid;
     NSString *theirVerkey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey
                                                                     outMyPk:nil];
@@ -1220,7 +1220,7 @@
                                                      poolHandle:poolHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils::encryptWithWalletHandle() returned wrong code");
@@ -1236,7 +1236,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -1256,7 +1256,7 @@
     // 3. my did
     NSString *myDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1268,7 +1268,7 @@
     NSString *theirDid;
     NSString *theirVerkey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey
                                                                     outMyPk:nil];
@@ -1288,7 +1288,7 @@
                                                      poolHandle:invalidPoolHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"SignusUtils::encryptWithWalletHandle() returned wrong code");
@@ -1307,7 +1307,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -1319,7 +1319,7 @@
     // 2. my did
     NSString *myDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1331,7 +1331,7 @@
     NSString *theirDid;
     NSString *theirVerkey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey
                                                                     outMyPk:nil];
@@ -1349,10 +1349,10 @@
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                               encryptedMessage:[SignusUtils encryptedMessage]
-                                                          nonce:[SignusUtils nonce]
+                                               encryptedMessage:[TestUtils encryptedMessage]
+                                                          nonce:[TestUtils nonce]
                                             outDecryptedMessage:&decryptedMessage];
-    XCTAssertTrue([decryptedMessage isEqualToData:[SignusUtils message]], @"SignusUtils::decryptWithWalletHandle() failed. Decrypted mesage doesn't match message");
+    XCTAssertTrue([decryptedMessage isEqualToData:[TestUtils message]], @"SignusUtils::decryptWithWalletHandle() failed. Decrypted mesage doesn't match message");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     
@@ -1364,7 +1364,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
@@ -1422,7 +1422,7 @@
                                                      poolHandle:poolHandle
                                                           myDid:myDid
                                                             did:myDid
-                                                        message:[SignusUtils message]
+                                                        message:[TestUtils message]
                                             outEncryptedMessage:&encryptedMessage
                                                        outNonce:&nonce];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::encryptWithWalletHandle() failed");
@@ -1433,8 +1433,8 @@
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                               encryptedMessage:[SignusUtils encryptedMessage]
-                                                          nonce:[SignusUtils nonce]
+                                               encryptedMessage:[TestUtils encryptedMessage]
+                                                          nonce:[TestUtils nonce]
                                             outDecryptedMessage:&decryptedMessage];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"SignusUtils::decryptWithWalletHandle() returned wrong error code.");
     
@@ -1449,7 +1449,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -1461,7 +1461,7 @@
     // 2. my did
     NSString *myDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1473,7 +1473,7 @@
     NSString *theirDid;
     NSString *theirVerkey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey
                                                                     outMyPk:nil];
@@ -1491,7 +1491,7 @@
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                               encryptedMessage:[SignusUtils encryptedMessage]
+                                               encryptedMessage:[TestUtils encryptedMessage]
                                                           nonce:[nonce dataUsingEncoding:NSUTF8StringEncoding]
                                             outDecryptedMessage:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"SignusUtils::decryptWithWalletHandle() returned wrong error code.");
@@ -1506,7 +1506,7 @@
     [TestUtils cleanupStorage];
     
     NSError *ret = nil;
-    NSString *poolName = [SignusUtils pool];
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -1518,7 +1518,7 @@
     // 2. my did
     NSString *myDid;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils mySeed]
+                                                                       seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
@@ -1530,7 +1530,7 @@
     NSString *theirDid;
     NSString *theirVerkey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[SignusUtils trusteeSeed]
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey
                                                                     outMyPk:nil];
@@ -1549,8 +1549,8 @@
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:invalidWalletHandle
                                                           myDid:myDid
                                                             did:theirDid
-                                               encryptedMessage:[SignusUtils encryptedMessage]
-                                                          nonce:[SignusUtils nonce]
+                                               encryptedMessage:[TestUtils encryptedMessage]
+                                                          nonce:[TestUtils nonce]
                                             outDecryptedMessage:&decryptedMessage];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils::decryptWithWalletHandle() returned wrong error code.");
 
