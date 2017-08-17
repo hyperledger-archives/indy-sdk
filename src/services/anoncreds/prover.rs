@@ -1,52 +1,6 @@
 use errors::common::CommonError;
-use services::anoncreds::constants::{
-    ITERATION,
-    LARGE_MASTER_SECRET,
-    LARGE_VPRIME,
-    LARGE_MVECT,
-    LARGE_E_START,
-    LARGE_ETILDE,
-    LARGE_VTILDE,
-    LARGE_UTILDE,
-    LARGE_RTILDE,
-    LARGE_M2_TILDE,
-    LARGE_ALPHATILDE
-};
-use services::anoncreds::types::{
-    Accumulator,
-    AccumulatorPublicKey,
-    AggregatedProof,
-    ClaimInitData,
-    ClaimDefinition,
-    ClaimSignature,
-    ClaimProof,
-    ClaimRequest,
-    InitProof,
-    NonRevocationClaim,
-    NonRevocProof,
-    NonRevocProofCList,
-    NonRevocInitProof,
-    NonRevocProofXList,
-    Proof,
-    ProofClaims,
-    Predicate,
-    PredicateType,
-    PrimaryClaim,
-    PrimaryEqualInitProof,
-    PrimaryEqualProof,
-    PrimaryInitProof,
-    PrimaryPredicateGEInitProof,
-    PrimaryPredicateGEProof,
-    PrimaryProof,
-    PublicKey,
-    RevocationClaimInitData,
-    RevocationPublicKey,
-    RevocationRegistry,
-    RequestedProofJson,
-    Schema,
-    ClaimJson,
-    ProofJson
-};
+use services::anoncreds::constants::*;
+use services::anoncreds::types::*;
 use services::anoncreds::helpers::{
     get_mtilde,
     four_squares,
@@ -384,8 +338,8 @@ impl Prover {
         }
 
         let mut values: Vec<Vec<u8>> = Vec::new();
-        values.extend_from_slice(&c_list);
         values.extend_from_slice(&tau_list);
+        values.extend_from_slice(&c_list);
         values.push(proof_req.nonce.to_bytes()?);
 
         let c_h = get_hash_as_int(&mut values)?;
@@ -474,7 +428,7 @@ impl Prover {
                                     accum: &Accumulator, tails: &HashMap<i32, PointG2>)
                                     -> Result<(), CommonError> {
         if !accum.v.contains(&claim.borrow().i) {
-            return Err(CommonError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()))
+            return Err(CommonError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()));
         }
 
         if claim.borrow().witness.v != accum.v {
@@ -570,7 +524,7 @@ impl Prover {
         let delta: i32 = attr_value - value;
 
         if delta < 0 {
-            return Err(CommonError::InvalidStructure("Predicate is not satisfied".to_string()))
+            return Err(CommonError::InvalidStructure("Predicate is not satisfied".to_string()));
         }
 
         let u = four_squares(delta)?;
@@ -1132,7 +1086,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_same_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new( "name".to_string(), Some(1), None));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1159,7 +1113,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_other_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(),Some(3), None));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(3), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 

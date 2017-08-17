@@ -486,8 +486,8 @@ impl NonRevocProofXList {
     }
 
     pub fn from_list(seq: Vec<GroupOrderElement>) -> NonRevocProofXList {
-        NonRevocProofXList::new(seq[0], seq[1], seq[2], seq[3], seq[4], seq[5], seq[6], seq[7],
-                                seq[8], seq[9], seq[10], seq[11], seq[12], seq[13])
+        NonRevocProofXList::new(seq[0], seq[10], seq[11], seq[12], seq[13], seq[1], seq[3], seq[4],
+                                seq[5], seq[6], seq[7], seq[8], seq[9], seq[2])
     }
 }
 
