@@ -306,4 +306,73 @@
     return err;
 }
 
+- (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
+                          poolHandle:(IndyHandle)poolHandle
+                               myDid:(NSString *)myDid
+                                 did:(NSString *)did
+                             message:(NSData *)message
+                 outEncryptedMessage:(NSData **)encryptedMessage
+                            outNonce:(NSData **)nonce
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    NSError *ret;
+    
+    ret = [IndySignus encryptWithWalletHandle:walletHandle
+                                         pool:poolHandle
+                                        myDid:myDid
+                                          did:did
+                                      message:message
+                                   completion:^(NSError *error, NSData *encryptedMsg, NSData *closureNonce)
+           {
+               err = error;
+               if (encryptedMessage) { *encryptedMessage = encryptedMsg; }
+               if (nonce) { *nonce = closureNonce; }
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    return err;
+}
+
+- (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
+                               myDid:(NSString *)myDid
+                                 did:(NSString *)did
+                    encryptedMessage:(NSData *)encryptedMessage
+                               nonce:(NSData *)nonce
+                 outDecryptedMessage:(NSData **)decryptedMessage
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    NSError *ret;
+    
+    ret = [IndySignus decryptWithWalletHandle:walletHandle
+                                        myDid:myDid
+                                          did:did
+                             encryptedMessage:encryptedMessage
+                                        nonce:nonce
+                                   completion:^(NSError *error, NSData *decryptedMsg)
+           {
+               err = error;
+               if (decryptedMessage) { *decryptedMessage = decryptedMsg; }
+               [completionExpectation fulfill];
+           }];
+
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    return err;
+}
+
+
 @end
