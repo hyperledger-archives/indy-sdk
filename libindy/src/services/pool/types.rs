@@ -1,4 +1,5 @@
 extern crate serde_json;
+extern crate rmp_serde;
 
 use std::cmp;
 use std::cmp::Eq;
@@ -33,6 +34,12 @@ pub struct GenTransaction {
 impl JsonEncodable for GenTransaction {}
 
 impl<'a> JsonDecodable<'a> for GenTransaction {}
+
+impl GenTransaction {
+    pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+        rmp_serde::to_vec_named(self)
+    }
+}
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
