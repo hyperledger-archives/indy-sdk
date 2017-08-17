@@ -16,9 +16,10 @@
 1. Checkout and build the library:
    
    ```
-   git checkout https://github.com/hyperledger/indy-sdk.git
-   cd ./indy-sdk
+   git clone https://github.com/hyperledger/indy-sdk.git
+   cd ./indy-sdk/indy-sdk
    cargo build
+   cd ..
    ```
 1. Run integration tests:
    * Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
@@ -38,9 +39,9 @@
      docker network create --subnet 10.0.0.0/8 indy_pool_network
      docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
      docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
-     ```
+     ```:
      
-     It can be usefull if we wants to launch integration tests inside another container attached to
+     It can be useful if we want to launch integration tests inside another container attached to
      the same docker network. 
      
    * Run tests
