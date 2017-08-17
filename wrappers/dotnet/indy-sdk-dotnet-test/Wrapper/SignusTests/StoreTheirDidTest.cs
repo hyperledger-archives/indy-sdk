@@ -13,25 +13,25 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         private string _verkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
 
         [TestInitialize]
-        public void CreateWallet()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
             if (_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
         
         [TestMethod]
-        public void TestStoreTheirDidWorks()
+        public async Task TestStoreTheirDidWorks()
         {
-            Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"did\":\"{0}\"}}", _did)).Wait();
+            await Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"did\":\"{0}\"}}", _did));
         }
 
         [TestMethod]
@@ -45,11 +45,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestStoreTheirDidWorksWithVerkey()
+        public async Task TestStoreTheirDidWorksWithVerkey()
         {
             var json = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", _did, _verkey);
 
-            Signus.StoreTheirDidAsync(_wallet, json).Wait();
+            await Signus.StoreTheirDidAsync(_wallet, json);
         }
 
         [TestMethod]
@@ -63,13 +63,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestStoreTheirDidWorksForCorrectCryptoType()
+        public async Task TestStoreTheirDidWorksForCorrectCryptoType()
         {
             var json = string.Format("{{\"did\":\"{0}\", " +
                 "\"verkey\":\"{1}\", " +
                 "\"crypto_type\": \"ed25519\"}}", _did, _verkey);
 
-            Signus.StoreTheirDidAsync(_wallet, json).Wait();
+            await Signus.StoreTheirDidAsync(_wallet, json);
         }
 
         [TestMethod]

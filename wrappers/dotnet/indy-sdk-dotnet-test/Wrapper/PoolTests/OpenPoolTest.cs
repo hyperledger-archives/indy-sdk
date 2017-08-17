@@ -8,10 +8,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
     public class OpenPoolTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestOpenPoolWorksForNullConfig()
+        public async Task TestOpenPoolWorksForNullConfig()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
 
@@ -19,12 +19,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         }
 
         [TestMethod]
-        public void TestOpenPoolWorksForConfig()
+        public async Task TestOpenPoolWorksForConfig()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
 
             var config = "{\"refreshOnOpen\":true,\"autoRefreshTime\":false,\"networkTimeout\":false}";
-            var pool = Pool.OpenPoolLedgerAsync(poolName, config).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, config);
 
 
             Assert.IsNotNull(pool);
@@ -35,7 +35,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         public async Task TestOpenPoolWorksForTwice()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);
@@ -49,22 +49,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         }
 
         [TestMethod]
-        public void TestOpenPoolWorksForTwoNodes()
+        public async Task TestOpenPoolWorksForTwoNodes()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig(2);
 
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);
         }
 
         [TestMethod]
-        public void TestOpenPoolWorksForThreeNodes()
+        public async Task TestOpenPoolWorksForThreeNodes()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig(3);
 
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);

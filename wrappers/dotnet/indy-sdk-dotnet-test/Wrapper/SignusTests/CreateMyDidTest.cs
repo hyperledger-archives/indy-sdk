@@ -16,27 +16,27 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         private string _existsCryptoType = "ed25519";
 
         [TestInitialize]
-        public void CreateWallet()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
             if(_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
         
         [TestMethod]
-        public void TestCreateMyDidWorksForEmptyJson()
+        public async Task TestCreateMyDidWorksForEmptyJson()
         {
             var json = "{}";
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(16, Base58CheckEncoding.DecodePlain(result.Did).Length);
@@ -44,11 +44,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestCreateMyDidWorksForSeed()
+        public async Task TestCreateMyDidWorksForSeed()
         {
             var json = string.Format("{{\"seed\":\"{0}\"}}", _seed);
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             var expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -58,11 +58,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestCreateMyDidWorksAsCid()
+        public async Task TestCreateMyDidWorksAsCid()
         {
             var json = string.Format("{{\"seed\":\"{0}\",\"cid\":true}}", _seed);
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_expectedVerkey, result.Did);
@@ -70,22 +70,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestCreateMyDidWorksForPassedDid()
+        public async Task TestCreateMyDidWorksForPassedDid()
         {
             var json = string.Format("{{\"did\":\"{0}\",\"cid\":false}}", _did);
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_did, result.Did);
         }
 
         [TestMethod]
-        public void TestCreateMyDidWorksForCorrectCryptoType()
+        public async Task TestCreateMyDidWorksForCorrectCryptoType()
         {
             var json = string.Format("{{\"crypto_type\":\"{0}\"}}", _existsCryptoType);
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
         }
 
@@ -114,11 +114,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestCreateMyDidWorksForAllParams()
+        public async Task TestCreateMyDidWorksForAllParams()
         {
             var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", _did, _seed, _existsCryptoType);
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_did, result.Did);

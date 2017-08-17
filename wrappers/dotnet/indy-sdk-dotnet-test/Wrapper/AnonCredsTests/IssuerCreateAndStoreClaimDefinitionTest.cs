@@ -23,25 +23,25 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "                 }";
 
         [TestInitialize]
-        public void CreateWallet()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
             if(_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();            
+            await Wallet.DeleteWalletAsync(_walletName, null);            
         }
 
         [TestMethod]
-        public void TestIssuerCreateAndStoreClaimDefWorks()
+        public async Task TestIssuerCreateAndStoreClaimDefWorks()
         {
-            var claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, null, false).Result;
+            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, null, false);
             Assert.IsNotNull(claimDef);
 
             var claimDefObject = JObject.Parse(claimDef);
@@ -87,9 +87,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestIssuerCreateAndStoreClaimDefWorksForCorrectCryptoType()
+        public async Task TestIssuerCreateAndStoreClaimDefWorksForCorrectCryptoType()
         {
-            var claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, "CL", false).Result;
+            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, "CL", false);
             Assert.IsNotNull(claimDef);
 
             var claimDefObject = JObject.Parse(claimDef);

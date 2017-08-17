@@ -1,6 +1,7 @@
 ﻿using Indy.Sdk.Dotnet.Test.Wrapper.AgentTests;
 using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
@@ -8,32 +9,32 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
     public class AgentAddIdentityTest : AgentIntegrationTestBase
     {
         [TestMethod]
-        public void TestAgentAddIdentityWorks()
+        public async Task TestAgentAddIdentityWorks()
         {
             var endpoint = "127.0.0.1:9601";
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
 
-            activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did).Wait();
+            await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
         }
 
         [TestMethod]
-        public void TestAgentAddIdentityWorksForMultiplyKeys()
+        public async Task TestAgentAddIdentityWorksForMultiplyKeys()
         {
             var endpoint = "127.0.0.1:9602";
 
-            var myDid1 = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
-            var myDid2 = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDid1 = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDid2 = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             CreateAndStoreMyDidResult[] didResults = { myDid1, myDid2 };
 
-            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
 
             foreach (var didResult in didResults)
             {
-                activeListener.AddIdentityAsync(_pool, _wallet, didResult.Did).Wait();
+                await activeListener.AddIdentityAsync(_pool, _wallet, didResult.Did);
             }
         }
     }

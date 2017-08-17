@@ -17,40 +17,40 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
 
         [TestInitialize]
-        public void OpenPool()
+        public async Task OpenPool()
         {
             string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void ClosePool()
+        public async Task ClosePool()
         {
             if (_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             if (_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
 
         [TestMethod]
-        public void TestBuildNymRequestWorksForOnlyRequiredFields()
+        public async Task TestBuildNymRequestWorksForOnlyRequiredFields()
         {
             var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"type\":\"1\",\"dest\":\"{1}\"}}", _identifier, _dest);
 
-            var nymRequest = Ledger.BuildNymRequestAsync(_identifier, _dest, null, null, null).Result;
+            var nymRequest = await Ledger.BuildNymRequestAsync(_identifier, _dest, null, null, null);
 
             Assert.IsTrue(nymRequest.Contains(expectedResult));
         }
 
         [TestMethod]
-        public void TestBuildNymRequestWorksForOnlyOptionalFields()
+        public async Task TestBuildNymRequestWorksForOnlyOptionalFields()
         {
             var verkey = "Anfh2rjAcxkE249DcdsaQl";
             var role = "STEWARD";
@@ -65,17 +65,17 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"role\":\"2\"" +
                     "}}", _identifier, _dest, verkey, alias);
 
-            var nymRequest = Ledger.BuildNymRequestAsync(_identifier, _dest, verkey, alias, role).Result;
+            var nymRequest = await Ledger.BuildNymRequestAsync(_identifier, _dest, verkey, alias, role);
 
             Assert.IsTrue(nymRequest.Contains(expectedResult));
         }
 
         [TestMethod]
-        public void TestBuildGetNymRequestWorks()
+        public async Task TestBuildGetNymRequestWorks()
         {
             var expectedResult = String.Format("\"identifier\":\"{0}\",\"operation\":{{\"type\":\"105\",\"dest\":\"{1}\"}}", _identifier, _dest);
 
-            var nymRequest = Ledger.BuildGetNymRequestAsync(_identifier, _dest).Result;
+            var nymRequest = await Ledger.BuildGetNymRequestAsync(_identifier, _dest);
 
             Assert.IsTrue(nymRequest.Contains(expectedResult));
         }
@@ -83,10 +83,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public async Task TestNymRequestWorksWithoutSignature()
         {
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
             var did = didResult.Did;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(did, did, null, null, null).Result;
+            var nymRequest = await Ledger.BuildNymRequestAsync(did, did, null, null, null);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, nymRequest)
@@ -96,49 +96,49 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void TestSendNymRequestsWorksForOnlyRequiredFields()
+        public async Task TestSendNymRequestsWorksForOnlyRequiredFields()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
             var myDid = myDidResult.Did;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null).Result;
-            var nymResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Result;
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
+            var nymResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
             Assert.IsNotNull(nymResponse);
         }
 
         [TestMethod]
-        public void TestSendNymRequestsWorksForOptionalFields()
+        public async Task TestSendNymRequestsWorksForOptionalFields()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerKey = myDidResult.VerKey;
             var role = "STEWARD";
             var alias = "some_alias";
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerKey, alias, role).Result;
-            var nymResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Result;
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerKey, alias, role);
+            var nymResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
             Assert.IsNotNull(nymResponse);
         }
 
         [TestMethod]
-        public void TestGetNymRequestWorks()
+        public async Task TestGetNymRequestWorks()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
-            var getNymRequest = Ledger.BuildGetNymRequestAsync(did, did).Result;
-            var getNymResponse = Ledger.SubmitRequestAsync(_pool, getNymRequest).Result;
+            var getNymRequest = await Ledger.BuildGetNymRequestAsync(did, did);
+            var getNymResponse = await Ledger.SubmitRequestAsync(_pool, getNymRequest);
 
             var getNymResponseObj = JObject.Parse(getNymResponse);
 
@@ -149,21 +149,21 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         public async Task TestSendNymRequestsWorksForWrongSignerRole()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myDidJson = "{}";
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson).Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson);
             var myDid = myDidResult.Did;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
             var myDidJson2 = "{}";
-            var myDidResult2 = Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson2).Result;
+            var myDidResult2 = await Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson2);
             var myDid2 = myDidResult2.Did;
 
-            var nymRequest2 = Ledger.BuildNymRequestAsync(myDid, myDid2, null, null, null).Result;
+            var nymRequest2 = await Ledger.BuildNymRequestAsync(myDid, myDid2, null, null, null);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, nymRequest2)
@@ -176,14 +176,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         public async Task TestSendNymRequestsWorksForUnknownSigner()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee9\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myDidJson = "{}";
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson).Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson);
             var myDid = myDidResult.Did;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null).Result;
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest)
@@ -193,21 +193,21 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void TestNymRequestsWorks()
+        public async Task TestNymRequestsWorks()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerKey = myDidResult.VerKey;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerKey, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerKey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
-            var getNymRequest = Ledger.BuildGetNymRequestAsync(myDid, myDid).Result;
-            var getNymResponse = Ledger.SubmitRequestAsync(_pool, getNymRequest).Result;
+            var getNymRequest = await Ledger.BuildGetNymRequestAsync(myDid, myDid);
+            var getNymResponse = await Ledger.SubmitRequestAsync(_pool, getNymRequest);
 
             var getNymResponseObj = JObject.Parse(getNymResponse);
 

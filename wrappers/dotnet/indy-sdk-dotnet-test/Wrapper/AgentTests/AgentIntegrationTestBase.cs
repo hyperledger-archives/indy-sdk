@@ -1,6 +1,7 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.Wrapper.Agent;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
@@ -30,30 +31,30 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
         };
 
         [TestInitialize]
-        public void SetUp()
+        public async Task SetUp()
         {
-            InitHelper.Init();
+            await InitHelper.InitAsync();
             StorageUtils.CleanupStorage();
 
             _poolName = PoolUtils.CreatePoolLedgerConfig();
 
             var config2 = "{}";
-            _pool = Pool.OpenPoolLedgerAsync(_poolName, config2).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(_poolName, config2);
 
-            Wallet.CreateWalletAsync(_poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(_poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void TearDown()
+        public async Task TearDown()
         {
             if(_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
 
             if(_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             StorageUtils.CleanupStorage();
         }        
