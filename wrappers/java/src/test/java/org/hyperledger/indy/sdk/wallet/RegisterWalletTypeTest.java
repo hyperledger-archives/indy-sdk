@@ -24,7 +24,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 	@Test
 	public void testRegisterWalletTypeWorks() throws Exception {
 
-		Wallet.registerWalletType("inmem", new InMemWalletType(), false).get();
+		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 	}
 
 	@Test
@@ -35,8 +35,8 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		String type = "inmem";
 
-		Wallet.registerWalletType(type, new InMemWalletType(), false).get();
-		Wallet.registerWalletType(type, new InMemWalletType(), true).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
 	}
 	
 	static Wallet wallet;
@@ -62,7 +62,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		StorageUtils.cleanupStorage();
 
 		String walletName = "inmemWorkoutWallet";
-		Wallet.registerWalletType("inmem", new InMemWalletType(), false);
+		Wallet.registerWalletType("inmem", new InMemWalletType());
 		
 		Wallet.createWallet("default", walletName, "inmem", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();

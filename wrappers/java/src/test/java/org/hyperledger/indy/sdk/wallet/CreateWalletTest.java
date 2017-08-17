@@ -18,7 +18,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreateWalletWorksForPlugged() throws Exception {
-		Wallet.registerWalletType("inmem", new InMemWalletType(), false).get();
+		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 		Wallet.createWallet("default", "createWalletWorks", "default", null, null).get();
 	}
 
