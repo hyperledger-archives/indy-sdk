@@ -8,17 +8,17 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
     public class DeletePoolTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestDeletePoolWorks()
+        public async Task TestDeletePoolWorks()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            Pool.DeletePoolLedgerConfigAsync(poolName).Wait();
+            await Pool.DeletePoolLedgerConfigAsync(poolName);
         }
 
         [TestMethod]
         public async Task TestDeletePoolWorksForOpened()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);

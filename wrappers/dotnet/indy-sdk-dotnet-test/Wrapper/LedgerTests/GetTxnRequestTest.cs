@@ -1,6 +1,7 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 {
@@ -12,29 +13,29 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private string _walletName = "ledgerWallet";
 
         [TestInitialize]
-        public void OpenPool()
+        public async Task OpenPool()
         {
             string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void ClosePool()
+        public async Task ClosePool()
         {
             if (_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             if (_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
         [TestMethod]
-        public void TestBuildGetTxnRequestWorks()
+        public async Task TestBuildGetTxnRequestWorks()
         {
             var identifier = "Th7MpTaRZVRYnPiabds81Y";
             var data = 1;
@@ -45,30 +46,30 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"data\":{1}" +
                     "}}", identifier, data);
 
-            var getTxnRequest = Ledger.BuildGetTxnRequestAsync(identifier, data).Result;
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(identifier, data);
 
             Assert.IsTrue(getTxnRequest.Replace("\\", "").Contains(expectedResult));
         }
 
         [TestMethod] //This test fails here and in the Java version.
-        public void TestGetTxnRequestWorks()
+        public async Task TestGetTxnRequestWorks()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"keys\": [\"name\", \"male\"]}";
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(did, schemaData).Result;
-            var schemaResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest).Result;
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
+            var schemaResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
 
             var schemaResponseObj = JObject.Parse(schemaResponse);
 
             var seqNo = schemaResponseObj["result"].Value<int>("seqNo");
 
-            var getTxnRequest = Ledger.BuildGetTxnRequestAsync(did, seqNo).Result;
-            var getTxnResponse = Ledger.SubmitRequestAsync(_pool, getTxnRequest).Result;
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(did, seqNo);
+            var getTxnResponse = await Ledger.SubmitRequestAsync(_pool, getTxnRequest);
 
             var getTxnResponseObj = JObject.Parse(getTxnResponse);
 
@@ -79,24 +80,24 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod] 
-        public void TestGetTxnRequestWorksForInvalidSeqNo()
+        public async Task TestGetTxnRequestWorksForInvalidSeqNo()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"keys\": [\"name\", \"male\"]}";
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(did, schemaData).Result;
-            var schemaResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest).Result;
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
+            var schemaResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
 
             var schemaResponseObj = JObject.Parse(schemaResponse);
 
             var seqNo = (int)schemaResponseObj["result"]["seqNo"] + 1;
 
-            var getTxnRequest = Ledger.BuildGetTxnRequestAsync(did, seqNo).Result;
-            var getTxnResponse = Ledger.SubmitRequestAsync(_pool, getTxnRequest).Result;
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(did, seqNo);
+            var getTxnResponse = await Ledger.SubmitRequestAsync(_pool, getTxnRequest);
 
             var getTxnResponseObj = JObject.Parse(getTxnResponse);
 

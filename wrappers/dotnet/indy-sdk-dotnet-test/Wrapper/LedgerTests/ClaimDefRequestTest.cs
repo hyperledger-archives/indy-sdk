@@ -38,29 +38,29 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private string _signature_type = "CL";
         
         [TestInitialize]
-        public void OpenPool()
+        public async Task OpenPool()
         {
             string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void ClosePool()
+        public async Task ClosePool()
         {
             if (_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             if(_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
         [TestMethod]
-        public void TestBuildClaimDefRequestWorks()
+        public async Task TestBuildClaimDefRequestWorks()
         {
             var schema_seq_no = 1;
             var data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}";
@@ -73,14 +73,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"signature_type\":\"{3}\"" +
                     "}}", _identifier, schema_seq_no, data, _signature_type);
 
-            var claimDefRequest = Ledger.BuildClaimDefTxnAsync(_identifier, schema_seq_no, _signature_type, data).Result;
+            var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(_identifier, schema_seq_no, _signature_type, data);
 
 
             Assert.IsTrue(claimDefRequest.Replace("\\", "").Contains(expectedResult));
         }
 
         [TestMethod]
-        public void TestBuildGetClaimDefRequestWorks()
+        public async Task TestBuildGetClaimDefRequestWorks()
         {
             var reference = 1;
 
@@ -92,7 +92,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"origin\":\"{3}\"" +
                     "}}", _identifier, reference, _signature_type, _identifier);
 
-            var getClaimDefRequest = Ledger.BuildGetClaimDefTxnAsync(_identifier, reference, _signature_type, _identifier).Result;
+            var getClaimDefRequest = await Ledger.BuildGetClaimDefTxnAsync(_identifier, reference, _signature_type, _identifier);
 
 
             Assert.IsTrue(getClaimDefRequest.Replace("\\", "").Contains(expectedResult));
@@ -112,30 +112,30 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod] 
-        public void TestClaimDefRequestWorks()
+        public async Task TestClaimDefRequestWorks()
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myJson = "{}";
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myJson).Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myJson);
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
             var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(myDid, schemaData).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest).Wait();
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(myDid, schemaData);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest);
 
             var getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
-            var getSchemaRequest = Ledger.BuildGetSchemaRequestAsync(myDid, myDid, getSchemaData).Result;
-            var getSchemaResponse = Ledger.SubmitRequestAsync(_pool, getSchemaRequest).Result;
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(myDid, myDid, getSchemaData);
+            var getSchemaResponse = await Ledger.SubmitRequestAsync(_pool, getSchemaRequest);
 
             var schemaObj = JObject.Parse(getSchemaResponse);
 
@@ -147,11 +147,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var claimDefJson = claimDefObj["data"];
   
-            var claimDefRequest = Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefObj["data"].ToString()).Result;
-            var claimDefResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, claimDefRequest).Result;
+            var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefObj["data"].ToString());
+            var claimDefResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, claimDefRequest);
 
-            var getClaimDefRequest = Ledger.BuildGetClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefObj["origin"].ToString()).Result;
-            var getClaimDefResponse = Ledger.SubmitRequestAsync(_pool, getClaimDefRequest).Result;
+            var getClaimDefRequest = await Ledger.BuildGetClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefObj["origin"].ToString());
+            var getClaimDefResponse = await Ledger.SubmitRequestAsync(_pool, getClaimDefRequest);
 
             var getClaimDefResponseObj = JObject.Parse(getClaimDefResponse);
 
@@ -181,22 +181,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myJson = "{}";
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myJson).Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myJson);
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
             var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(myDid, schemaData).Result;
-            var schemaResponse = Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest).Result;
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(myDid, schemaData);
+            var schemaResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest);
 
             var schemaObj = JObject.Parse(schemaResponse);
 
@@ -208,7 +208,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var claimDefJson = claimDefObj["data"].ToString();
 
-            var claimDefRequest = Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefJson).Result;
+            var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefJson);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, claimDefRequest)

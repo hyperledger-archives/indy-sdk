@@ -14,29 +14,29 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
 
         [TestInitialize]
-        public void OpenPool()
+        public async Task OpenPool()
         {
             string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void ClosePool()
+        public async Task ClosePool()
         {
             if(_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             if(_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
         [TestMethod]
-        public void TestBuildSchemaRequestWorks()
+        public async Task TestBuildSchemaRequestWorks()
         {
             var data = "{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]}";
 
@@ -46,13 +46,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"data\":\"{1}\"" +
                     "}}", _identifier, data);
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(_identifier, data).Result;
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(_identifier, data);
 
             Assert.IsTrue(schemaRequest.Replace("\\", "").Contains(expectedResult));
         }
 
         [TestMethod]
-        public void TestBuildGetSchemaRequestWorks()
+        public async Task TestBuildGetSchemaRequestWorks()
         {
             var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
@@ -63,7 +63,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"data\":{2}" +
                     "}}", _identifier, _identifier, data);
 
-            var getSchemaRequest = Ledger.BuildGetSchemaRequestAsync(_identifier, _identifier, data).Result;
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(_identifier, _identifier, data);
 
             Assert.IsTrue(getSchemaRequest.Contains(expectedResult));
         }
@@ -72,14 +72,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         public async Task TestBuildSchemaRequestWorksWithoutSignature()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var schemaData = "{\"name\":\"gvt2\",\n" +
                     "             \"version\":\"2.0\",\n" +
                     "             \"keys\": [\"name\", \"male\"]}";
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(did, schemaData).Result;
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, schemaRequest)
@@ -89,20 +89,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod] //Name of this test is bad.
-        public void TestSchemaRequestWorks()
+        public async Task TestSchemaRequestWorks()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
 
-            var schemaRequest = Ledger.BuildSchemaRequestAsync(did, schemaData).Result;                
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest).Wait();
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
 
             var getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
-            var getSchemaRequest = Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData).Result;
-            var getSchemaResponse = Ledger.SubmitRequestAsync(_pool, getSchemaRequest).Result;
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
+            var getSchemaResponse = await Ledger.SubmitRequestAsync(_pool, getSchemaRequest);
 
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
 
@@ -112,15 +112,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void TestGetSchemaRequestsWorksForUnknownSchema()
+        public async Task TestGetSchemaRequestsWorksForUnknownSchema()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
-            var getSchemaRequest = Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData).Result;
-            var getSchemaResponse = Ledger.SubmitRequestAsync(_pool, getSchemaRequest).Result;
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
+            var getSchemaResponse = await Ledger.SubmitRequestAsync(_pool, getSchemaRequest);
 
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
 
