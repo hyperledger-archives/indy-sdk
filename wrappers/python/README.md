@@ -13,14 +13,16 @@ Pull requests welcome!
 
 - Clone indy-sdk repo from https://github.com/hyperledger/indy-sdk
 
-- Build the native "indy" library at https://github.com/hyperledger/indy-sdk:
-
+- Build the native "indy" library:
+```
 	cargo build
-
+```
 - Then copy the resulting `libindy.so` to `/usr/lib/`.
 
-- cd wrappers/python
-
+- Move to python wrapper directory 
+```
+	cd wrappers/python
+```
 - Create virtual env if you want
 
 - install dependencies with pip install
