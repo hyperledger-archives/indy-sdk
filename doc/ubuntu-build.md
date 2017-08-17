@@ -22,7 +22,7 @@
    cd ..
    ```
 1. Run integration tests:
-   * Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
+   * Start local nodes pool on `127.0.0.1:9701-9709` with Docker:
      
      ```     
      docker build -f ci/indy-pool.dockerfile -t indy_pool .
@@ -47,6 +47,7 @@
    * Run tests
      
      ```
+     cd indy-sdk
      RUST_TEST_THREADS=1 cargo test
      ```
      
