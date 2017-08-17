@@ -38,12 +38,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         [TestMethod]
         public async Task TestBuildSchemaRequestWorks()
         {
-            var data = "{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]}";
+            var data = "{\"name\":\"name\",\"version\":\"1.0\",\"attr_names\":[\"name\",\"male\"]}";
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"type\":\"101\"," +
-                    "\"data\":\"{1}\"" +
+                    "\"data\":{1}" +
                     "}}", _identifier, data);
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(_identifier, data);
@@ -77,7 +77,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var schemaData = "{\"name\":\"gvt2\",\n" +
                     "             \"version\":\"2.0\",\n" +
-                    "             \"keys\": [\"name\", \"male\"]}";
+                    "             \"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
 
@@ -95,7 +95,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
-            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
             await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
