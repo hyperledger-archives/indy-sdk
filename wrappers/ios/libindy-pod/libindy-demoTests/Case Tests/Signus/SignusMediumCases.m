@@ -510,6 +510,390 @@
     
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+// MARK: - Encrypt
+
+- (void)testEncryptWorksForUnknownmyDid
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+
+    // 1. Create and open pool ledger config, get pool handle
+    IndyHandle poolHandle = 0;
+    
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+                                                                 poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
+    
+    // 2. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 3. create and store their did
+    NSString *theirDid;
+    NSString *theirVerkey;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:&theirVerkey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 4. store their did
+    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+                                                         identityJson:identityJson];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed");
+    
+    // 5. encrypt
+    
+    NSData *message = [[SignusUtils message] dataUsingEncoding:NSUTF8StringEncoding];
+    ret = [[SignusUtils sharedInstance] encryptWithWalletHandle:walletHandle
+                                                     poolHandle:poolHandle
+                                                          myDid:@"unknownDid"
+                                                            did:theirDid
+                                                        message:message
+                                            outEncryptedMessage:nil
+                                                       outNonce:nil];
+     XCTAssertEqual(ret.code, WalletNotFoundError, @"SignusUtils::encryptWithWalletHandle() returned wrong error code");
+
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+- (void)testEncryptWorksForGetNymFromLedgerWithIncompatiblePool
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+    
+    // 1. Create and open pool ledger config, get pool handle
+    IndyHandle poolHandle = 0;
+    
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+                                                                 poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
+    
+    // 2. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"other_pool"
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 3. create and store myDid
+    
+    NSString *myDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    
+    // 4. create and store their did
+    NSString *theirDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 5. store their did
+    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\"}", theirDid];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+                                                         identityJson:identityJson];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed");
+    
+    // 6. encrypt
+    
+    NSData *message = [[SignusUtils message] dataUsingEncoding:NSUTF8StringEncoding];
+    ret = [[SignusUtils sharedInstance] encryptWithWalletHandle:walletHandle
+                                                     poolHandle:poolHandle
+                                                          myDid:myDid
+                                                            did:theirDid
+                                                        message:message
+                                            outEncryptedMessage:nil
+                                                       outNonce:nil];
+    XCTAssertEqual(ret.code, WalletIncompatiblePoolError, @"SignusUtils::encryptWithWalletHandle() returned wrong error code");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+- (void)testEncryptWorksForNotFoundNym
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+    
+    // 1. Create and open pool ledger config, get pool handle
+    IndyHandle poolHandle = 0;
+    
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+                                                                 poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
+    
+    // 2. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 3. create and store myDid
+    
+    NSString *myDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    
+    // 4. create and store their did
+    NSString *theirDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 6. encrypt
+    
+    NSData *message = [[SignusUtils message] dataUsingEncoding:NSUTF8StringEncoding];
+    ret = [[SignusUtils sharedInstance] encryptWithWalletHandle:walletHandle
+                                                     poolHandle:poolHandle
+                                                          myDid:myDid
+                                                            did:theirDid
+                                                        message:message
+                                            outEncryptedMessage:nil
+                                                       outNonce:nil];
+    XCTAssertEqual(ret.code, CommonInvalidState, @"SignusUtils::encryptWithWalletHandle() returned wrong error code");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+// MARK: - Decrypt
+
+- (void)testDecryptWorksForUnknownMyDid
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+
+    // 1. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 2. create their did
+    NSString *theirDid;
+    NSString *theirVerkey;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils trusteeSeed]
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:&theirVerkey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 3. store their did
+    
+    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+                                                         identityJson:identityJson];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed");
+    
+    // 4. decrypt
+    ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                          myDid:@"unknownDid"
+                                                            did:theirDid
+                                               encryptedMessage:[SignusUtils encryptedMessage]
+                                                          nonce:[SignusUtils nonce]
+                                            outDecryptedMessage:nil];
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"SignusUtils::decryptWithWalletHandle() returned wrong error code");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+- (void)testDecryptworksForUnknownCoderDid
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+    
+    // 1. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 2. create my did
+    NSString *myDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils mySeed]
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    
+    // 3. create their did
+    NSString *theirDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils trusteeSeed]
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 4. decrypt
+    ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                          myDid:myDid
+                                                            did:theirDid
+                                               encryptedMessage:[SignusUtils encryptedMessage]
+                                                          nonce:[SignusUtils nonce]
+                                            outDecryptedMessage:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::decryptWithWalletHandle() returned wrong error code");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+- (void)testDecryptWorksForSavedCoderNymWithoutPubKey
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+
+    // 1. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 2. create my did
+    NSString *myDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils mySeed]
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    
+    // 3. create their did
+    NSString *theirDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils trusteeSeed]
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 4. store their did
+    
+    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\"}", theirDid];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+                                                         identityJson:identityJson];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed");
+
+    // 5. decrypt
+    ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                          myDid:myDid
+                                                            did:theirDid
+                                               encryptedMessage:[SignusUtils encryptedMessage]
+                                                          nonce:[SignusUtils nonce]
+                                            outDecryptedMessage:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"SignusUtils::decryptWithWalletHandle() returned wrong error code");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
+    [TestUtils cleanupStorage];
+}
+
+-(void)testDecryptWorksForInvalidNonceLen
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    NSString *poolName = [SignusUtils pool];
+    
+    // 1. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 2. create my did
+    NSString *myDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils mySeed]
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:nil
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    
+    // 3. create their did
+    NSString *theirDid;
+    NSString *theirVerkey;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:[SignusUtils trusteeSeed]
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:&theirVerkey
+                                                                    outMyPk:nil];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for theirDid");
+    
+    // 4. store their did
+    
+    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+                                                         identityJson:identityJson];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed");
+    
+    // 5. decrypt
+    
+    const unsigned char bytes[] = {24, 99, 107, 70, 58, 6, 252, 149, 225};
+    NSData *nonce = [NSData dataWithBytes:bytes length:sizeof(bytes)];
+    
+    ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                          myDid:myDid
+                                                            did:theirDid
+                                               encryptedMessage:[SignusUtils encryptedMessage]
+                                                          nonce:nonce
+                                            outDecryptedMessage:nil];
+     XCTAssertEqual(ret.code, CommonInvalidStructure, @"SignusUtils::decryptWithWalletHandle() returned wrong error code");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    
     [TestUtils cleanupStorage];
 }
 
