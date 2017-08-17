@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
-    //[TestClass]
+    [TestClass]
     public class RegisterWalletTypeTest : IndyIntegrationTestBase
     {
         protected static string _masterSecretName = "master_secret_name";
