@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 
@@ -16,7 +18,7 @@ pub struct ClaimDefinitionData {
     #[serde(rename = "primary")]
     pub public_key: PublicKey,
     #[serde(rename = "revocation")]
-    pub public_key_revocation: Option<String>,
+    pub public_key_revocation: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize, Eq)]
@@ -92,7 +94,7 @@ pub struct GetSchemaReplyResult {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct GetSchemaResultData {
-    pub keys: HashSet<String>,
+    pub attr_names: HashSet<String>,
     pub name: String,
     pub origin: String,
     pub version: String
@@ -123,7 +125,7 @@ pub struct GetTxnResult {
     pub seq_no: Option<i32>,
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: Option<String>
+    pub data: Option<serde_json::Value>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -135,7 +137,7 @@ pub struct SchemaResult {
     pub seq_no: i32,
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: Option<String>
+    pub data: Option<SchemaData>
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -149,7 +151,7 @@ pub struct Schema {
 pub struct SchemaData {
     pub name: String,
     pub version: String,
-    pub keys: HashSet<String>
+    pub attr_names: HashSet<String>
 }
 
 

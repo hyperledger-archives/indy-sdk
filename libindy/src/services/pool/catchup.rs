@@ -1,3 +1,5 @@
+extern crate rmp_serde;
+
 use std::cmp;
 use std::collections::{BinaryHeap, HashMap};
 
@@ -11,7 +13,6 @@ use super::{
 };
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
-use utils::json::JsonEncodable;
 
 enum CatchupStepResult {
     Finished,
@@ -105,7 +106,7 @@ impl CatchupHandler {
 
     fn check_nodes_responses_on_status(&mut self) -> Result<CatchupProgress, PoolError> {
         if self.pending_catchup.is_some() {
-            return Ok(CatchupProgress::InProgress)
+            return Ok(CatchupProgress::InProgress);
         }
         let mut votes: HashMap<(String, usize), usize> = HashMap::new();
         for node_vote in &self.nodes_votes {
@@ -217,9 +218,9 @@ impl CatchupHandler {
             let mut temp_mt = process.merkle_tree.clone();
             while !first_resp.txns.is_empty() {
                 let key = first_resp.min_tx().to_string();
-                if let Ok(new_gen_tx) = first_resp.txns.remove(&key).unwrap().to_json() {
-                    trace!("append to tree {}", new_gen_tx);
-                    temp_mt.append(new_gen_tx)?;
+                let new_gen_tx = first_resp.txns.remove(&key).unwrap();
+                if let Ok(new_get_txn_bytes) = new_gen_tx.to_msg_pack() {
+                    temp_mt.append(new_get_txn_bytes)?;
                 } else {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }

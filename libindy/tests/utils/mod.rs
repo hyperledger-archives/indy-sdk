@@ -13,6 +13,7 @@ pub mod anoncreds;
 pub mod types;
 
 #[macro_use]
+#[allow(unused_macros)]
 #[path = "../../src/utils/test.rs"]
 pub mod test;
 
