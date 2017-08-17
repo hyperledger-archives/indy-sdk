@@ -63,15 +63,18 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         public async Task TestBuildClaimDefRequestWorks()
         {
             var schema_seq_no = 1;
-            var data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}";
+            var dataTemplate = "{{\"primary\":{{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{{\"name\":\"1\"}},\"rctxt\":\"1\",\"z\":\"1\"}}{0}}}";
+            var data = string.Format(dataTemplate, string.Empty);
+
+            var expectedData = string.Format(dataTemplate, ",\"revocation\":{}");
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"ref\":{1}," +
-                    "\"data\":\"{2}\"," +
+                    "\"data\":{2}," +
                     "\"type\":\"102\"," +
                     "\"signature_type\":\"{3}\"" +
-                    "}}", _identifier, schema_seq_no, data, _signature_type);
+                    "}}", _identifier, schema_seq_no, expectedData, _signature_type);
 
             var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(_identifier, schema_seq_no, _signature_type, data);
 
@@ -128,7 +131,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
             await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
-            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(myDid, schemaData);
             await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest);
@@ -193,7 +196,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
             await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
-            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(myDid, schemaData);
             var schemaResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest);

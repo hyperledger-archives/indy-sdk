@@ -59,7 +59,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
-            var schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"keys\": [\"name\", \"male\"]}";
+            var schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
             var schemaResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
@@ -73,10 +73,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var getTxnResponseObj = JObject.Parse(getTxnResponse);
 
-            var schemaTransaction = getTxnResponseObj["result"].Value<string>("data");
-            var schemaTransactionObj = JObject.Parse(schemaTransaction);
+            var returnedSchemaData = getTxnResponseObj["result"]["data"]["data"];            
+            var expectedSchemaData = JToken.Parse(schemaData);
 
-            Assert.AreEqual(schemaData, schemaTransactionObj.Value<string>("data"));
+            Assert.IsTrue(JToken.DeepEquals(expectedSchemaData, returnedSchemaData));
         }
 
         [TestMethod] 
@@ -87,7 +87,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
             var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
-            var schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"keys\": [\"name\", \"male\"]}";
+            var schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
             var schemaResponse = await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
