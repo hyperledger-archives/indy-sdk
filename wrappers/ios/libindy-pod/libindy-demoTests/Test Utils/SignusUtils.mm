@@ -30,20 +30,21 @@
     return @"pool_1";
 }
 
-+ (NSString *)message
++ (NSData *)message
 {
-    return @"{\"reqId\":1496822211362017764}";
+    NSString *messageJson =  @"{\"reqId\":1496822211362017764}";
+    return [messageJson dataUsingEncoding:NSUTF8StringEncoding];
 }
 
 + (NSData *)encryptedMessage
 {
-    const unsigned char bytes[] = {242, 246, 53, 153, 106, 37, 185, 65, 212, 14, 109, 131, 200, 169, 94, 110, 51, 47, 101, 89, 0, 171, 105, 183};
+    const unsigned char bytes[] = {187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32};
     return [NSData dataWithBytes:bytes length:sizeof(bytes)];
 }
 
 + (NSData *)nonce
 {
-    const unsigned char bytes[] = {187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32};
+    const unsigned char bytes[] = {242, 246, 53, 153, 106, 37, 185, 65, 212, 14, 109, 131, 200, 169, 94, 110, 51, 47, 101, 89, 0, 171, 105, 183};
     return [NSData dataWithBytes:bytes length:sizeof(bytes)];
 }
 
@@ -55,12 +56,12 @@
 
 + (NSString *)trusteeSeed
 {
-    return @"000000000000000000000000";
+    return @"000000000000000000000000Trustee1";
 }
 
 + (NSString *)mySeed
 {
-    return @"00000000000000000000000000000";
+    return @"00000000000000000000000000000My1";
 }
 
 - (NSError *)signWithWalletHandle:(IndyHandle)walletHandle

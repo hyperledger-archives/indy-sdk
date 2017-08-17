@@ -17,7 +17,7 @@
 // MARK: - Class variables
 
 + (NSString *)pool;
-+ (NSString *)message;
++ (NSData *)message;
 + (NSData *)encryptedMessage;
 + (NSData *)nonce;
 + (NSData *)signature;
