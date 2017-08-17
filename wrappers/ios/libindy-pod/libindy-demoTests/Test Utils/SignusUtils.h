@@ -14,6 +14,18 @@
 
 + (SignusUtils *)sharedInstance;
 
+// MARK: - Class variables
+
++ (NSString *)pool;
++ (NSString *)message;
++ (NSData *)encryptedMessage;
++ (NSData *)nonce;
++ (NSData *)signature;
++ (NSString *)trusteeSeed;
++ (NSString *)mySeed;
+
+// MARK: - Instance methods
+
 - (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                          theirDid:(NSString *)theirDid
                           message:(NSData *)message
