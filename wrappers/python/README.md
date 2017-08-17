@@ -12,8 +12,8 @@ Pull requests welcome!
 ### How to build
 
 - Install native "indy" library:
-	Ubuntu:  https://repo.evernym.com/rpm/indy-sdk/ 
-	Windows: https://repo.evernym.com/deb/windows-bins/indy-sdk/
+* Ubuntu:  https://repo.evernym.com/rpm/indy-sdk/ 
+* Windows: https://repo.evernym.com/deb/windows-bins/indy-sdk/
 
 - Clone indy-sdk repo from https://github.com/hyperledger/indy-sdk
 
