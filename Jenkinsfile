@@ -364,7 +364,7 @@ def publishingLibindyDebFiles() {
                     echo 'Publish Deb: Build docker image'
                     def testEnv = dockerHelpers.build('indy-sdk')
 
-                    testEnv.inside {
+                    testEnv.inside('-u 0:0') {
 
                         sh 'chmod -R 777 ci'
 
@@ -436,7 +436,7 @@ def publishingPythonWrapperDebFiles() {
                     echo 'Publish Python Wrapper Deb: Build docker image'
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                    testEnv.inside {
+                    testEnv.inside('-u 0:0') {
                         sh 'chmod -R 777 ci'
 
                         sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
@@ -465,7 +465,7 @@ def publishingPythonWrapperToPipy() {
                 echo 'Publish Deb: Build docker image'
                 def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                testEnv.inside {
+                testEnv.inside('-u 0:0') {
 
                     withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                         sh 'cp $credentialsFile ./wrappers/python/'
