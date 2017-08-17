@@ -34,13 +34,18 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
         [TestCleanup]
         public void DeleteWallet()
         {
-            _issuerWallet.CloseAsync().Wait();
+            if(_issuerWallet != null)
+                _issuerWallet.CloseAsync().Wait();
+
             Wallet.DeleteWalletAsync("issuerWallet", null).Wait();
 
-            _proverWallet.CloseAsync().Wait();
+            if(_proverWallet != null)
+                _proverWallet.CloseAsync().Wait();
+
             Wallet.DeleteWalletAsync("proverWallet", null).Wait();
 
-            _pool.CloseAsync().Wait();
+            if(_pool != null)
+                _pool.CloseAsync().Wait();
         }
 
 
@@ -541,9 +546,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var requestedClaimsJson = string.Format("{{\n" +
                     "                                          \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
                     "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true],\n" +
-                    "                                                               \"attr2_uuid\":[\"{2}\", false]}},\n" +
-                    "                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{3}\"}}\n" +
-                    "                                        }}", selfAttestedValue, claimUuid, claimUuid, claimUuid);
+                    "                                          \"requested_predicates\":{{}}\n" +
+                    "                                        }}", selfAttestedValue, claimUuid);
 
             var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schemaJson);
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, claimDef);
@@ -562,9 +566,6 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     proof["requested_proof"]["revealed_attrs"]["attr1_uuid"][1]);
 
 
-            Assert.IsNotNull(proof["requested_proof"]["unrevealed_attrs"]["attr2_uuid"]);
-
-
             Assert.AreEqual(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("self1"));
 
             proofRequestJson = "{\n" +
@@ -572,7 +573,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                        \"name\":\"proof_req_1\",\n" +
                     "                        \"version\":\"0.1\",\n" +
                     "                    \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +
-                    "                    \"requested_predicates\":{}\n" +
+                    "                    \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}\n" +
                     "           }";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
