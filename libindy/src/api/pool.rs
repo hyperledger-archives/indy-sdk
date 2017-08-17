@@ -26,9 +26,9 @@ use self::libc::c_char;
 /// Ledger*
 #[no_mangle]
 pub extern fn indy_create_pool_ledger_config(command_handle: i32,
-                                               config_name: *const c_char,
-                                               config: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                             config_name: *const c_char,
+                                             config: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -72,9 +72,9 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 /// Ledger*
 #[no_mangle]
 pub extern fn indy_open_pool_ledger(command_handle: i32,
-                                      config_name: *const c_char,
-                                      config: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode {
+                                    config_name: *const c_char,
+                                    config: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode {
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -105,8 +105,8 @@ pub extern fn indy_open_pool_ledger(command_handle: i32,
 /// Ledger*
 #[no_mangle]
 pub extern fn indy_refresh_pool_ledger(command_handle: i32,
-                                         handle: i32,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                       handle: i32,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
@@ -134,8 +134,8 @@ pub extern fn indy_refresh_pool_ledger(command_handle: i32,
 /// Ledger*
 #[no_mangle]
 pub extern fn indy_close_pool_ledger(command_handle: i32,
-                                       handle: i32,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                     handle: i32,
+                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
@@ -163,8 +163,8 @@ pub extern fn indy_close_pool_ledger(command_handle: i32,
 /// Ledger*
 #[no_mangle]
 pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
-                                               config_name: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                             config_name: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 

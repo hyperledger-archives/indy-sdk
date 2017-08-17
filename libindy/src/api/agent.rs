@@ -42,16 +42,16 @@ use self::libc::c_char;
 /// - message: Received message.
 #[no_mangle]
 pub extern fn indy_agent_connect(command_handle: i32,
-                                   pool_handle: i32,
-                                   wallet_handle: i32,
-                                   sender_did: *const c_char,
-                                   receiver_did: *const c_char,
-                                   connection_cb: Option<extern fn(xcommand_handle: i32,
-                                                                   err: ErrorCode,
-                                                                   connection_handle: i32)>,
-                                   message_cb: Option<extern fn(xconnection_handle: i32,
-                                                                err: ErrorCode,
-                                                                message: *const c_char)>) -> ErrorCode {
+                                 pool_handle: i32,
+                                 wallet_handle: i32,
+                                 sender_did: *const c_char,
+                                 receiver_did: *const c_char,
+                                 connection_cb: Option<extern fn(xcommand_handle: i32,
+                                                                 err: ErrorCode,
+                                                                 connection_handle: i32)>,
+                                 message_cb: Option<extern fn(xconnection_handle: i32,
+                                                              err: ErrorCode,
+                                                              message: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(sender_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receiver_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam5);
@@ -119,18 +119,18 @@ pub extern fn indy_agent_connect(command_handle: i32,
 /// - message: Received message.
 #[no_mangle]
 pub extern fn indy_agent_listen(command_handle: i32,
-                                  endpoint: *const c_char,
-                                  listener_cb: Option<extern fn(xcommand_handle: i32,
+                                endpoint: *const c_char,
+                                listener_cb: Option<extern fn(xcommand_handle: i32,
+                                                              err: ErrorCode,
+                                                              listener_handle: i32)>,
+                                connection_cb: Option<extern fn(xlistener_handle: i32,
                                                                 err: ErrorCode,
-                                                                listener_handle: i32)>,
-                                  connection_cb: Option<extern fn(xlistener_handle: i32,
-                                                                  err: ErrorCode,
-                                                                  connection_handle: i32,
-                                                                  sender_did: *const c_char,
-                                                                  receiver_did: *const c_char)>,
-                                  message_cb: Option<extern fn(xconnection_handle: i32,
-                                                               err: ErrorCode,
-                                                               message: *const c_char)>) -> ErrorCode {
+                                                                connection_handle: i32,
+                                                                sender_did: *const c_char,
+                                                                receiver_did: *const c_char)>,
+                                message_cb: Option<extern fn(xconnection_handle: i32,
+                                                             err: ErrorCode,
+                                                             message: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(endpoint, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(listener_cb, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(connection_cb, ErrorCode::CommonInvalidParam4);
@@ -187,12 +187,12 @@ pub extern fn indy_agent_listen(command_handle: i32,
 /// - err: Error code
 #[no_mangle]
 pub extern fn indy_agent_add_identity(command_handle: i32,
-                                        listener_handle: i32,
-                                        pool_handle: i32,
-                                        wallet_handle: i32,
-                                        did: *const c_char,
-                                        add_identity_cb: Option<extern fn(xcommand_handle: i32,
-                                                                          err: ErrorCode)>) -> ErrorCode {
+                                      listener_handle: i32,
+                                      pool_handle: i32,
+                                      wallet_handle: i32,
+                                      did: *const c_char,
+                                      add_identity_cb: Option<extern fn(xcommand_handle: i32,
+                                                                        err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(add_identity_cb, ErrorCode::CommonInvalidParam6);
 
@@ -237,11 +237,11 @@ pub extern fn indy_agent_add_identity(command_handle: i32,
 /// - err: Error code
 #[no_mangle]
 pub extern fn indy_agent_remove_identity(command_handle: i32,
-                                           listener_handle: i32,
-                                           wallet_handle: i32,
-                                           did: *const c_char,
-                                           rm_identity_cb: Option<extern fn(xcommand_handle: i32,
-                                                                        err: ErrorCode)>) -> ErrorCode {
+                                         listener_handle: i32,
+                                         wallet_handle: i32,
+                                         did: *const c_char,
+                                         rm_identity_cb: Option<extern fn(xcommand_handle: i32,
+                                                                          err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(rm_identity_cb, ErrorCode::CommonInvalidParam5);
 
@@ -280,10 +280,10 @@ pub extern fn indy_agent_remove_identity(command_handle: i32,
 /// #Errors
 #[no_mangle]
 pub extern fn indy_agent_send(command_handle: i32,
-                                connection_handle: i32,
-                                message: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: i32,
-                                                     err: ErrorCode)>) -> ErrorCode {
+                              connection_handle: i32,
+                              message: *const c_char,
+                              cb: Option<extern fn(xcommand_handle: i32,
+                                                   err: ErrorCode)>) -> ErrorCode {
     check_useful_opt_c_str!(message, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -317,9 +317,9 @@ pub extern fn indy_agent_send(command_handle: i32,
 /// #Errors
 #[no_mangle]
 pub extern fn indy_agent_close_connection(command_handle: i32,
-                                            connection_handle: i32,
-                                            cb: Option<extern fn(xcommand_handle: i32,
-                                                                 err: ErrorCode)>) -> ErrorCode {
+                                          connection_handle: i32,
+                                          cb: Option<extern fn(xcommand_handle: i32,
+                                                               err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let cmd = Command::Agent(AgentCommand::CloseConnection(
@@ -351,9 +351,9 @@ pub extern fn indy_agent_close_connection(command_handle: i32,
 /// #Errors
 #[no_mangle]
 pub extern fn indy_agent_close_listener(command_handle: i32,
-                                          listener_handle: i32,
-                                          cb: Option<extern fn(xcommand_handle: i32,
-                                                               err: ErrorCode)>) -> ErrorCode {
+                                        listener_handle: i32,
+                                        cb: Option<extern fn(xcommand_handle: i32,
+                                                             err: ErrorCode)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let cmd = Command::Agent(AgentCommand::CloseListener(
