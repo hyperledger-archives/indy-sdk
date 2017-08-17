@@ -10,18 +10,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class IssuerCreateClaimTest : AnonCredsIntegrationTestBase
     {
-        [ClassCleanup]
-        public static void CloseCommonWallet()
-        {
-            if(_commonWallet != null)
-                _commonWallet.CloseAsync().Wait();
-
-        }
-
         [TestMethod]
-        public void TestIssuerCreateAndStoreClaimWorks()
+        public async Task TestIssuerCreateAndStoreClaimWorks()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimRequest = string.Format(_claimRequestTemplate, _issuerDid, 1);
 
@@ -31,7 +23,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1).Result;
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1);
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
@@ -47,7 +39,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimWorksForClaimDoesNotCorrespondToClaimRequest()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimRequest = string.Format(_claimRequestTemplate, _issuerDid, 1);
 
@@ -65,7 +57,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimReqWorksForInvalidClaim()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             String claimRequest = string.Format(_claimRequestTemplate, _issuerDid, 1);
 

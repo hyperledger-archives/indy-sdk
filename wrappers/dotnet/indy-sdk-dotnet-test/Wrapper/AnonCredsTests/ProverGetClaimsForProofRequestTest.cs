@@ -10,17 +10,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class ProverGetClaimsForProofRequestTest : AnonCredsIntegrationTestBase
     {
-        [ClassCleanup]
-        public static void CloseCommonWallet()
-        {
-            if (_commonWallet != null)
-                _commonWallet.CloseAsync().Wait();
-        }
-
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForRevealedAttribute()
+        public async Task TestProverGetClaimsForProofRequestWorksForRevealedAttribute()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -29,7 +22,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;                
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);                
 
             var claims = JObject.Parse(claimsJson);
 
@@ -38,9 +31,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForNotFoundAttribute()
+        public async Task TestProverGetClaimsForProofRequestWorksForNotFoundAttribute()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -49,7 +42,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -58,9 +51,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForSatisfyPredicate()
+        public async Task TestProverGetClaimsForProofRequestWorksForSatisfyPredicate()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -69,7 +62,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -78,9 +71,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForNotSatisfyPredicate()
+        public async Task TestProverGetClaimsForProofRequestWorksForNotSatisfyPredicate()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -89,7 +82,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -98,9 +91,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForMultipleAttributesAndPredicates()
+        public async Task TestProverGetClaimsForProofRequestWorksForMultipleAttributesAndPredicates()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "               \"name\":\"proof_req_1\",\n" +
@@ -114,7 +107,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "                     \"predicate2_uuid\":{\"attr_name\":\"height\",\"p_type\":\"GE\",\"value\":160}\n" +
                 "               }}";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -132,9 +125,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForEmptyRequest()
+        public async Task TestProverGetClaimsForProofRequestWorksForEmptyRequest()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -143,7 +136,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -152,9 +145,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForRevealedAttributeWithOtherSchema()
+        public async Task TestProverGetClaimsForProofRequestWorksForRevealedAttributeWithOtherSchema()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -163,7 +156,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -172,9 +165,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificIssuer()
+        public async Task TestProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificIssuer()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -183,7 +176,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -192,9 +185,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsForProofRequestWorksForSatisfyPredicateByIssuerAndSchema()
+        public async Task TestProverGetClaimsForProofRequestWorksForSatisfyPredicateByIssuerAndSchema()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -203,7 +196,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}}\n" +
                 "             }";
 
-            var claimsJson = AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest).Result;
+            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -214,7 +207,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverGetClaimsForProofRequestWorksForInvalidProofRequest()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +
@@ -232,7 +225,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverGetClaimsForProofRequestWorksForInvalidPredicateType()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "              \"name\":\"proof_req_1\",\n" +

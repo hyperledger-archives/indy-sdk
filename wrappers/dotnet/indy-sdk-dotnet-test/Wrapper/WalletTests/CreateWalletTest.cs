@@ -8,21 +8,21 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
     public class CreateWalletTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestCreateWalletWorks()
+        public async Task TestCreateWalletWorks()
         {
-            Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
+            await Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null);
         }
 
         [TestMethod]
-        public void TestCreateWalletWorksForEmptyType()
+        public async Task TestCreateWalletWorksForEmptyType()
         {
-            Wallet.CreateWalletAsync("default", "createWalletWorks", null, null, null).Wait();
+            await Wallet.CreateWalletAsync("default", "createWalletWorks", null, null, null);
         }
 
         [TestMethod]
-        public void TestCreateWalletWorksForConfigJson()
+        public async Task TestCreateWalletWorksForConfigJson()
         {
-            Wallet.CreateWalletAsync("default", "createWalletWorks", null, "{\"freshness_time\":1000}", null).Wait();
+            await Wallet.CreateWalletAsync("default", "createWalletWorks", null, "{\"freshness_time\":1000}", null);
         }
 
         [TestMethod]
@@ -52,7 +52,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             var walletName = "deleteWalletWorks";
             var type = "default";
 
-            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
+            await Wallet.CreateWalletAsync(poolName, walletName, type, null, null);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Wallet.CreateWalletAsync(poolName, walletName, type, null, null)
@@ -62,9 +62,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        public void TestCreateWalletWorksForPlugged()
+        public async Task TestCreateWalletWorksForPlugged()
         {
-            Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null).Wait();
+            await Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null);
         }
 
     }

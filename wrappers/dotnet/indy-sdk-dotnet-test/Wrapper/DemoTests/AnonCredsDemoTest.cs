@@ -15,42 +15,42 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
         private String _poolName;
 
         [TestInitialize]
-        public void CreateWallet()
+        public async Task CreateWallet()
         {
             //1. Create and Open Pool
             _poolName = PoolUtils.CreatePoolLedgerConfig();
 
-            _pool = Pool.OpenPoolLedgerAsync(_poolName, "{}").Result;
+            _pool = await Pool.OpenPoolLedgerAsync(_poolName, "{}");
 
             //2. Issuer Create and Open Wallet
-            Wallet.CreateWalletAsync(_poolName, "issuerWallet", "default", null, null).Wait();
-            _issuerWallet = Wallet.OpenWalletAsync("issuerWallet", null, null).Result;
+            await Wallet.CreateWalletAsync(_poolName, "issuerWallet", "default", null, null);
+            _issuerWallet = await Wallet.OpenWalletAsync("issuerWallet", null, null);
 
             //3. Prover Create and Open Wallet
-            Wallet.CreateWalletAsync(_poolName, "proverWallet", "default", null, null).Wait();
-            _proverWallet = Wallet.OpenWalletAsync("proverWallet", null, null).Result;
+            await Wallet.CreateWalletAsync(_poolName, "proverWallet", "default", null, null);
+            _proverWallet = await Wallet.OpenWalletAsync("proverWallet", null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
             if(_issuerWallet != null)
-                _issuerWallet.CloseAsync().Wait();
+                await _issuerWallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync("issuerWallet", null).Wait();
+            await Wallet.DeleteWalletAsync("issuerWallet", null);
 
             if(_proverWallet != null)
-                _proverWallet.CloseAsync().Wait();
+                await _proverWallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync("proverWallet", null).Wait();
+            await Wallet.DeleteWalletAsync("proverWallet", null);
 
             if(_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
         }
 
 
         [TestMethod]
-        public void TestAnonCredsDemo()
+        public async Task TestAnonCredsDemo()
         {
             //4. Issuer create ClaimDef
             var schemaJson = "{\n" +
@@ -63,20 +63,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                }";
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 
-            var claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, schemaJson, null, false).Result;
+            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, schemaJson, null, false);
             Assert.IsNotNull(claimDef);
 
             //5. Prover create Master Secret
             var masterSecret = "masterSecretName";
-            AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret);
 
             //6. Prover store Claim Offer
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
 
             //7. Prover get Claim Offers
             var claimOfferFilter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
-            var claimOffersJson = AnonCreds.ProverGetClaimOffersAsync(_proverWallet, claimOfferFilter).Result;
+            var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(_proverWallet, claimOfferFilter);
 
             var claimOffersObject = JArray.Parse(claimOffersJson);
             Assert.AreEqual(claimOffersObject.Count, 1);
@@ -86,7 +86,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             //8. Prover create ClaimReq
             var proverDid = "BzfFCYk";
-            var claimReq = AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).Result;
+            var claimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, claimOfferJson, claimDef, masterSecret);
             Assert.IsNotNull(claimReq);
 
             //9. Issuer create Claim
@@ -97,12 +97,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1, -1).Result;
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1, -1);
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
             //10. Prover store Claim
-            AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson);
 
             //11. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -114,7 +114,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                          \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
                     "                  }";
 
-            var claimsForProofJson = AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson).Result;
+            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
             Assert.IsNotNull(claimsForProofJson);
 
             var claimsForProof = JObject.Parse(claimsForProofJson);
@@ -142,8 +142,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var revocRegsJson = "{}";
 
 
-            var proofJson = AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-                    masterSecret, claimDefsJson, revocRegsJson).Result;
+            var proofJson = await AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
+                    masterSecret, claimDefsJson, revocRegsJson);
             Assert.IsNotNull(proofJson);
 
             var proof = JObject.Parse(proofJson);
@@ -156,12 +156,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             Assert.AreEqual(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("self1"));
 
-            Boolean valid = AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).Result;
+            Boolean valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson);
             Assert.IsTrue(valid);
         }
 
         [TestMethod]
-        public void TestAnonCredsWorksForMultipleIssuerSingleProver()
+        public async Task TestAnonCredsWorksForMultipleIssuerSingleProver()
         {
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
             var issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -169,8 +169,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var issuerGvtWallet = _issuerWallet;
 
             //1. Issuer2 Create and Open Wallet
-            Wallet.CreateWalletAsync(_poolName, "issuer2Wallet", "default", null, null).Wait();
-            var issuerXyzWallet = Wallet.OpenWalletAsync("issuer2Wallet", null, null).Result;
+            await Wallet.CreateWalletAsync(_poolName, "issuer2Wallet", "default", null, null);
+            var issuerXyzWallet = await Wallet.OpenWalletAsync("issuer2Wallet", null, null);
 
             //2. Issuer create ClaimDef
             var gvtSchemaJson = "{\n" +
@@ -182,7 +182,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                    }\n" +
                     "                }";
 
-            var gvtClaimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(issuerGvtWallet, issuerDid, gvtSchemaJson, null, false).Result;
+            var gvtClaimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(issuerGvtWallet, issuerDid, gvtSchemaJson, null, false);
 
             //3. Issuer create ClaimDef
             var xyzSchemaJson = "{\n" +
@@ -194,22 +194,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                    }\n" +
                     "                }";
 
-            var xyzClaimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(issuerXyzWallet, issuerDid2, xyzSchemaJson, null, false).Result;
+            var xyzClaimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(issuerXyzWallet, issuerDid2, xyzSchemaJson, null, false);
 
             //4. Prover create Master Secret
             var masterSecret = "masterSecretName";
-            AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret);
 
             //5. Prover store Claim Offer received from Issuer1
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
 
             //6. Prover store Claim Offer received from Issuer2
             var claimOffer2 = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid2, 2);
-            AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer2).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer2);
 
             //7. Prover get Claim Offers
-            var claimOffersJson = AnonCreds.ProverGetClaimOffersAsync(_proverWallet, "{}").Result;
+            var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(_proverWallet, "{}");
 
             var claimOffersObject = JArray.Parse(claimOffersJson);
             Assert.AreEqual(2, claimOffersObject.Count);
@@ -223,7 +223,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             //8. Prover create ClaimReq for GVT Claim Offer
             var proverDid = "BzfFCYk";
-            var gvtClaimReq = AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).Result;
+            var gvtClaimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret);
 
             //9. Issuer create Claim
             var gvtClaimAttributesJson = "{\n" +
@@ -233,14 +233,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var gvtCreateClaimResult = AnonCreds.IssuerCreateClaimAsync(issuerGvtWallet, gvtClaimReq, gvtClaimAttributesJson, -1, -1).Result;
+            var gvtCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerGvtWallet, gvtClaimReq, gvtClaimAttributesJson, -1, -1);
             var gvtClaimJson = gvtCreateClaimResult.ClaimJson;
 
             //10. Prover store Claim
-            AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson);
 
             //11. Prover create ClaimReq for GVT Claim Offer
-            var xyzClaimReq = AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).Result;
+            var xyzClaimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret);
 
             //12. Issuer create Claim
             var xyzClaimAttributesJson = "{\n" +
@@ -248,11 +248,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"period\":[\"8\",\"8\"]\n" +
                     "        }";
 
-            var xyzCreateClaimResult = AnonCreds.IssuerCreateClaimAsync(issuerXyzWallet, xyzClaimReq, xyzClaimAttributesJson, -1, -1).Result;
+            var xyzCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerXyzWallet, xyzClaimReq, xyzClaimAttributesJson, -1, -1);
             var xyzClaimJson = xyzCreateClaimResult.ClaimJson;
 
             //13. Prover store Claim
-            AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson);
 
             //14. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -266,7 +266,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                  }";
 
 
-            var claimsForProofJson = AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson).Result;
+            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
             Assert.IsNotNull(claimsForProofJson);
 
             var claimsForProof = JObject.Parse(claimsForProofJson);
@@ -299,8 +299,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             var revocRegsJson = "{}";
 
-            var proofJson = AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-                    masterSecret, claimDefsJson, revocRegsJson).Result;
+            var proofJson = await AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
+                    masterSecret, claimDefsJson, revocRegsJson);
             Assert.IsNotNull(proofJson);
 
             var proof = JObject.Parse(proofJson);
@@ -312,16 +312,16 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             Assert.AreEqual("partial",
                     proof["requested_proof"]["revealed_attrs"]["attr2_uuid"].Value<string>(1));
 
-            Boolean valid = AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).Result;
+            Boolean valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson);
             Assert.IsTrue(valid);
 
             //18. Close and delete Issuer2 Wallet
-            issuerXyzWallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync("issuer2Wallet", null).Wait();
+            await issuerXyzWallet.CloseAsync();
+            await Wallet.DeleteWalletAsync("issuer2Wallet", null);
         }
 
         [TestMethod]
-        public void TestAnonCredsWorksForSingleIssuerSingleProverMultipleClaims()
+        public async Task TestAnonCredsWorksForSingleIssuerSingleProverMultipleClaims()
         {
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 
@@ -335,7 +335,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                    }\n" +
                     "                }";
 
-            var gvtClaimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, gvtSchemaJson, null, false).Result;
+            var gvtClaimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, gvtSchemaJson, null, false);
 
             //2. Issuer create ClaimDef
             var xyzSchemaJson = "{\n" +
@@ -347,22 +347,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                    }\n" +
                     "                }";
 
-            var xyzClaimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, xyzSchemaJson, null, false).Result;
+            var xyzClaimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, xyzSchemaJson, null, false);
 
             //3. Prover create Master Secret
             var masterSecret = "masterSecretName";
-            AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret);
 
             //4. Prover store Claim Offer received from Issuer
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
 
             //5. Prover store Claim Offer received from Issuer
             var claimOffer2 = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 2);
-            AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer2).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer2);
 
             //6. Prover get Claim Offers
-            var claimOffersJson = AnonCreds.ProverGetClaimOffersAsync(_proverWallet, "{}").Result;
+            var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(_proverWallet, "{}");
 
             var claimOffersObject = JArray.Parse(claimOffersJson);
             Assert.AreEqual(2, claimOffersObject.Count);
@@ -376,7 +376,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             //7. Prover create ClaimReq for GVT Claim Offer
             var proverDid = "BzfFCYk";
-            var gvtClaimReq = AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).Result;
+            var gvtClaimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret);
 
             //8. Issuer create Claim
             var gvtClaimAttributesJson = "{\n" +
@@ -386,14 +386,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var gvtCreateClaimResult = AnonCreds.IssuerCreateClaimAsync(_issuerWallet, gvtClaimReq, gvtClaimAttributesJson, -1, -1).Result;
+            var gvtCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, gvtClaimReq, gvtClaimAttributesJson, -1, -1);
             var gvtClaimJson = gvtCreateClaimResult.ClaimJson;
 
             //9. Prover store Claim
-            AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson);
 
             //10. Prover create ClaimReq for GVT Claim Offer
-            var xyzClaimReq = AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).Result;
+            var xyzClaimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret);
 
             //11. Issuer create Claim
             var xyzClaimAttributesJson = "{\n" +
@@ -401,11 +401,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"period\":[\"8\",\"8\"]\n" +
                     "        }";
 
-            var xyzCreateClaimResult = AnonCreds.IssuerCreateClaimAsync(_issuerWallet, xyzClaimReq, xyzClaimAttributesJson, -1, -1).Result;
+            var xyzCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, xyzClaimReq, xyzClaimAttributesJson, -1, -1);
             var xyzClaimJson = xyzCreateClaimResult.ClaimJson;
 
             //12. Prover store Claim
-            AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson);
 
             //13. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -418,7 +418,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                  }";
 
 
-            var claimsForProofJson = AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson).Result;
+            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
             Assert.IsNotNull(claimsForProofJson);
 
             var claimsForProof = JObject.Parse(claimsForProofJson);
@@ -447,8 +447,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             var revocRegsJson = "{}";
 
-            var proofJson = AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-                    masterSecret, claimDefsJson, revocRegsJson).Result;
+            var proofJson = await AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
+                    masterSecret, claimDefsJson, revocRegsJson);
             Assert.IsNotNull(proofJson);
 
             var proof = JObject.Parse(proofJson);
@@ -457,7 +457,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             Assert.AreEqual("Alex",
                     proof["requested_proof"]["revealed_attrs"]["attr1_uuid"][1]);
 
-            Boolean valid = AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).Result;
+            var valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson);
             Assert.IsTrue(valid);
         }
 
@@ -475,21 +475,21 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                }";
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 
-            var claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, schemaJson, null, false).Result;
+            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, schemaJson, null, false);
 
             Assert.IsNotNull(claimDef);
 
             //2. Prover create Master Secret
             var masterSecret = "masterSecretName";
-            AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_proverWallet, masterSecret);
 
             //3. Prover store Claim Offer
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
 
             //4. Prover get Claim Offers
             var claimOfferFilter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
-            var claimOffersJson = AnonCreds.ProverGetClaimOffersAsync(_proverWallet, claimOfferFilter).Result;
+            var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(_proverWallet, claimOfferFilter);
 
             var claimOffersObject = JArray.Parse(claimOffersJson);
 
@@ -500,7 +500,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             //5. Prover create ClaimReq
             var proverDid = "BzfFCYk";
-            var claimReq = AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).Result;
+            var claimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, claimOfferJson, claimDef, masterSecret);
 
             Assert.IsNotNull(claimReq);
 
@@ -512,13 +512,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1, -1).Result;
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1, -1);
 
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
             //7. Prover store Claim
-            AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson);
 
             //8. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -529,7 +529,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "                          \"requested_predicates\":{}\n" +
                     "                  }";
 
-            var claimsForProofJson = AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson).Result;
+            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
 
             Assert.IsNotNull(claimsForProofJson);
 
@@ -554,8 +554,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var revocRegsJson = "{}";
 
             //TODO: Not sure why this call is failing...
-            var proofJson = AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-                    masterSecret, claimDefsJson, revocRegsJson).Result;
+            var proofJson = await AnonCreds.ProverCreateProofAsync(_proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
+                    masterSecret, claimDefsJson, revocRegsJson);
 
             Assert.IsNotNull(proofJson);
 
@@ -578,9 +578,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
               AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson)
-          );
+            );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
-    }
+        }
     }
 }

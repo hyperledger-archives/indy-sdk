@@ -31,7 +31,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
         private static TaskCompletionSource<string> _clientToServerMsgFuture = new TaskCompletionSource<string>();
 
         [TestMethod]
-        public void TestAgentDemo()
+        public async Task TestAgentDemo()
         {
             var endpoint = "127.0.0.1:9801";
             var listenerWalletName = "listenerWallet";
@@ -40,19 +40,19 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 
             //1. Create and Open Pool
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = Pool.OpenPoolLedgerAsync(poolName, "{}").Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             //2. Create and Open Listener Wallet
-            Wallet.CreateWalletAsync(poolName, listenerWalletName, "default", null, null).Wait();
-            var listenerWallet = Wallet.OpenWalletAsync(listenerWalletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, listenerWalletName, "default", null, null);
+            var listenerWallet = await Wallet.OpenWalletAsync(listenerWalletName, null, null);
 
             //3. Create and Open Trustee Wallet
-            Wallet.CreateWalletAsync(poolName, trusteeWalletName, "default", null, null).Wait();
-            var trusteeWallet = Wallet.OpenWalletAsync(trusteeWalletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, trusteeWalletName, "default", null, null);
+            var trusteeWallet = await Wallet.OpenWalletAsync(trusteeWalletName, null, null);
             var senderWallet = trusteeWallet;
 
             //4. Create My Did
-            var createMyDidResult = Signus.CreateAndStoreMyDidAsync(listenerWallet, "{}").Result;
+            var createMyDidResult = await Signus.CreateAndStoreMyDidAsync(listenerWallet, "{}");
             var listenerDid = createMyDidResult.Did;
             var listenerVerkey = createMyDidResult.VerKey;
             var listenerPk = createMyDidResult.Pk;
@@ -60,49 +60,49 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             //5. Create Their Did from Trustee seed
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
             var senderDid = trusteeDid;
 
             // 6. Prepare and Send NYM request with signing
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, listenerDid, listenerVerkey, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(pool, trusteeWallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, listenerDid, listenerVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(pool, trusteeWallet, trusteeDid, nymRequest);
 
             // 7. Prepare and Send Attrib for listener (will be requested from ledger and used by sender at start connection)
             var rawJson = string.Format("{{\"endpoint\":{{\"ha\":\"{0}\",\"verkey\":\"{1}\"}}}}", endpoint, listenerPk);
-            var attribRequest = Ledger.BuildAttribRequestAsync(listenerDid, listenerDid, null, rawJson, null).Result;
-            Ledger.SignAndSubmitRequestAsync(pool, listenerWallet, listenerDid, attribRequest).Wait();
+            var attribRequest = await Ledger.BuildAttribRequestAsync(listenerDid, listenerDid, null, rawJson, null);
+            await Ledger.SignAndSubmitRequestAsync(pool, listenerWallet, listenerDid, attribRequest);
 
             // 8. start listener on endpoint
-            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
 
             // 9. Allow listener accept incoming connection for specific DID (listener_did)
-            activeListener.AddIdentityAsync(pool, listenerWallet, listenerDid).Wait();
+            await activeListener.AddIdentityAsync(pool, listenerWallet, listenerDid);
 
             // 10. Initiate connection from sender to listener
-            var connection = Agent.AgentConnectAsync(pool, senderWallet, senderDid, listenerDid, _messageObserver).Result;
+            var connection = await Agent.AgentConnectAsync(pool, senderWallet, senderDid, listenerDid, _messageObserver);
 
             // 11. Send test message from sender to listener
-            connection.SendAsync("test").Wait();
+            await connection.SendAsync("test");
 
-            Assert.AreEqual(message, _clientToServerMsgFuture.Task.Result);
+            Assert.AreEqual(message, await _clientToServerMsgFuture.Task);
 
             // 12. Close connection
-            connection.CloseAsync().Wait();
+            await connection.CloseAsync();
 
             // 13. Close listener
-            activeListener.CloseAsync().Wait();
+            await activeListener.CloseAsync();
 
             // 14. Close and delete Issuer Wallet
-            listenerWallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(listenerWalletName, null).Wait();
+            await listenerWallet.CloseAsync();
+            await Wallet.DeleteWalletAsync(listenerWalletName, null);
 
             // 15. Close and delete Prover Wallet
-            trusteeWallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(trusteeWalletName, null).Wait();
+            await trusteeWallet.CloseAsync();
+            await Wallet.DeleteWalletAsync(trusteeWalletName, null);
 
             //16. Close Pool
-            pool.CloseAsync().Wait();
+            await pool.CloseAsync();
         }        
     }
 }
