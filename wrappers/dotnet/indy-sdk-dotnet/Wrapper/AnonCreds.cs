@@ -11,27 +11,27 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimDefResultDelegate _issuerCreateAndStoreClaimDefCallback = (xCommandHandle, err, claimDefJson) =>
+        private static IssuerCreateAndStoreClaimDefResultDelegate _issuerCreateAndStoreClaimDefCallback = (xcommand_handle, err, claim_def_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claimDefJson);
+            taskCompletionSource.SetResult(claim_def_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimRevocRegAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimRevocRegResultDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xCommandHandle, err, claimDefJson, claimDefUuid) =>
+        private static IssuerCreateAndStoreClaimRevocRegResultDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_json, revoc_reg_uuid) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<IssuerCreateAndStoreRevocRegResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<IssuerCreateAndStoreRevocRegResult>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new IssuerCreateAndStoreRevocRegResult(claimDefJson, claimDefUuid);
+            var callbackResult = new IssuerCreateAndStoreRevocRegResult(revoc_reg_json, revoc_reg_uuid);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -39,14 +39,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
         /// </summary>
-        private static IssuerCreateClaimResultDelegate _issuerCreateClaimCallback = (xCommandHandle, err, revocRegUpdateJson, xClaimJson) =>
+        private static IssuerCreateClaimResultDelegate _issuerCreateClaimCallback = (xcommand_handle, err, revoc_reg_update_json, xclaim_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<IssuerCreateClaimResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<IssuerCreateClaimResult>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new IssuerCreateClaimResult(revocRegUpdateJson, xClaimJson);
+            var callbackResult = new IssuerCreateClaimResult(revoc_reg_update_json, xclaim_json);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -55,87 +55,87 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the IssuerRevokeClaimAsync command completes.
         /// </summary>
-        private static IssuerRevokeClaimResultDelegate IssuerRevokeClaimCallback = (xCommandHandle, err, revocRegUpdateJson) =>
+        private static IssuerRevokeClaimResultDelegate IssuerRevokeClaimCallback = (xcommand_handle, err, revoc_reg_update_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(revocRegUpdateJson);
+            taskCompletionSource.SetResult(revoc_reg_update_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimOffersAsync command completes.
         /// </summary>
-        private static ProverGetClaimOffersResultDelegate _proverGetClaimOffersCallback = (xCommandHandle, err, claimOffersJson) =>
+        private static ProverGetClaimOffersResultDelegate _proverGetClaimOffersCallback = (xcommand_handle, err, claim_offer_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claimOffersJson);
+            taskCompletionSource.SetResult(claim_offer_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the roverCreateAndStoreClaimReqAsync command completes.
         /// </summary>
-        private static ProverCreateAndStoreClaimReqResultDelegate _proverCreateAndStoreClaimReqCallback = (xCommandHandle, err, claimReqJson) =>
+        private static ProverCreateAndStoreClaimReqResultDelegate _proverCreateAndStoreClaimReqCallback = (xcommand_handle, err, claim_req_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claimReqJson);
+            taskCompletionSource.SetResult(claim_req_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsAsync command completes.
         /// </summary>
-        private static ProverGetClaimsResultDelegate _proverGetClaimsCallback = (xCommandHandle, err, claimsJson) =>
+        private static ProverGetClaimsResultDelegate _proverGetClaimsCallback = (xcommand_handle, err, claims_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claimsJson);
+            taskCompletionSource.SetResult(claims_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsForProofAsync command completes.
         /// </summary>
-        private static ProverGetClaimsForProofResultDelegate _proverGetClaimsForProofCallback = (xCommandHandle, err, claimsJson) =>
+        private static ProverGetClaimsForProofResultDelegate _proverGetClaimsForProofCallback = (xcommand_handle, err, claims_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claimsJson);
+            taskCompletionSource.SetResult(claims_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the ProverCreateProofAsync command completes.
         /// </summary>
-        private static ProverCreateProofResultDelegate _proverCreateProofCallback = (xCommandHandle, err, proofJson) =>
+        private static ProverCreateProofResultDelegate _proverCreateProofCallback = (xcommand_handle, err, proof_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(proofJson);
+            taskCompletionSource.SetResult(proof_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the VerifierVerifyProofAsync command completes.
         /// </summary>
-        private static VerifierVerifyProofResultDelegate _verifierVerifyProofCallback = (xCommandHandle, err, valid) =>
+        private static VerifierVerifyProofResultDelegate _verifierVerifyProofCallback = (xcommand_handle, err, valid) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
