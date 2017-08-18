@@ -550,6 +550,7 @@ impl<'a> Deserialize<'a> for Pair {
     }
 }
 
+#[cfg(feature = "revocation_tests")]
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -454,8 +454,11 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "revocation")]
     use services::anoncreds::prover;
+    #[cfg(feature = "revocation")]
     use services::anoncreds::prover::Prover;
+    #[cfg(feature = "revocation")]
     use services::anoncreds::types::ClaimJson;
 
     #[test]
