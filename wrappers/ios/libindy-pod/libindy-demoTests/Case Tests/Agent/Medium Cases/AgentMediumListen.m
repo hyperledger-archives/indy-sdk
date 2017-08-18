@@ -7,8 +7,6 @@
 //
 
 #import <Foundation/Foundation.h>
-
-#import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
 #import <libindy/libindy.h>
 #import "TestUtils.h"
