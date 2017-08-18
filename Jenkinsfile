@@ -8,6 +8,7 @@ try {
     notifyingSuccess()
 } catch (err) {
     notifyingFailure(err)
+    throw err
 }
 
 def testing() {
@@ -30,11 +31,11 @@ def publishing() {
         }
 
         parallel([
-                'liblindy-to-cargo'       : { publishingLibindyToCargo() },
-                'libindy-rpm-files'       : { publishingLibindyRpmFiles() },
-                'libindy-deb-files'       : { publishingLibindyDebFiles() },
-                'libindy-win-files'       : { publishingLibindyWinFiles() },
-                'python-wrapper-to-pipy'  : { publishingPythonWrapperToPipy() }
+                'liblindy-to-cargo'     : { publishingLibindyToCargo() },
+                'libindy-rpm-files'     : { publishingLibindyRpmFiles() },
+                'libindy-deb-files'     : { publishingLibindyDebFiles() },
+                'libindy-win-files'     : { publishingLibindyWinFiles() },
+                'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
         ])
     }
 }
@@ -53,22 +54,16 @@ def notifyingFailure(err) {
     node('ubuntu-master') {
         sendNotification.fail([slack: env.BRANCH_NAME == 'master'])
     }
-    throw err
 }
 
-def openPool(env_name, network_name, pool_ver, plenum_ver = null, anoncreds_ver = null, node_ver = null) {
+def openPool(env_name, network_name, pool_ver, plenum_ver, anoncreds_ver, node_ver) {
     echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
     sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
     echo "${env_name} Test: Build docker image for nodes pool ver. ${pool_ver}"
-    def poolEnv
-    if (plenum_ver == null || anoncreds_ver == null || node_ver == null) {
-        poolEnv = dockerHelpers.build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci', '--build-arg pool_ip=10.0.0.2')
-    } else {
-        echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
-        poolEnv = dockerHelpers.build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
-                "--build-arg pool_ip=10.0.0.2 --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}")
-    }
+    echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
+    def poolEnv = dockerHelpers.build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
+            "--build-arg pool_ip=10.0.0.2 --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}")
     echo "${env_name} Test: Run nodes pool"
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 }
@@ -109,7 +104,7 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
         sh "cp -r ci libindy"
 
         dir('libindy') {
-            poolInst = openPool(env_name, network_name, '105')
+            poolInst = openPool(env_name, network_name, '105', '1.0.95', '1.0.25', '1.0.105')
 
             echo "${env_name} Test: Build docker image"
             def testEnv = dockerHelpers.build('libindy', file)
