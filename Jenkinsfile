@@ -34,7 +34,6 @@ def publishing() {
                 'libindy-rpm-files'       : { publishingLibindyRpmFiles() },
                 'libindy-deb-files'       : { publishingLibindyDebFiles() },
                 'libindy-win-files'       : { publishingLibindyWinFiles() },
-                'python-wrapper-deb-files': { publishingPythonWrapperDebFiles() },
                 'python-wrapper-to-pipy'  : { publishingPythonWrapperToPipy() }
         ])
     }
@@ -423,39 +422,6 @@ def publishingLibindyWinFiles() {
             }
             finally {
                 echo 'Publish Windows files: Cleanup'
-                step([$class: 'WsCleanup'])
-            }
-        }
-    }
-}
-
-def publishingPythonWrapperDebFiles() {
-    node('ubuntu') {
-        stage('Publish Python Wrapper DEB Files') {
-            try {
-                echo 'Publish Python Wrapper Deb files: Checkout csm'
-                checkout scm
-
-                sh "cp -r ci wrappers/python"
-
-                dir('wrappers/python') {
-
-                    echo 'Publish Python Wrapper Deb: Build docker image'
-                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
-
-                    testEnv.inside('-u 0:0') {
-                        sh 'chmod -R 777 ci'
-
-                        sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
-
-                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/python-wrapper-deb-build-and-upload.sh $evernym_repo_key"
-                        }
-                    }
-                }
-            }
-            finally {
-                echo 'Publish Python Wrapper Deb: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
