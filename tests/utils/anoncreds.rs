@@ -1,17 +1,5 @@
 use indy::api::ErrorCode;
-use indy::api::anoncreds::{
-    indy_issuer_create_and_store_claim_def,
-    indy_issuer_create_claim,
-    indy_prover_create_master_secret,
-    indy_prover_create_and_store_claim_req,
-    indy_prover_store_claim,
-    indy_prover_get_claims_for_proof_req,
-    indy_prover_create_proof,
-    indy_prover_store_claim_offer,
-    indy_prover_get_claim_offers,
-    indy_verifier_verify_proof,
-    indy_prover_get_claims
-};
+use indy::api::anoncreds::*;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
@@ -25,7 +13,7 @@ use utils::test::TestUtils;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::mpsc::channel;
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
 
@@ -52,12 +40,12 @@ impl AnoncredsUtils {
 
         let err =
             indy_issuer_create_and_store_claim_def(command_handle,
-                                                     wallet_handle,
-                                                     issuer_did.as_ptr(),
-                                                     schema.as_ptr(),
-                                                     if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
-                                                     create_non_revoc,
-                                                     cb);
+                                                   wallet_handle,
+                                                   issuer_did.as_ptr(),
+                                                   schema.as_ptr(),
+                                                   if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
+                                                   create_non_revoc,
+                                                   cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -84,9 +72,9 @@ impl AnoncredsUtils {
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
         let err = indy_prover_create_master_secret(command_handle,
-                                                     wallet_handle,
-                                                     master_secret_name.as_ptr(),
-                                                     cb);
+                                                   wallet_handle,
+                                                   master_secret_name.as_ptr(),
+                                                   cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -113,9 +101,9 @@ impl AnoncredsUtils {
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
 
         let err = indy_prover_store_claim_offer(command_handle,
-                                                  wallet_handle,
-                                                  claim_offer_json.as_ptr(),
-                                                  cb);
+                                                wallet_handle,
+                                                claim_offer_json.as_ptr(),
+                                                cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -142,9 +130,9 @@ impl AnoncredsUtils {
         let filter_json = CString::new(filter_json).unwrap();
 
         let err = indy_prover_get_claim_offers(command_handle,
-                                                 wallet_handle,
-                                                 filter_json.as_ptr(),
-                                                 cb);
+                                               wallet_handle,
+                                               filter_json.as_ptr(),
+                                               cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -175,12 +163,12 @@ impl AnoncredsUtils {
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
         let err = indy_prover_create_and_store_claim_req(command_handle,
-                                                           wallet_handle,
-                                                           prover_did.as_ptr(),
-                                                           claim_offer_json.as_ptr(),
-                                                           claim_def_json.as_ptr(),
-                                                           master_secret_name.as_ptr(),
-                                                           cb);
+                                                         wallet_handle,
+                                                         prover_did.as_ptr(),
+                                                         claim_offer_json.as_ptr(),
+                                                         claim_def_json.as_ptr(),
+                                                         master_secret_name.as_ptr(),
+                                                         cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -195,7 +183,7 @@ impl AnoncredsUtils {
         Ok(claim_req_json)
     }
 
-    pub fn issuer_create_claim(wallet_handle: i32, claim_req_json: &str, claim_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn issuer_create_claim(wallet_handle: i32, claim_req_json: &str, claim_json: &str, user_revoc_index: Option<i32>) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_update_json, xclaim_json| {
@@ -208,11 +196,11 @@ impl AnoncredsUtils {
         let claim_json = CString::new(claim_json).unwrap();
 
         let err = indy_issuer_create_claim(command_handle,
-                                             wallet_handle,
-                                             claim_req_json.as_ptr(),
-                                             claim_json.as_ptr(),
-                                             -1,
-                                             cb);
+                                           wallet_handle,
+                                           claim_req_json.as_ptr(),
+                                           claim_json.as_ptr(),
+                                           user_revoc_index.unwrap_or(-1),
+                                           cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -239,9 +227,9 @@ impl AnoncredsUtils {
         let claims_json = CString::new(claims_json).unwrap();
 
         let err = indy_prover_store_claim(command_handle,
-                                            wallet_handle,
-                                            claims_json.as_ptr(),
-                                            cb);
+                                          wallet_handle,
+                                          claims_json.as_ptr(),
+                                          cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -268,9 +256,9 @@ impl AnoncredsUtils {
         let filter_json = CString::new(filter_json).unwrap();
 
         let err = indy_prover_get_claims(command_handle,
-                                           wallet_handle,
-                                           filter_json.as_ptr(),
-                                           cb);
+                                         wallet_handle,
+                                         filter_json.as_ptr(),
+                                         cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -297,9 +285,9 @@ impl AnoncredsUtils {
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
         let err = indy_prover_get_claims_for_proof_req(command_handle,
-                                                         wallet_handle,
-                                                         proof_request_json.as_ptr(),
-                                                         cb);
+                                                       wallet_handle,
+                                                       proof_request_json.as_ptr(),
+                                                       cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -333,14 +321,14 @@ impl AnoncredsUtils {
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
         let err = indy_prover_create_proof(command_handle,
-                                             wallet_handle,
-                                             proof_req_json.as_ptr(),
-                                             requested_claims_json.as_ptr(),
-                                             schemas_json.as_ptr(),
-                                             master_secret_name.as_ptr(),
-                                             claim_defs_json.as_ptr(),
-                                             revoc_regs_json.as_ptr(),
-                                             cb);
+                                           wallet_handle,
+                                           proof_req_json.as_ptr(),
+                                           requested_claims_json.as_ptr(),
+                                           schemas_json.as_ptr(),
+                                           master_secret_name.as_ptr(),
+                                           claim_defs_json.as_ptr(),
+                                           revoc_regs_json.as_ptr(),
+                                           cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -372,12 +360,12 @@ impl AnoncredsUtils {
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
         let err = indy_verifier_verify_proof(command_handle,
-                                               proof_request_json.as_ptr(),
-                                               proof_json.as_ptr(),
-                                               schemas_json.as_ptr(),
-                                               claim_defs_json.as_ptr(),
-                                               revoc_regs_json.as_ptr(),
-                                               cb);
+                                             proof_request_json.as_ptr(),
+                                             proof_json.as_ptr(),
+                                             schemas_json.as_ptr(),
+                                             claim_defs_json.as_ptr(),
+                                             revoc_regs_json.as_ptr(),
+                                             cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -390,6 +378,68 @@ impl AnoncredsUtils {
         }
 
         Ok(valid)
+    }
+
+    pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, schema_seq_no: i32, max_claim_num: i32) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, revoc_reg_json| {
+            sender.send((err, revoc_reg_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg(cb);
+
+        let issuer_did = CString::new(issuer_did).unwrap();
+
+        let err = indy_issuer_create_and_store_revoc_reg(command_handle,
+                                                         wallet_handle,
+                                                         issuer_did.as_ptr(),
+                                                         schema_seq_no,
+                                                         max_claim_num,
+                                                         cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, revoc_reg_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(revoc_reg_json)
+    }
+
+    pub fn issuer_revoke_claim(wallet_handle: i32, issuer_did: &str, schema_seq_no: i32, user_revoc_index: i32) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, revoc_reg_update_json| {
+            sender.send((err, revoc_reg_update_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
+
+        let issuer_did = CString::new(issuer_did).unwrap();
+
+        let err = indy_issuer_revoke_claim(command_handle,
+                                           wallet_handle,
+                                           issuer_did.as_ptr(),
+                                           schema_seq_no,
+                                           user_revoc_index,
+                                           cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, revoc_reg_update_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(revoc_reg_update_json)
     }
 
     pub fn get_composite_id(issuer_did: &str, schema_seq_no: i32) -> String {
@@ -537,7 +587,7 @@ impl AnoncredsUtils {
                 let claim_json = AnoncredsUtils::get_gvt_claim_json();
 
                 //6. Create Claim
-                let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json).unwrap();
+                let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
 
                 //7. Store Claim
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json).unwrap();

@@ -34,14 +34,14 @@ use self::libc::c_char;
 /// Anoncreds*
 #[no_mangle]
 pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
-                                                       wallet_handle: i32,
-                                                       issuer_did: *const c_char,
-                                                       schema_json: *const c_char,
-                                                       signature_type: *const c_char,
-                                                       create_non_revoc: bool,
-                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            claim_def_json: *const c_char
-                                                       )>) -> ErrorCode {
+                                                     wallet_handle: i32,
+                                                     issuer_did: *const c_char,
+                                                     schema_json: *const c_char,
+                                                     signature_type: *const c_char,
+                                                     create_non_revoc: bool,
+                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                          claim_def_json: *const c_char
+                                                     )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam5);
@@ -85,14 +85,13 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 /// Anoncreds*
 #[no_mangle]
 pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
-                                                       wallet_handle: i32,
-                                                       issuer_did: *const c_char,
-                                                       schema_seq_no: i32,
-                                                       max_claim_num: i32,
-                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            revoc_reg_json: *const c_char
-                                                       )>) -> ErrorCode {
-
+                                                     wallet_handle: i32,
+                                                     issuer_did: *const c_char,
+                                                     schema_seq_no: i32,
+                                                     max_claim_num: i32,
+                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                          revoc_reg_json: *const c_char
+                                                     )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -158,19 +157,19 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_issuer_create_claim(command_handle: i32,
-                                         wallet_handle: i32,
-                                         claim_req_json: *const c_char,
-                                         claim_json: *const c_char,
-                                         user_revoc_index: i32,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              revoc_reg_update_json: *const c_char,  //TODO must be OPTIONAL
-                                                              xclaim_json: *const c_char
-                                         )>) -> ErrorCode {
+                                       wallet_handle: i32,
+                                       claim_req_json: *const c_char,
+                                       claim_json: *const c_char,
+                                       user_revoc_index: i32,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            revoc_reg_update_json: *const c_char, //TODO must be OPTIONAL
+                                                            xclaim_json: *const c_char
+                                       )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    let user_revoc_index = if user_revoc_index != -1 {Some(user_revoc_index)} else { None };
+    let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index) } else { None };
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
@@ -209,12 +208,14 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_issuer_revoke_claim(command_handle: i32,
-                                         wallet_handle: i32,
-                                         revoc_reg_seq_no: i32,
-                                         user_revoc_index: i32,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              revoc_reg_update_json: *const c_char,
-                                         )>) -> ErrorCode {
+                                       wallet_handle: i32,
+                                       issuer_did: *const c_char,
+                                       schema_seq_no: i32,
+                                       user_revoc_index: i32,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            revoc_reg_update_json: *const c_char,
+                                       )>) -> ErrorCode {
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -222,7 +223,8 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
             AnoncredsCommand::Issuer(
                 IssuerCommand::RevokeClaim(
                     wallet_handle,
-                    revoc_reg_seq_no,
+                    issuer_did,
+                    schema_seq_no,
                     user_revoc_index,
                     Box::new(move |result| {
                         let (err, revoc_reg_update_json) = result_to_err_code_1!(result, String::new());
@@ -253,10 +255,10 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_store_claim_offer(command_handle: i32,
-                                              wallet_handle: i32,
-                                              claim_offer_json: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
-                                              )>) -> ErrorCode {
+                                            wallet_handle: i32,
+                                            claim_offer_json: *const c_char,
+                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
+                                            )>) -> ErrorCode {
     check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -298,11 +300,11 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_get_claim_offers(command_handle: i32,
-                                             wallet_handle: i32,
-                                             filter_json: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                  claim_offers_json: *const c_char
-                                             )>) -> ErrorCode {
+                                           wallet_handle: i32,
+                                           filter_json: *const c_char,
+                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                claim_offers_json: *const c_char
+                                           )>) -> ErrorCode {
     check_useful_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -338,10 +340,10 @@ pub extern fn indy_prover_get_claim_offers(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_create_master_secret(command_handle: i32,
-                                                 wallet_handle: i32,
-                                                 master_secret_name: *const c_char,
-                                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
-                                                 )>) -> ErrorCode {
+                                               wallet_handle: i32,
+                                               master_secret_name: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode
+                                               )>) -> ErrorCode {
     check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -394,14 +396,14 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
-                                                       wallet_handle: i32,
-                                                       prover_did: *const c_char,
-                                                       claim_offer_json: *const c_char,
-                                                       claim_def_json: *const c_char,
-                                                       master_secret_name: *const c_char,
-                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            claim_req_json: *const c_char
-                                                       )>) -> ErrorCode {
+                                                     wallet_handle: i32,
+                                                     prover_did: *const c_char,
+                                                     claim_offer_json: *const c_char,
+                                                     claim_def_json: *const c_char,
+                                                     master_secret_name: *const c_char,
+                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                          claim_req_json: *const c_char
+                                                     )>) -> ErrorCode {
     check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam5);
@@ -454,11 +456,11 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_store_claim(command_handle: i32,
-                                        wallet_handle: i32,
-                                        claims_json: *const c_char,
-                                        cb: Option<extern fn(
-                                            xcommand_handle: i32, err: ErrorCode
-                                        )>) -> ErrorCode {
+                                      wallet_handle: i32,
+                                      claims_json: *const c_char,
+                                      cb: Option<extern fn(
+                                          xcommand_handle: i32, err: ErrorCode
+                                      )>) -> ErrorCode {
     check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -504,12 +506,12 @@ pub extern fn indy_prover_store_claim(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_get_claims(command_handle: i32,
-                                       wallet_handle: i32,
-                                       filter_json: *const c_char,
-                                       cb: Option<extern fn(
-                                           xcommand_handle: i32, err: ErrorCode,
-                                           claims_json: *const c_char
-                                       )>) -> ErrorCode {
+                                     wallet_handle: i32,
+                                     filter_json: *const c_char,
+                                     cb: Option<extern fn(
+                                         xcommand_handle: i32, err: ErrorCode,
+                                         claims_json: *const c_char
+                                     )>) -> ErrorCode {
     check_useful_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -568,12 +570,12 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
-                                                     wallet_handle: i32,
-                                                     proof_request_json: *const c_char,
-                                                     cb: Option<extern fn(
-                                                         xcommand_handle: i32, err: ErrorCode,
-                                                         claims_json: *const c_char
-                                                     )>) -> ErrorCode {
+                                                   wallet_handle: i32,
+                                                   proof_request_json: *const c_char,
+                                                   cb: Option<extern fn(
+                                                       xcommand_handle: i32, err: ErrorCode,
+                                                       claims_json: *const c_char
+                                                   )>) -> ErrorCode {
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -671,15 +673,15 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_create_proof(command_handle: i32,
-                                         wallet_handle: i32,
-                                         proof_req_json: *const c_char,
-                                         requested_claims_json: *const c_char,
-                                         schemas_json: *const c_char,
-                                         master_secret_name: *const c_char,
-                                         claim_defs_json: *const c_char,
-                                         revoc_regs_json: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              proof_json: *const c_char)>) -> ErrorCode {
+                                       wallet_handle: i32,
+                                       proof_req_json: *const c_char,
+                                       requested_claims_json: *const c_char,
+                                       schemas_json: *const c_char,
+                                       master_secret_name: *const c_char,
+                                       claim_defs_json: *const c_char,
+                                       revoc_regs_json: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            proof_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(proof_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(requested_claims_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
@@ -772,13 +774,13 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_verifier_verify_proof(command_handle: i32,
-                                           proof_request_json: *const c_char,
-                                           proof_json: *const c_char,
-                                           schemas_json: *const c_char,
-                                           claim_defs_jsons: *const c_char,
-                                           revoc_regs_json: *const c_char,
-                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                valid: bool)>) -> ErrorCode {
+                                         proof_request_json: *const c_char,
+                                         proof_json: *const c_char,
+                                         schemas_json: *const c_char,
+                                         claim_defs_jsons: *const c_char,
+                                         revoc_regs_json: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                              valid: bool)>) -> ErrorCode {
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);

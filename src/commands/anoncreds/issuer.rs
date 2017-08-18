@@ -44,7 +44,8 @@ pub enum IssuerCommand {
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     RevokeClaim(
         i32, // wallet handle
-        i32, // revoc reg seq no
+        String, // issuer did
+        i32, // schema seq no
         i32, // user revoc index
         Box<Fn(Result<String, IndyError>) + Send>),
 }
@@ -82,10 +83,10 @@ impl IssuerCommandExecutor {
                 self.create_claim(wallet_handle, &claim_req_json, &claim_json,
                                   user_revoc_index, cb);
             }
-            IssuerCommand::RevokeClaim(wallet_handle, revoc_reg_seq_no,
+            IssuerCommand::RevokeClaim(wallet_handle, issuer_did, schema_seq_no,
                                        user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "RevokeClaim command received");
-                self.revoke_claim(wallet_handle, revoc_reg_seq_no, user_revoc_index, cb);
+                self.revoke_claim(wallet_handle, &issuer_did, schema_seq_no, user_revoc_index, cb);
             }
         };
     }
@@ -262,20 +263,21 @@ impl IssuerCommandExecutor {
 
     fn revoke_claim(&self,
                     wallet_handle: i32,
-                    revoc_reg_seq_no: i32,
+                    issuer_did: &str,
+                    schema_seq_no: i32,
                     user_revoc_index: i32,
                     cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._revoke_claim(wallet_handle, revoc_reg_seq_no, user_revoc_index);
+        let result = self._revoke_claim(wallet_handle, issuer_did, schema_seq_no, user_revoc_index);
         cb(result)
     }
 
     fn _revoke_claim(&self,
                      wallet_handle: i32,
-                     revoc_reg_seq_no: i32,
+                     issuer_did: &str,
+                     schema_seq_no: i32,
                      user_revoc_index: i32) -> Result<String, IndyError> {
-        let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &revoc_reg_seq_no))?;
-        let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-        let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
+        let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)))?;
+        let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)))?;
 
         let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
             .map_err(map_err_trace!())
@@ -295,7 +297,7 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revoc_reg_update_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)), &revoc_reg_update_json)?;
 
         Ok(revoc_reg_update_json)
     }

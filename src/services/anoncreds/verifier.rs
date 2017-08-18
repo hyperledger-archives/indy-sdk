@@ -1,18 +1,4 @@
-use services::anoncreds::types::{
-    Accumulator,
-    AccumulatorPublicKey,
-    NonRevocProof,
-    NonRevocProofTauList,
-    PrimaryEqualProof,
-    PrimaryPredicateGEProof,
-    PrimaryProof,
-    PublicKey,
-    RevocationPublicKey,
-    ProofJson,
-    ClaimDefinition,
-    RevocationRegistry,
-    Schema
-};
+use services::anoncreds::types::*;
 use services::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
 use services::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
 use utils::crypto::bn::BigNumber;

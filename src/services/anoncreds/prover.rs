@@ -1,14 +1,7 @@
 use errors::common::CommonError;
 use services::anoncreds::constants::*;
 use services::anoncreds::types::*;
-use services::anoncreds::helpers::{
-    get_mtilde,
-    four_squares,
-    get_hash_as_int,
-    clone_bignum_map,
-    group_element_to_bignum,
-    bignum_to_group_element
-};
+use services::anoncreds::helpers::*;
 use services::anoncreds::verifier::Verifier;
 use services::anoncreds::issuer::Issuer;
 use utils::crypto::bn::BigNumber;
@@ -812,8 +805,8 @@ impl Prover {
         let mut x_list: Vec<GroupOrderElement> = Vec::new();
 
         for (x, y) in init_proof.tau_list_params.as_list()?.iter().zip(init_proof.c_list_params.as_list()?.iter()) {
-            x_list.push(x.sub_mod(
-                &ch_num_z.mul_mod(&y)?
+            x_list.push(x.add_mod(
+                &ch_num_z.mul_mod(&y)?.mod_neg()?
             )?);
         }
 

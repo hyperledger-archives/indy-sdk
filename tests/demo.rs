@@ -577,7 +577,6 @@ fn anoncreds_demo_works() {
 
     let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
     let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-
     let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
 
     // 9. Prover create Proof for Proof Request

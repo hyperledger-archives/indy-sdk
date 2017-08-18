@@ -1,44 +1,8 @@
 use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
-
-use services::anoncreds::constants::{
-    LARGE_E_START,
-    LARGE_E_END_RANGE,
-    LARGE_MASTER_SECRET,
-    LARGE_PRIME,
-    LARGE_VPRIME_PRIME
-};
-use services::anoncreds::types::{
-    Accumulator,
-    AccumulatorPublicKey,
-    AccumulatorSecretKey,
-    ByteOrder,
-    ClaimDefinition,
-    ClaimDefinitionData,
-    ClaimDefinitionPrivate,
-    ClaimRequest,
-    ClaimSignature,
-    NonRevocationClaim,
-    NonRevocProofCList,
-    NonRevocProofTauList,
-    NonRevocProofXList,
-    PrimaryClaim,
-    PublicKey,
-    RevocationPublicKey,
-    RevocationSecretKey,
-    RevocationRegistry,
-    RevocationRegistryPrivate,
-    Schema,
-    SecretKey,
-    Witness,
-    SignatureTypes
-};
-use services::anoncreds::helpers::{
-    random_qr,
-    bitwise_or_big_int,
-    get_hash_as_int,
-    transform_u32_to_array_of_u8
-};
+use services::anoncreds::constants::*;
+use services::anoncreds::types::*;
+use services::anoncreds::helpers::*;
 use utils::crypto::bn::BigNumber;
 use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
@@ -81,7 +45,7 @@ impl Issuer {
         let mut ctx = BigNumber::new_context()?;
 
         if schema.data.keys.len() == 0 {
-            return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
+            return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")));
         }
 
         info!(target: "anoncreds_service", "Issuer generate_safe_prime");
@@ -162,8 +126,8 @@ impl Issuer {
     pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, issuer_did: &str, schema_seq_no: i32)
                              -> Result<(RevocationRegistry, RevocationRegistryPrivate), AnoncredsError> {
         info!(target: "anoncreds_service",
-        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> start",
-        issuer_did, schema_seq_no);
+              "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> start",
+              issuer_did, schema_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let mut g_dash: HashMap<i32, PointG2> = HashMap::new();
@@ -195,8 +159,8 @@ impl Issuer {
         let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g, g_dash);
 
         info!(target: "anoncreds_service",
-        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> done",
-        issuer_did, schema_seq_no);
+              "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> done",
+              issuer_did, schema_seq_no);
         Ok((revocation_registry, revocation_registry_private))
     }
 
@@ -333,7 +297,7 @@ impl Issuer {
         if accumulator.is_full() {
             return Err(AnoncredsError::AccumulatorIsFull(
                 format!("issuer_did: {} schema_seq_no: {}", revocation_registry.issuer_did, revocation_registry.schema_seq_no))
-            )
+            );
         }
 
         let i = match seq_number {
