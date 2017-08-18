@@ -932,6 +932,6 @@ impl CallbackUtils {
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(closure_to_issuer_create_and_store_revoc_reg_cb))
+        (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
     }
 }

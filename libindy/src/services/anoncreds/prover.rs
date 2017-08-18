@@ -1,4 +1,5 @@
 use errors::common::CommonError;
+use errors::anoncreds::AnoncredsError;
 use services::anoncreds::constants::*;
 use services::anoncreds::types::*;
 use services::anoncreds::helpers::*;
@@ -278,7 +279,7 @@ impl Prover {
                         requested_claims: &RequestedClaimsJson,
                         ms: &BigNumber,
                         tails: &HashMap<i32, PointG2>)
-                        -> Result<ProofJson, CommonError> {
+                        -> Result<ProofJson, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover create proof -> start");
 
         let proof_claims = Prover::_prepare_proof_claims(proof_req,
@@ -403,7 +404,7 @@ impl Prover {
 
     fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
                                   pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG2>)
-                                  -> Result<NonRevocInitProof, CommonError> {
+                                  -> Result<NonRevocInitProof, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover init non-revocation proof -> start");
         Prover::_update_non_revocation_claim(claim, accum, tails)?;
 
@@ -419,9 +420,9 @@ impl Prover {
 
     fn _update_non_revocation_claim(claim: &RefCell<NonRevocationClaim>,
                                     accum: &Accumulator, tails: &HashMap<i32, PointG2>)
-                                    -> Result<(), CommonError> {
+                                    -> Result<(), AnoncredsError> {
         if !accum.v.contains(&claim.borrow().i) {
-            return Err(CommonError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()));
+            return Err(AnoncredsError::ClaimRevoked("Can not update Witness. Claim revoked.".to_string()));
         }
 
         if claim.borrow().witness.v != accum.v {
@@ -1033,7 +1034,7 @@ mod tests {
         prover.process_claim(&claim_json_ref_cell, claim_init_data,
                              revocation_claim_init_data.clone(),
                              Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
-                             Some(revocation_registry.clone()));
+                             Some(revocation_registry.clone())).unwrap();
 
         let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
 

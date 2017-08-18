@@ -23,7 +23,6 @@ use utils::timeout::TimeoutUtils;
 use indy::api::ErrorCode;
 use indy::api::anoncreds::{
     indy_issuer_create_and_store_claim_def,
-    indy_issuer_create_and_store_revoc_reg,
     indy_issuer_create_claim,
     indy_prover_create_master_secret,
     indy_prover_create_and_store_claim_req,
@@ -352,7 +351,6 @@ fn anoncreds_demo_works() {
     let (create_wallet_sender, create_wallet_receiver) = channel();
     let (open_wallet_sender, open_wallet_receiver) = channel();
     let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
-    let (issuer_create_and_store_revoc_reg_sender, issuer_create_and_store_revoc_reg_receiver) = channel();
     let (prover_create_master_secret_sender, prover_create_master_secret_receiver) = channel();
     let (prover_create_claim_req_sender, prover_create_claim_req_receiver) = channel();
     let (issuer_create_claim_sender, issuer_create_claim_receiver) = channel();
@@ -369,9 +367,6 @@ fn anoncreds_demo_works() {
     });
     let open_wallet_cb = Box::new(move |err, handle| {
         open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let issuer_create_and_store_revoc_reg_cb = Box::new(move |err, revoc_reg_json| {
-        issuer_create_and_store_revoc_reg_sender.send((err, revoc_reg_json)).unwrap();
     });
     let prover_create_master_secret_cb = Box::new(move |err| {
         prover_create_master_secret_sender.send(err).unwrap();
@@ -398,7 +393,6 @@ fn anoncreds_demo_works() {
     let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
     let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
-    let (issuer_create_and_store_revoc_reg_command_handle, issuer_create_and_store_revoc_reg_callback) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(issuer_create_and_store_revoc_reg_cb);
     let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
     let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
     let (issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::closure_to_issuer_create_claim_cb(issuer_create_claim_cb);
@@ -456,7 +450,7 @@ fn anoncreds_demo_works() {
                                                CString::new(issuer_did.clone()).unwrap().as_ptr(),
                                                CString::new(schema.clone()).unwrap().as_ptr(),
                                                null(),
-                                               true,
+                                               false,
                                                create_claim_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -465,22 +459,6 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let master_secret_name = "master_secret";
-
-
-    // Issuer creates a revocation registry
-    let max_claim_num: i32 = 5;
-
-    let err = indy_issuer_create_and_store_revoc_reg(issuer_create_and_store_revoc_reg_command_handle,
-                                                     wallet_handle,
-                                                     CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                                     schema_seq_no,
-                                                     max_claim_num,
-                                                     issuer_create_and_store_revoc_reg_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, revoc_reg_json) = issuer_create_and_store_revoc_reg_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("revocation_reg_json: {:?}", revoc_reg_json);
-    assert_eq!(ErrorCode::Success, err);
-
 
     // 5. Prover create Master Secret
     let err =
@@ -577,7 +555,7 @@ fn anoncreds_demo_works() {
 
     let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
     let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-    let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+    let revoc_regs_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request
     let err =

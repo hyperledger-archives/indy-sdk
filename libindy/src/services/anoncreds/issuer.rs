@@ -381,7 +381,13 @@ impl Issuer {
         info!(target: "anoncreds_service", "Issuer revoke claim by index {} -> start", i);
 
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
-        accumulator.v.remove(&i);
+
+        if !accumulator.v.remove(&i) {
+            return Err(AnoncredsError::InvalidUserRevocIndex(
+                format!("User index:{} not found in Accumulator", i))
+            );
+        }
+
         let index: i32 = accumulator.max_claim_num + 1 - i;
         let element = g_dash.get(&index)
             .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
@@ -578,7 +584,7 @@ mod tests {
         prover.process_claim(&claim_json_ref_cell, claim_init_data,
                              revocation_claim_init_data.clone(),
                              Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
-                             Some(revocation_registry));
+                             Some(revocation_registry)).unwrap();
 
         let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
         let new_v = non_revocation_claim.borrow().vr_prime_prime;

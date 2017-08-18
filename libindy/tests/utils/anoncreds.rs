@@ -387,7 +387,7 @@ impl AnoncredsUtils {
             sender.send((err, revoc_reg_json)).unwrap();
         });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg(cb);
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(cb);
 
         let issuer_did = CString::new(issuer_did).unwrap();
 
