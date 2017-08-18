@@ -488,8 +488,8 @@ mod tests {
         assert!(claim_definition_private.secret_key_revocation.is_none());
     }
 
+    #[cfg(feature = "revocation_tests")]
     #[test]
-    #[ignore]
     fn generate_claim_definition_works_with_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
@@ -548,6 +548,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "revocation")]
     fn test_init_non_revoc_claim() {
         let issuer = Issuer::new();
         let prover = Prover::new();

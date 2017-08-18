@@ -2308,8 +2308,8 @@ mod demos {
         TestUtils::cleanup_storage();
     }
 
+    #[cfg(feature = "revocation_tests")]
     #[test]
-    #[ignore] //Works only with --release
     fn anoncreds_works_for_revocation_registry() {
         TestUtils::cleanup_storage();
 
@@ -2376,7 +2376,7 @@ mod demos {
 
         let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
         let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let mut revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+        let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
 
         let proof_json = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                              &proof_req_json,
@@ -2397,8 +2397,8 @@ mod demos {
         TestUtils::cleanup_storage();
     }
 
+    #[cfg(feature = "revocation_tests")]
     #[test]
-    #[ignore] //Works only with --release
     fn anoncreds_works_for_claim_revoked_before_proof_created() {
         TestUtils::cleanup_storage();
 
@@ -2483,8 +2483,8 @@ mod demos {
         TestUtils::cleanup_storage();
     }
 
+    #[cfg(feature = "revocation_tests")]
     #[test]
-    #[ignore] //Works only with --release
     fn anoncreds_works_for_claim_revoked_after_proof_created() {
         TestUtils::cleanup_storage();
 
