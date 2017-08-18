@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */; };
 		5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C51F161E800024DFB3 /* SequenceUtils.m */; };
 		5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
 		5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -90,6 +91,7 @@
 		2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumConnect.m; sourceTree = "<group>"; };
 		5D13F6C41F161E800024DFB3 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
 		5D13F6C51F161E800024DFB3 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
 		5D13F6C71F161E9C0024DFB3 /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -196,6 +198,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		5D0481B41F46E16B00ED79A2 /* Medium Cases */ = {
+			isa = PBXGroup;
+			children = (
+				5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */,
+			);
+			path = "Medium Cases";
+			sourceTree = "<group>";
+		};
 		5DF013D01F1604C100076592 /* libindy-demo */ = {
 			isa = PBXGroup;
 			children = (
@@ -241,6 +251,7 @@
 		5DF014681F1605EB00076592 /* Agent */ = {
 			isa = PBXGroup;
 			children = (
+				5D0481B41F46E16B00ED79A2 /* Medium Cases */,
 				5DF014691F1605EB00076592 /* AgentHighCases.m */,
 				5DF0146A1F1605EB00076592 /* AgentMediumCases.m */,
 			);
@@ -593,6 +604,7 @@
 				5DF014B91F1605EB00076592 /* TestUtils.m in Sources */,
 				5DF014A31F1605EB00076592 /* LedgerAttribRequest.mm in Sources */,
 				5DF014A21F1605EB00076592 /* AnoncredsMediumCasesDemos.m in Sources */,
+				5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */,
 				5DF014B61F1605EB00076592 /* LedgerUtils.mm in Sources */,
 				5DF014AD1F1605EB00076592 /* WalletMediumCases.m in Sources */,
 				5DF014A81F1605EB00076592 /* PoolHighCases.m in Sources */,

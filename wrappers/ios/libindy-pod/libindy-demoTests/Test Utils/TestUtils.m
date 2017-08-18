@@ -32,17 +32,17 @@
 
 +(NSTimeInterval) defaultTimeout
 {
-    return  1000;
+    return  10;
 }
 
 +(NSTimeInterval) shortTimeout
 {
-    return  1000;
+    return  5;
 }
 
 +(NSTimeInterval) longTimeout
 {
-    return  1000;
+    return  100;
 }
 
 + (NSString *)pool

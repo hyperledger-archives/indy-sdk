@@ -826,7 +826,7 @@ mod medium_cases {
                                                      })),
                                                      None).unwrap();
 
-            AgentUtils::add_identity(listener_handle, pool_handle, wallet_handle, did.as_str()).unwrap();
+            AgentUtils::add_identity(listener_handle,  pool_handle, wallet_handle, did.as_str()).unwrap();
 
             AgentUtils::connect(0, wallet_handle,
                                 did.as_str(), did.as_str(),

@@ -497,20 +497,20 @@
     
     NSString *did;
     NSString *verkey;
-    NSString *pk;
+    NSString *pubKey;
     
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
-                                                                    outMyPk:&verkey];
+                                                                    outMyPk:&pubKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 4. store their did from parts
     
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
-                                                                       theirPk:pk
+                                                                       theirPk:pubKey
                                                                    theirVerkey:verkey
                                                                       endpoint:[TestUtils endpoint]];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
@@ -561,6 +561,106 @@
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
+
+- (void)testAgentListenWorksForPassedOnMessageCallback
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret;
+    NSString *poolName = [TestUtils pool];
+    NSString *msg = @"Message from client";
+    
+    // 1. create and open pool ledger
+    
+    IndyHandle poolHandle = 0;
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+                                                                 poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
+    
+    // 2. create and open wallet
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
+    
+    //3. obtain my did
+    
+    NSString *did;
+    NSString *verkey;
+    NSString *pubKey;
+    
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&did
+                                                                outMyVerkey:&verkey
+                                                                    outMyPk:&pubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    
+    // 4. store their did from parts
+    
+    ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                      theirDid:did
+                                                                       theirPk:pubKey
+                                                                   theirVerkey:verkey
+                                                                      endpoint:[TestUtils endpoint]];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
+    
+    // 5. listen
+    
+    XCTestExpectation* messageFromClientCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
+    __block NSString *clientMessage;
+    // message from client callback
+    void (^messageFromClientCallback)(IndyHandle, NSString *) = ^(IndyHandle xConnectionHandle, NSString * message) {
+        clientMessage = message;
+        NSLog(@"AgentHighCases::testAgentSendWorksForAllDataInWalletPresent::messageFromClientCallback triggered with message: %@", message);
+        [messageFromClientCompletionExpectation fulfill];
+    };
+    
+    IndyHandle listenerHandle = 0;
+    ret = [[AgentUtils sharedInstance] listenForEndpoint:[TestUtils endpoint]
+                                      connectionCallback:nil
+                                         messageCallback:messageFromClientCallback
+                                       outListenerHandle:&listenerHandle];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::listenForEndpoint() failed");
+    
+    // 6. add identity
+    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+                                                         poolHandle:poolHandle
+                                                       walletHandle:walletHandle
+                                                                did:did];
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
+    
+    // 7. connect
+    IndyHandle connectionHandle = 0;
+    ret = [[AgentUtils sharedInstance] connectWithPoolHandle:poolHandle
+                                                walletHandle:walletHandle
+                                                   senderDid:did
+                                                 receiverDid:did
+                                             messageCallback:nil
+                                         outConnectionHandle:&connectionHandle];
+    
+    XCTAssertEqual(ret.code, Success, @"AgentUtils::connectWithPoolHandle() failed");
+    
+    // 8. send message
+    
+    ret = [[AgentUtils sharedInstance] sendWithConnectionHandler:connectionHandle
+                                                         message:msg];
+    XCTAssertEqual(ret.code,Success, @"AgentUtils::sendWithConnectionHandler failed");
+    
+    [self waitForExpectations: @[messageFromClientCompletionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertTrue([clientMessage isEqualToString:msg], @"wrong clientMessage");
+
+    
+    // 8. close everything
+    
+    [[AgentUtils sharedInstance] closeListener:listenerHandle];
+    [[AgentUtils sharedInstance] closeListener:connectionHandle];
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    [TestUtils cleanupStorage];
+}
+
 
 // MARK: - Add identity
 
