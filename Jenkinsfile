@@ -127,7 +127,7 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
                         features_args = '--features "revocation_tests"'
                     }
                     echo "${env_name} Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo test $features_args --no-run --release"
+                    sh "RUST_BACKTRACE=1 cargo test --release $features_args --no-run"
 
                     echo "${env_name} Test: Run tests"
                     sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $features_args"
@@ -174,7 +174,7 @@ def libindyWindowsTesting() {
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                             "RUST_BACKTRACE=1"
                     ]) {
-                        bat "cargo test --release --no-run"
+                        bat 'cargo test --release --features "revocation_tests" --no-run'
                     }
 
                     echo "Windows Test: Run tests"
