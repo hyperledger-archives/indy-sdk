@@ -454,11 +454,11 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "revocation")]
+    #[cfg(feature = "revocation_tests")]
     use services::anoncreds::prover;
-    #[cfg(feature = "revocation")]
+    #[cfg(feature = "revocation_tests")]
     use services::anoncreds::prover::Prover;
-    #[cfg(feature = "revocation")]
+    #[cfg(feature = "revocation_tests")]
     use services::anoncreds::types::ClaimJson;
 
     #[test]
@@ -551,7 +551,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "revocation")]
+    #[cfg(feature = "revocation_tests")]
     fn test_init_non_revoc_claim() {
         let issuer = Issuer::new();
         let prover = Prover::new();
@@ -585,6 +585,7 @@ mod tests {
         let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
 
         revocation_registry.accumulator = updated_accumulator.unwrap();
+
         prover.process_claim(&claim_json_ref_cell, claim_init_data,
                              revocation_claim_init_data.clone(),
                              Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),

@@ -184,7 +184,7 @@ def libindyWindowsTesting() {
                             "RUST_BACKTRACE=1",
                             "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                     ]) {
-                        bat "cargo test --release --features "revocation_tests""
+                        bat 'cargo test --release --features "revocation_tests"'
                     }
                 }
             } finally {

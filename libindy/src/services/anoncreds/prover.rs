@@ -1010,7 +1010,7 @@ mod tests {
         let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
             issuer::mocks::ISSUER_DID, issuer::mocks::get_gvt_schema(), None, true).unwrap();
 
-        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+        let (mut revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
             5, issuer::mocks::ISSUER_DID, 1).unwrap();
 
@@ -1031,6 +1031,8 @@ mod tests {
             issuer::mocks::ISSUER_DID.to_string());
 
         let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
+
+        revocation_registry.accumulator = updated_accumulator.clone().unwrap();
 
         prover.process_claim(&claim_json_ref_cell, claim_init_data,
                              revocation_claim_init_data.clone(),
