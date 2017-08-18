@@ -32,7 +32,7 @@
 {
     [TestUtils cleanupStorage];
 
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     NSString *myWalletName = @"my_wallet4";
     NSString *theirWalletName = @"their_wallet5";
     NSString *xtype = @"default";

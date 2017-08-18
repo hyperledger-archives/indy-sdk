@@ -25,7 +25,6 @@
 		5DF013E21F1604C200076592 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013DB1F1604C200076592 /* ViewController.m */; };
 		5DF0149D1F1605EB00076592 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014661F1605EB00076592 /* Base58Test.m */; };
 		5DF0149E1F1605EB00076592 /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014691F1605EB00076592 /* AgentHighCases.m */; };
-		5DF0149F1F1605EB00076592 /* AgentMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146A1F1605EB00076592 /* AgentMediumCases.m */; };
 		5DF014A01F1605EB00076592 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146C1F1605EB00076592 /* AnoncredsHighCases.m */; };
 		5DF014A11F1605EB00076592 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146D1F1605EB00076592 /* AnoncredsMediumCases.m */; };
 		5DF014A21F1605EB00076592 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0146E1F1605EB00076592 /* AnoncredsMediumCasesDemos.m */; };
@@ -118,7 +117,6 @@
 		5DF013DB1F1604C200076592 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		5DF014661F1605EB00076592 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
 		5DF014691F1605EB00076592 /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
-		5DF0146A1F1605EB00076592 /* AgentMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCases.m; sourceTree = "<group>"; };
 		5DF0146C1F1605EB00076592 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
 		5DF0146D1F1605EB00076592 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
 		5DF0146E1F1605EB00076592 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
@@ -271,7 +269,6 @@
 			children = (
 				5D0481B41F46E16B00ED79A2 /* Medium Cases */,
 				5DF014691F1605EB00076592 /* AgentHighCases.m */,
-				5DF0146A1F1605EB00076592 /* AgentMediumCases.m */,
 			);
 			path = Agent;
 			sourceTree = "<group>";
@@ -618,7 +615,6 @@
 				5DF014A41F1605EB00076592 /* LedgerHignCases.mm in Sources */,
 				5DF014AC1F1605EB00076592 /* WalletHighCases.m in Sources */,
 				5DF014B41F1605EB00076592 /* ClosureUtils.m in Sources */,
-				5DF0149F1F1605EB00076592 /* AgentMediumCases.m in Sources */,
 				5DF014B91F1605EB00076592 /* TestUtils.m in Sources */,
 				5D0481C31F46FF4000ED79A2 /* AgentMediumCloseListener.m in Sources */,
 				5DF014A31F1605EB00076592 /* LedgerAttribRequest.mm in Sources */,

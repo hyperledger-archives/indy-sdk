@@ -40,7 +40,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -65,7 +65,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -90,7 +90,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -115,7 +115,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -249,7 +249,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -271,7 +271,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
@@ -293,7 +293,7 @@
 {
     [TestUtils cleanupStorage];
     NSError *ret = nil;
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
