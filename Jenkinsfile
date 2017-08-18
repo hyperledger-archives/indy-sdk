@@ -153,7 +153,7 @@ def libindyWindowsTesting() {
 
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
+                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/libindy/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
                     bat 'unzip prebuilt.zip -d prebuilt'
 
                     echo "Windows Test: Build"
@@ -394,7 +394,7 @@ def publishingLibindyWinFiles() {
 
                 dir('libindy') {
                     echo "Publish Windows files: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
+                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/libindy/windows-bins/indy-sdk-deps/indy-sdk-deps.zip"'
                     bat 'unzip prebuilt.zip -d prebuilt'
 
                     echo "Publish Windows files: Build"

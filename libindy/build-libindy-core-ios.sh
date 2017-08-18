@@ -34,13 +34,13 @@ cd $CUR_DIR
 echo "Uploading...."
 
 cat <<EOF | sftp -i $EVERNYM_REPO_KEY repo@54.187.56.182
-ls -l /var/repositories/deb/pods-ios/libindy-core/$LIBINDY_POD_VERSION/$POD_FILE_NAME
-rm /var/repositories/deb/pods-ios/libindy-core/$LIBINDY_POD_VERSION/$POD_FILE_NAME
-rmdir /var/repositories/deb/pods-ios/libindy-core/$LIBINDY_POD_VERSION
-mkdir /var/repositories/deb/pods-ios/libindy-core/$LIBINDY_POD_VERSION
-cd /var/repositories/deb/pods-ios/libindy-core/$LIBINDY_POD_VERSION
+ls -l /var/repositories/libindy/pods-ios/libindy-core/$LIBINDY_POD_VERSION/$POD_FILE_NAME
+rm /var/repositories/libindy/pods-ios/libindy-core/$LIBINDY_POD_VERSION/$POD_FILE_NAME
+rmdir /var/repositories/libindy/pods-ios/libindy-core/$LIBINDY_POD_VERSION
+mkdir /var/repositories/libindy/pods-ios/libindy-core/$LIBINDY_POD_VERSION
+cd /var/repositories/libindy/pods-ios/libindy-core/$LIBINDY_POD_VERSION
 put $WORK_DIR/$POD_FILE_NAME
-ls -l /var/repositories/deb/pods-ios/libindy-core/$LIBINDY_POD_VERSION
+ls -l /var/repositories/libindy/pods-ios/libindy-core/$LIBINDY_POD_VERSION
 EOF
 
 echo "Cleanup temporary directory: $WORK_DIR"

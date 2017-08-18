@@ -24,10 +24,10 @@ powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compressi
 rm -rf ./indy-sdk-zip
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
--mkdir /var/repository/repos/deb/windows-bins
--mkdir /var/repository/repos/deb/windows-bins/indy-sdk
-mkdir /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number
-cd /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number
+-mkdir /var/repository/repos/libindy/windows-bins
+-mkdir /var/repository/repos/libindy/windows-bins/indy-sdk
+mkdir /var/repository/repos/libindy/windows-bins/indy-sdk/$version-$number
+cd /var/repository/repos/libindy/windows-bins/indy-sdk/$version-$number
 put -r indy-sdk_"$version".zip
-ls -l /var/repository/repos/deb/windows-bins/indy-sdk/$version-$number
+ls -l /var/repository/repos/libindy/windows-bins/indy-sdk/$version-$number
 EOF

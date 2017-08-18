@@ -18,7 +18,7 @@ RUN apt-get update && \
       python3.6 \
       python3-pip
 
-ADD https://repo.evernym.com/deb/indy-sdk/0.1.1-119/indy-sdk_0.1.1_amd64.deb .
+ADD https://repo.evernym.com/libindy/indy-sdk/0.1.1-119/indy-sdk_0.1.1_amd64.deb .
 
 RUN gdebi -n indy-sdk_0.1.1_amd64.deb
 
