@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */; };
+		5D0481B91F46FEC800ED79A2 /* AgentMediumListen.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */; };
+		5D0481BB1F46FEE400ED79A2 /* AgentMediumAddIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */; };
+		5D0481BD1F46FEFA00ED79A2 /* AgentMediumRemoveIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481BC1F46FEFA00ED79A2 /* AgentMediumRemoveIdentity.m */; };
+		5D0481BF1F46FF0D00ED79A2 /* AgentMediumSend.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481BE1F46FF0D00ED79A2 /* AgentMediumSend.m */; };
+		5D0481C11F46FF2700ED79A2 /* AgentMediumCloseConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481C01F46FF2700ED79A2 /* AgentMediumCloseConnection.m */; };
+		5D0481C31F46FF4000ED79A2 /* AgentMediumCloseListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481C21F46FF4000ED79A2 /* AgentMediumCloseListener.m */; };
 		5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C51F161E800024DFB3 /* SequenceUtils.m */; };
 		5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
 		5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -92,6 +98,12 @@
 		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumConnect.m; sourceTree = "<group>"; };
+		5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumListen.m; sourceTree = "<group>"; };
+		5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumAddIdentity.m; sourceTree = "<group>"; };
+		5D0481BC1F46FEFA00ED79A2 /* AgentMediumRemoveIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumRemoveIdentity.m; sourceTree = "<group>"; };
+		5D0481BE1F46FF0D00ED79A2 /* AgentMediumSend.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumSend.m; sourceTree = "<group>"; };
+		5D0481C01F46FF2700ED79A2 /* AgentMediumCloseConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseConnection.m; sourceTree = "<group>"; };
+		5D0481C21F46FF4000ED79A2 /* AgentMediumCloseListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseListener.m; sourceTree = "<group>"; };
 		5D13F6C41F161E800024DFB3 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
 		5D13F6C51F161E800024DFB3 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
 		5D13F6C71F161E9C0024DFB3 /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -202,6 +214,12 @@
 			isa = PBXGroup;
 			children = (
 				5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */,
+				5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */,
+				5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */,
+				5D0481BC1F46FEFA00ED79A2 /* AgentMediumRemoveIdentity.m */,
+				5D0481BE1F46FF0D00ED79A2 /* AgentMediumSend.m */,
+				5D0481C01F46FF2700ED79A2 /* AgentMediumCloseConnection.m */,
+				5D0481C21F46FF4000ED79A2 /* AgentMediumCloseListener.m */,
 			);
 			path = "Medium Cases";
 			sourceTree = "<group>";
@@ -602,8 +620,10 @@
 				5DF014B41F1605EB00076592 /* ClosureUtils.m in Sources */,
 				5DF0149F1F1605EB00076592 /* AgentMediumCases.m in Sources */,
 				5DF014B91F1605EB00076592 /* TestUtils.m in Sources */,
+				5D0481C31F46FF4000ED79A2 /* AgentMediumCloseListener.m in Sources */,
 				5DF014A31F1605EB00076592 /* LedgerAttribRequest.mm in Sources */,
 				5DF014A21F1605EB00076592 /* AnoncredsMediumCasesDemos.m in Sources */,
+				5D0481C11F46FF2700ED79A2 /* AgentMediumCloseConnection.m in Sources */,
 				5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */,
 				5DF014B61F1605EB00076592 /* LedgerUtils.mm in Sources */,
 				5DF014AD1F1605EB00076592 /* WalletMediumCases.m in Sources */,
@@ -622,8 +642,12 @@
 				5DF014AF1F1605EB00076592 /* LedgerDemo.mm in Sources */,
 				5DF014B21F1605EB00076592 /* AgentUtils.m in Sources */,
 				5DF014AB1F1605EB00076592 /* SignusMediumCases.m in Sources */,
+				5D0481BD1F46FEFA00ED79A2 /* AgentMediumRemoveIdentity.m in Sources */,
 				5DF014BC1F1605EB00076592 /* NSDictionary+JSON.m in Sources */,
+				5D0481BB1F46FEE400ED79A2 /* AgentMediumAddIdentity.m in Sources */,
 				5DF014A11F1605EB00076592 /* AnoncredsMediumCases.m in Sources */,
+				5D0481B91F46FEC800ED79A2 /* AgentMediumListen.m in Sources */,
+				5D0481BF1F46FF0D00ED79A2 /* AgentMediumSend.m in Sources */,
 				5DF014A61F1605EB00076592 /* LedgerNymRequest.mm in Sources */,
 				5DF014BD1F1605EB00076592 /* NSString+Validation.m in Sources */,
 				5DF014BA1F1605EB00076592 /* WalletUtils.m in Sources */,
