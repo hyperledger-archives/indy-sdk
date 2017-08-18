@@ -120,17 +120,15 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
                 sh 'chmod -R 777 /home/indy/'
 
                 try {
-                    def features_args;
+                    def features_args = ""
                     if (run_interoperability_tests) {
-                        features_args = '--features "revocation_tests interoperability_tests"'
-                    } else {
-                        features_args = '--features "revocation_tests"'
+                        features_args = '--features "interoperability_tests"'
                     }
                     echo "${env_name} Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo test --release $features_args --no-run"
+                    sh "RUST_BACKTRACE=1 cargo test $features_args --no-run"
 
                     echo "${env_name} Test: Run tests"
-                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $features_args"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $features_args"
                     /* TODO FIXME restore after xunit will be fixed
                     sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                     */
@@ -174,7 +172,7 @@ def libindyWindowsTesting() {
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                             "RUST_BACKTRACE=1"
                     ]) {
-                        bat 'cargo test --release --features "revocation_tests" --no-run'
+                        bat "cargo test --no-run"
                     }
 
                     echo "Windows Test: Run tests"
@@ -184,7 +182,7 @@ def libindyWindowsTesting() {
                             "RUST_BACKTRACE=1",
                             "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                     ]) {
-                        bat 'cargo test --release --features "revocation_tests"'
+                        bat "cargo test"
                     }
                 }
             } finally {
