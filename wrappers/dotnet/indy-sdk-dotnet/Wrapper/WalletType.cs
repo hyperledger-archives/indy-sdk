@@ -74,9 +74,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets a wallet by its handle.
         /// </summary>
-        /// <param name="handle">The handle of the wallet.</param>
+        /// <param name="walletHandle">The handle of the wallet.</param>
         /// <returns>Thw wallet instance associated with the handle.</returns>
-        protected abstract CustomWalletBase GetWalletByHandle(int handle);
+        protected abstract ICustomWallet GetWalletByHandle(int walletHandle);
 
         /// <summary>
         /// Handler for wallet creation.
@@ -105,13 +105,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="config">The wallet configuration that was registered on creation.</param>
         /// <param name="runtimeConfig">The runtime configuration to use for the wallet.</param>
         /// <param name="credentials">The wallet credentials.</param>
-        /// <param name="walletHandle">A handle returned for the opened wallet instance.</param>
+        /// <param name="handle">A handle returned for the opened wallet instance.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode OpenHandler(string name, string config, string runtimeConfig, string credentials, ref int walletHandle)
+        private ErrorCode OpenHandler(string name, string config, string runtimeConfig, string credentials, ref int handle)
         {
             try
             {
-                return Open(name, config, runtimeConfig, credentials, out walletHandle);
+                return Open(name, config, runtimeConfig, credentials, out handle);
             }
             catch (Exception)
             {
@@ -122,15 +122,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Handler for setting a value on an opened wallet instance.
         /// </summary>
-        /// <param name="walletHandle">The handle of the wallet instance.</param>
+        /// <param name="handle">The handle of the wallet instance.</param>
         /// <param name="key">The key of the value to set.</param>
         /// <param name="value">The value to set.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode SetHandler(int walletHandle, string key, string value)
+        private ErrorCode SetHandler(int handle, string key, string value)
         {
             try
             {
-                var wallet = GetWalletByHandle(walletHandle);
+                var wallet = GetWalletByHandle(handle);
                 return wallet.Set(key, value);                
             }
             catch (Exception)
@@ -142,15 +142,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Handler for getting a value from an opened wallet instance.
         /// </summary>
-        /// <param name="walletHandle">The handle of the wallet instance.</param>
+        /// <param name="handle">The handle of the wallet instance.</param>
         /// <param name="key">The key of the value to get.</param>
-        /// <param name="valuePtr">The returned pointer to the value.</param>
+        /// <param name="value_ptr">The returned pointer to the value.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode GetHandler(int walletHandle, string key, ref IntPtr valuePtr)
+        private ErrorCode GetHandler(int handle, string key, ref IntPtr value_ptr)
         {
             try
             {
-                var wallet = GetWalletByHandle(walletHandle);
+                var wallet = GetWalletByHandle(handle);
 
                 string value;
                 var result = wallet.Get(key, out value);
@@ -158,8 +158,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
                 
-                valuePtr = MarshalToUnmanaged(value);
-                wallet.ValuePointers.Add(valuePtr);
+                value_ptr = MarshalToUnmanaged(value);
 
                 return ErrorCode.Success;
             }
@@ -172,15 +171,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Handler for getting an unexpired value from an open wallet instance.
         /// </summary>
-        /// <param name="walletHandle">The handle of the wallet instance.</param>
+        /// <param name="handle">The handle of the wallet instance.</param>
         /// <param name="key">The key of the value to get.</param>
-        /// <param name="valuePtr">The returned pointer to the value.</param>
+        /// <param name="value_ptr">The returned pointer to the value.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode GetNotExpiredHandler(int walletHandle, string key, ref IntPtr valuePtr)
+        private ErrorCode GetNotExpiredHandler(int handle, string key, ref IntPtr value_ptr)
         {
             try
             {
-                var wallet = GetWalletByHandle(walletHandle);
+                var wallet = GetWalletByHandle(handle);
 
                 string value;
                 var result = wallet.GetNotExpired(key, out value);
@@ -188,8 +187,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
 
-                valuePtr = MarshalToUnmanaged(value);
-                wallet.ValuePointers.Add(valuePtr);
+                value_ptr = MarshalToUnmanaged(value);
 
                 return ErrorCode.Success;
             }
@@ -202,15 +200,15 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Handler for getting a list of values from an open wallet instance.
         /// </summary>
-        /// <param name="walletHandle">The handle of the wallet instance.</param>
+        /// <param name="handle">The handle of the wallet instance.</param>
         /// <param name="keyPrefix">The prefix to filter keys by.</param>
-        /// <param name="valuesJsonPtr">The returned pointer to the value.</param>
+        /// <param name="values_json_ptr">The returned pointer to the value.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode ListHandler(int walletHandle, string keyPrefix, ref IntPtr valuesJsonPtr)
+        private ErrorCode ListHandler(int handle, string keyPrefix, ref IntPtr values_json_ptr)
         {
             try
             {
-                var wallet = GetWalletByHandle(walletHandle);
+                var wallet = GetWalletByHandle(handle);
 
                 string value;
                 var result = wallet.List(keyPrefix, out value);
@@ -218,8 +216,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 if (result != ErrorCode.Success)
                     return result;
 
-                valuesJsonPtr = MarshalToUnmanaged(value);
-                wallet.ValuePointers.Add(valuesJsonPtr);
+                values_json_ptr = MarshalToUnmanaged(value);
 
                 return ErrorCode.Success;
             }
@@ -232,13 +229,13 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Handler for closing an open wallet instance.
         /// </summary>
-        /// <param name="walletHandle">The handle of the wallet instance.</param>
+        /// <param name="handle">The handle of the wallet instance.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode CloseHandler(int walletHandle)
+        private ErrorCode CloseHandler(int handle)
         {
             try
             {
-                return Close(walletHandle);                
+                return Close(handle);                
             }
             catch (Exception)
             {
@@ -268,17 +265,16 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Handler for for freeing a value returned by an open wallet instance.
         /// </summary>
-        /// <param name="walletHandle">The handle of the wallet instance.</param>
-        /// <param name="valuePtr">The pointer to the value to free.</param>
+        /// <param name="handle">The handle of the wallet instance.</param>
+        /// <param name="value">The pointer to the value to free.</param>
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
-        private ErrorCode FreeHandler(int walletHandle, IntPtr valuePtr)
+        private ErrorCode FreeHandler(int handle, IntPtr value)
         {
             try
             {
-                var wallet = GetWalletByHandle(walletHandle);
+                var wallet = GetWalletByHandle(handle);
 
-                Marshal.FreeHGlobal(valuePtr);                
-                wallet.ValuePointers.Remove(valuePtr);
+                Marshal.FreeHGlobal(value);                
                 return ErrorCode.Success;
             }
             catch (Exception)

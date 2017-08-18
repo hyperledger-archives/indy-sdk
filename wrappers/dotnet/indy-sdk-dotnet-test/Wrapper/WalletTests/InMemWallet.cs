@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
-    public class InMemWallet : CustomWalletBase
+    public class InMemWallet : ICustomWallet
     {
         private static IDictionary<string, WalletRecord> _records = new Dictionary<string, WalletRecord>();
         private TimeSpan _freshnessDuration;
@@ -19,7 +19,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         public bool IsOpen { get; set; }
         
-        public override ErrorCode Set(string key, string value)
+        public ErrorCode Set(string key, string value)
         {
             var record = new WalletRecord() { Value = value, TimeCreated = DateTime.Now };
 
@@ -27,7 +27,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             return ErrorCode.Success;
         }
 
-        public override ErrorCode Get(string key, out string value)
+        public ErrorCode Get(string key, out string value)
         {
             value = null;
 
@@ -41,7 +41,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             return ErrorCode.Success;
         }
 
-        public override ErrorCode GetNotExpired(string key, out string value)
+        public ErrorCode GetNotExpired(string key, out string value)
         {
             value = null;
 
@@ -59,7 +59,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             return ErrorCode.Success;
         }
 
-        public override ErrorCode List(string keyPrefix, out string valuesJson)
+        public ErrorCode List(string keyPrefix, out string valuesJson)
         {
             var matchingItems = _records.Where(kvp => kvp.Key.StartsWith(keyPrefix)).ToList();
 
