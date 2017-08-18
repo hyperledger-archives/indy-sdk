@@ -5,6 +5,7 @@ import java.io.File;
 import com.sun.jna.Callback;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
 
 public abstract class LibIndy {
 
@@ -39,6 +40,7 @@ public abstract class LibIndy {
 
 		public int indy_sign_and_submit_request(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_submit_request(int command_handle, int pool_handle, String request_json, Callback cb);
+		public int indy_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_build_get_ddo_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_nym_request(int command_handle, String submitter_did, String target_did, String verkey, String alias, String role, Callback cb);
 		public int indy_build_attrib_request(int command_handle, String submitter_did, String target_did, String hash, String raw, String enc, Callback cb);
@@ -56,10 +58,10 @@ public abstract class LibIndy {
 		public int indy_create_and_store_my_did(int command_handle, int wallet_handle, String did_json, Callback cb);
 		public int indy_replace_keys(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
-		public int indy_sign(int command_handle, int wallet_handle, String did, String msg, Callback cb);
-		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, String signed_msg, Callback cb);
-		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, String msg, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, String encrypted_msg, String nonce, Callback cb);
+		public int indy_sign(int command_handle, int wallet_handle, String did, byte[] message_raw, int message_len, Callback cb);
+		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String my_did, String did, byte[] message_raw, int message_len, Callback cb);
+		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
 
 		// anoncreds.rs
 
@@ -109,7 +111,19 @@ public abstract class LibIndy {
 	/**
 	 * Initializes the API with the path to the C-Callable library.
 	 * 
-	 * @param file The path to the C-Callable library.
+	 * @param path The path to the directory containing the C-Callable library file.
+	 */
+	public static void init(String searchPath) {
+
+		NativeLibrary.addSearchPath(LIBRARY_NAME, searchPath);
+		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+	}
+
+	/**
+	 * Initializes the API with the path to the C-Callable library.
+	 * Warning: This is not platform-independent.
+	 *
+	 * @param file The absolute path to the C-Callable library file.
 	 */
 	public static void init(File file) {
 

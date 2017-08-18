@@ -1,8 +1,8 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.hyperledger.indy.sdk.IndyException;
@@ -126,54 +126,43 @@ public class Wallet extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	private static final List<String> REGISERED_WALLETS = Collections.synchronizedList(new ArrayList<String>());
+	private static final Map<String, WalletType> REGISTERED_WALLET_TYPES = Collections.synchronizedMap(new HashMap<String, WalletType>());
 
 	/**
 	 * Registers custom wallet implementation.
 	 * 
 	 * @param xtype Wallet type name.
 	 * @param walletType An instance of a WalletType subclass
-	 * @param forceCreate Allows a new registration with the same name as a previous registration if true.
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 * @throws InterruptedException Thrown...???
 	 */
 	public static CompletableFuture<Void> registerWalletType(
 			String xtype,
-			WalletType walletType,
-			Boolean forceCreate) throws IndyException, InterruptedException {
+			WalletType walletType) throws IndyException, InterruptedException {
 
-		synchronized (REGISERED_WALLETS) {
-			CompletableFuture<Void> future = new CompletableFuture<Void>();
-			int commandHandle = addFuture(future);
+		REGISTERED_WALLET_TYPES.put(xtype, walletType);
 
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
 
-			if (REGISERED_WALLETS.contains(xtype) && ! forceCreate) {
-				future.complete(null);
-				return future;
-			}
+		int result = LibIndy.api.indy_register_wallet_type(
+				commandHandle,
+				xtype,
+				walletType.getCreateCb(),
+				walletType.getOpenCb(),
+				walletType.getSetCb(),
+				walletType.getGetCb(),
+				walletType.getGetNotExpiredCb(),
+				walletType.getListCb(),
+				walletType.getCloseCb(),
+				walletType.getDeleteCb(),
+				walletType.getFreeCb(),
+				registerWalletTypeCb);
 
+		checkResult(result);
 
-			REGISERED_WALLETS.add(xtype);
-
-			int result = LibIndy.api.indy_register_wallet_type(
-					commandHandle,
-					xtype,
-					walletType.getCreateCb(),
-					walletType.getOpenCb(),
-					walletType.getSetCb(),
-					walletType.getGetCb(),
-					walletType.getGetNotExpiredCb(),
-					walletType.getListCb(),
-					walletType.getCloseCb(),
-					walletType.getDeleteCb(),
-					walletType.getFreeCb(),
-					registerWalletTypeCb);
-
-			checkResult(result);
-
-			return future;
-		}
+		return future;
 	}
 
 	/**

@@ -1,7 +1,6 @@
 FROM ubuntu:16.04
 
 ARG uid=1000
-ARG pool_ip=127.0.0.1
 
 # Install environment
 RUN apt-get update -y && apt-get install -y \
@@ -26,10 +25,14 @@ RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.lis
 
 RUN useradd -ms /bin/bash -u $uid sovrin
 
+ARG indy_plenum_ver=1.0.95
+ARG indy_anoncreds_ver=1.0.25
+ARG indy_node_ver=1.0.105
+
 RUN apt-get update -y && apt-get install -y \
-	indy-plenum=1.0.77 \
-	indy-anoncreds=1.0.22 \
-	indy-node=1.0.68
+	indy-plenum=${indy_plenum_ver} \
+	indy-anoncreds=${indy_anoncreds_ver} \
+	indy-node=${indy_node_ver}
 
 RUN echo '[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
@@ -83,6 +86,8 @@ RUN init_sovrin_keys --name Node1 --seed 111111111111111111111111111Node1 --forc
 RUN init_sovrin_keys --name Node2 --seed 111111111111111111111111111Node2 --force
 RUN init_sovrin_keys --name Node3 --seed 111111111111111111111111111Node3 --force
 RUN init_sovrin_keys --name Node4 --seed 111111111111111111111111111Node4 --force
+
+ARG pool_ip=127.0.0.1
 
 RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 1 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
 RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 2 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"

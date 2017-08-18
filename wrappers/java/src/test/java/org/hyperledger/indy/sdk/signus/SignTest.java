@@ -12,25 +12,20 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
 public class SignTest extends IndyIntegrationTest {
 
 
 	private Wallet wallet;
-	private String did;
 	private String walletName = "signusWallet";
+	private byte[] msg = "{\"reqId\":1496822211362017764}".getBytes();
 
 	@Before
 	public void createWalletWhitDid() throws Exception {
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		this.wallet = Wallet.openWallet(walletName, null, null).get();
-
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		did = result.getDid();
 	}
 
 	@After
@@ -42,21 +37,18 @@ public class SignTest extends IndyIntegrationTest {
 	@Test
 	public void testSignWorks() throws Exception {
 
-		String msg = "{\n" +
-				"                \"reqId\":1496822211362017764,\n" +
-				"                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-				"                \"operation\":{\n" +
-				"                    \"type\":\"1\",\n" +
-				"                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
-				"                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
-				"                }\n" +
-				"            }";
+		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000000000000My1", null, null);
 
-		String expectedSignature = "\"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"";
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 
-		String signedMessage = Signus.sign(this.wallet, did, msg).get();
+		byte[] expectedSignature = {- 87, - 41, 8, - 31, 7, 107, 110, 9, - 63, - 94, - 54, - 42, - 94, 66, - 18, - 45, 63, - 47, 12, - 60, 8, - 45, 55, 27, 120, 94,
+				- 52, - 109, 53, 104, 103, 61, 60, - 7, - 19, 127, 103, 46, - 36, - 33, 10, 95, 75, 53, - 11, - 46, - 15, - 105, - 65, 41, 48, 30, 9, 16, 78, - 4,
+				- 99, - 50, - 46, - 111, 125, - 123, 109, 11};
 
-		assertTrue(signedMessage.contains(expectedSignature));
+		byte[] signature = Signus.sign(this.wallet, result.getDid(), msg).get();
+
+		assertTrue(Arrays.equals(expectedSignature, signature));
 	}
 
 	@Test
@@ -64,18 +56,6 @@ public class SignTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
 
-		String msg = "{\"reqId\":1496822211362017764}";
-
 		Signus.sign(this.wallet, "8wZcEriaNLNKtteJvx7f8i", msg).get();
-	}
-
-	@Test
-	public void testSignWorksForInvalidMessageFormat() throws Exception {
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
-
-		String msg = "reqId:1495034346617224651";
-		Signus.sign(this.wallet, did, msg).get();
 	}
 }

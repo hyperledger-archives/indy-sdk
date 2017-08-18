@@ -66,7 +66,7 @@
                                                                    nodes:nil
                                                               poolConfig:nil
                                                           genTxnFileName:nil];
-    XCTAssertEqual(ret.code, PoolLedgerNotCreatedError, @"PoolUtils::createPoolLedgerConfigWithPoolName returned wrong code");
+    XCTAssertEqual(ret.code, PoolLedgerConfigAlreadyExistsError, @"PoolUtils::createPoolLedgerConfigWithPoolName returned wrong code");
     [TestUtils cleanupStorage];
 }
 

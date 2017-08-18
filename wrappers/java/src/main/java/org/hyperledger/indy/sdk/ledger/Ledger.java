@@ -60,6 +60,22 @@ public class Ledger extends IndyJava.API {
 	};
 
 	/**
+	 * Callback used when signRequest completes.
+	 */
+	private static Callback signRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String signed_request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = signed_request_json;
+			future.complete(result);
+		}
+	};
+
+	/**
 	 * Callback used when buildGetDdoRequest completes.
 	 */
 	private static Callback buildGetDdoRequestCb = new Callback() {
@@ -296,6 +312,37 @@ public class Ledger extends IndyJava.API {
 				poolHandle,
 				requestJson,
 				submitRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Signs request message.
+	 *
+	 * @param wallet A Wallet.
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param requestJson Request data json.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> signRequest(
+			Wallet wallet,
+			String submitterDid,
+			String requestJson) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_sign_request(
+				commandHandle,
+				walletHandle,
+				submitterDid,
+				requestJson,
+				signAndSubmitRequestCb);
 
 		checkResult(result);
 

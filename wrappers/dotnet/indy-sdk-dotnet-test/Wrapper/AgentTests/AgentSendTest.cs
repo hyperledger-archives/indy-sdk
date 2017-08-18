@@ -37,33 +37,33 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
             };
 
         [TestMethod]
-        public void TestAgentSendWorks()
+        public async Task TestAgentSendWorks()
         {
-            var endpoint = "127.0.0.1:9909";
+            var endpoint = "127.0.0.1:9609";
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
-            Signus.StoreTheirDidAsync(_wallet, identityJson).Wait();
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var activeListener = Agent.AgentListenAsync(endpoint, _incomingConnectionObserver).Result;
+            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
 
-            activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did).Wait();
+            await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
 
-            var clientToServerConnection = Agent.AgentConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did, _messageObserver).Result;
+            var clientToServerConnection = await Agent.AgentConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did, _messageObserver);
 
             var clientToServerMessage = "msg_from_client";
             var serverToClientMessage = "msg_from_server";
 
-            clientToServerConnection.SendAsync(clientToServerMessage).Wait();
+            await clientToServerConnection.SendAsync(clientToServerMessage);
 
-            Assert.AreEqual(clientToServerMessage, clientToServerMsgFuture.Task.Result);
+            Assert.AreEqual(clientToServerMessage, await clientToServerMsgFuture.Task);
 
-            var serverToClientConnection = serverToClientConnectionFuture.Task.Result;
-            serverToClientConnection.SendAsync(serverToClientMessage).Wait();
+            var serverToClientConnection = await serverToClientConnectionFuture.Task;
+            await serverToClientConnection.SendAsync(serverToClientMessage);
 
-            Assert.AreEqual(serverToClientMessage, serverToClientMsgFuture.Task.Result);
+            Assert.AreEqual(serverToClientMessage, await serverToClientMsgFuture.Task);
         }
     }
 }

@@ -10,24 +10,12 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class ProverGetClaimsTest : AnonCredsIntegrationTestBase
     {
-        [ClassCleanup]
-        public static void CloseCommonWallet()
-        {
-            try
-            {
-                _commonWallet.CloseAsync().Wait();
-            }
-            catch (Exception)
-            { }
-
-        }
-
         [TestMethod]
-        public void TestProverGetClaimsWorksForEmptyFilter()
+        public async Task TestProverGetClaimsWorksForEmptyFilter()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
-            var claims = AnonCreds.ProverGetClaimsAsync(_commonWallet, "{}").Result;
+            var claims = await AnonCreds.ProverGetClaimsAsync(_commonWallet, "{}");
 
             var claimsArray = JArray.Parse(claims);
 
@@ -35,13 +23,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsWorksForFilterByIssuer()
+        public async Task TestProverGetClaimsWorksForFilterByIssuer()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
 
-            var claims = AnonCreds.ProverGetClaimsAsync(_commonWallet, filter).Result;
+            var claims = await AnonCreds.ProverGetClaimsAsync(_commonWallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 
@@ -49,13 +37,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsWorksForFilterByIssuerAndSchema()
+        public async Task TestProverGetClaimsWorksForFilterByIssuerAndSchema()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", _issuerDid, 1);
 
-            var claims = AnonCreds.ProverGetClaimsAsync(_commonWallet, filter).Result;
+            var claims = await AnonCreds.ProverGetClaimsAsync(_commonWallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 
@@ -63,13 +51,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestProverGetClaimsWorksForEmptyResult()
+        public async Task TestProverGetClaimsWorksForEmptyResult()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"schema_seq_no\":{0}}}",  10);
 
-            var claims = AnonCreds.ProverGetClaimsAsync(_commonWallet, filter).Result;
+            var claims = await AnonCreds.ProverGetClaimsAsync(_commonWallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 
@@ -80,7 +68,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverGetClaimsForProofRequestWorksForInvalidPredicateType()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"schema_seq_no\":\"{0}\"}}", 1);
 

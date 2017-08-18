@@ -4,15 +4,24 @@ import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
+import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.TimeUnit;
 
 public class SignusDemoTest extends IndyIntegrationTest {
+
+	@Rule
+	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
 	@Test
 	public void testSignusDemo() throws Exception {
@@ -55,11 +64,10 @@ public class SignusDemoTest extends IndyIntegrationTest {
 				"        }\n" +
 				"    }";
 
-		String signedMessage = Signus.sign(theirWallet, theirDid, msg).get();
-		assertNotNull(signedMessage);
+		byte[] signature = Signus.sign(theirWallet, theirDid, msg.getBytes()).get();
 
 		// 8. I verify message
-		Boolean valid = Signus.verifySignature(myWallet, pool, theirDid, signedMessage).get();
+		Boolean valid = Signus.verifySignature(myWallet, pool, theirDid, msg.getBytes(), signature).get();
 		assertTrue(valid);
 
 		// 9. Close and delete My Wallet

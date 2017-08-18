@@ -50,7 +50,7 @@ public class AgentCloseListenerTest extends AgentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String endpoint = "127.0.0.1:9704";
+		String endpoint = "127.0.0.1:9604";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 

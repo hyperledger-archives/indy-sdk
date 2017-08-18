@@ -85,6 +85,46 @@ async def submit_request(pool_handle: int,
     return res
 
 
+async def sign_request(wallet_handle: int,
+                       submitter_did: str,
+                       request_json: str) -> str:
+    """
+    Signs request message.
+
+    Adds submitter information to passed request json, signs it with submitter
+    sign key (see wallet_sign).
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param submitter_did: Id of Identity stored in secured Wallet.
+    :param request_json: Request data json.
+    :return: Signed request json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("sign_request: >>> wallet_handle: %r, submitter_did: %r, request_json: %r",
+                 wallet_handle,
+                 submitter_did,
+                 request_json)
+
+    if not hasattr(sign_request, "cb"):
+        logger.debug("sign_and_submit_request: Creating callback")
+        sign_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_request_json = c_char_p(request_json.encode('utf-8'))
+
+    request_result = await do_call('indy_sign_request',
+                                   c_wallet_handle,
+                                   c_submitter_did,
+                                   c_request_json,
+                                   sign_request.cb)
+
+    res = request_result.decode()
+    logger.debug("sign_request: <<< res: %r", res)
+    return res
+
+
 async def build_get_ddo_request(submitter_did: str,
                                 target_did: str) -> str:
     """
