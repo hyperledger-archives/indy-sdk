@@ -31,7 +31,6 @@ def publishing() {
         }
 
         parallel([
-                'liblindy-to-cargo'     : { publishingLibindyToCargo() },
                 'libindy-rpm-files'     : { publishingLibindyRpmFiles() },
                 'libindy-deb-files'     : { publishingLibindyDebFiles() },
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
@@ -101,11 +100,9 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        sh "cp -r ci libindy"
+        poolInst = openPool(env_name, network_name, '105', '1.0.95', '1.0.25', '1.0.105')
 
         dir('libindy') {
-            poolInst = openPool(env_name, network_name, '105', '1.0.95', '1.0.25', '1.0.105')
-
             echo "${env_name} Test: Build docker image"
             def testEnv = dockerHelpers.build('libindy', file)
 
@@ -221,11 +218,9 @@ def javaWrapperUbuntuTesting() {
                 echo "${env_name} Test: Checkout csm"
                 checkout scm
 
-                sh "cp -r ci wrappers/java"
+                poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
 
                 dir('wrappers/java') {
-                    poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
-
                     echo "${env_name} Test: Build docker image"
                     def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
 
@@ -253,12 +248,9 @@ def pythonWrapperUbuntuTesting() {
                 echo "${env_name} Test: Checkout csm"
                 checkout scm
 
-                sh "cp -r ci wrappers/python"
+                poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
 
                 dir('wrappers/python') {
-
-                    poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
-
                     echo "${env_name} Test: Build docker image"
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
@@ -279,51 +271,12 @@ def pythonWrapperUbuntuTesting() {
     }
 }
 
-def publishingLibindyToCargo() {
-    node('ubuntu') {
-        stage('Publish Libindy to Cargo') {
-            try {
-                echo 'Publish to Cargo: Checkout csm'
-                checkout scm
-
-                sh "cp -r ci libindy"
-
-                dir('libindy') {
-                    echo 'Publish to Cargo: Build docker image'
-                    def testEnv = dockerHelpers.build('indy-sdk')
-
-                    testEnv.inside {
-                        echo 'Update version'
-
-                        sh 'chmod -R 777 ci'
-                        sh "ci/libindy-update-package-version.sh $env.BUILD_NUMBER"
-
-                        withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'SECRET')]) {
-                            sh 'cargo login $SECRET'
-                        }
-
-                        sh 'cargo package --allow-dirty'
-
-                        sh 'cargo publish --allow-dirty'
-                    }
-                }
-            }
-            finally {
-                echo 'Publish to cargo: Cleanup'
-                step([$class: 'WsCleanup'])
-            }
-        }
-    }
-}
-
 def publishingLibindyRpmFiles() {
     node('ubuntu') {
         stage('Publish Libindy RPM Files') {
             try {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
-
-                sh "cp -r ci libindy"
 
                 commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
@@ -355,9 +308,6 @@ def publishingLibindyDebFiles() {
             try {
                 echo 'Publish Deb files: Checkout csm'
                 checkout scm
-
-                sh "cp -r ci libindy"
-                sh "cp -r debian libindy"
 
                 commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
@@ -409,10 +359,10 @@ def publishingLibindyWinFiles() {
                     ]) {
                         bat "cargo build --release"
                     }
-                }
 
-                withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                    sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BUILD_NUMBER"
+                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                        sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BUILD_NUMBER"
+                    }
                 }
             }
             finally {
