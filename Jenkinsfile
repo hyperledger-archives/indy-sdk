@@ -380,23 +380,23 @@ def publishingPythonWrapperToPipy() {
                 echo 'Publish Deb files: Checkout csm'
                 checkout scm
 
-                echo 'Publish Deb: Build docker image'
-                def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+                dir('wrappers/python') {
+                    echo 'Publish Deb: Build docker image'
+                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                testEnv.inside('-u 0:0') {
+                    testEnv.inside('-u 0:0') {
 
-                    withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
-                        sh 'cp $credentialsFile ./wrappers/python/'
-                        sh "cp -r ci wrappers/python"
+                        withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
+                            sh 'cp $credentialsFile ./'
 
-                        sh "chmod -R 777 ci"
-                        sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+                            sh "chmod -R 777 ci"
+                            sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
 
-                        sh '''
-                           cd wrappers/python
-                           python3.6 setup.py sdist
-                           python3.6 -m twine upload dist/* --config-file .pypirc
-                       '''
+                            sh '''
+                                python3.6 setup.py sdist
+                                python3.6 -m twine upload dist/* --config-file .pypirc
+                            '''
+                        }
                     }
                 }
             }

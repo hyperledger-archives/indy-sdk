@@ -43,6 +43,7 @@ at #indy-sdk to discuss.
 %autosetup -n %{name}-%{commit}
 
 %build
+cd libindy
 cargo build --release
 
 %install
