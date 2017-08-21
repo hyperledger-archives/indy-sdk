@@ -72,21 +72,21 @@ public final class SignusResults {
 	 */
 	public static class EncryptResult extends IndyJava.Result {
 
-		private String encryptedMessage, nonce;
-		EncryptResult(String encryptedMessage, String nonce) { this.encryptedMessage = encryptedMessage; this.nonce = nonce; }
+		private byte[] encryptedMessage, nonce;
+		EncryptResult(byte[] encryptedMessage, byte[] nonce) { this.encryptedMessage = encryptedMessage; this.nonce = nonce; }
 
 		/**
 		 * Gets the encrypted message.
 		 *
 		 * @return The encrypted message.
 		 */
-		public String getEncryptedMessage() { return this.encryptedMessage; }
+		public byte[] getEncryptedMessage() { return this.encryptedMessage; }
 
 		/**
 		 * Gets the nonce.
 		 *
 		 * @return The nonce.
 		 */
-		public String getNonce() { return this.nonce; }
+		public byte[] getNonce() { return this.nonce; }
 	}
 }

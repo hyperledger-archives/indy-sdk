@@ -3,7 +3,7 @@
 ## Get/build dependencies
 
 All prebuilt can be downloaded from
-https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/
+https://repo.evernym.com/libindy/windows/deps/
 
 ### Binary deps
 

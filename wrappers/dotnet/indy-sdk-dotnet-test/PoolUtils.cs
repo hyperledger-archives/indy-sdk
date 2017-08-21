@@ -61,15 +61,15 @@ namespace Indy.Sdk.Dotnet.Test
             var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
             var createPoolLedgerConfig = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
-            Pool.CreatePoolLedgerConfigAsync(poolName, createPoolLedgerConfig).Wait();
+            Pool.CreatePoolLedgerConfigAsync(poolName, createPoolLedgerConfig);
         }
 
-        public static Pool CreateAndOpenPoolLedger()
+        public static async Task<Pool> CreateAndOpenPoolLedgerAsync()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
             var openPoolLedgerConfig = "{\"refreshOnOpen\":true}";
 
-            return Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig).Result;
+            return await Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig);
         }        
     }
 }

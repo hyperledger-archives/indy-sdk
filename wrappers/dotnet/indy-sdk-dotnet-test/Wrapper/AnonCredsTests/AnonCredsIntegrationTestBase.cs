@@ -1,6 +1,6 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
 {
@@ -26,12 +26,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             "\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
 
         [TestInitialize]
-        public void SetUp() 
+        public async Task SetUp() 
         {
-            InitHelper.Init();
+            await InitHelper.InitAsync();
         }
-                
-        protected void InitCommonWallet()
+
+        [ClassCleanup]
+        public static async Task CloseCommonWallet()
+        {
+            if (_commonWallet != null)
+                await _commonWallet.CloseAsync();
+
+        }
+
+        protected async Task InitCommonWallet()
         {
             if (_walletOpened)
                 return;
@@ -40,20 +48,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
 
             var walletName = "anoncredsCommonWallet";
 
-            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
-            _commonWallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
+            _commonWallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
-            _claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(_commonWallet, _issuerDid, _schema, null, false).Result;
+            _claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_commonWallet, _issuerDid, _schema, null, false);
 
-            AnonCreds.ProverStoreClaimOfferAsync(_commonWallet, string.Format(_claimOfferTemplate, _issuerDid, 1)).Wait();
-            AnonCreds.ProverStoreClaimOfferAsync(_commonWallet, string.Format(_claimOfferTemplate, _issuerDid, 2)).Wait();
-            AnonCreds.ProverStoreClaimOfferAsync(_commonWallet, string.Format(_claimOfferTemplate, _issuerDid2, 2)).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_commonWallet, string.Format(_claimOfferTemplate, _issuerDid, 1));
+            await AnonCreds.ProverStoreClaimOfferAsync(_commonWallet, string.Format(_claimOfferTemplate, _issuerDid, 2));
+            await AnonCreds.ProverStoreClaimOfferAsync(_commonWallet, string.Format(_claimOfferTemplate, _issuerDid2, 2));
 
-            AnonCreds.ProverCreateMasterSecretAsync(_commonWallet, _masterSecretName).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_commonWallet, _masterSecretName);
 
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}", _issuerDid, 1);
 
-            var claimRequest = AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, _claimDef, _masterSecretName).Result;
+            var claimRequest = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, _claimDef, _masterSecretName);
 
             var claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
                     "                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -61,10 +69,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1).Result;
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            AnonCreds.ProverStoreClaimAsync(_commonWallet, claimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(_commonWallet, claimJson);
 
             _walletOpened = true;
         }

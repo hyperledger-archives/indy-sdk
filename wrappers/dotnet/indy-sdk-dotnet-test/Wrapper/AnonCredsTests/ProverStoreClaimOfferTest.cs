@@ -13,31 +13,28 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         private string _walletName = "storeClaimOfferWallet";
         
         [TestInitialize]
-        public void CreateWallet()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
-            try
-            {
-                _wallet.CloseAsync().Wait();
-                Wallet.DeleteWalletAsync(_walletName, null).Wait();
-            }
-            catch (Exception)
-            { }
+            if(_wallet != null)
+                await _wallet.CloseAsync();
+
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
        
         [TestMethod]
-        public void TestProverStoreClaimOfferWorks()
+        public async Task TestProverStoreClaimOfferWorks()
         {
             var claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"schema_seq_no\":1 }";
 
-            AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer);
         }
 
 
@@ -54,7 +51,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public async Task testProverStoreClaimOfferWorksForInvalidIssuerDid()
+        public async Task TestProverStoreClaimOfferWorksForInvalidIssuerDid()
         {
             var claimOffer = "{\"issuer_did\":\"invalid_base58_string\",\"schema_seq_no\":1}";
 

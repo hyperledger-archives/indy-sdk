@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
 {
@@ -6,14 +7,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
     public class RefreshPoolTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestRefreshPoolWorks()
+        public async Task TestRefreshPoolWorks()
         {
-            var pool = PoolUtils.CreateAndOpenPoolLedger();
+            var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
 
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);
 
-            pool.RefreshAsync().Wait();
+            await pool.RefreshAsync();
         }       
     }
 }

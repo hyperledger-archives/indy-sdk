@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using static Indy.Sdk.Dotnet.IndyNativeMethods;
 
 namespace Indy.Sdk.Dotnet.Wrapper
@@ -41,15 +42,19 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for SignAsync has completed.
         /// </summary>
-        private static SignResultDelegate _signCallback = (xCommandHandle, err, signature) =>
+        private static SignResultDelegate _signCallback = (xCommandHandle, err, signature_raw, signature_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(signature);
+            var bytes = new byte[signature_len];
+            Marshal.Copy(signature_raw, bytes, 0, signature_len);
+
+            taskCompletionSource.SetResult(bytes);
         };
+
 
         /// <summary>
         /// Gets the callback to use when the command for VerifySignatureAsync has completed.
@@ -67,14 +72,20 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptResultDelegate _encryptCallback = (xCommandHandle, err, encryptedMsg, nonce) =>
+        private static EncryptResultDelegate _encryptCallback = (xCommandHandle, err, encrypted_msg_raw, encrypted_msg_len, nonce, nonce_len) =>
         {
             var taskCompletionSource = RemoveTaskCompletionSource<EncryptResult>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new EncryptResult(encryptedMsg, nonce);
+            var encryptedMessageBytes = new byte[encrypted_msg_len];
+            Marshal.Copy(encrypted_msg_raw, encryptedMessageBytes, 0, encrypted_msg_len);
+
+            var nonceBytes = new byte[nonce_len];
+            Marshal.Copy(nonce, nonceBytes, 0, nonce_len);
+
+            var callbackResult = new EncryptResult(encryptedMessageBytes, nonceBytes);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -82,14 +93,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
-        private static DecryptResultDelegate _decryptCallback = (xCommandHandle, err, decryptedMsg) =>
+        private static DecryptResultDelegate _decryptCallback = (xCommandHandle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xCommandHandle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(decryptedMsg);
+            var decryptedMsgBytes = new byte[decrypted_msg_len];
+            Marshal.Copy(decrypted_msg_raw, decryptedMsgBytes, 0, decrypted_msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
         };
 
         
@@ -168,9 +182,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="did">The did to sign with.</param>
         /// <param name="msg">The message to sign.</param>
         /// <returns>An asynchronous task that returns the signed message.</returns>
-        public static Task<string> SignAsync(Wallet wallet, string did, string msg)
+        public static Task<byte[]> SignAsync(Wallet wallet, string did, byte[] msg)
         {
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_sign(
@@ -178,6 +192,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 wallet.Handle,
                 did,
                 msg,
+                msg.Length,
                 _signCallback
                 );
 
@@ -186,15 +201,17 @@ namespace Indy.Sdk.Dotnet.Wrapper
             return taskCompletionSource.Task;
         }
 
+
         /// <summary>
         /// Verifies a signed message.
         /// </summary>
         /// <param name="wallet">The wallet containing the DID of the signed message.</param>
         /// <param name="pool">The ledger pool to verify the message against.</param>
         /// <param name="did">The did the message is associated with.</param>
-        /// <param name="signedMsg">The signed message to verify.</param>
+        /// <param name="msg">The message to verify.</param>
+        /// <param name="signature">The signature to verify.</param>
         /// <returns>An asynchronous task that returns true if the message is valid, otherwise false.</returns>
-        public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, string signedMsg)
+        public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, byte[] msg, byte[]signature)
         {
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -204,7 +221,10 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 wallet.Handle,
                 pool.Handle,
                 did,
-                signedMsg,
+                msg,
+                msg.Length,
+                signature,
+                signature.Length,
                 _verifySignatureCallback
                 );
 
@@ -222,7 +242,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="did">The did to encrypt for.</param>
         /// <param name="msg">The message to encrypt.</param>
         /// <returns>An asynchronous task that returns an EncryptResult.</returns>
-        public static Task<EncryptResult> EncryptAsync(Wallet wallet, Pool pool, string my_did, string did, string msg)
+        public static Task<EncryptResult> EncryptAsync(Wallet wallet, Pool pool, string my_did, string did, byte[] msg)
         {
             var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -234,6 +254,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 my_did,
                 did,
                 msg,
+                msg.Length,
                 _encryptCallback);
 
             CheckResult(commandResult);
@@ -250,9 +271,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="encryptedMsg">The message to decrypt.</param>
         /// <param name="nonce">The nonce.</param>
         /// <returns>An asynchronous task that returns the decrypted message.</returns>
-        public static Task<string> DecryptAsync(Wallet wallet, string my_did, string did, string encryptedMsg, string nonce)
+        public static Task<byte[]> DecryptAsync(Wallet wallet, string my_did, string did, byte[] encryptedMsg, byte[] nonce)
         {
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_decrypt(
@@ -261,7 +282,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 my_did,
                 did,
                 encryptedMsg,
+                encryptedMsg.Length,
                 nonce,
+                nonce.Length,
                 _decryptCallback
                 );
 

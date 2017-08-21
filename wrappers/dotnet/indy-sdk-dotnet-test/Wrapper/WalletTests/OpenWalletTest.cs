@@ -8,23 +8,23 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
     public class OpenWalletTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestOpenWalletWorks()
+        public async Task TestOpenWalletWorks()
         {
             var walletName = "openWalletWorks";
 
-            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
-            Wallet wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
             Assert.IsNotNull(wallet);
         }
 
         [TestMethod]
-        public void TestOpenWalletWorksForConfig()
+        public async Task TestOpenWalletWorksForConfig()
         {
             var walletName = "openWalletWorksForConfig";
 
-            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
-            Wallet wallet = Wallet.OpenWalletAsync(walletName, "{\"freshness_time\":1000}", null).Result;
+            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
+            var wallet = await Wallet.OpenWalletAsync(walletName, "{\"freshness_time\":1000}", null);
 
             Assert.IsNotNull(wallet);
         }
@@ -44,9 +44,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             var walletName = "openWalletWorksForTwice";
 
-            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
 
-            var wallet1 = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            var wallet1 = Wallet.OpenWalletAsync(walletName, null, null);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                Wallet.OpenWalletAsync(walletName, null, null)
@@ -66,14 +66,14 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        public void TestOpenWalletWorksForPlugged()
+        public async Task TestOpenWalletWorksForPlugged()
         {
             var type = "inmem";
             var poolName = "default";
             var walletName = "testOpenWalletWorksForPlugged";
 
-            Wallet.CreateWalletAsync(poolName, walletName, type, null, null).Wait();
-            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, walletName, type, null, null);
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
             Assert.IsNotNull(wallet);
         }
     }
