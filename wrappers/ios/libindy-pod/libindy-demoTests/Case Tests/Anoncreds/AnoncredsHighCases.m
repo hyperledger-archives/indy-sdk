@@ -80,7 +80,7 @@
     
     // 2. Create claim definition
     NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
-    IndyHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 100;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:invalidWalletHandle
                                                                              issuerDid:[AnoncredsUtils issuerDid]
                                                                             schemaJson:schema
