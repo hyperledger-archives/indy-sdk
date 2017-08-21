@@ -228,7 +228,7 @@ mod tests {
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(String::from(i)).unwrap();
+            mt.append(String::from(i).as_bytes().to_vec()).unwrap();
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
@@ -242,7 +242,7 @@ mod tests {
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(String::from(i)).unwrap();
+            mt.append(String::from(i).as_bytes().to_vec()).unwrap();
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
@@ -280,7 +280,7 @@ mod tests {
         println!("root(0)={}", mt.root_hash_hex());
         let mut r = 1;
         for i in values {
-            mt.append(String::from(i)).unwrap();
+            mt.append(String::from(i).as_bytes().to_vec()).unwrap();
             println!("root({})={}", r, mt.root_hash_hex());
             r+=1;
         }
@@ -311,7 +311,7 @@ mod tests {
     #[test]
     fn gen_proof_and_proof_validate_work() {
         let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
-        let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
+        let values    = strvals.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
         let tree      = MerkleTree::from_vec(values.clone()).unwrap();
         let root_hash = tree.root_hash();
 
@@ -326,7 +326,7 @@ mod tests {
     #[test]
     fn serialize_works() {
         let strvals   = vec![ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ];
-        let values    = strvals.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
+        let values    = strvals.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
         let mt = MerkleTree::from_vec(values.clone()).unwrap();
         let serialized = serde_json::to_string(&mt).unwrap();
         println!("serialize mt: h={}, c={}, rhash={}", mt.height, mt.count, serialized);
@@ -355,7 +355,7 @@ mod tests {
             r#"{"data":{"alias":"Node7","client_ip":"10.0.0.2","client_port":9714,"node_ip":"10.0.0.2","node_port":9713,"services":["VALIDATOR"]},"dest":"BM8dTooz5uykCbYSAAFwKNkYfT4koomBHsSWHTDtkjhW","identifier":"6pYGZXnqXLxLAhrEBhVjyvuhnV2LUgM9iw1gHds8JDqT","txnId":"e5f11aa7ec7091ca6c31a826eec885da7fcaa47611d03fdc3562b48247f179cf","type":"0"}"#,
             r#"{"data":{"alias":"Node8","client_ip":"10.0.0.2","client_port":9716,"node_ip":"10.0.0.2","node_port":9715,"services":["VALIDATOR"]},"dest":"98VysG35LxrutKTNXvhaztPFHnx5u9kHtT7PnUGqDa8x","identifier":"B4xQBURedpCS3r6v8YxTyz5RYh3Nh5Jt2MxsmtAUr1rH","txnId":"2b01e69f89514be94ebf24bfa270abbe1c5abc72415801da3f0d58e71aaa33a2","type":"0"}"#,
         ];
-        let all_values: Vec<String> = all_str_values.iter().map(|x| String::from(*x)).collect::<Vec<_>>();
+        let all_values: Vec<Vec<u8>> = all_str_values.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
         let mt_full = MerkleTree::from_vec(all_values.clone()).unwrap();
         let full_root_hash = mt_full.root_hash();
         let mut start_values = all_values.clone();

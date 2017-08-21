@@ -7,7 +7,7 @@ import pytest
 from indy import IndyError, signus
 from indy.error import ErrorCode
 
-message = '{"reqId":1496822211362017764}'
+message = '{"reqId":1496822211362017764}'.encode('utf-8')
 
 
 @pytest.mark.asyncio

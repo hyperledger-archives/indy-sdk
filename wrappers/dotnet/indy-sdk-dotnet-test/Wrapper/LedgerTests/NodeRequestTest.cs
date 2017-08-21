@@ -14,25 +14,29 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         private string _dest = "Th7MpTaRZVRYnPiabds81Y";
 
         [TestInitialize]
-        public void OpenPool()
+        public async Task OpenPool()
         {
             string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void ClosePool()
+        public async Task ClosePool()
         {
-            _pool.CloseAsync().Wait();
-            _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            if (_pool != null)
+                await _pool.CloseAsync();
+
+            if (_wallet != null)
+                await _wallet.CloseAsync();
+
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
         [TestMethod]
-        public void TestBuildNodeRequestWorks()
+        public async Task TestBuildNodeRequestWorks()
         {
             var data = "{\"node_ip\":\"10.0.0.100\"," +
                     "\"node_port\":910," +
@@ -48,7 +52,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"data\":{2}" +
                     "}}", _identifier, _dest, data);
 
-            var nodeRequest = Ledger.BuildNodeRequestAsync(_identifier, _dest, data).Result;
+            var nodeRequest = await Ledger.BuildNodeRequestAsync(_identifier, _dest, data);
 
             Assert.IsTrue(nodeRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -57,7 +61,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         public async Task TestSendNodeRequestWorksWithoutSignature()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Steward1\"}";
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var data = "{\"node_ip\":\"10.0.0.100\"," +
@@ -67,7 +71,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"alias\":\"some\"," +
                     "\"services\":[\"VALIDATOR\"]}";
 
-            var nodeRequest = Ledger.BuildNodeRequestAsync(did, did, data).Result;
+            var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
+
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, nodeRequest)
             );
@@ -113,7 +118,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var didResult = Signus.CreateAndStoreMyDidAsync(_wallet, didJson).Result;
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var data = "{\"node_ip\":\"10.0.0.100\"," +
@@ -123,7 +128,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                  "\"alias\":\"some\"," +
                  "\"services\":[\"VALIDATOR\"]}";
 
-            var nodeRequest = Ledger.BuildNodeRequestAsync(did, did, data).Result;
+            var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, nodeRequest)
@@ -134,21 +139,21 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
         [TestMethod]
         [Ignore]
-        public void TestSendNodeRequestWorksForNewSteward()
+        public async Task TestSendNodeRequestWorksForNewSteward()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myDidJson = "{}";
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson).Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson);
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
             var role = "STEWARD";
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, role).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, role);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
             var data = "{\"node_ip\":\"10.0.0.100\"," +
                     "\"node_port\":910," +
@@ -159,8 +164,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
             var dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y";
 
-            var nodeRequest = Ledger.BuildNodeRequestAsync(myDid, dest, data).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, nodeRequest).Wait();
+            var nodeRequest = await Ledger.BuildNodeRequestAsync(myDid, dest, data);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, nodeRequest);
         }
 
 

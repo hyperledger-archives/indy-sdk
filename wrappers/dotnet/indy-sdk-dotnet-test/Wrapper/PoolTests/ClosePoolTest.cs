@@ -8,24 +8,24 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
     public class ClosePoolTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestClosePoolWorks()
+        public async Task TestClosePoolWorks()
         {
-            var pool = PoolUtils.CreateAndOpenPoolLedger();
+            var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);
 
-            pool.CloseAsync().Wait();
+            await pool.CloseAsync();
             _openedPools.Remove(pool);
         }
 
         [TestMethod]
         public async Task TestClosePoolWorksForTwice()
         {
-            var pool = PoolUtils.CreateAndOpenPoolLedger();
+            var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);
 
-            pool.CloseAsync().Wait();
+            await pool.CloseAsync();
             _openedPools.Remove(pool);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
@@ -36,16 +36,16 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         }
 
         [TestMethod]
-        public void TestClosePoolWorksForReopenAfterClose()
+        public async Task TestClosePoolWorksForReopenAfterClose()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
 
-            pool.CloseAsync().Wait();
+            await pool.CloseAsync();
 
-            pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            pool = await Pool.OpenPoolLedgerAsync(poolName, null);
             _openedPools.Add(pool);
         }
     }

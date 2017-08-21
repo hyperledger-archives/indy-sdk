@@ -1,6 +1,8 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
 {
@@ -9,68 +11,47 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
     {
         private Wallet _wallet;
         private string _walletName = "signusWallet";
-        private string _did;
 
         [TestInitialize]
-        public void CreateWalletWithDid()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
-
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}").Result;
-
-            _did = result.Did;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
-            _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            if(_wallet != null)
+                await _wallet.CloseAsync();
+
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
         
         [TestMethod]
-        public void TestSignWorks()
+        public async Task TestSignWorks()
         {
-            var msg = "{\n" +
-                "                \"reqId\":1496822211362017764,\n" +
-                "                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-                "                \"operation\":{\n" +
-                "                    \"type\":\"1\",\n" +
-                "                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
-                "                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
-                "                }\n" +
-                "            }";
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}");
+            var did = result.Did;
+            
+            var msg = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
 
-            var expectedSignature = "\"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"";
+            var expectedSignatureBytes = new byte[] { 20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190, 90, 60, 142, 23, 16, 240, 189, 129, 45, 148, 245, 8, 102, 95, 95, 249, 100, 89, 41, 227, 213, 25, 100, 1, 232, 188, 245, 235, 186, 21, 52, 176, 236, 11, 99, 70, 155, 159, 89, 215, 197, 239, 138, 5 };
+            var signatureBytes = await Signus.SignAsync(_wallet, did, msg);      
 
-            var signedMessage = Signus.SignAsync(_wallet, _did, msg).Result;
-
-            Assert.IsTrue(signedMessage.Contains(expectedSignature));
+            Assert.IsTrue(expectedSignatureBytes.SequenceEqual(signatureBytes));
         }
 
         [TestMethod]
         public async Task TestSignWorksForUnknownDid()
         {
-            var msg = "{\"reqId\":1496822211362017764}";
+            var msg = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Signus.SignAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", msg)
             );
 
             Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
-        }
-
-        [TestMethod]
-        public async Task TestSignWorksForInvalidMessageFormat()
-        {
-            var msg = "reqId:1495034346617224651";
-
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Signus.SignAsync(_wallet, _did, msg)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
-        }
+        }       
     }
 }
