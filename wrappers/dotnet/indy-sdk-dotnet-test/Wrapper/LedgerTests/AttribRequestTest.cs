@@ -17,29 +17,29 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
 
 
         [TestInitialize]
-        public void OpenPool()
+        public async Task OpenPool()
         {
             string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = Pool.OpenPoolLedgerAsync(poolName, null).Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void ClosePool()
+        public async Task ClosePool()
         {
             if(_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             if(_wallet != null)
-            _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
 
         [TestMethod]
-        public void TestBuildAttribRequestWorksForRawData()
+        public async Task TestBuildAttribRequestWorksForRawData()
         {
             string expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
@@ -48,7 +48,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"raw\":\"{2}\"" +
                     "}}", _identifier, _dest, _endpoint);
 
-            string attribRequest = Ledger.BuildAttribRequestAsync(_identifier, _dest, null, _endpoint, null).Result;
+            string attribRequest = await Ledger.BuildAttribRequestAsync(_identifier, _dest, null, _endpoint, null);
 
             Assert.IsTrue(attribRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -64,7 +64,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void TestBuildGetAttribRequestWorks()
+        public async Task  TestBuildGetAttribRequestWorks()
         {
             string raw = "endpoint";
 
@@ -75,7 +75,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
                     "\"raw\":\"{2}\"" +
                     "}}", _identifier, _dest, raw);
 
-            string attribRequest = Ledger.BuildGetAttribRequestAsync(_identifier, _dest, raw).Result;
+            string attribRequest = await Ledger.BuildGetAttribRequestAsync(_identifier, _dest, raw);
 
             Assert.IsTrue(attribRequest.Contains(expectedResult));
         }
@@ -85,10 +85,10 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         {
             var json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             var trusteeDid = trusteeDidResult.Did;
 
-            var attribRequest = Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, _endpoint, null).Result;
+            var attribRequest = await Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, _endpoint, null);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.SubmitRequestAsync(_pool, attribRequest)
@@ -98,25 +98,25 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.LedgerTests
         }
 
         [TestMethod]
-        public void TestAttribRequestWorks()
+        public async Task  TestAttribRequestWorks()
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson).Result;
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
 
-            var attribRequest = Ledger.BuildAttribRequestAsync(myDid, myDid, null, _endpoint, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, attribRequest).Wait();
+            var attribRequest = await Ledger.BuildAttribRequestAsync(myDid, myDid, null, _endpoint, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, attribRequest);
 
-            var getAttribRequest = Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint").Result;
-            var getAttribResponse = Ledger.SubmitRequestAsync(_pool, getAttribRequest).Result;
+            var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint");
+            var getAttribResponse = await Ledger.SubmitRequestAsync(_pool, getAttribRequest);
 
             var jsonObject = JObject.Parse(getAttribResponse);
 

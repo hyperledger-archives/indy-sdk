@@ -10,32 +10,25 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class ProverGetClaimOfferTest : AnonCredsIntegrationTestBase
     {
-        [ClassCleanup]
-        public static void CloseCommonWallet()
-        {
-            if (_commonWallet != null)
-                _commonWallet.CloseAsync().Wait();
-        }
-
         [TestMethod]
-        public void TestsProverGetClaimOffersWorksForEmptyFilter()
+        public async Task TestsProverGetClaimOffersWorksForEmptyFilter()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
-            var claimOffers = AnonCreds.ProverGetClaimOffersAsync(_commonWallet, "{}").Result;
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, "{}");
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(3, claimOffersArray.Count);
         }
 
         [TestMethod]
-        public void TestsProverGetClaimOffersWorksForFilterByIssuer()
+        public async Task TestsProverGetClaimOffersWorksForFilterByIssuer()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
 
-            var claimOffers = AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter).Result;
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(2, claimOffersArray.Count);
@@ -45,13 +38,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod] 
-        public void TestsProverGetClaimOffersWorksForFilterBySchema()
+        public async Task TestsProverGetClaimOffersWorksForFilterBySchema()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"schema_seq_no\":{0}}}", 2);
 
-            var claimOffers = AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter).Result;
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(2, claimOffersArray.Count);
@@ -61,13 +54,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod] 
-        public void TestsProverGetClaimOffersWorksForFilterByIssuerAndSchema()
+        public async Task TestsProverGetClaimOffersWorksForFilterByIssuerAndSchema()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}", _issuerDid, 1);
 
-            var claimOffers = AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter).Result;
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(1, claimOffersArray.Count);
@@ -76,13 +69,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         }
 
         [TestMethod]
-        public void TestsProverGetClaimOffersWorksForNoResult()
+        public async Task TestsProverGetClaimOffersWorksForNoResult()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"schema_seq_no\":{0}}}", 3);
 
-            var claimOffers = AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter).Result;
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(0, claimOffersArray.Count);
@@ -91,7 +84,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverGetClaimOffersWorksForInvalidFilterJson()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var filter = string.Format("{{\"schema_seq_no\":\"{0}\"}}", 1);
 

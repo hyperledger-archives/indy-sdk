@@ -14,13 +14,13 @@ namespace Indy.Sdk.Dotnet.Test
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool SetDllDirectory(string lpPathName);
 
-        public static void Init()
+        public static async Task InitAsync()
         {
             if (_isInitialized)
                 return;
 
             LoadIndyDll();
-            RegisterWalletType();
+            await RegisterWalletTypeAsync();
 
             _isInitialized = true;
         }
@@ -34,9 +34,9 @@ namespace Indy.Sdk.Dotnet.Test
             SetDllDirectory(dir);
         }
 
-        private static void RegisterWalletType()
+        private static async Task RegisterWalletTypeAsync()
         {
-            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType()).Wait();
+            await Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType());
         }
     }
 }

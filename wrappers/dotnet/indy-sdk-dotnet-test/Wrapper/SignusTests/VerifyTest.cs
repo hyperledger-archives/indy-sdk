@@ -17,18 +17,18 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         private string _newDid;
 
         [TestInitialize]
-        public void CreateWalletWithDid()
+        public async Task CreateWalletWithDid()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
 
-            _pool = Pool.OpenPoolLedgerAsync(poolName, "{}").Result;
+            _pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
-            Wallet.CreateWalletAsync(poolName, walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            await Wallet.CreateWalletAsync(poolName, walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(walletName, null, null);
             
             var json = "{\"seed\":\"000000000000000000000000Trustee1\",\"cid\":false}";
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             _trusteeDid = result.Did;
@@ -36,28 +36,27 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
             if(_pool != null)
-                _pool.CloseAsync().Wait();
+                await _pool.CloseAsync();
 
             if (_wallet != null)
-                _wallet.CloseAsync().Wait();
+                await _wallet.CloseAsync();
 
-            Wallet.DeleteWalletAsync(walletName, null).Wait();
-           
+            await Wallet.DeleteWalletAsync(walletName, null);           
         }
 
-        private void CreateNewNymWithDidInLedger()
+        private async Task CreateNewNymWithDidInLedgerAsync()
         {
             var json = "{\"seed\":\"00000000000000000000000000000My1\"}";
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, json).Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             _newDid = result.Did;
             var newVerkey = result.VerKey;
 
-            var nymRequest = Ledger.BuildNymRequestAsync(_trusteeDid, _newDid, newVerkey, null, null).Result;
-            Ledger.SignAndSubmitRequestAsync(_pool, _wallet, _trusteeDid, nymRequest).Wait();
+            var nymRequest = await Ledger.BuildNymRequestAsync(_trusteeDid, _newDid, newVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, _trusteeDid, nymRequest);
         }
 
         [TestMethod]
@@ -76,7 +75,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestMethod]
         public async Task TestVerifyWorksForGetVerkeyFromLedger()
         {
-            CreateNewNymWithDidInLedger();
+            await CreateNewNymWithDidInLedgerAsync();
             await Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"did\":\"{0}\"}}", _newDid));
 
             var msgBytes = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
@@ -89,7 +88,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         [TestMethod]
         public async Task TestVerifyWorksForGetNymFromLedger()
         {
-            CreateNewNymWithDidInLedger();
+            await CreateNewNymWithDidInLedgerAsync();
 
             var msgBytes = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
             var signatureBytes = new byte[] { 169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11 };
