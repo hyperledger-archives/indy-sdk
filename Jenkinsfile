@@ -17,7 +17,6 @@ def testing() {
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
                 'libindy-windows-test': { libindyWindowsTesting() },
                 'libindy-redhat-test' : { libindyRedHatTesting() },
-                'java-ubuntu-test'    : { javaWrapperUbuntuTesting() },
                 'python-ubuntu-test'  : { pythonWrapperUbuntuTesting() }
         ])
     }
@@ -131,6 +130,19 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
                 }
             }
         }
+
+        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
+
+        dir('wrappers/java') {
+            echo "${env_name} Test: Build docker image for java"
+            def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
+
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Test: Test java wrapper"
+
+                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            }
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
@@ -203,37 +215,6 @@ def libindyRedHatTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
             libindyTest("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
-        }
-    }
-}
-
-def javaWrapperUbuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Java Test') {
-            def poolInst
-            def network_name = "pool_network"
-            def env_name = "Ubuntu Java"
-
-            try {
-                echo "${env_name} Test: Checkout csm"
-                checkout scm
-
-                poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
-
-                dir('wrappers/java') {
-                    echo "${env_name} Test: Build docker image"
-                    def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
-
-                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                        echo "${env_name} Test: Test"
-
-                        sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-                    }
-                }
-            }
-            finally {
-                closePool(env_name, network_name, poolInst)
-            }
         }
     }
 }
