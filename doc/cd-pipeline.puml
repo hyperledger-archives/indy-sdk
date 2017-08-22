@@ -2,6 +2,9 @@
 
 start
 
+title Indy SDK CI/CD Pipeline structure
+scale 0.8
+
 partition Testing {
     fork
         partition "Ubuntu Testing" {
@@ -78,7 +81,7 @@ partition Publishing {
         fork again
             partition "RHEL Publishing" {
                 :<b>Libindy
-                Build and publish RC rpms;
+                Build and publish Master/RC rpms;
             }
         fork again
             partition "Windows Publishing" {
