@@ -11,6 +11,11 @@ RUN apt-get install -y \
       gdebi \
       apt-utils
 
+RUN apt-get install -y \
+      libssl1.0.0 \
+      libsodium18 \
+      libsqlite0
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
