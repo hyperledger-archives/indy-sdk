@@ -35,12 +35,11 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Com
     Ok(result)
 }
 
+//Byte order: Little
 pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
     let mut result: Vec<u8> = Vec::new();
     for i in (0..4).rev() {
-        let shift = i * 8;
-        let b = (x >> shift) as u8;
-        result.push(b);
+        result.push((x >> i * 8) as u8);
     }
     result
 }
@@ -164,8 +163,8 @@ mod tests {
 
     #[test]
     fn transform_u32_to_array_of_u8_works() {
-        let int = 1958376517;
-        let answer = vec![116, 186, 116, 69];
+        let int = 0x74BA7445;
+        let answer = vec![0x74, 0xBA, 0x74, 0x45];
         assert_eq!(transform_u32_to_array_of_u8(int), answer)
     }
 }
