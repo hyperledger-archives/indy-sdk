@@ -496,7 +496,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             Assert.AreEqual(claimOffersObject.Count, 1);
 
             var claimOfferObject = claimOffersObject[0];
-            var claimOfferJson = claimOfferObject.ToString(); //Maybe formatting?
+            var claimOfferJson = claimOfferObject.ToString();
 
             //5. Prover create ClaimReq
             var proverDid = "BzfFCYk";
