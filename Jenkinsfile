@@ -16,7 +16,7 @@ def testing() {
         parallel([
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
                 'libindy-windows-test': { libindyWindowsTesting() },
-                //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() },
+                //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() }, IS-307
                 'python-ubuntu-test'  : { pythonWrapperUbuntuTesting() }
         ])
     }
@@ -30,7 +30,7 @@ def publishing() {
         }
 
         parallel([
-                //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() },
+                //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() }, IS-307
                 'libindy-deb-files'     : { publishingLibindyDebFiles() },
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
                 'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
@@ -136,8 +136,6 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
 
         dir('wrappers/java') {
-            echo "${env_name} Test: Build docker image for java"
-
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test java wrapper"
 
