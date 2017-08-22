@@ -12,3 +12,4 @@ pub const GET_DDO: &'static str = "120";//TODO change number
 
 pub const STEWARD: isize = 2;
 pub const TRUSTEE: isize = 0;
+pub const TRUST_ANCHOR: isize = 101;
