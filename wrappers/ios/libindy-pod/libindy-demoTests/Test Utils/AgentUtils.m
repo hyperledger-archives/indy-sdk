@@ -94,34 +94,6 @@ __strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, 
                 messageCallback:(void (^)(IndyHandle connectionHandle, NSString *message))messageCallback
               outListenerHandle:(IndyHandle *)listenerHandle
 {
-    
-    #if 0
-    // connection callback
-    void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, NSString* ) = ^(IndyHandle xListenerHandle, NSError *error, IndyHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
-        NSLog(@"AgentUtils::listen::New connection %d on listener %d, err %ld, sender DID %@, receiver DID: %@", (int)connectionHandle, (int)xListenerHandle, (long)error.code, senderDid, receiverDid);
-        if (connectionCallback) {connectionCallback(xListenerHandle, connectionHandle);}
-    };
-    
-    
-    // listener callback. We need to obtain listenerHandle, so we wait for completion. Connection and message callnacks can be triggered multiple times later, so we just pass them to register.
-    XCTestExpectation* listenerCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
-    __block IndyHandle tempListenerHandle = 0;
-    __block NSError *listenerErr;
-
-    void (^onListenerCallback)(NSError*, IndyHandle) = ^(NSError *error, IndyHandle xListenerHandle) {
-        NSLog(@"OnListenerCallback triggered.");
-        listenerErr = error;
-        tempListenerHandle = xListenerHandle;
-        [listenerCompletionExpectation fulfill];
-    };
-    
-    // message callback
-    void (^onMessageCallback)(IndyHandle, NSError*, NSString*) = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
-        NSLog(@"AgentUtils::listen::On connection %d received (with error %ld) agent message (CLI->SRV): %@", (int)xConnectionHandle, (long)error.code, message);
-        if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
-    };
-#endif
-    
     // listener callback. We need to obtain listenerHandle, so we wait for completion. Connection and message callnacks can be triggered multiple times later, so we just pass them to register.
     XCTestExpectation* listenerCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block IndyHandle tempListenerHandle = 0;
@@ -288,5 +260,51 @@ __strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, 
     return err;
 }
 
+- (NSError *)connectHangUpExpectedForPoolHandle:(IndyHandle)poolHandle
+                                   walletHandle:(IndyHandle)walletHandle
+                                      senderDid:(NSString *)senderDid
+                                    receiverDid:(NSString *)receiverDid
+                                      isTimeout:(BOOL *)isTimeout
+{
+    // connection callback. waiting for completion
+    XCTestExpectation* connectCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
+    __block NSError *connectionErr;
+    __block IndyHandle tempConnectionHandle;
+    
+    void (^onConnectCallback)(NSError*, IndyHandle) = ^(NSError *error, IndyHandle connectionHandle) {
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %ld", (long)error.code);
+        tempConnectionHandle = connectionHandle;
+        connectionErr = error;
+        [connectCompletionExpectation fulfill];
+    };
+    
+    __weak typeof(self)weakSelf = self;
+    weakSelf.connectionCallbacks[@(tempConnectionHandle)] = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
+        NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
+    };
+    
+    NSError *ret = [IndyAgent connectWithPoolHandle:poolHandle
+                                       walletHandle:walletHandle
+                                          senderDId:senderDid
+                                        receiverDId:receiverDid
+                                  connectionHandler:onConnectCallback
+                                     messageHandler:(void (^)(IndyHandle, NSError*, NSString*))weakSelf.connectionCallbacks[@(tempConnectionHandle)]];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    // wait for connection callback
+    [self waitForExpectations: @[connectCompletionExpectation] timeout:[TestUtils shortTimeout]];
+    
+    if (connectionErr)
+    {
+        return connectionErr;
+    } else {
+        if (isTimeout) { *isTimeout = YES; }
+        return ret;
+    }
+}
 
 @end

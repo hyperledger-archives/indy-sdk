@@ -59,6 +59,9 @@
                   Identifier = "AgentHignCases/testSequence">
                </Test>
                <Test
+                  Identifier = "AgentMediumSend/testAgentSendWorksForRemovedIdentity">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test
