@@ -44,8 +44,8 @@ impl<T: JsonEncodable> JsonEncodable for Request<T> {}
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub enum Role {
-    STEWARD = STEWARD,
-    TRUSTEE = TRUSTEE,
+    Steward = STEWARD,
+    Trustee = TRUSTEE,
     TrustAnchor = TRUST_ANCHOR
 }
 
