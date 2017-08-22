@@ -131,16 +131,18 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
-        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
+        if (env_name == 'Ubuntu') {
+            sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
 
-        dir('wrappers/java') {
-            echo "${env_name} Test: Build docker image for java"
-            def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
+            dir('wrappers/java') {
+                echo "${env_name} Test: Build docker image for java"
+                def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
 
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test java wrapper"
+                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                    echo "${env_name} Test: Test java wrapper"
 
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+                    sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+                }
             }
         }
     }
