@@ -1002,7 +1002,7 @@ mod medium_cases {
 
             let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let role = "TRUST_ANCHOR";
+            let role = "STEWARD";
             let alias = "some_alias";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey), Some(alias), Some(role)).unwrap();
 
