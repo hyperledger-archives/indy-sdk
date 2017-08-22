@@ -496,7 +496,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             Assert.AreEqual(claimOffersObject.Count, 1);
 
             var claimOfferObject = claimOffersObject[0];
-            var claimOfferJson = claimOfferObject.ToString();
+            var claimOfferJson = claimOfferObject.ToString(); //Maybe formatting?
 
             //5. Prover create ClaimReq
             var proverDid = "BzfFCYk";
@@ -545,7 +545,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var selfAttestedValue = "yes";
             var requestedClaimsJson = string.Format("{{\n" +
                     "                                          \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
-                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true],\n" +
+                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true]}},\n" +
                     "                                          \"requested_predicates\":{{}}\n" +
                     "                                        }}", selfAttestedValue, claimUuid);
 
