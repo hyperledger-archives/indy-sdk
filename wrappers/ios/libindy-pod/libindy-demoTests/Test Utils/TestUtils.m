@@ -45,6 +45,11 @@
     return  100;
 }
 
++ (NSString *)tmpFilePathAppending:(NSString *)fileName
+{
+    return [NSString stringWithFormat:@"%@/%@", [TestUtils getUserTmpDir], fileName];
+}
+
 + (NSString *)pool
 {
     return @"pool_1";
