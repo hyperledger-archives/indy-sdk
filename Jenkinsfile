@@ -16,7 +16,7 @@ def testing() {
         parallel([
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
                 'libindy-windows-test': { libindyWindowsTesting() },
-                'libindy-redhat-test' : { libindyRedHatTesting() },
+                //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() },
                 'python-ubuntu-test'  : { pythonWrapperUbuntuTesting() }
         ])
     }
@@ -30,7 +30,7 @@ def publishing() {
         }
 
         parallel([
-                'libindy-rpm-files'     : { publishingLibindyRpmFiles() },
+                //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() },
                 'libindy-deb-files'     : { publishingLibindyDebFiles() },
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
                 'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
