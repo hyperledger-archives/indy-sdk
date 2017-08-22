@@ -101,9 +101,11 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
 
         poolInst = openPool(env_name, network_name, '105', '1.0.95', '1.0.25', '1.0.105')
 
+        def testEnv
+
         dir('libindy') {
             echo "${env_name} Test: Build docker image"
-            def testEnv = dockerHelpers.build('libindy', file)
+            testEnv = dockerHelpers.build('libindy', file)
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
@@ -131,18 +133,15 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
-        if (env_name == 'Ubuntu') {
-            sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
+        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
 
-            dir('wrappers/java') {
-                echo "${env_name} Test: Build docker image for java"
-                def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
+        dir('wrappers/java') {
+            echo "${env_name} Test: Build docker image for java"
 
-                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                    echo "${env_name} Test: Test java wrapper"
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Test: Test java wrapper"
 
-                    sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-                }
+                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
             }
         }
     }
