@@ -26,12 +26,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
             var connectionEvent = await listener.WaitForConnection();
             var serverConnection = connectionEvent.Connection;
 
+            var waitListenerConnectionTask = listener.WaitForConnection(); //Start waiting for additional connections - we'll never get one in this test, however.
+
             var clientToServerMessage = "msg_from_client";
-            var serverToClientMessage = "msg_from_server";
+            var serverToClientMessage = "msg_from_server";                             
 
             await clientConnection.SendAsync(clientToServerMessage);
 
-            var serverMessageEvent = await serverConnection.WaitForMessage();
+            var waitServerMessageTask = serverConnection.WaitForMessage();
+
+            var completedTask = await Task.WhenAny(waitListenerConnectionTask, waitServerMessageTask); //Wait for either an additional connection or message and proceed when one has arrived.
+
+            Assert.AreEqual(completedTask, waitServerMessageTask);
+
+            var serverMessageEvent = await waitServerMessageTask;
 
             Assert.AreEqual(clientToServerMessage, serverMessageEvent.Message);
 
