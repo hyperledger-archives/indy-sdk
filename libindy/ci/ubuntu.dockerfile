@@ -21,8 +21,8 @@ RUN apt-get update && \
       debhelper \
       wget
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
-RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.list
 RUN apt-get update -y && apt-get install -y \
 	python3-charm-crypto
 
