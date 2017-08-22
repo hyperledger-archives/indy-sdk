@@ -1,7 +1,4 @@
 extern crate serde_json;
-extern crate uuid;
-
-use self::uuid::Uuid;
 
 use errors::anoncreds::AnoncredsError;
 use errors::indy::IndyError;
@@ -19,7 +16,7 @@ use services::anoncreds::types::{
     RevocationRegistryPrivate,
     Schema
 };
-use services::anoncreds::helpers::get_claim_def_id;
+use services::anoncreds::helpers::get_composite_id;
 use std::rc::Rc;
 use std::collections::HashMap;
 use utils::json::{JsonDecodable, JsonEncodable};
@@ -38,17 +35,17 @@ pub enum IssuerCommand {
         String, // issuer did
         i32, // schema seq no
         i32, // max claim num
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Box<Fn(Result<String, IndyError>) + Send>),
     CreateClaim(
         i32, // wallet handle
         String, // claim req json
         String, // claim json
-        Option<i32>, // revoc reg seq no
         Option<i32>, // user revoc index
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     RevokeClaim(
         i32, // wallet handle
-        i32, // revoc reg seq no
+        String, // issuer did
+        i32, // schema seq no
         i32, // user revoc index
         Box<Fn(Result<String, IndyError>) + Send>),
 }
@@ -81,15 +78,15 @@ impl IssuerCommandExecutor {
                 info!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
                 self.create_and_store_revocation_registry(wallet_handle, &issuer_did, schema_seq_no, max_claim_num, cb);
             }
-            IssuerCommand::CreateClaim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index, cb) => {
+            IssuerCommand::CreateClaim(wallet_handle, claim_req_json, claim_json, user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "CreateClaim command received");
                 self.create_claim(wallet_handle, &claim_req_json, &claim_json,
-                                  revoc_reg_seq_no, user_revoc_index, cb);
+                                  user_revoc_index, cb);
             }
-            IssuerCommand::RevokeClaim(wallet_handle, revoc_reg_seq_no,
+            IssuerCommand::RevokeClaim(wallet_handle, issuer_did, schema_seq_no,
                                        user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "RevokeClaim command received");
-                self.revoke_claim(wallet_handle, revoc_reg_seq_no, user_revoc_index, cb);
+                self.revoke_claim(wallet_handle, &issuer_did, schema_seq_no, user_revoc_index, cb);
             }
         };
     }
@@ -127,8 +124,8 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition private json: {}", err.to_string())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &get_claim_def_id(issuer_did, schema.seq_no)), &claim_definition_json)?;
-        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &get_claim_def_id(issuer_did, schema.seq_no)), &claim_definition_private_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &get_composite_id(issuer_did, schema.seq_no)), &claim_definition_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &get_composite_id(issuer_did, schema.seq_no)), &claim_definition_private_json)?;
 
         Ok(claim_definition_json)
     }
@@ -138,7 +135,7 @@ impl IssuerCommandExecutor {
                                             issuer_did: &str,
                                             schema_seq_no: i32,
                                             max_claim_num: i32,
-                                            cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+                                            cb: Box<Fn(Result<String, IndyError>) + Send>) {
         let result = self._create_and_store_revocation_registry(wallet_handle, issuer_did, schema_seq_no, max_claim_num);
         cb(result)
     }
@@ -147,9 +144,8 @@ impl IssuerCommandExecutor {
                                              wallet_handle: i32,
                                              issuer_did: &str,
                                              schema_seq_no: i32,
-                                             max_claim_num: i32) -> Result<(String, String), IndyError> {
-
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_claim_def_id(issuer_did, schema_seq_no)))?;
+                                             max_claim_num: i32) -> Result<String, IndyError> {
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_composite_id(issuer_did, schema_seq_no)))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition json: {}", err.to_string())))?;
@@ -160,8 +156,6 @@ impl IssuerCommandExecutor {
         let (revocation_registry, revocation_registry_private) =
             self.anoncreds_service.issuer.issue_accumulator(&pk_r, max_claim_num, issuer_did, schema_seq_no)?;
 
-        let uuid = Uuid::new_v4().to_string();
-
         let revocation_registry_json = RevocationRegistry::to_json(&revocation_registry)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
@@ -170,8 +164,8 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry private: {}", err.to_string())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &uuid), &revocation_registry_json)?;
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &uuid), &revocation_registry_private_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(issuer_did, schema_seq_no)), &revocation_registry_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(issuer_did, schema_seq_no)), &revocation_registry_private_json)?;
         // TODO: change it
         let tails_dash = serde_json::to_string(&revocation_registry_private.tails_dash)
             .map_err(map_err_trace!())
@@ -179,17 +173,16 @@ impl IssuerCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("tails"), &tails_dash)?;
 
-        Ok((revocation_registry_json, uuid))
+        Ok(revocation_registry_json)
     }
 
     fn create_claim(&self,
                     wallet_handle: i32,
                     claim_req_json: &str,
                     claim_json: &str,
-                    revoc_reg_seq_no: Option<i32>,
                     user_revoc_index: Option<i32>,
                     cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let result = self._create_claim(wallet_handle, claim_req_json, claim_json, revoc_reg_seq_no, user_revoc_index);
+        let result = self._create_claim(wallet_handle, claim_req_json, claim_json, user_revoc_index);
         cb(result)
     }
 
@@ -197,14 +190,13 @@ impl IssuerCommandExecutor {
                      wallet_handle: i32,
                      claim_req_json: &str,
                      claim_json: &str,
-                     revoc_reg_seq_no: Option<i32>,
                      user_revoc_index: Option<i32>) -> Result<(String, String), IndyError> {
         let claim_req_json: ClaimRequestJson = ClaimRequestJson::from_json(claim_req_json)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_req_json: {}", err.to_string())))?;
 
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_claim_def_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
-        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &get_claim_def_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
+        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
 
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
@@ -214,17 +206,16 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_private_json: {}", err.to_string())))?;
 
-        if claim_def.data.public_key_revocation.is_some() && (revoc_reg_seq_no.is_none() || claim_req_json.blinded_ms.ur.is_none()) {
+        if claim_def.data.public_key_revocation.is_some() && claim_req_json.blinded_ms.ur.is_none() {
             return Err(IndyError::AnoncredsError(AnoncredsError::NotIssuedError(
-                format!("Revocation Sequence Number and Claim_request.ur are required for this claim"))))
+                format!("Claim_request.ur are required for this claim"))));
         }
 
         let (revocation_registry, revocation_registry_private,
-            mut revocation_registry_json, revocation_registry_uuid) = match revoc_reg_seq_no {
-            Some(seq_no) => {
-                let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("seq_no::{}", &seq_no))?;
-                let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-                let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
+            mut revocation_registry_json) = match claim_def.data.public_key_revocation {
+            Some(_) => {
+                let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
+                let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
 
                 let revocation_registry = Some(RefCell::new(RevocationRegistry::from_json(&revocation_registry_json)
                     .map_err(map_err_trace!())
@@ -234,9 +225,9 @@ impl IssuerCommandExecutor {
                     .map_err(map_err_trace!())
                     .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_private_json: {}", err.to_string())))?);
 
-                (revocation_registry, revocation_registry_private, revocation_registry_json, revocation_registry_uuid)
+                (revocation_registry, revocation_registry_private, revocation_registry_json)
             }
-            _ => (None, None, String::new(), String::new())
+            _ => (None, None, String::new())
         };
 
         let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)
@@ -256,10 +247,10 @@ impl IssuerCommandExecutor {
                 .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
 
-            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid), &revocation_registry_json)?;
+            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)), &revocation_registry_json)?;
         }
 
-        let claim_json = ClaimJson::new(attributes, revoc_reg_seq_no, claims, claim_def.schema_seq_no, claim_req_json.issuer_did);
+        let claim_json = ClaimJson::new(attributes, claims, claim_def.schema_seq_no, claim_req_json.issuer_did);
 
         let claim_json = ClaimJson::to_json(&claim_json)
             .map_err(map_err_trace!())
@@ -270,20 +261,21 @@ impl IssuerCommandExecutor {
 
     fn revoke_claim(&self,
                     wallet_handle: i32,
-                    revoc_reg_seq_no: i32,
+                    issuer_did: &str,
+                    schema_seq_no: i32,
                     user_revoc_index: i32,
                     cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._revoke_claim(wallet_handle, revoc_reg_seq_no, user_revoc_index);
+        let result = self._revoke_claim(wallet_handle, issuer_did, schema_seq_no, user_revoc_index);
         cb(result)
     }
 
     fn _revoke_claim(&self,
                      wallet_handle: i32,
-                     revoc_reg_seq_no: i32,
+                     issuer_did: &str,
+                     schema_seq_no: i32,
                      user_revoc_index: i32) -> Result<String, IndyError> {
-        let revocation_registry_uuid = self.wallet_service.get(wallet_handle, &format!("revocation_registry_uuid::{}", &revoc_reg_seq_no))?;
-        let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &revocation_registry_uuid))?;
-        let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &revocation_registry_uuid))?;
+        let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)))?;
+        let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)))?;
 
         let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
             .map_err(map_err_trace!())
@@ -303,7 +295,7 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry_uuid::{}", &revocation_registry_uuid), &revoc_reg_update_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)), &revoc_reg_update_json)?;
 
         Ok(revoc_reg_update_json)
     }

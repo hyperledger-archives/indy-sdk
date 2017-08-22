@@ -80,7 +80,7 @@
     
     // 2. Create claim definition
     NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
-    IndyHandle invalidWalletHandle = walletHandle + 1;
+    IndyHandle invalidWalletHandle = walletHandle + 100;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:invalidWalletHandle
                                                                              issuerDid:[AnoncredsUtils issuerDid]
                                                                             schemaJson:schema
@@ -512,9 +512,9 @@
     // 2. create claim
     NSString *claimRequest = [NSString stringWithFormat: @"{"\
                               "\"blinded_ms\":{"\
-                              "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
-                              "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
-                              "\"ur\":null},"\
+                                    "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
+                                    "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","\
+                                    "\"ur\":null},"\
                               "\"issuer_did\":\"%@\","\
                               "\"schema_seq_no\":1}", [AnoncredsUtils issuerDid]];
     
@@ -533,6 +533,8 @@
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"m2"] length] > 0, @"wrong \"m2\" length");
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"e"] length] > 0, @"wrong \"e\" length");
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"v"] length] > 0, @"wrong \"v\" length");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimReq
@@ -593,6 +595,8 @@
                                                        outRevocRegUpdateJSON:nil];
 
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong error code.");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 // MARK: - Prover store claim
@@ -641,6 +645,8 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverStoreClaimWorksForInvalidWalletHandle
@@ -689,6 +695,8 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:invalidWalletHandle
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 // MARK: - Prover get claims
@@ -715,6 +723,8 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForFilterByIssuerDid
@@ -740,6 +750,8 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForFilterByClaimDefSeqNoAndSchemaSeqNo
@@ -765,6 +777,8 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForEmptyResult
@@ -789,6 +803,8 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 0, @"claims count != 0");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForInvalidWalletHandle
@@ -808,6 +824,8 @@
                                                                filterJson:@"{}"
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForWalletHandle returned wrong code");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 // MARK: - Prover get claims for proof request
