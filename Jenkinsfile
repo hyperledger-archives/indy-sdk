@@ -15,8 +15,8 @@ def testing() {
     stage('Testing') {
         parallel([
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
-                'libindy-windows-test': { libindyWindowsTesting() },
                 //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() }, IS-307
+                'libindy-windows-test': { libindyWindowsTesting() }
         ])
     }
 }
@@ -108,7 +108,7 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
-                sh 'chmod -R 777 /home/indy/'
+                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
 
                 try {
                     def features_args = ""
