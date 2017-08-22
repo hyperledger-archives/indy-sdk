@@ -14,10 +14,12 @@
 
 + (SignusUtils *)sharedInstance;
 
+// MARK: - Instance methods
+
 - (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                          theirDid:(NSString *)theirDid
-                          message:(NSString *)message
-                     outSignature:(NSString **)signature;
+                          message:(NSData *)message
+                     outSignature:(NSData **)signature;
 
 - (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
@@ -49,6 +51,22 @@
 - (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
                          poolHandle:(IndyHandle)poolHandle
                                 did:(NSString *)did
-                          signature:(NSString *)signature
+                            message:(NSData *)message
+                          signature:(NSData *)signature
                         outVerified:(BOOL *)verified;
+
+- (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
+                          poolHandle:(IndyHandle)poolHandle
+                               myDid:(NSString *)myDid
+                                 did:(NSString *)did
+                             message:(NSData *)message
+                 outEncryptedMessage:(NSData **)encryptedMessage
+                            outNonce:(NSData **)nonce;
+
+- (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
+                               myDid:(NSString *)myDid
+                                 did:(NSString *)did
+                    encryptedMessage:(NSData *)encryptedMessage
+                               nonce:(NSData *)nonce
+                 outDecryptedMessage:(NSData **)decryptedMessage;
 @end
