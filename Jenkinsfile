@@ -17,7 +17,6 @@ def testing() {
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
                 'libindy-windows-test': { libindyWindowsTesting() },
                 //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() }, IS-307
-                'python-ubuntu-test'  : { pythonWrapperUbuntuTesting() }
         ])
     }
 }
@@ -134,12 +133,23 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
-
         dir('wrappers/java') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test java wrapper"
 
                 sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            }
+        }
+
+        sh "cp libindy/target/debug/libindy.so wrappers/python"
+        dir('wrappers/python') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Test: Test python wrapper"
+
+                sh '''
+                    python3.6 -m pip install -e .
+                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
+                '''
             }
         }
     }
@@ -214,39 +224,6 @@ def libindyRedHatTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
             libindyTest("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
-        }
-    }
-}
-
-def pythonWrapperUbuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Python Test') {
-            def poolInst
-            def network_name = "pool_network"
-            def env_name = "Ubuntu Python"
-            try {
-                echo "${env_name} Test: Checkout csm"
-                checkout scm
-
-                poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
-
-                dir('wrappers/python') {
-                    echo "${env_name} Test: Build docker image"
-                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
-
-                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                        echo "${env_name} Test: Test"
-
-                        sh '''
-                            python3.6 -m pip install -e .
-                            RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
-                        '''
-                    }
-                }
-            }
-            finally {
-                closePool(env_name, network_name, poolInst)
-            }
         }
     }
 }
