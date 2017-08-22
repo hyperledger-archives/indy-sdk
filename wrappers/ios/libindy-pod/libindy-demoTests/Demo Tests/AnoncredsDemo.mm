@@ -32,7 +32,7 @@
 - (void)testAnoncredsDemo
 {
     [TestUtils cleanupStorage];
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     NSString *walletName = @"issuer_wallet";
     NSString *xType = @"default";
     XCTestExpectation *completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];

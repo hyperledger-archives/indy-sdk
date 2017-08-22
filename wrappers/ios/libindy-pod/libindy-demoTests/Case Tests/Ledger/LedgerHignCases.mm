@@ -307,7 +307,7 @@
 - (void) testSignAndSubmitRequestWorksForIncompatibleWalletAndPool
 {
     [TestUtils cleanupStorage];
-    NSString *poolName1 = @"pool1";
+    NSString *poolName1 = [TestUtils pool];
     NSString *poolName2 = @"pool2";
     NSError *ret;
     
