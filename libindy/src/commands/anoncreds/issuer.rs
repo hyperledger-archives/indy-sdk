@@ -145,7 +145,6 @@ impl IssuerCommandExecutor {
                                              issuer_did: &str,
                                              schema_seq_no: i32,
                                              max_claim_num: i32) -> Result<String, IndyError> {
-
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_composite_id(issuer_did, schema_seq_no)))?;
         let claim_def = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
@@ -209,7 +208,7 @@ impl IssuerCommandExecutor {
 
         if claim_def.data.public_key_revocation.is_some() && claim_req_json.blinded_ms.ur.is_none() {
             return Err(IndyError::AnoncredsError(AnoncredsError::NotIssuedError(
-                format!("Claim_request.ur are required for this claim"))))
+                format!("Claim_request.ur are required for this claim"))));
         }
 
         let (revocation_registry, revocation_registry_private,
@@ -218,9 +217,9 @@ impl IssuerCommandExecutor {
                 let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
                 let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
 
-                let revocation_registry = Some(RevocationRegistry::from_json(&revocation_registry_json)
+                let revocation_registry = Some(RefCell::new(RevocationRegistry::from_json(&revocation_registry_json)
                     .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?);
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?));
 
                 let revocation_registry_private = Some(RevocationRegistryPrivate::from_json(&revocation_registry_private_json)
                     .map_err(map_err_trace!())
@@ -235,17 +234,16 @@ impl IssuerCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_json: {}", err.to_string())))?;
 
-        let (claims, updated_accumulator) = self.anoncreds_service.issuer.create_claim(&claim_def,
-                                                                                       &claim_def_private,
-                                                                                       &revocation_registry,
-                                                                                       &revocation_registry_private,
-                                                                                       &claim_req_json.blinded_ms,
-                                                                                       &attributes,
-                                                                                       user_revoc_index)?;
+        let claims = self.anoncreds_service.issuer.create_claim(&claim_def,
+                                                                &claim_def_private,
+                                                                &revocation_registry,
+                                                                &revocation_registry_private,
+                                                                &claim_req_json.blinded_ms,
+                                                                &attributes,
+                                                                user_revoc_index)?;
 
-        if let (Some(x), Some(mut revocation_registry)) = (updated_accumulator, revocation_registry) {
-            revocation_registry.accumulator = x;
-            revocation_registry_json = RevocationRegistry::to_json(&revocation_registry)
+        if let Some(x) = revocation_registry {
+            revocation_registry_json = RevocationRegistry::to_json(&x.borrow())
                 .map_err(map_err_trace!())
                 .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
 

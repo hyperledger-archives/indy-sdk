@@ -66,7 +66,7 @@ impl Prover {
 
     pub fn process_claim(&self, claim_json: &RefCell<ClaimJson>, primary_claim_init_data: ClaimInitData,
                          revocation_claim_init_data: Option<RevocationClaimInitData>,
-                         pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
+                         pkr: Option<RevocationPublicKey>, revoc_reg: &Option<RevocationRegistry>)
                          -> Result<(), CommonError> {
         info!(target: "anoncreds_service", "Prover process received claim -> start");
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
@@ -79,7 +79,7 @@ impl Prover {
                                                    .ok_or(CommonError::InvalidStructure("Field pkr not found".to_string()))?,
                                                &revoc_reg.clone()
                                                    .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
-                                               &revoc_reg
+                                               &revoc_reg.clone()
                                                    .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
         }
         info!(target: "anoncreds_service", "Prover process received claim -> done");
@@ -1010,7 +1010,7 @@ mod tests {
         let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
             issuer::mocks::ISSUER_DID, issuer::mocks::get_gvt_schema(), None, true).unwrap();
 
-        let (mut revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
             5, issuer::mocks::ISSUER_DID, 1).unwrap();
 
@@ -1021,8 +1021,10 @@ mod tests {
             claim_definition.clone().unwrap().data.public_key_revocation,
             master_secret, mocks::PROVER_DID).unwrap();
 
-        let (claim_signature, updated_accumulator) = issuer.create_claim(
-            &claim_definition, &claim_definition_private.clone().unwrap(), &Some(revocation_registry.clone()),
+        let revocation_registry_ref_cell = Some(RefCell::new(revocation_registry));
+
+        let claim_signature = issuer.create_claim(
+            &claim_definition, &claim_definition_private.clone().unwrap(), &revocation_registry_ref_cell,
             &Some(revocation_registry_private.clone()), &claim_request,
             &issuer::mocks::get_gvt_attributes(), None).unwrap();
 
@@ -1032,12 +1034,11 @@ mod tests {
 
         let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
 
-        revocation_registry.accumulator = updated_accumulator.clone().unwrap();
-
+        let revocation_reg = revocation_registry_ref_cell.unwrap().clone();
         prover.process_claim(&claim_json_ref_cell, claim_init_data,
                              revocation_claim_init_data.clone(),
                              Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
-                             Some(revocation_registry.clone())).unwrap();
+                             &Some(revocation_reg.borrow().clone())).unwrap();
 
         let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
 
@@ -1047,10 +1048,10 @@ mod tests {
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()).unwrap();
         let proof_tau_list = Issuer::_create_tau_list_values(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            &updated_accumulator.clone().unwrap(), &c_list_params, &proof_c_list).unwrap();
+            &revocation_reg.borrow().accumulator, &c_list_params, &proof_c_list).unwrap();
         let proof_tau_list_calc = Issuer::_create_tau_list_expected_values(
             &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            &updated_accumulator.unwrap(), &revocation_registry.clone().acc_pk,
+            &revocation_reg.borrow().accumulator, &revocation_reg.borrow().acc_pk,
             &proof_c_list).unwrap();
         assert_eq!(proof_tau_list.as_slice().unwrap(), proof_tau_list_calc.as_slice().unwrap());
     }

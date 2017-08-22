@@ -351,7 +351,7 @@ impl ProverCommandExecutor {
                                                     primary_claim_init_data,
                                                     revocation_claim_init_data,
                                                     claim_def.data.public_key_revocation,
-                                                    revocation_registry)?;
+                                                    &revocation_registry)?;
 
         let claim = ClaimJson::to_json(&claim_json.borrow())
             .map_err(map_err_trace!())
