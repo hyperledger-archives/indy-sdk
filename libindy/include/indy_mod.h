@@ -110,6 +110,8 @@ typedef enum
 
     AnoncredsProofRejected = 405,
 
+    AnoncredsClaimRevoked = 406,
+
     // Signus errors
     // Unknown format of DID entity keys
     SignusUnknownCryptoError = 500
