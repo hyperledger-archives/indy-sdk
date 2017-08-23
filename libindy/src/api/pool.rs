@@ -56,11 +56,11 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 /// config (optional): Runtime pool configuration json.
 ///                         if NULL, then default config will be used. Example:
 /// {
-///     "refreshOnOpen": bool (optional), Forces pool ledger to be refreshed immediately after opening.
+///     "refresh_on_open": bool (optional), Forces pool ledger to be refreshed immediately after opening.
 ///                      Defaults to true.
-///     "autoRefreshTime": int (optional), After this time in minutes pool ledger will be automatically refreshed.
+///     "auto_refresh_time": int (optional), After this time in minutes pool ledger will be automatically refreshed.
 ///                        Use 0 to disable automatic refresh. Defaults to 24*60.
-///     "networkTimeout": int (optional), Network timeout for communication with nodes in milliseconds.
+///     "network_timeout": int (optional), Network timeout for communication with nodes in milliseconds.
 ///                       Defaults to 20000.
 /// }
 ///

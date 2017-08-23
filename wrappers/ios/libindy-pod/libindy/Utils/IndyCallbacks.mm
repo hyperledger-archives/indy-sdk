@@ -409,6 +409,29 @@ void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
     }
 }
 
+/// Arguments arg1 and arg2 will be converted to nsdata
+void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
+                                 indy_error_t err,
+                                 const uint8_t* arg1,
+                                 uint32_t arg2)
+{
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    
+    void (^completion)(NSError*, NSData* arg) = (__bridge void (^)(NSError*, NSData* arg))block;
+    
+    NSData *sarg = [NSData dataWithBytes:arg1 length:arg2];
+    
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+                           NSError *error = [ NSError errorFromIndyError: err ];
+                           completion(error, sarg);
+                       });
+    }
+}
+
 void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
                                  indy_error_t err,
                                  const char* arg1,
@@ -454,6 +477,31 @@ void IndyWrapperCommon5PSCallback(indy_handle_t xcommand_handle,
                        {
                            NSError *error = [ NSError errorFromIndyError: err ];
                            completion(error, (IndyHandle) connection_handle, sarg1, sarg2);
+                       });
+    }
+}
+
+void IndyWrapperCommon6PDataCallback(indy_handle_t xcommand_handle,
+                                     indy_error_t err,
+                                     const uint8_t* arg1,
+                                     uint32_t arg2,
+                                     const uint8_t* arg3,
+                                     uint32_t arg4)
+{
+    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+    
+    void (^completion)(NSError*, NSData* xArg1, NSData* xArg2) = (__bridge void (^)(NSError*, NSData* xArg1, NSData* xArg2))block;
+    
+    NSData *sarg1 = [NSData dataWithBytes:arg1 length:arg2];
+    NSData *sarg2 = [NSData dataWithBytes:arg3 length:arg4];
+    
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+                           NSError *error = [ NSError errorFromIndyError: err ];
+                           completion(error, sarg1, sarg2);
                        });
     }
 }

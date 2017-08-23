@@ -45,12 +45,12 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildSchemaRequestWorks() throws Exception {
 
-		String data = "{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]}";
+		String data = "{\"name\":\"name\",\"version\":\"1.0\",\"attr_names\":[\"name\",\"male\"]}";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"101\"," +
-				"\"data\":\"%s\"" +
+				"\"data\":%s" +
 				"}", identifier, data);
 
 		String schemaRequest = Ledger.buildSchemaRequest(identifier, data).get();
@@ -89,7 +89,7 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 
 		String schemaData = "{\"name\":\"gvt2\",\n" +
 				"             \"version\":\"2.0\",\n" +
-				"             \"keys\": [\"name\", \"male\"]}";
+				"             \"attr_names\": [\"name\", \"male\"]}";
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, schemaData).get();
 		String schemaResponse = Ledger.submitRequest(pool, schemaRequest).get();
@@ -106,7 +106,7 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
 
-		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, schemaData).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();

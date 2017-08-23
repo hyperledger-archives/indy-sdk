@@ -29,4 +29,17 @@
 
 + (void) cleanupStorage;
 
++ (NSString *)pool;
++ (NSData *)message;
++ (NSData *)encryptedMessage;
++ (NSData *)nonce;
++ (NSData *)signature;
++ (NSString *)trusteeSeed;
++ (NSString *)mySeed;
++ (NSString *)endpoint;
++ (NSString *)clientMessage;
++ (NSString *)serverMessage;
+
+
+
 @end

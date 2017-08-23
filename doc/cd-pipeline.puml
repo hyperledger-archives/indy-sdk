@@ -1,0 +1,142 @@
+@startuml
+
+start
+
+title Indy SDK CI/CD Pipeline structure
+scale 0.8
+
+partition Testing {
+    fork
+        partition "Ubuntu Testing" {
+            :Start test pool;
+            if (BRANCH_NAME in ["master", "rc"]) then (yes)
+              :<b>Libindy\nRelease build;
+            else (no)
+              :<b>Libindy\nDebug build;
+            endif
+            :<b>Libindy
+            Testing;
+            :<b>Python Wrapper
+            Testing;
+            :<b>Java Wrapper
+            Testing;
+        }
+    fork again
+        partition "RHEL Testing" {
+            :Start test pool;
+            if (BRANCH_NAME in ["master", "rc"]) then (yes)
+                :<b>Libindy\nRelease build;
+            else (no)
+                :<b>Libindy\nDebug build;
+            endif
+            :<b>Libindy
+            Testing;
+            :<b>Python Wrapper
+            Testing;
+            :<b>Java Wrapper
+            Testing;
+        }
+    fork again
+        partition "Windows Testing" {
+            :Start test pool;
+            if (BRANCH_NAME in ["master", "rc"]) then (yes)
+                :<b>Libindy\nRelease build;
+            else (no)
+                :<b>Libindy\nDebug build;
+            endif
+            :<b>Libindy
+            Testing;
+            :<b>Python Wrapper
+            Testing;
+            :<b>Java Wrapper
+            Testing;
+            #red:<b>.Net Wrapper
+            Testing;
+            note right: Not implemented yet\nSee IS-257
+        }
+    fork again
+        partition "MacOS Testing" {
+            #red::Skip;
+            note right: Not implemented yet\nSee IS-192
+        }
+    fork again
+        partition "iOS Testing" {
+            #red::Skip;
+            note right: Not implemented yet\nSee IS-189
+        }
+    end fork
+}
+
+partition Publishing {
+    if (BRANCH_NAME in ["master", "rc"]) then (yes)
+        fork
+            partition "Ubuntu Publishing" {
+                :<b>Libindy
+                Build and publish Master/RC debs;
+                :<b>Python Wrapper
+                Publish RC to PyPi;
+                :<b>Java Wrapper
+                Build and publish Master/RC to Maven Central;
+            }
+        fork again
+            partition "RHEL Publishing" {
+                :<b>Libindy
+                Build and publish Master/RC rpms;
+            }
+        fork again
+            partition "Windows Publishing" {
+                :<b>Libindy
+                Build and publish Master/RC dlls archive;
+                #red:<b>.Net Wrapper
+                Master/RC Publishing;
+                note right: Not implemented yet\nSee IS-306
+            }
+        fork again
+            partition "MacOS Publishing" {
+                #red::Skip;
+                note right: Not implemented yet\nSee IS-6
+            }
+        fork again
+            partition "iOS Publishing" {
+                #red::Skip;
+                note right: Not implemented yet\nSee IS-100
+            }
+        end fork
+    else (no)
+        :<b>Skip publishing;
+    endif
+}
+
+partition "Acceptance Testing" {
+    if (BRANCH_NAME == "rc") then (yes)
+        :Notify QA about new artifacts to test;
+        :Acceptance testing by QA;
+    else (no)
+        :<b>Skip Acceptance Testing;
+    endif
+}
+
+partition "Releasing" {
+    if (BRANCH_NAME == "rc" && Acceptance tests passed) then (yes)
+        :<b>Libindy
+        Move RC debs to Stable repo;
+        :<b>Libindy
+        Move RC rmps to Stable repo;
+        :<b>Libindy
+        Move RC dlls archive to Stable repo;
+        :<b>Python Wrapper
+        Publish Stable to PyPi;
+        :<b>Java Wrapper
+        Build and publish Stable to Maven Central;
+    else (no)
+        :<b>Skip Releasing;
+    endif
+}
+
+partition Notification {
+    :Notify team about pipeline result;
+}
+
+stop
+
+@enduml

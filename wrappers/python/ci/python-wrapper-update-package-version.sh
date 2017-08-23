@@ -6,4 +6,4 @@ fi
 
 suffix="$1"
 
-sed -i -E "s/version = \"([0-9,.]+).*\"/version = \"\1-$suffix\"/" Cargo.toml
+sed -i -E "s/version='([0-9,.]+).*/version='\1-$suffix',/" setup.py

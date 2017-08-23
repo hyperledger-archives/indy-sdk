@@ -1,60 +1,8 @@
 use errors::common::CommonError;
-use services::anoncreds::constants::{
-    ITERATION,
-    LARGE_MASTER_SECRET,
-    LARGE_VPRIME,
-    LARGE_MVECT,
-    LARGE_E_START,
-    LARGE_ETILDE,
-    LARGE_VTILDE,
-    LARGE_UTILDE,
-    LARGE_RTILDE,
-    LARGE_M2_TILDE,
-    LARGE_ALPHATILDE
-};
-use services::anoncreds::types::{
-    Accumulator,
-    AccumulatorPublicKey,
-    AggregatedProof,
-    ClaimInitData,
-    ClaimDefinition,
-    ClaimSignature,
-    ClaimProof,
-    ClaimRequest,
-    InitProof,
-    NonRevocationClaim,
-    NonRevocProof,
-    NonRevocProofCList,
-    NonRevocInitProof,
-    NonRevocProofXList,
-    Proof,
-    ProofClaims,
-    Predicate,
-    PredicateType,
-    PrimaryClaim,
-    PrimaryEqualInitProof,
-    PrimaryEqualProof,
-    PrimaryInitProof,
-    PrimaryPredicateGEInitProof,
-    PrimaryPredicateGEProof,
-    PrimaryProof,
-    PublicKey,
-    RevocationClaimInitData,
-    RevocationPublicKey,
-    RevocationRegistry,
-    RequestedProofJson,
-    Schema,
-    ClaimJson,
-    ProofJson
-};
-use services::anoncreds::helpers::{
-    get_mtilde,
-    four_squares,
-    get_hash_as_int,
-    clone_bignum_map,
-    group_element_to_bignum,
-    bignum_to_group_element
-};
+use errors::anoncreds::AnoncredsError;
+use services::anoncreds::constants::*;
+use services::anoncreds::types::*;
+use services::anoncreds::helpers::*;
 use services::anoncreds::verifier::Verifier;
 use services::anoncreds::issuer::Issuer;
 use utils::crypto::bn::BigNumber;
@@ -118,7 +66,7 @@ impl Prover {
 
     pub fn process_claim(&self, claim_json: &RefCell<ClaimJson>, primary_claim_init_data: ClaimInitData,
                          revocation_claim_init_data: Option<RevocationClaimInitData>,
-                         pkr: Option<RevocationPublicKey>, revoc_reg: Option<RevocationRegistry>)
+                         pkr: Option<RevocationPublicKey>, revoc_reg: &Option<RevocationRegistry>)
                          -> Result<(), CommonError> {
         info!(target: "anoncreds_service", "Prover process received claim -> start");
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
@@ -131,7 +79,7 @@ impl Prover {
                                                    .ok_or(CommonError::InvalidStructure("Field pkr not found".to_string()))?,
                                                &revoc_reg.clone()
                                                    .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
-                                               &revoc_reg
+                                               &revoc_reg.clone()
                                                    .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
         }
         info!(target: "anoncreds_service", "Prover process received claim -> done");
@@ -331,7 +279,7 @@ impl Prover {
                         requested_claims: &RequestedClaimsJson,
                         ms: &BigNumber,
                         tails: &HashMap<i32, PointG2>)
-                        -> Result<ProofJson, CommonError> {
+                        -> Result<ProofJson, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover create proof -> start");
 
         let proof_claims = Prover::_prepare_proof_claims(proof_req,
@@ -384,8 +332,8 @@ impl Prover {
         }
 
         let mut values: Vec<Vec<u8>> = Vec::new();
-        values.extend_from_slice(&c_list);
         values.extend_from_slice(&tau_list);
+        values.extend_from_slice(&c_list);
         values.push(proof_req.nonce.to_bytes()?);
 
         let c_h = get_hash_as_int(&mut values)?;
@@ -416,8 +364,7 @@ impl Prover {
 
             let claim_proof = ClaimProof::new(proof,
                                               proof_claim.claim_json.schema_seq_no,
-                                              proof_claim.claim_json.issuer_did.clone(),
-                                              proof_claim.claim_json.revoc_reg_seq_no);
+                                              proof_claim.claim_json.issuer_did.clone());
 
             proofs.insert(proof_claim_uuid.clone(), claim_proof);
             attributes.insert(proof_claim_uuid.clone(), proof_claim.claim_json.claim.clone());
@@ -457,7 +404,7 @@ impl Prover {
 
     fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
                                   pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG2>)
-                                  -> Result<NonRevocInitProof, CommonError> {
+                                  -> Result<NonRevocInitProof, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover init non-revocation proof -> start");
         Prover::_update_non_revocation_claim(claim, accum, tails)?;
 
@@ -473,9 +420,9 @@ impl Prover {
 
     fn _update_non_revocation_claim(claim: &RefCell<NonRevocationClaim>,
                                     accum: &Accumulator, tails: &HashMap<i32, PointG2>)
-                                    -> Result<(), CommonError> {
+                                    -> Result<(), AnoncredsError> {
         if !accum.v.contains(&claim.borrow().i) {
-            return Err(CommonError::InvalidStructure("Can not update Witness. I'm revoced.".to_string()))
+            return Err(AnoncredsError::ClaimRevoked("Can not update Witness. Claim revoked.".to_string()));
         }
 
         if claim.borrow().witness.v != accum.v {
@@ -571,7 +518,7 @@ impl Prover {
         let delta: i32 = attr_value - value;
 
         if delta < 0 {
-            return Err(CommonError::InvalidStructure("Predicate is not satisfied".to_string()))
+            return Err(CommonError::InvalidStructure("Predicate is not satisfied".to_string()));
         }
 
         let u = four_squares(delta)?;
@@ -789,10 +736,10 @@ impl Prover {
         let r_prime_prime_prime = GroupOrderElement::new()?;
         let o = GroupOrderElement::new()?;
         let o_prime = GroupOrderElement::new()?;
-        let m = rho.add_mod(&claim.c)?;
-        let m_prime = r.add_mod(&r_prime_prime)?;
-        let t = o.add_mod(&claim.c)?;
-        let t_prime = o_prime.add_mod(&r_prime_prime)?;
+        let m = rho.mul_mod(&claim.c)?;
+        let m_prime = r.mul_mod(&r_prime_prime)?;
+        let t = o.mul_mod(&claim.c)?;
+        let t_prime = o_prime.mul_mod(&r_prime_prime)?;
         let m2 = GroupOrderElement::from_bytes(&claim.m2.to_bytes()?)?;
 
         Ok(NonRevocProofXList::new(rho, r, r_prime, r_prime_prime, r_prime_prime_prime, o, o_prime,
@@ -859,8 +806,8 @@ impl Prover {
         let mut x_list: Vec<GroupOrderElement> = Vec::new();
 
         for (x, y) in init_proof.tau_list_params.as_list()?.iter().zip(init_proof.c_list_params.as_list()?.iter()) {
-            x_list.push(x.sub_mod(
-                &ch_num_z.add_mod(&y)?
+            x_list.push(x.add_mod(
+                &ch_num_z.mul_mod(&y)?.mod_neg()?
             )?);
         }
 
@@ -1053,6 +1000,61 @@ mod tests {
         assert_eq!("2909377521678119520977157959638852346549039931868195250658890196374980817755318676413066648981533034386605143040798380729872705956567376032225961933326117009011908374020093877002895162468521578763395678346621437225972600951965633549602979234732083149655058280123465723210167346545435946648092301500495871307611941306714133444462666462818882418100633983906555894992078138873969482714430788917034883079579778040749973092160959984323579215740942468398437958324399647532773947797685551797171537348210954088256282790659454179075257593928991997283548069103317735700818358235857780570873678690413979416837309542554490385517111819905278234351454124245103700468051202549165577210724696681231918320110736784038063606140146272860", proof.r.get("DELTA").unwrap().to_dec().unwrap());
         assert_eq!("44263308381149662900948673540609137605123483577985225626015193605421446490850432944403510911593807877995566074607735765400382861784877744789798777017960357051684400364048124004882741408393303775593487691064638002920853960645913535484864749193831701910596138125770720981871270085109534802728387292108961395671973015447681340852592012638839948998301809908713998541365956149792695654874324699264455657573099688614830144400409479952124271239106111005380360397720399778640177093636911827538708829123941248898780310301607124559838851222069991204870155414077086348071171421803569856093007812236846764361931252088960485440158830117131468627609450498244887243402854104282374544935516477360120294987311548247220633388905908551822949252630925854555366381978721601629564425954576926076828495554017163967076851067453147787769115012365426065129174495136", proof.alpha.to_dec().unwrap());
     }
+
+    #[cfg(feature = "revocation_tests")]
+    #[test]
+    fn test_c_and_tau_list() {
+        let issuer = Issuer::new();
+        let prover = Prover::new();
+
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
+            issuer::mocks::ISSUER_DID, issuer::mocks::get_gvt_schema(), None, true).unwrap();
+
+        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            5, issuer::mocks::ISSUER_DID, 1).unwrap();
+
+        let master_secret = prover.generate_master_secret().unwrap();
+
+        let (claim_request, claim_init_data, revocation_claim_init_data) = prover.create_claim_request(
+            claim_definition.clone().unwrap().data.public_key,
+            claim_definition.clone().unwrap().data.public_key_revocation,
+            master_secret, mocks::PROVER_DID).unwrap();
+
+        let revocation_registry_ref_cell = Some(RefCell::new(revocation_registry));
+
+        let claim_signature = issuer.create_claim(
+            &claim_definition, &claim_definition_private.clone().unwrap(), &revocation_registry_ref_cell,
+            &Some(revocation_registry_private.clone()), &claim_request,
+            &issuer::mocks::get_gvt_attributes(), None).unwrap();
+
+        let claim_json = ClaimJson::new(
+            issuer::mocks::get_gvt_attributes(), claim_signature, 1,
+            issuer::mocks::ISSUER_DID.to_string());
+
+        let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
+
+        let revocation_reg = revocation_registry_ref_cell.unwrap().clone();
+        prover.process_claim(&claim_json_ref_cell, claim_init_data,
+                             revocation_claim_init_data.clone(),
+                             Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
+                             &Some(revocation_reg.borrow().clone())).unwrap();
+
+        let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
+
+        let c_list_params = Prover::_gen_c_list_params(&non_revocation_claim).unwrap();
+        let proof_c_list = Prover::_create_c_list_values(
+            &non_revocation_claim, &c_list_params,
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()).unwrap();
+        let proof_tau_list = Issuer::_create_tau_list_values(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            &revocation_reg.borrow().accumulator, &c_list_params, &proof_c_list).unwrap();
+        let proof_tau_list_calc = Issuer::_create_tau_list_expected_values(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            &revocation_reg.borrow().accumulator, &revocation_reg.borrow().acc_pk,
+            &proof_c_list).unwrap();
+        assert_eq!(proof_tau_list.as_slice().unwrap(), proof_tau_list_calc.as_slice().unwrap());
+    }
 }
 
 #[cfg(test)]
@@ -1082,7 +1084,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_same_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new( "name".to_string(), Some(1), None));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1109,7 +1111,7 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_other_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(),Some(3), None));
+        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(3), None));
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
@@ -1341,6 +1343,8 @@ pub mod mocks {
     use std::iter::FromIterator;
     use services::anoncreds::types::SignatureTypes;
 
+    pub const PROVER_DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {
         NonRevocProofCList::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
                                 PointG1::new().unwrap(), PointG1::new().unwrap(),
@@ -1549,17 +1553,17 @@ pub mod mocks {
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new("1".to_string(), attrs, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, None, 2, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new("2".to_string(), attrs, 2, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, None, 1, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new("3".to_string(), attrs, 1, issuer::mocks::ISSUER_DID.to_string())
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
@@ -1634,7 +1638,6 @@ pub mod mocks {
     pub fn get_gvt_claims_json() -> ClaimJson {
         ClaimJson {
             claim: issuer::mocks::get_gvt_attributes(),
-            revoc_reg_seq_no: None,
             schema_seq_no: 1,
             signature: mocks::get_gvt_claims_object(),
             issuer_did: "did".to_string()
@@ -1644,7 +1647,6 @@ pub mod mocks {
     pub fn get_xyz_claims_json() -> ClaimJson {
         ClaimJson {
             claim: issuer::mocks::get_xyz_attributes(),
-            revoc_reg_seq_no: None,
             schema_seq_no: 2,
             signature: mocks::get_xyz_claims_object(),
             issuer_did: "did".to_string()

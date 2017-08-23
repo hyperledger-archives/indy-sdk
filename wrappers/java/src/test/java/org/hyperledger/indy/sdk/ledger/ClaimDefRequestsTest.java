@@ -71,18 +71,21 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 	public void testBuildClaimDefRequestWorks() throws Exception {
 
 		int schema_seq_no = 1;
-		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}";
+		String dataTemplate = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}%s}";
+		String data = String.format(dataTemplate, "");
+		
+		String expectedData = String.format(dataTemplate, ",\"revocation\":{}");
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"ref\":%d," +
-				"\"data\":\"%s\"," +
+				"\"data\":%s," +
 				"\"type\":\"102\"," +
 				"\"signature_type\":\"%s\"" +
-				"}", identifier, schema_seq_no, data, signature_type);
+				"}", identifier, schema_seq_no, expectedData, signature_type);
 
 		String claimDefRequest = Ledger.buildClaimDefTxn(identifier, schema_seq_no, signature_type, data).get();
-
+		
 		assertTrue(claimDefRequest.replace("\\", "").contains(expectedResult));
 	}
 
@@ -135,7 +138,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
-		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, schemaData).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
@@ -196,7 +199,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTest {
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
-		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"keys\": [\"name\", \"male\"]}";
+		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, schemaData).get();
 		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();

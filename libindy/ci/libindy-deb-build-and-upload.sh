@@ -14,13 +14,12 @@ version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit
 [ -z $commit ] && exit 2
 [ -z $key ] && exit 3
 
-dpkg-buildpackage
+dpkg-buildpackage -tc
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
-mkdir /var/repository/repos/deb/indy-sdk
-mkdir /var/repository/repos/deb/indy-sdk/$version-$number
-cd /var/repository/repos/deb/indy-sdk/$version-$number
+mkdir /var/repository/repos/libindy/ubuntu/master/$version-$number
+cd /var/repository/repos/libindy/ubuntu/master/$version-$number
 put -r ../indy-sdk-dev_"$version"_amd64.deb
 put -r ../indy-sdk_"$version"_amd64.deb
-ls -l /var/repository/repos/deb/indy-sdk/$version-$number
+ls -l /var/repository/repos/libindy/ubuntu/master/$version-$number
 EOF
