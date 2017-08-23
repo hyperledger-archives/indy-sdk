@@ -35,6 +35,12 @@ def publishing() {
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
                 //TODO implement publishing for all types 'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
         ])
+
+        if (env.BRANCH_NAME == 'rc') {
+            if (approval.check("default")) {
+                publishingRCtoStable()
+            }
+        }
     }
 }
 
@@ -365,4 +371,8 @@ def publishingPythonWrapperToPipy() {
             }
         }
     }
+}
+
+def publishingRCtoStable() {
+    echo "ERROR: publishing stable packages not implemented"
 }
