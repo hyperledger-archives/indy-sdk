@@ -25,11 +25,3 @@ chown root.root indy-sdk.spec
 
 spectool -g -R indy-sdk.spec || exit 4
 rpmbuild -ba indy-sdk.spec || exit 5
-
-cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
-mkdir /var/repository/repos/libindy/rhel/master/$version-$number
-cd /var/repository/repos/libindy/rhel/master/$version-$number
-put -r /usr/src/rpm/RPMS/
-put -r /usr/src/rpm/SRPMS/
-ls -l /var/repository/repos/libindy/rhel/master/$version-$number
-EOF
