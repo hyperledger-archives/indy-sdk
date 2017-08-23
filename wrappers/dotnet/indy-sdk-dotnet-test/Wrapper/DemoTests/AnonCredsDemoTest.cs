@@ -97,7 +97,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1);
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
@@ -233,7 +233,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var gvtCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerGvtWallet, gvtClaimReq, gvtClaimAttributesJson, -1, -1);
+            var gvtCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerGvtWallet, gvtClaimReq, gvtClaimAttributesJson, -1);
             var gvtClaimJson = gvtCreateClaimResult.ClaimJson;
 
             //10. Prover store Claim
@@ -248,7 +248,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"period\":[\"8\",\"8\"]\n" +
                     "        }";
 
-            var xyzCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerXyzWallet, xyzClaimReq, xyzClaimAttributesJson, -1, -1);
+            var xyzCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerXyzWallet, xyzClaimReq, xyzClaimAttributesJson, -1);
             var xyzClaimJson = xyzCreateClaimResult.ClaimJson;
 
             //13. Prover store Claim
@@ -386,7 +386,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var gvtCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, gvtClaimReq, gvtClaimAttributesJson, -1, -1);
+            var gvtCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, gvtClaimReq, gvtClaimAttributesJson, -1);
             var gvtClaimJson = gvtCreateClaimResult.ClaimJson;
 
             //9. Prover store Claim
@@ -401,7 +401,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"period\":[\"8\",\"8\"]\n" +
                     "        }";
 
-            var xyzCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, xyzClaimReq, xyzClaimAttributesJson, -1, -1);
+            var xyzCreateClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, xyzClaimReq, xyzClaimAttributesJson, -1);
             var xyzClaimJson = xyzCreateClaimResult.ClaimJson;
 
             //12. Prover store Claim
@@ -512,7 +512,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimAttributesJson, -1);
 
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
