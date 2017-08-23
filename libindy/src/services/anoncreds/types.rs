@@ -166,18 +166,16 @@ impl<'a> JsonDecodable<'a> for ClaimRequestJson {}
 pub struct ClaimInfo {
     pub claim_uuid: String,
     pub attrs: HashMap<String, String>,
-    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub issuer_did: String
 }
 
 impl ClaimInfo {
     pub fn new(claim_uuid: String, attrs: HashMap<String, String>,
-               revoc_reg_seq_no: Option<i32>, schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
+               schema_seq_no: i32, issuer_did: String) -> ClaimInfo {
         ClaimInfo {
             claim_uuid: claim_uuid,
             attrs: attrs,
-            revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
             issuer_did: issuer_did
         }
@@ -216,17 +214,15 @@ impl<'a> JsonDecodable<'a> for ClaimRequest {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaimProof {
     pub proof: Proof,
-    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub issuer_did: String
 }
 
 impl ClaimProof {
-    pub fn new(proof: Proof, schema_seq_no: i32, issuer_did: String, revoc_reg_seq_no: Option<i32>) -> ClaimProof {
+    pub fn new(proof: Proof, schema_seq_no: i32, issuer_did: String) -> ClaimProof {
         ClaimProof {
             proof: proof,
             schema_seq_no: schema_seq_no,
-            revoc_reg_seq_no: revoc_reg_seq_no,
             issuer_did: issuer_did
         }
     }
@@ -309,6 +305,13 @@ impl ClaimDefinitionPrivate {
             secret_key_revocation: secret_key_revocation
         }
     }
+
+    pub fn clone(&self) -> Result<ClaimDefinitionPrivate, CommonError> {
+        Ok(ClaimDefinitionPrivate {
+            secret_key: self.secret_key.clone()?,
+            secret_key_revocation: self.secret_key_revocation.clone()
+        })
+    }
 }
 
 impl JsonEncodable for ClaimDefinitionPrivate {}
@@ -328,6 +331,13 @@ impl ClaimSignature {
             primary_claim: primary_claim,
             non_revocation_claim: non_revocation_claim
         }
+    }
+
+    pub fn clone(&self) -> Result<ClaimSignature, CommonError> {
+        Ok(ClaimSignature {
+            primary_claim: self.primary_claim.clone()?,
+            non_revocation_claim: self.non_revocation_claim.clone()
+        })
     }
 }
 
@@ -357,22 +367,29 @@ impl<'a> JsonDecodable<'a> for ClaimInitData {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimJson {
     pub claim: HashMap<String, Vec<String>>,
-    pub revoc_reg_seq_no: Option<i32>,
     pub schema_seq_no: i32,
     pub signature: ClaimSignature,
     pub issuer_did: String
 }
 
 impl ClaimJson {
-    pub fn new(claim: HashMap<String, Vec<String>>, revoc_reg_seq_no: Option<i32>,
+    pub fn new(claim: HashMap<String, Vec<String>>,
                signature: ClaimSignature, schema_seq_no: i32, issuer_did: String) -> ClaimJson {
         ClaimJson {
             claim: claim,
-            revoc_reg_seq_no: revoc_reg_seq_no,
             schema_seq_no: schema_seq_no,
             signature: signature,
             issuer_did: issuer_did
         }
+    }
+
+    pub fn clone(&self) -> Result<ClaimJson, CommonError> {
+        Ok(ClaimJson {
+            claim: self.claim.clone(),
+            schema_seq_no: self.schema_seq_no,
+            signature: self.signature.clone()?,
+            issuer_did: self.issuer_did.clone()
+        })
     }
 }
 
@@ -469,8 +486,8 @@ impl NonRevocProofXList {
     }
 
     pub fn from_list(seq: Vec<GroupOrderElement>) -> NonRevocProofXList {
-        NonRevocProofXList::new(seq[0], seq[1], seq[2], seq[3], seq[4], seq[5], seq[6], seq[7],
-                                seq[8], seq[9], seq[10], seq[11], seq[12], seq[13])
+        NonRevocProofXList::new(seq[0], seq[10], seq[11], seq[12], seq[13], seq[1], seq[3], seq[4],
+                                seq[5], seq[6], seq[7], seq[8], seq[9], seq[2])
     }
 }
 
@@ -478,6 +495,7 @@ impl JsonEncodable for NonRevocProofXList {}
 
 impl<'a> JsonDecodable<'a> for NonRevocProofXList {}
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NonRevocProofTauList {
     pub t1: PointG1,
     pub t2: PointG1,
@@ -665,6 +683,15 @@ impl PrimaryClaim {
             e: e,
             v: v
         }
+    }
+
+    pub fn clone(&self) -> Result<PrimaryClaim, CommonError> {
+        Ok(PrimaryClaim {
+            m2: self.m2.clone()?,
+            a: self.a.clone()?,
+            e: self.e.clone()?,
+            v: self.v.clone()?
+        })
     }
 }
 
@@ -1170,6 +1197,13 @@ impl SecretKey {
             p: p,
             q: q
         }
+    }
+
+    pub fn clone(&self) -> Result<SecretKey, CommonError> {
+        Ok(SecretKey {
+            p: self.p.clone()?,
+            q: self.q.clone()?
+        })
     }
 }
 
