@@ -140,7 +140,7 @@
 //{
 //    [TestUtils cleanupStorage];
 //    NSString *poolName = @"pool_open";
-//    NSString *config = @"{\"refreshOnOpen\": \"true\"}";
+//    NSString *config = @"{\"refresh_on_open\": \"true\"}";
 //    
 //    // 1. create pool ledger
 //    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName

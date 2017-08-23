@@ -42,7 +42,7 @@
     //1. Create wallet, get wallet handle
     NSError *ret;
     IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool1"
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName failed");
@@ -173,7 +173,7 @@
 {
     [TestUtils cleanupStorage];
     
-    NSString* poolName = @"pool1";
+    NSString* poolName = [TestUtils pool];
     IndyHandle issuerWalletHandle = 0;
     IndyHandle proverWalletHandle = 0;
     NSError *ret = nil;
@@ -356,7 +356,7 @@
     
     NSString *issuer2Did = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *proverDid = @"BzfFCYk";
-    NSString *poolName = @"pool1";
+    NSString *poolName = [TestUtils pool];
     NSError *ret;
     
     //1. Issuer1 create wallet, get wallet handles
@@ -703,7 +703,7 @@
     NSString* issuerDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString* proverDid = @"BzfFCYk";
     
-    NSString* poolName = @"pool1";
+    NSString* poolName = [TestUtils pool];
     NSError*  ret = nil;
     
     //1. Issuer create wallet, get wallet handles

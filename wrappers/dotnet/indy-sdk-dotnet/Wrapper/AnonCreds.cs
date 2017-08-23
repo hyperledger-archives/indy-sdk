@@ -24,16 +24,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimRevocRegAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimRevocRegResultDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_json, revoc_reg_uuid) =>
+        private static IssuerCreateAndStoreClaimRevocRegResultDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<IssuerCreateAndStoreRevocRegResult>(xcommand_handle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new IssuerCreateAndStoreRevocRegResult(revoc_reg_json, revoc_reg_uuid);
-
-            taskCompletionSource.SetResult(callbackResult);
+            taskCompletionSource.SetResult(revoc_reg_json);
         };
 
         /// <summary>
@@ -180,9 +178,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="schemaSeqNo">The sequence number of a schema transaction in the ledger.</param>
         /// <param name="maxClaimNum">The maximum number of claims the new registry can process.</param>
         /// <returns>An asynchronous task that returns a IssuerCreateAndStoreRevocRegResult result.</returns>
-        public static Task<IssuerCreateAndStoreRevocRegResult> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, int schemaSeqNo, int maxClaimNum)
+        public static Task<string> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, int schemaSeqNo, int maxClaimNum)
         {
-            var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreRevocRegResult>();
+            var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_issuer_create_and_store_revoc_reg(
@@ -205,10 +203,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="wallet">The target wallet.</param>
         /// <param name="claimReqJson">a claim request with a blinded secret</param>
         /// <param name="claimJson">a claim containing attribute values for each of requested attribute names.</param>
-        /// <param name="revocRegSeqNo">seq no of a revocation registry transaction in Ledger or -1 if revoc_reg_seq_no is absentee.</param>
         /// <param name="userRevocIndex">index of a new user in the revocation registry or -1 if user_revoc_index is absentee.</param>
         /// <returns>An asynchronous task that returns a IssuerCreateClaimResult result.</returns>
-        public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int revocRegSeqNo, int userRevocIndex)
+        public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int userRevocIndex)
         {
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateClaimResult>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -218,7 +215,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 wallet.Handle,
                 claimReqJson,
                 claimJson,
-                revocRegSeqNo,
                 userRevocIndex,
                 _issuerCreateClaimCallback
                 );
@@ -232,10 +228,11 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// Revokes a user identified by a revoc_id in a given revoc-registry.
         /// </summary>
         /// <param name="wallet">The target wallet.</param>
-        /// <param name="revocRegSeqNo">seq no of a revocation registry transaction in Ledger</param>
+        /// <param name="issuerDid">The DID of the issuer.</param>
+        /// <param name="schemaSequenceNumber">The sequence number of the schema.</param>
         /// <param name="userRevocIndex">index of the user in the revocation registry</param>
         /// <returns>An asynchronous task that returns a revocation registry update JSON with a revoked claim.</returns>
-        public static Task<string> IssuerRevokeClaimAsync(Wallet wallet, int revocRegSeqNo, int userRevocIndex)
+        public static Task<string> IssuerRevokeClaimAsync(Wallet wallet, string issuerDid, int schemaSequenceNumber, int userRevocIndex)
         {
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
@@ -243,7 +240,8 @@ namespace Indy.Sdk.Dotnet.Wrapper
             var commandResult = IndyNativeMethods.indy_issuer_revoke_claim(
                 commandHandle,
                 wallet.Handle,
-                revocRegSeqNo,
+                issuerDid,
+                schemaSequenceNumber,
                 userRevocIndex,
                 IssuerRevokeClaimCallback
                 );

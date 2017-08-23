@@ -638,8 +638,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_json">Revoc registry json</param>
-        /// <param name="revoc_reg_uuid">Unique number identifying the revocation registry in the wallet</param>
-        internal delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int xcommand_handle, int err, string revoc_reg_json, string revoc_reg_uuid);
+        internal delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int xcommand_handle, int err, string revoc_reg_json);
 
         /// <summary>
         /// Signs a given claim for the given user by a given key (claim def).
@@ -648,12 +647,11 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="claim_req_json">a claim request with a blinded secret</param>
         /// <param name="claim_json">a claim containing attribute values for each of requested attribute names.</param>
-        /// <param name="revoc_reg_seq_no">(Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger</param>
         /// <param name="user_revoc_index">index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int revoc_reg_seq_no, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
+        internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_create_and_store_revoc_reg function.
@@ -670,12 +668,13 @@ namespace Indy.Sdk.Dotnet
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="revoc_reg_seq_no">seq no of a revocation registry transaction in Ledger</param>
+        /// <param name="issuer_did">The DID of the issuer.</param>
+        /// <param name="schema_seq_no">The schema sequence number.</param>
         /// <param name="user_revoc_index">index of the user in the revocation registry</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, int revoc_reg_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
+        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_revoke_claim function.
