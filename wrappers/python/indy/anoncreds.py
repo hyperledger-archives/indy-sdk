@@ -166,7 +166,6 @@ async def issuer_create_claim(wallet_handle: int,
                                                         c_wallet_handle,
                                                         c_claim_req_json,
                                                         c_claim_json,
-                                                        c_revoc_reg_seq_no,
                                                         c_user_revoc_index,
                                                         issuer_create_claim.cb)
     res = (revoc_reg_update_json.decode(), claim_json.decode())
