@@ -32,7 +32,7 @@ def publishing() {
                 //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() }, IS-307
                 'libindy-deb-files'     : { publishingLibindyDebFiles() },
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
-                'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
+                //TODO implement publishing for all types 'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
         ])
     }
 }
