@@ -321,6 +321,7 @@ def publishingLibindyDebFiles() {
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
                             sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                            sh "rm -rf debian"
                         }
                     }
                 }
