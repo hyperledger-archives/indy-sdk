@@ -7,7 +7,7 @@ try {
     publishing()
     notifyingSuccess()
 } catch (err) {
-    notifyingFailure(err)
+    notifyingFailure()
     throw err
 }
 
@@ -23,7 +23,7 @@ def testing() {
 
 def publishing() {
     stage('Publishing') {
-        if (env.BRANCH_NAME != 'master') {
+        if (!env.BRANCH_NAME in ['master', 'rc']) {
             echo "${env.BRANCH_NAME}: skip publishing"
             return
         }
@@ -46,7 +46,7 @@ def notifyingSuccess() {
     }
 }
 
-def notifyingFailure(err) {
+def notifyingFailure() {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: env.BRANCH_NAME == 'master'])
@@ -246,7 +246,7 @@ def publishingLibindyRpmFiles() {
                         sh 'chmod -R 777 ci'
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/libindy-rpm-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                            sh "./ci/libindy-rpm-build-and-upload.sh $commit $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                         }
                     }
                 }
@@ -277,7 +277,7 @@ def publishingLibindyDebFiles() {
                         sh 'chmod -R 777 ci'
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                            sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                         }
                     }
                 }
@@ -318,7 +318,7 @@ def publishingLibindyWinFiles() {
                     }
 
                     withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BUILD_NUMBER"
+                        sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
                     }
                 }
             }
