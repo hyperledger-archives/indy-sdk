@@ -987,7 +987,7 @@
     NSString *data = @"{"\
     "\"name\":\"name\","\
     "\"version\":\"1.0\","\
-    "\"keys\":[\"name\",\"male\"]}";
+    "\"attr_names\":[\"name\",\"male\"]}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
@@ -996,7 +996,7 @@
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"name"] = @"name";
     expectedResult[@"operation"][@"data"][@"version"] = @"1.0";
-    expectedResult[@"operation"][@"data"][@"keys"] = [[NSArray alloc] initWithObjects:@"name", @"male", nil];
+    expectedResult[@"operation"][@"data"][@"attr_names"] = [[NSArray alloc] initWithObjects:@"name", @"male", nil];
     
     NSString *schemaRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:identifier
@@ -1065,10 +1065,7 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    NSString* myDidJson = [NSString stringWithFormat:@"{"\
-                           "\"seed\":\"000000000000000000000000Trustee1\"," \
-                           "\"cid\":true"\
-                           "}"];
+    NSString* myDidJson = [NSString stringWithFormat:@"{\"seed\":\"000000000000000000000000Trustee1\"}"];
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
@@ -1083,7 +1080,7 @@
     NSString *schemaData = @"{"\
     "\"name\":\"gvt2\","\
     "\"version\":\"2.0\","\
-    "\"keys\":[\"name\",\"male\"]}";
+    "\"attr_names\":[\"name\",\"male\"]}";
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
                                                                       data:schemaData
@@ -1172,7 +1169,7 @@
     NSString *schemaData = [NSString stringWithFormat:@"{"\
                             "\"name\":\"gvt2\"," \
                             "\"version\":\"2.0\"," \
-                            "\"keys\":[\"name\",\"male\"]" \
+                            "\"attr_names\":[\"name\",\"male\"]" \
                             "}"];
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
@@ -1591,7 +1588,7 @@
     NSString *schemaData = [NSString stringWithFormat:@"{"\
                             "\"name\":\"gvt2\"," \
                             "\"version\":\"2.0\"," \
-                            "\"keys\":[\"name\",\"male\"]" \
+                            "\"attr_names\":[\"name\",\"male\"]" \
                             "}"];
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
@@ -1638,16 +1635,7 @@
     getSchemaResponseJson = [NSDictionary toString:(NSDictionary*)getSchemaResponse[@"result"]];
     
     // 11. Create claim definition
-    NSString *claimDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                                            schemaJson:getSchemaResponseJson
-                                                                         signatureType:nil
-                                                                        createNonRevoc:false
-                                                                          claimDefJson:&claimDefJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed");
-    XCTAssertNotNil(claimDefJson, @"claimDefJson is nil!");
-    
+    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtClaimDef];
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
     
     NSMutableDictionary *claimDefData = [NSMutableDictionary new];
@@ -1750,7 +1738,7 @@
     NSString *schemaData = [NSString stringWithFormat:@"{"\
                             "\"name\":\"gvt2\"," \
                             "\"version\":\"2.0\"," \
-                            "\"keys\":[\"name\",\"male\"]" \
+                            "\"attr_names\":[\"name\",\"male\"]" \
                             "}"];
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
@@ -1797,15 +1785,7 @@
     getSchemaResponseJson = [NSDictionary toString:(NSDictionary*)getSchemaResponse[@"result"]];
     
     // 11. Create claim definition
-    NSString *claimDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:@"NcYxiDXkpYi6ov5FcYDi1e"
-                                                                            schemaJson:getSchemaResponseJson
-                                                                         signatureType:nil
-                                                                        createNonRevoc:false
-                                                                          claimDefJson:&claimDefJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed");
-    XCTAssertNotNil(claimDefJson, @"claimDefJson is nil!");
+    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtClaimDef];
     
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
     

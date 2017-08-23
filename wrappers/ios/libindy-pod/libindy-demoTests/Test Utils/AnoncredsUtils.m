@@ -220,7 +220,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if ( claimDefJson ) { *claimDefJson = outClaimDefJson; }
     
@@ -294,7 +294,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     return err;
     
@@ -324,7 +324,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if (outJson) { *outJson = json; }
     return err;
@@ -346,7 +346,6 @@
     NSError *ret = [ IndyAnoncreds proverCreateAndStoreClaimReqWithWalletHandle: walletHandle
                                                                         proverDid:pd
                                                                    claimOfferJSON:coj
-                    
                                                                      claimDefJSON:cdj
                                                                  masterSecretName:name
                                                                        completion:^(NSError* error, NSString* claimReqJSON)
@@ -361,7 +360,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if (outJson) { *outJson = json; }
     return err;

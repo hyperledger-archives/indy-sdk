@@ -62,6 +62,9 @@
                   Identifier = "AgentMediumSend/testAgentSendWorksForRemovedIdentity">
                </Test>
                <Test
+                  Identifier = "AnoncredsHignCases/testAnoncreds">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test

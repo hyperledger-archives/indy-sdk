@@ -533,8 +533,6 @@
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"m2"] length] > 0, @"wrong \"m2\" length");
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"e"] length] > 0, @"wrong \"e\" length");
     XCTAssertTrue([claim[@"signature"][@"primary_claim"][@"v"] length] > 0, @"wrong \"v\" length");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimReq
@@ -595,8 +593,6 @@
                                                        outRevocRegUpdateJSON:nil];
 
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong error code.");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 // MARK: - Prover store claim
@@ -645,8 +641,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverStoreClaimWorksForInvalidWalletHandle
@@ -695,8 +689,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:invalidWalletHandle
                                                                  claimsJson:xClaimJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 // MARK: - Prover get claims
@@ -723,8 +715,6 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForFilterByIssuerDid
@@ -750,8 +740,6 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForFilterByClaimDefSeqNoAndSchemaSeqNo
@@ -777,8 +765,6 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 1, @"claims count != 1");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForEmptyResult
@@ -803,8 +789,6 @@
     NSArray *claims = (NSArray *)claimsDict;
     
     XCTAssertEqual([claims count], 0, @"claims count != 0");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 - (void)testProverGetClaimsWorksForInvalidWalletHandle
@@ -824,8 +808,6 @@
                                                                filterJson:@"{}"
                                                             outClaimsJson:&claimsJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForWalletHandle returned wrong code");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
 }
 
 // MARK: - Prover get claims for proof request
@@ -1344,6 +1326,23 @@
                                                  claimDefsJson:claimDefsJson
                                                  revocRegsJson:revocRegsJsons outValid:&isValid];
     XCTAssertFalse(isValid, @"isValid is true! Should be false.");
+}
+
+- (void)testAnoncreds
+{
+//    [self testProverCreateProofWorksForInvalidWalletHandle];
+//    [self testProverGetClaimsForProofReqWorksForRevealedAttr];
+//    [self testProverCreateProofWorksForUsingNotSatisfyClaim];
+//    [self testProverCreateAndStoreRequestWorks];
+    
+    NSString *path = [TestUtils getUserTmpDir];
+    NSString *pathDir = [TestUtils getUserDocumentDir];
+    [self testIssuerCreateAndStoreClaimDefWorks];
+    [self testIssuerCreateAndStoreClaimDefWorksForInvalidWallet];
+    [self testIssuerCreateClaimWorks];
+    [self testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimReq];
+    [self testIssuerCreateClaimWorksForInvalidWalletHandle];
+    [self testProverCreateAndStoreClaimreqWorksForClaimDefDoesNotCorrespondOfferDiffrentIssuerDid];
 }
 
 

@@ -100,7 +100,6 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    NSString* myVerKey = nil;
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
                            "\"seed\":\"00000000000000000000000000000My3\"" \
                            "}"];
@@ -108,18 +107,17 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
+                                                        outMyVerkey:nil
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     XCTAssertNotNil(myDid, @"myDid is nil!");
-    XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
     
     // 4. Build schema request
     NSString *schemaData = [NSString stringWithFormat:@"{"\
                             "\"name\":\"gvt2\"," \
                             "\"version\":\"2.0\"," \
-                            "\"keys\":[\"name\",\"male\"]" \
+                            "\"attr_names\":[\"name\",\"male\"]" \
                             "}"];
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
