@@ -342,7 +342,6 @@ public class Anoncreds extends IndyJava.API {
 				walletHandle, 
 				claimReqJson,
 				claimJson,
-				revocRegSeqNo,
 				userRevocIndex,
 				issuerCreateClaimCb);
 
