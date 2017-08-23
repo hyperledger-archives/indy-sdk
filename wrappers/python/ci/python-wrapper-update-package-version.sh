@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: $0 <patch-version>"

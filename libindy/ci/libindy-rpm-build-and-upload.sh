@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <commit> <key> <type> <number>"
