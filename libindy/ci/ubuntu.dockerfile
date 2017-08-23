@@ -21,8 +21,8 @@ RUN apt-get update && \
       debhelper \
       wget
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BD33704C
-RUN echo "deb https://repo.evernym.com/deb xenial master" >> /etc/apt/sources.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.list
 RUN apt-get update -y && apt-get install -y \
 	python3-charm-crypto
 
@@ -45,6 +45,12 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
+RUN apt-get update && apt-get install openjdk-8-jdk -y
+
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+
+RUN apt-get update && apt-get install -y maven
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
@@ -63,3 +69,21 @@ USER indy
 RUN pip3 install \
 	/home/indy/indy-anoncreds \
 	pytest
+
+USER root
+RUN apt-get update && \
+      apt-get install -y \
+      apt-utils \
+      software-properties-common \
+      ruby-dev
+RUN add-apt-repository ppa:jonathonf/python-3.6
+RUN apt-get update && \
+      apt-get install -y \
+      python3.6 \
+      python3-pip
+RUN gem install fpm
+ADD https://bootstrap.pypa.io/ez_setup.py .
+RUN python3.6
+RUN python3.6 -m pip install twine
+
+USER indy

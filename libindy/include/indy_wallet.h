@@ -98,7 +98,7 @@ extern "C" {
     /// name: Name of the wallet.
     /// runtime_config (optional): Runtime wallet configuration json. if NULL, then default runtime_config will be used. Example:
     /// {
-    ///     "freshnessTime": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
+    ///     "freshness_time": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
     ///     ... List of additional supported keys are defined by wallet type.
     /// }
     /// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.

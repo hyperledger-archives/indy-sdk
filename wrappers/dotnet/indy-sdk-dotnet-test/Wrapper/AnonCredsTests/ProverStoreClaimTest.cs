@@ -30,7 +30,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
             await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson);

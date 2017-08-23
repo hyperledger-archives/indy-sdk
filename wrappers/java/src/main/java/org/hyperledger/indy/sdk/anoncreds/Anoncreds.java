@@ -5,7 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreRevocRegResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
@@ -39,7 +38,7 @@ public class Anoncreds extends IndyJava.API {
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			String result = claim_def_json, claim_def_uuid;
+			String result = claim_def_json;
 			future.complete(result);
 		}
 	};
@@ -50,12 +49,12 @@ public class Anoncreds extends IndyJava.API {
 	private static Callback issuerCreateAndStoreRevocRegCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String revoc_reg_json, String revoc_reg_uuid) {
+		public void callback(int xcommand_handle, int err, String revoc_reg_json) {
 
-			CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = (CompletableFuture<IssuerCreateAndStoreRevocRegResult>) removeFuture(xcommand_handle);
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			IssuerCreateAndStoreRevocRegResult result = new IssuerCreateAndStoreRevocRegResult(revoc_reg_json, revoc_reg_uuid);
+			String result = revoc_reg_json;
 			future.complete(result);
 		}
 	};
@@ -290,13 +289,13 @@ public class Anoncreds extends IndyJava.API {
 	 * @return A future resolving to a JSON string containing the revocation registry.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
+	public static CompletableFuture<String> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
 			String issuerDid,
 			int schemaSeqNo, 
 			int maxClaimNum) throws IndyException {
 
-		CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<IssuerCreateAndStoreRevocRegResult>();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -320,7 +319,6 @@ public class Anoncreds extends IndyJava.API {
 	 * @param wallet The wallet.
 	 * @param claimReqJson  a claim request with a blinded secret
 	 * @param claimJson a claim containing attribute values for each of requested attribute names.
-	 * @param revocRegSeqNo (Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger
 	 * @param userRevocIndex index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 	 * @return A future resolving to a revocation registry update json with a newly issued claim
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -329,7 +327,6 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String claimReqJson, 
 			String claimJson,
-			int revocRegSeqNo,
 			int userRevocIndex) throws IndyException {
 
 		CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<IssuerCreateClaimResult>();
@@ -342,7 +339,6 @@ public class Anoncreds extends IndyJava.API {
 				walletHandle, 
 				claimReqJson,
 				claimJson,
-				revocRegSeqNo,
 				userRevocIndex,
 				issuerCreateClaimCb);
 
@@ -355,14 +351,16 @@ public class Anoncreds extends IndyJava.API {
 	 * Revokes a user identified by a revoc_id in a given revoc-registry.
 	 * 
 	 * @param wallet A wallet.
-	 * @param revocRegSeqNo seq no of a revocation registry transaction in Ledger
+	 * @param issuerDid	The DID of the issuer.
+	 * @param schemaSeqNo The sequence number of the schema to use.
 	 * @param userRevocIndex index of the user in the revocation registry
 	 * @return A future resolving to a revocation registry update json with a revoked claim
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> issuerRevokeClaim(
 			Wallet wallet,
-			int revocRegSeqNo, 
+			String issuerDid,
+			int schemaSeqNo,
 			int userRevocIndex) throws IndyException {
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -372,8 +370,9 @@ public class Anoncreds extends IndyJava.API {
 
 		int result = LibIndy.api.indy_issuer_revoke_claim(
 				commandHandle, 
-				walletHandle, 
-				revocRegSeqNo,
+				walletHandle,
+				issuerDid,
+				schemaSeqNo,
 				userRevocIndex,
 				issuerRevokeClaimCb);
 

@@ -46,7 +46,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
         'age': ['28', '28']
     })
 
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_json, claim_json, -1, -1)
+    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_json, claim_json, -1)
 
     # 6. Prover process and store Claim
     await anoncreds.prover_store_claim(wallet_handle, claim_json)
