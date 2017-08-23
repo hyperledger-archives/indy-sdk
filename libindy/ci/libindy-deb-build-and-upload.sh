@@ -16,7 +16,7 @@ version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit
 [ -z $commit ] && exit 2
 [ -z $key ] && exit 3
 
-dpkg-buildpackage
+dpkg-buildpackage -tc
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
 mkdir /var/repository/repos/libindy/ubuntu/$type/$version-$number
