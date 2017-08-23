@@ -12,10 +12,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
 import static org.hyperledger.indy.sdk.utils.PoolUtils.DEFAULT_POOL_NAME;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DecryptTest extends IndyIntegrationTest {
 
@@ -26,9 +28,9 @@ public class DecryptTest extends IndyIntegrationTest {
 	private String myDid;
 	private String myVerkey;
 	private String walletName = "signusWallet";
-	private String msg = "{\"reqId\":1496822211362017764}";
-	private String encrypted_message = "4SWFzd3sx7xNemZEtktt3s558Fa28fGbauAZv9NRQjQhHq9bwT8uBnACQJAKzZ";
-	private String nonce = "Dd3vSQgDdADJGoxb6BPcWU6wkEMqSeFwv";
+	private byte[] msg = "{\"reqId\":1496822211362017764}".getBytes();
+	private byte[] encryptedMessage = {-105, 30, 89, 75, 76, 28, -59, -45, 105, -46, 20, 124, -85, -13, 109, 29, -88, -82, -8, -6, -50, -84, -53, -48, -49, 56, 124, 114, 82, 126, 74, 99, -72, -78, -117, 96, 60, 119, 50, -40, 121, 21, 57, -68, 89};
+	private byte[] nonce = {-14, 102, -41, -57, 1, 4, 75, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23};
 	private String identityJsonTemplate = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 
 	@Before
@@ -69,8 +71,9 @@ public class DecryptTest extends IndyIntegrationTest {
 		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		String decryptedMessage = Signus.decrypt(wallet, myDid, trusteeDid, encrypted_message, nonce).get();
-		assertEquals(msg, decryptedMessage);
+		byte[] decryptedMessage = Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
+		assertTrue(Arrays.equals(msg, decryptedMessage));
+
 	}
 
 	@Test
@@ -97,9 +100,9 @@ public class DecryptTest extends IndyIntegrationTest {
 		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		String nonce = "acS2SQgDdfE3Goxa1AhcWCa4kEMqSelv7";
+		byte[] nonce = {46, 33, -4, 67, 1, 44, 57, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23};
 
-		Signus.decrypt(wallet, myDid, trusteeDid, encrypted_message, nonce).get();
+		Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
 	}
 
 	@Test
@@ -110,6 +113,6 @@ public class DecryptTest extends IndyIntegrationTest {
 		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		Signus.decrypt(wallet, "unknowDid", trusteeDid, encrypted_message, nonce).get();
+		Signus.decrypt(wallet, "unknowDid", trusteeDid, encryptedMessage, nonce).get();
 	}
 }

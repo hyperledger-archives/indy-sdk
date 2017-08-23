@@ -9,31 +9,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class ProverCreateAndStoreClaimReqTest : AnonCredsIntegrationTestBase
     {
-        [ClassCleanup]
-        public static void CloseCommonWallet()
-        {
-            try
-            {
-                _commonWallet.CloseAsync().Wait();
-            }
-            catch (Exception)
-            { }
-        }
-
         [TestMethod]
-        public void TestProverCreateAndStoreClaimReqWorks()
+        public async Task TestProverCreateAndStoreClaimReqWorks()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 1);
 
-            AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, _proverDid, claimOffer, _claimDef, _masterSecretName).Wait();
+            await AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, _proverDid, claimOffer, _claimDef, _masterSecretName);
         }
 
         [TestMethod]
         public async Task TestProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondToClaimOfferDifferentIssuer()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimOffer = string.Format(_claimOfferTemplate, "acWziYqKpYi6ov5FcYDi1e3", 1);         
 
@@ -47,7 +36,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondToClaimOfferDifferentSchema()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 2);
 
@@ -61,7 +50,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverCreateAndStoreClaimReqWorksForInvalidClaimOffer()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
 
@@ -75,7 +64,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverCreateAndStoreClaimReqWorksForInvalidMasterSecret()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 2);
 

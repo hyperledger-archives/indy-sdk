@@ -39,7 +39,7 @@ use utils::types::{
     GetTxnResult,
     SchemaData
 };
-use std::collections::{HashSet};
+use std::collections::HashSet;
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
 // See: https://github.com/hyperledger/indy-sdk/issues/25
 
@@ -522,9 +522,9 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_correct_data_json() {
             let identifier = "identifier";
-            let data = r#"{"name":"name", "version":"1.0", "keys":["name","male"]}"#;
+            let data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
 
-            let expected_result = "\"operation\":{\"type\":\"101\",\"data\":\"{\\\"name\\\":\\\"name\\\", \\\"version\\\":\\\"1.0\\\", \\\"keys\\\":[\\\"name\\\",\\\"male\\\"]";
+            let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]"#;
 
             let schema_request = LedgerUtils::build_schema_request(identifier, data).unwrap();
 
@@ -557,7 +557,7 @@ mod high_cases {
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
+                                \"attr_names\": [\"name\", \"male\"]}";
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
 
             let res = PoolUtils::send_request(pool_handle, &schema_request);
@@ -586,7 +586,7 @@ mod high_cases {
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
+                                \"attr_names\": [\"name\", \"male\"]}";
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
 
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
@@ -693,7 +693,7 @@ mod high_cases {
             let schema_seq_no = 1;
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}}"#;
 
-            let expected_result = r#""identifier":"identifier","operation":{"ref":1,"data":"{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}","type":"102","signature_type":"CL""#;
+            let expected_result = r#""identifier":"identifier","operation":{"ref":1,"data":{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"},"revocation":{}},"type":"102","signature_type":"CL""#;
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(identifier, schema_seq_no, signature_type, data).unwrap();
             assert!(claim_def_request.contains(expected_result));
@@ -729,7 +729,7 @@ mod high_cases {
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
+                                \"attr_names\": [\"name\", \"male\"]}";
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
 
@@ -774,7 +774,7 @@ mod high_cases {
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
+                                \"attr_names\": [\"name\", \"male\"]}";
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
 
@@ -806,8 +806,7 @@ mod high_cases {
 
             let get_claim_def_response = PoolUtils::send_request(pool_handle, &get_claim_def_request).unwrap();
             info!("get_claim_def_response {}", get_claim_def_response);
-            let get_claim_def_response: Result<Reply<GetClaimDefReplyResult>, _> = serde_json::from_str(&get_claim_def_response);
-            assert!(get_claim_def_response.is_ok());
+            let _: Reply<GetClaimDefReplyResult> = serde_json::from_str(&get_claim_def_response).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -844,7 +843,7 @@ mod high_cases {
             let schema_data = SchemaData {
                 name: "gvt3".to_string(),
                 version: "3.0".to_string(),
-                keys: keys
+                attr_names: keys
             };
             let schema_data_json = serde_json::to_string(&schema_data).unwrap();
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
@@ -862,12 +861,9 @@ mod high_cases {
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
 
-            let get_txn_schema_result: SchemaResult = serde_json::from_str(&get_txn_response.result.data.unwrap()).unwrap();
-            assert!(get_txn_schema_result.data.is_some());
+            let get_txn_schema_result: SchemaResult = serde_json::from_value(get_txn_response.result.data.unwrap()).unwrap();
 
-            let get_txn_schema_data: SchemaData = serde_json::from_str(&get_txn_schema_result.data.unwrap()).unwrap();
-
-            assert_eq!(schema_data, get_txn_schema_data);
+            assert_eq!(schema_data, get_txn_schema_result.data.unwrap());
 
             TestUtils::cleanup_storage();
         }
@@ -889,7 +885,7 @@ mod high_cases {
             let schema_data = SchemaData {
                 name: "gvt3".to_string(),
                 version: "3.0".to_string(),
-                keys: keys
+                attr_names: keys
             };
             let schema_data_json = serde_json::to_string(&schema_data).unwrap();
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), &schema_data_json).unwrap();
@@ -1012,6 +1008,36 @@ mod medium_cases {
 
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
             info!("nym_response {:?}", nym_response);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_send_nym_request_works_for_different_roles() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "indy_send_nym_request_works_for_different_roles";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let role = "STEWARD";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, Some(role)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let (my_did2, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let role = "TRUSTEE";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did2.clone(), None, None, Some(role)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let (my_did3, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let role = "TRUST_ANCHOR";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did3.clone(), None, None, Some(role)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1256,7 +1282,7 @@ mod medium_cases {
 
             let schema_data = "{\"name\":\"gvt2\",\
                                 \"version\":\"2.0\",\
-                                \"keys\": [\"name\", \"male\"]}";
+                                \"attr_names\": [\"name\", \"male\"]}";
             let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);

@@ -115,10 +115,12 @@ pub enum ErrorCode
 
     AnoncredsNotIssuedError = 403,
 
-    // Attempt to generate master secret with dupplicated name
+    // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
 
     AnoncredsProofRejected = 405,
+
+    AnoncredsClaimRevoked = 406,
 
     // Signus errors
     // Unknown format of DID entity keys

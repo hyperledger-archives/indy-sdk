@@ -230,32 +230,6 @@ impl CallbackUtils {
         (command_handle, Some(open_wallet_callback))
     }
 
-    pub fn closure_to_issuer_create_and_store_revoc_reg_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                                      Option<extern fn(command_handle: i32,
-                                                                                                                                       err: ErrorCode,
-                                                                                                                                       revoc_reg_json: *const c_char,
-                                                                                                                                       revoc_reg_uuid: *const c_char)>) {
-        lazy_static! {
-            static ref ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
-        }
-
-        extern "C" fn issuer_create_and_store_revoc_reg_callback(command_handle: i32, err: ErrorCode,
-                                                                 revoc_reg_json: *const c_char,
-                                                                 revoc_reg_uuid: *const c_char) {
-            let mut callbacks = ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            let revoc_reg_json = unsafe { CStr::from_ptr(revoc_reg_json).to_str().unwrap().to_string() };
-            let revoc_reg_uuid = unsafe { CStr::from_ptr(revoc_reg_uuid).to_str().unwrap().to_string() };
-            cb(err, revoc_reg_json, revoc_reg_uuid)
-        }
-
-        let mut callbacks = ISSUER_CREATE_AND_STORE_REVOC_REG_CALLBACKS.lock().unwrap();
-        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
-    }
-
     pub fn closure_to_prover_create_master_secret_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                                 Option<extern fn(command_handle: i32,
                                                                                                                  err: ErrorCode)>) {
@@ -914,5 +888,50 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(closure_to_sign_request_callback))
+    }
+
+
+    pub fn closure_to_issuer_revoke_claim_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                Option<extern fn(command_handle: i32,
+                                                                                                                 err: ErrorCode,
+                                                                                                                 revoc_reg_update_json: *const c_char)>) {
+        lazy_static! {
+            static ref ISSUER_REVOKE_CLAIM_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn issuer_revoke_claim_callback(command_handle: i32, err: ErrorCode, revoc_reg_update_json: *const c_char) {
+            let mut callbacks = ISSUER_REVOKE_CLAIM_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let revoc_reg_update_json = unsafe { CStr::from_ptr(revoc_reg_update_json).to_str().unwrap().to_string() };
+            cb(err, revoc_reg_update_json)
+        }
+
+        let mut callbacks = ISSUER_REVOKE_CLAIM_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(issuer_revoke_claim_callback))
+    }
+
+    pub fn closure_to_issuer_create_and_store_revoc_reg_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                              Option<extern fn(command_handle: i32,
+                                                                                                                               err: ErrorCode,
+                                                                                                                               revoc_reg_update_json: *const c_char)>) {
+        lazy_static! {
+            static ref ISSUER_CREATE_REVOC_REG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn issuer_create_and_store_revoc_reg_callback(command_handle: i32, err: ErrorCode, revoc_reg_json: *const c_char) {
+            let mut callbacks = ISSUER_CREATE_REVOC_REG_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let revoc_reg_json = unsafe { CStr::from_ptr(revoc_reg_json).to_str().unwrap().to_string() };
+            cb(err, revoc_reg_json)
+        }
+
+        let mut callbacks = ISSUER_CREATE_REVOC_REG_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
     }
 }

@@ -14,34 +14,31 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         
 
         [TestInitialize]
-        public void CreateWallet()
+        public async Task CreateWallet()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
-            try
-            {
-                _wallet.CloseAsync().Wait();
-                Wallet.DeleteWalletAsync(_walletName, null).Wait();
-            }
-            catch (Exception)
-            { }
+            if (_wallet != null)
+                await _wallet.CloseAsync();
+
+            await Wallet.DeleteWalletAsync(_walletName, null);            
         }
 
         [TestMethod]
-        public void TestProverCreateMasterSecretWorks()
+        public async Task TestProverCreateMasterSecretWorks()
         {
-            AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name").Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name");
         }
 
         [TestMethod] 
         public async Task TestProverCreateMasterSecretWorksForDuplicate()
         {
-            AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate").Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate");
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate")

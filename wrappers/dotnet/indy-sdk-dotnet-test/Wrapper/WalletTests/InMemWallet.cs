@@ -17,10 +17,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             _freshnessDuration = freshnessDuration;
         }
 
-
         public bool IsOpen { get; set; }
         
-
         public override ErrorCode Set(string key, string value)
         {
             var record = new WalletRecord() { Value = value, TimeCreated = DateTime.Now };

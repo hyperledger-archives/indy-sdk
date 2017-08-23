@@ -8,7 +8,7 @@ pub use services::ledger::merkletree::proof::{
     Positioned
 };
 
-pub type TreeLeafData = String;
+pub type TreeLeafData = Vec<u8>;
 
 /// Binary Tree where leaves hold a stand-alone value.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

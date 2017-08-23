@@ -1,44 +1,8 @@
 use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
-
-use services::anoncreds::constants::{
-    LARGE_E_START,
-    LARGE_E_END_RANGE,
-    LARGE_MASTER_SECRET,
-    LARGE_PRIME,
-    LARGE_VPRIME_PRIME
-};
-use services::anoncreds::types::{
-    Accumulator,
-    AccumulatorPublicKey,
-    AccumulatorSecretKey,
-    ByteOrder,
-    ClaimDefinition,
-    ClaimDefinitionData,
-    ClaimDefinitionPrivate,
-    ClaimRequest,
-    ClaimSignature,
-    NonRevocationClaim,
-    NonRevocProofCList,
-    NonRevocProofTauList,
-    NonRevocProofXList,
-    PrimaryClaim,
-    PublicKey,
-    RevocationPublicKey,
-    RevocationSecretKey,
-    RevocationRegistry,
-    RevocationRegistryPrivate,
-    Schema,
-    SecretKey,
-    Witness,
-    SignatureTypes
-};
-use services::anoncreds::helpers::{
-    random_qr,
-    bitwise_or_big_int,
-    get_hash_as_int,
-    transform_u32_to_array_of_u8
-};
+use services::anoncreds::constants::*;
+use services::anoncreds::types::*;
+use services::anoncreds::helpers::*;
 use utils::crypto::bn::BigNumber;
 use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
@@ -81,7 +45,7 @@ impl Issuer {
         let mut ctx = BigNumber::new_context()?;
 
         if schema.data.keys.len() == 0 {
-            return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")))
+            return Err(CommonError::InvalidStructure(format!("List of attribute names is required to setup claim definition")));
         }
 
         info!(target: "anoncreds_service", "Issuer generate_safe_prime");
@@ -162,8 +126,8 @@ impl Issuer {
     pub fn issue_accumulator(&self, pk_r: &RevocationPublicKey, max_claim_num: i32, issuer_did: &str, schema_seq_no: i32)
                              -> Result<(RevocationRegistry, RevocationRegistryPrivate), AnoncredsError> {
         info!(target: "anoncreds_service",
-        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> start",
-        issuer_did, schema_seq_no);
+              "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> start",
+              issuer_did, schema_seq_no);
         let gamma = GroupOrderElement::new()?;
         let mut g: HashMap<i32, PointG1> = HashMap::new();
         let mut g_dash: HashMap<i32, PointG2> = HashMap::new();
@@ -195,8 +159,8 @@ impl Issuer {
         let revocation_registry_private = RevocationRegistryPrivate::new(acc_sk, g, g_dash);
 
         info!(target: "anoncreds_service",
-        "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> done",
-        issuer_did, schema_seq_no);
+              "Issuer create accumulator for issuer_did {} and schema_seq_no {} -> done",
+              issuer_did, schema_seq_no);
         Ok((revocation_registry, revocation_registry_private))
     }
 
@@ -331,7 +295,7 @@ impl Issuer {
         if accumulator.is_full() {
             return Err(AnoncredsError::AccumulatorIsFull(
                 format!("issuer_did: {} schema_seq_no: {}", revocation_registry.borrow().issuer_did, revocation_registry.borrow().schema_seq_no))
-            )
+            );
         }
 
         let i = match seq_number {
@@ -379,7 +343,6 @@ impl Issuer {
 
         let witness = Witness::new(sigma_i, u_i, g_i.clone(), omega, accumulator.v.clone());
         let timestamp = time::now_utc().to_timespec().sec;
-
         info!(target: "anoncreds_service", "Issuer issue non-revocation claim -> done");
         Ok(
             (
@@ -415,7 +378,13 @@ impl Issuer {
         info!(target: "anoncreds_service", "Issuer revoke claim by index {} -> start", i);
 
         let ref mut accumulator = revocation_registry.borrow_mut().accumulator;
-        accumulator.v.remove(&i);
+
+        if !accumulator.v.remove(&i) {
+            return Err(AnoncredsError::InvalidUserRevocIndex(
+                format!("User index:{} not found in Accumulator", i))
+            );
+        }
+
         let index: i32 = accumulator.max_claim_num + 1 - i;
         let element = g_dash.get(&index)
             .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in g", index)))?;
@@ -429,22 +398,28 @@ impl Issuer {
     pub fn _create_tau_list_values(pk_r: &RevocationPublicKey, accumulator: &Accumulator,
                                    params: &NonRevocProofXList, proof_c: &NonRevocProofCList) -> Result<NonRevocProofTauList, CommonError> {
         let t1 = pk_r.h.mul(&params.rho)?.add(&pk_r.htilde.mul(&params.o)?)?;
-        let t2 = proof_c.e.mul(&params.c)?
+        let mut t2 = proof_c.e.mul(&params.c)?
             .add(&pk_r.h.mul(&params.m.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t.mod_neg()?)?)?;
+        if t2.is_inf()? {
+            t2 = PointG1::new_inf()?;
+        }
         let t3 = Pair::pair(&proof_c.a, &pk_r.h_cap)?.pow(&params.c)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.r)?)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.y)?.pow(&params.rho)?
                 .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.m)?)?
                 .mul(&Pair::pair(&pk_r.h1, &pk_r.h_cap)?.pow(&params.m2)?)?
-                .mul(&Pair::pair(&pk_r.h2, &pk_r.h_cap)?.pow(&params.s)?)?)?.inverse()?;
+                .mul(&Pair::pair(&pk_r.h2, &pk_r.h_cap)?.pow(&params.s)?)?.inverse()?)?;
         let t4 = Pair::pair(&pk_r.htilde, &accumulator.acc)?
             .pow(&params.r)?
             .mul(&Pair::pair(&pk_r.g.neg()?, &pk_r.h_cap)?.pow(&params.r_prime)?)?;
         let t5 = pk_r.g.mul(&params.r)?.add(&pk_r.htilde.mul(&params.o_prime)?)?;
-        let t6 = proof_c.d.mul(&params.r_prime_prime)?
+        let mut t6 = proof_c.d.mul(&params.r_prime_prime)?
             .add(&pk_r.g.mul(&params.m_prime.mod_neg()?)?)?
             .add(&pk_r.htilde.mul(&params.t_prime.mod_neg()?)?)?;
+        if t6.is_inf()? {
+            t6 = PointG1::new_inf()?;
+        }
         let t7 = Pair::pair(&pk_r.pk.add(&proof_c.g)?, &pk_r.h_cap)?.pow(&params.r_prime_prime)?
             .mul(&Pair::pair(&pk_r.htilde, &pk_r.h_cap)?.pow(&params.m_prime.mod_neg()?)?)?
             .mul(&Pair::pair(&pk_r.htilde, &proof_c.s)?.pow(&params.r)?)?;
@@ -476,6 +451,12 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "revocation_tests")]
+    use services::anoncreds::prover;
+    #[cfg(feature = "revocation_tests")]
+    use services::anoncreds::prover::Prover;
+    #[cfg(feature = "revocation_tests")]
+    use services::anoncreds::types::ClaimJson;
 
     #[test]
     fn generate_keys_works() {
@@ -507,8 +488,8 @@ mod tests {
         assert!(claim_definition_private.secret_key_revocation.is_none());
     }
 
+    #[cfg(feature = "revocation_tests")]
     #[test]
-    #[ignore]
     fn generate_claim_definition_works_with_revocation_part() {
         let issuer = Issuer::new();
         let schema = mocks::get_gvt_schema();
@@ -564,6 +545,55 @@ mod tests {
         let e = BigNumber::from_dec("259344723055062059907025491480697571938277889515152306249728583105665800713306759149981690559193987143012367913206299323899696942213235956742930214202955935602153431795703076242907").unwrap();
         let result = BigNumber::from_dec("18970881790876593286488783486386867538450674270137197011105008151201183300028283403854725282778638150217936721942434319741164063687946275930536223863520768657672755664180955901543160149915323325151339912941454195063854083578091043058101001054089316795088554097754632405106453701959655043761308676687984722831097067744306280339099944309055300662730322057853217855619342132319369757252485139011180518031078822262681093763592682724354563150664662385847044702450408149239372444565988153918412684418519832197112374827438788434448252992414094101094582772269873015514685057917124494501480003311040042093731740782916169155664").unwrap();
         assert_eq!(result, Issuer::_sign(&public_key, &secret_key, &context_attribute, &attributes, &v, &u, &e).unwrap());
+    }
+
+    #[test]
+    #[cfg(feature = "revocation_tests")]
+    fn test_init_non_revoc_claim() {
+        let issuer = Issuer::new();
+        let prover = Prover::new();
+
+        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
+            mocks::ISSUER_DID, mocks::get_gvt_schema(), None, true).unwrap();
+
+        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
+            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
+            5, mocks::ISSUER_DID, 1).unwrap();
+
+        let master_secret = prover.generate_master_secret().unwrap();
+
+        let (claim_request, claim_init_data, revocation_claim_init_data) = prover.create_claim_request(
+            claim_definition.clone().unwrap().data.public_key,
+            claim_definition.clone().unwrap().data.public_key_revocation,
+            master_secret, prover::mocks::PROVER_DID).unwrap();
+
+        let revocation_registry_ref_cell = Some(RefCell::new(revocation_registry));
+
+        let claim_signature = issuer.create_claim(
+            &claim_definition, &claim_definition_private, &revocation_registry_ref_cell,
+            &Some(revocation_registry_private), &claim_request,
+            &mocks::get_gvt_attributes(), None).unwrap();
+
+        let non_revocation_claim = claim_signature.clone().unwrap().non_revocation_claim.unwrap();
+        let old_v = non_revocation_claim.borrow().vr_prime_prime;
+
+        let claim_json = ClaimJson::new(
+            mocks::get_gvt_attributes(), claim_signature, 1,
+            mocks::ISSUER_DID.to_string());
+
+        let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
+
+        let revoc_reg = revocation_registry_ref_cell.unwrap().clone();
+        prover.process_claim(&claim_json_ref_cell, claim_init_data,
+                             revocation_claim_init_data.clone(),
+                             Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
+                             &Some(revoc_reg.borrow().clone())).unwrap();
+
+        let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
+        let new_v = non_revocation_claim.borrow().vr_prime_prime;
+
+        let vr_prime = revocation_claim_init_data.unwrap().v_prime;
+        assert_eq!(old_v.add_mod(&vr_prime).unwrap(), new_v);
     }
 }
 

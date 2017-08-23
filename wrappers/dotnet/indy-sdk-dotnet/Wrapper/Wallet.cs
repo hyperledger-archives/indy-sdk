@@ -14,7 +14,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Wallet type registrations by type name.
         /// </summary>
-        private static IDictionary<string, WalletType> _registeredWalletTypes = new ConcurrentDictionary<string, WalletType>();
+        private static ConcurrentBag<WalletType> _registeredWalletTypes = new ConcurrentBag<WalletType>();
         
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
@@ -36,11 +36,11 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="walletType">The type type.</param>
         /// <returns>An asynchronous Task with no return value.</returns>
         public static Task RegisterWalletTypeAsync(string xType, WalletType walletType)
-        {
+        {            
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
-            _registeredWalletTypes[xType] = walletType;          
+            _registeredWalletTypes.Add(walletType);          
 
             var result = IndyNativeMethods.indy_register_wallet_type(
                 commandHandle,

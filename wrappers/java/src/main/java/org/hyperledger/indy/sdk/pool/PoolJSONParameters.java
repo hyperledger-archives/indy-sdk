@@ -23,9 +23,9 @@ public final class PoolJSONParameters {
 
 		public OpenPoolLedgerJSONParameter(Boolean refreshOnOpen, Boolean autoRefreshTime, Integer networkTimeout) {
 
-			if (refreshOnOpen != null) this.map.put("refreshOnOpen", refreshOnOpen);
-			if (autoRefreshTime != null) this.map.put("autoRefreshTime", autoRefreshTime);
-			if (networkTimeout != null) this.map.put("networkTimeout", networkTimeout);
+			if (refreshOnOpen != null) this.map.put("refresh_on_open", refreshOnOpen);
+			if (autoRefreshTime != null) this.map.put("auto_refresh_time", autoRefreshTime);
+			if (networkTimeout != null) this.map.put("network_timeout", networkTimeout);
 		}
 	}
 }
