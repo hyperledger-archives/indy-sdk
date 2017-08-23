@@ -25,8 +25,12 @@ async def test_build_claim_def_request_works_for_correct_data_json():
     expected_response = {
         "identifier": "identifier",
         "operation": {"ref": 1,
-                      "data": '{"primary": {"n": "1", "s": "2", "rms": "3",'
-                              ' "r": {"name": "1"}, "rctxt": "1", "z": "1"}}',
+                      "data": {
+                          "primary": {
+                              "n": "1", "s": "2", "rms": "3", "r": {"name": "1"}, "rctxt": "1", "z": "1"
+                          },
+                          "revocation": {}
+                      },
                       "type": "102",
                       "signature_type": "CL"}}
 
