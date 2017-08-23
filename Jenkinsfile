@@ -342,7 +342,7 @@ def publishingPythonWrapperToPipy() {
                     echo 'Publish Deb: Build docker image'
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                    testEnv.inside('-u 0:0') {
+                    testEnv.inside {
 
                         withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                             sh 'cp $credentialsFile ./'
