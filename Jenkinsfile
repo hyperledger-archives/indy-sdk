@@ -23,10 +23,11 @@ def testing() {
 
 def publishing() {
     stage('Publishing') {
-        if (!env.BRANCH_NAME in ['master', 'rc']) {
+        if (!(env.BRANCH_NAME in ['master', 'rc'])) {
             echo "${env.BRANCH_NAME}: skip publishing"
             return
         }
+        echo "${env.BRANCH_NAME}: start publishing"
 
         parallel([
                 //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() }, IS-307
