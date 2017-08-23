@@ -278,6 +278,7 @@ def publishingLibindyDebFiles() {
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
                             sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                            sh "rm -rf debian"
                         }
                     }
                 }
@@ -341,7 +342,7 @@ def publishingPythonWrapperToPipy() {
                     echo 'Publish Deb: Build docker image'
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                    testEnv.inside('-u 0:0') {
+                    testEnv.inside {
 
                         withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                             sh 'cp $credentialsFile ./'
