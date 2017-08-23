@@ -10,7 +10,7 @@ number="$3"
 
 mkdir -p /usr/src/rpm/SOURCES/
 
-version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | tr -d '" ')
+version="0.1.1"
 
 [ -z $version ] && exit 1
 [ -z $commit ] && exit 2
