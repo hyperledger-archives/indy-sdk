@@ -39,7 +39,7 @@ use utils::types::{
     GetTxnResult,
     SchemaData
 };
-use std::collections::{HashSet};
+use std::collections::HashSet;
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
 // See: https://github.com/hyperledger/indy-sdk/issues/25
 
@@ -1008,6 +1008,36 @@ mod medium_cases {
 
             let nym_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
             info!("nym_response {:?}", nym_response);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_send_nym_request_works_for_different_roles() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "indy_send_nym_request_works_for_different_roles";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let role = "STEWARD";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), None, None, Some(role)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let (my_did2, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let role = "TRUSTEE";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did2.clone(), None, None, Some(role)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let (my_did3, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+            let role = "TRUST_ANCHOR";
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did3.clone(), None, None, Some(role)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             TestUtils::cleanup_storage();
         }

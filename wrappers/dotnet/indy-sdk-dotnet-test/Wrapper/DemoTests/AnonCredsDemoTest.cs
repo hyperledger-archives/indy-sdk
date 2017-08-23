@@ -545,7 +545,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             var selfAttestedValue = "yes";
             var requestedClaimsJson = string.Format("{{\n" +
                     "                                          \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
-                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true],\n" +
+                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true]}},\n" +
                     "                                          \"requested_predicates\":{{}}\n" +
                     "                                        }}", selfAttestedValue, claimUuid);
 
