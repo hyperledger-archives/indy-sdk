@@ -126,28 +126,30 @@
     [TestUtils cleanupStorage];
 }
 
-// TODO: - not implemented yet in Rust
-//- (void)testOpenPoolLedgerWorksForInvalidConfig
-//{
-//    [TestUtils cleanupStorage];
-//    NSString *poolName = @"pool_open";
-//    NSString *config = @"{\"refresh_on_open\": \"true\"}";
-//    
-//    // 1. create pool ledger
-//    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
-//                                                                            nodes:nil
-//                                                                       poolConfig:nil
-//                                                                   genTxnFileName:nil];
-//    XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName failed");
-//    
-//    // 2. open pool ledger
-//    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
-//                                              config:config
-//                                         poolHandler:nil];
-//    XCTAssertEqual(ret.code, CommonInvalidStructure, @"PoolUtils::openPoolLedger returned wrong code");
-//    
-//    [TestUtils cleanupStorage];
-//}
+ //TODO: - not implemented yet in Rust
+- (void)testOpenPoolLedgerWorksForInvalidConfig
+{
+    [TestUtils cleanupStorage];
+    NSString *poolName = @"pool_open";
+    NSString *config = @"{\"refresh_on_open\": \"true\"}";
+    
+    // 1. create pool ledger
+    NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:poolName
+                                                                             nodesCount:nil
+                                                                            txnFilePath:nil];
+    NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
+    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
+                                                                       poolConfig:poolConfig];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName failed");
+    
+    // 2. open pool ledger
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
+                                              config:config
+                                         poolHandler:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"PoolUtils::openPoolLedger returned wrong code");
+    
+    [TestUtils cleanupStorage];
+}
 
 // MARK: - Close
 

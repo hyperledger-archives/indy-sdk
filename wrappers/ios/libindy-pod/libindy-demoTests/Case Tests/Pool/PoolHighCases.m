@@ -73,10 +73,10 @@
 {
     [TestUtils cleanupStorage];
     NSString *poolName = @"create_pool_ledger_config_works_for_specific_config";
-    NSString *txnFileName = @"specific_filename.txn";
-    NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:poolName
+    NSString *txnFilePath = [TestUtils tmpFilePathAppending:@"specific_filename.txn"];
+    txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:poolName
                                                                              nodesCount:nil
-                                                                            txnFilePath:txnFileName];
+                                                                            txnFilePath:txnFilePath];
     NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
     
     NSError * res = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
@@ -239,7 +239,7 @@
     IndyHandle poolHandle = 0;
     NSError *ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                         poolHandle:&poolHandle];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed!");
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName() failed!");
     
     // 2. close pool ledger
     ret = [[PoolUtils sharedInstance] closeHandle:poolHandle];

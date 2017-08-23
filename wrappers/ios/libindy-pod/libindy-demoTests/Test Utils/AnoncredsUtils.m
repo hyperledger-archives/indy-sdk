@@ -283,7 +283,7 @@
     
     NSError *ret = [IndyAnoncreds proverStoreClaimOfferWithWalletHandle:walletHandle
                                                          claimOfferJSON:str
-                                                               completion: ^(NSError *error)
+                                                             completion: ^(NSError *error)
                     {
                         err = error;
                         [completionExpectation fulfill];
@@ -554,7 +554,6 @@
     
     [TestUtils cleanupStorage];
     
-    ////TODO Need clean after tests but not exists After function in Cargo
     NSError *ret;
     
     // 1. Create and open wallet
@@ -578,12 +577,11 @@
                                                claimDefJson:&tempClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateClaimDefinifionWithWalletHandle failed");
     
-    if (ret.code != Success) {return ret;}
     XCTAssertTrue([tempClaimDefJson isValid], @"invalid tempClaimDefJson: %@", tempClaimDefJson);
     
     //3. Store three claim offers
     NSString *claimOfferJson1 = [self getClaimOfferJson:[AnoncredsUtils issuerDid]
-                                            schemaSeqNo:@(1)];
+                                            schemaSeqNo:seqNo];
     NSString *claimOfferJson2 = [self getClaimOfferJson:[AnoncredsUtils issuerDid]
                                             schemaSeqNo:@(2)];
     NSString *claimOfferJson3 = [self getClaimOfferJson:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"

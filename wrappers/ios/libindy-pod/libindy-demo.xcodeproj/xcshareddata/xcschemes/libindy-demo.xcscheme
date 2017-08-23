@@ -71,6 +71,9 @@
                   Identifier = "LedgerHignCases/testSubmitNodeRequestWorksForNewSteward">
                </Test>
                <Test
+                  Identifier = "PoolMediumCases/testOpenPoolLedgerWorksForInvalidConfig">
+               </Test>
+               <Test
                   Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">
                </Test>
                <Test

@@ -122,7 +122,7 @@
     
     return [self createGenesisTxnFileWithPoolName:poolName
                                       txnFileData:genesisTXNs
-                                      txnFilePath:[TestUtils getUserTmpDir]];
+                                      txnFilePath:txnFilePath];
 }
 
 
@@ -130,7 +130,16 @@
                                    txnFileData:(NSString *)txnFileData
                                    txnFilePath:(NSString *)txnFilePath
 {
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@.txn", [TestUtils getUserTmpDir], txnFilePath];
+    NSString *filePath;// = [NSString stringWithFormat:@"%@/%@.txn", [TestUtils getUserTmpDir], txnFilePath];
+    if (!txnFilePath)
+    {
+        filePath = [NSString stringWithFormat:@"%@%@.txn", [TestUtils getUserTmpDir], poolName];
+    }
+    else
+    {
+        filePath = txnFilePath;
+    }
+
 
     BOOL isSuccess =  [[NSFileManager defaultManager] createFileAtPath:filePath
                                              contents:[NSData dataWithBytes:[txnFileData UTF8String] length:[txnFileData length]]
@@ -202,7 +211,7 @@
     
     return [self createGenesisTxnFileWithPoolName:poolName
                                       txnFileData:genesisTXNs
-                                      txnFilePath:[TestUtils getUserTmpDir]];
+                                      txnFilePath:txnFilePath];
     
 }
 
@@ -267,7 +276,7 @@
     
     return [self createGenesisTxnFileWithPoolName:poolName
                                       txnFileData:genesisTXNs
-                                      txnFilePath:[TestUtils getUserTmpDir]];
+                                      txnFilePath:txnFilePath];
 
 }
 

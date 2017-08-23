@@ -29,6 +29,7 @@
 
 + (void) cleanupStorage;
 
++ (NSString *)tmpFilePathAppending:(NSString *)fileName;
 + (NSString *)pool;
 + (NSData *)message;
 + (NSData *)encryptedMessage;
