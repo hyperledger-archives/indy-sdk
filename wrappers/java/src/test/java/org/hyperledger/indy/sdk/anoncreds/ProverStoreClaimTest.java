@@ -29,7 +29,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 				"                 \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
 		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();

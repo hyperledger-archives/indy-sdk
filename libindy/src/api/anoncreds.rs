@@ -135,7 +135,6 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///      "attr1" : ["value1", "value1_as_int"],
 ///      "attr2" : ["value2", "value2_as_int"]
 ///     }
-/// revoc_reg_seq_no: (Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
 ///
@@ -195,7 +194,8 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
+/// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
+/// schema_seq_no: seq no of a schema transaction in Ledger
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
 ///

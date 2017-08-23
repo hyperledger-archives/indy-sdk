@@ -67,8 +67,8 @@ public abstract class LibIndy {
 
 		public int indy_issuer_create_and_store_claim_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String signature_type, boolean create_non_revoc, Callback cb);
 		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, int schema_seq_no, int max_claim_num, Callback cb);
-		public int indy_issuer_create_claim(int command_handle, int wallet_handle, String claim_req_json, String claim_json, int revoc_reg_seq_no, int user_revoc_index, Callback cb);
-		public int indy_issuer_revoke_claim(int command_handle, int wallet_handle, int revoc_reg_seq_no, int user_revoc_index, Callback cb);
+		public int indy_issuer_create_claim(int command_handle, int wallet_handle, String claim_req_json, String claim_json, int user_revoc_index, Callback cb);
+		public int indy_issuer_revoke_claim(int command_handle, int wallet_handle, String issuer_did, int schema_seq_no, int user_revoc_index, Callback cb);
 		public int indy_prover_store_claim_offer(int command_handle, int wallet_handle, String claim_offer_json, Callback cb);
 		public int indy_prover_get_claim_offers(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_create_master_secret(int command_handle, int wallet_handle, String master_secret_name, Callback cb);
