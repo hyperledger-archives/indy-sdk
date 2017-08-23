@@ -56,6 +56,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EnvironmentUtils.cs" />
     <Compile Include="IndyIntegrationTestBase.cs" />
     <Compile Include="InitHelper.cs" />
     <Compile Include="PoolUtils.cs" />
@@ -96,6 +97,9 @@
     <Compile Include="Wrapper\PoolTests\RefreshPoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\OpenPoolTest.cs" />
     <Compile Include="Wrapper\PoolTests\DeletePoolTest.cs" />
+    <Compile Include="Wrapper\LedgerTests\SignRequestTest.cs" />
+    <Compile Include="Wrapper\SignusTests\DecryptTest.cs" />
+    <Compile Include="Wrapper\SignusTests\EncryptTest.cs" />
     <Compile Include="Wrapper\SignusTests\VerifyTest.cs" />
     <Compile Include="Wrapper\SignusTests\StoreTheirDidTest.cs" />
     <Compile Include="Wrapper\SignusTests\SignTest.cs" />

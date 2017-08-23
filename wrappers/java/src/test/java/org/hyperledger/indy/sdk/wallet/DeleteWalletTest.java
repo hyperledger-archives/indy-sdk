@@ -81,7 +81,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		String poolName = "default";
 		String walletName = "wallet";
 
-		Wallet.registerWalletType(type, new InMemWalletType()).get();
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
 		Wallet.deleteWallet(walletName, null).get();
 		Wallet.createWallet(poolName, walletName, type, null, null).get();

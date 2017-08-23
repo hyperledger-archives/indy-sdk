@@ -2,24 +2,26 @@ import json
 
 import pytest
 
-from indy import signus, ledger, agent
-from tests.utils import wallet
+from indy import signus, ledger, agent, wallet
 
 
 @pytest.mark.asyncio
-async def test_agent_connect_works_for_remote_data(pool_handle,
-                                                   trustee1_seed):
-    endpoint = "127.0.0.1:9705"
+async def test_agent_connect_works_for_remote_data(endpoint,
+                                                   pool_name,
+                                                   pool_handle,
+                                                   seed_trustee1):
+    await wallet.create_wallet(pool_name, "listener_wallet", None, None, None)
+    listener_wallet_handle = await wallet.open_wallet("listener_wallet", None, None)
 
-    listener_wallet_handle = await wallet.create_and_open_wallet(wallet_name="listener_wallet")
-    trustee_wallet_handle = await wallet.create_and_open_wallet(wallet_name="trustee_wallet")
+    await wallet.create_wallet(pool_name, "trustee_wallet", None, None, None)
+    trustee_wallet_handle = await wallet.open_wallet("trustee_wallet", None, None)
 
     listener_did, listener_verkey, listener_pk = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
 
     trustee_did, trustee_verkey, trustee_pk = await signus.create_and_store_my_did(
         trustee_wallet_handle,
         json.dumps({
-            "seed": trustee1_seed
+            "seed": seed_trustee1
         }))
 
     nym_request = await ledger.build_nym_request(trustee_did, listener_did, listener_verkey, None, None)
@@ -36,6 +38,7 @@ async def test_agent_connect_works_for_remote_data(pool_handle,
             }
         }),
         None)
+
     await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, listener_did, attrib_request)
 
     listener_handle = await agent.agent_listen(endpoint)
@@ -66,4 +69,4 @@ async def test_agent_connect_works_for_remote_data(pool_handle,
 
 @pytest.mark.asyncio
 async def test_agent_connect_works_for_all_data_in_wallet_present(connection):
-    assert connection is not None
+    pass

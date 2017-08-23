@@ -260,6 +260,8 @@ namespace Indy.Sdk.Dotnet
         /// <param name="request_json">The request that can be signed and submitted to the ledger.</param>
         internal delegate void BuildRequestResultDelegate(int command_handle, int err, string request_json);
 
+        
+
         /// <summary>
         /// Signs and submits request message to validator pool.
         /// </summary>
@@ -283,7 +285,27 @@ namespace Indy.Sdk.Dotnet
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_submit_request(int command_handle, IntPtr pool_handle, string request_json, SubmitRequestResultDelegate cb);
+        
+        /// <summary>
+        /// Signs a request.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handle.</param>
+        /// <param name="submitter_did">The DID of the submitter.</param>
+        /// <param name="request_json">The request to sign.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestResultDelegate cb);
 
+        /// <summary>
+        /// Delegate for callbacks used by functions that sign requests.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="signed_request_json">The signed request data.</param>
+        internal delegate void SignRequestResultDelegate(int command_handle, int err, string signed_request_json);
+        
         /// <summary>
         /// Builds a request to get a DDO.
         /// </summary>
@@ -482,19 +504,21 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="did">signing DID</param>
-        /// <param name="msg">a message to be signed</param>
+        /// <param name="msg_raw">The message to be signed.</param>
+        /// <param name="msg_len">The length of the message array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_sign(int command_handle, IntPtr wallet_handle, string did, string msg, SignResultDelegate cb);
+        internal static extern int indy_sign(int command_handle, IntPtr wallet_handle, string did, byte[] msg_raw, int msg_len, SignResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_sign function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="signature">a signature string</param>
-        internal delegate void SignResultDelegate(int command_handle, int err, string signature);
+        /// <param name="signature_raw">The raw signature bytes.</param>
+        /// <param name="signature_len">The length of the signature byte array.</param>
+        internal delegate void SignResultDelegate(int command_handle, int err, IntPtr signature_raw, int signature_len);
 
         /// <summary>
         /// Verify a signature created by a key associated with a DID.
@@ -503,11 +527,14 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="pool_handle">pool handle.</param>
         /// <param name="did">DID that signed the message</param>
-        /// <param name="signed_msg">The signed message</param>
+        /// <param name="msg_raw">The message</param>
+        /// <param name="msg_len">The length of the message array.</param>
+        /// <param name="signature_raw">The signature.</param>
+        /// <param name="signature_len">The length of the signature array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, string signed_msg, VerifySignatureResultDelegate cb);
+        internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, byte[] msg_raw, int msg_len, byte[] signature_raw, int signature_len, VerifySignatureResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_verify_signature function.
@@ -525,20 +552,23 @@ namespace Indy.Sdk.Dotnet
         /// <param name="pool_handle"></param>
         /// <param name="my_did">encrypting DID</param>
         /// <param name="did">encrypting DID (??)</param>
-        /// <param name="msg">encrypting DID</param>
+        /// <param name="msg_raw">The message to encrypt.</param>
+        /// <param name="msg_len">The length of the message byte array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, string msg, EncryptResultDelegate cb);
+        internal static extern int indy_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, byte[] msg_raw, int msg_len, EncryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_encrypt function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="encrypted_msg">The encrypted message.</param>
-        /// <param name="nonce">The nonce</param>
-        internal delegate void EncryptResultDelegate(int command_handle, int err, string encrypted_msg, string nonce);
+        /// <param name="encrypted_msg_raw">The encrypted message as an array of bytes.</param>
+        /// <param name="encrypted_msg_len">The length of the encrypted message byte array.</param>
+        /// <param name="nonce_raw">The nonce as an array of bytes.</param>
+        /// <param name="nonce_len">The length of the nonce byte array.</param>
+        internal delegate void EncryptResultDelegate(int command_handle, int err, IntPtr encrypted_msg_raw, int encrypted_msg_len, IntPtr nonce_raw, int nonce_len);
 
         /// <summary>
         /// Decrypts a message encrypted by a public key associated with my DID.
@@ -547,20 +577,23 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="my_did">DID</param>
         /// <param name="did">DID that signed the message</param>
-        /// <param name="encrypted_msg">encrypted message</param>
-        /// <param name="nonce">nonce that encrypted message</param>
+        /// <param name="encrypted_msg_raw">encrypted message as a byte array.</param>
+        /// <param name="encrypted_msg_len">The length of the message byte array.</param>
+        /// <param name="nonce_raw">nonce that encrypted message as a byte array.</param>
+        /// <param name="nonce_len">The length of the nonce byte array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, string encrypted_msg, string nonce, DecryptResultDelegate cb);
+        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_decrypt function.
         /// </summary>
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="decrypted_msg">The decrypted message.</param>
-        internal delegate void DecryptResultDelegate(int command_handle, int err, string decrypted_msg);
+        /// <param name="decrypted_msg_raw">The decrypted message as an array of bytes.</param>
+        /// <param name="decrypted_msg_len">The length of the decrypted message byte array.</param>
+        internal delegate void DecryptResultDelegate(int command_handle, int err, IntPtr decrypted_msg_raw, int decrypted_msg_len);
 
         // anoncreds.rs
 
@@ -605,8 +638,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="command_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_json">Revoc registry json</param>
-        /// <param name="revoc_reg_uuid">Unique number identifying the revocation registry in the wallet</param>
-        internal delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int command_handle, int err, string revoc_reg_json, string revoc_reg_uuid);
+        internal delegate void IssuerCreateAndStoreClaimRevocRegResultDelegate(int command_handle, int err, string revoc_reg_json);
 
         /// <summary>
         /// Signs a given claim for the given user by a given key (claim def).
@@ -615,12 +647,11 @@ namespace Indy.Sdk.Dotnet
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="claim_req_json">a claim request with a blinded secret</param>
         /// <param name="claim_json">a claim containing attribute values for each of requested attribute names.</param>
-        /// <param name="revoc_reg_seq_no">(Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger</param>
         /// <param name="user_revoc_index">index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int revoc_reg_seq_no, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
+        internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_create_and_store_revoc_reg function.
@@ -637,12 +668,13 @@ namespace Indy.Sdk.Dotnet
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="revoc_reg_seq_no">seq no of a revocation registry transaction in Ledger</param>
+        /// <param name="issuer_did">The DID of the issuer.</param>
+        /// <param name="schema_seq_no">The schema sequence number.</param>
         /// <param name="user_revoc_index">index of the user in the revocation registry</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, int revoc_reg_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
+        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the sovrin_issuer_revoke_claim function.

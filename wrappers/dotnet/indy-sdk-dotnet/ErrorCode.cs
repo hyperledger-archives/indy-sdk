@@ -185,7 +185,7 @@
         AnoncredsNotIssuedError = 403,
 
         /// <summary>
-        /// Attempt to generate master secret with dupplicated name
+        /// Attempt to generate master secret with duplicated name
         /// </summary>
         AnoncredsMasterSecretDuplicateNameError = 404,
 
@@ -193,6 +193,11 @@
         /// 
         /// </summary>
         AnoncredsProofRejected = 405,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        AnoncredsClaimRevoked = 406,
 
         // Signus errors
         // 

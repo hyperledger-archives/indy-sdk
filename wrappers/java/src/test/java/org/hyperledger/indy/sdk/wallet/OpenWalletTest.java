@@ -37,12 +37,10 @@ public class OpenWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenWalletWorksForPlugged() throws Exception {
-
 		String type = "inmem";
 		String poolName = "default";
 		String walletName = "testOpenWalletWorksForPlugged";
 
-		Wallet.registerWalletType(type, new InMemWalletType()).get();
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 		assertNotNull(wallet);

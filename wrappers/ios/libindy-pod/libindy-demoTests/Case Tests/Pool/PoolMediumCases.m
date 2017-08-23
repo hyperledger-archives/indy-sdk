@@ -66,7 +66,7 @@
                                                                    nodes:nil
                                                               poolConfig:nil
                                                           genTxnFileName:nil];
-    XCTAssertEqual(ret.code, PoolLedgerNotCreatedError, @"PoolUtils::createPoolLedgerConfigWithPoolName returned wrong code");
+    XCTAssertEqual(ret.code, PoolLedgerConfigAlreadyExistsError, @"PoolUtils::createPoolLedgerConfigWithPoolName returned wrong code");
     [TestUtils cleanupStorage];
 }
 
@@ -140,7 +140,7 @@
 //{
 //    [TestUtils cleanupStorage];
 //    NSString *poolName = @"pool_open";
-//    NSString *config = @"{\"refreshOnOpen\": \"true\"}";
+//    NSString *config = @"{\"refresh_on_open\": \"true\"}";
 //    
 //    // 1. create pool ledger
 //    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName

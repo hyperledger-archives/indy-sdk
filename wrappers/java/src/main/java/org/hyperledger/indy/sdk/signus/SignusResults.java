@@ -66,4 +66,27 @@ public final class SignusResults {
 		 */
 		public String getPk() { return this.pk; }
 	}
+
+	/**
+	 * Result from calling encrypt.
+	 */
+	public static class EncryptResult extends IndyJava.Result {
+
+		private byte[] encryptedMessage, nonce;
+		EncryptResult(byte[] encryptedMessage, byte[] nonce) { this.encryptedMessage = encryptedMessage; this.nonce = nonce; }
+
+		/**
+		 * Gets the encrypted message.
+		 *
+		 * @return The encrypted message.
+		 */
+		public byte[] getEncryptedMessage() { return this.encryptedMessage; }
+
+		/**
+		 * Gets the nonce.
+		 *
+		 * @return The nonce.
+		 */
+		public byte[] getNonce() { return this.nonce; }
+	}
 }

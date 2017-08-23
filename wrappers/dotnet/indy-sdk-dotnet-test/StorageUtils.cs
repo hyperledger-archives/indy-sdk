@@ -15,31 +15,11 @@ namespace Indy.Sdk.Dotnet.Test
 
         public static void CleanupStorage()
         {
-            string tmpDir = GetTmpPath();
-            string homeDir = GetIndyHomePath();
+            string tmpDir = EnvironmentUtils.GetTmpPath();
+            string homeDir = EnvironmentUtils.GetIndyHomePath();
 
             CleanDirectory(tmpDir);
             CleanDirectory(homeDir);
-        }
-
-        public static String GetIndyHomePath()
-        {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".indy");
-        }
-
-        public static String GetIndyHomePath(string filename)
-        {
-            return Path.Combine(GetIndyHomePath(), filename);
-        }
-
-        public static string GetTmpPath()
-        {
-            return Path.Combine(Path.GetTempPath(), ".indy");
-        }
-
-        public static string GetTmpPath(string filename)
-        {
-            return Path.Combine(GetTmpPath(), filename);
-        }
+        }        
     }
 }

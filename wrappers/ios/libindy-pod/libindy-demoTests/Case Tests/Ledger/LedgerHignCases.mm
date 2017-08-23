@@ -307,7 +307,7 @@
 - (void) testSignAndSubmitRequestWorksForIncompatibleWalletAndPool
 {
     [TestUtils cleanupStorage];
-    NSString *poolName1 = @"pool1";
+    NSString *poolName1 = [TestUtils pool];
     NSString *poolName2 = @"pool2";
     NSError *ret;
     
@@ -1938,7 +1938,11 @@
     
     // 6. Build & send get schema request
     
-    NSString *getSchemaDataJson = @"{\"name\":\"gvt3\",\"version\":\"3.0\"}";
+    NSMutableDictionary *getSchemaData = [NSMutableDictionary new];
+    getSchemaData[@"name"] = @"gvt3";
+    getSchemaData[@"version"] = @"3.0";
+    
+    NSString *getSchemaDataJson = [NSDictionary toString:getSchemaData];
     NSString *getSchemaRequest;
     ret = [[LedgerUtils sharedInstance] buildGetSchemaRequestWithSubmitterDid:myDid
                                                                          dest:myDid
@@ -1974,10 +1978,10 @@
     
     NSDictionary *getTxnSchemaResult = [NSDictionary fromString:getTxnResponse[@"result"][@"data"]];
     // TODO: For some reason data is "{" or null
-    XCTAssertTrue(getTxnSchemaResult[@"data"] != nil, @"getTxnSchemaResult[data] is nil");
+    XCTAssertNotNil(getTxnSchemaResult[@"data"], @"getTxnSchemaResult[data] is nil");
     XCTAssertTrue([getTxnSchemaResult[@"data"] length] > 0, @"getTxnResponse[result][data] is empty");
     
-    NSString *getTxnSchemaDataJson = [NSDictionary toString:getTxnSchemaResult[@"data"]];
+    NSString *getTxnSchemaDataJson = getTxnSchemaResult[@"data"];
     
     XCTAssertTrue([getTxnSchemaDataJson isEqualToString:schemaDataJson], @"getTxnSchemaDataJson is not equesl to schemaDataJson");
     
@@ -2052,18 +2056,15 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");
     
     NSString *getTxnResponseJson;
-    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
-                                                              walletHandle:walletHandle
-                                                              submitterDid:myDid
-                                                               requestJson:getTxnRequest
-                                                           outResponseJson:&getTxnResponseJson];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed for getTxnRequest: %@", getTxnRequest);
+    ret = [[LedgerUtils sharedInstance] submitRequest:getTxnRequest
+                                       withPoolHandle:poolHandle
+                                           resultJson:&getTxnResponseJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::submitRequest() failed for getTxnRequest: %@", getTxnRequest);
     
     // 10. Check getTxnResponse
     NSDictionary *getTxnResponse = [NSDictionary fromString: getTxnResponseJson];
     
-    // TODO: Fix this check then test will be fixed
-    XCTAssertNil(getTxnResponse[@"result"][@"data"], @"data field in getTxnResponse shall be nil");
+    XCTAssertTrue([getTxnResponse[@"result"][@"data"] isEqual:[NSNull null]], @"data field in getTxnResponse shall be nil");
     
     [TestUtils cleanupStorage];
 }

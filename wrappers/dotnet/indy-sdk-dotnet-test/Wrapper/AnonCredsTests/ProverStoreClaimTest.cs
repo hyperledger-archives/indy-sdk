@@ -9,32 +9,20 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
     [TestClass]
     public class ProverStoreClaimTest : AnonCredsIntegrationTestBase
     {
-        [ClassCleanup]
-        public static void CloseCommonWallet()
-        {
-            try
-            {
-                _commonWallet.CloseAsync().Wait();
-            }
-            catch (Exception)
-            { }
-
-        }
-
         [TestMethod]
-        public void TestProverStoreClaimWorks()
+        public async Task TestProverStoreClaimWorks()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var proverWalletName = "proverWallet";
-            Wallet.CreateWalletAsync("default", proverWalletName, "default", null, null).Wait();
-            var proverWallet = Wallet.OpenWalletAsync(proverWalletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", proverWalletName, "default", null, null);
+            var proverWallet = await Wallet.OpenWalletAsync(proverWalletName, null, null);
 
-            AnonCreds.ProverCreateMasterSecretAsync(proverWallet, _masterSecretName).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(proverWallet, _masterSecretName);
             
             var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 1);
 
-            var claimRequest = AnonCreds.ProverCreateAndStoreClaimReqAsync(proverWallet, _proverDid, claimOffer, _claimDef, _masterSecretName).Result;
+            var claimRequest = await AnonCreds.ProverCreateAndStoreClaimReqAsync(proverWallet, _proverDid, claimOffer, _claimDef, _masterSecretName);
 
             var claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
                     "                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -42,19 +30,19 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1).Result;
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson).Wait();
+            await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson);
 
-            proverWallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(proverWalletName, null).Wait();
+            await proverWallet.CloseAsync();
+            await Wallet.DeleteWalletAsync(proverWalletName, null);
         }
 
         [TestMethod]
         public async Task TestProverStoreClaimWorksWithoutClaim()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimJson = string.Format("{{\"claim\":{{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]}},\n" +
                 "                          \"issuer_did\":\"{0}\",\n" +
@@ -73,11 +61,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
         [TestMethod]
         public async Task TestProverStoreClaimWorksForInvalidClaimJson()
         {
-            InitCommonWallet();
+            await InitCommonWallet();
 
             var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 1);
 
-            AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, _proverDid, claimOffer, _claimDef, _masterSecretName).Wait();
+            await AnonCreds.ProverCreateAndStoreClaimReqAsync(_commonWallet, _proverDid, claimOffer, _claimDef, _masterSecretName);
 
             var claimJson = "{\"claim\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
                     "            \"issuer_did\":1,\"\n" +

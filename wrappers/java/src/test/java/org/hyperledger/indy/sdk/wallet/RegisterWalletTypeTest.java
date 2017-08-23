@@ -1,6 +1,5 @@
 package org.hyperledger.indy.sdk.wallet;
 
-
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
@@ -18,10 +17,10 @@ import static org.junit.Assert.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-
 public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 	@Test
+	@Ignore //The wallet is already registered by the base class!
 	public void testRegisterWalletTypeWorks() throws Exception {
 
 		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
@@ -33,10 +32,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletTypeAlreadyRegisteredError));
 
-		String type = "inmem";
-
-		Wallet.registerWalletType(type, new InMemWalletType()).get();
-		Wallet.registerWalletType(type, new InMemWalletType()).get();
+		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 	}
 	
 	static Wallet wallet;
@@ -62,7 +58,6 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		StorageUtils.cleanupStorage();
 
 		String walletName = "inmemWorkoutWallet";
-		Wallet.registerWalletType("inmem", new InMemWalletType());
 		
 		Wallet.createWallet("default", walletName, "inmem", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
@@ -85,7 +80,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 				"                 \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
 		Anoncreds.proverStoreClaim(wallet, claimJson).get();

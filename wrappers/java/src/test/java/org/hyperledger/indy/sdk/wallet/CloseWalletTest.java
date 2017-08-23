@@ -45,11 +45,9 @@ public class CloseWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCloseWalletWorksForPlugged() throws Exception {
-		String type = "inmem";
 		String walletName = "testCloseWalletWorksForPlugged";
 
-		Wallet.registerWalletType(type, new InMemWalletType()).get();
-		Wallet.createWallet("default", walletName, type, null, null).get();
+		Wallet.createWallet("default", walletName, "inmem", null, null).get();
 
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 		wallet.closeWallet().get();

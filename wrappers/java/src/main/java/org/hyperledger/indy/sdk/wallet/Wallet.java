@@ -141,32 +141,31 @@ public class Wallet extends IndyJava.API {
 	 * @throws InterruptedException Thrown...???
 	 */
 	public static CompletableFuture<Void> registerWalletType(
-			String xtype,
-			WalletType walletType) throws IndyException, InterruptedException {
+		String xtype,
+		WalletType walletType) throws IndyException, InterruptedException {
 
-			CompletableFuture<Void> future = new CompletableFuture<Void>();
-			int commandHandle = addFuture(future);
-			
-			REGISTERED_WALLET_TYPES.add(walletType);
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+		
+		REGISTERED_WALLET_TYPES.add(walletType);
 
-			int result = LibIndy.api.indy_register_wallet_type(
-					commandHandle,
-					xtype,
-					walletType.getCreateCb(),
-					walletType.getOpenCb(),
-					walletType.getSetCb(),
-					walletType.getGetCb(),
-					walletType.getGetNotExpiredCb(),
-					walletType.getListCb(),
-					walletType.getCloseCb(),
-					walletType.getDeleteCb(),
-					walletType.getFreeCb(),
-					registerWalletTypeCb);
+		int result = LibIndy.api.indy_register_wallet_type(
+				commandHandle,
+				xtype,
+				walletType.getCreateCb(),
+				walletType.getOpenCb(),
+				walletType.getSetCb(),
+				walletType.getGetCb(),
+				walletType.getGetNotExpiredCb(),
+				walletType.getListCb(),
+				walletType.getCloseCb(),
+				walletType.getDeleteCb(),
+				walletType.getFreeCb(),
+				registerWalletTypeCb);
 
-			checkResult(result);
+		checkResult(result);
 
-			return future;
-		}
+		return future;
 	}
 
 	/**

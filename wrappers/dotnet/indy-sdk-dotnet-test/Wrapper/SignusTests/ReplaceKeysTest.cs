@@ -14,28 +14,30 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         private string _verKey;
 
         [TestInitialize]
-        public void CreateWalletWithDid()
+        public async Task CreateWalletWithDid()
         {
-            Wallet.CreateWalletAsync("default", _walletName, "default", null, null).Wait();
-            _wallet = Wallet.OpenWalletAsync(_walletName, null, null).Result;
+            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
 
-            var result = Signus.CreateAndStoreMyDidAsync(_wallet, "{}").Result;
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             _did = result.Did;
             _verKey = result.VerKey;
         }
 
         [TestCleanup]
-        public void DeleteWallet()
+        public async Task DeleteWallet()
         {
-            _wallet.CloseAsync().Wait();
-            Wallet.DeleteWalletAsync(_walletName, null).Wait();
+            if(_wallet != null)
+                await _wallet.CloseAsync();
+
+            await Wallet.DeleteWalletAsync(_walletName, null);
         }
         
         [TestMethod]
-        public void TestReplaceKeysWorksForEmptyJson()
+        public async Task TestReplaceKeysWorksForEmptyJson()
         {
-            var result = Signus.ReplaceKeysAsync(_wallet, _did, "{}").Result;
+            var result = await Signus.ReplaceKeysAsync(_wallet, _did, "{}");
 
             Assert.IsNotNull(result);
             Assert.AreEqual(32, Base58CheckEncoding.DecodePlain(result.VerKey).Length);
@@ -52,17 +54,17 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.SignusTests
         }
 
         [TestMethod]
-        public void TestReplaceKeysWorksForNotExistsDid()
+        public async Task TestReplaceKeysWorksForNotExistsDid()
         {
-            var result = Signus.ReplaceKeysAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", "{}").Result;
+            var result = await Signus.ReplaceKeysAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", "{}");
 
             Assert.IsNotNull(result);
         }
 
         [TestMethod]
-        public void TestReplaceKeysWorksForSeed()
+        public async Task TestReplaceKeysWorksForSeed()
         {
-            var result = Signus.ReplaceKeysAsync(_wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}").Result;
+            var result = await Signus.ReplaceKeysAsync(_wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}");
 
             Assert.IsNotNull(result);
             Assert.AreEqual("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", result.VerKey);

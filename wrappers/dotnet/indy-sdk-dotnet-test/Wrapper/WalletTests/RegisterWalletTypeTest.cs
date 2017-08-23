@@ -22,28 +22,28 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         [TestMethod]
         [Ignore]
-        public void Test()
+        public async Task TestExerciseCustomWallet()
         {
-            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType()).Wait();
+            await Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType());
 
             var walletName = "registerWalletTypeWorks";
 
-            Wallet.CreateWalletAsync("default", walletName, "inmem", null, null).Wait();
+            await Wallet.CreateWalletAsync("default", walletName, "inmem", null, null);
 
-            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
             Assert.IsNotNull(wallet);
 
-            var claimDef = AnonCreds.IssuerCreateAndStoreClaimDefAsync(wallet, _issuerDid, _schema, null, false).Result;
+            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(wallet, _issuerDid, _schema, null, false);
 
-            AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(_claimOfferTemplate, _issuerDid, 1)).Wait();
-            AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(_claimOfferTemplate, _issuerDid, 2)).Wait();
-            AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(_claimOfferTemplate, _issuerDid2, 2)).Wait();
+            await AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(_claimOfferTemplate, _issuerDid, 1));
+            await AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(_claimOfferTemplate, _issuerDid, 2));
+            await AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(_claimOfferTemplate, _issuerDid2, 2));
 
-            AnonCreds.ProverCreateMasterSecretAsync(wallet, _masterSecretName).Wait();
+            await AnonCreds.ProverCreateMasterSecretAsync(wallet, _masterSecretName);
 
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}", _issuerDid, 1);
 
-            var claimRequest = AnonCreds.ProverCreateAndStoreClaimReqAsync(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, _masterSecretName).Result;
+            var claimRequest = await AnonCreds.ProverCreateAndStoreClaimReqAsync(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, _masterSecretName);
 
             var claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
                     "                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -51,23 +51,23 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1, -1).Result;
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            AnonCreds.ProverStoreClaimAsync(wallet, claimJson).Wait();
-
+            await AnonCreds.ProverStoreClaimAsync(wallet, claimJson);
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
 
-            var claimOffers = AnonCreds.ProverGetClaimOffersAsync(wallet, filter).Result;
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(wallet, filter);
 
-            wallet.CloseAsync().Wait();
+            await wallet.CloseAsync();
         }
 
         [TestMethod]
-        public void TestRegisterWalletTypeWorks()
+        [Ignore] //Not a valid test since the wallet type is registered on init!
+        public async Task TestRegisterWalletTypeWorks()
         {
-            Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType(), false).Wait();
+            await Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType());
         }
 
         [TestMethod]
@@ -75,11 +75,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             var type = "inmem";
 
-            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
-
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                   Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), true)
-                );
+                Wallet.RegisterWalletTypeAsync(type, new InMemWalletType())
+            );
 
             Assert.AreEqual(ErrorCode.WalletTypeAlreadyRegisteredError, ex.ErrorCode);
         }

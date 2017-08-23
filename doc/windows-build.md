@@ -3,7 +3,7 @@
 ## Get/build dependencies
 
 All prebuilt can be downloaded from
-https://repo.evernym.com/deb/windows-bins/indy-sdk-deps/
+https://repo.evernym.com/libindy/windows/deps/
 
 ### Binary deps
 
@@ -55,20 +55,17 @@ Checkout https://github.com/evernym/libzmq-pw repository.
 - execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
   - set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64
+  - set MILAGRO_DIR=C:\BIN\x64
+  - set ZMQPW_DIR=C:\BIN\x64
   - set SODIUM_LIB_DIR=C:\BIN\x64
-  - set OPENSSL_INCLUDE_DIR=C:\BIN\x64\include
-  - set OPENSSL_LIB_DIR=C:\BIN\x64
-  - set LIBZMQ_LIB_DIR=C:\BIN\x64
-  - set LIBZMQ_INCLUDE_DIR=C:\BIN\x64\include
-- set static flag for libsodium build
-  - set SODIUM_STATIC=y
+  - set OPENSSL_DIR=C:\BIN\x64
 - set PATH to find .dlls:
-  - set PATH=C:\BIN\x64;%PATH%
+  - set PATH=C:\BIN\x64\lib;%PATH%
 - change dir to indy-client and run cargo (you may want to add --release --target x86_64-pc-windows-msvc keys to cargo)
 
 ## openssl-sys workaround
 
-When your windows build fails complaining on gdi32.lib you should edit
+If your windows build fails complaining on gdi32.lib you should edit
 
 ```
   ~/.cargo/registry/src/github.com-*/openssl-sys-*/build.rs
@@ -83,3 +80,24 @@ and add
 to the end of main() function.
 
 Then try to rebuild whole project.
+
+## Run integration tests
+
+* Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
+ 
+  ```     
+  docker build -f ci/indy-pool.dockerfile -t indy_pool .
+  docker run -itd -p 9701-9709:9701-9709 indy_pool
+  ```          
+ 
+  Please note that this port mapping between container and local host requires
+  latest Docker for Windows (linux containers) and windows system with Hyper-V support.
+  
+  If you use some Docker distribution based on Virtual Box you can use Virtual Box's 
+  port forwarding future to map 9701-9709 container ports to local 9701-9709 ports.
+ 
+* Run tests
+  
+  ```
+  RUST_TEST_THREADS=1 cargo test
+  ```

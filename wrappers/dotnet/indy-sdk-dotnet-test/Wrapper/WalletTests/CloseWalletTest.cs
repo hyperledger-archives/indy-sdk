@@ -8,16 +8,16 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
     public class CloseWalletTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public void TestCloseWalletWorks()
+        public async Task TestCloseWalletWorks()
         {
             var walletName = "closeWalletWorks";
-            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
 
-            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
             Assert.IsNotNull(wallet);
 
-            wallet.CloseAsync().Wait();
+            await wallet.CloseAsync();
         }
 
         [TestMethod]
@@ -25,13 +25,13 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             var walletName = "closeWalletWorksForTwice";
 
-            Wallet.CreateWalletAsync("default", walletName, "default", null, null).Wait();
+            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
 
-            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
             Assert.IsNotNull(wallet);
 
-            wallet.CloseAsync().Wait();
+            await wallet.CloseAsync();
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 wallet.CloseAsync()
@@ -41,16 +41,15 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         }
 
         [TestMethod]
-        public void TestCloseWalletWorksForPlugged()
+        public async Task TestCloseWalletWorksForPlugged()
         {
             var type = "inmem";
             var walletName = "testCloseWalletWorksForPlugged";
 
-            Wallet.RegisterWalletTypeAsync(type, new InMemWalletType(), false).Wait();
-            Wallet.CreateWalletAsync("default", walletName, type, null, null).Wait();
+            await Wallet.CreateWalletAsync("default", walletName, type, null, null);
 
-            var wallet = Wallet.OpenWalletAsync(walletName, null, null).Result;
-            wallet.CloseAsync().Wait();
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await wallet.CloseAsync();
         }
     }
 }

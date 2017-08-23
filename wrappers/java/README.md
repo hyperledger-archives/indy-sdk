@@ -5,6 +5,8 @@
 This is a **work-in-progress** Java wrapper for [Indy](https://www.hyperledger.org/projects/indy). It is implemented using a foreign function interface (FFI) to a native library written in Rust. Indy is the
 open-source codebase behind the Sovrin network for self-sovereign digital identity.
 
+This Java wrapper currently requires Java 8 (e.g. the openjdk-8-jdk package in Debian/Ubuntu).
+
 Pull requests welcome!
 
 **Not ready for production use! Not all commands work properly! Use at your own risk!**
@@ -115,7 +117,7 @@ Output:
 	CreatePoolLedgerConfigJSONParameter: {"genesis_txn":"localhost.txn"}
 	CreatePoolLedgerConfigResult: PoolResults.CreatePoolLedgerConfigResult[]
 	=== OPEN POOL ===
-	OpenPoolLedgerJSONParameter: {"refreshOnOpen":true}
+	OpenPoolLedgerJSONParameter: {"refresh_on_open":true}
 	OpenPoolLedgerResult: PoolResults.OpenPoolLedgerResult[pool=Pool[poolHandle=2]]
 	=== CREATE TRUSTEE WALLET ===
 	CreateWalletResultTrustee: WalletResults.CreateWalletResult[]

@@ -50,7 +50,7 @@ public class AgentCloseConnectionTest extends AgentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String endpoint = "127.0.0.1:9703";
+		String endpoint = "127.0.0.1:9603";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
@@ -75,7 +75,7 @@ public class AgentCloseConnectionTest extends AgentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		String endpoint = "127.0.0.1:9713";
+		String endpoint = "127.0.0.1:9613";
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
