@@ -115,7 +115,7 @@ async def test_send_schema_request_works_without_signature(pool_handle, identity
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
-        "keys": ["name", "male"]
+        "attr_names": ["name", "male"]
     }
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
@@ -133,7 +133,7 @@ async def test_schema_requests_works(pool_handle, wallet_handle, identity_truste
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
-        "keys": ["name", "male"]
+        "attr_names": ["name", "male"]
     }
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
@@ -180,7 +180,7 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
-        "keys": ["name", "male"]
+        "attr_names": ["name", "male"]
     }
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
@@ -222,6 +222,7 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
         my_did, get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['data']['origin'])
     get_claim_def_response = json.loads(
         (await ledger.submit_request(pool_handle, get_claim_def_request)))
+    claim_def["revocation"] = {}  # FIXME workaround for ledger
     assert claim_def == get_claim_def_response['result']['data']
 
 
@@ -230,9 +231,9 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_truste
     (my_did, _) = identity_trustee1
 
     schema_data = json.dumps({
+        "attr_names": ["name"],
         "name": "gvt3",
-        "version": "3.0",
-        "keys": ["name"]
+        "version": "3.0"
     })
 
     schema_request = await ledger.build_schema_request(my_did, schema_data)
@@ -249,7 +250,7 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_truste
 
     get_txn_request = await ledger.build_get_txn_request(my_did, schema_response['result']['seqNo'])
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
-    assert schema_data == json.loads(get_txn_response['result']['data'])['data']
+    assert json.loads(schema_data) == get_txn_response['result']['data']['data']
 
 
 @pytest.mark.asyncio
@@ -259,7 +260,7 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
     schema_data = json.dumps({
         "name": "gvt3",
         "version": "3.0",
-        "keys": ["name"]
+        "attr_names": ["name"]
     })
 
     schema_request = await ledger.build_schema_request(my_did, schema_data)

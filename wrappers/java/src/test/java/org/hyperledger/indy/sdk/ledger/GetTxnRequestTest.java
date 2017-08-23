@@ -1,5 +1,8 @@
 package org.hyperledger.indy.sdk.ledger;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.Signus;
@@ -8,10 +11,9 @@ import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
-import org.junit.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class GetTxnRequestTest extends IndyIntegrationTest {
 
@@ -61,7 +63,7 @@ public class GetTxnRequestTest extends IndyIntegrationTest {
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
 
-		String schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"keys\": [\"name\", \"male\"]}";
+		String schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, schemaData).get();
 		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
@@ -74,11 +76,10 @@ public class GetTxnRequestTest extends IndyIntegrationTest {
 		String getTxnResponse = Ledger.submitRequest(pool, getTxnRequest).get();
 
 		JSONObject getTxnResponseObj = new JSONObject(getTxnResponse);
+		
+		JSONObject schemaTransactionObj = getTxnResponseObj.getJSONObject("result").getJSONObject("data");
 
-		String schemaTransaction = getTxnResponseObj.getJSONObject("result").getString("data");
-		JSONObject schemaTransactionObj = new JSONObject(schemaTransaction);
-
-		assertEquals(schemaData, schemaTransactionObj.getString("data"));
+		assertTrue(new JSONObject(schemaData).similar(schemaTransactionObj.getJSONObject("data")));
 	}
 
 	@Test
@@ -90,7 +91,7 @@ public class GetTxnRequestTest extends IndyIntegrationTest {
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
 		String did = didResult.getDid();
 
-		String schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"keys\": [\"name\", \"male\"]}";
+		String schemaData = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, schemaData).get();
 		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
