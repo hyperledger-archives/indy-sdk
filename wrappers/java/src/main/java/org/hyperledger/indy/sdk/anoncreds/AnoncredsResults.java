@@ -15,29 +15,6 @@ public final class AnoncredsResults {
 	}
 
 	/**
-	 * Result from calling issuerCreateAndStoreRevocReg.
-	 */
-	public static class IssuerCreateAndStoreRevocRegResult extends IndyJava.Result {
-
-		private String revocRegJson, revocRegUuid;
-		IssuerCreateAndStoreRevocRegResult(String revocRegJson, String revocRegUuid) { this.revocRegJson = revocRegJson; this.revocRegUuid = revocRegUuid; }
-		
-		/**
-		 * Gets the revocation registration JSON.
-		 * 
-		 * @return The revocation registration JSON.
-		 */
-		public String getRevocRegJson() { return this.revocRegJson; }
-		
-		/**
-		 * Gets the revocation registration UUID.
-		 * 
-		 * @return The revocation registration UUID.
-		 */
-		public String getRevocRegUuid() { return this.revocRegUuid; }
-	}
-
-	/**
 	 * Result from calling issuerCreateClaim.
 	 */
 	public static class IssuerCreateClaimResult extends IndyJava.Result {

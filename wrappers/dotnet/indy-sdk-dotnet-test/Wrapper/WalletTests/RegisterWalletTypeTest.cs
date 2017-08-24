@@ -51,7 +51,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
             await AnonCreds.ProverStoreClaimAsync(wallet, claimJson);

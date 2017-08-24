@@ -60,7 +60,7 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
 async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             issuer_did: str,
                                             schema_seq_no: int,
-                                            max_claim_num: int) -> (str, str):
+                                            max_claim_num: int) -> str:
     """
     Create a new revocation registry for the given claim definition.
     Stores it in a secure wallet identifying by the returned key.
@@ -70,7 +70,6 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     :param schema_seq_no: seq no of a schema transaction in Ledger
     :param max_claim_num: maximum number of claims the new registry can process.
     :return: Revoc registry json
-        Unique number identifying the revocation registry in the wallet
     """
 
     logger = logging.getLogger(__name__)
@@ -90,13 +89,13 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     c_schema_seq_no = c_int32(schema_seq_no)
     c_max_claim_num = c_int32(max_claim_num)
 
-    (revoc_reg_json, revoc_reg_uuid) = await do_call('indy_issuer_create_and_store_revoc_reg',
-                                                     c_wallet_handle,
-                                                     c_issuer_did,
-                                                     c_schema_seq_no,
-                                                     c_max_claim_num,
-                                                     issuer_create_and_store_revoc_reg.cb)
-    res = (revoc_reg_json.decode(), revoc_reg_uuid.decode())
+    revoc_reg_json = await do_call('indy_issuer_create_and_store_revoc_reg',
+                                   c_wallet_handle,
+                                   c_issuer_did,
+                                   c_schema_seq_no,
+                                   c_max_claim_num,
+                                   issuer_create_and_store_revoc_reg.cb)
+    res = revoc_reg_json.decode()
     logger.debug("issuer_create_and_store_revoc_reg: <<< res: %r", res)
     return res
 
@@ -104,7 +103,6 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 async def issuer_create_claim(wallet_handle: int,
                               claim_req_json: str,
                               claim_json: str,
-                              revoc_reg_seq_no: int,
                               user_revoc_index: int) -> (str, str):
     """
     Signs a given claim for the given user by a given key (claim ef).
@@ -127,8 +125,6 @@ async def issuer_create_claim(wallet_handle: int,
             "attr1" : ["value1", "value1_as_int"],
             "attr2" : ["value2", "value2_as_int"]
         }
-    :param revoc_reg_seq_no: (Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation
-     registry transaction in Ledger
     :param user_revoc_index: index of a new user in the revocation registry
      (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
     :return: Revocation registry update json with a newly issued claim
@@ -149,7 +145,6 @@ async def issuer_create_claim(wallet_handle: int,
                  wallet_handle,
                  claim_req_json,
                  claim_json,
-                 revoc_reg_seq_no,
                  user_revoc_index)
 
     if not hasattr(issuer_create_claim, "cb"):
@@ -159,14 +154,12 @@ async def issuer_create_claim(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_claim_req_json = c_char_p(claim_req_json.encode('utf-8'))
     c_claim_json = c_char_p(claim_json.encode('utf-8'))
-    c_revoc_reg_seq_no = c_int32(revoc_reg_seq_no)
     c_user_revoc_index = c_int32(user_revoc_index)
 
     (revoc_reg_update_json, claim_json) = await do_call('indy_issuer_create_claim',
                                                         c_wallet_handle,
                                                         c_claim_req_json,
                                                         c_claim_json,
-                                                        c_revoc_reg_seq_no,
                                                         c_user_revoc_index,
                                                         issuer_create_claim.cb)
     res = (revoc_reg_update_json.decode(), claim_json.decode())
@@ -175,7 +168,8 @@ async def issuer_create_claim(wallet_handle: int,
 
 
 async def issuer_revoke_claim(wallet_handle: int,
-                              revoc_reg_seq_no: int,
+                              issuer_did: str,
+                              schema_seq_no: int,
                               user_revoc_index: int) -> str:
     """
     Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -183,7 +177,8 @@ async def issuer_revoke_claim(wallet_handle: int,
     created an stored into the wallet.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
+    :param issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
+    :param schema_seq_no: seq no of a schema transaction in Ledger
     :param user_revoc_index: index of the user in the revocation registry
     :return: Revocation registry update json with a revoked claim
     """
@@ -191,7 +186,8 @@ async def issuer_revoke_claim(wallet_handle: int,
     logger = logging.getLogger(__name__)
     logger.debug("issuer_revoke_claim: >>> wallet_handle: %r, revoc_reg_seq_no: %r, user_revoc_index: %r",
                  wallet_handle,
-                 revoc_reg_seq_no,
+                 issuer_did,
+                 schema_seq_no,
                  user_revoc_index)
 
     if not hasattr(issuer_revoke_claim, "cb"):
@@ -199,12 +195,14 @@ async def issuer_revoke_claim(wallet_handle: int,
         issuer_revoke_claim.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_revoc_reg_seq_no = c_int32(revoc_reg_seq_no)
+    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+    c_schema_seq_no = c_int32(schema_seq_no)
     c_user_revoc_index = c_int32(user_revoc_index)
 
     revoc_reg_update_json = await do_call('indy_issuer_revoke_claim',
                                           c_wallet_handle,
-                                          c_revoc_reg_seq_no,
+                                          c_issuer_did,
+                                          c_schema_seq_no,
                                           c_user_revoc_index,
                                           issuer_revoke_claim.cb)
     res = revoc_reg_update_json.decode()

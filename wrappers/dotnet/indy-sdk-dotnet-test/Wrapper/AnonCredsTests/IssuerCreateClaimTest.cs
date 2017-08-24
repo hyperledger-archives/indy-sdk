@@ -23,7 +23,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1);
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
@@ -48,7 +48,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "       }";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1)
+                AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
@@ -68,7 +68,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
                     "       }";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1, -1)
+                AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);

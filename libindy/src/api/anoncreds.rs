@@ -90,8 +90,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      schema_seq_no: i32,
                                                      max_claim_num: i32,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                          revoc_reg_json: *const c_char,
-                                                                          revoc_reg_uuid: *const c_char
+                                                                          revoc_reg_json: *const c_char
                                                      )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -105,10 +104,9 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                     schema_seq_no,
                     max_claim_num,
                     Box::new(move |result| {
-                        let (err, revoc_reg_json, revoc_reg_wallet_key) = result_to_err_code_2!(result, String::new(), String::new());
+                        let (err, revoc_reg_json) = result_to_err_code_1!(result, String::new());
                         let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
-                        let revoc_reg_uuid = CStringUtils::string_to_cstring(revoc_reg_wallet_key);
-                        cb(command_handle, err, revoc_reg_json.as_ptr(), revoc_reg_uuid.as_ptr())
+                        cb(command_handle, err, revoc_reg_json.as_ptr())
                     })
                 ))));
 
@@ -137,7 +135,6 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///      "attr1" : ["value1", "value1_as_int"],
 ///      "attr2" : ["value2", "value2_as_int"]
 ///     }
-/// revoc_reg_seq_no: (Optional, pass -1 if revoc_reg_seq_no is absentee) seq no of a revocation registry transaction in Ledger
 /// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
 ///
@@ -162,7 +159,6 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
                                        wallet_handle: i32,
                                        claim_req_json: *const c_char,
                                        claim_json: *const c_char,
-                                       revoc_reg_seq_no: i32,
                                        user_revoc_index: i32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             revoc_reg_update_json: *const c_char, //TODO must be OPTIONAL
@@ -172,7 +168,6 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    let revoc_reg_seq_no = if revoc_reg_seq_no != -1 { Some(revoc_reg_seq_no) } else { None };
     let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index) } else { None };
 
     let result = CommandExecutor::instance()
@@ -180,7 +175,6 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
             wallet_handle,
             claim_req_json,
             claim_json,
-            revoc_reg_seq_no,
             user_revoc_index,
             Box::new(move |result| {
                 let (err, revoc_reg_update_json, xclaim_json) = result_to_err_code_2!(result, String::new(), String::new());
@@ -200,7 +194,8 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// revoc_reg_seq_no: seq no of a revocation registry transaction in Ledger
+/// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
+/// schema_seq_no: seq no of a schema transaction in Ledger
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
 ///
@@ -214,11 +209,13 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_issuer_revoke_claim(command_handle: i32,
                                        wallet_handle: i32,
-                                       revoc_reg_seq_no: i32,
+                                       issuer_did: *const c_char,
+                                       schema_seq_no: i32,
                                        user_revoc_index: i32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             revoc_reg_update_json: *const c_char,
                                        )>) -> ErrorCode {
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -226,7 +223,8 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
             AnoncredsCommand::Issuer(
                 IssuerCommand::RevokeClaim(
                     wallet_handle,
-                    revoc_reg_seq_no,
+                    issuer_did,
+                    schema_seq_no,
                     user_revoc_index,
                     Box::new(move |result| {
                         let (err, revoc_reg_update_json) = result_to_err_code_1!(result, String::new());

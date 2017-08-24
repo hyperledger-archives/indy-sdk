@@ -110,7 +110,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, - 1).get();
 		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
@@ -246,7 +246,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerGvtWallet, gvtClaimReq, gvtClaimAttributesJson, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerGvtWallet, gvtClaimReq, gvtClaimAttributesJson, - 1).get();
 		String gvtClaimJson = gvtCreateClaimResult.getClaimJson();
 
 		//10. Prover store Claim
@@ -261,7 +261,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"period\":[\"8\",\"8\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerXyzWallet, xyzClaimReq, xyzClaimAttributesJson, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerXyzWallet, xyzClaimReq, xyzClaimAttributesJson, - 1).get();
 		String xyzClaimJson = xyzCreateClaimResult.getClaimJson();
 
 		//13. Prover store Claim
@@ -399,7 +399,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, gvtClaimReq, gvtClaimAttributesJson, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, gvtClaimReq, gvtClaimAttributesJson, - 1).get();
 		String gvtClaimJson = gvtCreateClaimResult.getClaimJson();
 
 		//9. Prover store Claim
@@ -414,7 +414,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"period\":[\"8\",\"8\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, xyzClaimReq, xyzClaimAttributesJson, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, xyzClaimReq, xyzClaimAttributesJson, - 1).get();
 		String xyzClaimJson = xyzCreateClaimResult.getClaimJson();
 
 		//12. Prover store Claim
@@ -525,7 +525,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, - 1).get();
 		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
