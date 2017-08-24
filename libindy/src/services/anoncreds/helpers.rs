@@ -35,12 +35,11 @@ pub fn bitwise_or_big_int(a: &BigNumber, b: &BigNumber) -> Result<BigNumber, Com
     Ok(result)
 }
 
+//Byte order: Little
 pub fn transform_u32_to_array_of_u8(x: u32) -> Vec<u8> {
-    let mut result: Vec<u8> = vec![0; 60];
+    let mut result: Vec<u8> = Vec::new();
     for i in (0..4).rev() {
-        let shift = i * 8;
-        let b = (x >> shift) as u8;
-        result.push(b);
+        result.push((x >> i * 8) as u8);
     }
     result
 }
@@ -121,7 +120,7 @@ pub fn bignum_to_group_element(num: &BigNumber) -> Result<GroupOrderElement, Com
     Ok(GroupOrderElement::from_bytes(&num.to_bytes()?)?)
 }
 
-pub fn get_claim_def_id(issuer_did: &str, schema_seq_no: i32) -> String {
+pub fn get_composite_id(issuer_did: &str, schema_seq_no: i32) -> String {
     issuer_did.to_string() + ":" + &schema_seq_no.to_string()
 }
 
@@ -164,8 +163,8 @@ mod tests {
 
     #[test]
     fn transform_u32_to_array_of_u8_works() {
-        let int = 1958376517;
-        let answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 186, 116, 69];
+        let int = 0x74BA7445;
+        let answer = vec![0x74, 0xBA, 0x74, 0x45];
         assert_eq!(transform_u32_to_array_of_u8(int), answer)
     }
 }

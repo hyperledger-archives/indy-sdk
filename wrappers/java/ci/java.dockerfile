@@ -11,9 +11,10 @@ RUN apt-get install -y \
       gdebi \
       apt-utils
 
-ADD https://repo.evernym.com/libindy/ubuntu/master/0.1.1-119/indy-sdk_0.1.1_amd64.deb .
-
-RUN gdebi -n indy-sdk_0.1.1_amd64.deb
+RUN apt-get install -y \
+      libssl1.0.0 \
+      libsodium18 \
+      libsqlite0
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy

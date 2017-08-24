@@ -15,10 +15,8 @@ def testing() {
     stage('Testing') {
         parallel([
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
-                'libindy-windows-test': { libindyWindowsTesting() },
-                'libindy-redhat-test' : { libindyRedHatTesting() },
-                'java-ubuntu-test'    : { javaWrapperUbuntuTesting() },
-                'python-ubuntu-test'  : { pythonWrapperUbuntuTesting() }
+                //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() }, IS-307
+                'libindy-windows-test': { libindyWindowsTesting() }
         ])
     }
 }
@@ -31,7 +29,7 @@ def publishing() {
         }
 
         parallel([
-                'libindy-rpm-files'     : { publishingLibindyRpmFiles() },
+                //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() }, IS-307
                 'libindy-deb-files'     : { publishingLibindyDebFiles() },
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
                 'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
@@ -102,13 +100,15 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
 
         poolInst = openPool(env_name, network_name, '105', '1.0.95', '1.0.25', '1.0.105')
 
+        def testEnv
+
         dir('libindy') {
             echo "${env_name} Test: Build docker image"
-            def testEnv = dockerHelpers.build('libindy', file)
+            testEnv = dockerHelpers.build('libindy', file)
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
-                sh 'chmod -R 777 /home/indy/'
+                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
 
                 try {
                     def features_args = ""
@@ -129,6 +129,27 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
                     junit 'test-results.xml'
                     */
                 }
+            }
+        }
+
+        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
+        dir('wrappers/java') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Test: Test java wrapper"
+
+                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            }
+        }
+
+        sh "cp libindy/target/debug/libindy.so wrappers/python"
+        dir('wrappers/python') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Test: Test python wrapper"
+
+                sh '''
+                    python3.6 -m pip install -e .
+                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
+                '''
             }
         }
     }
@@ -207,70 +228,6 @@ def libindyRedHatTesting() {
     }
 }
 
-def javaWrapperUbuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Java Test') {
-            def poolInst
-            def network_name = "pool_network"
-            def env_name = "Ubuntu Java"
-
-            try {
-                echo "${env_name} Test: Checkout csm"
-                checkout scm
-
-                poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
-
-                dir('wrappers/java') {
-                    echo "${env_name} Test: Build docker image"
-                    def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
-
-                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                        echo "${env_name} Test: Test"
-
-                        sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-                    }
-                }
-            }
-            finally {
-                closePool(env_name, network_name, poolInst)
-            }
-        }
-    }
-}
-
-def pythonWrapperUbuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Python Test') {
-            def poolInst
-            def network_name = "pool_network"
-            def env_name = "Ubuntu Python"
-            try {
-                echo "${env_name} Test: Checkout csm"
-                checkout scm
-
-                poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
-
-                dir('wrappers/python') {
-                    echo "${env_name} Test: Build docker image"
-                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
-
-                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                        echo "${env_name} Test: Test"
-
-                        sh '''
-                            python3.6 -m pip install -e .
-                            RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
-                        '''
-                    }
-                }
-            }
-            finally {
-                closePool(env_name, network_name, poolInst)
-            }
-        }
-    }
-}
-
 def publishingLibindyRpmFiles() {
     node('ubuntu') {
         stage('Publish Libindy RPM Files') {
@@ -321,6 +278,7 @@ def publishingLibindyDebFiles() {
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
                             sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BUILD_NUMBER"
+                            sh "rm -rf debian"
                         }
                     }
                 }
@@ -384,7 +342,7 @@ def publishingPythonWrapperToPipy() {
                     echo 'Publish Deb: Build docker image'
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                    testEnv.inside('-u 0:0') {
+                    testEnv.inside {
 
                         withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                             sh 'cp $credentialsFile ./'

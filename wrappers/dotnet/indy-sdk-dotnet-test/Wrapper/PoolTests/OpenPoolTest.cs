@@ -23,7 +23,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.PoolTests
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
 
-            var config = "{\"refreshOnOpen\":true,\"autoRefreshTime\":false,\"networkTimeout\":false}";
+            var config = "{\"refresh_on_open\":true,\"auto_refresh_time\":false,\"network_timeout\":false}";
             var pool = await Pool.OpenPoolLedgerAsync(poolName, config);
 
 

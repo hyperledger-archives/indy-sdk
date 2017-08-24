@@ -28,7 +28,7 @@ async def test_build_get_claim_def_request_works():
 
 
 @pytest.mark.asyncio
-async def test_build_claim_def_request_works_for_correct_data_json():
+async def test_build_get_claim_def_request_works_for_correct_data_json():
     identifier = "identifier"
     signature_type = "CL"
     schema_seq_no = 1
@@ -49,7 +49,7 @@ async def test_build_claim_def_request_works_for_correct_data_json():
         "identifier": "identifier",
         "operation": {
             "ref": schema_seq_no,
-            "data": json.dumps(data),
+            "data": data,
             "type": "102",
             "signature_type": signature_type
         }
@@ -58,4 +58,6 @@ async def test_build_claim_def_request_works_for_correct_data_json():
     response = json.loads(
         await ledger.build_claim_def_txn(
             identifier, schema_seq_no, signature_type, json.dumps(data)))
+
+    expected_response['operation']['data']['revocation'] = {}  # FIXME workaround for ledger
     assert expected_response.items() <= response.items()

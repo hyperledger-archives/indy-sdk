@@ -294,7 +294,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, gvt_claim_json, is
     claim_req = await anoncreds.prover_create_and_store_claim_req(
         wallet_handle, "HEJ9gvWX64wW7UD", claim_offer_issuer_1_json, claim_def_json, master_secret_name)
 
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1, -1)
+    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
 
     await anoncreds.prover_store_claim(wallet_handle, claim_json)
 
