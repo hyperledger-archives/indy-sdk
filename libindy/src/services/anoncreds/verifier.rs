@@ -1,18 +1,4 @@
-use services::anoncreds::types::{
-    Accumulator,
-    AccumulatorPublicKey,
-    NonRevocProof,
-    NonRevocProofTauList,
-    PrimaryEqualProof,
-    PrimaryPredicateGEProof,
-    PrimaryProof,
-    PublicKey,
-    RevocationPublicKey,
-    ProofJson,
-    ClaimDefinition,
-    RevocationRegistry,
-    Schema
-};
+use services::anoncreds::types::*;
 use services::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
 use services::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
 use utils::crypto::bn::BigNumber;
@@ -43,7 +29,7 @@ impl Verifier {
         let mut tau_list: Vec<Vec<u8>> = Vec::new();
 
         for (proof_uuid, proof_item) in &proof.proofs {
-            let claim_definition = &claim_defs.get(proof_uuid)
+            let claim_definition = claim_defs.get(proof_uuid)
                 .ok_or(CommonError::InvalidStructure(format!("Claim definition is not found")))?;
             let schema = schemas.get(proof_uuid)
                 .ok_or(CommonError::InvalidStructure(format!("Schema is not found")))?;
@@ -72,9 +58,9 @@ impl Verifier {
 
         let mut values: Vec<Vec<u8>> = Vec::new();
 
-        values.push(nonce.to_bytes()?);
         values.extend_from_slice(&tau_list);
         values.extend_from_slice(&proof.aggregated_proof.c_list);
+        values.push(nonce.to_bytes()?);
 
         let c_hver = get_hash_as_int(&mut values)?;
 
@@ -283,13 +269,15 @@ impl Verifier {
     pub fn _verify_non_revocation_proof(pkr: &RevocationPublicKey, accum: &Accumulator, accum_pk: &AccumulatorPublicKey,
                                         c_hash: &BigNumber, proof: &NonRevocProof)
                                         -> Result<NonRevocProofTauList, CommonError> {
+        info!(target: "anoncreds_service", "Verifier verify non revocation proof -> start");
+
         let ch_num_z = bignum_to_group_element(&c_hash)?;
 
         let t_hat_expected_values = Issuer::_create_tau_list_expected_values(pkr, accum, accum_pk, &proof.c_list)?;
         let t_hat_calc_values = Issuer::_create_tau_list_values(&pkr, &accum, &proof.x_list, &proof.c_list)?;
 
 
-        Ok(NonRevocProofTauList::new(
+        let res = Ok(NonRevocProofTauList::new(
             t_hat_expected_values.t1.mul(&ch_num_z)?.add(&t_hat_calc_values.t1)?,
             t_hat_expected_values.t2.mul(&ch_num_z)?.add(&t_hat_calc_values.t2)?,
             t_hat_expected_values.t3.pow(&ch_num_z)?.mul(&t_hat_calc_values.t3)?,
@@ -298,7 +286,9 @@ impl Verifier {
             t_hat_expected_values.t6.mul(&ch_num_z)?.add(&t_hat_calc_values.t6)?,
             t_hat_expected_values.t7.pow(&ch_num_z)?.mul(&t_hat_calc_values.t7)?,
             t_hat_expected_values.t8.pow(&ch_num_z)?.mul(&t_hat_calc_values.t8)?
-        ))
+        ));
+        info!(target: "anoncreds_service", "Verifier verify non revocation proof -> start");
+        res
     }
 }
 
