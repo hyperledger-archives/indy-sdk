@@ -41,6 +41,8 @@
      docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
      ```
      
+     If you use this method then you have to specify the TEST_POOL_IP as specified below  when running the tests.
+ 
      It can be useful if we want to launch integration tests inside another container attached to
      the same docker network. 
      
