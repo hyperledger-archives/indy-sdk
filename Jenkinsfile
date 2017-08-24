@@ -109,7 +109,7 @@ void getGitCommitSHA() {
 
 void getSrcVersion() {
     commit = getGitCommitSHA()
-    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | tr -d '\" ')").trim()
+    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
     return version
 }
 
@@ -392,6 +392,7 @@ def publishingPythonWrapperToPipy(isRelease) {
                         }
                     }
                 }
+                version = getSrcVersion()
             }
             finally {
                 echo 'Publish To Pypi: Cleanup'
@@ -399,6 +400,7 @@ def publishingPythonWrapperToPipy(isRelease) {
             }
         }
     }
+    return version
 }
 
 def publishingRCtoStable(version) {
