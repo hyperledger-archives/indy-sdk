@@ -338,16 +338,24 @@ def publishingLibindyWinFiles() {
     }
 }
 
-def publishingPythonWrapperToPipy() {
+def publishingPythonWrapperToPipy(isRelease) {
     node('ubuntu') {
         stage('Publish Python Wrapper To Pipy') {
             try {
-                echo 'Publish Deb files: Checkout csm'
+                echo 'Publish To Pypi: Checkout csm'
                 checkout scm
 
                 dir('wrappers/python') {
-                    echo 'Publish Deb: Build docker image'
+                    echo 'Publish To Pypi: Build docker image'
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
+
+                    def suffix = "";
+                    if (env.BRANCH_NAME === 'master' && !isRelease){
+                        suffix = "-devel-$env.BUILD_NUMBER"
+                    }
+                    else if (env.BRANCH_NAME === 'rc'){
+                       suffix = "-rc-$env.BUILD_NUMBER"
+                    }
 
                     testEnv.inside {
 
@@ -355,18 +363,19 @@ def publishingPythonWrapperToPipy() {
                             sh 'cp $credentialsFile ./'
 
                             sh "chmod -R 777 ci"
-                            sh "ci/python-wrapper-update-package-version.sh $env.BUILD_NUMBER"
+                            sh "ci/python-wrapper-update-package-version.sh $suffix"
+                            sh 'cat setup.py'
 
                             sh '''
                                 python3.6 setup.py sdist
-                                python3.6 -m twine upload dist/* --config-file .pypirc
+                                ls
                             '''
                         }
                     }
                 }
             }
             finally {
-                echo 'Publish Deb: Cleanup'
+                echo 'Publish To Pypi: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
