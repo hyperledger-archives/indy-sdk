@@ -63,14 +63,23 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
         {
             var matchingItems = _records.Where(kvp => kvp.Key.StartsWith(keyPrefix)).ToList();
 
-            var array = new JArray();
+            var valuesArray = new JArray();
+
             foreach(var item in matchingItems)
             {
                 var record = item.Value;
-                array.Add(record.Value);
+
+                var value = new JObject();
+                value.Add("key", item.Key);
+                value.Add("value", record.Value);
+
+                valuesArray.Add(value);
             }
 
-            valuesJson = array.ToString(Formatting.None);
+            var valuesJObject = new JObject();
+            valuesJObject.Add("values", valuesArray);
+
+            valuesJson = valuesJObject.ToString(Formatting.None);
 
             return ErrorCode.Success;
         }
