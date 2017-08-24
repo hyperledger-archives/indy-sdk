@@ -25,9 +25,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use for functions that don't return a value.
         /// </summary>
-        internal static NoValueDelegate _noValueCallback = (xCommandHandle, err) =>
+        internal static NoValueDelegate _noValueCallback = (xcommand_handle, err) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;

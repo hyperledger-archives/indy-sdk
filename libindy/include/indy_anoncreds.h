@@ -33,8 +33,6 @@ extern "C" {
                                                  indy_handle_t wallet_handle,
                                                  const char *  claim_req_json,
                                                  const char *  claim_json,
-                                                 const char *  issuer_did,
-                                                 indy_i32_t    schema_seq_no,
                                                  indy_i32_t    user_revoc_index, //option??
 
                                                  void           (*cb)(indy_handle_t xcommand_handle,

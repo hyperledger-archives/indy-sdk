@@ -12,14 +12,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for CreateAndStoreMyDidResultAsync has completed.
         /// </summary>
-        private static CreateAndStoreMyDidResultDelegate _createAndStoreMyDidCallback = (xCommandHandle, err, did, verKey, pk) =>
+        private static CreateAndStoreMyDidResultDelegate _createAndStoreMyDidCallback = (xcommand_handle, err, did, verkey, pk) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<CreateAndStoreMyDidResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<CreateAndStoreMyDidResult>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new CreateAndStoreMyDidResult(did, verKey, pk);
+            var callbackResult = new CreateAndStoreMyDidResult(did, verkey, pk);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -27,14 +27,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for ReplaceKeysAsync has completed.
         /// </summary>
-        private static ReplaceKeysResultDelegate _replaceKeysCallback = (xCommandHandle, err, verKey, pk) =>
+        private static ReplaceKeysResultDelegate _replaceKeysCallback = (xcommand_handle, err, verkey, pk) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<ReplaceKeysResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<ReplaceKeysResult>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new ReplaceKeysResult(verKey, pk);
+            var callbackResult = new ReplaceKeysResult(verkey, pk);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -42,9 +42,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for SignAsync has completed.
         /// </summary>
-        private static SignResultDelegate _signCallback = (xCommandHandle, err, signature_raw, signature_len) =>
+        private static SignResultDelegate _signCallback = (xcommand_handle, err, signature_raw, signature_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
@@ -59,9 +59,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for VerifySignatureAsync has completed.
         /// </summary>
-        private static VerifySignatureResultDelegate _verifySignatureCallback = (xCommandHandle, err, valid) =>
+        private static VerifySignatureResultDelegate _verifySignatureCallback = (xcommand_handle, err, valid) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<bool>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
@@ -72,9 +72,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptResultDelegate _encryptCallback = (xCommandHandle, err, encrypted_msg_raw, encrypted_msg_len, nonce, nonce_len) =>
+        private static EncryptResultDelegate _encryptCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<EncryptResult>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<EncryptResult>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
@@ -83,7 +83,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
             Marshal.Copy(encrypted_msg_raw, encryptedMessageBytes, 0, encrypted_msg_len);
 
             var nonceBytes = new byte[nonce_len];
-            Marshal.Copy(nonce, nonceBytes, 0, nonce_len);
+            Marshal.Copy(nonce_raw, nonceBytes, 0, nonce_len);
 
             var callbackResult = new EncryptResult(encryptedMessageBytes, nonceBytes);
 
@@ -93,9 +93,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
-        private static DecryptResultDelegate _decryptCallback = (xCommandHandle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        private static DecryptResultDelegate _decryptCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<byte[]>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
