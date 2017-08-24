@@ -29,16 +29,20 @@ def publishing() {
         }
         echo "${env.BRANCH_NAME}: start publishing"
 
-        parallel([
+        pubResults = parallel([
                 //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() }, IS-307
                 'libindy-deb-files'     : { publishingLibindyDebFiles() },
                 'libindy-win-files'     : { publishingLibindyWinFiles() },
-                //TODO implement publishing for all types 'python-wrapper-to-pipy': { publishingPythonWrapperToPipy() }
+                'python-wrapper-to-pipy': { publishingPythonWrapperToPipy(false) }
         ])
 
         if (env.BRANCH_NAME == 'rc') {
+            if (pubResults['libindy-deb-files'] != pubResults['libindy-win-files']
+                    || pubResults['libindy-deb-files'] != pubResults['python-wrapper-to-pipy']) {
+                error "platforms artifacts have different versions"
+            }
             if (approval.check("default")) {
-                publishingRCtoStable()
+                publishingRCtoStable(pubResults['libindy-deb-files'])
             }
         }
     }
@@ -97,6 +101,16 @@ def closePool(env_name, network_name, poolInst) {
         echo "${env_name} Test: error while delete ${network_name} - ${error}"
     }
     step([$class: 'WsCleanup'])
+}
+
+void getGitCommitSHA() {
+    return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+}
+
+void getSrcVersion() {
+    commit = getGitCommitSHA()
+    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | tr -d '\" ')").trim()
+    return version
 }
 
 def libindyTest(file, env_name, run_interoperability_tests, network_name) {
@@ -242,7 +256,7 @@ def publishingLibindyRpmFiles() {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
 
-                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                version = getSrcVersion()
 
                 dir('libindy') {
                     echo 'Publish Rpm: Build docker image'
@@ -253,7 +267,7 @@ def publishingLibindyRpmFiles() {
                         sh 'chmod -R 777 ci'
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/libindy-rpm-build-and-upload.sh $commit $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+                            sh "./ci/libindy-rpm-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                         }
                     }
                 }
@@ -264,6 +278,7 @@ def publishingLibindyRpmFiles() {
             }
         }
     }
+    return version
 }
 
 def publishingLibindyDebFiles() {
@@ -273,7 +288,7 @@ def publishingLibindyDebFiles() {
                 echo 'Publish Deb files: Checkout csm'
                 checkout scm
 
-                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                version = getSrcVersion()
 
                 dir('libindy') {
                     echo 'Publish Deb: Build docker image'
@@ -284,7 +299,7 @@ def publishingLibindyDebFiles() {
                         sh 'chmod -R 777 ci'
 
                         withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/libindy-deb-build-and-upload.sh $commit $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+                            sh "./ci/libindy-deb-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                             sh "rm -rf debian"
                         }
                     }
@@ -296,6 +311,7 @@ def publishingLibindyDebFiles() {
             }
         }
     }
+    return version
 }
 
 def publishingLibindyWinFiles() {
@@ -305,7 +321,7 @@ def publishingLibindyWinFiles() {
                 echo 'Publish Windows files: Checkout csm'
                 checkout scm
 
-                commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                version = getSrcVersion()
 
                 dir('libindy') {
                     echo "Publish Windows files: Download prebuilt dependencies"
@@ -326,7 +342,7 @@ def publishingLibindyWinFiles() {
                     }
 
                     withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/libindy-win-zip-and-upload.sh $commit '${evernym_repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+                        sh "./ci/libindy-win-zip-and-upload.sh $version '${evernym_repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
                     }
                 }
             }
@@ -336,6 +352,7 @@ def publishingLibindyWinFiles() {
             }
         }
     }
+    return version
 }
 
 def publishingPythonWrapperToPipy(isRelease) {
@@ -349,12 +366,17 @@ def publishingPythonWrapperToPipy(isRelease) {
                     echo 'Publish To Pypi: Build docker image'
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
-                    def suffix = "";
-                    if (env.BRANCH_NAME == 'master' && !isRelease){
+                    def suffix
+                    if (env.BRANCH_NAME == 'master' && !isRelease) {
                         suffix = "-devel-$env.BUILD_NUMBER"
-                    }
-                    else if (env.BRANCH_NAME == 'rc'){
-                       suffix = "-rc-$env.BUILD_NUMBER"
+                    } else if (env.BRANCH_NAME == 'rc') {
+                        if (isRelease) {
+                            suffix = ""
+                        } else {
+                            suffix = "-rc-$env.BUILD_NUMBER"
+                        }
+                    } else {
+                        error "Publish To Pypi: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
                     }
 
                     testEnv.inside {
@@ -379,6 +401,20 @@ def publishingPythonWrapperToPipy(isRelease) {
     }
 }
 
-def publishingRCtoStable() {
-    echo "ERROR: publishing stable packages not implemented"
+def publishingRCtoStable(version) {
+    stage('Moving RC artifacts to stable') {
+        node('ubuntu') {
+            rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'key')]) {
+                for (os in ['ubuntu', 'windows']) { //FIXME add rhel IS-307
+                    src = "/var/repository/repos/libindy/$os/rc/$rcFullVersion/"
+                    target = "/var/repository/repos/libindy/$os/stable/$version"
+                    sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
+                    //check not exists
+                    sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
+                }
+            }
+        }
+        publishingPythonWrapperToPipy(true)
+    }
 }
