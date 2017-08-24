@@ -350,10 +350,10 @@ def publishingPythonWrapperToPipy(isRelease) {
                     def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
 
                     def suffix = "";
-                    if (env.BRANCH_NAME === 'master' && !isRelease){
+                    if (env.BRANCH_NAME == 'master' && !isRelease){
                         suffix = "-devel-$env.BUILD_NUMBER"
                     }
-                    else if (env.BRANCH_NAME === 'rc'){
+                    else if (env.BRANCH_NAME == 'rc'){
                        suffix = "-rc-$env.BUILD_NUMBER"
                     }
 
@@ -361,14 +361,11 @@ def publishingPythonWrapperToPipy(isRelease) {
 
                         withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                             sh 'cp $credentialsFile ./'
-
                             sh "chmod -R 777 ci"
-                            sh "ci/python-wrapper-update-package-version.sh $suffix"
-                            sh 'cat setup.py'
-
+                            sh "sed -i -E \"s/version='([0-9,.]+).*/version='\\1$suffix',/\" setup.py"
                             sh '''
                                 python3.6 setup.py sdist
-                                ls
+                                python3.6 -m twine upload dist/* --config-file .pypirc
                             '''
                         }
                     }
