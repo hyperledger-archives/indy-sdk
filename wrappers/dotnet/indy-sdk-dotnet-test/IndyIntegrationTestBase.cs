@@ -11,9 +11,9 @@ namespace Indy.Sdk.Dotnet.Test
         protected HashSet<Pool> _openedPools = new HashSet<Pool>();
         
         [TestInitialize]
-        public void SetUp()
+        public async Task SetUp()
         {
-            InitHelper.Init();
+            await InitHelper.InitAsync();
             StorageUtils.CleanupStorage();
         }
 
@@ -22,12 +22,8 @@ namespace Indy.Sdk.Dotnet.Test
         {
             foreach (var pool in _openedPools)
             {
-                try
-                {
+                if(pool != null)
                     await pool.CloseAsync();
-                }
-                catch (IndyException)
-                { }
             }
 
             _openedPools.Clear();

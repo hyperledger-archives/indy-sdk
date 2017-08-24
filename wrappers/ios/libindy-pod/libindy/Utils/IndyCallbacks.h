@@ -16,7 +16,7 @@ extern void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
 
 extern void IndyWrapperCommon3PSCallback(indy_handle_t xcommand_handle,
                                            indy_error_t err,
-                                           const char* arg1);
+                                           const char *arg1);
 
 extern void IndyWrapperCommon3PBCallback(indy_handle_t xcommand_handle,
                                            indy_error_t err,
@@ -24,20 +24,32 @@ extern void IndyWrapperCommon3PBCallback(indy_handle_t xcommand_handle,
 
 extern void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
                                           indy_error_t err,
-                                          const char* arg1,
+                                          const char *arg1,
                                           const char *arg2);
+
+extern void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
+                                            indy_error_t err,
+                                            const uint8_t* arg1,
+                                            uint32_t arg2);
 
 extern void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
                                           indy_error_t err,
-                                          const char* arg1,
+                                          const char *arg1,
                                           const char *arg2,
                                           const char *arg3);
 
 extern void IndyWrapperCommon5PSCallback(indy_handle_t xcommand_handle,
                                            indy_error_t err,
                                            indy_handle_t connection_handle,
-                                           const char* arg1,
+                                           const char *arg1,
                                            const char *arg2);
+
+extern void IndyWrapperCommon6PDataCallback(indy_handle_t xcommand_handle,
+                                            indy_error_t err,
+                                            const uint8_t* arg1,
+                                            uint32_t arg2,
+                                            const uint8_t* arg3,
+                                            uint32_t arg4);
 
 extern void IndyWrapperCommonAgentOutgoingConnectionCallback(indy_handle_t xcommand_handle,
                                                                indy_error_t  err,

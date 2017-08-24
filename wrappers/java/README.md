@@ -117,7 +117,7 @@ Output:
 	CreatePoolLedgerConfigJSONParameter: {"genesis_txn":"localhost.txn"}
 	CreatePoolLedgerConfigResult: PoolResults.CreatePoolLedgerConfigResult[]
 	=== OPEN POOL ===
-	OpenPoolLedgerJSONParameter: {"refreshOnOpen":true}
+	OpenPoolLedgerJSONParameter: {"refresh_on_open":true}
 	OpenPoolLedgerResult: PoolResults.OpenPoolLedgerResult[pool=Pool[poolHandle=2]]
 	=== CREATE TRUSTEE WALLET ===
 	CreateWalletResultTrustee: WalletResults.CreateWalletResult[]

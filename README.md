@@ -14,5 +14,18 @@ us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
 * [Ubuntu based distro (Ubuntu 16.04)](doc/ubuntu-build.md)
 * [RHEL based distro (Amazon Linux 2017.03)](doc/rhel-build.md)
 * [Windows](doc/windows-build.md)
-* [iOS](doc/ios-build.md)
 * [MacOS](doc/mac-build.md)
+
+## Wrappers documentation
+* [.Net](wrappers/dotnet/README.md)
+* [Java](wrappers/java/README.md)
+* [Python](wrappers/python/README.md)
+* [iOS](wrappers/ios/ios-build.md)
+
+## Binaries
+Builded binaries can be downloaded from https://repo.evernym.com/libindy:
+* ubuntu/{master,stable,rc} - Ubuntu deb packages
+* windows/{master,stable,rc} - Windows zip-archive with all required DLLs (include libindy itself) and headers
+* windows/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
+* ios/stable/ - Pods for iOS
+* rhel/{master,stable,rc} - RHEL rpms

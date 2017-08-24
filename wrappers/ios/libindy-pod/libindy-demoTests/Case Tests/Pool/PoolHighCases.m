@@ -107,7 +107,7 @@
 //    [TestUtils cleanupStorage];
 //    
 //    NSString *poolName = @"open_pool_ledger_works_for_config";
-//    NSString *config = @"{\"refreshOnOpen\": true}";
+//    NSString *config = @"{\"refresh_on_open\": true}";
 //    
 //    // 1. Create pool ledger config
 //    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName

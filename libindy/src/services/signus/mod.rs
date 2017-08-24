@@ -1,10 +1,6 @@
 mod ed25519;
 pub mod types;
 
-extern crate serde_json;
-
-use self::serde_json::Value;
-
 use self::ed25519::ED25519Signus;
 use self::types::{
     MyDidInfo,
@@ -13,19 +9,17 @@ use self::types::{
     TheirDid
 };
 use utils::crypto::base58::Base58;
-use utils::crypto::signature_serializer::serialize_signature;
 
 use errors::common::CommonError;
 use errors::signus::SignusError;
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::str;
 
 const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
-    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Vec<u8>;
+    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn gen_nonce(&self) -> Vec<u8>;
     fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
@@ -111,7 +105,7 @@ impl SignusService {
         Ok(their_did)
     }
 
-    pub fn sign(&self, my_did: &MyDid, doc: &str) -> Result<String, SignusError> {
+    pub fn sign(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(
                 SignusError::UnknownCryptoError(
@@ -121,28 +115,13 @@ impl SignusService {
         let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
 
         let sign_key = Base58::decode(&my_did.signkey)?;
-        let mut msg: Value = serde_json::from_str(doc)
-            .map_err(|err|
-                SignusError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
-        if !msg.is_object() {
-            return Err(SignusError::CommonError(
-                CommonError::InvalidStructure(format!("Message is invalid json: {}", msg))))
-        }
+        let signature = signus.sign(&sign_key, doc)?;
 
-        let signature = serialize_signature(msg.clone())?;
-        let signature = signus.sign(&sign_key, signature.as_bytes())?;
-        let signature = Base58::encode(&signature);
-        msg["signature"] = Value::String(signature);
-        let signed_msg: String = serde_json::to_string(&msg)
-            .map_err(|err|
-                SignusError::CommonError(
-                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
-        Ok(signed_msg)
+        Ok(signature)
     }
 
-    pub fn verify(&self, their_did: &TheirDid, signed_msg: &str) -> Result<bool, SignusError> {
+    pub fn verify(&self, their_did: &TheirDid, msg: &[u8], signature: &[u8]) -> Result<bool, SignusError> {
         if !self.crypto_types.contains_key(their_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to verify message with unknown crypto: {}", their_did.crypto_type)));
         }
@@ -154,32 +133,10 @@ impl SignusService {
             None => return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain verkey: {}", their_did.did))))
         };
 
-        let signed_msg: Value = serde_json::from_str(signed_msg)
-            .map_err(|err|
-                SignusError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
-
-        if !signed_msg.is_object() {
-            return Err(SignusError::CommonError(
-                CommonError::InvalidStructure(format!("Message is invalid json: {}", signed_msg))))
-        }
-
-        // TODO: FIXME: This code seem unreliable and hard to understand
-        if let Value::String(ref signature) = signed_msg["signature"] {
-            let signature = Base58::decode(signature)?;
-            let mut message: Value = Value::Object(serde_json::map::Map::new());
-            for key in signed_msg.as_object().unwrap().keys() {
-                if key != "signature" {
-                    message[key] = signed_msg[key].clone();
-                }
-            }
-            Ok(signus.verify(&verkey, &serialize_signature(message)?.as_bytes(), &signature)?)
-        } else {
-            return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("No signature field in message json"))));
-        }
+        Ok(signus.verify(&verkey, msg, signature)?)
     }
 
-    pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &str) -> Result<(String, String), SignusError> {
+    pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", my_did.crypto_type)));
         }
@@ -197,14 +154,11 @@ impl SignusService {
         let secret_key = Base58::decode(&my_did.sk)?;
         let public_key = Base58::decode(&public_key)?;
 
-        let encrypted_doc = signus.encrypt(&secret_key, &public_key, &doc.as_bytes(), &nonce);
-        let encrypted_doc = Base58::encode(&encrypted_doc);
-        let nonce = Base58::encode(&nonce);
-
+        let encrypted_doc = signus.encrypt(&secret_key, &public_key, doc, &nonce)?;
         Ok((encrypted_doc, nonce))
     }
 
-    pub fn decrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &str, nonce: &str) -> Result<String, SignusError> {
+    pub fn decrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("MyDid crypto is unknown: {}, {}", my_did.did, my_did.crypto_type)));
         }
@@ -220,15 +174,10 @@ impl SignusService {
 
         let secret_key = Base58::decode(&my_did.sk)?;
         let public_key = Base58::decode(&public_key)?;
-        let nonce = Base58::decode(&nonce)?;
-        let doc = Base58::decode(&doc)?;
 
         let decrypted_doc = signus.decrypt(&secret_key, &public_key, &doc, &nonce)?;
 
-        let decrypted_doc = str::from_utf8(&decrypted_doc)
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Decrypted message is invalid string: {}", their_did.did)))?;
-        Ok(decrypted_doc.to_string())
+        Ok(decrypted_doc)
     }
 }
 
@@ -238,29 +187,26 @@ mod tests {
     use services::signus::types::MyDidInfo;
 
     #[test]
-    fn create_my_did_with_empty_input_works() {
+    fn create_my_did_with_works_for_empty_info() {
         let service = SignusService::new();
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
+        service.create_my_did(&did_info).unwrap();
     }
 
     #[test]
-    fn create_my_did_with_did_in_input_works() {
+    fn create_my_did_works_for_passed_did() {
         let service = SignusService::new();
 
         let did = Some("Dbf2fjCbsiq2kfns".to_string());
         let did_info = MyDidInfo::new(did.clone(), None, None, None);
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
+        let my_did = service.create_my_did(&did_info).unwrap();
 
-        assert_eq!(did.unwrap(), did_info.did.unwrap());
+        assert_eq!(did.unwrap(), my_did.did);
     }
 
     #[test]
-    fn try_create_my_did_with_invalid_crypto_type() {
+    fn create_my_did_not_works_for_invalid_crypto_type() {
         let service = SignusService::new();
 
         let did = Some("Dbf2fjCbsiq2kfns".to_string());
@@ -268,12 +214,11 @@ mod tests {
 
         let did_info = MyDidInfo::new(did.clone(), None, crypto_type, None);
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_err());
+        assert!(service.create_my_did(&did_info).is_err());
     }
 
     #[test]
-    fn create_my_did_with_seed_type() {
+    fn create_my_did_works_for_seed() {
         let service = SignusService::new();
 
         let did = Some("Dbf2fjCbsiq2kfns".to_string());
@@ -282,13 +227,10 @@ mod tests {
         let did_info_with_seed = MyDidInfo::new(did.clone(), seed, None, None);
         let did_info_without_seed = MyDidInfo::new(did.clone(), None, None, None);
 
-        let res_with_seed = service.create_my_did(&did_info_with_seed);
-        let res_without_seed = service.create_my_did(&did_info_without_seed);
+        let res_with_seed = service.create_my_did(&did_info_with_seed).unwrap();
+        let res_without_seed = service.create_my_did(&did_info_without_seed).unwrap();
 
-        assert!(res_with_seed.is_ok());
-        assert!(res_without_seed.is_ok());
-
-        assert_ne!(res_with_seed.unwrap().verkey, res_without_seed.unwrap().verkey)
+        assert_ne!(res_with_seed.verkey, res_without_seed.verkey)
     }
 
     #[test]
@@ -306,12 +248,9 @@ mod tests {
             }
         }"#;
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
-        let my_did = res.unwrap();
+        let my_did = service.create_my_did(&did_info).unwrap();
 
-        let signature = service.sign(&my_did, message);
-        assert!(signature.is_ok());
+        service.sign(&my_did, message.as_bytes()).unwrap();
     }
 
     #[test]
@@ -334,8 +273,7 @@ mod tests {
                                 "verkey".to_string(),
                                 "signkey".to_string());
 
-        let signature = service.sign(&my_did, message);
-        assert!(signature.is_err());
+        assert!(service.sign(&my_did, message.as_bytes()).is_err());
     }
 
     #[test]
@@ -353,13 +291,9 @@ mod tests {
             }
         }"#;
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
-        let my_did = res.unwrap();
+        let my_did = service.create_my_did(&did_info).unwrap();
 
-        let signature = service.sign(&my_did, message);
-        assert!(signature.is_ok());
-        let signature = signature.unwrap();
+        let signature = service.sign(&my_did, message.as_bytes()).unwrap();
 
         let their_did = TheirDid {
             did: "sw2SA2jCbsiq2kfns".to_string(),
@@ -369,14 +303,12 @@ mod tests {
             verkey: Some(my_did.verkey)
         };
 
-        let res = service.verify(&their_did, &signature);
-        assert!(res.is_ok());
-        let valid = res.unwrap();
+        let valid = service.verify(&their_did, message.as_bytes(), &signature).unwrap();
         assert!(valid);
     }
 
     #[test]
-    fn try_verify_with_invalid_verkey() {
+    fn verify_not_works_for_invalid_verkey() {
         let service = SignusService::new();
 
         let did_info = MyDidInfo::new(None, None, None, None);
@@ -390,13 +322,9 @@ mod tests {
             }
         }"#;
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
-        let my_did = res.unwrap();
+        let my_did = service.create_my_did(&did_info).unwrap();
 
-        let signature = service.sign(&my_did, message);
-        assert!(signature.is_ok());
-        let signature = signature.unwrap();
+        let signature = service.sign(&my_did, message.as_bytes()).unwrap();
 
         let their_did = TheirDid {
             did: "sw2SA2jCbsiq2kfns".to_string(),
@@ -406,9 +334,8 @@ mod tests {
             verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
         };
 
-        let res = service.verify(&their_did, &signature);
-        assert!(res.is_ok());
-        assert_eq!(false, res.unwrap());
+        let valid = service.verify(&their_did, message.as_bytes(), &signature).unwrap();
+        assert_eq!(false, valid);
     }
 
     #[test]
@@ -419,14 +346,9 @@ mod tests {
 
         let did_info = MyDidInfo::new(None, None, None, None);
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
-        let my_did = res.unwrap();
+        let my_did = service.create_my_did(&did_info).unwrap();
 
-
-        let res = service.create_my_did(&did_info.clone());
-        assert!(res.is_ok());
-        let their_did = res.unwrap();
+        let their_did = service.create_my_did(&did_info.clone()).unwrap();
 
         let their_did = TheirDid {
             did: their_did.did,
@@ -436,8 +358,7 @@ mod tests {
             verkey: Some(their_did.verkey)
         };
 
-        let encrypted_message = service.encrypt(&my_did, &their_did, msg);
-        assert!(encrypted_message.is_ok());
+        service.encrypt(&my_did, &their_did, msg.as_bytes()).unwrap();
     }
 
     #[test]
@@ -448,9 +369,7 @@ mod tests {
 
         let did_info = MyDidInfo::new(None, None, None, None);
 
-        let res = service.create_my_did(&did_info);
-        assert!(res.is_ok());
-        let my_did = res.unwrap();
+        let my_did = service.create_my_did(&did_info).unwrap();
 
         let my_did_for_encrypt = my_did.clone();
 
@@ -463,9 +382,7 @@ mod tests {
         };
 
 
-        let res = service.create_my_did(&did_info.clone());
-        assert!(res.is_ok());
-        let their_did = res.unwrap();
+        let their_did = service.create_my_did(&did_info.clone()).unwrap();
 
         let my_did_for_decrypt = their_did.clone();
 
@@ -477,14 +394,10 @@ mod tests {
             verkey: Some(their_did.verkey)
         };
 
-        let encrypted_message = service.encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg);
-        assert!(encrypted_message.is_ok());
-        let (encrypted_message, noce) = encrypted_message.unwrap();
+        let (encrypted_message, noce) = service.encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg.as_bytes()).unwrap();
 
-        let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce);
-        assert!(decrypted_message.is_ok());
-        let decrypted_message = decrypted_message.unwrap();
+        let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
 
-        assert_eq!(msg.to_string(), decrypted_message);
+        assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
     }
 }

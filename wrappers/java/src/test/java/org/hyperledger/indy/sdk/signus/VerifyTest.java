@@ -1,7 +1,5 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
@@ -11,16 +9,13 @@ import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
+
+import java.io.UnsupportedEncodingException;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class VerifyTest extends IndyIntegrationTest {
 
@@ -29,8 +24,13 @@ public class VerifyTest extends IndyIntegrationTest {
 	private String trusteeDid;
 	private String trusteeVerkey;
 	private String identityJson;
-	private String newDid;
+	private String myDid;
+	private String myVerkey;
 	private String walletName = "signusWallet";
+	private byte[] msg = "{\"reqId\":1496822211362017764}".getBytes();
+	private byte[] signature = {-87, -41, 8, -31, 7, 107, 110, 9, -63, -94, -54, -42, -94, 66, -18, -45, 63, -47, 12, -60, 8, -45, 55, 27, 120, 94, -52, -109, 53, 104,
+			103, 61, 60, -7, -19, 127, 103, 46, -36, -33, 10, 95, 75, 53, -11, -46, -15, -105, -65, 41, 48, 30, 9, 16, 78, -4, -99, -50, -46, -111, 125, -123, 109, 11};
+
 
 	@Before
 	public void createWalletWithDid() throws Exception {
@@ -50,6 +50,16 @@ public class VerifyTest extends IndyIntegrationTest {
 
 		trusteeDid = result.getDid();
 		trusteeVerkey = result.getVerkey();
+
+		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson2 =
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000000000000My1", null, null);
+
+		CreateAndStoreMyDidResult result2 = Signus.createAndStoreMyDid(wallet, didJson2.toJson()).get();
+		myDid = result2.getDid();
+		myVerkey = result2.getVerkey();
+
+		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
+		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 	}
 
 	@After
@@ -59,86 +69,28 @@ public class VerifyTest extends IndyIntegrationTest {
 		pool.closePoolLedger().get();
 	}
 
-	private void createNewNymWithDidInLedger() throws Exception {
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000000000000My1", null, null);
-
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson.toJson()).get();
-		newDid = result.getDid();
-		String newVerkey = result.getVerkey();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, newDid, newVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-	}
-
 	@Test
 	public void testVerifyWorksForVerkeyCachedInWallet() throws Exception {
-		identityJson = String.format("{\"did\":\"%s\",\"verkey\":\"%s\"}", trusteeDid, trusteeVerkey);
+		identityJson = String.format("{\"did\":\"%s\",\"verkey\":\"%s\"}", myDid, myVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		String msg = "{\n" +
-				"                \"reqId\":1496822211362017764,\n" +
-				"                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-				"                \"operation\":{\n" +
-				"                    \"type\":\"1\",\n" +
-				"                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
-				"                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
-				"                },\n" +
-				"                \"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"\n" +
-				"            }";
-
-		Boolean valid = Signus.verifySignature(wallet, pool, trusteeDid, msg).get();
+		Boolean valid = Signus.verifySignature(wallet, pool, myDid, msg, signature).get();
 		assertTrue(valid);
 	}
 
 	@Test
 	public void testVerifyWorksForGetVerkeyFromLedger() throws Exception {
-		createNewNymWithDidInLedger();
-		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", newDid)).get();
+		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", myDid)).get();
 
-		String msg = "{\"reqId\":1496822211362017764,\n" +
-				"\"signature\":\"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai\"}";
 
-		Boolean valid = Signus.verifySignature(wallet, pool, newDid, msg).get();
+		Boolean valid = Signus.verifySignature(wallet, pool, myDid, msg, signature).get();
 		assertTrue(valid);
 	}
 
 	@Test
 	public void testVerifyWorksForGetNymFromLedger() throws Exception {
-		createNewNymWithDidInLedger();
-		String msg = "{\"reqId\":1496822211362017764,\n" +
-				"\"signature\":\"tibTuE59pZn1sCeZpNL5rDzpkpqV3EkDmRpFTizys9Gr3ZieLdGEGyq4h8jsVWW9zSaXSRnfYcVb1yTjUJ7vJai\"}";
-
-		Boolean valid = Signus.verifySignature(wallet, pool, newDid, msg).get();
+		Boolean valid = Signus.verifySignature(wallet, pool, myDid, msg, signature).get();
 		assertTrue(valid);
-	}
-
-	@Test
-	public void testVerifyWorksForInvalidMessageFormat() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
-
-		String msg = "\"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"";
-
-		Signus.verifySignature(wallet, pool, trusteeDid, msg).get();
-	}
-
-	@Test
-	public void testVerifyWorksForMessageWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
-
-		String msg = "{\n" +
-				"                \"reqId\":1496822211362017764,\n" +
-				"                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-				"                \"operation\":{\n" +
-				"                    \"type\":\"1\",\n" +
-				"                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
-				"                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
-				"                },\n" +
-				"            }";
-
-		Signus.verifySignature(wallet, pool, trusteeDid, msg).get();
 	}
 
 	@Test
@@ -158,19 +110,11 @@ public class VerifyTest extends IndyIntegrationTest {
 
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		String msg = "{\n" +
-				"                \"reqId\":1496822211362017764,\n" +
-				"                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-				"                \"operation\":{\n" +
-				"                    \"type\":\"1\",\n" +
-				"                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
-				"                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
-				"                }\n" +
-				"            }";
+		String msg = "{\"reqId\":1496822211362017764}";
 
-		String signedMessage = Signus.sign(wallet, trusteeDid, msg).get();
+		byte[] signature = Signus.sign(wallet, trusteeDid, msg.getBytes()).get();
 
-		Boolean valid = Signus.verifySignature(wallet, pool, stewardDid, signedMessage).get();
+		Boolean valid = Signus.verifySignature(wallet, pool, stewardDid, msg.getBytes(), signature).get();
 
 		assertFalse(valid);
 	}

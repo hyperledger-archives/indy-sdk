@@ -49,8 +49,9 @@ impl LedgerService {
         let role = match role {
             Some(r) =>
                 match r.clone() {
-                    "STEWARD" => Some(Role::STEWARD as i32),
-                    "TRUSTEE" => Some(Role::TRUSTEE as i32),
+                    "STEWARD" => Some(Role::Steward as i32),
+                    "TRUSTEE" => Some(Role::Trustee as i32),
+                    "TRUST_ANCHOR" => Some(Role::TrustAnchor as i32),
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 },
             _ => None
@@ -136,9 +137,9 @@ impl LedgerService {
         Base58::decode(&identifier)?;
 
         let req_id = LedgerService::get_req_id();
-        SchemaOperationData::from_json(&data)
+        let data = SchemaOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
-        let operation = SchemaOperation::new(data.to_string());
+        let operation = SchemaOperation::new(data);
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -168,9 +169,9 @@ impl LedgerService {
 
         let req_id = LedgerService::get_req_id();
 
-        ClaimDefOperationData::from_json(&data)
+        let data = ClaimDefOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
-        let operation = ClaimDefOperation::new(_ref, signature_type.to_string(), data.to_string());
+        let operation = ClaimDefOperation::new(_ref, signature_type.to_string(), data);
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -346,12 +347,11 @@ mod tests {
     fn build_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name", "version":"1.0", "keys":["name","male"]}"#;
+        let data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
 
-        let expected_result = r#""operation":{"type":"101","data":"{\"name\":\"name\", \"version\":\"1.0\", \"keys\":[\"name\",\"male\"]"#;
+        let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]"#;
 
         let schema_request = ledger_service.build_schema_request(identifier, data);
-        assert!(schema_request.is_ok());
         let schema_request = schema_request.unwrap();
         assert!(schema_request.contains(expected_result));
     }
@@ -360,7 +360,7 @@ mod tests {
     fn build_get_schema_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name","keys":["name","male"]}"#;
+        let data = r#"{"name":"name","attr_names":["name","male"]}"#;
 
         let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
         assert!(get_schema_request.is_err());

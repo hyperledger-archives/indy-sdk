@@ -5,6 +5,7 @@ extern crate byteorder;
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
+extern crate rmp_serde;
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::rust_base58::FromBase58;
@@ -257,7 +258,7 @@ impl PoolWorker {
         let ctx: zmq::Context = zmq::Context::new();
         let key_pair = zmq::CurveKeyPair::new()?;
         for gen_txn in &merkle_tree {
-            let gen_txn: GenTransaction = GenTransaction::from_json(gen_txn)
+            let gen_txn: GenTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
                 .map_err(|e|
                     CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
 
@@ -413,7 +414,9 @@ impl PoolWorker {
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?;
-            mt.append(line).map_err(map_err_trace!())?;
+            let genesis_txn: serde_json::Value = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
+            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
+            mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
     }
@@ -422,7 +425,7 @@ impl PoolWorker {
     fn get_f(cnt: usize) -> usize {
         return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
         if cnt < 4 {
-            return 0
+            return 0;
         }
         (cnt - 1) / 3
     }
@@ -909,7 +912,7 @@ mod tests {
         let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 4, "test restored MT size");
-        assert_eq!(merkle_tree.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c", "test restored MT root hash");
+        assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
     }
 
     #[test]
@@ -917,7 +920,7 @@ mod tests {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
         let mut merkle_tree: MerkleTree = MerkleTree::from_vec(Vec::new()).unwrap();
-        merkle_tree.append(gt.to_json().unwrap()).unwrap();
+        merkle_tree.append(gt.to_msg_pack().unwrap()).unwrap();
 
         pw.connect_to_known_nodes(Some(&merkle_tree)).unwrap();
 
@@ -954,7 +957,7 @@ mod tests {
 
         let poll_items = pw.get_zmq_poll_items().unwrap();
 
-        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1 );
+        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1);
         //TODO compare poll items
     }
 
@@ -1043,7 +1046,7 @@ mod tests {
     fn catchup_handler_start_catchup_works() {
         let mut ch: CatchupHandler = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        ch.merkle_tree.append(gt.to_json().unwrap()).unwrap();
+        ch.merkle_tree.append(gt.to_msg_pack().unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);

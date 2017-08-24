@@ -11,29 +11,67 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when a command that submits a message to the ledger completes.
         /// </summary>
-        private static SubmitRequestResultDelegate _submitRequestCallback = (xCommandHandle, err, responseJson) =>
+        private static SubmitRequestResultDelegate _submitRequestCallback = (xcommand_handle, err, response_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(responseJson);
+            taskCompletionSource.SetResult(response_json);
         };
 
         /// <summary>
         /// Gets the callback to use when a command that builds a request completes.
         /// </summary>
-        private static BuildRequestResultDelegate _buildRequestCallback = (xCommandHandle, err, requestJson) =>
+        private static BuildRequestResultDelegate _buildRequestCallback = (xcommand_handle, err, request_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(requestJson);
+            taskCompletionSource.SetResult(request_json);
         };
 
+
+        /// <summary>
+        /// Gets the callback to use when the command for SignRequestAsync has completed.
+        /// </summary>
+        private static SignRequestResultDelegate _signRequestCallback = (xcommand_handle, err, signed_request_json) =>
+        {
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
+
+            if (!CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(signed_request_json);
+        };
+
+
+        /// <summary>
+        /// Signs a request.
+        /// </summary>
+        /// <param name="wallet">The wallet to use for signing.</param>
+        /// <param name="submitterDid">The DID of the submitter.</param>
+        /// <param name="requestJson">The request JSON to sign.</param>
+        /// <returns>An asynchronous task that returns the signed message.</returns>
+        public static Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = AddTaskCompletionSource(taskCompletionSource);
+
+            int result = IndyNativeMethods.indy_sign_request(
+                commandHandle,
+                wallet.Handle,
+                submitterDid,
+                requestJson,
+                _signRequestCallback);
+
+            CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
 
         /// <summary>
         /// Signs and submits a request to the ledger.
@@ -44,7 +82,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <param name="requstJson">The request to sign and submit.</param>
         /// <returns>An asynchronous Task that returns the submit result.</returns>
         public static Task<string> SignAndSubmitRequestAsync(Pool pool, Wallet wallet, string submitterDid, string requstJson)
-        {           
+        {
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = AddTaskCompletionSource(taskCompletionSource);
 
@@ -53,7 +91,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 pool.Handle,
                 wallet.Handle,
                 submitterDid,
-                requstJson,                
+                requstJson,
                 _submitRequestCallback
                 );
 
@@ -357,9 +395,9 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 data,
                 _buildRequestCallback);
 
-        CheckResult(result);
+            CheckResult(result);
 
-        return taskCompletionSource.Task;
+            return taskCompletionSource.Task;
+        }
     }
-}
 }

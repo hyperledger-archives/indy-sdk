@@ -77,19 +77,22 @@
 
 + (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
                               did:(NSString *)did
-                              msg:(NSString *)msg
-                       completion:(void (^)(NSError *error, NSString *signature)) handler
+                          message:(NSData*)message
+                       completion:(void (^)(NSError *error,
+                                            NSData *signature)) handler
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = indy_sign( handle,
+    uint32_t messageLen = (uint32_t)[message length];
+    uint8_t *messageRaw = (uint8_t *)[message bytes];
+    ret = indy_sign(handle,
                     walletHandle,
                     [did UTF8String],
-                    [msg UTF8String],
-                    IndyWrapperCommon3PSCallback
-                    );
+                    messageRaw,
+                    messageLen,
+                    IndyWrapperCommon4PDataCallback);
     
     if( ret != Success )
     {
@@ -102,18 +105,27 @@
 + (NSError *)verifySignatureWithWalletHandle:(IndyHandle)walletHandle
                                   poolHandle:(IndyHandle)poolHandle
                                          did:(NSString *)did
-                                   signature:(NSString *)signature
+                                     message:(NSData *)message
+                                   signature:(NSData *)signature
                                   completion:(void (^)(NSError *error, BOOL valid)) handler
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
+    uint32_t messageLen = (uint32_t)[message length];
+    uint8_t *messageRaw = (uint8_t *)[message bytes];
+    uint32_t signatureLen = (uint32_t)[signature length];
+    uint8_t *signatureRaw = (uint8_t *)[signature bytes];
+    
     ret = indy_verify_signature(handle,
                                 walletHandle,
                                 poolHandle,
                                 [did UTF8String],
-                                [signature UTF8String],
+                                messageRaw,
+                                messageLen,
+                                signatureRaw,
+                                signatureLen,
                                 IndyWrapperCommon3PBCallback);
     if( ret != Success )
     {
@@ -127,21 +139,24 @@
                                 pool:(IndyHandle)poolHandle
                                myDid:(NSString *)myDid
                                  did:(NSString *)did
-                                 msg:(NSString *)msg
-                          completion:(void (^)(NSError *error, NSString *encryptedMsg, NSString *nonce)) handler
+                             message:(NSData *)message
+                          completion:(void (^)(NSError *error, NSData *encryptedMsg, NSData *nonce)) handler
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = indy_encrypt( handle,
+    uint32_t messageLen = (uint32_t)[message length];
+    uint8_t *messageRaw = (uint8_t *)[message bytes];
+
+    ret = indy_encrypt(handle,
                        walletHandle,
                        poolHandle,
                        [myDid UTF8String],
                        [did UTF8String],
-                       [msg UTF8String],
-                       IndyWrapperCommon4PCallback
-                       );
+                       messageRaw,
+                       messageLen,
+                       IndyWrapperCommon6PDataCallback);
     
     if( ret != Success )
     {
@@ -154,22 +169,28 @@
 + (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
                                myDid:(NSString *)myDid
                                  did:(NSString *)did
-                        encryptedMsg:(NSString *)msg
-                               nonce:(NSString *)nonce
-                          completion:(void (^)(NSError *error, NSString *decryptedMsg)) handler
+                    encryptedMessage:(NSData *)encryptedMessage
+                               nonce:(NSData *)nonce
+                          completion:(void (^)(NSError *error, NSData *decryptedMessage)) handler
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
-    ret = indy_decrypt( handle,
+    uint32_t messageLen = (uint32_t)[encryptedMessage length];
+    uint8_t *messageRaw = (uint8_t *)[encryptedMessage bytes];
+    uint32_t nonceLen = (uint32_t)[nonce length];
+    uint8_t *nonceRaw = (uint8_t *)[nonce bytes];
+    
+    ret = indy_decrypt(handle,
                        walletHandle,
                        [myDid UTF8String],
                        [did UTF8String],
-                       [msg UTF8String],
-                       [nonce UTF8String],
-                       IndyWrapperCommon3PSCallback
-                       );
+                        messageRaw,
+                        messageLen,
+                        nonceRaw,
+                        nonceLen,
+                        IndyWrapperCommon4PDataCallback);
     
     if( ret != Success )
     {
