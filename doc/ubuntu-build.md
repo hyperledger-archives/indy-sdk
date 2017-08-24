@@ -59,4 +59,4 @@
      RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
      ```
      
-See [ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
+See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/libindy/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
