@@ -102,19 +102,20 @@ public class WalletTypeInmem extends WalletType {
 		if (wallet == null) return ErrorCode.CommonInvalidState;
 
 		StringBuilder builder = new StringBuilder();
-		builder.append("[");
+		builder.append("{\"values\":[");
 
 		for (Iterator<Map.Entry<String, String>> iterator = wallet.values.entrySet().iterator(); iterator.hasNext(); ) {
 
 			Map.Entry<String, String> entry = iterator.next();
 			String key = entry.getKey();
 			String value = entry.getValue();
-			if (key.startsWith(keyPrefix)) continue;
-			builder.append("\"" + escapeJson(value.toString()) + "\"");
+			if (!key.startsWith(keyPrefix)) continue;
+			String pair = String.format("{\"key\":\"%s\", \"value\":\"%s\"}", key, escapeJson(value));
+			builder.append(pair);
 			if (iterator.hasNext()) builder.append(",");
 		}
 
-		builder.append("]");
+		builder.append("]}");
 
 		byte[] bytes = Native.toByteArray(builder.toString(), "UTF-8");
 		Pointer pointer = new Pointer(Native.malloc(bytes.length));
