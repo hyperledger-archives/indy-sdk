@@ -197,7 +197,8 @@ mod high_cases {
             assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 1 }));
             assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 2 }));
 
-            TestUtils::cleanup_storage();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            InmemWallet::cleanup();
         }
     }
 

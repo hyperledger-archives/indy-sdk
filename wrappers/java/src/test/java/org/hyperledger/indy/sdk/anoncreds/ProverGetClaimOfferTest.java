@@ -101,8 +101,6 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testOpenWalletWorksForPlugged() throws Exception {
-		StorageUtils.cleanupStorage();
-
 		WalletTypeInmem.getInstance().clear();
 
 		String type = "proverInmem";
@@ -132,7 +130,5 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		assertTrue(claimOffersArray.toString().contains(claimOffer2));
 
 		WalletTypeInmem.getInstance().clear();
-		StorageUtils.cleanupStorage();
-
 	}
 }
