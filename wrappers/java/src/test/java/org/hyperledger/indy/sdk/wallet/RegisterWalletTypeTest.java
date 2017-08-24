@@ -52,7 +52,6 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 	
 	@Test
-	@Ignore
 	public void customWalletWorkoutTest() throws Exception { 
 		
 		StorageUtils.cleanupStorage();

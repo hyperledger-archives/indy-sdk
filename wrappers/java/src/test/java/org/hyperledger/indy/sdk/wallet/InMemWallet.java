@@ -3,11 +3,12 @@ package org.hyperledger.indy.sdk.wallet;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.wallet.WalletType.StringByReference;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class InMemWallet implements CustomWallet {
 
@@ -72,7 +73,7 @@ public class InMemWallet implements CustomWallet {
 	@Override
 	public ErrorCode list(String keyPrefix, StringByReference resultString) {
 
-		StringJoiner joiner = new StringJoiner(",", "[", "]");
+		JSONArray jsonValues = new JSONArray();
 		
 		for (Iterator<Map.Entry<String, WalletRecord>> iterator = records.entrySet().iterator(); iterator.hasNext(); ) {
 
@@ -83,10 +84,17 @@ public class InMemWallet implements CustomWallet {
 			if (!key.startsWith(keyPrefix)) 
 				continue;
 			
-			joiner.add(record.value);
+			JSONObject valueObject = new JSONObject();
+			valueObject.put("key", key);
+			valueObject.put("value", record.value);
+			
+			jsonValues.put(valueObject);
 		}
 		
-        resultString.setValue(joiner.toString());
+		JSONObject resultObject = new JSONObject();
+		resultObject.put("values", jsonValues);
+		
+        resultString.setValue(resultObject.toString());
 
         return ErrorCode.Success;
 	}
