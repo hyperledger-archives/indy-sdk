@@ -421,9 +421,7 @@ impl PoolWorker {
         Ok(mt)
     }
 
-    #[allow(unreachable_code)]
     fn get_f(cnt: usize) -> usize {
-        return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
         if cnt < 4 {
             return 0;
         }

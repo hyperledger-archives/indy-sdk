@@ -16,7 +16,7 @@ def testing() {
         parallel([
                 'libindy-ubuntu-test' : { libindyUbuntuTesting() },
                 //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() }, IS-307
-                'libindy-windows-test': { libindyWindowsTesting() }
+//                'libindy-windows-test': { libindyWindowsTesting() }
         ])
     }
 }
@@ -119,7 +119,7 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
                     sh "RUST_BACKTRACE=1 cargo test $features_args --no-run"
 
                     echo "${env_name} Test: Run tests"
-                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $features_args"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --test ledger $features_args"
                     /* TODO FIXME restore after xunit will be fixed
                     sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                     */
@@ -132,29 +132,43 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
-        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
-        dir('wrappers/java') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test java wrapper"
-
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-            }
+//        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
+//        dir('wrappers/java') {
+//            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+//                echo "${env_name} Test: Test java wrapper"
+//
+//                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+//            }
+//        }
+//
+//        sh "cp libindy/target/debug/libindy.so wrappers/python"
+//        dir('wrappers/python') {
+//            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+//                echo "${env_name} Test: Test python wrapper"
+//
+//                sh '''
+//                    python3.6 -m pip install -e .
+//                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
+//                '''
+//            }
+//        }
+    } finally {
+        try {
+            d_id = "${poolInst.id}"
+            sh "mkdir pool_logs"
+            sh "docker cp ${d_id}:/home/sovrin/.sovrin/Node1.log ./pool_logs/"
+            sh "docker cp ${d_id}:/home/sovrin/.sovrin/Node2.log ./pool_logs/"
+            sh "docker cp ${d_id}:/home/sovrin/.sovrin/Node3.log ./pool_logs/"
+            sh "docker cp ${d_id}:/home/sovrin/.sovrin/Node4.log ./pool_logs/"
+            echo "Finish copy logs for Nodes"
+            sh "ls -la pool_logs"
+            archiveArtifacts artifacts: 'pool_logs/'
+        } catch(err) {
+            echo "Error in copy logs: ${err}"
         }
-
-        sh "cp libindy/target/debug/libindy.so wrappers/python"
-        dir('wrappers/python') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test python wrapper"
-
-                sh '''
-                    python3.6 -m pip install -e .
-                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
-                '''
-            }
+        finally {
+            closePool(env_name, network_name, poolInst)
         }
-    }
-    finally {
-        closePool(env_name, network_name, poolInst)
     }
 }
 
