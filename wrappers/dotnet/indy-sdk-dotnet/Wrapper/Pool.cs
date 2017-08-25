@@ -12,14 +12,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Callback to use when a pool open command has completed.
         /// </summary>
-        private static OpenPoolLedgerResultDelegate _openPoolLedgerCallback = (xCommandHandle, err, handle) =>
+        private static OpenPoolLedgerResultDelegate _openPoolLedgerCallback = (command_handle, err, pool_handle) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<Pool>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<Pool>(command_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(new Pool(handle));
+            taskCompletionSource.SetResult(new Pool(pool_handle));
         };
         
         /// <summary>

@@ -20,7 +20,7 @@ use self::libc::c_char;
 /// set: Wallet set operation handler
 /// get: Wallet get operation handler
 /// get_not_expired: Wallet get_not_expired operation handler
-/// list: Wallet list operation handler
+/// list: Wallet list operation handler(must to return data in the following format: {"values":[{"key":"", "value":""}, {"key":"", "value":""}]}
 /// close: Wallet close operation handler
 /// delete: WalletType delete operation handler
 /// free: Handler that allows to de-allocate strings allocated in caller code

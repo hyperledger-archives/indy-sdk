@@ -25,7 +25,7 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
@@ -53,7 +53,7 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 				"        \"period\":[\"8\",\"8\"]\n" +
 				"       }";
 
-		Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1, - 1).get();
+		Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 	}
 
 	@Test
@@ -72,6 +72,6 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 				"        \"age\":\"28\"" +
 				"       }";
 
-		Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1, - 1).get();
+		Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 	}
 }

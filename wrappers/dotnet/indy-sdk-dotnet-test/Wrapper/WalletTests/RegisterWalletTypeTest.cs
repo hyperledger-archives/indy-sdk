@@ -21,12 +21,9 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
             "\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
 
         [TestMethod]
-        [Ignore]
-        public async Task TestExerciseCustomWallet()
-        {
-            await Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType());
+        public async Task TestExerciseCustomWallet()        {
 
-            var walletName = "registerWalletTypeWorks";
+            var walletName = "exerciseWalletTypeWorks";
 
             await Wallet.CreateWalletAsync("default", walletName, "inmem", null, null);
 
@@ -51,7 +48,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
             await AnonCreds.ProverStoreClaimAsync(wallet, claimJson);

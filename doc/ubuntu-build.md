@@ -19,13 +19,14 @@
    git clone https://github.com/hyperledger/indy-sdk.git
    cd ./indy-sdk/libindy
    cargo build
+   cd ..
    ```
 1. Run integration tests:
    * Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
      
      ```     
      docker build -f ci/indy-pool.dockerfile -t indy_pool .
-     docker run -itd -p 9701-9709:9701-9709 indy_pool
+     docker run -itd -p 9701-9708:9701-9708 indy_pool
      ```     
      
      In some environments, this approach with mapping of local ports to container ports
@@ -40,12 +41,15 @@
      docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
      ```
      
-     It can be usefull if we wants to launch integration tests inside another container attached to
+     If you use this method then you have to specify the TEST_POOL_IP as specified below  when running the tests.
+ 
+     It can be useful if we want to launch integration tests inside another container attached to
      the same docker network. 
      
    * Run tests
      
      ```
+     cd libindy
      RUST_TEST_THREADS=1 cargo test
      ```
      
@@ -55,4 +59,4 @@
      RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
      ```
      
-See [ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
+See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/libindy/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
