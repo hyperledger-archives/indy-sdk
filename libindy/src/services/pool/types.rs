@@ -83,9 +83,17 @@ pub struct CatchupRep {
 }
 
 impl CatchupRep {
-    pub fn min_tx(&self) -> usize {
-        assert!(!self.txns.is_empty());
-        (self.txns.keys().min().unwrap().parse::<usize>()).unwrap()
+    pub fn min_tx(&self) -> Result<usize, CommonError> {
+        let mut min = None;
+        for (k, _) in self.txns.iter() {
+            let val = k.parse::<usize>()
+                .map_err(|err| CommonError::InvalidStructure(format!("{:?}", err)))?;
+            match min {
+                None => min = Some(val),
+                Some(m) => if val < m { min = Some(val) }
+            }
+        }
+        min.ok_or(CommonError::InvalidStructure(format!("Empty Map")))
     }
 }
 
@@ -190,18 +198,16 @@ pub trait MinValue {
 
 impl MinValue for Vec<(CatchupRep, usize)> {
     fn get_min(&self) -> Result<(CatchupRep, usize), CommonError> {
-        if self.len() == 0 {
-            return Err(CommonError::InvalidStructure(format!("Empty list")));
-        }
 
-        Ok(
-            self.into_iter()
-                .fold(None, |min, &(ref catchup_rep, y)|
-                    match min {
-                        None => Some((catchup_rep.clone(), y)),
-                        Some((min_rep, u)) => Some(
-                            if catchup_rep.min_tx() < min_rep.min_tx() { (catchup_rep.clone(), y) } else { (min_rep, u) }),
-                    }).unwrap())
+        let mut min = None;
+        for &(ref catchup_rep, y) in self.iter() {
+            match min {
+                None => min = Some((catchup_rep, y)),
+                Some((min_rep, u)) => if catchup_rep.min_tx()? < min_rep.min_tx()? { min = Some((catchup_rep, y)) }
+            }
+        }
+        let (catchup_rep, n) = min.ok_or(CommonError::InvalidStructure(format!("Empty list")))?;
+        Ok((catchup_rep.clone(), n))
     }
 }
 

@@ -213,11 +213,11 @@ impl CatchupHandler {
             .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
         process.pending_reps.push((catchup, node_idx));
         while !process.pending_reps.is_empty()
-            && process.pending_reps.get_min().unwrap().0.min_tx() - 1 == process.merkle_tree.count() {
+            && process.pending_reps.get_min()?.0.min_tx()? - 1 == process.merkle_tree.count() {
             let (mut first_resp, node_idx) = process.pending_reps.pop().unwrap();
             let mut temp_mt = process.merkle_tree.clone();
             while !first_resp.txns.is_empty() {
-                let key = first_resp.min_tx().to_string();
+                let key = first_resp.min_tx()?.to_string();
                 let new_gen_tx = first_resp.txns.remove(&key).unwrap();
                 if let Ok(new_get_txn_bytes) = rmp_serde::to_vec_named(&new_gen_tx) {
                     temp_mt.append(new_get_txn_bytes)?;
