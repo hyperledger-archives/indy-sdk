@@ -193,21 +193,21 @@ pub struct CatchUpProcess {
 }
 
 pub trait MinValue {
-    fn get_min(&self) -> Result<(CatchupRep, usize), CommonError>;
+    fn get_min_index(&self) -> Result<usize, CommonError>;
 }
 
 impl MinValue for Vec<(CatchupRep, usize)> {
-    fn get_min(&self) -> Result<(CatchupRep, usize), CommonError> {
-
-        let mut min = None;
-        for &(ref catchup_rep, y) in self.iter() {
-            match min {
-                None => min = Some((catchup_rep, y)),
-                Some((min_rep, u)) => if catchup_rep.min_tx()? < min_rep.min_tx()? { min = Some((catchup_rep, y)) }
+    fn get_min_index(&self) -> Result<usize, CommonError> {
+        let mut res = None;
+        for (i, &(ref catchup_rep, _)) in self.iter().enumerate() {
+            match res {
+                None => { res = Some((catchup_rep, i)); }
+                Some((min_rep, i)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
+                    res = Some((min_rep, i));
+                }
             }
         }
-        let (catchup_rep, n) = min.ok_or(CommonError::InvalidStructure(format!("Empty list")))?;
-        Ok((catchup_rep.clone(), n))
+        Ok(res.ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?.1)
     }
 }
 
