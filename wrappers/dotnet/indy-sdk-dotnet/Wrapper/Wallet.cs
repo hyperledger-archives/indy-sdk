@@ -19,14 +19,14 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
-        private static OpenWalletResultDelegate _openWalletCallback = (xCommandHandle, err, handle) =>
+        private static OpenWalletResultDelegate _openWalletCallback = (xcommand_handle, err, wallet_handle) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<Wallet>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<Wallet>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(new Wallet(handle));
+            taskCompletionSource.SetResult(new Wallet(wallet_handle));
         };
 
         /// <summary>
