@@ -67,7 +67,7 @@ namespace Indy.Sdk.Dotnet.Test
         public static async Task<Pool> CreateAndOpenPoolLedgerAsync()
         {
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var openPoolLedgerConfig = "{\"refreshOnOpen\":true}";
+            var openPoolLedgerConfig = "{\"refresh_on_open\":true}";
 
             return await Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig);
         }        

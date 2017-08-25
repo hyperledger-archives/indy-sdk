@@ -38,8 +38,14 @@
                              walletHandle:(IndyHandle)walletHandle
                                       did:(NSString *)did;
 
-- (NSError *)removeIdentity:(NSString *) did
+- (NSError *)removeIdentity:(NSString *)did
              listenerHandle:(IndyHandle)listenerHandle
                walletHandle:(IndyHandle)walletHandle;
+
+- (NSError *)connectHangUpExpectedForPoolHandle:(IndyHandle)poolHandle
+                                   walletHandle:(IndyHandle)walletHandle
+                                      senderDid:(NSString *)senderDid
+                                    receiverDid:(NSString *)receiverDid
+                                      isTimeout:(BOOL *)isTimeout;
 
 @end
