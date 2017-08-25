@@ -94,4 +94,6 @@ RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 4 --ips="$
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708 9709
 
+RUN echo "logLevel=0" >> /home/sovrin/.sovrin/sovrin_config.py
+
 CMD ["/usr/bin/supervisord"]
