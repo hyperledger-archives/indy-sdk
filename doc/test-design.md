@@ -1,4 +1,4 @@
-# Indy SDK test design
+# Indy SDK test approach 
 
 ### Components
 
@@ -15,18 +15,18 @@ sign/verify, encrypt/decrypt, and anoncreds protocol
 
 The Acceptance test procedure consists of the following parts:
 * Functional testing
-* Installation testing
+* Installability testing
 * Interoperability testing
 * Documentation testing
 
 ### Functional testing
 
-Functional part of test procedure contains the set of automated system/integration tests that CI/CD executes for each
+Functional part of test procedure contains the set of automated system/integration tests that CI/CD execute for each
 merge commit to master or rc branch. Release artifacts will be created from the same libindy binaries that were
 used for tests execution. Creation of rc package assumes that automated functional tests are passed. 
 See [cd-pipeline.puml](cd-pipeline.puml) for details.
  
-Note that libindy and wrappers also provides the set of unit tests, but they mostly used to follow TDD
+Note that libindy and wrappers also provide the set of unit tests, but they are mostly used to follow TDD
 approach and don't follow formal test design.
 
 In the future we expect extending functional test procedure with some manual steps for complex cases that 
@@ -41,9 +41,9 @@ Specification to API calls for now are present as comments in interface parts of
 (java wrapper docs)
 * https://github.com/hyperledger/indy-sdk/blob/master/wrappers/dotnet/indy-sdk-dotnet/Wrapper/ (.Net wrapper docs)
  
-##### Test levels
+##### Test groups
 
-We define the following test levels:
+We define the following test groups by priority:
 * High cases
 * Medium cases
 * Low cases
@@ -67,7 +67,7 @@ Successful completion of High cases tests indicates Alpha quality.
 
 ##### Medium cases
 
-Successful completion of High cases tests indicates Beta quality.
+Successful completion of High and Medium cases tests indicates Beta quality.
 
 * Precondition checking:
   * Invalid handle
@@ -82,7 +82,7 @@ Successful completion of High cases tests indicates Beta quality.
 
 ##### Low cases
 
-Successful completion of High cases tests indicates Production quality.
+Successful completion of High, Medium and Low cases tests indicates Production quality.
 
 * Cases that hard to test: Io errors, timeouts and etc...
 
@@ -95,7 +95,7 @@ usage examples.
 For current moment we implemented High and Medium cases for libindy (except revocation part of Anoncreds). High
 cases for Python, Java, iOs, and .Net wrappers.
 
-Note that High cases for wrappers contains the same tests as libindy and we keep this tests cases synced.
+Note that High cases for wrappers contain the same tests as libindy and we keep this tests cases synced.
 Architecture of wrapper allows to claim that High cases coverage can be enough for Beta+ quality.
 
 Note that test procedure was created by developers (not professional QA) and can require review and 
@@ -107,16 +107,16 @@ See:
 * https://github.com/hyperledger/indy-sdk/tree/master/wrappers/java/src/test/java/org/hyperledger/indy/sdk (java wrapper tests)
 * https://github.com/hyperledger/indy-sdk/tree/master/wrappers/ios/libindy-pod/libindy-demoTests (iOS wrapper tests)
 
-### Installation testing
+### Installability testing
 
 Functional testing is performed before artifacts packaging. libindy has some runtime dependencies
-and we need to be sure that package installation satisfy this dependencies.
+and we need to be sure that package installation satisfy these dependencies.
 
 I suggest the following:
 * Create simple demo projects on C, Python and Java that will depend on libindy artifacts and move our demo tests
 to these projects (in the future we need projects for iOS, .Net and NodeJS). We can try to do this in the current
 sprint.
-* Test libibindy and wrapper installation on ubuntu and windows (in the future on macos, rhel, iOS too)
+* Test libindy and wrapper installation on ubuntu and windows (in the future on macos, rhel, iOS too)
 * Test that these demo projects can be built and run with rc packages
 
 For first release these steps can be performed manually and automated in the future.
