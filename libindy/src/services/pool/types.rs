@@ -21,12 +21,20 @@ pub struct NodeData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct GenTransaction {
     pub data: NodeData,
     pub dest: String,
     pub identifier: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub req_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "txnId")]
     pub txn_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub txn_time: Option<u64>,
     #[serde(rename = "type")]
     pub txn_type: String,
 }
