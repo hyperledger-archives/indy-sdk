@@ -14,9 +14,9 @@ try {
 def testing() {
     stage('Testing') {
         parallel([
-                'libindy-ubuntu-test' : { libindyUbuntuTesting() },
-                //FIXME fix and restore 'libindy-redhat-test' : { libindyRedHatTesting() }, IS-307
-                'libindy-windows-test': { libindyWindowsTesting() }
+                'ubuntu-test' : { ubuntuTesting() },
+                //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
+                'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -30,10 +30,10 @@ def publishing() {
         echo "${env.BRANCH_NAME}: start publishing"
 
         pubResults = parallel([
-                //FIXME fix and restore 'libindy-rpm-files'     : { publishingLibindyRpmFiles() }, IS-307
-                'libindy-deb-files'     : { publishingLibindyDebFiles() },
-                'libindy-win-files'     : { publishingLibindyWinFiles() },
-                'python-wrapper-to-pipy': { publishingPythonWrapperToPipy(false) }
+                //FIXME fix and restore 'libindy-rpm-files'     : { rhelPublishing() }, IS-307
+                'libindy-deb-files'     : { ubuntuPublishing() },
+                'libindy-win-files'     : { windowsPublishing() },
+                'python-wrapper-to-pipy': { pythonWrapperPublishing(false) }
         ])
 
         if (env.BRANCH_NAME == 'rc') {
@@ -113,7 +113,7 @@ void getSrcVersion() {
     return version
 }
 
-def libindyTest(file, env_name, run_interoperability_tests, network_name) {
+def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -179,7 +179,7 @@ def libindyTest(file, env_name, run_interoperability_tests, network_name) {
     }
 }
 
-def libindyWindowsTesting() {
+def windowsTesting() {
     node('win2016') {
         stage('Windows Test') {
             echo "Windows Test: Checkout scm"
@@ -233,23 +233,23 @@ def libindyWindowsTesting() {
     }
 }
 
-def libindyUbuntuTesting() {
+def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            libindyTest("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
         }
     }
 }
 
-def libindyRedHatTesting() {
+def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
-            libindyTest("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
+            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
         }
     }
 }
 
-def publishingLibindyRpmFiles() {
+def rhelPublishing() {
     node('ubuntu') {
         stage('Publish Libindy RPM Files') {
             try {
@@ -281,7 +281,7 @@ def publishingLibindyRpmFiles() {
     return version
 }
 
-def publishingLibindyDebFiles() {
+def ubuntuPublishing() {
     node('ubuntu') {
         stage('Publish Libindy DEB Files') {
             try {
@@ -314,7 +314,7 @@ def publishingLibindyDebFiles() {
     return version
 }
 
-def publishingLibindyWinFiles() {
+def windowsPublishing() {
     node('win2016') {
         stage('Publish Libindy Windows Files') {
             try {
@@ -355,7 +355,7 @@ def publishingLibindyWinFiles() {
     return version
 }
 
-def publishingPythonWrapperToPipy(isRelease) {
+def pythonWrapperPublishing(isRelease) {
     node('ubuntu') {
         stage('Publish Python Wrapper To Pipy') {
             try {
@@ -411,12 +411,12 @@ def publishingRCtoStable(version) {
                 for (os in ['ubuntu', 'windows']) { //FIXME add rhel IS-307
                     src = "/var/repository/repos/libindy/$os/rc/$rcFullVersion/"
                     target = "/var/repository/repos/libindy/$os/stable/$version"
+                    //should not exists
                     sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
-                    //check not exists
                     sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
                 }
             }
         }
-        publishingPythonWrapperToPipy(true)
+        pythonWrapperPublishing(true)
     }
 }
