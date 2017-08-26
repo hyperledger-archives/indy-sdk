@@ -27,7 +27,8 @@ namespace Hyperledger.Indy.Sdk.Test
 
         private static void LoadIndyDll()
         {
-            var executingLocation = Assembly.GetExecutingAssembly().Location;
+            var assemblyLocation = typeof(InitHelper).GetTypeInfo().Assembly.Location;
+            var executingLocation = Path.GetDirectoryName(assemblyLocation);
             var libDir = Path.Combine(executingLocation, "../../../../lib");
             var dir = Path.GetFullPath(libDir);
 

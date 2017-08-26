@@ -17,6 +17,11 @@ namespace Hyperledger.Indy.Sdk.Test.WalletTests
         /// </summary>
         private static int _nextWalletHandle = 0;
 
+        public IDictionary<string, InMemWallet> ConfiguredWallets
+        {
+            get { return ConfiguredWallets; }
+        }
+
         /// <summary>
         /// Gets the next command handle.
         /// </summary>

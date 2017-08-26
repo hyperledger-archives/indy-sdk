@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Sdk.Test
 
         public static string GetUserHomePath()
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            return Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE")); //TODO: Does this work on non-Windows platforms?
         }
 
         public static string GetIndyHomePath()

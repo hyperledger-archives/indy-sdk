@@ -1,4 +1,4 @@
-﻿using Base58Check;
+﻿using Hyperledger.Indy.Sdk.Test.Util.Base58Check;
 using Hyperledger.Indy.Sdk.SignUsApi;
 using Hyperledger.Indy.Sdk.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -26,14 +26,16 @@ namespace Hyperledger.Indy.Sdk.Test
              };
 
             Directory.CreateDirectory(Path.GetDirectoryName(file));
-            var stream = new StreamWriter(file);
 
-            for (int i = 0; i < nodesCnt; i++)
+            var stream = File.Create(file);
+            using (var writer = new StreamWriter(stream))
             {
-                stream.WriteLine(defaultTxns[i]);
-            }
 
-            stream.Close();
+                for (int i = 0; i < nodesCnt; i++)
+                {
+                    writer.WriteLine(defaultTxns[i]);
+                }
+            }
 
             return file;
         }
