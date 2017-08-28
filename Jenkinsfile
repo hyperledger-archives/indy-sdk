@@ -327,7 +327,7 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv, "")
+                libindyDebPublishing(testEnv)
                 pythonWrapperPublishing(testEnv, false)
             }
             finally {
