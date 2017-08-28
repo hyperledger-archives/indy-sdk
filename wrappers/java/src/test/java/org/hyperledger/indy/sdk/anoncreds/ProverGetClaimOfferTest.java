@@ -2,9 +2,8 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.hyperledger.indy.sdk.wallet.InMemWalletType;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.wallet.WalletTypeInmem;
 import org.json.JSONArray;
 import org.junit.*;
 
@@ -101,13 +100,12 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testOpenWalletWorksForPlugged() throws Exception {
-		WalletTypeInmem.getInstance().clear();
-
 		String type = "proverInmem";
 		String poolName = "default";
 		String walletName = "proverCustomWallet";
 
-		Wallet.registerWalletType(type, WalletTypeInmem.getInstance()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
+
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
@@ -128,7 +126,5 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 		assertTrue(claimOffersArray.toString().contains(claimOffer));
 		assertTrue(claimOffersArray.toString().contains(claimOffer2));
-
-		WalletTypeInmem.getInstance().clear();
 	}
 }
