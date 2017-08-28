@@ -49,8 +49,9 @@ impl LedgerService {
         let role = match role {
             Some(r) =>
                 match r.clone() {
-                    "STEWARD" => Some(Role::STEWARD as i32),
-                    "TRUSTEE" => Some(Role::TRUSTEE as i32),
+                    "STEWARD" => Some(Role::Steward as i32),
+                    "TRUSTEE" => Some(Role::Trustee as i32),
+                    "TRUST_ANCHOR" => Some(Role::TrustAnchor as i32),
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 },
             _ => None

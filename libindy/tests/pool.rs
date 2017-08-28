@@ -103,7 +103,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_name = "open_pool_ledger_works_for_config";
-            let config = r#"{"refreshOnOpen": true}"#;
+            let config = r#"{"refresh_on_open": true}"#;
 
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
@@ -366,7 +366,7 @@ mod medium_cases {
         fn open_pool_ledger_works_for_invalid_config() {
             TestUtils::cleanup_storage();
             let name = "pool_open";
-            let config = r#"{"refreshOnOpen": "true"}"#;
+            let config = r#"{"refresh_on_open": "true"}"#;
 
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());

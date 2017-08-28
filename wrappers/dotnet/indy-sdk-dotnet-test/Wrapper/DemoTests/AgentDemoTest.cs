@@ -1,35 +1,12 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.Agent;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
 {
     [TestClass]
     public class AgentDemoTest : IndyIntegrationTestBase
     {
-        private static MessageReceivedHandler _messageObserver = (Connection connection, string message) =>
-        {
-            Console.WriteLine("Received message '" + message + "' on connection " + connection);
-        };
-
-        private static MessageReceivedHandler _messageObserverForIncoming = (Connection connection, string message) =>
-        {
-            Console.WriteLine("Received message '" + message + "' on incoming connection " + connection);
-
-            _clientToServerMsgFuture.SetResult(message);
-        };
-
-        private static ConnectionOpenedHandler _incomingConnectionObserver = (Listener listener, Connection connection, string senderDid, string receiverDid) =>
-        {
-            Console.WriteLine("New connection " + connection);
-
-            return _messageObserverForIncoming;
-        };
-
-        private static TaskCompletionSource<string> _clientToServerMsgFuture = new TaskCompletionSource<string>();
-
         [TestMethod]
         public async Task TestAgentDemo()
         {
@@ -74,18 +51,22 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.DemoTests
             await Ledger.SignAndSubmitRequestAsync(pool, listenerWallet, listenerDid, attribRequest);
 
             // 8. start listener on endpoint
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             // 9. Allow listener accept incoming connection for specific DID (listener_did)
             await activeListener.AddIdentityAsync(pool, listenerWallet, listenerDid);
 
             // 10. Initiate connection from sender to listener
-            var connection = await Agent.AgentConnectAsync(pool, senderWallet, senderDid, listenerDid, _messageObserver);
+            var connection = await AgentConnection.ConnectAsync(pool, senderWallet, senderDid, listenerDid);
 
             // 11. Send test message from sender to listener
             await connection.SendAsync("test");
 
-            Assert.AreEqual(message, await _clientToServerMsgFuture.Task);
+            var serverConnectionEvent = await activeListener.WaitForConnection();
+            var serverConnection = serverConnectionEvent.Connection;
+            var messageEvent = await serverConnection.WaitForMessage();
+
+            Assert.AreEqual(message, messageEvent.Message);
 
             // 12. Close connection
             await connection.CloseAsync();

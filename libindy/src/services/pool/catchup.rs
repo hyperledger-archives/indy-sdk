@@ -1,7 +1,7 @@
 extern crate rmp_serde;
 
 use std::cmp;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::HashMap;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
@@ -169,7 +169,7 @@ impl CatchupHandler {
 
         self.pending_catchup = Some(CatchUpProcess {
             merkle_tree: self.merkle_tree.clone(),
-            pending_reps: BinaryHeap::new(),
+            pending_reps: Vec::new(),
         });
 
         let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
@@ -212,26 +212,33 @@ impl CatchupHandler {
         let mut process = self.pending_catchup.as_mut()
             .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
         process.pending_reps.push((catchup, node_idx));
-        while !process.pending_reps.is_empty()
-            && process.pending_reps.peek().unwrap().0.min_tx() - 1 == process.merkle_tree.count() {
-            let (mut first_resp, node_idx) = process.pending_reps.pop().unwrap();
-            let mut temp_mt = process.merkle_tree.clone();
-            while !first_resp.txns.is_empty() {
-                let key = first_resp.min_tx().to_string();
-                let new_gen_tx = first_resp.txns.remove(&key).unwrap();
-                if let Ok(new_get_txn_bytes) = new_gen_tx.to_msg_pack() {
-                    temp_mt.append(new_get_txn_bytes)?;
-                } else {
+
+        while !process.pending_reps.is_empty() {
+            let index = process.pending_reps.get_min_index()?;
+            {
+                let &mut (ref mut first_resp, node_idx) = process.pending_reps.get_mut(index)
+                    .ok_or(CommonError::InvalidStructure(format!("Element not Found")))?;
+                if first_resp.min_tx()? - 1 != process.merkle_tree.count() { break; }
+
+                let mut temp_mt = process.merkle_tree.clone();
+                while !first_resp.txns.is_empty() {
+                    let key = first_resp.min_tx()?.to_string();
+                    let new_gen_tx = first_resp.txns.remove(&key).unwrap();
+                    if let Ok(new_get_txn_bytes) = rmp_serde::to_vec_named(&new_gen_tx) {
+                        temp_mt.append(new_get_txn_bytes)?;
+                    } else {
+                        return Ok(CatchupStepResult::FailedAtNode(node_idx));
+                    }
+                }
+
+                if CatchupHandler::check_cons_proofs(&temp_mt, &first_resp.consProof, &self.target_mt_root, self.target_mt_size)
+                    .map_err(map_err_err!()).is_err() {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
-            }
 
-            if CatchupHandler::check_cons_proofs(&temp_mt, &first_resp.consProof, &self.target_mt_root, self.target_mt_size)
-                .map_err(map_err_err!()).is_err() {
-                return Ok(CatchupStepResult::FailedAtNode(node_idx));
+                process.merkle_tree = temp_mt;
             }
-
-            process.merkle_tree = temp_mt;
+            process.pending_reps.remove(index);
         }
         trace!("updated mt hash {}, tree {:?}", process.merkle_tree.root_hash().as_slice().to_base58(), process.merkle_tree);
         if &process.merkle_tree.count() == &self.target_mt_size {

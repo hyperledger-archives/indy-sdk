@@ -282,7 +282,7 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSError *ret = [IndyAnoncreds proverStoreClaimOfferWithWalletHandle:walletHandle
-                                                           claimOfferJSON:str
+                                                         claimOfferJSON:str
                                                                completion: ^(NSError *error)
                     {
                         err = error;
@@ -554,8 +554,6 @@
     
     [TestUtils cleanupStorage];
     
-    XCTAssertTrue(5 == 3, @"FALSE!!!!");
-    
     ////TODO Need clean after tests but not exists After function in Cargo
     NSError *ret;
     
@@ -576,7 +574,7 @@
                                                   issuerDid:[AnoncredsUtils issuerDid]
                                                  schemaJson:schema
                                               signatureType:nil
-                                             createNonRevoc:false
+                                             createNonRevoc:NO
                                                claimDefJson:&tempClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateClaimDefinifionWithWalletHandle failed");
     

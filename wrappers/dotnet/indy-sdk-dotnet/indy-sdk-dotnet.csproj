@@ -52,11 +52,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Wrapper\Agent.cs" />
+    <Compile Include="Wrapper\AgentConnection.cs" />
+    <Compile Include="Wrapper\AgentConnectionEvent.cs" />
+    <Compile Include="Wrapper\AgentEvent.cs" />
+    <Compile Include="Wrapper\AgentListener.cs" />
+    <Compile Include="Wrapper\AgentMessageEvent.cs" />
     <Compile Include="Wrapper\AnonCredsResults.cs" />
     <Compile Include="Wrapper\AnonCreds.cs" />
     <Compile Include="ErrorCode.cs" />
-    <Compile Include="IndyConstants.cs" />
     <Compile Include="IndyException.cs" />
     <Compile Include="Wrapper\AsyncWrapperBase.cs" />
     <Compile Include="Wrapper\Ledger.cs" />
@@ -66,7 +69,7 @@
     <Compile Include="Wrapper\SignusResults.cs" />
     <Compile Include="Wrapper\Signus.cs" />
     <Compile Include="Wrapper\Wallet.cs" />
-    <Compile Include="Wrapper\CustomWalletBase.cs" />
+    <Compile Include="Wrapper\ICustomWallet.cs" />
     <Compile Include="Wrapper\WalletType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
