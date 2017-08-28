@@ -52,7 +52,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Wrapper\Agent.cs" />
+    <Compile Include="Wrapper\AgentConnection.cs" />
+    <Compile Include="Wrapper\AgentConnectionEvent.cs" />
+    <Compile Include="Wrapper\AgentEvent.cs" />
+    <Compile Include="Wrapper\AgentListener.cs" />
+    <Compile Include="Wrapper\AgentMessageEvent.cs" />
     <Compile Include="Wrapper\AnonCredsResults.cs" />
     <Compile Include="Wrapper\AnonCreds.cs" />
     <Compile Include="ErrorCode.cs" />
