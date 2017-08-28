@@ -33,15 +33,6 @@
     return instance;
 }
 
-+ (NSString *) nodeIp
-{
-    return @"127.0.0.1";
-}
-
-+ (NSString *) testPoolIp
-{
-    return @"127.0.0.1";
-}
 
 - (NSNumber *) getRequestId
 {
@@ -61,7 +52,7 @@
         return nil;
     }
     
-    NSString *nodeIp = [PoolUtils nodeIp];
+    NSString *nodeIp = [TestUtils testPoolIp];
     NSString *node1 = [NSString stringWithFormat:@"{"
                        "\"data\":{"
                             "\"alias\":\"Node1\","
@@ -157,7 +148,7 @@
 - (NSString *)createGenesisTxnFileForTestPoolWithInvalidNodesForPoolName:(NSString *)poolName
                                                              txnFilePath:(NSString *)txnFilePath
 {
-    NSString *testPoolIp = [PoolUtils testPoolIp];
+    NSString *testPoolIp = [TestUtils testPoolIp];
     NSString *node1 = [NSString stringWithFormat:@"{"
                        "\"data\":{"
                        "\"client_ip\":\"%@\","
@@ -218,7 +209,7 @@
 - (NSString *)createGenesisTxnFileForTestPoolWithWrongAliasForPoolName:(NSString *)poolName
                                                             txnFilePath:(NSString *)txnFilePath
 {
-    NSString *testPoolIp = [PoolUtils nodeIp];
+    NSString *testPoolIp = [TestUtils testPoolIp];
     NSString *node1 = [NSString stringWithFormat:@"{"
                        "\"data\":{"
                             "\"alias\":\"Node1\","

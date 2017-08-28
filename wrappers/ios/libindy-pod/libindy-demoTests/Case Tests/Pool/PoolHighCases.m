@@ -224,7 +224,8 @@
     ret = [[PoolUtils sharedInstance] refreshPoolHandle:poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::refreshPoolHandle() failed!");
     
-     [TestUtils cleanupStorage];
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    [TestUtils cleanupStorage];
 }
 
 // MARK: - Close
@@ -245,6 +246,7 @@
     ret = [[PoolUtils sharedInstance] closeHandle:poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::closeHandle() failed!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -267,6 +269,7 @@
     ret = [[PoolUtils sharedInstance] closeHandle:poolHandle];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"PoolUtils::closeHandle() returned wrong code!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -290,6 +293,8 @@
                                               config:nil
                                          poolHandler:nil];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::openPoolLedger() returned wrong code!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -331,6 +336,7 @@
     ret = [[PoolUtils sharedInstance] deletePoolWithName:poolName];
     XCTAssertEqual(ret.code, CommonInvalidState, @"PoolUtils::deletePoolWithName() returned wrong code!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

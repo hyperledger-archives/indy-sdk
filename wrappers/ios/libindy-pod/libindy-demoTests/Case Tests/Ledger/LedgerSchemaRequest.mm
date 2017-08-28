@@ -136,6 +136,7 @@
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(schemaResponse, @"schemaResponse is nil!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -196,6 +197,8 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
     XCTAssertNotNil(getSchemaResponse, @"getSchemaResponse is nil!");
     XCTAssertFalse([getSchemaResponse isEqualToString:@""], @"getSchemaResponse is enpty!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

@@ -53,7 +53,7 @@
     
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                             issuerDid:[TestUtils issuerDid]
                                                                             schemaJson:schema
                                                                          signatureType:nil
                                                                         createNonRevoc:false
@@ -81,7 +81,7 @@
     
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                             issuerDid:[TestUtils issuerDid]
                                                                             schemaJson:schema
                                                                          signatureType:nil
                                                                         createNonRevoc:false
@@ -103,7 +103,7 @@
     
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                             issuerDid:[TestUtils issuerDid]
                                                                             schemaJson:schema
                                                                          signatureType:@"some_type"
                                                                         createNonRevoc:false
@@ -174,9 +174,9 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName failed");
     
     // 3. create claim offers
-    NSString *claimOfferJson1 = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
+    NSString *claimOfferJson1 = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                        schemaSeqNo:@(1)];
-    NSString *claimOfferJson2 = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
+    NSString *claimOfferJson2 = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                        schemaSeqNo:@(2)];
     NSString *claimOfferJson3 = [[AnoncredsUtils sharedInstance] getClaimOfferJson:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                             schemaSeqNo:@(2)];
@@ -195,7 +195,7 @@
     
     // 5. get claim offers
     NSString *claimOffersJson;
-    NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}", [AnoncredsUtils issuerDid]];
+    NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}", [TestUtils issuerDid]];
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle2
                                                      filterJson:filter
                                              outClaimOffersJSON:&claimOffersJson];
@@ -254,7 +254,7 @@
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
                                                            claimDefJson:claimDefJson
-                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
+                                                       masterSecretName:[TestUtils commonMasterSecretName]
                                                         outClaimReqJson:nil];
 
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed with wrong code");
@@ -271,7 +271,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create and store claim request
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     NSString *claimDefJson = @"{"\
             "\"schema_eq_no\":1,"\
@@ -285,7 +285,7 @@
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
                                                            claimDefJson:claimDefJson
-                                                       masterSecretName:[AnoncredsUtils commonMasterSecretName]
+                                                       masterSecretName:[TestUtils commonMasterSecretName]
                                                         outClaimReqJson:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
 }
@@ -302,7 +302,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create and store claim request
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
@@ -333,13 +333,14 @@
                                     "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","
                                     "\"ur\":null},"
                               "\"issuer_did\":\"%@\","
-                              "\"schema_seq_no\":1}",[AnoncredsUtils issuerDid]];
+                              "\"schema_seq_no\":1}",[TestUtils issuerDid]];
     
     NSString *claimJson = [[AnoncredsUtils sharedInstance] getGvtClaimJson];
     
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
                                                                 claimReqJson:claimRequest
                                                                    claimJson:claimJson
+                                                              userRevocIndex:nil
                                                                 outClaimJson:nil
                                                        outRevocRegUpdateJSON:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong code");
@@ -362,7 +363,7 @@
                                     "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\","
                                     "\"ur\":null},"
                               "\"issuer_did\":\"%@\","
-                              "\"schema_seq_no\":1}", [AnoncredsUtils issuerDid]];
+                              "\"schema_seq_no\":1}", [TestUtils issuerDid]];
     
     NSString *claimJson = @"{"
         "\"sex\":\"male\","
@@ -374,6 +375,7 @@
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
                                                                 claimReqJson:claimRequest
                                                                    claimJson:claimJson
+                                                              userRevocIndex:nil
                                                                 outClaimJson:nil
                                                        outRevocRegUpdateJSON:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong code");
@@ -407,7 +409,7 @@
                                     "\"a\":\"1\","
                                     "\"e\":\"2\","
                                     "\"v\":\"3\"},"
-                           "\"non_revocation_claim\":null}}",[AnoncredsUtils issuerDid]];
+                           "\"non_revocation_claim\":null}}",[TestUtils issuerDid]];
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
                                                                  claimsJson:claimJson];
     XCTAssertEqual(ret.code, WalletNotFoundError, @"AnoncredsUtils::proverStoreClaimWithWalletHandle returned wrong code");
@@ -425,7 +427,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create and store claim request
-    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[AnoncredsUtils issuerDid]
+    NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
@@ -713,7 +715,7 @@
                                                          requestedClaimsJson:requestedClaimsJson
            
                                                                  schemasJson:schemasJson
-                                                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
+                                                            masterSecretName:[TestUtils commonMasterSecretName]
                                                                claimDefsJson:claimDefsJson
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:nil];
@@ -770,7 +772,7 @@
                                                          requestedClaimsJson:requestedClaimsJson
            
                                                                  schemasJson:schemasJson
-                                                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
+                                                            masterSecretName:[TestUtils commonMasterSecretName]
                                                                claimDefsJson:claimDefsJson
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:nil];
@@ -825,7 +827,7 @@
                                                          requestedClaimsJson:requestedClaimsJson
            
                                                                  schemasJson:schemasJson
-                                                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
+                                                            masterSecretName:[TestUtils commonMasterSecretName]
                                                                claimDefsJson:claimDefsJson
                                                                revocRegsJson:revocRegsJsons
                                                                 outProofJson:nil];

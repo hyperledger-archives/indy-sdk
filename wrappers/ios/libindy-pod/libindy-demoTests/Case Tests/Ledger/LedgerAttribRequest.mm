@@ -84,6 +84,7 @@
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"PoolUtils::sendRequestWithPoolHandle() failed");
     XCTAssertNotNil(attribResponse, @"attribResponse is nil!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -140,6 +141,7 @@
     XCTAssertNotNil(getAttribResponse, @"getAttribResponse is nil!");
     XCTAssertFalse([getAttribResponse isEqualToString:@""], @"getAttribResponse is empty!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -197,6 +199,7 @@
     XCTAssertNotNil(getAttribResponse, @"getAttribResponse is nil!");
     XCTAssertFalse([getAttribResponse isEqualToString:@""], @"getAttribResponse is empty!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

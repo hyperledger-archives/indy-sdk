@@ -68,7 +68,7 @@
     __block NSString *claimDefJSON = nil;
     
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:[AnoncredsUtils issuerDid]
+                                                                             issuerDid:[TestUtils issuerDid]
                                                                             schemaJson:schema
                                                                          signatureType:nil
                                                                         createNonRevoc:false
@@ -131,12 +131,12 @@
     }";
     __block NSString *xClaimJSON = nil;
     
+    
     ret = [IndyAnoncreds issuerCreateClaimWithWalletHandle:walletHandle
-                                                claimReqJSON:claimReqJSON
-                                                   claimJSON:testClaimJson
-                                               revocRegSeqNo:@(-1)
-                                              userRevocIndex:@(-1)
-                                                  completion:^(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
+                                              claimReqJSON:claimReqJSON
+                                                 claimJSON:testClaimJson
+                                            userRevocIndex:nil
+                                                completion:^(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
            {
                XCTAssertEqual(error.code, Success, "issuerCreateClaim() got error in completion");
                xClaimJSON = [ NSString stringWithString: claimJSON1];

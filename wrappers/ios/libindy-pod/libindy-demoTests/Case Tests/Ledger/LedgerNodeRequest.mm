@@ -129,6 +129,8 @@
                                                            outResponseJson:&nodeResponse];
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -189,6 +191,8 @@
                                                            outResponseJson:&nodeResponse];
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

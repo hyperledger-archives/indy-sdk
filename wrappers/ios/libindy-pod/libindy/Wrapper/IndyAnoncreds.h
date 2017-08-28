@@ -25,12 +25,12 @@
 + (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJSON:(NSString *)reqJSON
                                      claimJSON:(NSString *)claimJSON
-                                 revocRegSeqNo:(NSNumber *)seqNo       // TODO: check how to deal with option<>
-                                userRevocIndex:(NSNumber *)revocIndex  // TODO: check how to deal with option<>
+                                userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler;
 
 + (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
-                                 revocRegSeqNo:(NSNumber *)revocSeqNo
+                                     issuerDid:(NSString *)issuerDid
+                                   schemaSeqNo:(NSNumber *)schemaSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler;
 

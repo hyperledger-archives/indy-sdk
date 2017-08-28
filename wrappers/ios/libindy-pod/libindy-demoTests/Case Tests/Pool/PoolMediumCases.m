@@ -171,6 +171,7 @@
     ret = [[PoolUtils sharedInstance] closeHandle:invalidPoolHandle];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"PoolUtils::closeHandle returned wrong code");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -210,6 +211,7 @@
     ret = [[PoolUtils sharedInstance] deletePoolWithName:poolName];
     XCTAssertEqual(ret.code, CommonIOError, @"PoolUtils::deletePoolWithName returned wrong code");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -233,8 +235,8 @@
     ret = [[PoolUtils sharedInstance] refreshPoolHandle:invalidPoolHandle];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"PoolUtils::refreshPoolHandle returned wrong code");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
-
 }
 
 @end

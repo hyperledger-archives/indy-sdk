@@ -383,6 +383,7 @@
     [[WalletUtils sharedInstance] closeWalletWithHandle:listenerWallet];
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    
     [TestUtils cleanupStorage];
 }
 

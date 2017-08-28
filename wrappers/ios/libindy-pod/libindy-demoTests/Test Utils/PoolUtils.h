@@ -14,8 +14,6 @@
 
 + (PoolUtils *)sharedInstance;
 
-+ (NSString *) nodeIp;
-
 - (NSNumber *)getRequestId;
 
 // MARK: - Txn file
