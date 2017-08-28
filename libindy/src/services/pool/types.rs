@@ -199,11 +199,11 @@ pub trait MinValue {
 impl MinValue for Vec<(CatchupRep, usize)> {
     fn get_min_index(&self) -> Result<usize, CommonError> {
         let mut res = None;
-        for (i, &(ref catchup_rep, _)) in self.iter().enumerate() {
+        for (index, &(ref catchup_rep, _)) in self.iter().enumerate() {
             match res {
-                None => { res = Some((catchup_rep, i)); }
+                None => { res = Some((catchup_rep, index)); }
                 Some((min_rep, i)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
-                    res = Some((min_rep, i));
+                    res = Some((catchup_rep, index));
                 }
             }
         }
