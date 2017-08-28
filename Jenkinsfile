@@ -29,20 +29,22 @@ def publishing() {
         }
         echo "${env.BRANCH_NAME}: start publishing"
 
-        pubResults = parallel([
+        publishedVersions = parallel([
                 //FIXME fix and restore 'libindy-rpm-files'     : { rhelPublishing() }, IS-307
                 'libindy-deb-files'     : { ubuntuPublishing() },
                 'libindy-win-files'     : { windowsPublishing() },
                 'python-wrapper-to-pipy': { pythonWrapperPublishing(false) }
         ])
 
+        version = publishedVersions['libindy-deb-files']
+        if (publishedVersions['libindy-win-files'] != version
+                || publishedVersions['python-wrapper-to-pipy'] != version) { // FIXME check rhel too, IS-307
+            error "platforms artifacts have different versions"
+        }
+
         if (env.BRANCH_NAME == 'rc') {
-            if (pubResults['libindy-deb-files'] != pubResults['libindy-win-files']
-                    || pubResults['libindy-deb-files'] != pubResults['python-wrapper-to-pipy']) {
-                error "platforms artifacts have different versions"
-            }
             if (approval.check("default")) {
-                publishingRCtoStable(pubResults['libindy-deb-files'])
+                publishingRCtoStable(version)
             }
         }
     }
