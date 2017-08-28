@@ -262,7 +262,7 @@ def windowsTesting(isDebugTests) {
 def ubuntuTesting(isDebugTests) {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network", isDebugTests)
+            linuxTesting("libindy/ci/ubuntu.dockerfile libindy/ci", "Ubuntu", true, "pool_network", isDebugTests)
         }
     }
 }
@@ -270,7 +270,7 @@ def ubuntuTesting(isDebugTests) {
 def rhelTesting(isDebugTests) {
     node('ubuntu') {
         stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network", isDebugTests)
+            linuxTesting("libindy/ci/amazon.dockerfile libindy/ci", "RedHat", false, "pool_network", isDebugTests)
         }
     }
 }
