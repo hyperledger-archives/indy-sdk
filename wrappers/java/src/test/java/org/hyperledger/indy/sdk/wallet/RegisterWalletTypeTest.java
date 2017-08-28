@@ -37,14 +37,14 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 	@Rule
 	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
-	
+
 	@Test
-	public void customWalletWorkoutTest() throws Exception { 
-		
+	public void customWalletWorkoutTest() throws Exception {
+
 		StorageUtils.cleanupStorage();
 
 		String walletName = "inmemWorkoutWallet";
-		
+
 		Wallet.createWallet("default", walletName, "inmem", null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
@@ -61,9 +61,15 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String masterSecretName = "master_secret_name";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
+		String filter = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
 
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
+		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
+		JSONArray claimOffersArray = new JSONArray(claimOffers);
+
+		assertEquals(1, claimOffersArray.length());
+
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
+				claimOffersArray.get(0).toString(), claimDef, masterSecretName).get();
 
 		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -76,7 +82,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		Anoncreds.proverStoreClaim(wallet, claimJson).get();
 
-		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
+		filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 

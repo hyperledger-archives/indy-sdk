@@ -2,8 +2,6 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.wallet.InMemWalletType;
-import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.junit.*;
 
@@ -96,35 +94,5 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		String filter = String.format("{\"schema_seq_no\":\"%d\"}", 1);
 
 		Anoncreds.proverGetClaimOffers(wallet, filter).get();
-	}
-
-	@Test
-	public void testOpenWalletWorksForPlugged() throws Exception {
-		String type = "proverInmem";
-		String poolName = "default";
-		String walletName = "proverCustomWallet";
-
-		Wallet.registerWalletType(type, new InMemWalletType()).get();
-
-		Wallet.createWallet(poolName, walletName, type, null, null).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-		String claimOffer2 = String.format(claimOfferTemplate, issuerDid, 2);
-		String claimOffer3 = String.format(claimOfferTemplate, issuerDid2, 2);
-
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer2).get();
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer3).get();
-
-		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
-
-		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
-		JSONArray claimOffersArray = new JSONArray(claimOffers);
-
-		assertEquals(2, claimOffersArray.length());
-
-		assertTrue(claimOffersArray.toString().contains(claimOffer));
-		assertTrue(claimOffersArray.toString().contains(claimOffer2));
 	}
 }
