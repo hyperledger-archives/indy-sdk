@@ -135,7 +135,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        poolInst = openPool(env_name, network_name, '105', '1.0.95', '1.0.25', '1.0.105')
+        poolInst = openPool(env_name, network_name, '119', '1.1.112', '1.0.25', '1.1.119')
 
         echo "${env_name} Test: Build docker image"
         testEnv = dockerHelpers.build('libindy', file)
