@@ -158,7 +158,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
                         buildType = '--release'
                     }
 
-                    testParams = "$buildType + $featuresArgs".trim()
+                    testParams = "$buildType $featuresArgs".trim()
 
                     echo "${env_name} Test: Build"
                     sh "RUST_BACKTRACE=1 cargo test $testParams --no-run"
