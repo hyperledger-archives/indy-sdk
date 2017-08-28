@@ -413,7 +413,6 @@ def pythonWrapperPublishing(testEnv, isRelease) {
         testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                 sh 'cp $credentialsFile ./'
-                sh "chmod -R 777 ci"
                 sh "sed -i -E \"s/version='([0-9,.]+).*/version='\\1$suffix',/\" setup.py"
                 sh '''
                     python3.6 setup.py sdist
