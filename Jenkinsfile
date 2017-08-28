@@ -34,7 +34,7 @@ def publishing() {
 //        echo "${env.BRANCH_NAME}: start publishing"
 
         publishedVersions = parallel([
-                'java-publishing' : { publishingJavaWrapperToMaven() }
+                'ubuntu-files' : { ubuntuPublishing() },
         ])
 
 //        version = publishedVersions['ubuntu-files']
@@ -320,13 +320,14 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                //version = getSrcVersion()
 
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv)
-                pythonWrapperPublishing(testEnv, false)
+                //libindyDebPublishing(testEnv)
+                //pythonWrapperPublishing(testEnv, false)
+                publishingJavaWrapperToMaven(testEnv)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -459,40 +460,21 @@ def publishLibindyRCtoStable(version) {
 }
 
 
-def publishingJavaWrapperToMaven() {
-    node('ubuntu') {
-        stage('Publish Java Wrapper To Maven Central') {
-            try {
-                def poolInst
-                def network_name = "pool_network"
-                def env_name = "Ubuntu Java"
+def publishingJavaWrapperToMaven(testEnv) {
+    dir('wrappers/java') {
+        echo "Publish To Maven Test: Build docker image"
 
-                echo "Publish To Maven: Checkout csm"
-                checkout scm
+        testEnv.inside {
+            echo "Publish To Maven Test: Test"
 
-                dir('wrappers/java') {
-                    echo "Publish To Maven Test: Build docker image"
-                    def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
+            //sh "sed -i -E -e 'H;1h;$!d;x' -e \"s/<version>([0-9,.]+)<\/version>/<version>\\1-$env.BUILD_NUMBER<\/version>/\" pom.xml"
 
-                    poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
+            withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
+                sh 'cp $settingsFile ~/.m2'
+                //sh 'cp gpgKeys ~/.gnupg'
 
-                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                        echo "Publish To Maven Test: Test"
-
-                        sed -i -E -e 'H;1h;$!d;x' -e "s/<version>([0-9,.]+)<\/version>/<version>\1-$env.BUILD_NUMBER<\/version>/" pom.xml
-
-                        withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
-                            sh 'cp $settingsFile ~/.m2'
-                            //sh 'cp gpgKeys ~/.gnupg'
-
-                            sh "mvn clean deploy -DskipTests"
-                            //sh "mvn nexus-staging:release"
-                        }
-                    }
-                }
-            }
-            finally {
-                closePool(env_name, network_name, poolInst)
+                sh "mvn clean deploy -DskipTests"
+                //sh "mvn nexus-staging:release"
             }
         }
     }

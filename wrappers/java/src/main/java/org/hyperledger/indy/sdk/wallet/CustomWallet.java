@@ -11,7 +11,6 @@ public interface CustomWallet {
 	/**
 	 * Sets a value on a wallet instance.
 	 * 
-	 * @param handle The handle of the wallet to set the value on.
 	 * @param key The key to set the value for.
 	 * @param value The value to set.
 	 * @return An ErrorCode indicating the outcome.
@@ -21,7 +20,6 @@ public interface CustomWallet {
 	/**
 	 * Gets a value from a wallet instance.
 	 * 
-	 * @param handle The handle of the wallet to set the value on.
 	 * @param key The key of value to get.
 	 * @param resultString A result object to containthe value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
@@ -31,7 +29,6 @@ public interface CustomWallet {
 	/**
 	 * Gets an unexpired value from a wallet instance.
 	 * 
-	 * @param handle The handle of the wallet to set the value on.
 	 * @param key The key of value to get.
 	 * @param resultString A result object to containthe value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
@@ -41,8 +38,7 @@ public interface CustomWallet {
 	/**
 	 * Gets a list of values optionally filtered by key.
 	 * 
-	 * @param handle The handle of the wallet to set the value on.
-	 * @param keyPrefx The prefix of the keys to filter on.  If null no filter will be applied.
+	 * @param keyPrefix The prefix of the keys to filter on.  If null no filter will be applied.
 	 * @param resultString A result object to containthe value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
