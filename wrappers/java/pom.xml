@@ -41,11 +41,12 @@
 			<!--<url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
 		<!--</snapshotRepository>-->
 	<!--</distributionManagement>-->
+
 	<distributionManagement>
 		<repository>
-			<id>artifactory</id>
-			<name>artifactory</name>
-			<url>https://repo.evernym.com/artifactory</url>
+			<id>central</id>
+			<name>indy-artifactory-releases</name>
+			<url>http://repo.evernym.com/artifactory/libindy-maven-local</url>
 		</repository>
 	</distributionManagement>
 
