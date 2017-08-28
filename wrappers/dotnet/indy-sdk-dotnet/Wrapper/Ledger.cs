@@ -11,41 +11,41 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// <summary>
         /// Gets the callback to use when a command that submits a message to the ledger completes.
         /// </summary>
-        private static SubmitRequestResultDelegate _submitRequestCallback = (xCommandHandle, err, responseJson) =>
+        private static SubmitRequestResultDelegate _submitRequestCallback = (xcommand_handle, err, response_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(responseJson);
+            taskCompletionSource.SetResult(response_json);
         };
 
         /// <summary>
         /// Gets the callback to use when a command that builds a request completes.
         /// </summary>
-        private static BuildRequestResultDelegate _buildRequestCallback = (xCommandHandle, err, requestJson) =>
+        private static BuildRequestResultDelegate _buildRequestCallback = (xcommand_handle, err, request_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(requestJson);
+            taskCompletionSource.SetResult(request_json);
         };
 
 
         /// <summary>
         /// Gets the callback to use when the command for SignRequestAsync has completed.
         /// </summary>
-        private static SignRequestResultDelegate _signRequestCallback = (xCommandHandle, err, signature) =>
+        private static SignRequestResultDelegate _signRequestCallback = (xcommand_handle, err, signed_request_json) =>
         {
-            var taskCompletionSource = RemoveTaskCompletionSource<string>(xCommandHandle);
+            var taskCompletionSource = RemoveTaskCompletionSource<string>(xcommand_handle);
 
             if (!CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(signature);
+            taskCompletionSource.SetResult(signed_request_json);
         };
 
 
