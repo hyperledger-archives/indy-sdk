@@ -41,6 +41,8 @@
      docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
      ```
      
+     If you use this method then you have to specify the TEST_POOL_IP as specified below  when running the tests.
+ 
      It can be useful if we want to launch integration tests inside another container attached to
      the same docker network. 
      
@@ -57,4 +59,4 @@
      RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
      ```
      
-See [ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
+See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/libindy/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.

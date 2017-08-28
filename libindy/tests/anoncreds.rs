@@ -31,6 +31,7 @@ use utils::types::{
 };
 
 use indy::api::ErrorCode;
+use utils::inmem_wallet::InmemWallet;
 
 mod high_cases {
     use super::*;
@@ -167,6 +168,37 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claim_offers(invalid_wallet_handle, r#"{"schema_seq_no":"1"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+        }
+
+        #[test]
+        fn prover_get_claim_offers_for_custom_wallet() {
+            InmemWallet::cleanup();
+
+            let wallet_name = "prover_plugged_wallet";
+            let xtype = "inmem";
+
+            WalletUtils::register_wallet_type(xtype, false).unwrap();
+            WalletUtils::create_wallet("pool_1", wallet_name, Some(xtype), None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None).unwrap();
+
+            let claim_offer_json = AnoncredsUtils::get_claim_offer(&ISSUER_DID, 1);
+            let claim_offer_json2 = AnoncredsUtils::get_claim_offer(&ISSUER_DID, 2);
+            let claim_offer_json3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 2);
+
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json2).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json3).unwrap();
+
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
+
+            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+
+            assert_eq!(claim_offers.len(), 2);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 1 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 2 }));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            InmemWallet::cleanup();
         }
     }
 

@@ -27,7 +27,7 @@ namespace Indy.Sdk.Dotnet
         public static IndyException fromErrorCode(int errorCode)
         {
             if (!Enum.IsDefined(typeof(ErrorCode), errorCode))
-                throw new InvalidCastException(string.Format("The error code '{0}' does not have a corresponding ErrorCode value.", errorCode));
+                throw new InvalidCastException(string.Format("The error #{0} does not have a corresponding ErrorCode value.", errorCode));
 
             var message = string.Format("{0}:{1}", Enum.GetName(typeof(ErrorCode), errorCode), errorCode);
             return new IndyException(message, (ErrorCode)errorCode);            
