@@ -176,7 +176,7 @@ public abstract class WalletType {
 	 * 
 	 * @param handle The handle of the wallet to set the value on.
 	 * @param keyPrefx The prefix of the keys to filter on.  If null no filter will be applied.
-	 * @param valueJsonPtr A pointer to the return value to be set by implementers.
+	 * @param valuesJsonPtr A pointer to the return value to be set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
 	public abstract ErrorCode list(int handle, String keyPrefx, PointerByReference valuesJsonPtr);
@@ -195,7 +195,7 @@ public abstract class WalletType {
 	 * @param name The name of the wallet.
 	 * @param config The configuration of the wallet.
 	 * @param credentials The credentials of the wallet.
-	 * @return
+	 * @return An ErrorCode indicating the outcome.
 	 */
 	public abstract ErrorCode delete(String name, String config, String credentials);
 	

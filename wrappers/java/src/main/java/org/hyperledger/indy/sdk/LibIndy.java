@@ -111,7 +111,7 @@ public abstract class LibIndy {
 	/**
 	 * Initializes the API with the path to the C-Callable library.
 	 * 
-	 * @param path The path to the directory containing the C-Callable library file.
+	 * @param searchPath The path to the directory containing the C-Callable library file.
 	 */
 	public static void init(String searchPath) {
 

@@ -407,3 +407,42 @@ def publishingPythonWrapperToPipy() {
         }
     }
 }
+
+def publishingJavaWrapperToMaven() {
+    node('ubuntu') {
+        stage('Publish Java Wrapper To Maven Central') {
+            try {
+                def poolInst
+                def network_name = "pool_network"
+                def env_name = "Ubuntu Java"
+
+                echo "Publish To Maven: Checkout csm"
+                checkout scm
+
+                dir('wrappers/java') {
+                    echo "Publish To Maven Test: Build docker image"
+                    def testEnv = dockerHelpers.build('java-indy-sdk', 'ci/java.dockerfile ci')
+
+                    poolInst = openPool(env_name, network_name, '84', '1.0.82', '1.0.25', '1.0.84')
+
+                    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                        echo "Publish To Maven Test: Test"
+
+                        sed -i -E -e 'H;1h;$!d;x' -e "s/<version>([0-9,.]+)<\/version>/<version>\1-$env.BUILD_NUMBER<\/version>/" pom.xml
+
+                        withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
+                            sh 'cp $settingsFile ~/.m2'
+                            //sh 'cp gpgKeys ~/.gnupg'
+
+                            sh "mvn clean deploy -DskipTests"
+                            //sh "mvn nexus-staging:release"
+                        }
+                    }
+                }
+            }
+            finally {
+                closePool(env_name, network_name, poolInst)
+            }
+        }
+    }
+}
