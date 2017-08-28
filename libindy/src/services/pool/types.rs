@@ -1,11 +1,11 @@
 extern crate serde_json;
 extern crate rmp_serde;
 
-use std::cmp;
 use std::cmp::Eq;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use super::zmq;
+use errors::common::CommonError;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::json::{JsonDecodable, JsonEncodable};
@@ -75,29 +75,25 @@ pub struct CatchupReq {
 impl<'a> JsonDecodable<'a> for CatchupReq {}
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CatchupRep {
     pub ledgerId: usize,
     pub consProof: Vec<String>,
-    pub txns: HashMap<String, GenTransaction>,
+    pub txns: HashMap<String, serde_json::Value>,
 }
 
 impl CatchupRep {
-    pub fn min_tx(&self) -> usize {
-        assert!(!self.txns.is_empty());
-        (self.txns.keys().min().unwrap().parse::<usize>()).unwrap()
-    }
-}
-
-impl cmp::Ord for CatchupRep {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        other.min_tx().cmp(&self.min_tx())
-    }
-}
-
-impl cmp::PartialOrd for CatchupRep {
-    fn partial_cmp(&self, other: &CatchupRep) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
+    pub fn min_tx(&self) -> Result<usize, CommonError> {
+        let mut min = None;
+        for (k, _) in self.txns.iter() {
+            let val = k.parse::<usize>()
+                .map_err(|err| CommonError::InvalidStructure(format!("{:?}", err)))?;
+            match min {
+                None => min = Some(val),
+                Some(m) => if val < m { min = Some(val) }
+            }
+        }
+        min.ok_or(CommonError::InvalidStructure(format!("Empty Map")))
     }
 }
 
@@ -193,7 +189,26 @@ pub struct RemoteNode {
 
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
-    pub pending_reps: BinaryHeap<(CatchupRep, usize)>,
+    pub pending_reps: Vec<(CatchupRep, usize)>,
+}
+
+pub trait MinValue {
+    fn get_min_index(&self) -> Result<usize, CommonError>;
+}
+
+impl MinValue for Vec<(CatchupRep, usize)> {
+    fn get_min_index(&self) -> Result<usize, CommonError> {
+        let mut res = None;
+        for (index, &(ref catchup_rep, _)) in self.iter().enumerate() {
+            match res {
+                None => { res = Some((catchup_rep, index)); }
+                Some((min_rep, i)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
+                    res = Some((catchup_rep, index));
+                }
+            }
+        }
+        Ok(res.ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?.1)
+    }
 }
 
 #[derive(Debug)]

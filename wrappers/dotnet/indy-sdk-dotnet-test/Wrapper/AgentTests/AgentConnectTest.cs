@@ -39,11 +39,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
                     string.Format("{{\"endpoint\":{{\"ha\":\"{0}\",\"verkey\":\"{1}\"}}}}", endpoint, listenerPk), null);
             await Ledger.SignAndSubmitRequestAsync(_pool, listenerWallet, listenerDid, attribRequest);
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             await activeListener.AddIdentityAsync(_pool, listenerWallet, listenerDid);
 
-            await Agent.AgentConnectAsync(_pool, senderWallet, senderDid, listenerDid, _messageObserver);
+            await AgentConnection.ConnectAsync(_pool, senderWallet, senderDid, listenerDid);
 
             await listenerWallet.CloseAsync();
             await Wallet.DeleteWalletAsync(listenerWalletName, null);
@@ -63,11 +63,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
             await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
 
-            await Agent.AgentConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did, _messageObserver);
+            await AgentConnection.ConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did);
         }
     }
 }

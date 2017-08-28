@@ -178,6 +178,16 @@ impl Wallet for PluggedWallet {
         Ok(result)
     }
 
+    fn close(&self) -> Result<(), WalletError> {
+        let err = (self.close_handler)(self.handle);
+
+        if err != ErrorCode::Success {
+            return Err(WalletError::PluggedWallerError(err));
+        }
+
+        Ok(())
+    }
+
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
     }
