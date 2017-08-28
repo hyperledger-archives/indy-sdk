@@ -177,8 +177,9 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
             }
         }
 
+        def folder = isDebugTests ? "debug" : "release";
 
-        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
+        sh "cp libindy/target/$folder/libindy.so wrappers/java/lib"
         dir('wrappers/java') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test java wrapper"
@@ -187,7 +188,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
             }
         }
 
-        sh "cp libindy/target/debug/libindy.so wrappers/python"
+        sh "cp libindy/target/$folder/libindy.so wrappers/python"
         dir('wrappers/python') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test python wrapper"
@@ -326,7 +327,7 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv)
+                libindyDebPublishing(testEnv, "")
                 pythonWrapperPublishing(testEnv, false)
             }
             finally {
@@ -382,7 +383,7 @@ def windowsPublishing() {
 
 def libindyDebPublishing(testEnv) {
     dir('libindy') {
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+        testEnv.inside('-u 0:0') {
             sh 'chmod -R 755 ci/*.sh'
 
             withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
@@ -409,7 +410,7 @@ def pythonWrapperPublishing(testEnv, isRelease) {
         }
 
 
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+        testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                 sh 'cp $credentialsFile ./'
                 sh "chmod -R 777 ci"
