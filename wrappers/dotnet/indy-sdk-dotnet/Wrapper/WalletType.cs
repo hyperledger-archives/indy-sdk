@@ -76,7 +76,7 @@ namespace Indy.Sdk.Dotnet.Wrapper
         /// </summary>
         /// <param name="walletHandle">The handle of the wallet.</param>
         /// <returns>Thw wallet instance associated with the handle.</returns>
-        protected abstract CustomWalletBase GetWalletByHandle(int walletHandle);
+        protected abstract ICustomWallet GetWalletByHandle(int walletHandle);
 
         /// <summary>
         /// Handler for wallet creation.
@@ -159,7 +159,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
                     return result;
                 
                 value_ptr = MarshalToUnmanaged(value);
-                wallet.ValuePointers.Add(value_ptr);
 
                 return ErrorCode.Success;
             }
@@ -189,7 +188,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
                     return result;
 
                 value_ptr = MarshalToUnmanaged(value);
-                wallet.ValuePointers.Add(value_ptr);
 
                 return ErrorCode.Success;
             }
@@ -219,7 +217,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
                     return result;
 
                 values_json_ptr = MarshalToUnmanaged(value);
-                wallet.ValuePointers.Add(values_json_ptr);
 
                 return ErrorCode.Success;
             }
@@ -278,7 +275,6 @@ namespace Indy.Sdk.Dotnet.Wrapper
                 var wallet = GetWalletByHandle(handle);
 
                 Marshal.FreeHGlobal(value);                
-                wallet.ValuePointers.Remove(value);
                 return ErrorCode.Success;
             }
             catch (Exception)

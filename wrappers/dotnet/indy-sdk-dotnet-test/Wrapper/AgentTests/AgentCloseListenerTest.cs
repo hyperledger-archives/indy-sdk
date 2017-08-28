@@ -1,31 +1,12 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Threading.Tasks;
-using static Indy.Sdk.Dotnet.Wrapper.Agent;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
 {
     [TestClass]
     public class AgentCloseListenerTest : AgentIntegrationTestBase
     {
-        private static TaskCompletionSource<Connection> _serverToClientConnectionTaskCompletionSource;
-
-        private new static ConnectionOpenedHandler _incomingConnectionObserver = (listener, connection, senderDid, receiverDid) =>
-            {
-                Console.WriteLine("New connection " + connection);
-
-                _serverToClientConnectionTaskCompletionSource.SetResult(connection);
-
-                return _messageObserverForIncoming;
-            };
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            _serverToClientConnectionTaskCompletionSource = new TaskCompletionSource<Connection>();
-        }
-
         [TestMethod]
         public async Task TestAgentCloseConnectionWorksForOutgoing()
         {
@@ -36,15 +17,17 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AgentTests
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
 
-            await Signus.StoreTheirDidAsync(_wallet, identityJson);
+            await  Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var activeListener = await Agent.AgentListenAsync(endpoint, _incomingConnectionObserver);
+            var activeListener = await AgentListener.ListenAsync(endpoint);
 
             await activeListener.AddIdentityAsync(_pool, _wallet, myDid.Did);
 
-            await Agent.AgentConnectAsync(_pool, _wallet, myDid.Did, myDid.Did, _messageObserver);
+            await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
 
-            var serverToClientConnection = await _serverToClientConnectionTaskCompletionSource.Task;
+            var connectionEvent = await activeListener.WaitForConnection();
+            var serverToClientConnection = connectionEvent.Connection;
+
             await activeListener.CloseAsync();
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
