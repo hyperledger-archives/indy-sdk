@@ -12,7 +12,7 @@ import org.json.JSONObject;
 
 public class InMemWallet implements CustomWallet {
 
-	private static Map<String, WalletRecord> records = new ConcurrentHashMap<String, WalletRecord>();	
+	private Map<String, WalletRecord> records = new ConcurrentHashMap<String, WalletRecord>();
 	private int freshnessDuration;
 	private Boolean isOpen = false;
 	
