@@ -26,6 +26,7 @@ pub trait Wallet {
     fn get(&self, key: &str) -> Result<String, WalletError>;
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError>;
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError>;
+    fn close(&self) -> Result<(), WalletError>;
     fn get_pool_name(&self) -> String;
     fn get_name(&self) -> String;
 }
@@ -233,7 +234,7 @@ impl WalletService {
 
     pub fn close(&self, handle: i32) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().remove(&handle) {
-            Some(wallet) => Ok(()),
+            Some(wallet) => wallet.close(),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
