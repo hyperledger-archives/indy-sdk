@@ -3,11 +3,10 @@ package org.hyperledger.indy.sdk;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.hyperledger.indy.sdk.wallet.InMemWalletType;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.wallet.WalletTypeInmem;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
@@ -35,7 +34,7 @@ public class IndyIntegrationTest {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
 		if (!isWalletRegistered){
-			Wallet.registerWalletType("inmem", WalletTypeInmem.getInstance()).get();
+			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 		}
 		isWalletRegistered = true;
 	}
