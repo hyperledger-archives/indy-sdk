@@ -30,15 +30,13 @@ def publishing() {
         echo "${env.BRANCH_NAME}: start publishing"
 
         publishedVersions = parallel([
-                //FIXME fix and restore 'libindy-rpm-files'     : { rhelPublishing() }, IS-307
-                'libindy-deb-files'     : { ubuntuPublishing() },
-                'libindy-win-files'     : { windowsPublishing() },
-                'python-wrapper-to-pipy': { pythonWrapperPublishing(false) }
+                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
+                'ubuntu-files' : { ubuntuPublishing() },
+                'windows-files': { windowsPublishing() },
         ])
 
-        version = publishedVersions['libindy-deb-files']
-        if (publishedVersions['libindy-win-files'] != version
-                || publishedVersions['python-wrapper-to-pipy'] != version) { // FIXME check rhel too, IS-307
+        version = publishedVersions['ubuntu-files']
+        if (publishedVersions['windows-files'] != version) { // FIXME check rhel too, IS-307
             error "platforms artifacts have different versions"
         }
 
@@ -285,16 +283,17 @@ def rhelPublishing() {
 
 def ubuntuPublishing() {
     node('ubuntu') {
-        stage('Publish Libindy DEB Files') {
+        stage('Publish Ubuntu Files') {
             try {
-                echo 'Publish Deb files: Checkout csm'
+                echo 'Publish Ubuntu files: Checkout csm'
                 checkout scm
 
                 version = getSrcVersion()
 
+                def testEnv
                 dir('libindy') {
-                    echo 'Publish Deb: Build docker image'
-                    def testEnv = dockerHelpers.build('indy-sdk')
+                    echo 'Publish Ubuntu files: Build docker image'
+                    testEnv = dockerHelpers.build('indy-sdk')
 
                     testEnv.inside('-u 0:0') {
 
@@ -306,9 +305,10 @@ def ubuntuPublishing() {
                         }
                     }
                 }
+                pythonWrapperPublishing(testEnv, false)
             }
             finally {
-                echo 'Publish Deb: Cleanup'
+                echo 'Publish Ubuntu files: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
@@ -357,68 +357,68 @@ def windowsPublishing() {
     return version
 }
 
-def pythonWrapperPublishing(isRelease) {
-    node('ubuntu') {
-        stage('Publish Python Wrapper To Pipy') {
-            try {
-                echo 'Publish To Pypi: Checkout csm'
-                checkout scm
-
-                dir('wrappers/python') {
-                    echo 'Publish To Pypi: Build docker image'
-                    def testEnv = dockerHelpers.build('python-indy-sdk', 'ci/python.dockerfile ci')
-
-                    def suffix
-                    if (env.BRANCH_NAME == 'master' && !isRelease) {
-                        suffix = "-devel-$env.BUILD_NUMBER"
-                    } else if (env.BRANCH_NAME == 'rc') {
-                        if (isRelease) {
-                            suffix = ""
-                        } else {
-                            suffix = "-rc-$env.BUILD_NUMBER"
-                        }
-                    } else {
-                        error "Publish To Pypi: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
-                    }
-
-                    testEnv.inside {
-
-                        withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
-                            sh 'cp $credentialsFile ./'
-                            sh "chmod -R 777 ci"
-                            sh "sed -i -E \"s/version='([0-9,.]+).*/version='\\1$suffix',/\" setup.py"
-                            sh '''
-                                python3.6 setup.py sdist
-                                python3.6 -m twine upload dist/* --config-file .pypirc
-                            '''
-                        }
-                    }
+def pythonWrapperPublishing(testEnv, isRelease) {
+    stage('Publish Python Wrapper To Pipy') {
+        dir('wrappers/python') {
+            def suffix
+            if (env.BRANCH_NAME == 'master' && !isRelease) {
+                suffix = "-devel-$env.BUILD_NUMBER"
+            } else if (env.BRANCH_NAME == 'rc') {
+                if (isRelease) {
+                    suffix = ""
+                } else {
+                    suffix = "-rc-$env.BUILD_NUMBER"
                 }
-                version = getSrcVersion()
+            } else {
+                error "Publish To Pypi: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
             }
-            finally {
-                echo 'Publish To Pypi: Cleanup'
-                step([$class: 'WsCleanup'])
+
+            testEnv.inside {
+
+                withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
+                    sh 'cp $credentialsFile ./'
+                    sh "chmod -R 777 ci"
+                    sh "sed -i -E \"s/version='([0-9,.]+).*/version='\\1$suffix',/\" setup.py"
+                    sh '''
+                        python3.6 setup.py sdist
+                        python3.6 -m twine upload dist/* --config-file .pypirc
+                    '''
+                }
             }
         }
+        version = getSrcVersion()
     }
     return version
 }
 
-def publishingRCtoStable(version) {
-    stage('Moving RC artifacts to stable') {
-        node('ubuntu') {
-            rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'key')]) {
-                for (os in ['ubuntu', 'windows']) { //FIXME add rhel IS-307
-                    src = "/var/repository/repos/libindy/$os/rc/$rcFullVersion/"
-                    target = "/var/repository/repos/libindy/$os/stable/$version"
-                    //should not exists
-                    sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
-                    sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
+def publishingRCtoStable(versionRC) {
+    node('ubuntu') {
+        stage('Moving RC artifacts to Stable') {
+            try {
+                echo 'Moving RC artifacts to Stable: Checkout csm'
+                checkout scm
+
+                version = getSrcVersion()
+                if (version != versionRC) {
+                    error "Moving RC artifacts to Stable: try to publish RC as Stable with different version"
                 }
+                rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+                withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'key')]) {
+                    for (os in ['ubuntu', 'windows']) { //FIXME add rhel IS-307
+                        src = "/var/repository/repos/libindy/$os/rc/$rcFullVersion/"
+                        target = "/var/repository/repos/libindy/$os/stable/$version"
+                        //should not exists
+                        sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
+                        sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
+                    }
+                }
+
+                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                pythonWrapperPublishing(testEnv, true)
+            } finally {
+                echo 'Moving RC artifacts to Stable: Cleanup'
+                step([$class: 'WsCleanup'])
             }
         }
-        pythonWrapperPublishing(true)
     }
 }
