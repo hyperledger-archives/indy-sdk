@@ -75,7 +75,7 @@ pub struct CatchupReq {
 impl<'a> JsonDecodable<'a> for CatchupReq {}
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CatchupRep {
     pub ledgerId: usize,
     pub consProof: Vec<String>,
