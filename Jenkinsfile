@@ -129,7 +129,7 @@ void getSrcVersion() {
     return version
 }
 
-def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
+def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDebugTests) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
