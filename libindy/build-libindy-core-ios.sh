@@ -31,7 +31,7 @@ ls -l $WORK_DIR/$POD_FILE_NAME
 echo "\nPacking completed."
 cd $CUR_DIR
 
-echo "Uploading...."
+#echo "Uploading...."
 
 #cat <<EOF | sftp -i $EVERNYM_REPO_KEY repo@54.187.56.182
 #ls -l /var/repositories/libindy/ios/stable/libindy-core/$LIBINDY_POD_VERSION/$POD_FILE_NAME
@@ -43,6 +43,6 @@ echo "Uploading...."
 #ls -l /var/repositories/libindy/ios/stable/libindy-core/$LIBINDY_POD_VERSION
 #EOF
 
-echo "Cleanup temporary directory: $WORK_DIR"
+echo "Temporary directory: $WORK_DIR"
 #rm -rf "$WORK_DIR"
 
