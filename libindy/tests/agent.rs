@@ -107,7 +107,7 @@ mod high_cases {
 
             let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("sovrin_agent_connect_works_for_a")).unwrap();
 
-            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), "127.0.0.1:9701").unwrap();
+            SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), "127.0.0.1:9700").unwrap();
 
             //FIXME temporary code: replace by indy_agent_listen
             thread::spawn(move || {
@@ -116,7 +116,7 @@ mod high_cases {
                 let socket: zmq::Socket = zmq::Context::new().socket(zmq::SocketType::ROUTER).unwrap();
                 socket.set_curve_server(true).unwrap();
                 socket.add_curve_keypair([public_key, secret_key].concat().as_slice()).unwrap();
-                socket.bind(format!("tcp://{}", "127.0.0.1:9701").as_str()).unwrap();
+                socket.bind(format!("tcp://{}", "127.0.0.1:9700").as_str()).unwrap();
                 socket.poll(zmq::POLLIN, -1).unwrap();
                 let identity = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 let msg = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
