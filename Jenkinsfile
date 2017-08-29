@@ -329,6 +329,7 @@ def ubuntuPublishing() {
 
                 libindyDebPublishing(testEnv)
                 pythonWrapperPublishing(testEnv, false)
+                javaWrapperPublishing(testEnv, false)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -394,21 +395,25 @@ def libindyDebPublishing(testEnv) {
     }
 }
 
+def getSuffix(isRelease, target) {
+    def suffix;
+    if (env.BRANCH_NAME == 'master' && !isRelease) {
+        suffix = "-dev-$env.BUILD_NUMBER"
+    } else if (env.BRANCH_NAME == 'rc') {
+        if (isRelease) {
+            suffix = ""
+        } else {
+            suffix = "-rc-$env.BUILD_NUMBER"
+        }
+    } else {
+        error "Publish To ${target}: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
+    }
+    return suffix;
+}
+
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {
-        def suffix
-        if (env.BRANCH_NAME == 'master' && !isRelease) {
-            suffix = "-devel-$env.BUILD_NUMBER"
-        } else if (env.BRANCH_NAME == 'rc') {
-            if (isRelease) {
-                suffix = ""
-            } else {
-                suffix = "-rc-$env.BUILD_NUMBER"
-            }
-        } else {
-            error "Publish To Pypi: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
-        }
-
+        def suffix = getSuffix(testEnv, "Pypi")
 
         testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
@@ -418,6 +423,25 @@ def pythonWrapperPublishing(testEnv, isRelease) {
                     python3.6 setup.py sdist
                     python3.6 -m twine upload dist/* --config-file .pypirc
                 '''
+            }
+        }
+    }
+}
+
+def javaWrapperPublishing(testEnv, isRelease) {
+    dir('wrappers/java') {
+        echo "Publish To Maven Test: Build docker image"
+        def suffix = getSuffix(testEnv, "Maven")
+
+        testEnv.inside {
+            echo "Publish To Maven Test: Test"
+
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+
+            withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
+                sh 'cp $settingsFile .'
+
+                sh "mvn clean deploy -DskipTests --settings settings.xml"
             }
         }
     }
