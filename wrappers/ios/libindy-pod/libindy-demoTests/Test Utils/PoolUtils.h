@@ -16,23 +16,40 @@
 
 - (NSNumber *)getRequestId;
 
-- (NSString *)createDefaultPoolConfig:(NSString *)poolName;
+// MARK: - Txn file
+- (NSString *)createGenesisTxnFileForTestPool:(NSString *)poolName
+                                   nodesCount:(NSNumber *)nodesCount
+                                  txnFilePath:(NSString *)txnFilePath;
+
+- (NSString *)createGenesisTxnFileWithPoolName:(NSString *)poolName
+                                   txnFileData:(NSString *)txnFileData
+                                   txnFilePath:(NSString *)txnFilePath;
+
+- (NSString *)createGenesisTxnFileForTestPoolWithInvalidNodesForPoolName:(NSString *)poolName
+                                                             txnFilePath:(NSString *)txnFilePath;
+
+- (NSString *)createGenesisTxnFileForTestPoolWithWrongAliasForPoolName:(NSString *)poolName
+                                                           txnFilePath:(NSString *)txnFilePath;
+// MARK: - Config
+
+- (NSString *)poolConfigJsonForTxnFilePath:(NSString *)txnFilePath;
+
+- (NSString *)createDefaultPoolConfig:(NSString *)poolName
+                          txnFileData:(NSString *)txnFileData;
 
 - (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)poolName
-                                          nodes:(NSString *)nodes
-                                     poolConfig:(NSString *)config
-                                 genTxnFileName:(NSString *)genTxnFileName;
+                                     poolConfig:(NSString *)config;
 
-- (NSError*)createAndOpenPoolLedgerConfigWithName: (NSString *) poolName
-                                       poolHandle: (IndyHandle *) handle;
+// MARK: - Pool ledger
 
 - (NSError *)openPoolLedger:(NSString*)poolName
                      config:(NSString*)config
                 poolHandler:(IndyHandle*)handle;
 
-- (NSError *)sendRequestWithPoolHandle:(IndyHandle)poolHandle
-                               request:(NSString *)request
-                              response:(NSString **)response;
+- (NSError*)createAndOpenPoolLedgerWithPoolName: (NSString *) poolName
+                                     poolHandle: (IndyHandle*) handle;
+
+// MARK: - Actions
 
 - (NSError *)refreshPoolHandle:(IndyHandle)poolHandle;
 
@@ -40,6 +57,8 @@
 
 - (NSError *)deletePoolWithName:(NSString *)poolName;
 
-+ (NSString *) nodeIp;
+- (NSError *)sendRequestWithPoolHandle:(IndyHandle)poolHandle
+                               request:(NSString *)request
+                              response:(NSString **)response;
 
 @end

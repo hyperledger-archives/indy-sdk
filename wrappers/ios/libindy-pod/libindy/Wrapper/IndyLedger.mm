@@ -37,6 +37,29 @@
     return [NSError errorFromIndyError: ret];
 }
 
++ (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
+                            submitterDid:(NSString *)submitterDid
+                             requestJson:(NSString *)requestJson
+                              completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    
+    ret = indy_sign_request(handle,
+                            walletHandle,
+                            [submitterDid UTF8String],
+                            [requestJson UTF8String],
+                            IndyWrapperCommon3PSCallback);
+    
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+    
+    return [NSError errorFromIndyError: ret];
+}
+
 + (NSError *)submitRequestWithPoolHandle:(IndyHandle)poolHandle
                              requestJSON:(NSString *)request
                               completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler

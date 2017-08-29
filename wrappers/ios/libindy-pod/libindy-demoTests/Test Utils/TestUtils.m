@@ -45,6 +45,16 @@
     return  100;
 }
 
++ (NSString *)tmpFilePathAppending:(NSString *)fileName
+{
+    return [NSString stringWithFormat:@"%@/%@", [TestUtils getUserTmpDir], fileName];
+}
+
++ (NSString *) testPoolIp
+{
+    return @"127.0.0.1";
+}
+
 + (NSString *)pool
 {
     return @"pool_1";
@@ -79,6 +89,7 @@
     return @"000000000000000000000000Trustee1";
 }
 
+
 + (NSString *)mySeed
 {
     return @"00000000000000000000000000000My1";
@@ -97,6 +108,21 @@
 + (NSString *)serverMessage
 {
     return @"msg_from_server";
+}
+
++ (NSString *)commonMasterSecretName
+{
+    return @"common_master_secret_name";
+}
+
++ (NSString *)issuerDid
+{
+    return @"NcYxiDXkpYi6ov5FcYDi1e";
+}
+
++ (IndyHandle)walletHandle
+{
+    return 0;
 }
 
 @end

@@ -80,9 +80,9 @@
     
     // 1. pool
     IndyHandle poolHandle = 0;
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName failed");
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName failed");
     
     // 2. listener handle
     
@@ -168,9 +168,9 @@
     
     // 1. pool
     IndyHandle poolHandle = 0;
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName failed");
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName failed");
     
     // 2. listener handle
     

@@ -41,9 +41,9 @@
 //    
 //}
 
--(NSError*) createAndOpenWalletWithPoolName:(NSString*) poolName
-                                      xtype:(NSString*) xtype
-                                     handle:(IndyHandle*) handle
+-(NSError *)createAndOpenWalletWithPoolName:(NSString *) poolName
+                                      xtype:(NSString *) xtype
+                                     handle:(IndyHandle *) handle
 {
     __block NSError *err = nil;
     NSError *ret = nil;
@@ -54,11 +54,11 @@
     NSString *xTypeStr = (xtype) ? xtype : @"default";
     
     ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
-                                                             name:  walletName
-                                                            xType:  xTypeStr
-                                                           config:  nil
-                                                      credentials:  nil
-                                                       completion: ^(NSError* error)
+                                                           name:  walletName
+                                                          xType:  xTypeStr
+                                                         config:  nil
+                                                    credentials:  nil
+                                                     completion: ^(NSError* error)
            {
                err = error;
                [completionExpectation fulfill];

@@ -83,6 +83,11 @@
                                            data:(NSNumber *)data
                                      resultJson:(NSString**)resultJson;
 
+// MARK: - Sign Request
+- (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
+                            submitterdid:(NSString *)submitterDid
+                             requestJson:(NSString *)requestJson
+                              resultJson:(NSString**)resultJson;
 
 
 @end

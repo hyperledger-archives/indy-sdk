@@ -38,27 +38,6 @@
     return instance;
 }
 
-// MARK: - Default static values
-+ (NSString *)commonMasterSecretName
-{
-    return @"common_master_secret_name";
-}
-
-+ (IndyHandle)walletHandle
-{
-    return 0;
-}
-
-+ (NSString *)claimDefJson
-{
-    return @"";
-}
-
-+ (NSString *)issuerDid
-{
-    return @"NcYxiDXkpYi6ov5FcYDi1e";
-}
-
 // MARK: - Json configurators
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo
 {
@@ -155,6 +134,7 @@
 - (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJson:(NSString *)claimReqJson
                                      claimJson:(NSString *)claimJson
+                                userRevocIndex:(NSNumber *)userRevocIndex
                                   outClaimJson:(NSString **)xClaimJson
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON
 {
@@ -168,8 +148,7 @@
     NSError *ret = [IndyAnoncreds  issuerCreateClaimWithWalletHandle:walletHandle
                                                           claimReqJSON:claimReqJson
                                                              claimJSON:claimJson
-                                                         revocRegSeqNo:@(-1)
-                                                        userRevocIndex:@(-1)
+                                                        userRevocIndex:userRevocIndex
                                                             completion:^(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)
                     {
                         err = error;
@@ -220,7 +199,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if ( claimDefJson ) { *claimDefJson = outClaimDefJson; }
     
@@ -283,7 +262,7 @@
     
     NSError *ret = [IndyAnoncreds proverStoreClaimOfferWithWalletHandle:walletHandle
                                                          claimOfferJSON:str
-                                                               completion: ^(NSError *error)
+                                                             completion: ^(NSError *error)
                     {
                         err = error;
                         [completionExpectation fulfill];
@@ -294,7 +273,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     return err;
     
@@ -324,7 +303,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if (outJson) { *outJson = json; }
     return err;
@@ -346,7 +325,6 @@
     NSError *ret = [ IndyAnoncreds proverCreateAndStoreClaimReqWithWalletHandle: walletHandle
                                                                         proverDid:pd
                                                                    claimOfferJSON:coj
-                    
                                                                      claimDefJSON:cdj
                                                                  masterSecretName:name
                                                                        completion:^(NSError* error, NSString* claimReqJSON)
@@ -361,7 +339,7 @@
         return ret;
     }
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if (outJson) { *outJson = json; }
     return err;
@@ -554,7 +532,6 @@
     
     [TestUtils cleanupStorage];
     
-    ////TODO Need clean after tests but not exists After function in Cargo
     NSError *ret;
     
     // 1. Create and open wallet
@@ -571,20 +548,19 @@
     NSString *schema = [self getGvtSchemaJson:seqNo];
     NSString *tempClaimDefJson;
     ret = [self issuerCreateClaimDefinifionWithWalletHandle:tempWalletHandle
-                                                  issuerDid:[AnoncredsUtils issuerDid]
+                                                  issuerDid:[TestUtils issuerDid]
                                                  schemaJson:schema
                                               signatureType:nil
-                                             createNonRevoc:NO
+                                             createNonRevoc:false
                                                claimDefJson:&tempClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateClaimDefinifionWithWalletHandle failed");
     
-    if (ret.code != Success) {return ret;}
     XCTAssertTrue([tempClaimDefJson isValid], @"invalid tempClaimDefJson: %@", tempClaimDefJson);
     
     //3. Store three claim offers
-    NSString *claimOfferJson1 = [self getClaimOfferJson:[AnoncredsUtils issuerDid]
-                                            schemaSeqNo:@(1)];
-    NSString *claimOfferJson2 = [self getClaimOfferJson:[AnoncredsUtils issuerDid]
+    NSString *claimOfferJson1 = [self getClaimOfferJson:[TestUtils issuerDid]
+                                            schemaSeqNo:seqNo];
+    NSString *claimOfferJson2 = [self getClaimOfferJson:[TestUtils issuerDid]
                                             schemaSeqNo:@(2)];
     NSString *claimOfferJson3 = [self getClaimOfferJson:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                             schemaSeqNo:@(2)];
@@ -600,7 +576,7 @@
     
     //4. Create MasterSecret
     ret = [self proverCreateMasterSecret:tempWalletHandle
-                        masterSecretName:[AnoncredsUtils commonMasterSecretName]];
+                        masterSecretName:[TestUtils commonMasterSecretName]];
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret failed");
     
     //5. Create and Store Claim Request
@@ -609,7 +585,7 @@
                                    proverDid:@"HEJ9gvWX64wW7UD"
                               claimOfferJson:claimOfferJson1
                                 claimDefJson:tempClaimDefJson
-                            masterSecretName:[AnoncredsUtils commonMasterSecretName]
+                            masterSecretName:[TestUtils commonMasterSecretName]
                              outClaimReqJson:&claimRequest];
     
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreClaimReq failed for claimOfferJson1");
@@ -624,6 +600,7 @@
     ret = [self issuerCreateClaimWithWalletHandle:tempWalletHandle
                                      claimReqJson:claimRequest
                                         claimJson:claimJson
+                                   userRevocIndex:nil
                                      outClaimJson:&xClaimJson
                             outRevocRegUpdateJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateClaimWithWalletHandle failed");
