@@ -339,7 +339,7 @@ public abstract class WalletType {
 	 * @param name The name of the wallet.
 	 * @param config The configuration of the wallet.
 	 * @param credentials The credentials of the wallet.
-	 * @return
+	 * @return An ErrorCode indicating the outcome.
 	 */
 	public abstract ErrorCode delete(String name, String config, String credentials);
 		

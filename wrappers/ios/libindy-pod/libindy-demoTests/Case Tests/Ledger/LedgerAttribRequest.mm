@@ -41,7 +41,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -84,6 +84,7 @@
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"PoolUtils::sendRequestWithPoolHandle() failed");
     XCTAssertNotNil(attribResponse, @"attribResponse is nil!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -96,7 +97,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -140,6 +141,7 @@
     XCTAssertNotNil(getAttribResponse, @"getAttribResponse is nil!");
     XCTAssertFalse([getAttribResponse isEqualToString:@""], @"getAttribResponse is empty!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -152,7 +154,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -197,6 +199,7 @@
     XCTAssertNotNil(getAttribResponse, @"getAttribResponse is nil!");
     XCTAssertFalse([getAttribResponse isEqualToString:@""], @"getAttribResponse is empty!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

@@ -135,7 +135,6 @@ public class Wallet extends IndyJava.API {
 	 * 
 	 * @param xtype Wallet type name.
 	 * @param walletType An instance of a WalletType subclass
-	 * @param forceCreate Allows a new registration with the same name as a previous registration if true.
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 * @throws InterruptedException Thrown...???

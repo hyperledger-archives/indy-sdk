@@ -62,6 +62,9 @@
                   Identifier = "AgentMediumSend/testAgentSendWorksForRemovedIdentity">
                </Test>
                <Test
+                  Identifier = "AnoncredsHignCases/testAnoncreds">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test
@@ -69,6 +72,9 @@
                </Test>
                <Test
                   Identifier = "LedgerHignCases/testSubmitNodeRequestWorksForNewSteward">
+               </Test>
+               <Test
+                  Identifier = "PoolMediumCases/testOpenPoolLedgerWorksForInvalidConfig">
                </Test>
                <Test
                   Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">

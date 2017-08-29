@@ -87,7 +87,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -100,7 +100,6 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    NSString* myVerKey = nil;
     NSString* myDidJson = [NSString stringWithFormat:@"{"\
                            "\"seed\":\"00000000000000000000000000000My3\"" \
                            "}"];
@@ -108,18 +107,17 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
+                                                        outMyVerkey:nil
                                                             outMyPk:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     XCTAssertNotNil(myDid, @"myDid is nil!");
-    XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
     
     // 4. Build schema request
     NSString *schemaData = [NSString stringWithFormat:@"{"\
                             "\"name\":\"gvt2\"," \
                             "\"version\":\"2.0\"," \
-                            "\"keys\":[\"name\",\"male\"]" \
+                            "\"attr_names\":[\"name\",\"male\"]" \
                             "}"];
     NSString *schemaRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
@@ -138,6 +136,7 @@
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(schemaResponse, @"schemaResponse is nil!");
     
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -151,7 +150,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -198,6 +197,8 @@
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
     XCTAssertNotNil(getSchemaResponse, @"getSchemaResponse is nil!");
     XCTAssertFalse([getSchemaResponse isEqualToString:@""], @"getSchemaResponse is enpty!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

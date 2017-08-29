@@ -37,9 +37,9 @@
     
     // 1. Obtain pool handle
     IndyHandle poolHandle = 0;
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerConfigWithName() failed");
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName() failed");
     
     // 2. Obtain listener's wallet
     IndyHandle listenerWalletHandle = 0;
