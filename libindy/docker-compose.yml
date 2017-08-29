@@ -1,0 +1,12 @@
+version: '2'
+services:
+  indy-client-rust-test:
+    build:
+      context: .
+      dockerfile: ci/ubuntu.dockerfile
+    command: cargo test --color=always -- --nocapture
+    volumes:
+      - ".:/home/indy/indy-client-rust"
+    working_dir: /home/indy/indy-client-rust
+    environment:
+        - RUST_TEST_THREADS=1

@@ -1,0 +1,57 @@
+[package]
+name = "indy"
+version = "1.0.0"
+authors = [
+  "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
+  "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
+  "Artem Ivanov <artem.ivanov@dsr-company.com>",
+  "Evgeniy Razinkov <evgeniy.razinkov@dsr-company.com.ru>",
+  "Kirill Neznamov <kirill.neznamov@dsr-company.com>",
+  "Sergey Minaev <sergey.minaev@dsr-company.com>"
+  ]
+
+description = "This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects), which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org). The major artifact of the SDK is a c-callable library."
+license = "MIT/Apache-2.0"
+build = "build.rs"
+
+[lib]
+name = "indy"
+path = "src/lib.rs"
+crate-type = ["staticlib","rlib", "dylib"]
+
+[features]
+default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool"]
+bn_openssl = ["openssl", "int_traits"]
+ed25519_sodium = ["sodiumoxide"]
+base58_rust_base58 = ["rust-base58"]
+xsalsa20_sodium = ["sodiumoxide"]
+pair_amcl = ["amcl"]
+hash_openssl = ["openssl"]
+local_nodes_pool = []
+interoperability_tests = []
+revocation_tests = []
+
+[dependencies]
+amcl = { version = "0.1.1", optional = true }
+int_traits = { version = "0.1.1", optional = true }
+env_logger = "0.4.2"
+hex = "0.2.0"
+libc = "0.2.21"
+log = "0.3.7"
+openssl = { version = "0.9.11", optional = true }
+rand = "0.3"
+rusqlite = "0.10.1"
+rust-base58 = {version = "0.0.4", optional = true}
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+rmp-serde = "0.13.6"
+sodiumoxide = {version = "0.0.14", optional = true}
+time = "0.1.36"
+zmq-pw = "0.9.8"
+lazy_static = "0.2"
+byteorder = "1.0.0"
+[dependencies.uuid]
+version = "0.5.0"
+default-features = false
+features = ["v4"]

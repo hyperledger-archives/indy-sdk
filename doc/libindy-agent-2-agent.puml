@@ -1,0 +1,98 @@
+@startuml
+skinparam ParticipantPadding 20
+skinparam BoxPadding 20
+
+title Libindy Agent to Agent communucation API
+scale 0.9
+
+box "Sender Agent" #LightBlue
+actor "Sender Agent" as SA
+participant "Sender Libindy" as SL
+participant "Sender Wallet" as SW
+participant "Sender Socket" as SS
+endbox
+
+box "Receiver Agent" #LightBlue
+actor "Receiver Agent" as RA
+participant "Receiver Libindy" as RL
+participant "Receiver Wallet" as RW
+participant "Receiver Socket" as RS
+endbox
+
+participant "Ledger" as L
+
+=== Start listening ==
+
+RA -> RL: <b>1. indy_create_and_store_my_did
+RL -> RW: Store receiver keys
+
+RA -> RL: <b>2. indy_agent_listen
+RL -> RS: Start listening
+RL -> RA: Listener handle (cb)
+
+RA -> RL: <b>3. indy_add_identity \ncan be performed multiply times for same listener and different DID
+RL -> RW: Check my_did in wallet
+RL -> RL: Start accepting incomming connections for the DID
+RL -> RA: Add identity result (cb)
+
+=== Establish connection ==
+
+SA -> SL: <b>3. indy_create_and_store_my_did
+SL -> SW: Store sender keys
+
+SA -> SL: <b>4. indy_agent_connect
+SL -> SW: Get sender keys
+SW -> SL: Sender keys
+SL -> L: GET_NYM/GET_DDO
+L -> SL: Receiver keys and endpoint
+SL -> SW: Store receiver keys and endpoint
+
+SL -> SS: Receiver did, keys and endpoint. Sender did, keys
+
+SS -> RS: PairwiseCurveCP Hello message
+RS -> RL: Keys lookup request
+RL -> RW: Get keys and did for request
+RW -> RL: Receiver keys and did
+RL -> RS: Receiver keys
+RS -> SS: PairwiseCurveCP Welcome message
+
+SS -> RS: Next PairwiseCurveCP handshake messages
+RS -> SS: PairwiseCurveCP handshake messages answers
+
+SS -> SL: PairwiseCurveCP connection established
+
+SL -> SS: DID message
+SS -> RS: DID message
+RS -> RL: Sender did and public key
+RL -> L: GET_NYM/GET_DDO
+L -> RL: Sender keys and did (from Ledger)
+RL -> RL: Connection verification
+RL -> RS: DID message answer
+RS -> SS: DID message answer
+SS -> SL: DID message answer
+SL -> SA: Connection handle (cb)
+RL -> RA: Connection handle (cb)
+
+=== Exchange messages ==
+
+SA -> SL: <b>4. indy_agent_send
+SL -> SS: Message
+SS -> RS: Message
+RS -> RL: Message
+RL -> RA: Message (cb)
+
+RA -> RL: <b>5. indy_agent_send
+RL -> RS: Message
+RS -> SS: Message
+SS -> SL: Message
+SL -> SA: Message (cb)
+
+=== Clean up ==
+
+SA -> SL:  <b>5. indy_agent_close_connection
+SL -> SS: Close socket
+
+RA -> RL: <b>5. indy_agent_close_listener
+RL -> RS: Close socket
+
+@enduml

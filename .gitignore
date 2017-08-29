@@ -1,0 +1,8 @@
+cargo-registry
+target
+build
+.idea
+.venv
+.cache
+.DS_Store
+Podfile.lock

@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+#
+
+export PATH=/usr/local/bin:/usr/bin:/bin:/root/.cargo/bin
+
+%:
+	dh $@
+
+clean:
+	cargo clean
+
+build:
+	cargo build --release
