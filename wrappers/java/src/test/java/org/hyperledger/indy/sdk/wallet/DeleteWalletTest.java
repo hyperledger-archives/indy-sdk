@@ -77,8 +77,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testDeleteWalletWorksForPlugged() throws Exception {
-		WalletTypeInmem.getInstance().clear();
-
 		String type = "inmem";
 		String poolName = "default";
 		String walletName = "wallet";
@@ -86,8 +84,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
 		Wallet.deleteWallet(walletName, null).get();
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
-
-		WalletTypeInmem.getInstance().clear();
 	}
 
 	@Test

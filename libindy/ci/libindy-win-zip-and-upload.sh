@@ -1,18 +1,19 @@
-#!/bin/bash -e
+#!/bin/bash -xe
 
 if [ "$1" = "--help" ] ; then
-  echo "Usage: $0 <commit> $1 <key> $2 <number>"
+  echo "Usage: <version> <key> <type> <number>"
+  return
 fi
 
-commit="$1"
+version="$1"
 key="$2"
-number="$3"
-
-version=$(wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | tr -d '" ')
+type="$3"
+number="$4"
 
 [ -z $version ] && exit 1
-[ -z $commit ] && exit 2
-[ -z $key ] && exit 3
+[ -z $key ] && exit 2
+[ -z $type ] && exit 3
+[ -z $number ] && exit 4
 
 mkdir indy-sdk-zip
 mkdir indy-sdk-zip/lib
@@ -22,8 +23,8 @@ powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compressi
 rm -rf ./indy-sdk-zip
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
-mkdir /var/repository/repos/libindy/windows/master/$version-$number
-cd /var/repository/repos/libindy/windows/master/$version-$number
+mkdir /var/repository/repos/libindy/windows/$type/$version-$number
+cd /var/repository/repos/libindy/windows/$type/$version-$number
 put -r indy-sdk_"$version".zip
-ls -l /var/repository/repos/libindy/windows/master/$version-$number
+ls -l /var/repository/repos/libindy/windows/$type/$version-$number
 EOF

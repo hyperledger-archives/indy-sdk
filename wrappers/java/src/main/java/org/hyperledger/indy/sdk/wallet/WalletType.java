@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk.wallet;
 import org.hyperledger.indy.sdk.ErrorCode;
 
 import com.sun.jna.Callback;
+import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
@@ -19,7 +20,14 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(String name, String config, String credentials) {
 
-			return WalletType.this.create(name, config, credentials).ordinal();
+			try
+			{
+				return create(name, config, credentials).value();
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}
 		}
 	};
 
@@ -31,7 +39,18 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(String name, String config, String runtime_config, String credentials, Pointer handle) {
 
-			return WalletType.this.open(name, config, runtime_config, credentials, handle).ordinal();
+			try
+			{
+				HandleByReference walletHandle = new HandleByReference(); 
+				ErrorCode result = open(name, config, runtime_config, credentials, walletHandle);
+				handle.setInt(0, walletHandle.getValue());
+				
+				return result.value();
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}
 		}
 	};
 
@@ -42,8 +61,16 @@ public abstract class WalletType {
 
 		@SuppressWarnings("unused")
 		public int callback(int handle, String key, String value) {
-
-			return WalletType.this.set(handle, key, value).ordinal();
+			
+            try
+			{
+            	CustomWallet wallet = getWalletByHandle(handle);
+                return wallet.set(key, value).value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}
 		}
 	};
 
@@ -55,7 +82,25 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(int handle, String key, PointerByReference value_ptr) {
 
-			return WalletType.this.get(handle, key, value_ptr).ordinal();
+			try
+			{
+            	CustomWallet wallet = getWalletByHandle(handle);
+            	            	
+            	StringByReference resultString = new StringByReference();
+                ErrorCode result = wallet.get(key, resultString);
+                
+                if(result != ErrorCode.Success)
+                	return result.value();
+                
+                Pointer marshalledValue = marshalToNative(resultString.getValue());
+                value_ptr.setValue(marshalledValue);
+                		
+                return result.value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}
 		}
 	};
 
@@ -66,8 +111,26 @@ public abstract class WalletType {
 
 		@SuppressWarnings("unused")
 		public int callback(int handle, String key, PointerByReference value_ptr) {
-
-			return WalletType.this.getNotExpired(handle, key, value_ptr).ordinal();
+			
+			try
+			{
+            	CustomWallet wallet = getWalletByHandle(handle);
+            	
+            	StringByReference resultString = new StringByReference();
+                ErrorCode result = wallet.getNotExpired(key, resultString);
+                
+                if(result != ErrorCode.Success)
+                	return result.value();
+                
+                Pointer marshalledValue = marshalToNative(resultString.getValue());
+                value_ptr.setValue(marshalledValue);
+                		
+                return result.value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}
 		}
 	};
 
@@ -79,7 +142,25 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(int handle, String key_prefix, PointerByReference values_json_ptr) {
 
-			return WalletType.this.list(handle, key_prefix, values_json_ptr).ordinal();
+			try
+			{
+            	CustomWallet wallet = getWalletByHandle(handle);
+            	
+            	StringByReference resultString = new StringByReference();
+                ErrorCode result = wallet.list(key_prefix, resultString);
+                
+                if(result != ErrorCode.Success)
+                	return result.value();
+                
+                Pointer marshalledValue = marshalToNative(resultString.getValue());
+                values_json_ptr.setValue(marshalledValue);
+                		
+                return result.value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}
 		}
 	};
 
@@ -91,7 +172,14 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(int handle) {
 
-			return WalletType.this.close(handle).ordinal();
+			try
+			{            	
+            	return close(handle).value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}			
 		}
 	};
 
@@ -103,7 +191,14 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(String name, String config, String credentials) {
 
-			return WalletType.this.delete(name, config, credentials).ordinal();
+			try
+			{            	
+            	return delete(name, config, credentials).value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}			
 		}
 	};
 
@@ -115,10 +210,99 @@ public abstract class WalletType {
 		@SuppressWarnings("unused")
 		public int callback(int wallet_handle, Pointer value) {
 
-			return WalletType.this.free(wallet_handle, value).ordinal();
+			try
+			{       			
+				Native.free(Pointer.nativeValue(value));
+            	return ErrorCode.Success.value();  
+			}
+			catch(Exception e)
+			{
+				return ErrorCode.CommonInvalidState.value();
+			}			
 		}
 	};
+	
+	/**
+	 * Gets the create callback.
+	 * 
+	 * @return The create callback.
+	 */
+	Callback getCreateCb() {
+		return createCb;
+	}
 
+	/**
+	 * Gets the open callback.
+	 * 
+	 * @return The open callback.
+	 */
+	Callback getOpenCb() {
+		return openCb;
+	}
+
+	/**
+	 * Gets the set callback.
+	 * 
+	 * @return The set callback.
+	 */
+	Callback getSetCb() {
+		return setCb;
+	}
+
+	/**
+	 * Gets the get callback.
+	 * 
+	 * @return The get callback.
+	 */
+	Callback getGetCb() {
+		return getCb;
+	}
+
+	/**
+	 * Gets the getNotExpired callback.
+	 * 
+	 * @return The getNotExpired callback.
+	 */
+	Callback getGetNotExpiredCb() {
+		return getNotExpiredCb;
+	}
+
+	/**
+	 * Gets the list callback.
+	 * 
+	 * @return The list callback.
+	 */
+	Callback getListCb() {
+		return listCb;
+	}
+
+	/**
+	 * Gets the close callback.
+	 * 
+	 * @return The close callback.
+	 */
+	Callback getCloseCb() {
+		return closeCb;
+	}
+
+	/**
+	 * Gets the delete callback.
+	 * 
+	 * @return The delete callback.
+	 */
+	Callback getDeleteCb() {
+		return deleteCb;
+	}
+
+	/**
+	 * Gets the free callback.
+	 * 
+	 * @return The free callback.
+	 */
+	Callback getFreeCb() {
+		return freeCb;
+	}
+	
 	/**
 	 * Creates a new wallet.
 	 * 
@@ -136,51 +320,11 @@ public abstract class WalletType {
 	 * @param config The configuration for the wallet specified on creation.
 	 * @param runtimeConfig The runtime configuration for the wallet.
 	 * @param credentials The credentials for the wallet.
-	 * @param handle A handle for the opened wallet instance to be set by the implementer.
+	 * @param walletHandle A handle for the opened wallet instance to be set by the implementer.
 	 * @return An Errorcode indicating the outcome.
 	 */
-	public abstract ErrorCode open(String name, String config, String runtimeConfig, String credentials, Pointer handle);
-	
-	/**
-	 * Sets a value on a wallet instance.
-	 * 
-	 * @param handle The handle of the wallet to set the value on.
-	 * @param key The key to set the value for.
-	 * @param value The value to set.
-	 * @return An ErrorCode indicating the outcome.
-	 */
-	public abstract ErrorCode set(int handle, String key, String value);
-	
-	/**
-	 * Gets a value from a wallet instance.
-	 * 
-	 * @param handle The handle of the wallet to set the value on.
-	 * @param key The key of value to get.
-	 * @param valuePtr A pointer to the value to be set by implementers.
-	 * @return An ErrorCode indicating the outcome.
-	 */
-	public abstract ErrorCode get(int handle, String key, PointerByReference valuePtr);
-	
-	/**
-	 * Gets an unexpired value from a wallet instance.
-	 * 
-	 * @param handle The handle of the wallet to set the value on.
-	 * @param key The key of value to get.
-	 * @param valuePtr A pointer to the return value to be set by implementers.
-	 * @return An ErrorCode indicating the outcome.
-	 */
-	public abstract ErrorCode getNotExpired(int handle, String key, PointerByReference valuePtr);
-	
-	/**
-	 * Gets a list of values optionally filtered by key.
-	 * 
-	 * @param handle The handle of the wallet to set the value on.
-	 * @param keyPrefx The prefix of the keys to filter on.  If null no filter will be applied.
-	 * @param valueJsonPtr A pointer to the return value to be set by implementers.
-	 * @return An ErrorCode indicating the outcome.
-	 */
-	public abstract ErrorCode list(int handle, String keyPrefx, PointerByReference valuesJsonPtr);
-	
+	public abstract ErrorCode open(String name, String config, String runtimeConfig, String credentials, HandleByReference walletHandle);
+		
 	/**
 	 * Closes a wallet.
 	 * 
@@ -198,94 +342,77 @@ public abstract class WalletType {
 	 * @return
 	 */
 	public abstract ErrorCode delete(String name, String config, String credentials);
+		
+	/**
+	 * Gets an open wallet by its handle.
+	 * 
+	 * @param handle The handle of the open wallet.
+	 * @return The wallet instance associated with the handle.
+	 */
+	protected abstract CustomWallet getWalletByHandle(int handle);
 	
 	/**
-	 * Frees a value returned by a wallet.
+	 * Marshals a string value to unmanaged memory and returns a pointer to the native memory.
 	 * 
-	 * @param walletHandle The handle of the wallet the value belongs to.
-	 * @param value A pointer to the value to be freed.
-	 * @return An ErrorCode indicating the outcome.
+	 * @param value The value to marshal.
+	 * @return A pointer to the native memory containing the marshalled value.
 	 */
-	public abstract ErrorCode free(int walletHandle, Pointer value);
+	private Pointer marshalToNative(String value) {
+		byte[] bytes = Native.toByteArray(value, "UTF-8");
+		Pointer pointer = new Pointer(Native.malloc(bytes.length));
+		pointer.write(0, bytes, 0, bytes.length);
+		return pointer;
+	}
 	
 	/**
-	 * Gets the create callback.
-	 * 
-	 * @return The create callback.
+	 * A result returned from a wallet method that gets a value.
 	 */
-	public Callback getCreateCb() {
-		return createCb;
+	public class StringByReference {
+		
+		private String value;
+		
+		/**
+		 * Sets the value for the result.
+		 * 
+		 * @param value The value.
+		 */
+		public void setValue(String value) {
+			this.value = value;
+		}
+		
+		/**
+		 * Gets the value from the result.
+		 * 
+		 * @return The value.
+		 */
+		public String getValue() {
+			return this.value;
+		}		
 	}
-
+	
 	/**
-	 * Gets the open callback.
-	 * 
-	 * @return The open callback.
+	 * A handle returned from a wallet method.
 	 */
-	public Callback getOpenCb() {
-		return openCb;
+	public class HandleByReference {
+		private int handle;
+		
+		/**
+		 * Sets the handle value.
+		 * 
+		 * @param value The handle.
+		 */
+		public void setValue(int value) {
+			handle = value;
+		}
+		
+		/**
+		 * Gets the handle value.
+		 * 
+		 * @return The handle.
+		 */
+		public int getValue() {
+			return handle;
+		}
 	}
-
-	/**
-	 * Gets the set callback.
-	 * 
-	 * @return The set callback.
-	 */
-	public Callback getSetCb() {
-		return setCb;
-	}
-
-	/**
-	 * Gets the get callback.
-	 * 
-	 * @return The get callback.
-	 */
-	public Callback getGetCb() {
-		return getCb;
-	}
-
-	/**
-	 * Gets the getNotExpired callback.
-	 * 
-	 * @return The getNotExpired callback.
-	 */
-	public Callback getGetNotExpiredCb() {
-		return getNotExpiredCb;
-	}
-
-	/**
-	 * Gets the list callback.
-	 * 
-	 * @return The list callback.
-	 */
-	public Callback getListCb() {
-		return listCb;
-	}
-
-	/**
-	 * Gets the close callback.
-	 * 
-	 * @return The close callback.
-	 */
-	public Callback getCloseCb() {
-		return closeCb;
-	}
-
-	/**
-	 * Gets the delete callback.
-	 * 
-	 * @return The delete callback.
-	 */
-	public Callback getDeleteCb() {
-		return deleteCb;
-	}
-
-	/**
-	 * Gets the free callback.
-	 * 
-	 * @return The free callback.
-	 */
-	public Callback getFreeCb() {
-		return freeCb;
-	}
+	
 }
