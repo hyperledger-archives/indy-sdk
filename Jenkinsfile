@@ -398,7 +398,7 @@ def libindyDebPublishing(testEnv) {
 def getSuffix(isRelease, target) {
     def suffix;
     if (env.BRANCH_NAME == 'master' && !isRelease) {
-        suffix = "-devel-$env.BUILD_NUMBER"
+        suffix = "-dev-$env.BUILD_NUMBER"
     } else if (env.BRANCH_NAME == 'rc') {
         if (isRelease) {
             suffix = ""
