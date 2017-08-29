@@ -29,6 +29,8 @@
 
 + (void) cleanupStorage;
 
++ (NSString *) testPoolIp;
++ (NSString *)tmpFilePathAppending:(NSString *)fileName;
 + (NSString *)pool;
 + (NSData *)message;
 + (NSData *)encryptedMessage;
@@ -40,6 +42,8 @@
 + (NSString *)clientMessage;
 + (NSString *)serverMessage;
 
-
++ (NSString *)commonMasterSecretName;
++ (NSString *)issuerDid;
++ (IndyHandle)walletHandle;
 
 @end

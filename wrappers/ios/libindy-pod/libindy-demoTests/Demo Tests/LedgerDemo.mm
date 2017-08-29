@@ -37,11 +37,14 @@
     NSError *ret;
     
     // 1. Create ledger config from genesis txn file
-    ret = [[ PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
-                                                                    nodes:nil
-                                                               poolConfig:nil
-                                                           genTxnFileName:nil];
+    NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:poolName
+                                                                             nodesCount:nil
+                                                                            txnFilePath:nil];
+    NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
+    
+    ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
+                                                              poolConfig:poolConfig];
     
     // 2. Open pool ledger
     __block IndyHandle poolHandle = 0;

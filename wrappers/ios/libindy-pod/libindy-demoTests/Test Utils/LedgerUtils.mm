@@ -419,4 +419,38 @@
     if (resultJson) { *resultJson = result;}
     return err;
 }
+
+// MARK: - Sign Request
+
+- (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
+                            submitterdid:(NSString *)submitterDid
+                             requestJson:(NSString *)requestJson
+                              resultJson:(NSString**)resultJson
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+    NSError *ret;
+    
+    ret = [IndyLedger signRequestWithWalletHandle:walletHandle
+                                     submitterDid:submitterDid
+                                      requestJson:requestJson
+                                       completion:^(NSError* error, NSString* signResult)
+           {
+               err = error;
+               result = signResult;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson) { *resultJson = result;}
+    return err;
+}
+
 @end
