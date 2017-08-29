@@ -177,7 +177,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
             }
         }
 
-        def folder = isDebugTests ? "debug" : "release";
+        def folder = isDebugTests ? "debug" : "release"
 
         sh "cp libindy/target/$folder/libindy.so wrappers/java/lib"
         dir('wrappers/java') {
@@ -396,7 +396,7 @@ def libindyDebPublishing(testEnv) {
 }
 
 def getSuffix(isRelease, target) {
-    def suffix;
+    def suffix
     if (env.BRANCH_NAME == 'master' && !isRelease) {
         suffix = "-dev-$env.BUILD_NUMBER"
     } else if (env.BRANCH_NAME == 'rc') {
@@ -408,12 +408,12 @@ def getSuffix(isRelease, target) {
     } else {
         error "Publish To ${target}: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
     }
-    return suffix;
+    return suffix
 }
 
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {
-        def suffix = getSuffix(testEnv, "Pypi")
+        def suffix = getSuffix(isRelease, "Pypi")
 
         testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
@@ -431,7 +431,7 @@ def pythonWrapperPublishing(testEnv, isRelease) {
 def javaWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/java') {
         echo "Publish To Maven Test: Build docker image"
-        def suffix = getSuffix(testEnv, "Maven")
+        def suffix = getSuffix(isRelease, "Maven")
 
         testEnv.inside {
             echo "Publish To Maven Test: Test"
