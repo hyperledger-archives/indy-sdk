@@ -3,14 +3,14 @@
 @Library('SovrinHelpers') _
 
 try {
-    //testing()
+    testing()
     publishing()
     if (acceptanceTesting()) {
-        //releasing()
+        releasing()
     }
-    //notifyingSuccess()
+    notifyingSuccess()
 } catch (err) {
-    //notifyingFailure()
+    notifyingFailure()
     throw err
 }
 
@@ -27,20 +27,22 @@ def testing() {
 
 def publishing() {
     stage('Publishing') {
-//        if (!(env.BRANCH_NAME in ['master', 'rc'])) {
-//            echo "${env.BRANCH_NAME}: skip publishing"
-//           return
-//        }
-//        echo "${env.BRANCH_NAME}: start publishing"
+        if (!(env.BRANCH_NAME in ['master', 'rc'])) {
+            echo "${env.BRANCH_NAME}: skip publishing"
+            return
+        }
+        echo "${env.BRANCH_NAME}: start publishing"
 
         publishedVersions = parallel([
+                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
+                'windows-files': { windowsPublishing() },
         ])
 
-//        version = publishedVersions['ubuntu-files']
-//        if (publishedVersions['windows-files'] != version) { // FIXME check rhel too, IS-307
-//            error "platforms artifacts have different versions"
-//        }
+        version = publishedVersions['ubuntu-files']
+        if (publishedVersions['windows-files'] != version) { // FIXME check rhel too, IS-307
+            error "platforms artifacts have different versions"
+        }
     }
 }
 
@@ -320,14 +322,14 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Checkout csm'
                 checkout scm
 
-                //version = getSrcVersion()
+                version = getSrcVersion()
 
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                //libindyDebPublishing(testEnv)
-                //pythonWrapperPublishing(testEnv, false)
-                publishingJavaWrapperToMaven(testEnv)
+                libindyDebPublishing(testEnv)
+                pythonWrapperPublishing(testEnv, false)
+                javaWrapperPublishing(testEnv, false)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -393,21 +395,25 @@ def libindyDebPublishing(testEnv) {
     }
 }
 
+def getSuffix(isRelease, target) {
+    def suffix;
+    if (env.BRANCH_NAME == 'master' && !isRelease) {
+        suffix = "-devel-$env.BUILD_NUMBER"
+    } else if (env.BRANCH_NAME == 'rc') {
+        if (isRelease) {
+            suffix = ""
+        } else {
+            suffix = "-rc-$env.BUILD_NUMBER"
+        }
+    } else {
+        error "Publish To ${target}: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
+    }
+    return suffix;
+}
+
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {
-        def suffix
-        if (env.BRANCH_NAME == 'master' && !isRelease) {
-            suffix = "-devel-$env.BUILD_NUMBER"
-        } else if (env.BRANCH_NAME == 'rc') {
-            if (isRelease) {
-                suffix = ""
-            } else {
-                suffix = "-rc-$env.BUILD_NUMBER"
-            }
-        } else {
-            error "Publish To Pypi: invalid case: branch ${env.BRANCH_NAME}, isRelease ${isRelease}"
-        }
-
+        def suffix = getSuffix(testEnv, "Pypi")
 
         testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
@@ -417,6 +423,25 @@ def pythonWrapperPublishing(testEnv, isRelease) {
                     python3.6 setup.py sdist
                     python3.6 -m twine upload dist/* --config-file .pypirc
                 '''
+            }
+        }
+    }
+}
+
+def javaWrapperPublishing(testEnv, isRelease) {
+    dir('wrappers/java') {
+        echo "Publish To Maven Test: Build docker image"
+        def suffix = getSuffix(testEnv, "Maven")
+
+        testEnv.inside {
+            echo "Publish To Maven Test: Test"
+
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+
+            withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
+                sh 'cp $settingsFile .'
+
+                sh "mvn clean deploy -DskipTests --settings settings.xml"
             }
         }
     }
@@ -455,27 +480,6 @@ def publishLibindyRCtoStable(version) {
             //should not exists
             sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
             sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
-        }
-    }
-}
-
-
-def publishingJavaWrapperToMaven(testEnv) {
-    dir('wrappers/java') {
-        echo "Publish To Maven Test: Build docker image"
-
-        testEnv.inside {
-            echo "Publish To Maven Test: Test"
-
-            //sh "sed -i -E -e 'H;1h;$!d;x' -e \"s/<version>([0-9,.]+)<\/version>/<version>\\1-$env.BUILD_NUMBER<\/version>/\" pom.xml"
-
-            withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
-                sh 'cp $settingsFile ~/.m2'
-                //sh 'cp gpgKeys ~/.gnupg'
-
-                sh "mvn clean deploy -DskipTests"
-                //sh "mvn nexus-staging:release"
-            }
         }
     }
 }
