@@ -44,8 +44,8 @@
 
 	<distributionManagement>
 		<repository>
-			<id>central</id>
-			<name>indy-artifactory-releases</name>
+			<id>artifactory-evernym</id>
+			<name>artifactory-evernym</name>
 			<url>http://repo.evernym.com/artifactory/libindy-maven-local</url>
 		</repository>
 	</distributionManagement>
