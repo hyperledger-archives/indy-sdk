@@ -334,7 +334,7 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, proof_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, proof_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -371,7 +371,7 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, valid) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);

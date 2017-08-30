@@ -32,7 +32,7 @@ interoperability_tests = []
 revocation_tests = []
 
 [dependencies]
-amcl = { version = "0.1.1", optional = true }
+amcl = { version = "0.1.2", optional = true, features = ["BLS383"]}
 int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 hex = "0.2.0"
