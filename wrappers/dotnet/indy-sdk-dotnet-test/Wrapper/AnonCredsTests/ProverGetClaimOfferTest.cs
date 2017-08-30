@@ -1,4 +1,5 @@
-﻿using Indy.Sdk.Dotnet.Wrapper;
+﻿using Indy.Sdk.Dotnet.Test.Wrapper.WalletTests;
+using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System;
@@ -94,6 +95,51 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.AnonCredsTests
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+        }
+
+        [TestMethod]
+        public async Task TestGetClaimOffersForPlugged()
+        {
+            var type = "proverInmem";
+            var poolName = "default";
+            var walletName = "proverCustomWallet";
+
+            await Wallet.RegisterWalletTypeAsync(type, new InMemWalletType());
+            await Wallet.CreateWalletAsync(poolName, walletName, type, null, null);
+
+            string claimOffers;
+            Wallet wallet = null;
+
+            var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 1);
+            var claimOffer2 = string.Format(_claimOfferTemplate, _issuerDid, 2);
+            var claimOffer3 = string.Format(_claimOfferTemplate, _issuerDid2, 2);
+
+            try
+            {
+                wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+
+                await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer);
+                await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer2);
+                await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer3);
+
+                var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
+
+                claimOffers = await AnonCreds.ProverGetClaimOffersAsync(wallet, filter);
+            }
+            finally
+            {
+                if (wallet != null)
+                    await wallet.CloseAsync();
+
+                await Wallet.DeleteWalletAsync(walletName, null);
+            }
+
+            var claimOffersArray = JArray.Parse(claimOffers);
+
+            Assert.AreEqual(2, claimOffersArray.Count);
+            Assert.IsTrue(claimOffers.Contains(claimOffer));
+            Assert.IsTrue(claimOffers.Contains(claimOffer2));
+
         }
 
     }

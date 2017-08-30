@@ -1,5 +1,6 @@
 ﻿using Indy.Sdk.Dotnet.Wrapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 
 namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
@@ -55,7 +56,11 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
 
-            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(wallet, filter);
+            var claims = await AnonCreds.ProverGetClaimsAsync(wallet, filter);
+
+            var claimsArray = JArray.Parse(claims);
+
+            Assert.AreEqual(1, claimsArray.Count);
 
             await wallet.CloseAsync();
         }
