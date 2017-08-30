@@ -9,7 +9,7 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 {
     public class InMemWallet : ICustomWallet
     {
-        private static IDictionary<string, WalletRecord> _records = new Dictionary<string, WalletRecord>();
+        private IDictionary<string, WalletRecord> _records = new Dictionary<string, WalletRecord>();
         private TimeSpan _freshnessDuration;
 
         public InMemWallet(TimeSpan freshnessDuration)
