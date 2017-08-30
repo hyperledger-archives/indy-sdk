@@ -20,7 +20,7 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
 [features]
-default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool"]
+default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests"]
 bn_openssl = ["openssl", "int_traits"]
 ed25519_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
