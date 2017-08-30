@@ -1,10 +1,9 @@
-﻿using Indy.Sdk.Dotnet.Test.Wrapper.WalletTests;
-using Indy.Sdk.Dotnet.Wrapper;
+﻿using Hyperledger.Indy.Sdk.PoolApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Indy.Sdk.Dotnet.Test
+namespace Hyperledger.Indy.Sdk.Test
 {
     public abstract class IndyIntegrationTestBase
     {

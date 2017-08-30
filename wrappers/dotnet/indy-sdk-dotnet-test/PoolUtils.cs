@@ -1,12 +1,8 @@
-﻿using Indy.Sdk.Dotnet.Wrapper;
-using System;
-using System.Collections.Generic;
+﻿using Hyperledger.Indy.Sdk.PoolApi;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Indy.Sdk.Dotnet.Test
+namespace Hyperledger.Indy.Sdk.Test
 {
     class PoolUtils
     {

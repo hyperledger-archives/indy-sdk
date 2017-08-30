@@ -7,8 +7,8 @@
     <ProjectGuid>{876F1961-BA65-4844-AE59-033208634E42}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Indy.Sdk.Dotnet.Test</RootNamespace>
-    <AssemblyName>Indy.Sdk.Dotnet.Test</AssemblyName>
+    <RootNamespace>Hyperledger.Indy.Sdk.Test</RootNamespace>
+    <AssemblyName>Hyperledger.Indy.Sdk.Test</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -61,58 +61,59 @@
     <Compile Include="InitHelper.cs" />
     <Compile Include="PoolUtils.cs" />
     <Compile Include="StorageUtils.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentAddIdentityTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentSendTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentRemoveIdentityTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentListenTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentConnectTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentCloseListenerTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentCloseConnectionTest.cs" />
-    <Compile Include="Wrapper\AgentTests\AgentIntegrationTestBase.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\VerifierVerifyProofTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverStoreClaimTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverStoreClaimOfferTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverGetClaimsTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverGetClaimsForProofRequestTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverGetClaimOfferTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverCreateProofTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverCreateMasterSecretTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\ProverCreateAndStoreClaimReqTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\IssuerCreateClaimTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\IssuerCreateAndStoreClaimDefinitionTest.cs" />
-    <Compile Include="Wrapper\AnonCredsTests\AnonCredsIntegrationTestBase.cs" />
-    <Compile Include="Wrapper\DemoTests\SignusDemoTest.cs" />
-    <Compile Include="Wrapper\DemoTests\LedgerDemoTest.cs" />
-    <Compile Include="Wrapper\DemoTests\AnonCredsDemoTest.cs" />
-    <Compile Include="Wrapper\DemoTests\AgentDemoTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\SchemaRequestTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\RequestTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\NymRequestTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\NodeRequestTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\GetTxnRequestTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\ClaimDefRequestTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\AttribRequestTest.cs" />
-    <Compile Include="Wrapper\PoolTests\ClosePoolTest.cs" />
-    <Compile Include="Wrapper\PoolTests\CreatePoolTest.cs" />
-    <Compile Include="Wrapper\PoolTests\RefreshPoolTest.cs" />
-    <Compile Include="Wrapper\PoolTests\OpenPoolTest.cs" />
-    <Compile Include="Wrapper\PoolTests\DeletePoolTest.cs" />
-    <Compile Include="Wrapper\LedgerTests\SignRequestTest.cs" />
-    <Compile Include="Wrapper\SignusTests\DecryptTest.cs" />
-    <Compile Include="Wrapper\SignusTests\EncryptTest.cs" />
-    <Compile Include="Wrapper\SignusTests\VerifyTest.cs" />
-    <Compile Include="Wrapper\SignusTests\StoreTheirDidTest.cs" />
-    <Compile Include="Wrapper\SignusTests\SignTest.cs" />
-    <Compile Include="Wrapper\SignusTests\ReplaceKeysTest.cs" />
-    <Compile Include="Wrapper\SignusTests\CreateMyDidTest.cs" />
-    <Compile Include="Wrapper\WalletTests\CloseWalletTest.cs" />
-    <Compile Include="Wrapper\WalletTests\CreateWalletTest.cs" />
+    <Compile Include="AgentTests\AgentAddIdentityTest.cs" />
+    <Compile Include="AgentTests\AgentSendTest.cs" />
+    <Compile Include="AgentTests\AgentRemoveIdentityTest.cs" />
+    <Compile Include="AgentTests\AgentListenTest.cs" />
+    <Compile Include="AgentTests\AgentConnectTest.cs" />
+    <Compile Include="AgentTests\AgentCloseListenerTest.cs" />
+    <Compile Include="AgentTests\AgentCloseConnectionTest.cs" />
+    <Compile Include="AgentTests\AgentIntegrationTestBase.cs" />
+    <Compile Include="AnonCredsTests\RevocationTests.cs" />
+    <Compile Include="AnonCredsTests\VerifierVerifyProofTest.cs" />
+    <Compile Include="AnonCredsTests\ProverStoreClaimTest.cs" />
+    <Compile Include="AnonCredsTests\ProverStoreClaimOfferTest.cs" />
+    <Compile Include="AnonCredsTests\ProverGetClaimsTest.cs" />
+    <Compile Include="AnonCredsTests\ProverGetClaimsForProofRequestTest.cs" />
+    <Compile Include="AnonCredsTests\ProverGetClaimOfferTest.cs" />
+    <Compile Include="AnonCredsTests\ProverCreateProofTest.cs" />
+    <Compile Include="AnonCredsTests\ProverCreateMasterSecretTest.cs" />
+    <Compile Include="AnonCredsTests\ProverCreateAndStoreClaimReqTest.cs" />
+    <Compile Include="AnonCredsTests\IssuerCreateClaimTest.cs" />
+    <Compile Include="AnonCredsTests\IssuerCreateAndStoreClaimDefinitionTest.cs" />
+    <Compile Include="AnonCredsTests\AnonCredsIntegrationTestBase.cs" />
+    <Compile Include="DemoTests\SignusDemoTest.cs" />
+    <Compile Include="DemoTests\LedgerDemoTest.cs" />
+    <Compile Include="DemoTests\AnonCredsDemoTest.cs" />
+    <Compile Include="DemoTests\AgentDemoTest.cs" />
+    <Compile Include="LedgerTests\SchemaRequestTest.cs" />
+    <Compile Include="LedgerTests\RequestTest.cs" />
+    <Compile Include="LedgerTests\NymRequestTest.cs" />
+    <Compile Include="LedgerTests\NodeRequestTest.cs" />
+    <Compile Include="LedgerTests\GetTxnRequestTest.cs" />
+    <Compile Include="LedgerTests\ClaimDefRequestTest.cs" />
+    <Compile Include="LedgerTests\AttribRequestTest.cs" />
+    <Compile Include="PoolTests\ClosePoolTest.cs" />
+    <Compile Include="PoolTests\CreatePoolTest.cs" />
+    <Compile Include="PoolTests\RefreshPoolTest.cs" />
+    <Compile Include="PoolTests\OpenPoolTest.cs" />
+    <Compile Include="PoolTests\DeletePoolTest.cs" />
+    <Compile Include="LedgerTests\SignRequestTest.cs" />
+    <Compile Include="SignusTests\DecryptTest.cs" />
+    <Compile Include="SignusTests\EncryptTest.cs" />
+    <Compile Include="SignusTests\VerifyTest.cs" />
+    <Compile Include="SignusTests\StoreTheirDidTest.cs" />
+    <Compile Include="SignusTests\SignTest.cs" />
+    <Compile Include="SignusTests\ReplaceKeysTest.cs" />
+    <Compile Include="SignusTests\CreateMyDidTest.cs" />
+    <Compile Include="WalletTests\CloseWalletTest.cs" />
+    <Compile Include="WalletTests\CreateWalletTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Wrapper\WalletTests\DeleteWalletTest.cs" />
-    <Compile Include="Wrapper\WalletTests\InMemWallet.cs" />
-    <Compile Include="Wrapper\WalletTests\InMemWalletType.cs" />
-    <Compile Include="Wrapper\WalletTests\RegisterWalletTypeTest.cs" />
-    <Compile Include="Wrapper\WalletTests\OpenWalletTest.cs" />
+    <Compile Include="WalletTests\DeleteWalletTest.cs" />
+    <Compile Include="WalletTests\InMemWallet.cs" />
+    <Compile Include="WalletTests\InMemWalletType.cs" />
+    <Compile Include="WalletTests\RegisterWalletTypeTest.cs" />
+    <Compile Include="WalletTests\OpenWalletTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\indy-sdk-dotnet\indy-sdk-dotnet.csproj">

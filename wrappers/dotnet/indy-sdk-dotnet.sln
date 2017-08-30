@@ -1,11 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.14
+VisualStudioVersion = 15.0.26730.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "indy-sdk-dotnet", "indy-sdk-dotnet\indy-sdk-dotnet.csproj", "{BBAA753E-9FBC-40F2-9E29-0F5456669684}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "indy-sdk-dotnet-test", "indy-sdk-dotnet-test\indy-sdk-dotnet-test.csproj", "{876F1961-BA65-4844-AE59-033208634E42}"
+EndProject
+Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "indy-sdk-dotnet-doc", "indy-sdk-dotnet-doc\indy-sdk-dotnet-doc.shfbproj", "{8F726903-1E9F-4BEC-8CE9-911C050E08DB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BBAA753E-9FBC-40F2-9E29-0F5456669684} = {BBAA753E-9FBC-40F2-9E29-0F5456669684}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,8 +46,23 @@ Global
 		{876F1961-BA65-4844-AE59-033208634E42}.Release|x64.Build.0 = Release|Any CPU
 		{876F1961-BA65-4844-AE59-033208634E42}.Release|x86.ActiveCfg = Release|Any CPU
 		{876F1961-BA65-4844-AE59-033208634E42}.Release|x86.Build.0 = Release|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|x64.Build.0 = Debug|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|x86.Build.0 = Debug|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|x64.ActiveCfg = Release|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|x64.Build.0 = Release|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|x86.ActiveCfg = Release|Any CPU
+		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8EF23A8-0B02-4D0B-A065-DB3ECBC5FE9F}
 	EndGlobalSection
 EndGlobal

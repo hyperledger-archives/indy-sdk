@@ -1,11 +1,11 @@
-﻿using Indy.Sdk.Dotnet.Test.Wrapper.WalletTests;
-using Indy.Sdk.Dotnet.Wrapper;
+﻿using Hyperledger.Indy.Sdk.Test.WalletTests;
+using Hyperledger.Indy.Sdk.WalletApi;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace Indy.Sdk.Dotnet.Test
+namespace Hyperledger.Indy.Sdk.Test
 {
     class InitHelper
     {
