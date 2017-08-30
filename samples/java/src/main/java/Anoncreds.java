@@ -4,7 +4,6 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import utils.PoolUtils;
-import utils.StorageUtils;
 
 import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.*;
 import static org.junit.Assert.*;
@@ -14,8 +13,6 @@ class Anoncreds {
 
 	static void demo() throws Exception {
 		System.out.println("Anoncreds sample -> started");
-
-		StorageUtils.cleanupStorage();
 
 		String issuerWalletName = "issuerWallet";
 		String proverWalletName = "trusteeWallet";
@@ -135,15 +132,20 @@ class Anoncreds {
 		Boolean valid = verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);
 
+		//14. Close and Delete issuer wallet
 		issuerWallet.closeWallet().get();
 		Wallet.deleteWallet(issuerWalletName, null).get();
 
+		//15. Close and Delete prover wallet
 		proverWallet.closeWallet().get();
 		Wallet.deleteWallet(proverWalletName, null).get();
 
+		//16. Close pool
 		pool.closePoolLedger().get();
 
-		StorageUtils.cleanupStorage();
+		//17. Delete Pool ledger config
+		Pool.deletePoolLedgerConfig(poolName).get();
+
 		System.out.println("Anoncreds sample -> completed");
 	}
 }

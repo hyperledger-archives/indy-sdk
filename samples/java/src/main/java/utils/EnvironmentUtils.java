@@ -8,10 +8,6 @@ class EnvironmentUtils {
         return testPoolIp != null ? testPoolIp : "127.0.0.1";
     }
 
-    static String getIndyHomePath() {
-        return FileUtils.getUserDirectoryPath() + "/.indy/";
-    }
-
     static String getTmpPath() {
         return FileUtils.getTempDirectoryPath() + "/indy/";
     }

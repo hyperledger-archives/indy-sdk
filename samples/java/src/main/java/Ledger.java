@@ -5,7 +5,6 @@ import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import utils.PoolUtils;
-import utils.StorageUtils;
 
 import static org.hyperledger.indy.sdk.ledger.Ledger.buildNymRequest;
 import static org.hyperledger.indy.sdk.ledger.Ledger.signAndSubmitRequest;
@@ -16,8 +15,6 @@ class Ledger {
 
 	static void demo() throws Exception {
 		System.out.println("Ledger sample -> started");
-
-		StorageUtils.cleanupStorage();
 
 		String myWalletName = "myWallet";
 		String theirWalletName = "theirWallet";
@@ -69,7 +66,9 @@ class Ledger {
 		// 10. Close Pool
 		pool.closePoolLedger().get();
 
-		StorageUtils.cleanupStorage();
+		// 11. Delete Pool ledger config
+		Pool.deletePoolLedgerConfig(poolName).get();
+
 		System.out.println("Ledger sample -> completed");
 	}
 }

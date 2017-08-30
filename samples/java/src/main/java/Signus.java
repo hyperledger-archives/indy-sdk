@@ -2,7 +2,6 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import utils.PoolUtils;
-import utils.StorageUtils;
 
 import static org.hyperledger.indy.sdk.signus.Signus.*;
 import static org.junit.Assert.assertTrue;
@@ -12,8 +11,6 @@ class Signus {
 
 	static void demo() throws Exception {
 		System.out.println("Ledger sample -> started");
-
-		StorageUtils.cleanupStorage();
 
 		String myWalletName = "myWallet";
 		String theirWalletName = "theirWallet";
@@ -66,10 +63,12 @@ class Signus {
 		theirWallet.closeWallet().get();
 		Wallet.deleteWallet(theirWalletName, null).get();
 
-		//11. Close Pool
+		// 11. Close Pool
 		pool.closePoolLedger().get();
 
-		StorageUtils.cleanupStorage();
+		// 12. Delete Pool ledger config
+		Pool.deletePoolLedgerConfig(poolName).get();
+
 		System.out.println("Ledger sample -> completed");
 	}
 }

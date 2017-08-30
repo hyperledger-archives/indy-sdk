@@ -10,7 +10,6 @@ import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Assert;
 import utils.PoolUtils;
-import utils.StorageUtils;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -23,8 +22,6 @@ class Agent {
 
 	static void demo() throws Exception {
 		System.out.println("Agent sample -> started");
-
-		StorageUtils.cleanupStorage();
 
 		String listenerWalletName = "listenerWallet";
 		String trusteeWalletName = "trusteeWallet";
@@ -127,10 +124,12 @@ class Agent {
 		trusteeWallet.closeWallet().get();
 		Wallet.deleteWallet(trusteeWalletName, null).get();
 
-		//16. Close Pool
+		// 16. Close Pool
 		pool.closePoolLedger().get();
 
-		StorageUtils.cleanupStorage();
+		// 17. Delete Pool ledger config
+		Pool.deletePoolLedgerConfig(poolName).get();
+
 		System.out.println("Agent sample -> completed");
 	}
 }

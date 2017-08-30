@@ -30,7 +30,7 @@
 
 	<repositories>
 		<repository>
-			<id>central</id>
+			<id>evernym</id>
 			<url>https://repo.evernym.com/artifactory/libindy-maven-local</url>
 		</repository>
 	</repositories>
