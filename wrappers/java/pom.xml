@@ -2,11 +2,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.hyperledger.indy-sdk-java</groupId>
-	<artifactId>indy-sdk-java</artifactId>
+	<groupId>org.hyperledger</groupId>
+	<artifactId>indy</artifactId>
 	<packaging>jar</packaging>
 	<version>0.0.1</version>
-	<name>indy-sdk-java</name>
+	<name>indy</name>
 	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
 		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
 		The major artifact of the SDK is a c-callable library.
