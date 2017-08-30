@@ -1,45 +1,38 @@
-package org.hyperledger.indy.sdk.demo;
-
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.agent.Agent;
 import org.hyperledger.indy.sdk.agent.Agent.Connection;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
 import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
 import org.hyperledger.indy.sdk.agent.AgentObservers.MessageObserver;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
-import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import utils.PoolUtils;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+
+import static org.hyperledger.indy.sdk.agent.Agent.agentConnect;
+import static org.hyperledger.indy.sdk.agent.Agent.agentListen;
 
 
-public class AgentDemoTest extends IndyIntegrationTest {
+class Agent {
 
-	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
-	@Test
-	public void testAgentDemo() throws Exception {
-		String endpoint = "127.0.0.1:9801";
+	static void demo() throws Exception {
+		System.out.println("Agent sample -> started");
+
 		String listenerWalletName = "listenerWallet";
 		String trusteeWalletName = "trusteeWallet";
+		String endpoint = "127.0.0.1:9801";
 		String message = "test";
+		String trusteeSeed = "000000000000000000000000Trustee1";
+
 
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
-
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
+		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Create and Open Listener Wallet
 		Wallet.createWallet(poolName, listenerWalletName, "default", null, null).get();
@@ -58,7 +51,7 @@ public class AgentDemoTest extends IndyIntegrationTest {
 
 		//5. Create Their Did from Trustee seed
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
+				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, trusteeSeed, null, null);
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(trusteeWallet, trusteeDidJson.toJson()).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -104,16 +97,16 @@ public class AgentDemoTest extends IndyIntegrationTest {
 		};
 
 		// 8. start listener on endpoint
-		Listener activeListener = Agent.agentListen(endpoint, incomingConnectionObserver).get();
+		Listener activeListener = agentListen(endpoint, incomingConnectionObserver).get();
 
 		// 9. Allow listener accept incoming connection for specific DID (listener_did)
 		activeListener.agentAddIdentity(pool, listenerWallet, listenerDid).get();
 
 		// 10. Initiate connection from sender to listener
-		Connection connection = Agent.agentConnect(pool, senderWallet, senderDid, listenerDid, messageObserver).get();
+		Connection connection = agentConnect(pool, senderWallet, senderDid, listenerDid, messageObserver).get();
 
 		// 11. Send test message from sender to listener
-		connection.agentSend("test").get();
+		connection.agentSend(message).get();
 
 		Assert.assertEquals(message, clientToServerMsgFuture.get());
 
@@ -131,7 +124,12 @@ public class AgentDemoTest extends IndyIntegrationTest {
 		trusteeWallet.closeWallet().get();
 		Wallet.deleteWallet(trusteeWalletName, null).get();
 
-		//16. Close Pool
+		// 16. Close Pool
 		pool.closePoolLedger().get();
+
+		// 17. Delete Pool ledger config
+		Pool.deletePoolLedgerConfig(poolName).get();
+
+		System.out.println("Agent sample -> completed");
 	}
 }

@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='indy_sdk',
+    name='python3-indy',
     version='1.0.0',
     packages=['indy'],
     url='https://github.com/hyperledger/indy-sdk',

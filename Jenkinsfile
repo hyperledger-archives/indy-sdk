@@ -140,7 +140,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        poolInst = openPool(env_name, network_name, 'rc', 'rc30', '1.1.23', '1.0.9', '1.1.30')
+        poolInst = openPool(env_name, network_name, 'rc', 'rc30', '1.1.24', '1.0.9', '1.1.31')
 
         def testEnv
 
@@ -218,7 +218,7 @@ def windowsTesting(isDebugTests) {
 
             try {
                 echo "Windows Test: Run Indy pool"
-                poolVerOptions = getBuildPoolVerOptions('rc', '1.1.23', '1.0.9', '1.1.30')
+                poolVerOptions = getBuildPoolVerOptions('rc', '1.1.24', '1.0.9', '1.1.31')
                 bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP ${poolVerOptions} -f ci/indy-pool.dockerfile -t indy_pool ci"
                 bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 

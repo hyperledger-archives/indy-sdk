@@ -2,14 +2,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.hyperledger</groupId>
-	<artifactId>indy</artifactId>
+	<groupId>org.hyperledger.indy-sdk-java</groupId>
+	<artifactId>indy-sdk-java-sample</artifactId>
 	<packaging>jar</packaging>
-	<version>1.0.0</version>
-	<name>indy</name>
-	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
-		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
-		The major artifact of the SDK is a c-callable library.
+	<version>0.0.1</version>
+	<name>indy-sdk-java</name>
+	<description>This is the sample of usage java wrapper for Hyperledger Indy SDK.
 	</description>
 	<licenses>
 		<license>
@@ -18,11 +16,6 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
-
-	<issueManagement>
-		<url>https://github.com/hyperledger/indy-sdk/issues</url>
-		<system>GitHub Issues</system>
-	</issueManagement>
 
 	<scm>
 		<url>https://github.com/hyperledger/indy-sdk</url>
@@ -35,20 +28,12 @@
 		<github.global.server>github</github.global.server>
 	</properties>
 
-	<!--<distributionManagement>-->
-	<!--<snapshotRepository>-->
-	<!--<id>ossrh</id>-->
-	<!--<url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
-	<!--</snapshotRepository>-->
-	<!--</distributionManagement>-->
-
-	<distributionManagement>
+	<repositories>
 		<repository>
-			<id>artifactory-evernym</id>
-			<name>artifactory-evernym</name>
+			<id>evernym</id>
 			<url>https://repo.evernym.com/artifactory/libindy-maven-local</url>
 		</repository>
-	</distributionManagement>
+	</repositories>
 
 	<build>
 		<plugins>
@@ -95,49 +80,7 @@
 					<includeScope>runtime</includeScope>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.9.1</version>
-				<executions>
-					<execution>
-						<id>attach-javadocs</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<!--<plugin>-->
-				<!--<groupId>org.apache.maven.plugins</groupId>-->
-				<!--<artifactId>maven-gpg-plugin</artifactId>-->
-				<!--<version>1.6</version>-->
-				<!--<executions>-->
-					<!--<execution>-->
-						<!--<id>sign-artifacts</id>-->
-						<!--<phase>verify</phase>-->
-						<!--<goals>-->
-							<!--<goal>sign</goal>-->
-						<!--</goals>-->
-					<!--</execution>-->
-				<!--</executions>-->
-			<!--</plugin>-->
-			<!--<plugin>-->
-				<!--<groupId>org.sonatype.plugins</groupId>-->
-				<!--<artifactId>nexus-staging-maven-plugin</artifactId>-->
-				<!--<version>1.6.8</version>-->
-				<!--<extensions>true</extensions>-->
-				<!--<configuration>-->
-					<!--<serverId>ossrh</serverId>-->
-					<!--<nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
-					<!--<autoReleaseAfterClose>true</autoReleaseAfterClose>-->
-				<!--</configuration>-->
-			<!--</plugin>-->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-deploy-plugin</artifactId>
-				<version>2.7</version>
-			</plugin>
+
 		</plugins>
 	</build>
 
@@ -146,13 +89,6 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>net.java.dev.jna</groupId>
-			<artifactId>jna</artifactId>
-			<version>4.4.0</version>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -164,19 +100,16 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.5</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.bitcoinj</groupId>
-			<artifactId>bitcoinj-core</artifactId>
-			<version>0.14.4</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20160810</version>
-			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.hyperledger</groupId>
+			<artifactId>indy</artifactId>
+			<version>0.0.1-dev-160</version>
 		</dependency>
 	</dependencies>
 </project>
