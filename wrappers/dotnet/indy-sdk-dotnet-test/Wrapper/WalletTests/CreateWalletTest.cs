@@ -63,8 +63,8 @@ namespace Indy.Sdk.Dotnet.Test.Wrapper.WalletTests
 
         [TestMethod]
         public async Task TestCreateWalletWorksForPlugged()
-        {
-            await Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null);
+        {       
+            await Wallet.CreateWalletAsync("default", "createPluggedWalletWorks", "inmem", null, null);
         }
 
     }
