@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='indy_sdk',
+    name='python3-indy',
     version='0.0.1',
     packages=['indy'],
     url='https://github.com/hyperledger/indy-sdk',
@@ -9,6 +9,6 @@ setup(
     author='Vyacheslav Gudkov',
     author_email='vyacheslav.gudkov@dsr-company.com',
     description='This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects), which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org). The major artifact of the SDK is a c-callable library.',
-    install_requires=['pytest', 'pytest-asyncio', 'base58'],
+    install_requires=[],
     tests_require=['pytest', 'pytest-asyncio', 'base58']
 )

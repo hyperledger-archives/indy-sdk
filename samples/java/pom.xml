@@ -107,8 +107,8 @@
 			<version>20160810</version>
 		</dependency>
 		<dependency>
-			<groupId>org.hyperledger.indy-sdk-java</groupId>
-			<artifactId>indy-sdk-java</artifactId>
+			<groupId>org.hyperledger</groupId>
+			<artifactId>indy</artifactId>
 			<version>0.0.1-dev-160</version>
 		</dependency>
 	</dependencies>
