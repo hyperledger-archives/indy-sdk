@@ -2,7 +2,6 @@ package org.hyperledger.indy.sample.Tests;
 
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -18,22 +17,22 @@ import static org.junit.Assert.assertTrue;
 public class Anoncreds {
 
 	public static void run() throws Exception {
-
 		StorageUtils.cleanupStorage();
+
+		String issuerWalletName = "issuerWallet";
+		String proverWalletName = "trusteeWallet";
 
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
-
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
+		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Issuer Create and Open Wallet
-		Wallet.createWallet(poolName, "issuerWallet", "default", null, null).get();
-		Wallet issuerWallet = Wallet.openWallet("issuerWallet", null, null).get();
+		Wallet.createWallet(poolName, issuerWalletName, "default", null, null).get();
+		Wallet issuerWallet = Wallet.openWallet(issuerWalletName, null, null).get();
 
 		//3. Prover Create and Open Wallet
-		Wallet.createWallet(poolName, "proverWallet", "default", null, null).get();
-		Wallet proverWallet = Wallet.openWallet("proverWallet", null, null).get();
+		Wallet.createWallet(poolName, proverWalletName, "default", null, null).get();
+		Wallet proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
 
 		//4. Issuer create ClaimDef
 		String schemaJson = "{\n" +
@@ -47,7 +46,6 @@ public class Anoncreds {
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 
 		String claimDef = issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, schemaJson, null, false).get();
-		assertNotNull(claimDef);
 
 		//5. Prover create Master Secret
 		String masterSecret = "masterSecretName";
@@ -81,7 +79,6 @@ public class Anoncreds {
 				"        }";
 
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = issuerCreateClaim(issuerWallet, claimReq, claimAttributesJson, - 1).get();
-		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
 		//10. Prover store Claim
@@ -98,7 +95,6 @@ public class Anoncreds {
 				"                  }";
 
 		String claimsForProofJson = proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
-		assertNotNull(claimsForProofJson);
 
 		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
 		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
@@ -127,7 +123,6 @@ public class Anoncreds {
 
 		String proofJson = proverCreateProof(proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
 				masterSecret, claimDefsJson, revocRegsJson).get();
-		assertNotNull(proofJson);
 
 		JSONObject proof = new JSONObject(proofJson);
 
@@ -143,10 +138,10 @@ public class Anoncreds {
 		assertTrue(valid);
 
 		issuerWallet.closeWallet().get();
-		Wallet.deleteWallet("issuerWallet", null).get();
+		Wallet.deleteWallet(issuerWalletName, null).get();
 
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet("proverWallet", null).get();
+		Wallet.deleteWallet(proverWalletName, null).get();
 
 		pool.closePoolLedger().get();
 

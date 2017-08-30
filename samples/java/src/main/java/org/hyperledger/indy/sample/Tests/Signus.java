@@ -17,27 +17,26 @@ public class Signus {
 	public static void run() throws Exception {
 		StorageUtils.cleanupStorage();
 
+		String myWalletName = "myWallet";
+		String theirWalletName = "theirWallet";
+
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
-
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
+		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Create and Open My Wallet
-		Wallet.createWallet(poolName, "myWallet", "default", null, null).get();
-		Wallet myWallet = Wallet.openWallet("myWallet", null, null).get();
+		Wallet.createWallet(poolName, myWalletName, "default", null, null).get();
+		Wallet myWallet = Wallet.openWallet(myWalletName, null, null).get();
 
 		//3. Create and Open Their Wallet
-		Wallet.createWallet(poolName, "theirWallet", "default", null, null).get();
-		Wallet theirWallet = Wallet.openWallet("theirWallet", null, null).get();
+		Wallet.createWallet(poolName, theirWalletName, "default", null, null).get();
+		Wallet theirWallet = Wallet.openWallet(theirWalletName, null, null).get();
 
 		//4. Create My Did
-		CreateAndStoreMyDidResult createMyDidResult = createAndStoreMyDid(myWallet, "{}").get();
-		assertNotNull(createMyDidResult);
+		createAndStoreMyDid(myWallet, "{}").get();
 
 		//5. Create Their Did
 		CreateAndStoreMyDidResult createTheirDidResult = createAndStoreMyDid(theirWallet, "{}").get();
-		assertNotNull(createTheirDidResult);
 		String theirDid = createTheirDidResult.getDid();
 		String theirVerkey = createTheirDidResult.getVerkey();
 
@@ -63,11 +62,11 @@ public class Signus {
 
 		// 9. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet("myWallet", null).get();
+		Wallet.deleteWallet(myWalletName, null).get();
 
 		// 10. Close and delete Their Wallet
 		theirWallet.closeWallet().get();
-		Wallet.deleteWallet("theirWallet", null).get();
+		Wallet.deleteWallet(theirWalletName, null).get();
 
 		//11. Close Pool
 		pool.closePoolLedger().get();

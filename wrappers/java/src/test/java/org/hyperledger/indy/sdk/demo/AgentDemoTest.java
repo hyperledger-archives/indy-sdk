@@ -123,11 +123,11 @@ public class AgentDemoTest extends IndyIntegrationTest {
 		// 13. Close listener
 		activeListener.agentCloseListener();
 
-		// 14. Close and delete Issuer Wallet
+		// 14. Close and delete Listener Wallet
 		listenerWallet.closeWallet().get();
 		Wallet.deleteWallet(listenerWalletName, null).get();
 
-		// 15. Close and delete Prover Wallet
+		// 15. Close and delete Sender Wallet
 		trusteeWallet.closeWallet().get();
 		Wallet.deleteWallet(trusteeWalletName, null).get();
 

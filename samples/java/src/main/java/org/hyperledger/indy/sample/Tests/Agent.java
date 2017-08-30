@@ -6,7 +6,6 @@ import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
 import org.hyperledger.indy.sdk.agent.AgentObservers.MessageObserver;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
@@ -17,6 +16,9 @@ import org.hyperledger.indy.sample.utils.StorageUtils;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.hyperledger.indy.sdk.agent.Agent.agentConnect;
+import static org.hyperledger.indy.sdk.agent.Agent.agentListen;
+
 
 public class Agent {
 
@@ -24,18 +26,16 @@ public class Agent {
 	public static void run() throws Exception {
 		StorageUtils.cleanupStorage();
 
-		String endpoint = "127.0.0.1:9801";
 		String listenerWalletName = "listenerWallet";
 		String trusteeWalletName = "trusteeWallet";
+		String endpoint = "127.0.0.1:9801";
 		String message = "test";
 		String trusteeSeed = "000000000000000000000000Trustee1";
 
 
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
-
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
-		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
+		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Create and Open Listener Wallet
 		Wallet.createWallet(poolName, listenerWalletName, "default", null, null).get();
@@ -100,16 +100,16 @@ public class Agent {
 		};
 
 		// 8. start listener on endpoint
-		Listener activeListener = org.hyperledger.indy.sdk.agent.Agent.agentListen(endpoint, incomingConnectionObserver).get();
+		Listener activeListener = agentListen(endpoint, incomingConnectionObserver).get();
 
 		// 9. Allow listener accept incoming connection for specific DID (listener_did)
 		activeListener.agentAddIdentity(pool, listenerWallet, listenerDid).get();
 
 		// 10. Initiate connection from sender to listener
-		Connection connection = org.hyperledger.indy.sdk.agent.Agent.agentConnect(pool, senderWallet, senderDid, listenerDid, messageObserver).get();
+		Connection connection = agentConnect(pool, senderWallet, senderDid, listenerDid, messageObserver).get();
 
 		// 11. Send test message from sender to listener
-		connection.agentSend("test").get();
+		connection.agentSend(message).get();
 
 		Assert.assertEquals(message, clientToServerMsgFuture.get());
 
@@ -119,11 +119,11 @@ public class Agent {
 		// 13. Close listener
 		activeListener.agentCloseListener();
 
-		// 14. Close and delete Issuer Wallet
+		// 14. Close and delete Listener Wallet
 		listenerWallet.closeWallet().get();
 		Wallet.deleteWallet(listenerWalletName, null).get();
 
-		// 15. Close and delete Prover Wallet
+		// 15. Close and delete Sender Wallet
 		trusteeWallet.closeWallet().get();
 		Wallet.deleteWallet(trusteeWalletName, null).get();
 
