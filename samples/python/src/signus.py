@@ -1,30 +1,27 @@
 from indy import signus, wallet
 
-import pytest
 import json
-from src.utils import clean_home
 import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-@pytest.mark.asyncio
 async def demo():
     logger.info("Signus sample -> started")
 
-    clean_home()
-
+    my_wallet_name = 'my_wallet'
+    their_wallet_name = 'their_wallet'
     pool_name = 'pool1'
     seed_trustee1 = "000000000000000000000000Trustee1"
 
     # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, 'my_wallet', None, None, None)
-    my_wallet_handle = await wallet.open_wallet('my_wallet', None, None)
+    await wallet.create_wallet(pool_name, my_wallet_name, None, None, None)
+    my_wallet_handle = await wallet.open_wallet(my_wallet_name, None, None)
 
     # 2. Create Their Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, 'their_wallet', None, None, None)
-    their_wallet_handle = await wallet.open_wallet('their_wallet', None, None)
+    await wallet.create_wallet(pool_name, their_wallet_name, None, None, None)
+    their_wallet_handle = await wallet.open_wallet(their_wallet_name, None, None)
 
     # 3. Create My DID
     await signus.create_and_store_my_did(my_wallet_handle, "{}")
@@ -61,7 +58,8 @@ async def demo():
     await wallet.close_wallet(their_wallet_handle)
     await wallet.close_wallet(my_wallet_handle)
 
-    clean_home()
+    #  9. Delete wallets
+    await wallet.delete_wallet(my_wallet_name, None)
+    await wallet.delete_wallet(their_wallet_name, None)
 
     logger.info("Signus sample -> completed")
-

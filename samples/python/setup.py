@@ -5,8 +5,8 @@ setup(
     version='0.0.1',
     url='https://github.com/hyperledger/indy-sdk',
     license='MIT/Apache-2.0',
-    author='Vyacheslav Gudkov',
-    author_email='vyacheslav.gudkov@dsr-company.com',
+    author='Artem Ivanov',
+    author_email='artem.ivanov@dsr-company.com',
     description='This is the sample of usage python wrapper for Hyperledger Indy SDK.',
-    install_requires=['pytest', 'pytest-asyncio', 'indy-sdk']
+    install_requires=['indy-sdk']
 )

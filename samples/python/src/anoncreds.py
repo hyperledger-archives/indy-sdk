@@ -1,22 +1,18 @@
 from indy import anoncreds, wallet
 
-import pytest
 import json
 
 import logging
-from src.utils import clean_home
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-@pytest.mark.asyncio
 async def demo():
     logger.info("Anoncreds sample -> started")
 
     pool_name = 'pool1'
     wallet_name = 'wallet1'
-    clean_home()
 
     # 1. Create My Wallet and Get Wallet Handle
     await wallet.create_wallet(pool_name, wallet_name, None, None, None)
@@ -105,6 +101,7 @@ async def demo():
     # 10. Close wallet
     await wallet.close_wallet(wallet_handle)
 
-    clean_home()
+    # 11. Delete wallet
+    await wallet.delete_wallet(wallet_name, None)
 
     logger.info("Anoncreds sample -> completed")

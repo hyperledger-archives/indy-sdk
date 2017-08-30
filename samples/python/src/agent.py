@@ -1,21 +1,19 @@
 from indy import agent, ledger, signus, pool, wallet
 
-import pytest
 import json
-from src.utils import clean_home, get_pool_genesis_txn_path
+from src.utils import get_pool_genesis_txn_path
 import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-@pytest.mark.asyncio
 async def demo():
     logger.info("Agent sample -> started")
 
-    clean_home()
-
     pool_name = 'pool1'
+    listener_wallet_name = 'listener_wallet'
+    sender_wallet_name = 'sender_wallet'
     seed_trustee1 = "000000000000000000000000Trustee1"
     endpoint = '127.0.0.1:9700'
     pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
@@ -28,12 +26,12 @@ async def demo():
     pool_handle = await pool.open_pool_ledger(pool_name, None)
 
     # 3. Create and Open Listener Wallet. Gets wallet handle
-    await wallet.create_wallet(pool_name, 'listener_wallet', None, None, None)
-    listener_wallet_handle = await wallet.open_wallet('listener_wallet', None, None)
+    await wallet.create_wallet(pool_name, listener_wallet_name, None, None, None)
+    listener_wallet_handle = await wallet.open_wallet(listener_wallet_name, None, None)
 
     # 4. Create and Open Sender Wallet. Gets wallet handle
-    await wallet.create_wallet(pool_name, 'sender_wallet', None, None, None)
-    sender_wallet_handle = await wallet.open_wallet('sender_wallet', None, None)
+    await wallet.create_wallet(pool_name, sender_wallet_name, None, None, None)
+    sender_wallet_handle = await wallet.open_wallet(sender_wallet_name, None, None)
 
     # 5. Create Listener DID
     (listener_did, listener_verkey, listener_pk) = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
@@ -79,10 +77,18 @@ async def demo():
     await agent.agent_close_listener(listener_handle)
     await agent.agent_close_connection(connection_handle)
 
+    # 14. Close wallets
     await wallet.close_wallet(listener_wallet_handle)
     await wallet.close_wallet(sender_wallet_handle)
+
+    # 15. Close pool
     await pool.close_pool_ledger(pool_handle)
 
-    clean_home()
+    #  16. Delete wallets
+    await wallet.delete_wallet(listener_wallet_name, None)
+    await wallet.delete_wallet(sender_wallet_name, None)
+
+    # 17. Delete pool ledger config
+    await pool.delete_pool_ledger_config(pool_name)
 
     logger.info("Agent sample -> completed")

@@ -1,23 +1,19 @@
 import json
 
-import pytest
-
 from indy import ledger, signus, wallet, pool
-from src.utils import clean_home, get_pool_genesis_txn_path
+from src.utils import get_pool_genesis_txn_path
 import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-# noinspection PyUnusedLocal
-@pytest.mark.asyncio
 async def demo():
     logger.info("Ledger sample -> started")
 
-    clean_home()
-
     pool_name = 'pool1'
+    my_wallet_name = 'my_wallet'
+    their_wallet_name = 'their_wallet'
     seed_trustee1 = "000000000000000000000000Trustee1"
     pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
 
@@ -29,12 +25,12 @@ async def demo():
     pool_handle = await pool.open_pool_ledger(pool_name, None)
 
     # 3. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, 'my_wallet', None, None, None)
-    my_wallet_handle = await wallet.open_wallet('my_wallet', None, None)
+    await wallet.create_wallet(pool_name, my_wallet_name, None, None, None)
+    my_wallet_handle = await wallet.open_wallet(my_wallet_name, None, None)
 
     # 4. Create Their Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, 'their_wallet', None, None, None)
-    their_wallet_handle = await wallet.open_wallet('their_wallet', None, None)
+    await wallet.create_wallet(pool_name, their_wallet_name, None, None, None)
+    their_wallet_handle = await wallet.open_wallet(their_wallet_name, None, None)
 
     # 5. Create My DID
     (my_did, my_verkey, my_pk) = await signus.create_and_store_my_did(my_wallet_handle, "{}")
@@ -69,6 +65,11 @@ async def demo():
     await wallet.close_wallet(my_wallet_handle)
     await pool.close_pool_ledger(pool_handle)
 
-    clean_home()
+    # 11. Delete wallets
+    await wallet.delete_wallet(my_wallet_name, None)
+    await wallet.delete_wallet(their_wallet_name, None)
+
+    # 12. Delete pool ledger config
+    await pool.delete_pool_ledger_config(pool_name)
 
     logger.info("Ledger sample -> completed")

@@ -1,25 +1,12 @@
 from os import environ, makedirs
 from os.path import dirname
 from pathlib import Path
-from shutil import rmtree
 from tempfile import gettempdir
 
 
-def clean_home() -> Path:
-    path = Path.home().joinpath(".indy")
-    if path.exists():
-        rmtree(str(path))
-
-
-def path_temp():
-    path = Path(gettempdir()).joinpath("indy")
-    if path.exists():
-        rmtree(str(path))
-    return path
-
-
 def get_pool_genesis_txn_path(pool_name):
-    path = path_temp().joinpath("{}.txn".format(pool_name))
+    path_temp = Path(gettempdir()).joinpath("indy")
+    path = path_temp.joinpath("{}.txn".format(pool_name))
     save_pool_genesis_txn_file(path)
     return path
 
@@ -42,7 +29,8 @@ def pool_genesis_txn_data():
 def save_pool_genesis_txn_file(path):
     data = pool_genesis_txn_data()
 
-    makedirs(dirname(path))
+    if not path.exists():
+        makedirs(dirname(path))
 
     with open(str(path), "w+") as f:
         f.writelines(data)
