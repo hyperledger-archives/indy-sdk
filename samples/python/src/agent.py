@@ -2,11 +2,17 @@ from indy import agent, ledger, signus, pool, wallet
 
 import pytest
 import json
-from tests.utils import clean_home, get_pool_genesis_txn_path
+from src.utils import clean_home, get_pool_genesis_txn_path
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 @pytest.mark.asyncio
-async def agent_demo():
+async def demo():
+    logger.info("Agent sample -> started")
+
     clean_home()
 
     pool_name = 'pool1'
@@ -78,3 +84,5 @@ async def agent_demo():
     await pool.close_pool_ledger(pool_handle)
 
     clean_home()
+
+    logger.info("Agent sample -> completed")

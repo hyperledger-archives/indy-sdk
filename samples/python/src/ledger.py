@@ -3,12 +3,18 @@ import json
 import pytest
 
 from indy import ledger, signus, wallet, pool
-from tests.utils import clean_home, get_pool_genesis_txn_path
+from src.utils import clean_home, get_pool_genesis_txn_path
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def ledger_demo():
+async def demo():
+    logger.info("Ledger sample -> started")
+
     clean_home()
 
     pool_name = 'pool1'
@@ -64,3 +70,5 @@ async def ledger_demo():
     await pool.close_pool_ledger(pool_handle)
 
     clean_home()
+
+    logger.info("Ledger sample -> completed")

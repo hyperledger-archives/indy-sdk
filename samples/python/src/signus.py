@@ -2,11 +2,17 @@ from indy import signus, wallet
 
 import pytest
 import json
-from tests.utils import clean_home
+from src.utils import clean_home
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 @pytest.mark.asyncio
-async def signus_demo():
+async def demo():
+    logger.info("Signus sample -> started")
+
     clean_home()
 
     pool_name = 'pool1'
@@ -56,3 +62,6 @@ async def signus_demo():
     await wallet.close_wallet(my_wallet_handle)
 
     clean_home()
+
+    logger.info("Signus sample -> completed")
+
