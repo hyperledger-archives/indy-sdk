@@ -1,22 +1,20 @@
-package org.hyperledger.indy.sample.Tests;
-
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.hyperledger.indy.sample.utils.PoolUtils;
-import org.hyperledger.indy.sample.utils.StorageUtils;
+import utils.PoolUtils;
+import utils.StorageUtils;
 
 import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
-public class Anoncreds {
+class Anoncreds {
 
-	public static void run() throws Exception {
+	static void demo() throws Exception {
+		System.out.println("Anoncreds sample -> started");
+
 		StorageUtils.cleanupStorage();
 
 		String issuerWalletName = "issuerWallet";
@@ -146,5 +144,6 @@ public class Anoncreds {
 		pool.closePoolLedger().get();
 
 		StorageUtils.cleanupStorage();
+		System.out.println("Anoncreds sample -> completed");
 	}
 }

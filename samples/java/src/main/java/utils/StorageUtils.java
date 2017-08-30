@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sample.utils;
+package utils;
 
 import org.apache.commons.io.FileUtils;
 

@@ -1,5 +1,3 @@
-package org.hyperledger.indy.sample.Tests;
-
 import org.hyperledger.indy.sdk.agent.Agent.Connection;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
 import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
@@ -11,8 +9,8 @@ import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Assert;
-import org.hyperledger.indy.sample.utils.PoolUtils;
-import org.hyperledger.indy.sample.utils.StorageUtils;
+import utils.PoolUtils;
+import utils.StorageUtils;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -20,10 +18,12 @@ import static org.hyperledger.indy.sdk.agent.Agent.agentConnect;
 import static org.hyperledger.indy.sdk.agent.Agent.agentListen;
 
 
-public class Agent {
+class Agent {
 
 
-	public static void run() throws Exception {
+	static void demo() throws Exception {
+		System.out.println("Agent sample -> started");
+
 		StorageUtils.cleanupStorage();
 
 		String listenerWalletName = "listenerWallet";
@@ -131,5 +131,6 @@ public class Agent {
 		pool.closePoolLedger().get();
 
 		StorageUtils.cleanupStorage();
+		System.out.println("Agent sample -> completed");
 	}
 }

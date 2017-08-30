@@ -1,22 +1,22 @@
-package org.hyperledger.indy.sample.Tests;
-
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
-import org.hyperledger.indy.sample.utils.PoolUtils;
-import org.hyperledger.indy.sample.utils.StorageUtils;
+import utils.PoolUtils;
+import utils.StorageUtils;
 
 import static org.hyperledger.indy.sdk.ledger.Ledger.buildNymRequest;
 import static org.hyperledger.indy.sdk.ledger.Ledger.signAndSubmitRequest;
 import static org.junit.Assert.assertEquals;
 
 
-public class Ledger {
+class Ledger {
 
-	public static void run() throws Exception {
+	static void demo() throws Exception {
+		System.out.println("Ledger sample -> started");
+
 		StorageUtils.cleanupStorage();
 
 		String myWalletName = "myWallet";
@@ -70,5 +70,6 @@ public class Ledger {
 		pool.closePoolLedger().get();
 
 		StorageUtils.cleanupStorage();
+		System.out.println("Ledger sample -> completed");
 	}
 }
