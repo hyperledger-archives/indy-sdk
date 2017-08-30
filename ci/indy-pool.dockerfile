@@ -19,7 +19,8 @@ RUN pip3 install -U \
 	setuptools
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
-RUN echo "deb https://repo.sovrin.org/deb xenial master" >> /etc/apt/sources.list
+ARG sovrin_stream=stable
+RUN echo "deb https://repo.sovrin.org/deb xenial $sovrin_stream" >> /etc/apt/sources.list
 
 RUN useradd -ms /bin/bash -u $uid sovrin
 
