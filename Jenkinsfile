@@ -459,10 +459,12 @@ def publishingRCtoStable() {
                 echo 'Moving RC artifacts to Stable: libindy'
                 publishLibindyRCtoStable(version)
 
-                echo 'Moving RC artifacts to Stable: python wrapper'
-                echo 'Moving RC artifacts to Stable: Build docker image for python publishing'
+                echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                echo 'Moving RC artifacts to Stable: python wrapper'
                 pythonWrapperPublishing(testEnv, true)
+                echo 'Moving RC artifacts to Stable: java wrapper'
+                javaWrapperPublishing(testEnv, true)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
