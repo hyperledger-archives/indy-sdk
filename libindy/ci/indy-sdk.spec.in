@@ -1,7 +1,7 @@
 %global commit @commit@
 
 Summary: Official SDK for Hyperledger Indy
-Name: indy-sdk
+Name: libindy
 Version: @version@.%{commit}
 Release: 1%{?dist}
 License: Apache License 2.0
