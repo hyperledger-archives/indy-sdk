@@ -84,14 +84,19 @@ def notifyingFailure() {
     }
 }
 
-def openPool(env_name, network_name, pool_ver, plenum_ver, anoncreds_ver, node_ver) {
+def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
+    return "--build-arg=sovrin_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
+}
+
+def openPool(env_name, network_name, pool_type, pool_ver, plenum_ver, anoncreds_ver, node_ver) {
     echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
     sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
     echo "${env_name} Test: Build docker image for nodes pool ver. ${pool_ver}"
     echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
+    verOptions = getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver)
     def poolEnv = dockerHelpers.build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
-            "--build-arg pool_ip=10.0.0.2 --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}")
+            "--build-arg pool_ip=10.0.0.2 ${verOptions}")
     echo "${env_name} Test: Run nodes pool"
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 }
@@ -135,7 +140,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        poolInst = openPool(env_name, network_name, '119', '1.1.112', '1.0.25', '1.1.119')
+        poolInst = openPool(env_name, network_name, 'stable', 'stable33', '1.1.24', '1.0.10', '1.1.33')
 
         def testEnv
 
@@ -213,7 +218,8 @@ def windowsTesting(isDebugTests) {
 
             try {
                 echo "Windows Test: Run Indy pool"
-                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
+                poolVerOptions = getBuildPoolVerOptions('stable', '1.1.24', '1.0.10', '1.1.33')
+                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP ${poolVerOptions} -f ci/indy-pool.dockerfile -t indy_pool ci"
                 bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 dir('libindy') {
