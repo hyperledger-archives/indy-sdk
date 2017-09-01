@@ -150,7 +150,6 @@
     // 4. listen
     
     IndyHandle listenerHandler = 0;
-    __block NSString* messageFromClient;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:[TestUtils endpoint]
                                       connectionCallback:nil
                                          messageCallback:nil
@@ -165,8 +164,6 @@
     XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
     
     // 6. Close listener (1)
-    
-    IndyHandle connectionHandle = 0;
     ret = [[AgentUtils sharedInstance] closeListener:listenerHandler];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::closeListener() failed");
     

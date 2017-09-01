@@ -1,4 +1,4 @@
-indy-sdk (0.1.1) unstable; urgency=medium
+libindy (1.0.0) unstable; urgency=medium
 
   [ Hyperledger ]
   * Append doc control message to control not rules Closes: #837111

@@ -64,22 +64,19 @@
 + (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJSON:(NSString *)reqJSON
                                      claimJSON:(NSString *)claimJSON
-                                 revocRegSeqNo:(NSNumber *)seqNo       // TODO: check how to deal with option<>
-                                userRevocIndex:(NSNumber *)revocIndex  // TODO: check how to deal with option<>
+                                userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *claimJSON)) handler
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
-    
+
     ret = indy_issuer_create_claim(handle,
                                    walletHandle,
                                    [reqJSON UTF8String],
                                    [claimJSON UTF8String],
-                                   seqNo ? [seqNo intValue] : -1,
                                    revocIndex ? [revocIndex intValue] : -1,
-                                   IndyWrapperCommon4PCallback
-                                   );
+                                   IndyWrapperCommon4PCallback);
 
     if( ret != Success )
     {
@@ -90,7 +87,8 @@
 }
 
 + (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
-                                 revocRegSeqNo:(NSNumber *)revocSeqNo
+                                     issuerDid:(NSString *)issuerDid
+                                   schemaSeqNo:(NSNumber *)schemaSeqNo
                                 userRevocIndex:(NSNumber *)revocIndex
                                     completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler
 {
@@ -100,10 +98,10 @@
     
     ret = indy_issuer_revoke_claim(handle,
                                    walletHandle,
-                                   [revocSeqNo intValue],
-                                   [revocIndex intValue],
-                                   IndyWrapperCommon3PSCallback
-                                   );
+                                   [issuerDid UTF8String],
+                                   schemaSeqNo ? [schemaSeqNo intValue] : -1,
+                                   revocIndex ? [revocIndex intValue] : -1,
+                                   IndyWrapperCommon3PSCallback);
     
     if( ret != Success )
     {

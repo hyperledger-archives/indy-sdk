@@ -11,12 +11,6 @@
 
 + (AnoncredsUtils *)sharedInstance;
 
-+ (NSString *)commonMasterSecretName;
-
-+ (IndyHandle)walletHandle;
-+ (NSString *)claimDefJson;
-+ (NSString *)issuerDid;
-
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
@@ -66,6 +60,7 @@
 - (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
                                   claimReqJson:(NSString *)claimReqJson
                                      claimJson:(NSString *)claimJson
+                                userRevocIndex:(NSNumber *)userRevocIndex
                                   outClaimJson:(NSString **)xClaimJson
                          outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON;
 
@@ -76,8 +71,8 @@
                                           createNonRevoc:(BOOL)createNonRevoc
                                             claimDefJson:(NSString **)claimDefJson;
 
-- (NSError *) proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
-                                    claimsJson:(NSString *)str;
+- (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
+                                   claimsJson:(NSString *)str;
 
 - (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
                                        proofRequestJson:(NSString *)str

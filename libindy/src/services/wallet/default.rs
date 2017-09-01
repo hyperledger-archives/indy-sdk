@@ -123,6 +123,8 @@ impl Wallet for DefaultWallet {
         return Ok(record.value)
     }
 
+    fn close(&self) -> Result<(), WalletError>{ Ok(()) }
+
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
     }

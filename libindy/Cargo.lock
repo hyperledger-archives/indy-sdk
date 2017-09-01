@@ -1,8 +1,8 @@
 [root]
 name = "indy"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
- "amcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "amcl 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -34,7 +34,7 @@ dependencies = [
 
 [[package]]
 name = "amcl"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -527,7 +527,7 @@ dependencies = [
 
 [metadata]
 "checksum aho-corasick 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "500909c4f87a9e52355b26626d890833e9e1d53ac566db76c36faa984b889699"
-"checksum amcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3fb88518d64a21aa1a6a3ea5f591444525c55945118f5cb65786d769d9110bc4"
+"checksum amcl 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8a555cfaa0e641430ad130ad6cac857cf494a7a02964720fe5a73e5e7a548b39"
 "checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
 "checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff81738b726f5d099632ceaffe7fb65b90212e8dce59d518729e7e8634032d3d"

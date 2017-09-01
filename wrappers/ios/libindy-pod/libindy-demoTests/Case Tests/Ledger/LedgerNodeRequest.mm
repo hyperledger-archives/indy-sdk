@@ -82,7 +82,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -129,6 +129,8 @@
                                                            outResponseJson:&nodeResponse];
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
@@ -142,7 +144,7 @@
     // 1. Create and open pool ledger config, get pool handle
     IndyHandle poolHandle = 0;
     
-    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerConfigWithName:poolName
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
     
@@ -189,6 +191,8 @@
                                                            outResponseJson:&nodeResponse];
     XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 

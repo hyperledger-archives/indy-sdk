@@ -2,11 +2,22 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.hyperledger.indy-sdk-java</groupId>
-	<artifactId>indy-sdk-java</artifactId>
+	<groupId>org.hyperledger</groupId>
+	<artifactId>indy</artifactId>
 	<packaging>jar</packaging>
-	<version>0.1-SNAPSHOT</version>
-	<name>indy-sdk-java</name>
+	<version>1.0.0</version>
+	<name>indy</name>
+	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
+		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
+		The major artifact of the SDK is a c-callable library.
+	</description>
+	<licenses>
+		<license>
+			<name>MIT/Apache-2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<issueManagement>
 		<url>https://github.com/hyperledger/indy-sdk/issues</url>
@@ -24,8 +35,22 @@
 		<github.global.server>github</github.global.server>
 	</properties>
 
-	<build>
+	<!--<distributionManagement>-->
+	<!--<snapshotRepository>-->
+	<!--<id>ossrh</id>-->
+	<!--<url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
+	<!--</snapshotRepository>-->
+	<!--</distributionManagement>-->
 
+	<distributionManagement>
+		<repository>
+			<id>artifactory-evernym</id>
+			<name>artifactory-evernym</name>
+			<url>https://repo.evernym.com/artifactory/libindy-maven-local</url>
+		</repository>
+	</distributionManagement>
+
+	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -70,12 +95,53 @@
 					<includeScope>runtime</includeScope>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9.1</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!--<plugin>-->
+				<!--<groupId>org.apache.maven.plugins</groupId>-->
+				<!--<artifactId>maven-gpg-plugin</artifactId>-->
+				<!--<version>1.6</version>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<id>sign-artifacts</id>-->
+						<!--<phase>verify</phase>-->
+						<!--<goals>-->
+							<!--<goal>sign</goal>-->
+						<!--</goals>-->
+					<!--</execution>-->
+				<!--</executions>-->
+			<!--</plugin>-->
+			<!--<plugin>-->
+				<!--<groupId>org.sonatype.plugins</groupId>-->
+				<!--<artifactId>nexus-staging-maven-plugin</artifactId>-->
+				<!--<version>1.6.8</version>-->
+				<!--<extensions>true</extensions>-->
+				<!--<configuration>-->
+					<!--<serverId>ossrh</serverId>-->
+					<!--<nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
+					<!--<autoReleaseAfterClose>true</autoReleaseAfterClose>-->
+				<!--</configuration>-->
+			<!--</plugin>-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>2.7</version>
+			</plugin>
 		</plugins>
-
 	</build>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

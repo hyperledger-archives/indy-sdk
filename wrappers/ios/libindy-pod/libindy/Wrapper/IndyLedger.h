@@ -15,6 +15,11 @@
                                       requestJSON:(NSString *)request
                                        completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
 
++ (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
+                            submitterDid:(NSString *)submitterDid
+                             requestJson:(NSString *)requestJson
+                              completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
+
 + (NSError *)submitRequestWithPoolHandle:(IndyHandle)poolHandle
                              requestJSON:(NSString *)request
                               completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler;
