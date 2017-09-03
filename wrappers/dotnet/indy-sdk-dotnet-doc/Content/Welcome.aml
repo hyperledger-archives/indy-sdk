@@ -2,52 +2,45 @@
 <topic id="e4da67ca-552f-41fd-bee1-c2abebb6336d" revisionNumber="1">
 	<developerConceptualDocument xmlns="http://ddue.schemas.microsoft.com/authoring/2003/5" xmlns:xlink="http://www.w3.org/1999/xlink">
 		<introduction>
-			<para>This is a sample conceptual topic.  You can use this as a starting point for adding more conceptual
-content to your help project.</para>
+			<para>Welcome to the Hyperledger Indy SDK for .NET.</para>
+      <para>This version of the SDK can be used with any flavor of .NET that conforms to the .NET Standard 1.0 and above including
+      but not limited to the .NET Framework v4.5 and .NET Core 1.0 and can be used on any platform with
+      .NET support.</para>
+      <para>The .NET assembly is a wrapper for the C-callable Indy SDK which must be installed separately
+      in an appropriate location (e.g. the DLL search path in Windows). </para>
+      <para>The SDK provides features for managing a self sovereign identity including interacting with 
+      an Indy node pool such as the Sovrin ledger.</para>
+      <list class="bullet">
+        <listItem>
+          <para>
+            For more information on Hyperledger Indy see the
+            <externalLink>
+              <linkText>Hyperledger website</linkText>
+              <linkUri>http://hyperledger.org</linkUri>
+            </externalLink>
+          </para>
+        </listItem>
+        <listItem>
+          <para>
+            The source code for the Hyperledger Indy SDK, including this .NET wrapper can be found
+            <externalLink>
+              <linkText>here</linkText>
+              <linkUri>https://github.com/hyperledger/indy-sdk</linkUri>
+            </externalLink>
+          </para>
+        </listItem>
+        <listItem>
+          <para>
+            For more information on Sovrin see the
+            <externalLink>
+              <linkText>Sovrin website</linkText>
+              <linkUri>https://sovrin.org</linkUri>
+            </externalLink>
+          </para>
+        </listItem>
+      </list>
 		</introduction>
-
-		<section>
-			<title>Getting Started</title>
-			<content>
-				<para>To get started, add a documentation source to the project (a Visual Studio solution, project, or
-assembly and XML comments file).  See the <legacyBold>Getting Started</legacyBold> topics in the Sandcastle Help
-File Builder's help file for more information.  The following default items are included in this project:</para>
-
-				<list class="bullet">
-					<listItem>
-						<para><localUri>ContentLayout.content</localUri> - Use the content layout file to manage the
-conceptual content in the project and define its layout in the table of contents.</para>
-					</listItem>
-
-					<listItem>
-						<para>The <localUri>.\media</localUri> folder - Place images in this folder that you will reference
-from conceptual content using <codeInline>medialLink</codeInline> or <codeInline>mediaLinkInline</codeInline>
-elements.  If you will not have any images in the file, you may remove this folder.</para>
-					</listItem>
-
-					<listItem>
-						<para>The <localUri>.\icons</localUri> folder - This contains a default logo for the help file.  You
-may replace it or remove it and the folder if not wanted.  If removed or if you change the file name, update
-the <ui>Transform Args</ui> project properties page by removing or changing the filename in the
-<codeInline>logoFile</codeInline> transform argument.  Note that unlike images referenced from conceptual topics,
-the logo file should have its <legacyBold>BuildAction</legacyBold> property set to <codeInline>Content</codeInline>.</para>
-					</listItem>
-
-					<listItem>
-						<para>The <localUri>.\Content</localUri> folder - Use this to store your conceptual topics.  You may
-name the files and organize them however you like.  One suggestion is to lay the files out on disk as you have
-them in the content layout file as shown in this project but the choice is yours.  Files can be added via the
-Solution Explorer or from within the content layout file editor.  Files must appear in the content layout file
-in order to be compiled into the help file.</para>
-					</listItem>
-				</list>
-
-				<para>See the <legacyBold>Conceptual Content</legacyBold> topics in the Sandcastle Help File Builder's
-help file for more information.  See the <legacyBold> Sandcastle MAML Guide</legacyBold> for details on Microsoft
-Assistance Markup Language (MAML) which is used to create these topics.</para>
-			</content>
-		</section>
-
+    
 		<relatedTopics>
 			<link xlink:href="46550fe2-c33c-478a-9934-06d92c63c3c1" />
 		</relatedTopics>

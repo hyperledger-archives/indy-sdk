@@ -211,10 +211,9 @@ namespace Hyperledger.Indy.Sdk.SignUsApi
         /// </para>
         /// <code>
         /// {
-        ///        "did": string, (required)
-        ///        "verkey": string (optional, if only pk is provided),
-        ///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
-        ///               currently only 'ed25519' value is supported for this field)
+        ///        "did": string, 
+        ///        "verkey": string,
+        ///        "crypto_type": string
         /// }
         /// </code>
         /// <para>The <c>did</c> member specifies the DID to store.  This value is required.</para>

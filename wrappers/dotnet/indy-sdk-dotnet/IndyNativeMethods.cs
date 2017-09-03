@@ -6,7 +6,7 @@ namespace Hyperledger.Indy.Sdk
     /// <summary>
     /// PInvoke import of C-Callable SDK library functions and associated delegates.
     /// </summary>
-    public static class IndyNativeMethods
+    internal static class IndyNativeMethods
     {
         /// <summary>
         /// Delegate for callbacks that only include the success or failure of command execution.

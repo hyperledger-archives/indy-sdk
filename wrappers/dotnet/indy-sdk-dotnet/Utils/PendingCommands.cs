@@ -44,7 +44,7 @@ namespace Hyperledger.Indy.Sdk.Utils
         }
 
         /// <summary>
-        /// Gets and temoves a TaskCompletionResult from tracking.
+        /// Gets and removes a TaskCompletionResult from tracking.
         /// </summary>
         /// <typeparam name="T">The type of the TaskCompletionResult that was tracked.</typeparam>
         /// <param name="commandHandle">The command handle used for tracking the TaskCompletionResult.</param>

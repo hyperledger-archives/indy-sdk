@@ -34,7 +34,7 @@
         public AgentConnection Connection { get; }
 
         /// <summary>
-        /// Gets the received message.
+        /// Gets the decrypted content of the received message.
         /// </summary>
         public string Message { get; }
     }

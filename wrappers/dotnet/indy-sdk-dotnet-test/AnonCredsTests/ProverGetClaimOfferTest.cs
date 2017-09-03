@@ -1,5 +1,5 @@
-﻿using Hyperledger.Indy.Sdk.Test.WalletTests;
-using Hyperledger.Indy.Sdk.AnonCredsApi;
+﻿using Hyperledger.Indy.Sdk.AnonCredsApi;
+using Hyperledger.Indy.Sdk.Test.WalletTests;
 using Hyperledger.Indy.Sdk.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;

@@ -263,7 +263,7 @@ namespace Hyperledger.Indy.Sdk.WalletApi
         }
 
         /// <summary>
-        /// Handler for for freeing a value returned by an open wallet instance.
+        /// Handler for freeing a value returned by an open wallet instance.
         /// </summary>
         /// <param name="handle">The handle of the wallet instance.</param>
         /// <param name="value">The pointer to the value to free.</param>

@@ -25,9 +25,10 @@ namespace Hyperledger.Indy.Sdk.PoolApi
         };
 
         /// <summary>
-        /// Creates a new local pool configuration that can be used later to connect pool nodes.
+        /// Creates a new local pool configuration that can be used later to open a connection to pool nodes.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// If the configuration specified in the <paramref name="config"/> parameter is null then the 
         /// default configuration will be used, however if specified the value should adhere to the following
         /// JSON format:
@@ -38,7 +39,10 @@ namespace Hyperledger.Indy.Sdk.PoolApi
         /// </code>
         /// If the value of the <c>genesis_txn</c> key in the JSON is null then a default file will be
         /// used.  If the file specified does not exist it will be created.
+        /// </para>
         /// </remarks>
+        /// <seealso cref="OpenPoolLedgerAsync(string, string)"/>
+        /// <seealso cref="DeletePoolLedgerConfigAsync(string)"/>
         /// <param name="configName">The name for the configuration.</param>
         /// <param name="config">The configuration JSON.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> with no return value that completes when
@@ -63,6 +67,7 @@ namespace Hyperledger.Indy.Sdk.PoolApi
         /// <summary>
         /// Deletes an existing pool configuration.
         /// </summary>
+        /// <seealso cref="CreatePoolLedgerConfigAsync(string, string)"/>
         /// <param name="configName">The name of the configuration to delete.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> with no return value that completes when
         /// the configuration is deleted.</returns>
@@ -146,7 +151,7 @@ namespace Hyperledger.Indy.Sdk.PoolApi
         /// <summary>
         /// Refreshes a local copy of the pool and updates the pool's node connections.
         /// </summary>
-        /// <returns>An asynchronous <see cref="Task{T}"/> with no return value that completes when the refresh has completed.</returns>
+        /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
         public Task RefreshAsync()
         {
             var taskCompletionSource = new TaskCompletionSource<bool>();
@@ -166,8 +171,11 @@ namespace Hyperledger.Indy.Sdk.PoolApi
         /// <summary>
         /// Closes the pool.
         /// </summary>
-        /// <returns>An asynchronous <see cref="Task{T}"/> with no return value that completes
-        /// when the pool is closed.</returns>
+        /// <remarks>
+        /// <note type="note">Once a Pool instance is closed it cannot be opened again.  Instead call the 
+        /// <see cref="OpenPoolLedgerAsync(string, string)"/> method to open a new Pool instance.</note>
+        /// </remarks>
+        /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
         public Task CloseAsync()
         {
             _isOpen = false;
