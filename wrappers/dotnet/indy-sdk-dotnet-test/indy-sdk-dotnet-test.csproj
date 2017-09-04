@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>net45;netcoreapp1.0</TargetFrameworks>
-    <AssemblyName>Indy.Sdk.Dotnet.Test</AssemblyName>
-    <RootNamespace>Indy.Sdk.Dotnet.Test</RootNamespace>
+    <AssemblyName>Hyperledger.Indy.Sdk.Test</AssemblyName>
+    <RootNamespace>Hyperledger.Indy.Sdk.Test</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">

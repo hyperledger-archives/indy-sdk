@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.1</TargetFramework>
-    <AssemblyName>Indy.Sdk.DotNet</AssemblyName>
-    <RootNamespace>Indy.Sdk.DotNet</RootNamespace>
+    <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
+    <RootNamespace>Hyperledger.Indy.Sdk</RootNamespace>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Version>1.0.0</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
