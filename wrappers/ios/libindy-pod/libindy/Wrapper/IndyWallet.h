@@ -10,14 +10,17 @@
 
 @required
 - (NSError *)createWithName:(NSString *)name
-                  andConfig:(NSString *)config;
+                     config:(NSString *)config
+                credentials:(NSString *)credentials;
 
 @required
 - (NSError *)openWithName:(NSString *)name
-               withConfig:(NSString *)config
-                andHandle:(IndyHandle *)handle;
+                   config:(NSString *)config
+            runtimeConfig:(NSString *)runtimeConfig
+              credentials:(NSString *)credentials
+                   handle:(IndyHandle *)handle;
 @required
-- (NSError *)setValue:(NSString *)value  // can value be of any type???
+- (NSError *)setValue:(id)value  // can value be of any type???
                forKey:(NSString *)key
             andSubKey:(NSString *)subkey
            withHandle:(IndyHandle)handle;
@@ -38,10 +41,10 @@
 
 @interface IndyWallet : NSObject
 
-/*
+
 - (NSError*) registerWalletType:(NSString*) type
              withImplementation:(id<IndyWalletImplementation>) implementation;
-*/
+
 
 + (IndyWallet *)sharedInstance;
 

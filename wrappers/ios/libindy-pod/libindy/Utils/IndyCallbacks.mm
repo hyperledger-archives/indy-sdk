@@ -641,10 +641,9 @@ void IndyWrapperCommonAgentListenerConnectionCallback(indy_handle_t xlistener_ha
                        
                    });
 }
-
-void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnection_handle,
+  void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnection_handle,
                                                    indy_error_t  err,
-                                                   const char *    message)
+                                                   const char *  message)
 {
     NSString* sarg = [NSString stringWithUTF8String: message];
     

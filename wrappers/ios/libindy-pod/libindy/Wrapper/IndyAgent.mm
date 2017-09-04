@@ -48,7 +48,7 @@
                                          NSString *senderDid,
                                          NSString *receiverDid))connectionCompletion
                 messageHandler:(void (^)(IndyHandle xconnectionHandle,
-                                              NSError *error,
+                                         NSError *error,
                                          NSString *message))messageCompletion
 {
     indy_error_t ret;
