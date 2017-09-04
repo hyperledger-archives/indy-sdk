@@ -3,7 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 
-namespace Indy.Sdk.Dotnet.Test.Util.Base58Check
+namespace Hyperledger.Indy.Sdk.Test.Util.Base58Check
 {
     /// <summary>
     /// Base58Check Encoding / Decoding (Bitcoin-style)

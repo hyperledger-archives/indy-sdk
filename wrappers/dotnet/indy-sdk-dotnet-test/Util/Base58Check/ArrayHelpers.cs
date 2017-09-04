@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace Indy.Sdk.Dotnet.Test.Util.Base58Check
+namespace Hyperledger.Indy.Sdk.Test.Util.Base58Check
 {
     internal class ArrayHelpers
     {
