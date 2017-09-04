@@ -5,45 +5,14 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
-
-@protocol IndyWalletImplementation <NSObject>
-
-@required
-- (NSError *)createWithName:(NSString *)name
-                     config:(NSString *)config
-                credentials:(NSString *)credentials;
-
-@required
-- (NSError *)openWithName:(NSString *)name
-                   config:(NSString *)config
-            runtimeConfig:(NSString *)runtimeConfig
-              credentials:(NSString *)credentials
-                   handle:(IndyHandle *)handle;
-@required
-- (NSError *)setValue:(id)value  // can value be of any type???
-               forKey:(NSString *)key
-            andSubKey:(NSString *)subkey
-           withHandle:(IndyHandle)handle;
-
-@required
-- (NSError *)getValue:(NSString **)value // can value be of any type???
-               forKey:(NSString *)key
-            andSubKey:(NSString *)subkey
-           withHandle:(IndyHandle)handle;
-
-@required
-- (NSError *)close:(IndyHandle)handle;
-
-@required
-- (NSError *)deleteWithName:(NSString *)name;
-
-@end
+#import "IndyWalletImplementation.h"
 
 @interface IndyWallet : NSObject
 
 
-- (NSError*) registerWalletType:(NSString*) type
-             withImplementation:(id<IndyWalletImplementation>) implementation;
+- (NSError *)registerWalletType:(NSString *)type
+             withImplementation:(id<IndyWalletImplementation>)implementation
+                     completion:(void (^)(NSError *error)) handler;
 
 
 + (IndyWallet *)sharedInstance;

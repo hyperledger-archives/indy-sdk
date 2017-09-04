@@ -37,6 +37,19 @@
 
 // MARK: - Register wallet type
 
+- (void)testRegisterWalletTypeWorks
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:@"xtype"];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+//    
+//    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:@"pool1" walletName:@"keychain_wallet" xtype:@"xtype" config:nil];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+    
+    [TestUtils cleanupStorage];
+}
+
 // MARK: - Create wallet
 
 - (void)testCreateWalletWorks

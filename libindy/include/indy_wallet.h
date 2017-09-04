@@ -46,7 +46,7 @@ extern "C" {
                                                                           const char* key,
                                                                           const char *const *value_ptr),
 
-                                                  indy_error_t (*getNotExiredFn)(indy_handle_t handle,
+                                                  indy_error_t (*getNotExpiredFn)(indy_handle_t handle,
                                                                           const char* key,
                                                                           const char *const *value_ptr),
 
@@ -59,7 +59,8 @@ extern "C" {
                                                                              const char* config,
                                                                              const char* credentials),
 
-                                                  indy_error_t (*freeFn)(indy_handle_t handle, const char* str)
+                                                  indy_error_t (*freeFn)(indy_handle_t handle, const char* str),
+                                                  void         (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                                   );
 
     /// Creates a new secure wallet with the given unique name.

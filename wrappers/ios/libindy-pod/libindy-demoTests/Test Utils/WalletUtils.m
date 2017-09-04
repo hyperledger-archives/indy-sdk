@@ -7,10 +7,6 @@
 #import <libindy/libindy.h>
 #import "TestUtils.h"
 
-@interface  WalletUtils()
-
-@property (nonatomic, strong) NSMutableArray *registeredWallets;
-@end
 
 @implementation WalletUtils
 
@@ -21,25 +17,37 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [WalletUtils new];
-        instance.registeredWallets = [NSMutableArray new];
     });
     
     return instance;
 }
 
 // TODO: Implement when architecture is discussed
-//- (NSError *)registerWalletType: (NSString *)xtype
-//{
-//    NSMutableArray *wallets = self.registeredWallets;
-//    
-//    NSError *ret;
-//    if ([wallets containsObject:xtype])
-//    {
-//        return [NSError new];
-//    }
-//    
-//    
-//}
+- (NSError *)registerWalletType: (NSString *)xtype
+{
+    NSError *ret;
+    
+    __block NSError *err = nil;
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    ret = [[IndyWallet sharedInstance] registerWalletType:xtype
+                                       withImplementation:[KeychainWallet sharedInstance]
+                                               completion:^(NSError* error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+    
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    return err;
+}
 
 -(NSError *)createAndOpenWalletWithPoolName:(NSString *) poolName
                                       xtype:(NSString *) xtype
