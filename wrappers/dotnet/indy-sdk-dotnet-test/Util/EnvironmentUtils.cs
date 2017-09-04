@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
-namespace Hyperledger.Indy.Sdk.Test
+namespace Hyperledger.Indy.Sdk.Test.Util
 {
     static class EnvironmentUtils
     {
@@ -13,7 +14,10 @@ namespace Hyperledger.Indy.Sdk.Test
 
         public static string GetUserHomePath()
         {
-            return Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE")); //TODO: Does this work on non-Windows platforms?
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return Environment.GetEnvironmentVariable("HOME");
+            else
+                return Environment.GetEnvironmentVariable("USERPROFILE");
         }
 
         public static string GetIndyHomePath()

@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.Sdk.PoolApi;
+using Hyperledger.Indy.Sdk.Test.Util;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Threading.Tasks;

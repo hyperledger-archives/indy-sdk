@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test
+namespace Hyperledger.Indy.Sdk.Test.Util
 {
     class PoolUtils
     {

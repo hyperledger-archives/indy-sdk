@@ -1,6 +1,7 @@
 ﻿using Hyperledger.Indy.Sdk.PoolApi;
 using Hyperledger.Indy.Sdk.SignUsApi;
 using Hyperledger.Indy.Sdk.WalletApi;
+using Hyperledger.Indy.Sdk.Test.Util;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
