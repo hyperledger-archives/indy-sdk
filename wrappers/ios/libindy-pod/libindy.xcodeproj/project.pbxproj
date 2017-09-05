@@ -16,6 +16,7 @@
 		5D4F3C061F5D3F8E004CB6A4 /* KeychainWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C041F5D3F8E004CB6A4 /* KeychainWallet.m */; };
 		5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletImplementation.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletImplementation.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5D4F3C0F1F5DA697004CB6A4 /* KeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */; };
+		5D4F3C111F5E97AD004CB6A4 /* KeychainConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C101F5E97AD004CB6A4 /* KeychainConfiguration.swift */; };
 		5DF014D51F1615BA00076592 /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C01F1615BA00076592 /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C21F1615BA00076592 /* IndyCallbacks.h */; };
 		5DF014D71F1615BA00076592 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C31F1615BA00076592 /* NSError+IndyError.h */; };
@@ -34,13 +35,12 @@
 		5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D11F1615BA00076592 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014D21F1615BA00076592 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014D31F1615BA00076592 /* IndyWallet.mm */; };
-		99F99A270519250B16B8BC76 /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 432D733B8EBB5A088C4B4770 /* libPods-libindy.a */; };
+		BF0C0A07BB9D7E0003D65372 /* Pods_libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7F641AF58594DF7F7E5128D /* Pods_libindy.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3E08C01B1EB3336A000A73BA /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
-		432D733B8EBB5A088C4B4770 /* libPods-libindy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCallbacks.mm; sourceTree = "<group>"; };
 		5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libindy.a"; path = "Pods/../build/Debug-iphoneos/libPods-libindy.a"; sourceTree = "<group>"; };
 		5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletCallbacks.h; sourceTree = "<group>"; };
@@ -49,6 +49,7 @@
 		5D4F3C041F5D3F8E004CB6A4 /* KeychainWallet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainWallet.m; sourceTree = "<group>"; };
 		5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletImplementation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletImplementation.h; sourceTree = "<group>"; };
 		5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWalletItem.swift; sourceTree = "<group>"; };
+		5D4F3C101F5E97AD004CB6A4 /* KeychainConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainConfiguration.swift; sourceTree = "<group>"; };
 		5DF014BF1F1615BA00076592 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5DF014C01F1615BA00076592 /* libindy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libindy.h; sourceTree = "<group>"; };
 		5DF014C21F1615BA00076592 /* IndyCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCallbacks.h; sourceTree = "<group>"; };
@@ -70,6 +71,7 @@
 		5DF014D31F1615BA00076592 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
 		717E50F5CB0006C54C8947D5 /* Pods-libindy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.debug.xcconfig"; sourceTree = "<group>"; };
 		DEA13FB625E476E575ACEE1F /* Pods-libindy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy/Pods-libindy.release.xcconfig"; sourceTree = "<group>"; };
+		E7F641AF58594DF7F7E5128D /* Pods_libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,7 +81,7 @@
 			files = (
 				5D2A3A4F1F164BD70003FE43 /* libPods-libindy.a in Frameworks */,
 				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
-				99F99A270519250B16B8BC76 /* libPods-libindy.a in Frameworks */,
+				BF0C0A07BB9D7E0003D65372 /* Pods_libindy.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,7 +93,7 @@
 			children = (
 				5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */,
 				3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */,
-				432D733B8EBB5A088C4B4770 /* libPods-libindy.a */,
+				E7F641AF58594DF7F7E5128D /* Pods_libindy.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -122,6 +124,7 @@
 				5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */,
 				5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */,
 				5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */,
+				5D4F3C101F5E97AD004CB6A4 /* KeychainConfiguration.swift */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
@@ -315,6 +318,7 @@
 				5DF014D81F1615BA00076592 /* NSError+IndyError.m in Sources */,
 				5D4F3C0F1F5DA697004CB6A4 /* KeychainWalletItem.swift in Sources */,
 				5DF014E11F1615BA00076592 /* IndyPool.mm in Sources */,
+				5D4F3C111F5E97AD004CB6A4 /* KeychainConfiguration.swift in Sources */,
 				5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */,
 				5DF014E31F1615BA00076592 /* IndySignus.mm in Sources */,
 				5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */,

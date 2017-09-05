@@ -4,14 +4,15 @@ platform :ios, '10.2'
 
 workspace 'libindy.xcworkspace'
 
-#use_frameworks!
-
 def appPods
     pod 'libsodium'
     pod 'libzmq-pw',"4.2.2"
     pod 'OpenSSL'
     pod 'milagro', "3.0.0"
     pod 'libindy-core', "0.1.1"
+
+use_frameworks!
+    pod 'Locksmith'
 end
 
 target 'libindy-demo' do
