@@ -24,9 +24,9 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $sovrin_stream" >> /etc/apt/sou
 
 RUN useradd -ms /bin/bash -u $uid sovrin
 
-ARG indy_plenum_ver=1.1.112
-ARG indy_anoncreds_ver=1.0.25
-ARG indy_node_ver=1.1.119
+ARG indy_plenum_ver=1.1.24
+ARG indy_anoncreds_ver=1.0.10
+ARG indy_node_ver=1.1.33
 
 RUN apt-get update -y && apt-get install -y \
 	indy-plenum=${indy_plenum_ver} \
