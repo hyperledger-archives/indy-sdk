@@ -1,29 +1,22 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf830
-{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
-
-\f0\fs24 \cf0 \{\
-  "name": "indy-objc",\
-  "version": "0.1.1",\
-  "summary": "Summary TODO.",\
-  "description": "Description TODO.",\
-  "homepage": "TODO",\
-  "license": \{\
-    "type": "Apache License 2.0",\
-    "file": "LICENSE"\
-  \},\
-  "authors": \{\
-    "Daniel Hardman": "daniel.hardman@evernym.com"\
-  \},\
-  "platforms": \{\
-    "ios": "10.0"\
-  \},\
-  "source": \{\
-    "http": "https://repo.evernym.com/libindy/ios/stable/indy-objc/0.1.1/indy-objc.tar.gz"\
-  \},\
-  "source_files": "*.h",\
-  "vendored_libraries": "*.a"\
-\}}
+{
+    "name": "indy-objc",
+    "version": "0.1.1",
+    "summary": "Summary TODO.",
+    "description": "Description TODO.",
+    "homepage": "TODO",
+    "license": {
+        "type": "Apache License 2.0",
+        "file": "LICENSE"
+    },
+    "authors": {
+        "Daniel Hardman": "daniel.hardman@evernym.com"
+    },
+    "platforms": {
+        "ios": "10.0"
+    },
+    "source": {
+        "http": "https://repo.evernym.com/libindy/ios/stable/indy-objc/0.1.1/indy-objc.tar.gz"
+    },
+    "source_files": "*.h",
+    "vendored_libraries": "*.a"
+}
