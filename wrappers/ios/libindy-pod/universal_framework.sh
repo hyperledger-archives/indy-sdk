@@ -48,6 +48,8 @@ fi
 # Step 3. Create universal binary file using lipo and place the combined executable in the copied framework directory
 echo "Combining executables"
 
+open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
+
 lipo -create -output "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/${TARGET_NAME}" "${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${TARGET_NAME}.framework/${TARGET_NAME}" "${BUILD_DIR}/${CONFIGURATION}-iphoneos/${TARGET_NAME}.framework/${TARGET_NAME}"
 
 # Step 4. Create universal binaries for embedded frameworks
@@ -59,9 +61,6 @@ lipo -create -output "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/${TARGE
 # Step 5. Convenience step to copy the framework to the project's directory
 echo "Copying to project dir"
 
-if [ -d "${PROJECT_DIR}/${TARGET_NAME}.framework"]; then
-rm "${PROJECT_DIR}/${TARGET_NAME}.framework"
-fi
 
 yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${FULL_PRODUCT_NAME}" "${PROJECT_DIR}"
 
