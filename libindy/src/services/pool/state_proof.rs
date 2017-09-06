@@ -11,6 +11,9 @@ use std::collections::HashMap;
 use std::fmt::LowerHex;
 use std::iter::Iterator;
 
+use errors::common::CommonError;
+use errors::pool::PoolError;
+
 #[derive(Debug, Serialize, Deserialize)]
 enum Node {
     Leaf(Leaf),
@@ -88,7 +91,8 @@ impl Decodable for Node {
                         next: Box::new(rlp::decode(rlp.at(1)?.as_raw())),
                     }));
                 } else {
-                    panic!("Incorrect path");
+                    error!("RLP for path in Patricia Merkle Trie contains incorrect flags byte {}", path[0]);
+                    return Err(DecoderError::Custom("Path contains incorrect flags byte"));
                 }
             }
             Prototype::List(17) => {
@@ -116,7 +120,10 @@ impl Decodable for Node {
             Prototype::Data(32) => {
                 return Ok(Node::Hash(rlp::decode(rlp.as_raw())));
             }
-            _ => panic!("Decode not implemented for {:?}", rlp.prototype())
+            _ => {
+                error!("Unexpected data while parsing Patricia Merkle Trie: {:?}", rlp.prototype());
+                return Err(DecoderError::Custom("Unexpected data"));
+            }
         }
     }
 }
@@ -125,55 +132,65 @@ type NodeHash = generic_array::GenericArray<u8, <sha3::Sha3_256 as digest::Fixed
 type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
-    pub fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Option<Vec<u8>> {
+    pub fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Result<Option<Vec<u8>>, CommonError> {
         let nibble_path = Node::path_to_nibbles(path.as_bytes());
-        self._get_value(db, nibble_path.as_slice()).map(|v| {
-            print_iter_hex(v.iter());
-            let mut v = rlp::decode_list(v.as_slice());
-            assert_eq!(v.len(), 1);
-            v.pop().unwrap()
-        })
+        match self._get_value(db, nibble_path.as_slice())? {
+            Some(v) => {
+                print_iter_hex(v.iter());
+                let mut vec = rlp::decode_list(v.as_slice());
+                if let Some(val) = vec.pop() {
+                    if vec.len() == 0 {
+                        return Ok(val);
+                    }
+                }
+                return Err(CommonError::InvalidStructure("Unexpected data format of value in Patricia Merkle Trie".to_string()));
+            }
+            None => return Ok(None)
+        }
     }
-    fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Option<&'a Vec<u8>> {
-        println!("{:?}", self);
+    fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Result<Option<&'a Vec<u8>>, CommonError> {
+        trace!("Check proof, cur node: {:?}", self);
         match self {
             &Node::Full(ref node) => {
                 if path.is_empty() {
-                    return node.value.as_ref();
+                    return Ok(node.value.as_ref());
                 }
                 if let Some(ref next) = node.nodes[path[0] as usize] {
                     return next._get_value(db, &path[1..]);
                 }
-                return None;
+                return Ok(None);
             }
             &Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
                     return next._get_value(db, path);
                 } else {
-                    panic!("Broken TrieDB");
+                    return Err(CommonError::InvalidStructure(
+                        "Incomplete key-value DB for Patricia Merkle Trie to get value by the key".to_string()));
                 }
             }
             &Node::Leaf(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
                 if !is_leaf {
-                    panic!("Should be leaf");
+                    return Err(CommonError::InvalidState(
+                        "Incorrect Patricia Merkle Trie: node marked as leaf but path contains extension flag".to_string()));
                 }
                 if pair_path == path {
-                    return Some(&pair.value);
+                    return Ok(Some(&pair.value));
                 } else {
-                    return None;
+                    return Ok(None);
                 }
             }
             &Node::Extension(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
                 if is_leaf {
-                    panic!("Should be extension");
+                    return Err(CommonError::InvalidState(
+                        "Incorrect Patricia Merkle Trie: node marked as extension but path contains leaf flag".to_string()));
                 }
                 if path.starts_with(&pair_path) {
                     return pair.next._get_value(db, &path[pair_path.len()..]);
                 } else {
-                    return None;
+                    return Ok(None);
                 }
             }
         }
