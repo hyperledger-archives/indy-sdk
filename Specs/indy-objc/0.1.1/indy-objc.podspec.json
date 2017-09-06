@@ -16,9 +16,7 @@
   "platforms": {
     "ios": "10.0"
   },
-  "ios": {
-    "vendored_frameworks": "libindy.framework"
-  },
+  "vendored_frameworks": "libindy.framework",
   "source_files": "*.h",
   "module_name": "libindy"
 }
