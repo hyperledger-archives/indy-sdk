@@ -6,9 +6,10 @@ extern crate generic_array;
 extern crate digest;
 
 use self::rlp::*;
+use self::sha3::Digest;
 use std::collections::HashMap;
-use std::iter::Iterator;
 use std::fmt::LowerHex;
+use std::iter::Iterator;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Node {
@@ -149,8 +150,9 @@ impl Node {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
                     return next._get_value(db, path);
+                } else {
+                    panic!("Broken TrieDB");
                 }
-                return None;
             }
             &Node::Leaf(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
@@ -158,7 +160,7 @@ impl Node {
                     panic!("Should be leaf");
                 }
                 if pair_path == path {
-                    return Some(&pair.value)
+                    return Some(&pair.value);
                 } else {
                     return None;
                 }
@@ -169,7 +171,7 @@ impl Node {
                     panic!("Should be extension");
                 }
                 if path.starts_with(&pair_path) {
-                    return pair.next._get_value(db, &path[pair_path.len()..])
+                    return pair.next._get_value(db, &path[pair_path.len()..]);
                 } else {
                     return None;
                 }
@@ -191,7 +193,7 @@ impl Node {
         if is_odd {
             nibbles.insert(0, path[0] & 0x0F);
         }
-        return (is_leaf, nibbles)
+        return (is_leaf, nibbles);
     }
 }
 
@@ -202,18 +204,44 @@ fn print_iter_hex<T, V>(iter: T) where T: Iterator<Item=V>, V: LowerHex {
     println!();
 }
 
+pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_value: Option<&str>) -> bool {
+    let nodes: Vec<Node> = rlp::decode_list(proofs_rlp);
+    let mut map: TrieDB = HashMap::new();
+    for node in &nodes {
+        let encoded = rlp::encode(node);
+        let mut hasher = sha3::Sha3_256::default();
+        hasher.input(encoded.to_vec().as_slice());
+        let hash = hasher.result();
+        map.insert(hash, node);
+    }
+    map.get(root_hash).map(|root| {
+        root
+            .get_value(&map, key)
+            .map_or(Ok(None), |value| {
+                String::from_utf8(value).map(Some)
+            })
+            .map(|value| value.eq(&expected_value.map(String::from)))
+            .unwrap_or(false)
+    }).unwrap_or(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use self::sha3::Digest;
-    #[test]
-    fn state_proof_works() {
-        let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080".to_string();
+
+    fn hex_str_to_bytes(hex_str: &str) -> Vec<u8> {
         let mut vec: Vec<u8> = Vec::new();
-        for i in 0..str.len() / 2 {
-            let x = &str[(i * 2)..(i * 2 + 2)];
+        for i in 0..hex_str.len() / 2 {
+            let x = &hex_str[(i * 2)..(i * 2 + 2)];
             vec.push(u8::from_str_radix(&x, 16).unwrap())
         }
+        return vec;
+    }
+
+    #[test]
+    fn state_proof_works() {
+        let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080";
+        let vec = hex_str_to_bytes(str);
         let rlp = rlp::Rlp::new(vec.as_slice());
         let proofs: Vec<Node> = rlp.as_list();
         println!("Input");
@@ -237,5 +265,51 @@ mod tests {
             let x = proofs[2].get_value(&map, k.to_string().as_str());
             println!("{:?}", x.map(String::from_utf8));
         }
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf() {
+        /*
+            '33' -> 'v1'
+            '34' -> 'v2'
+            '3C' -> 'v3'
+            '4'  -> 'v4'
+            'D'  -> 'v5asdfasdf'
+            'E'  -> 'v6fdsfdfs'
+        */
+        let proofs = hex_str_to_bytes("f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080");
+        let root_hash = hex_str_to_bytes("badc906111df306c6afac17b62f29792f0e523b67ba831651d6056529b6bf690");
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33", Some("v1")));
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "34", Some("v2")));
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C", Some("v3")));
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "4", Some("v4")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_through_extension() {
+        /*
+            '33'  -> 'v1'
+            'D'   -> 'v2'
+            'E'   -> 'v3'
+            '333' -> 'v4'
+            '334' -> 'v5'
+        */
+        let proofs = hex_str_to_bytes("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080");
+        let root_hash = hex_str_to_bytes("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab");
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "333", Some("v4")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_full_node() {
+        /*
+            '33'  -> 'v1'
+            'D'   -> 'v2'
+            'E'   -> 'v3'
+            '333' -> 'v4'
+            '334' -> 'v5'
+        */
+        let proofs = hex_str_to_bytes("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080");
+        let root_hash = hex_str_to_bytes("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab");
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33", Some("v1")));
     }
 }
