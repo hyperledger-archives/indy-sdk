@@ -13,6 +13,6 @@ __Intellij__
      </dependency>
      ```
      
-* Click on Edit configuration and edit Main.config, add DYLD_LIBRARY_PATH=<path to indy dll/so/dylib>
+* Click on Edit configuration and edit Main.config, add DYLD_LIBRARY_PATH=<path to indy dll/so/dylib>. *Note: `DYLD_LIBRARY_PATH` is specific to OSX, you have to use flag `LD_LIBRARY_PATH` if you are on Linux*
 * Run the Project
 * If there is an error that config already exist. Remove `~/.indy` folder.
