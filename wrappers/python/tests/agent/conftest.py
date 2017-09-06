@@ -36,11 +36,11 @@ async def wallet_with_identities(wallet_with_identity, endpoint):
 
 
 @pytest.fixture
-async def listener_handle(endpoint):
-    listener_handle = await agent.agent_listen(endpoint)
+def listener_handle(event_loop, endpoint):
+    listener_handle = event_loop.run_until_complete(agent.agent_listen(endpoint))
     assert type(listener_handle) is int
     yield listener_handle
-    await agent.agent_close_listener(listener_handle)
+    event_loop.run_until_complete(agent.agent_close_listener(listener_handle))
 
 
 @pytest.fixture
@@ -59,13 +59,13 @@ async def listener_with_identities(listener_handle, wallet_with_identities):
 
 
 @pytest.fixture
-async def connection(listener_with_identity):
+def connection(event_loop, listener_with_identity):
     listener_handle, wallet_handle, did = listener_with_identity
 
-    connection_handle = await agent.agent_connect(0, wallet_handle, did, did)
+    connection_handle = event_loop.run_until_complete(agent.agent_connect(0, wallet_handle, did, did))
     assert connection_handle is not None
 
-    event = await agent.agent_wait_for_event([listener_handle])  # type: agent.ConnectionEvent
+    event = event_loop.run_until_complete(agent.agent_wait_for_event([listener_handle]))  # type: agent.ConnectionEvent
 
     assert type(event) is agent.ConnectionEvent
     assert event.handle == listener_handle
@@ -75,5 +75,5 @@ async def connection(listener_with_identity):
 
     yield listener_handle, event.connection_handle, connection_handle, wallet_handle, did
 
-    await agent.agent_close_connection(event.connection_handle)
-    await agent.agent_close_connection(connection_handle)
+    event_loop.run_until_complete(agent.agent_close_connection(event.connection_handle))
+    event_loop.run_until_complete(agent.agent_close_connection(connection_handle))
