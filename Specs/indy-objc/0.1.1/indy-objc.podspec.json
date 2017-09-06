@@ -17,6 +17,7 @@
     "source": {
         "http": "https://repo.evernym.com/libindy/ios/stable/indy-objc/0.1.1/indy-objc.zip"
     },
+     "source_files": "*.h",
     "vendored_frameworks":"libindy.framework",
     "module_name": "libindy"
 }
