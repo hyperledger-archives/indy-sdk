@@ -228,6 +228,7 @@ impl Node {
     }
 }
 
+#[allow(dead_code)] //FIXME remove after usage in main code
 pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_value: Option<&str>) -> bool {
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
