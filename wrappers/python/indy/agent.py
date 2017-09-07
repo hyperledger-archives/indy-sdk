@@ -15,8 +15,12 @@ class Event:
     :error: (IndyError) If event is erroneous contains related IndyError exception
     """
 
-    handle: int
-    error: IndyError
+    # handle: int
+    # error: IndyError
+
+    def __init__(self, handle: int, err: int):
+        self.handle = handle
+        self.error = IndyError(ErrorCode(err)) if err != ErrorCode.Success else None
 
     def is_success(self):
         """
@@ -36,9 +40,9 @@ class ConnectionEvent(Event):
     :sender_did: Sender DID
     :receiver_did: Receiver DID
     """
-    connection_handle: int
-    sender_did: str
-    receiver_did: str
+    # connection_handle: int
+    # sender_did: str
+    # receiver_did: str
 
     def __init__(self, handle: int, err: int, connection_handle: int, sender_did: bytes, receiver_did: bytes):
         logger = logging.getLogger(__name__)
@@ -50,11 +54,9 @@ class ConnectionEvent(Event):
                      sender_did,
                      receiver_did)
 
-        self.handle = handle
+        super().__init__(handle, err)
 
-        if err != ErrorCode.Success:
-            self.error = IndyError(ErrorCode(err))
-        else:
+        if self.is_success():
             self.connection_handle = connection_handle
             self.sender_did = sender_did.decode()
             self.receiver_did = receiver_did.decode()
@@ -69,7 +71,7 @@ class MessageEvent(Event):
     :message: Incoming message
     """
 
-    message: str
+    # message: str
 
     def __init__(self, handle: int, err: int, message: bytes):
         logger = logging.getLogger(__name__)
@@ -78,18 +80,16 @@ class MessageEvent(Event):
                      err,
                      message)
 
-        self.handle = handle
+        super().__init__(handle, err)
 
-        if err != ErrorCode.Success:
-            self._error = IndyError(ErrorCode(err))
-        else:
+        if self.is_success():
             self.message = message.decode()
 
         logger.debug("MessageEvent:__init__ <<< self: %r", self)
 
 
-_events: List[Event] = []
-_event_waiters: List[Tuple[List[int], Any, Any]] = []
+_events = []  # type: List[Event]
+_event_waiters = []  # type: List[Tuple[List[int], Any, Any]]
 
 
 def _notify_event_waiters():
