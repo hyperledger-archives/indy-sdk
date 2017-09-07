@@ -10,9 +10,6 @@ def appPods
     pod 'OpenSSL'
     pod 'milagro', "3.0.0"
     pod 'libindy-core', "0.1.1"
-
-use_frameworks!
-    pod 'Locksmith'
 end
 
 target 'libindy-demo' do

@@ -60,7 +60,7 @@ extern "C" {
                                                                              const char* credentials),
 
                                                   indy_error_t (*freeFn)(indy_handle_t handle, const char* str),
-                                                  void         (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                                  void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                                   );
 
     /// Creates a new secure wallet with the given unique name.
