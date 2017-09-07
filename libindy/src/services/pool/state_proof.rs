@@ -8,8 +8,6 @@ extern crate digest;
 use self::rlp::*;
 use self::sha3::Digest;
 use std::collections::HashMap;
-use std::fmt::LowerHex;
-use std::iter::Iterator;
 
 use errors::common::CommonError;
 
@@ -146,7 +144,7 @@ impl Node {
         let nibble_path = Node::path_to_nibbles(path.as_bytes());
         match self._get_value(db, nibble_path.as_slice())? {
             Some(v) => {
-                print_iter_hex(v.iter());
+                trace!("Raw value from Patricia Merkle Trie {:?}", v);
                 let mut vec: Vec<Vec<u8>> = rlp::decode_list(v.as_slice());
                 if let Some(val) = vec.pop() {
                     if vec.len() == 0 {
@@ -224,13 +222,6 @@ impl Node {
     }
 }
 
-fn print_iter_hex<T, V>(iter: T) where T: Iterator<Item=V>, V: LowerHex {
-    for i in iter {
-        print!("{:02x} ", i);
-    }
-    println!();
-}
-
 pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_value: Option<&str>) -> bool {
     let nodes: Vec<Node> = rlp::decode_list(proofs_rlp);
     let mut map: TrieDB = HashMap::new();
@@ -263,31 +254,40 @@ mod tests {
     }
 
     #[test]
-    fn state_proof_works() {
+    fn state_proof_nodes_parse_and_get_works() {
+        /*
+            '33' -> 'v1'
+            '34' -> 'v2'
+            '3C' -> 'v3'
+            '4'  -> 'v4'
+            'D'  -> 'v5asdfasdf'
+            'E'  -> 'v6fdsfdfs'
+        */
         let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080";
         let vec = hex_str_to_bytes(str);
         let rlp = rlp::Rlp::new(vec.as_slice());
         let proofs: Vec<Node> = rlp.as_list();
-        println!("Input");
+        info!("Input");
         for rlp in rlp.iter() {
-            print_iter_hex(rlp.as_raw().iter());
+            info!("{:?}", rlp.as_raw());
         }
-        println!("parsed");
+        info!("parsed");
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
-            println!("{:?}", node);
+            info!("{:?}", node);
             let encoded = encode(node);
-            print_iter_hex(encoded.iter());
+            info!("{:?}", encoded);
             let mut hasher = sha3::Sha3_256::default();
             hasher.input(encoded.to_vec().as_slice());
             let out = hasher.result();
-            print_iter_hex(out.iter());
+            info!("{:?}", out);
             map.insert(out, node);
         }
         for k in 33..35 {
-            println!("Try get {}", k);
-            let x = proofs[2].get_str_value(&map, k.to_string().as_str());
-            println!("{:?}", x);
+            info!("Try get {}", k);
+            let x = proofs[2].get_str_value(&map, k.to_string().as_str()).unwrap().unwrap();
+            info!("{:?}", x);
+            assert_eq!(x, format!("v{}", k - 32));
         }
     }
 
