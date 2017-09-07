@@ -69,21 +69,3 @@ USER indy
 RUN pip3 install \
 	/home/indy/indy-anoncreds \
 	pytest
-
-USER root
-RUN apt-get update && \
-      apt-get install -y \
-      apt-utils \
-      software-properties-common \
-      ruby-dev
-RUN add-apt-repository ppa:jonathonf/python-3.6
-RUN apt-get update && \
-      apt-get install -y \
-      python3.6 \
-      python3-pip
-RUN gem install fpm
-ADD https://bootstrap.pypa.io/ez_setup.py .
-RUN python3.6
-RUN python3.6 -m pip install twine
-
-USER indy
