@@ -199,7 +199,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
                 echo "${env_name} Test: Test python wrapper"
 
                 sh '''
-                    python3.5 -m pip install -e .
+                    python3.5 -m pip install --user -e .
                     LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
             }
