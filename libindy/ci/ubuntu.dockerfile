@@ -58,6 +58,11 @@ RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
 WORKDIR /home/indy
 
+USER root
+RUN pip3 install \
+    twine
+
+USER indy
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
 RUN virtualenv -p python3.5 /home/indy/test
 RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/test/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
