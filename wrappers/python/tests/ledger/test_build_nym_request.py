@@ -64,7 +64,6 @@ async def test_nym_request_works_for_different_roles(wallet_handle, pool_handle,
     await check_for_role(pool_handle, wallet_handle, trustee_did, 'STEWARD', '2')
 
 
-@pytest.mark.asyncio
 async def check_for_role(pool_handle, wallet_handle, trustee_did, role, expected_role_value):
     (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
 
