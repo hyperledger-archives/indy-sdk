@@ -2,9 +2,6 @@
 //  KeychainWallet.m
 //  libindy-demo
 //
-//  Created by Anastasia Tarasova on 04/09/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
 
 #import "IndyWalletCallbacks.h"
 #import "KeychainWallet.h"

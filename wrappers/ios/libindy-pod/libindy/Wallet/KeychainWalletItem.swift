@@ -8,7 +8,6 @@
 
 import Foundation
 
-import Locksmith
 
 struct KeychainWalletItem
 {
@@ -39,6 +38,12 @@ struct KeychainPasswordItem {
         self.service = service
         self.account = account
         self.accessGroup = accessGroup
+        
+        let wrapper = KeychainWrapper.init(serviceName: "wallet1")
+        
+        
+        wrapper.
+        
     }
     
     // MARK: Keychain access
