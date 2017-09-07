@@ -5,7 +5,13 @@ extern crate sha3;
 extern crate generic_array;
 extern crate digest;
 
-use self::rlp::*;
+use self::rlp::{
+    DecoderError as RlpDecoderError,
+    Prototype as RlpPrototype,
+    RlpStream,
+    UntrustedRlp,
+    encode as rlp_encode
+};
 use self::sha3::Digest;
 use std::collections::HashMap;
 
@@ -37,7 +43,7 @@ struct Extension {
     next: Box<Node>,
 }
 
-impl Encodable for Node {
+impl rlp::Encodable for Node {
     fn rlp_append(&self, s: &mut RlpStream) {
         match self {
             &Node::Hash(ref hash) => {
@@ -72,54 +78,54 @@ impl Encodable for Node {
     }
 }
 
-impl Decodable for Node {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
+impl rlp::Decodable for Node {
+    fn decode(rlp: &UntrustedRlp) -> Result<Self, RlpDecoderError> {
         match rlp.prototype()? {
-            Prototype::List(2) => {
+            RlpPrototype::List(2) => {
                 let path = rlp.at(0)?.as_raw();
                 if path[0] & 0x20 == 0x20 {
                     return Ok(Node::Leaf(Leaf {
-                        path: rlp::decode(path),
-                        value: rlp::decode(rlp.at(1)?.as_raw()),
+                        path: rlp.at(0)?.as_val()?,
+                        value: rlp.at(1)?.as_val()?,
                     }));
                 } else if path[0] & 0x20 == 0x00 {
                     return Ok(Node::Extension(Extension {
-                        path: rlp::decode(path),
-                        next: Box::new(rlp::decode(rlp.at(1)?.as_raw())),
+                        path: rlp.at(0)?.as_val()?,
+                        next: Box::new(rlp.at(1)?.as_val()?),
                     }));
                 } else {
                     error!("RLP for path in Patricia Merkle Trie contains incorrect flags byte {}", path[0]);
-                    return Err(DecoderError::Custom("Path contains incorrect flags byte"));
+                    return Err(RlpDecoderError::Custom("Path contains incorrect flags byte"));
                 }
             }
-            Prototype::List(17) => {
+            RlpPrototype::List(17) => {
                 let mut nodes: [Option<Box<Node>>; 16] = [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None];
                 for i in 0..16 {
                     let cur = rlp.at(i)?;
                     match cur.prototype()? {
-                        Prototype::Data(0) => {
+                        RlpPrototype::Data(0) => {
                             continue
                         }
                         _ => {
-                            nodes[i] = Some(Box::new(rlp::decode(cur.as_raw())));
+                            nodes[i] = Some(Box::new(cur.as_val()?));
                         }
                     }
                 }
                 let mut value: Option<Vec<u8>> = None;
                 if !rlp.at(16)?.is_empty() {
-                    value = Some(rlp::decode(rlp.at(16)?.as_raw()))
+                    value = Some(rlp.at(16)?.as_val()?)
                 }
                 return Ok(Node::Full(FullNode {
                     nodes: nodes,
                     value: value,
                 }));
             }
-            Prototype::Data(32) => {
-                return Ok(Node::Hash(rlp::decode(rlp.as_raw())));
+            RlpPrototype::Data(32) => {
+                return Ok(Node::Hash(rlp.as_val()?));
             }
             _ => {
                 error!("Unexpected data while parsing Patricia Merkle Trie: {:?}", rlp.prototype());
-                return Err(DecoderError::Custom("Unexpected data"));
+                return Err(RlpDecoderError::Custom("Unexpected data"));
             }
         }
     }
@@ -145,7 +151,7 @@ impl Node {
         match self._get_value(db, nibble_path.as_slice())? {
             Some(v) => {
                 trace!("Raw value from Patricia Merkle Trie {:?}", v);
-                let mut vec: Vec<Vec<u8>> = rlp::decode_list(v.as_slice());
+                let mut vec: Vec<Vec<u8>> = UntrustedRlp::new(v.as_slice()).as_list().unwrap_or_default(); //default will cause error below
                 if let Some(val) = vec.pop() {
                     if vec.len() == 0 {
                         return Ok(Some(val));
@@ -223,10 +229,10 @@ impl Node {
 }
 
 pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_value: Option<&str>) -> bool {
-    let nodes: Vec<Node> = rlp::decode_list(proofs_rlp);
+    let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
-        let encoded = rlp::encode(node);
+        let encoded = rlp_encode(node);
         let mut hasher = sha3::Sha3_256::default();
         hasher.input(encoded.to_vec().as_slice());
         let hash = hasher.result();
@@ -265,8 +271,8 @@ mod tests {
         */
         let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080";
         let vec = hex_str_to_bytes(str);
-        let rlp = rlp::Rlp::new(vec.as_slice());
-        let proofs: Vec<Node> = rlp.as_list();
+        let rlp = UntrustedRlp::new(vec.as_slice());
+        let proofs: Vec<Node> = rlp.as_list().unwrap();
         info!("Input");
         for rlp in rlp.iter() {
             info!("{:?}", rlp.as_raw());
@@ -275,7 +281,7 @@ mod tests {
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
             info!("{:?}", node);
-            let encoded = encode(node);
+            let encoded = rlp_encode(node);
             info!("{:?}", encoded);
             let mut hasher = sha3::Sha3_256::default();
             hasher.input(encoded.to_vec().as_slice());
@@ -335,5 +341,11 @@ mod tests {
         let proofs = hex_str_to_bytes("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080");
         let root_hash = hex_str_to_bytes("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab");
         assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33", Some("v1")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
+        let proofs = hex_str_to_bytes("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080");
+        assert_eq!(verify_proof(proofs.as_slice(), &[0x00], "", None), false);
     }
 }
