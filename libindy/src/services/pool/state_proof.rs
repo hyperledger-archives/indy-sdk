@@ -12,7 +12,6 @@ use std::fmt::LowerHex;
 use std::iter::Iterator;
 
 use errors::common::CommonError;
-use errors::pool::PoolError;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Node {
@@ -132,15 +131,26 @@ type NodeHash = generic_array::GenericArray<u8, <sha3::Sha3_256 as digest::Fixed
 type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
-    pub fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Result<Option<Vec<u8>>, CommonError> {
+    fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Result<Option<String>, CommonError> {
+        let value = self.get_value(db, path)?;
+        if let Some(vec) = value {
+            let str = String::from_utf8(vec)
+                .map_err(|err| CommonError::InvalidStructure(
+                    format!("Patricia Merkle Trie contains non-str value ({})", err)))?;
+            Ok(Some(str))
+        } else {
+            Ok(None)
+        }
+    }
+    fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Result<Option<Vec<u8>>, CommonError> {
         let nibble_path = Node::path_to_nibbles(path.as_bytes());
         match self._get_value(db, nibble_path.as_slice())? {
             Some(v) => {
                 print_iter_hex(v.iter());
-                let mut vec = rlp::decode_list(v.as_slice());
+                let mut vec: Vec<Vec<u8>> = rlp::decode_list(v.as_slice());
                 if let Some(val) = vec.pop() {
                     if vec.len() == 0 {
-                        return Ok(val);
+                        return Ok(Some(val));
                     }
                 }
                 return Err(CommonError::InvalidStructure("Unexpected data format of value in Patricia Merkle Trie".to_string()));
@@ -233,11 +243,8 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_val
     }
     map.get(root_hash).map(|root| {
         root
-            .get_value(&map, key)
-            .map_or(Ok(None), |value| {
-                String::from_utf8(value).map(Some)
-            })
-            .map(|value| value.eq(&expected_value.map(String::from)))
+            .get_str_value(&map, key)
+            .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
             .unwrap_or(false)
     }).unwrap_or(false)
 }
@@ -279,8 +286,8 @@ mod tests {
         }
         for k in 33..35 {
             println!("Try get {}", k);
-            let x = proofs[2].get_value(&map, k.to_string().as_str());
-            println!("{:?}", x.map(String::from_utf8));
+            let x = proofs[2].get_str_value(&map, k.to_string().as_str());
+            println!("{:?}", x);
         }
     }
 
