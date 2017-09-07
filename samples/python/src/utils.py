@@ -1,5 +1,4 @@
-from os import environ, makedirs
-from os.path import dirname
+from os import environ
 from pathlib import Path
 from tempfile import gettempdir
 
@@ -29,8 +28,7 @@ def pool_genesis_txn_data():
 def save_pool_genesis_txn_file(path):
     data = pool_genesis_txn_data()
 
-    if not path.exists():
-        makedirs(dirname(path))
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(str(path), "w+") as f:
         f.writelines(data)
