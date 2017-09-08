@@ -166,16 +166,24 @@ class KeychainWrapper
     
     // MARK: Read
     
-    func read() throws -> [String: Any]?
+    func read() throws -> [String: Any]
     {
         do {
             guard let result = try performKeychainStorageAction(closure: performReadRequestClosure, keychainQuery: asReadableQuery) else
             {
-                return nil
+                throw KeychainError.notAvailable
             }
-            return self.unarchiveData(fromQuery: result)
-        } catch {
-            return nil
+            
+            guard let data = self.unarchiveData(fromQuery: result) else
+            {
+                throw KeychainError.notAvailable
+            }
+            
+            return data
+        }
+        catch
+        {
+            throw error
         }
     }
     

@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyWalletCallbacks.h"
-#import "IndyKeychainWallet.h"
+#import "KeychainWallet.h"
 #import "indy_core.h"
 
 @interface IndyWalletCallbacks ()

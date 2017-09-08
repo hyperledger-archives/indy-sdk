@@ -3,7 +3,16 @@
 //  libindy
 //
 
-@protocol IndyWalletProtocol <NSObject>
+@protocol IndyWalletTypeProtocol;
+@protocol IndyWalletImplementationProtocol;
+
+@protocol IndyWalletProtocol <IndyWalletTypeProtocol, IndyWalletImplementationProtocol>
+
+@end
+
+// MARK: - Indy Wallet type protocol
+
+@protocol IndyWalletTypeProtocol
 
 @required
 + (id<IndyWalletProtocol>) sharedInstance;
@@ -26,6 +35,11 @@
                            config:(NSString *)config
                       credentials:(NSString *)credentials;
 
+@end
+
+// MARK: - Indy wallet implementation protocol
+
+@protocol IndyWalletImplementationProtocol <NSObject>
 
 @required
 - (NSError *)setValue:(NSString *)value

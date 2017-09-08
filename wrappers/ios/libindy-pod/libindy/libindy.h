@@ -23,7 +23,7 @@ FOUNDATION_EXPORT const unsigned char libindyVersionString[];
 #import <libindy/IndyAgent.h>
 
 
-#import <libindy/IndyKeychainWallet.h>
+#import <libindy/KeychainWallet.h>
 
 
 
