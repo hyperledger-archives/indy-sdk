@@ -1,12 +1,12 @@
-﻿using Hyperledger.Indy.Sdk.LedgerApi;
-using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.SignUsTests
+namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
     public class EncryptTest : IndyIntegrationTestBase
@@ -17,7 +17,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         private string _trusteeVerkey;
         private string _did;
         private string _verkey;
-        private string _walletName = "signusWallet";
+        private string _walletName = "SignusWallet";
         private byte[] _msg = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
 
         [TestInitialize]
@@ -31,12 +31,12 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
             _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
 
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
             _trusteeDid = result.Did;
             _trusteeVerkey = result.VerKey;
 
             var otherDid = "{\"seed\":\"00000000000000000000000000000My1\"}";
-            var nym = await SignUs.CreateAndStoreMyDidAsync(_wallet, otherDid);
+            var nym = await Signus.CreateAndStoreMyDidAsync(_wallet, otherDid);
             _did = nym.Did;
             _verkey = nym.VerKey;
 
@@ -60,9 +60,9 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         public async Task TestEncryptWorksForPkCachedInWallet()
         {
             var identityJson = string.Format("{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}", _did, _verkey);
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var encryptResult = await SignUs.EncryptAsync(_wallet, _pool, _trusteeDid, _did, _msg);
+            var encryptResult = await Signus.EncryptAsync(_wallet, _pool, _trusteeDid, _did, _msg);
             Assert.IsNotNull(encryptResult);
         }
 
@@ -70,16 +70,16 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         public async Task TestEncryptWorksForGetPkFromLedger()
         {
             var identityJson = string.Format("{{\"did\":\"{0}\"}}", _did);
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var encryptResult = await SignUs.EncryptAsync(_wallet, _pool, _trusteeDid, _did, _msg);
+            var encryptResult = await Signus.EncryptAsync(_wallet, _pool, _trusteeDid, _did, _msg);
             Assert.IsNotNull(encryptResult);
         }
 
         [TestMethod]
         public async Task TestEncryptWorksForGetNymFromLedger()
         {
-            var encryptResult = await SignUs.EncryptAsync(_wallet, _pool, _trusteeDid, _did, _msg);
+            var encryptResult = await Signus.EncryptAsync(_wallet, _pool, _trusteeDid, _did, _msg);
             Assert.IsNotNull(encryptResult);
         }
 
@@ -87,10 +87,10 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         public async Task TestEncryptWorksForUnknownMyDid()
         {
             var identityJson = string.Format("{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}", _trusteeDid, _trusteeVerkey);
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                SignUs.EncryptAsync(_wallet, _pool, "unknownDid", _trusteeDid, _msg)
+                Signus.EncryptAsync(_wallet, _pool, "unknownDid", _trusteeDid, _msg)
             );
 
             Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
@@ -99,10 +99,10 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         [TestMethod]
         public async Task TestEncryptWorksForNotFoundNym()
         {
-            var nym = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var nym = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-               SignUs.EncryptAsync(_wallet, _pool, _trusteeDid, nym.Did, _msg)
+               Signus.EncryptAsync(_wallet, _pool, _trusteeDid, nym.Did, _msg)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidState, ex.ErrorCode);

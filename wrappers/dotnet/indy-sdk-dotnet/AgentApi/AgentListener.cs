@@ -1,15 +1,15 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.Utils;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.Utils;
+using Hyperledger.Indy.WalletApi;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.AgentApi
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Represents a listener that can receive incoming connections from an agent and exposes 
@@ -192,14 +192,14 @@ namespace Hyperledger.Indy.Sdk.AgentApi
         /// </para>
         /// <para>This method will perform a <see cref="Wallet"/> lookup to find the identity information 
         /// for the DID to add and consequently the DID must have already been saved in the wallet using 
-        /// the <see cref="SignUsApi.CreateAndStoreMyDidResult"/> method prior to attempting to
+        /// the <see cref="Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult"/> method prior to attempting to
         /// add it to the listener.
         /// </para>
         /// <para>Authorization to accept incoming connections to a DID on a listener can be removed using
         /// the <see cref="RemoveIdentityAsync(Wallet, string)"/> method.
         /// </para>
         /// </remarks>
-        /// <seealso cref="SignUs"/>
+        /// <seealso cref="Signus"/>
         /// <param name="pool">The node pool that will be used to verify the identity.</param>
         /// <param name="wallet">The Wallet that contains the identity.</param>
         /// <param name="did">The DID of the identity to authorize connections to.</param>

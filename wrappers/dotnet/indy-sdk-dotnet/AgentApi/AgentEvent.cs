@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Hyperledger.Indy.Sdk.AgentApi
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Base class for events raised by <see cref="AgentConnection"/> and <see cref="AgentListener"/>

@@ -1,11 +1,11 @@
-﻿using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Hyperledger.Indy.Sdk.Test.WalletTests
+namespace Hyperledger.Indy.Test.WalletTests
 {
     public class InMemWalletType : WalletType
     {

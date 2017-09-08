@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.WalletTests
+namespace Hyperledger.Indy.Test.WalletTests
 {
     [TestClass]
     public class CreateWalletTest : IndyIntegrationTestBase

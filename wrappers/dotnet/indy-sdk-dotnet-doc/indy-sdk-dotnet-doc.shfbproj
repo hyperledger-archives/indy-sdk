@@ -52,13 +52,13 @@
     <HelpTitle>Hyperledger Indy SDK Wrapper for .NET</HelpTitle>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <NamespaceSummaries>
-      <NamespaceSummaryItem name="Hyperledger.Indy.Sdk" isDocumented="True">Groups classes related to the .NET wrapper as a whole.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="Hyperledger.Indy.Sdk.AgentApi" isDocumented="True">Groups types related specifically to Agent communications.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="Hyperledger.Indy.Sdk.AnonCredsApi" isDocumented="True">Groups types related specifically to anonymous credentials.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="Hyperledger.Indy.Sdk.LedgerApi" isDocumented="True">Groups types related specifically to generating messages destined for a ledger and functionality for submitting messages to the ledger.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="Hyperledger.Indy.Sdk.PoolApi" isDocumented="True">Groups types related specifically to communicating with a pool of nodes that host a ledger.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="Hyperledger.Indy.Sdk.SignUsApi" isDocumented="True">Groups types related specifically to crypto functionality such as encryption and decryption, signing and verifying signatures.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="Hyperledger.Indy.Sdk.WalletApi" isDocumented="True">Groups types related specifically to wallets that store identity information, attributes and claims.</NamespaceSummaryItem></NamespaceSummaries>
+      <NamespaceSummaryItem name="Hyperledger.Indy" isDocumented="True">Groups classes related to the .NET wrapper as a whole.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="Hyperledger.Indy.AgentApi" isDocumented="True">Groups types related specifically to Agent communications.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="Hyperledger.Indy.AnonCredsApi" isDocumented="True">Groups types related specifically to anonymous credentials.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="Hyperledger.Indy.LedgerApi" isDocumented="True">Groups types related specifically to generating messages destined for a ledger and functionality for submitting messages to the ledger.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="Hyperledger.Indy.PoolApi" isDocumented="True">Groups types related specifically to communicating with a pool of nodes that host a ledger.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="Hyperledger.Indy.WalletApi" isDocumented="True">Groups types related specifically to wallets that store identity information, attributes and claims.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="Hyperledger.Indy.SignusApi" isDocumented="True">Groups types related specifically to crypto functionality such as encryption and decryption, signing and verifying signatures.</NamespaceSummaryItem></NamespaceSummaries>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
 			 the build.  The others are optional common platform types that may appear. -->
@@ -91,9 +91,6 @@
   </ItemGroup>
   <ItemGroup>
     <ContentLayout Include="ContentLayout.content" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="icons\Help-old.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="icons\Help.png">

@@ -1,19 +1,19 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using System;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.DemoTests
+namespace Hyperledger.Indy.Test.DemoTests
 {
     [TestClass]
-    public class SignUsDemoTest : IndyIntegrationTestBase
+    public class SignusDemoTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        public async Task TestSignUsDemo()
+        public async Task TestSignusDemo()
         {
             //1. Create and Open Pool
             var poolName = PoolUtils.CreatePoolLedgerConfig();
@@ -29,18 +29,18 @@ namespace Hyperledger.Indy.Sdk.Test.DemoTests
             var theirWallet = await Wallet.OpenWalletAsync("theirWallet", null, null);
 
             //4. Create My Did
-            var createMyDidResult = await SignUs.CreateAndStoreMyDidAsync(myWallet, "{}");
+            var createMyDidResult = await Signus.CreateAndStoreMyDidAsync(myWallet, "{}");
             Assert.IsNotNull(createMyDidResult);
 
             //5. Create Their Did
-            var createTheirDidResult = await SignUs.CreateAndStoreMyDidAsync(theirWallet, "{}");
+            var createTheirDidResult = await Signus.CreateAndStoreMyDidAsync(theirWallet, "{}");
             Assert.IsNotNull(createTheirDidResult);
             var theirDid = createTheirDidResult.Did;
             var theirVerkey = createTheirDidResult.VerKey;
 
             // 6. Store Their DID
             var identityJson = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", theirDid, theirVerkey);
-            await SignUs.StoreTheirDidAsync(myWallet, identityJson);
+            await Signus.StoreTheirDidAsync(myWallet, identityJson);
 
             // 7. Their sign message
             var msgBytes = Encoding.UTF8.GetBytes("{\n" +
@@ -52,11 +52,11 @@ namespace Hyperledger.Indy.Sdk.Test.DemoTests
                     "        }\n" +
                     "    }");
 
-            var signatureBytes = await SignUs.SignAsync(theirWallet, theirDid, msgBytes);
+            var signatureBytes = await Signus.SignAsync(theirWallet, theirDid, msgBytes);
             Assert.IsNotNull(signatureBytes);
 
             // 8. I verify message
-            Boolean valid = await SignUs.VerifySignatureAsync(myWallet, pool, theirDid, msgBytes, signatureBytes);
+            Boolean valid = await Signus.VerifySignatureAsync(myWallet, pool, theirDid, msgBytes, signatureBytes);
             Assert.IsTrue(valid);
 
             // 9. Close and delete My Wallet

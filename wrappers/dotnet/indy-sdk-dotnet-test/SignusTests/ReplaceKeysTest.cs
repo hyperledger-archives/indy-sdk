@@ -1,16 +1,16 @@
 ﻿using Base58Check;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.SignUsTests
+namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
     public class ReplaceKeysTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
-        private string _walletName = "signusWallet";
+        private string _walletName = "SignusWallet";
         private string _did;
         private string _verKey;
 
@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
             await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
             _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             _did = result.Did;
             _verKey = result.VerKey;
@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         [TestMethod]
         public async Task TestReplaceKeysWorksForEmptyJson()
         {
-            var result = await SignUs.ReplaceKeysAsync(_wallet, _did, "{}");
+            var result = await Signus.ReplaceKeysAsync(_wallet, _did, "{}");
 
             Assert.IsNotNull(result);
             Assert.AreEqual(32, Base58CheckEncoding.DecodePlain(result.VerKey).Length);
@@ -48,7 +48,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         public async Task TestReplaceKeysWorksForInvalidDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                SignUs.ReplaceKeysAsync(_wallet, "invalid_base58_string", "{}")
+                Signus.ReplaceKeysAsync(_wallet, "invalid_base58_string", "{}")
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
@@ -57,7 +57,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         [TestMethod]
         public async Task TestReplaceKeysWorksForNotExistsDid()
         {
-            var result = await SignUs.ReplaceKeysAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", "{}");
+            var result = await Signus.ReplaceKeysAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", "{}");
 
             Assert.IsNotNull(result);
         }
@@ -65,7 +65,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         [TestMethod]
         public async Task TestReplaceKeysWorksForSeed()
         {
-            var result = await SignUs.ReplaceKeysAsync(_wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}");
+            var result = await Signus.ReplaceKeysAsync(_wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}");
 
             Assert.IsNotNull(result);
             Assert.AreEqual("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", result.VerKey);

@@ -1,13 +1,13 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.Utils;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.Utils;
+using Hyperledger.Indy.WalletApi;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.AgentApi
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Represents a connection between two agents and exposes static methods for opening an outbound
@@ -68,18 +68,18 @@ namespace Hyperledger.Indy.Sdk.AgentApi
         /// established with).
         /// </para>
         /// <para>The <see cref="Wallet"/> provided when creating the connection must contain information about
-        /// the sender identity which must have been added using the <see cref="SignUs.CreateAndStoreMyDidAsync(Wallet, string)"/> 
+        /// the sender identity which must have been added using the <see cref="Signus.CreateAndStoreMyDidAsync(Wallet, string)"/> 
         /// method prior to attempting to create the connection.
         /// </para>
         /// <para>The identity information for the receiver can also be stored in the wallet using
-        /// the <see cref="SignUs.StoreTheirDidAsync(Wallet, string)"/> method, however if no record is
+        /// the <see cref="Signus.StoreTheirDidAsync(Wallet, string)"/> method, however if no record is
         /// present in the wallet the identity information will be established from the ledger in the 
         /// provided node <see cref="Pool"/> and will automatically be cached in the provided wallet.
         /// </para>
         /// </remarks>
         /// <seealso cref="Pool"/>
         /// <seealso cref="Wallet"/>
-        /// <seealso cref="SignUs"/>
+        /// <seealso cref="Signus"/>
         /// <param name="pool">The node pool that the destination DID is registered on.</param>
         /// <param name="wallet">The wallet containing the sender (and optionally receiver) DID.</param>
         /// <param name="senderDid">The DID of the identity imitating the connection.</param>

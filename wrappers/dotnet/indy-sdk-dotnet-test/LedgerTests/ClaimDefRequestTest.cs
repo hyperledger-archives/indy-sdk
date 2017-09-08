@@ -1,12 +1,12 @@
-﻿using Hyperledger.Indy.Sdk.LedgerApi;
-using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.LedgerTests
+namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
     public class ClaimDefRequestTest : IndyIntegrationTestBase
@@ -122,12 +122,12 @@ namespace Hyperledger.Indy.Sdk.Test.LedgerTests
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myJson = "{}";
 
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, myJson);
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myJson);
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
@@ -187,12 +187,12 @@ namespace Hyperledger.Indy.Sdk.Test.LedgerTests
         {
             var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myJson = "{}";
 
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, myJson);
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myJson);
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 

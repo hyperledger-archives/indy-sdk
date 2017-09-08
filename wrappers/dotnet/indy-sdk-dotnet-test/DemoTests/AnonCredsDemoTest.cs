@@ -1,12 +1,12 @@
-﻿using Hyperledger.Indy.Sdk.AnonCredsApi;
-using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.DemoTests
+namespace Hyperledger.Indy.Test.DemoTests
 {
     [TestClass]
     public class AnonCredsDemoTest : IndyIntegrationTestBase

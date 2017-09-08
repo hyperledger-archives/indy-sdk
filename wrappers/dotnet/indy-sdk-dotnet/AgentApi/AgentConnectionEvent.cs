@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk.AgentApi
+﻿namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Event raised when a connection is established on an <see cref="AgentListener"/>.

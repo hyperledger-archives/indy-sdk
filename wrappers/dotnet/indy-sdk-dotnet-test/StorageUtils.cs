@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace Hyperledger.Indy.Sdk.Test
+namespace Hyperledger.Indy.Test
 {
     class StorageUtils
     {

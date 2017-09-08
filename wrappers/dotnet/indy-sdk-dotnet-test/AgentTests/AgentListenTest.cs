@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.AgentApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
+﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.AgentTests
+namespace Hyperledger.Indy.Test.AgentTests
 {
     [TestClass]
     public class AgentListenTest : AgentIntegrationTestBase
@@ -15,11 +15,11 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
 
             var didJson = "{\"seed\":\"sovrin_agent_connect_works_for_a\"}";
        
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
             await AgentListener.ListenAsync(endpoint);
         }

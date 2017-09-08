@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk
+﻿namespace Hyperledger.Indy
 {
     /// <summary>
     /// Error codes
@@ -199,11 +199,11 @@
         /// </summary>
         AnoncredsClaimRevoked = 406,
 
-        // SignUs errors
+        // Signus errors
         // 
         /// <summary>
         /// Unknown format of DID entity keys
         /// </summary>
-        SignUsUnknownCryptoError = 500
+        SignusUnknownCryptoError = 500
     }
 }

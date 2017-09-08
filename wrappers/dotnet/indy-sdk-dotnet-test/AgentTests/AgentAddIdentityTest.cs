@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.AgentApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
+﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.AgentTests
+namespace Hyperledger.Indy.Test.AgentTests
 {
     [TestClass]
     public class AgentAddIdentityTest : AgentIntegrationTestBase
@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9601";
 
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
 
@@ -25,8 +25,8 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9602";
 
-            var myDid1 = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
-            var myDid2 = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDid1 = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDid2 = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             CreateAndStoreMyDidResult[] didResults = { myDid1, myDid2 };
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace Hyperledger.Indy.Sdk
+namespace Hyperledger.Indy
 {
     /// <summary>
     /// Exception indicating a problem originating from the Indy SDK.

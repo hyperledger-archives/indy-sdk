@@ -1,11 +1,11 @@
-﻿using Hyperledger.Indy.Sdk.AgentApi;
-using Hyperledger.Indy.Sdk.LedgerApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.AgentTests
+namespace Hyperledger.Indy.Test.AgentTests
 {
     [TestClass]
     public class AgentConnectTest : AgentIntegrationTestBase
@@ -24,14 +24,14 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
             var trusteeWallet = await Wallet.OpenWalletAsync(trusteeWalletName, null, null);
             var senderWallet = trusteeWallet;
 
-            var createMyDidResult = await SignUs.CreateAndStoreMyDidAsync(listenerWallet, "{}");
+            var createMyDidResult = await Signus.CreateAndStoreMyDidAsync(listenerWallet, "{}");
             var listenerDid = createMyDidResult.Did;
             var listenerVerkey = createMyDidResult.VerKey;
             var listenerPk = createMyDidResult.Pk;
 
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var trusteeDidResult = await SignUs.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
             var senderDid = trusteeDid;
 
@@ -60,11 +60,11 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9606";
 
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
 

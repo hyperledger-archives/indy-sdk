@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.AnonCredsApi;
+﻿using Hyperledger.Indy.AnonCredsApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
 
-namespace Hyperledger.Indy.Sdk.Test.AnonCredsTests
+namespace Hyperledger.Indy.Test.AnonCredsTests
 {
     [TestClass]
     public class VerifierVerifyProofTest : AnonCredsIntegrationTestBase

@@ -52,9 +52,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SignUsApi\CreateAndStoreMyDidResult.cs" />
-    <Compile Include="SignUsApi\EncryptResult.cs" />
-    <Compile Include="SignUsApi\ReplaceKeysResult.cs" />
+    <Compile Include="SignusApi\CreateAndStoreMyDidResult.cs" />
+    <Compile Include="SignusApi\EncryptResult.cs" />
+    <Compile Include="SignusApi\ReplaceKeysResult.cs" />
     <Compile Include="Utils\CallbackHelper.cs" />
     <Compile Include="Utils\PendingCommands.cs" />
     <Compile Include="AgentApi\AgentConnection.cs" />
@@ -70,7 +70,7 @@
     <Compile Include="IndyNativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PoolApi\Pool.cs" />
-    <Compile Include="SignUsApi\Signus.cs" />
+    <Compile Include="SignusApi\Signus.cs" />
     <Compile Include="WalletApi\Wallet.cs" />
     <Compile Include="WalletApi\ICustomWallet.cs" />
     <Compile Include="WalletApi\WalletType.cs" />

@@ -1,10 +1,10 @@
-﻿using Hyperledger.Indy.Sdk.Utils;
+﻿using Hyperledger.Indy.Utils;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.WalletApi
+namespace Hyperledger.Indy.WalletApi
 {
     /// <summary>
     /// Represents a wallet that stores key value records and provides static methods for managing

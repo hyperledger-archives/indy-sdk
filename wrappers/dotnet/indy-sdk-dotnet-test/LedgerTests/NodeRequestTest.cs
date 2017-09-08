@@ -1,11 +1,11 @@
-﻿using Hyperledger.Indy.Sdk.LedgerApi;
-using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.LedgerTests
+namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
     public class NodeRequestTest : IndyIntegrationTestBase
@@ -64,7 +64,7 @@ namespace Hyperledger.Indy.Sdk.Test.LedgerTests
         public async Task TestSendNodeRequestWorksWithoutSignature()
         {
             var didJson = "{\"seed\":\"000000000000000000000000Steward1\"}";
-            var didResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var data = "{\"node_ip\":\"10.0.0.100\"," +
@@ -121,7 +121,7 @@ namespace Hyperledger.Indy.Sdk.Test.LedgerTests
         {
             var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
 
-            var didResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
             var did = didResult.Did;
 
             var data = "{\"node_ip\":\"10.0.0.100\"," +
@@ -145,11 +145,11 @@ namespace Hyperledger.Indy.Sdk.Test.LedgerTests
         public async Task TestSendNodeRequestWorksForNewSteward()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var trusteeDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeDidJson);
             var trusteeDid = trusteeDidResult.Did;
 
             var myDidJson = "{}";
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, myDidJson);
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, myDidJson);
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 

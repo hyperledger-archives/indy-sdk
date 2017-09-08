@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk.SignUsApi
+﻿namespace Hyperledger.Indy.SignusApi
 {
     /// <summary>
     /// Result of replacing keys.

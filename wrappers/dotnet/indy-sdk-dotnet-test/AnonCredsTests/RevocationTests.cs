@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk.Test.AnonCredsTests
+﻿namespace Hyperledger.Indy.Test.AnonCredsTests
 {
     //TODO: Implement these tests.
     class RevocationTests

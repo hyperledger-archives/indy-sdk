@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk.WalletApi
+﻿namespace Hyperledger.Indy.WalletApi
 {
     /// <summary>
     /// Features all custom wallets must implement.

@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.Utils;
+﻿using Hyperledger.Indy.Utils;
 using System;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.PoolApi
+namespace Hyperledger.Indy.PoolApi
 {
     /// <summary>
     /// Represents a connection to a pool of ledger nodes and provides static methods for managing

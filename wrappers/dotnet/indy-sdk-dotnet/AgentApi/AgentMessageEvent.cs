@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk.AgentApi
+﻿namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Event raised when a message is received on an <see cref="AgentConnection"/>.

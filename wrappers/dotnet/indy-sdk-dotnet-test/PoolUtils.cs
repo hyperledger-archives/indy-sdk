@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
+﻿using Hyperledger.Indy.PoolApi;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test
+namespace Hyperledger.Indy.Test
 {
     class PoolUtils
     {

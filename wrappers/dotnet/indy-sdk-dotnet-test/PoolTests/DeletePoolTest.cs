@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
+﻿using Hyperledger.Indy.PoolApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.PoolTests
+namespace Hyperledger.Indy.Test.PoolTests
 {
     [TestClass]
     public class DeletePoolTest : IndyIntegrationTestBase
