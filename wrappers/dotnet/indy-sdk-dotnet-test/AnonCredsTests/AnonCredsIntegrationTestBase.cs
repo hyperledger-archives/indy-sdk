@@ -1,10 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.AnonCredsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
-using Hyperledger.Indy.Sdk.Test.Util;
+﻿using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.AnonCredsTests
+namespace Hyperledger.Indy.Test.AnonCredsTests
 {
 
     public abstract class AnonCredsIntegrationTestBase 

@@ -1,10 +1,10 @@
-﻿using Hyperledger.Indy.Sdk.LedgerApi;
-using Hyperledger.Indy.Sdk.Utils;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.Utils;
+using Hyperledger.Indy.WalletApi;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.AnonCredsApi
+namespace Hyperledger.Indy.AnonCredsApi
 {
     /// <summary>
     /// Provides methods for managing anonymous credentials.

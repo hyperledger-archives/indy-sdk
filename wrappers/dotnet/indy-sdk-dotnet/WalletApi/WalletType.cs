@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.WalletApi
+namespace Hyperledger.Indy.WalletApi
 {
     /// <summary>
     /// Base type for implementing custom wallet types.

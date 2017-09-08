@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.AgentApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
+﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.AgentTests
+namespace Hyperledger.Indy.Test.AgentTests
 {
     [TestClass]
     public class AgentSendTest : AgentIntegrationTestBase
@@ -13,11 +13,11 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9609";
 
-            var myDidResult = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
             var listener = await AgentListener.ListenAsync(endpoint);
             await listener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);

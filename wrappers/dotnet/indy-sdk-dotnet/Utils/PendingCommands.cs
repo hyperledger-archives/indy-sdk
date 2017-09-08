@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Utils
+namespace Hyperledger.Indy.Utils
 {
     /// <summary>
     /// Holder for pending commands.

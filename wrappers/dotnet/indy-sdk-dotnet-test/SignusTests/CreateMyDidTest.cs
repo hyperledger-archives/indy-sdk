@@ -1,16 +1,16 @@
-﻿using Hyperledger.Indy.Sdk.Test.Util.Base58Check;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.Test.Util.Base58Check;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.SignUsTests
+namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
     public class CreateMyDidTest : IndyIntegrationTestBase
     {
         private Wallet _wallet;
-        private string _walletName = "signusWallet";
+        private string _walletName = "SignusWallet";
         private string _seed = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         private string _did = "8wZcEriaNLNKtteJvx7f8i";
         private string _expectedVerkey = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         {
             var json = "{}";
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(16, Base58CheckEncoding.DecodePlain(result.Did).Length);
@@ -49,7 +49,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         {
             var json = string.Format("{{\"seed\":\"{0}\"}}", _seed);
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             var expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -63,7 +63,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         {
             var json = string.Format("{{\"seed\":\"{0}\",\"cid\":true}}", _seed);
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_expectedVerkey, result.Did);
@@ -75,7 +75,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         {
             var json = string.Format("{{\"did\":\"{0}\",\"cid\":false}}", _did);
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_did, result.Did);
@@ -86,7 +86,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         {
             var json = string.Format("{{\"crypto_type\":\"{0}\"}}", _existsCryptoType);
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
         }
 
@@ -96,7 +96,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
             var json = "{\"seed\":\"aaaaaaaaaaa\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                SignUs.CreateAndStoreMyDidAsync(_wallet, json)
+                Signus.CreateAndStoreMyDidAsync(_wallet, json)
             );
 
             Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
@@ -108,10 +108,10 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
             var json = "{\"crypto_type\":\"crypto_type\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                SignUs.CreateAndStoreMyDidAsync(_wallet, json)
+                Signus.CreateAndStoreMyDidAsync(_wallet, json)
             );
 
-            Assert.AreEqual(ErrorCode.SignUsUnknownCryptoError, ex.ErrorCode);
+            Assert.AreEqual(ErrorCode.SignusUnknownCryptoError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -119,7 +119,7 @@ namespace Hyperledger.Indy.Sdk.Test.SignUsTests
         {
             var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", _did, _seed, _existsCryptoType);
 
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_did, result.Did);

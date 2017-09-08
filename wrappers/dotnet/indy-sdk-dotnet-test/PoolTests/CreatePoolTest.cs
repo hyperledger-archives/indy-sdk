@@ -1,10 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.Test.Util;
+﻿using Hyperledger.Indy.PoolApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.PoolTests
+namespace Hyperledger.Indy.Test.PoolTests
 {
     [TestClass]
     public class CreatePoolTest : IndyIntegrationTestBase

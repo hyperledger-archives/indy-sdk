@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.Sdk.AnonCredsApi
+﻿namespace Hyperledger.Indy.AnonCredsApi
 {
     /// <summary>
     /// Result of an issuer creating a claim.

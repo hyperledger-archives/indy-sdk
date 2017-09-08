@@ -1,10 +1,10 @@
-﻿using Hyperledger.Indy.Sdk.LedgerApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.LedgerTests
+namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
     public class SignRequestTest : IndyIntegrationTestBase
@@ -19,7 +19,7 @@ namespace Hyperledger.Indy.Sdk.Test.LedgerTests
             await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
             _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
     
-            var result = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}");
+            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{\"seed\":\"000000000000000000000000Trustee1\"}");
             _did = result.Did;
         }
 

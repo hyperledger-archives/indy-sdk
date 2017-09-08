@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.Sdk.Test.Util;
+﻿using Hyperledger.Indy.Test.Util;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.PoolTests
+namespace Hyperledger.Indy.Test.PoolTests
 {
     [TestClass]
     public class RefreshPoolTest : IndyIntegrationTestBase

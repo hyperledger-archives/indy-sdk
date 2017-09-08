@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
+﻿using Hyperledger.Indy.PoolApi;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.Util
+namespace Hyperledger.Indy.Test
 {
     class PoolUtils
     {
@@ -26,16 +26,14 @@ namespace Hyperledger.Indy.Sdk.Test.Util
              };
 
             Directory.CreateDirectory(Path.GetDirectoryName(file));
+            var stream = new StreamWriter(file);
 
-            var stream = File.Create(file);
-            using (var writer = new StreamWriter(stream))
+            for (int i = 0; i < nodesCnt; i++)
             {
-
-                for (int i = 0; i < nodesCnt; i++)
-                {
-                    writer.WriteLine(defaultTxns[i]);
-                }
+                stream.WriteLine(defaultTxns[i]);
             }
+
+            stream.Close();
 
             return file;
         }

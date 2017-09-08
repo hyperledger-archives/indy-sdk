@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Hyperledger.Indy.Sdk
+namespace Hyperledger.Indy
 {
     
 
@@ -432,7 +432,7 @@ namespace Hyperledger.Indy.Sdk
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_txn_request(int command_handle, string submitter_did, int data, BuildRequestResultDelegate cb);
 
-        // signus.rs
+        // Signus.rs
 
         /// <summary>
         /// Creates keys (signing and encryption keys) for a new

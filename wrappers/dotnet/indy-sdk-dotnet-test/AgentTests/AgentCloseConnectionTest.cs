@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.Sdk.AgentApi;
-using Hyperledger.Indy.Sdk.SignUsApi;
+﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Sdk.Test.AgentTests
+namespace Hyperledger.Indy.Test.AgentTests
 {
     [TestClass]
     public class AgentCloseConnectionTest : AgentIntegrationTestBase
@@ -13,12 +13,12 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9603";
 
-            var myDid = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
 
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
 
@@ -40,12 +40,12 @@ namespace Hyperledger.Indy.Sdk.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9613";
 
-            var myDid = await SignUs.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
                     myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
 
-            await SignUs.StoreTheirDidAsync(_wallet, identityJson);
+            await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
 

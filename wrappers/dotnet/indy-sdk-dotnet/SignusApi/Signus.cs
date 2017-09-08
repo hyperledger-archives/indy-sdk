@@ -1,16 +1,16 @@
-﻿using Hyperledger.Indy.Sdk.PoolApi;
-using Hyperledger.Indy.Sdk.Utils;
-using Hyperledger.Indy.Sdk.WalletApi;
+﻿using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.Utils;
+using Hyperledger.Indy.WalletApi;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.SignUsApi
+namespace Hyperledger.Indy.SignusApi
 {
     /// <summary>
     /// Provides cryptographic functionality.
     /// </summary>
-    public static class SignUs 
+    public static class Signus 
     {
         /// <summary>
         /// Gets the callback to use when the command for CreateAndStoreMyDidResultAsync has completed.

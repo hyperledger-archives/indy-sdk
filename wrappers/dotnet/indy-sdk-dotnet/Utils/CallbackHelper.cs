@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using static Hyperledger.Indy.Sdk.IndyNativeMethods;
+using static Hyperledger.Indy.IndyNativeMethods;
 
-namespace Hyperledger.Indy.Sdk.Utils
+namespace Hyperledger.Indy.Utils
 {
     internal static class CallbackHelper
     {
