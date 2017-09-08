@@ -4,28 +4,32 @@
 //
 
 #import "IndyWalletCallbacks.h"
-#import "KeychainWallet.h"
+#import "IndyKeychainWallet.h"
 #import "NSError+IndyError.h"
+#import "libindy-Swift.h"
 
-
-@interface KeychainWallet ()
+@interface IndyKeychainWallet ()
 
 @property (strong, readwrite) NSRecursiveLock *globalLock;
-@property (strong, readwrite) NSMutableArray *walletNames;
-@property (strong, readwrite) NSMutableArray *walletHandles;
+
+@property (strong, readwrite) NSMutableDictionary *handlesAndNames; // dictionary of active [walletHandle: walletName]
+@property (strong, readwrite) NSMutableArray *openedWalletItems; // array of IndyKeychainWalletItem
+
 
 @end
 
 
-@implementation KeychainWallet
+@implementation IndyKeychainWallet
 
-+ (KeychainWallet *)sharedInstance
++ (IndyKeychainWallet *)sharedInstance
 {
-    static KeychainWallet *instance = nil;
+    static IndyKeychainWallet *instance = nil;
     static dispatch_once_t dispatch_once_block;
     
     dispatch_once(&dispatch_once_block, ^ {
-        instance = [KeychainWallet new];
+        instance = [IndyKeychainWallet new];
+        instance.handlesAndNames = [NSMutableDictionary new];
+        instance.openedWalletItems = [NSMutableArray new];
     });
     
     return instance;
@@ -40,12 +44,22 @@
 {
     @synchronized (self.globalLock)
     {
-        if ([self.walletNames containsObject:name])
+        NSArray *walletNames = [IndyKeychainWalletItem allStoredWalletNames];
+        
+        if ([walletNames containsObject:name])
         {
-            return [NSError errorFromIndyError:CommonInvalidState];
+            return [NSError errorFromIndyError:WalletAlreadyExistsError];
         }
         
-        [self.walletNames addObject:name];
+        IndyKeychainWalletItem *walletItem = [[IndyKeychainWalletItem alloc] initWithName:name config:config credentials:credentials];
+        
+        NSError *res;
+        [walletItem updateInKeychainAndReturnError:&res];
+        
+        if ( res.code != Success)
+        {
+            return res;
+        }
     }
     
     return [NSError errorFromIndyError:Success];
@@ -57,7 +71,9 @@
             runtimeConfig:(NSString *)runtimeConfig
               credentials:(NSString *)credentials
                    handle:(IndyHandle *)handle
+                outWallet:(__autoreleasing id<IndyWalletProtocol> *)wallet
 {
+       
         return [NSError errorFromIndyError:Success];
 }
 

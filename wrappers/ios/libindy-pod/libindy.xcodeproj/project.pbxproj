@@ -14,12 +14,12 @@
 		5D4F3BFF1F5D3F48004CB6A4 /* IndyWalletCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */; };
 		5D4F3C051F5D3F8E004CB6A4 /* IndyKeychainWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5D4F3C061F5D3F8E004CB6A4 /* IndyKeychainWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */; };
-		5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletImplementation.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletImplementation.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DE5D1281F61320E000BB547 /* KeychainAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D1261F61320E000BB547 /* KeychainAccessibility.swift */; };
 		5DE5D1291F61320E000BB547 /* KeychainWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D1271F61320E000BB547 /* KeychainWrapper.swift */; };
 		5DE5D12C1F616AB7000BB547 /* KeychainError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D12B1F616AB7000BB547 /* KeychainError.swift */; };
 		5DE5D12E1F617F1C000BB547 /* DictionaryExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D12D1F617F1C000BB547 /* DictionaryExtension.swift */; };
-		5DE5D12F1F619674000BB547 /* KeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */; };
+		5DE5D12F1F619674000BB547 /* IndyKeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C0E1F5DA697004CB6A4 /* IndyKeychainWalletItem.swift */; };
 		5DF014D51F1615BA00076592 /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C01F1615BA00076592 /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C21F1615BA00076592 /* IndyCallbacks.h */; };
 		5DF014D71F1615BA00076592 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C31F1615BA00076592 /* NSError+IndyError.h */; };
@@ -51,8 +51,8 @@
 		5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyWalletCallbacks.m; sourceTree = "<group>"; };
 		5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyKeychainWallet.h; sourceTree = "<group>"; };
 		5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyKeychainWallet.m; sourceTree = "<group>"; };
-		5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletImplementation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletImplementation.h; sourceTree = "<group>"; };
-		5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWalletItem.swift; sourceTree = "<group>"; };
+		5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletProtocols.h; sourceTree = "<group>"; };
+		5D4F3C0E1F5DA697004CB6A4 /* IndyKeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IndyKeychainWalletItem.swift; sourceTree = "<group>"; };
 		5DE5D1261F61320E000BB547 /* KeychainAccessibility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainAccessibility.swift; sourceTree = "<group>"; };
 		5DE5D1271F61320E000BB547 /* KeychainWrapper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWrapper.swift; sourceTree = "<group>"; };
 		5DE5D12B1F616AB7000BB547 /* KeychainError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainError.swift; sourceTree = "<group>"; };
@@ -129,7 +129,7 @@
 				5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */,
 				5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */,
 				5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */,
-				5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */,
+				5D4F3C0E1F5DA697004CB6A4 /* IndyKeychainWalletItem.swift */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
@@ -187,7 +187,7 @@
 				5DF014D11F1615BA00076592 /* IndyTypes.h */,
 				5DF014D21F1615BA00076592 /* IndyWallet.h */,
 				5DF014D31F1615BA00076592 /* IndyWallet.mm */,
-				5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletImplementation.h */,
+				5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */,
 			);
 			path = Wrapper;
 			sourceTree = "<group>";
@@ -212,7 +212,7 @@
 				5DF014DB1F1615BA00076592 /* IndyAnoncreds.h in Headers */,
 				5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */,
 				5DF014E21F1615BA00076592 /* IndySignus.h in Headers */,
-				5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletImplementation.h in Headers */,
+				5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletProtocols.h in Headers */,
 				5D4F3BFE1F5D3F48004CB6A4 /* IndyWalletCallbacks.h in Headers */,
 				5DF014D91F1615BA00076592 /* IndyAgent.h in Headers */,
 				5DF014D71F1615BA00076592 /* NSError+IndyError.h in Headers */,
@@ -334,7 +334,7 @@
 				5DF014DC1F1615BA00076592 /* IndyAnoncreds.mm in Sources */,
 				5D4F3C061F5D3F8E004CB6A4 /* IndyKeychainWallet.m in Sources */,
 				5DE5D1291F61320E000BB547 /* KeychainWrapper.swift in Sources */,
-				5DE5D12F1F619674000BB547 /* KeychainWalletItem.swift in Sources */,
+				5DE5D12F1F619674000BB547 /* IndyKeychainWalletItem.swift in Sources */,
 				5DF014D81F1615BA00076592 /* NSError+IndyError.m in Sources */,
 				5DF014E11F1615BA00076592 /* IndyPool.mm in Sources */,
 				5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */,
@@ -393,7 +393,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -439,9 +439,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -453,6 +454,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 717E50F5CB0006C54C8947D5 /* Pods-libindy.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
@@ -471,8 +474,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libindy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "$(PROJECT_NAME)-Swift.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0;
+				USER_HEADER_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers";
 			};
 			name = Debug;
 		};
@@ -480,6 +486,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = DEA13FB625E476E575ACEE1F /* Pods-libindy.release.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
@@ -498,7 +506,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libindy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "$(PROJECT_NAME)-Swift.h";
 				SWIFT_VERSION = 3.0;
+				USER_HEADER_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers";
 			};
 			name = Release;
 		};

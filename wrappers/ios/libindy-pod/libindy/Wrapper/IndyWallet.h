@@ -5,13 +5,13 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
-#import "IndyWalletImplementation.h"
+#import "IndyWalletProtocols.h"
 
 @interface IndyWallet : NSObject
 
 
 - (NSError *)registerWalletType:(NSString *)type
-             withImplementation:(id<IndyWalletImplementation>)implementation
+             withImplementation:(id<IndyWalletProtocol>)implementation
                      completion:(void (^)(NSError *error)) handler;
 
 

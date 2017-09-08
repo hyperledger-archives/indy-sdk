@@ -4,7 +4,7 @@ import Foundation
 
 class KeychainWrapper
 {
-    let defaultServiceName = Bundle.main.infoDictionary![String(kCFBundleIdentifierKey)] as? String ?? "com.indykeychainwrapper.defaultService"
+    static let defaultServiceName = Bundle.main.infoDictionary![String(kCFBundleIdentifierKey)] as? String ?? "com.indykeychainwrapper.defaultService"
 
     private (set) public var service: String
     
@@ -12,17 +12,65 @@ class KeychainWrapper
 
     private (set) public var accessGroup: String?
     
+    static let standard = KeychainWrapper()
+    
     var accessible: KeychainAccessibility?
     
     var generic: NSData?
     
     // MARK: - Init
    
-    public init(service: String, account: String? = nil, accessGroup: String? = nil) {
+    init(service: String, account: String? = nil, accessGroup: String? = nil) {
         self.service = service
         self.account = account
         self.accessGroup = accessGroup
     }
+    
+    private convenience init() {
+        self.init(service: KeychainWrapper.defaultServiceName)
+    }
+    
+    /**
+     Get all account for service
+     */
+    static func allKeys(forService service: String, withAccessGroup accessGroup: String? = nil) -> Array<String>
+    {
+        var keychainQueryDictionary: [String:Any] = [
+            String(kSecClass): kSecClassGenericPassword,
+            String(kSecAttrService): service,
+            String(kSecReturnAttributes): kCFBooleanTrue,
+            String(kSecMatchLimit): kSecMatchLimitAll,
+            ]
+        
+        if let accessGroup = accessGroup
+        {
+            keychainQueryDictionary[String(kSecAttrAccessGroup)] = accessGroup
+        }
+        
+        var result: AnyObject?
+        let status = SecItemCopyMatching(keychainQueryDictionary as CFDictionary, &result)
+        
+        guard status == errSecSuccess else { return [] }
+        
+        var keys = Array<String>()
+        guard let results = result as? [[AnyHashable: Any]] else
+        {
+            return keys
+        }
+        
+        for attributes in results
+        {
+            if let accountData = attributes[String(kSecAttrAccount)] as? Data,
+               let account = String(data: accountData, encoding: String.Encoding.utf8)
+            {
+                    keys.append(account)
+            }
+        }
+        
+        return keys
+    }
+    
+    
     
     // MARK: - Query
 

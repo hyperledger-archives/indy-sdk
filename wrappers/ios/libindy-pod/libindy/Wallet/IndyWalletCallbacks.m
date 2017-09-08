@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyWalletCallbacks.h"
-#import "KeychainWallet.h"
+#import "IndyKeychainWallet.h"
 #import "indy_core.h"
 
 @interface IndyWalletCallbacks ()
@@ -59,7 +59,7 @@
 
 // MARK: - Wallet Type
 - (void)addWalletType:(NSString *)type
-        withImplementation:(id<IndyWalletImplementation>)implementation
+        withImplementation:(id<IndyWalletProtocol>)implementation
 {
     @synchronized (self.globalLock)
     {
@@ -115,7 +115,7 @@
 
 // MARK: - Get wallet implementation
 
-- (id<IndyWalletImplementation>)getWalletByName:(NSString *)name
+- (id<IndyWalletProtocol>)getWalletByName:(NSString *)name
 {
     NSString *type = nil;
     @synchronized (self.globalLock)
@@ -128,7 +128,7 @@
         return nil;
     }
     
-    id<IndyWalletImplementation> implementation;
+    id<IndyWalletProtocol> implementation;
     
     @synchronized (self.globalLock)
     {
@@ -138,7 +138,7 @@
     return implementation;
 }
 
-- (id<IndyWalletImplementation>)getWalletByHandle:(IndyHandle)handle
+- (id<IndyWalletProtocol>)getWalletByHandle:(IndyHandle)handle
 {
     NSString *type = nil;
     @synchronized (self.globalLock)
@@ -151,7 +151,7 @@
         return nil;
     }
     
-    id<IndyWalletImplementation> implementation;
+    id<IndyWalletProtocol> implementation;
     
     @synchronized (self.globalLock)
     {
@@ -173,7 +173,7 @@ indy_error_t IndyWalletCreateCallback(const char* name,
     NSString *walletConfig = (config != NULL) ? [NSString stringWithUTF8String:config] : nil;
     NSString *walletCredentials = (credentials != NULL) ? [NSString stringWithUTF8String:credentials] : nil;
     
-    id<IndyWalletImplementation> implementation = [[IndyWalletCallbacks sharedInstance] getWalletByName:walletName];
+    id<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] getWalletByName:walletName];
     
     if (implementation == nil)
     {

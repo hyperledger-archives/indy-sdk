@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "indy_core.h"
 #import "IndyTypes.h"
-#import "IndyWalletImplementation.h"
+#import "IndyWalletProtocols.h"
 
 @interface IndyWalletCallbacks : NSObject
 
@@ -18,7 +18,7 @@
 /**
  Add wallet type and calls to dictionary [type: methods]
  */
-- (void)addWalletType:(NSString *)type withImplementation:(id<IndyWalletImplementation>)implementation;
+- (void)addWalletType:(NSString *)type withImplementation:(id<IndyWalletProtocol>)implementation;
 - (void)removeWalletType:(NSString *)type;
 
 
@@ -30,8 +30,8 @@
 - (void)removeWalletHandle:(IndyHandle)handle;
 
 
-- (id<IndyWalletImplementation>)getWalletByHandle:(IndyHandle)handle;
-- (id<IndyWalletImplementation>)getWalletByName:(NSString *) name;
+- (id<IndyWalletProtocol>)getWalletByHandle:(IndyHandle)handle;
+- (id<IndyWalletProtocol>)getWalletByName:(NSString *) name;
 
 @end
 

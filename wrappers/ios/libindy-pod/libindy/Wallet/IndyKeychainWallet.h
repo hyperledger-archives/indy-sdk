@@ -5,9 +5,7 @@
 
 #import "IndyWallet.h"
 
-@interface KeychainWallet : NSObject <IndyWalletImplementation>
-
-+ (KeychainWallet*) sharedInstance;
+@interface IndyKeychainWallet : NSObject <IndyWalletProtocol>
 
 - (NSString *)walletTypeName;
 

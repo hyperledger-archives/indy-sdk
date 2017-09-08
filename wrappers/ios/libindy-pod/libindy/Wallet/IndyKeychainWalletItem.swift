@@ -8,17 +8,17 @@
 
 import Foundation
 
-@objc protocol IndyWalletKeychainStorable: NSObjectProtocol
+@objc public protocol IndyWalletKeychainStorable: NSObjectProtocol
 {
 
 }
 
 
-@objc class IndyKeychainWalletItem: NSObject, IndyWalletKeychainStorable
+@objc public class IndyKeychainWalletItem: NSObject, IndyWalletKeychainStorable
 {
-    var serviceName = "IndyKeychainWallet"
+    static let serviceName = "IndyKeychainWallet"
     
-    fileprivate (set) var poolName: String
+    //fileprivate (set) var poolName: String?
     
     fileprivate (set) var name: String
     
@@ -28,20 +28,27 @@ import Foundation
     
     fileprivate var keychain: KeychainWrapper
     
+    var handle : IndyHandle = 0
     
-    init(name: String, poolName: String, config: String, credentials: String)
+    public init(name: String, config: String, credentials: String)
     {
         self.name = name
-        self.poolName = poolName
+        //self.poolName = poolName
         self.config = config
         
-        self.keychain = KeychainWrapper(service: self.serviceName, account: self.name)
+        self.keychain = KeychainWrapper(service: IndyKeychainWalletItem.serviceName, account: self.name)
+    }
+    
+    public init(name: String)
+    {
+        self.name = name
+        self.keychain = KeychainWrapper(service: IndyKeychainWalletItem.serviceName, account: self.name)
     }
 
     
     fileprivate var data: [String: Any] {
         var dictionary: [String: Any] = [:]
-        dictionary[WalletAttributes.poolName.rawValue] = self.poolName
+       // dictionary[WalletAttributes.poolName.rawValue] = self.poolName
         dictionary[WalletAttributes.config.rawValue] = self.config
         dictionary[WalletAttributes.values.rawValue] = self.values
         
@@ -51,35 +58,45 @@ import Foundation
 
 extension IndyKeychainWalletItem
 {
+    public func updateInKeychain() throws
+    {
+        try self.keychain.update(data: self.data)
+        
+    }
       func deleteFromKeychain() throws
     {
         try self.keychain.delete()
     }
     
+    static public func allStoredWalletNames() -> Array<String>
+    {
+        return KeychainWrapper.allKeys(forService: IndyKeychainWalletItem.serviceName)
+    }
+    
     func readFromKeychain()
     {
-        guard let resultData = try? self.keychain.read() else
-        {
-            return
-        }
-        
+//        guard let resultData = try? self.keychain.read() else
+//        {
+//            return
+//        }
+//        
         
     }
     
     
     func set(value: String, forKey key: String) throws
     {
-        var storedData = [String: Any]()
-        do
-        {
-            storedData = try self.keychain.read()
-        }
-        catch
-        {
-            throw error
-        }
-        
-        
+//        var storedData = [String: Any]()
+//        do
+//        {
+//            storedData = try self.keychain.read()
+//        }
+//        catch
+//        {
+//            throw error
+//        }
+//        
+//        
         
         
         self.values[key] = WalletValue(value: value, timeCreated: self.currentTime)
@@ -133,7 +150,7 @@ extension IndyKeychainWalletItem
     
     fileprivate enum WalletAttributes: String
     {
-        case poolName = "poolName"
+       // case poolName = "poolName"
         case config = "config"
         case values = "values"
     }
