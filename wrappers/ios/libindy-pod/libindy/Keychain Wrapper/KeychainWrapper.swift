@@ -70,8 +70,6 @@ class KeychainWrapper
         return keys
     }
     
-    
-    
     // MARK: - Query
 
     

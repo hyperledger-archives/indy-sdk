@@ -23,6 +23,8 @@ import Foundation
     
     fileprivate var keychain: KeychainWrapper
     
+    fileprivate var dateFormat = "yyyy-MM-dd HH:mm:ss"
+    
     public init(name: String, config: String? = nil, credentials: String? = nil)
     {
         self.name = name
@@ -101,21 +103,33 @@ extension KeychainWalletItem
     {
         return KeychainWrapper.allKeys(forService: KeychainWalletItem.serviceName)
     }
+    
+//    static public func deleteAllWallets() 
+//    {
+//        return KeychainWrapper.allKeys(forService: KeychainWalletItem.serviceName)
+//    }
 
     
     
-    public func set(value: String, forKey key: String) throws
+    public func setWalletValue(_ value: String, forKey key: String) throws
     {
         try self.readFromKeychain()
         
-        self.values[key] = WalletValue(value: value, timeCreated: self.currentTime)
+        self.values[key] = WalletValue(value: value, timeCreated: self.currentTimeString)
         
         try self.keychain.update(data: self.data)
     }
     
-    public func getValue(forKey key: String) throws -> String?
+    public func getValue(forKey key: String) -> String?
     {
-        try self.readFromKeychain()
+        do
+        {
+            try self.readFromKeychain()
+        }
+        catch
+        {
+            return nil
+        }
         
         guard let valuesDictionary = self.resultData[WalletAttributes.values.rawValue] as? [String: Any] else
         {
@@ -129,6 +143,73 @@ extension KeychainWalletItem
         
         return valueItem.value
     }
+    
+    
+    public func getNotExpiredValue(forKey key: String) -> String?
+    {
+        do
+        {
+            try self.readFromKeychain()
+        }
+        catch
+        {
+            return nil
+        }
+        
+        guard let valuesDictionary = self.resultData[WalletAttributes.values.rawValue] as? [String: Any] else
+        {
+            return nil
+        }
+        
+        guard let valueItem = valuesDictionary[key] as? WalletValue else
+        {
+            return nil
+        }
+        
+        guard let itemDate = valueItem.timeCreated.toDate(withFormat: self.dateFormat) else
+        {
+            return nil
+        }
+        
+        let currentTime = Date()
+        
+        
+        if currentTime.timeIntervalSince(itemDate) > Double(self.freshnessTime)
+        {
+            return nil
+        }
+        
+        return valueItem.value
+    }
+    
+    public func listValuesJson(forKeyPrefix prefix: String) -> String
+    {
+        var valuesJson = [String: Any]()
+        
+        do
+        {
+            try self.readFromKeychain()
+        }
+        catch
+        {
+            return valuesJson.toString() ?? String.emptyJson
+        }
+        
+        guard let valuesDictionary = self.resultData[WalletAttributes.values.rawValue] as? [String: Any] else
+        {
+            return valuesJson.toString() ?? String.emptyJson
+        }
+        
+        for (key, value) in valuesDictionary
+        {
+            if key.hasPrefix(prefix)
+            {
+                valuesJson[key] = value
+            }
+        }
+        
+        return valuesJson.toString() ?? String.emptyJson
+    }
 }
 
 // MARK: - Prepare & pass data
@@ -137,10 +218,10 @@ extension KeychainWalletItem
 {
     // MARK: Utilities
     
-    fileprivate var currentTime: String
+    fileprivate var currentTimeString: String
     {
         let dateFormatter : DateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        dateFormatter.dateFormat = self.dateFormat
         let date = Date()
         let dateString = dateFormatter.string(from: date)
         return dateString

@@ -27,8 +27,7 @@
                    config:(NSString *)config
             runtimeConfig:(NSString *)runtimeConfig
               credentials:(NSString *)credentials
-                   handle:(IndyHandle *)handle
-                outWallet:(id<IndyWalletProtocol>*)wallet;
+                   handle:(IndyHandle *)handle;
 
 @required
 - (NSError *)deleteWalletWithName:(NSString *)name
@@ -54,12 +53,12 @@
 @required
 - (NSError *)getNotExpired:(IndyHandle)walletHandle
                        key:(NSString *)key
-                     value:(NSString *)value;
+                     value:(NSString**)value;
 
 @required
 - (NSError *)list:(IndyHandle)handle
               key:(NSString *)key
-       valuesJson:(NSString *)valuesJson;
+       valuesJson:(NSString**)valuesJson;
 
 @required
 - (NSError *)close:(IndyHandle)handle;

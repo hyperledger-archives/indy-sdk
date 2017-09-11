@@ -15,8 +15,8 @@
 		5D0481C11F46FF2700ED79A2 /* AgentMediumCloseConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481C01F46FF2700ED79A2 /* AgentMediumCloseConnection.m */; };
 		5D0481C31F46FF4000ED79A2 /* AgentMediumCloseListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481C21F46FF4000ED79A2 /* AgentMediumCloseListener.m */; };
 		5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C51F161E800024DFB3 /* SequenceUtils.m */; };
-		5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
-		5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5DADD3CB1F6676DE00F0BEE6 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
+		5DADD3CC1F6676DE00F0BEE6 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DF013DC1F1604C200076592 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013D21F1604C100076592 /* AppDelegate.mm */; };
 		5DF013DD1F1604C200076592 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D31F1604C100076592 /* Assets.xcassets */; };
 		5DF013DE1F1604C200076592 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D41F1604C100076592 /* LaunchScreen.storyboard */; };
@@ -79,13 +79,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		846CE34E1F0113A700B57188 /* Embed Frameworks */ = {
+		5DADD3CD1F6676DF00F0BEE6 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */,
+				5DADD3CC1F6676DE00F0BEE6 /* libindy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -171,7 +171,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */,
+				5DADD3CB1F6676DE00F0BEE6 /* libindy.framework in Frameworks */,
 				C4AEADFDB2CE7D041575D9DA /* libPods-libindy-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -405,7 +405,7 @@
 				3E2A7F831EC36186006194EC /* Resources */,
 				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
 				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
-				846CE34E1F0113A700B57188 /* Embed Frameworks */,
+				5DADD3CD1F6676DF00F0BEE6 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -778,6 +778,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
@@ -792,6 +793,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demo/Info.plist";

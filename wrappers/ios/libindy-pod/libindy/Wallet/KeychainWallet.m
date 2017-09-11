@@ -20,6 +20,7 @@
 // Properties for singleton
 @property (strong, readwrite) NSRecursiveLock *globalLock;
 @property (strong, readwrite) NSMutableDictionary *handlesDictionary; // dictionary of active [walletHandle: walletItem]
+@property (strong, readwrite) NSMutableDictionary *namesAndDictionary; // dictionary of active [walletName: handle]
 
 - (NSString *)defaultConfig;
 
@@ -53,58 +54,6 @@
     return self;
 }
 
-// MARK: - Instance methods
-
-- (NSError *)setValue:(NSString *)value forKey:(NSString *)key withHandle:(IndyHandle)handle
-{
-    @synchronized (self.globalLock)
-    {
-        if (self.handlesDictionary[@(handle)] == nil)
-        {
-            return [NSError errorFromIndyError:CommonInvalidState];
-        }
-        
-        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
-        
-        
-    }
-    return nil;
-}
-
-- (NSError *)getValue:(NSString *__autoreleasing *)value forKey:(NSString *)key withHandle:(IndyHandle)handle
-{
-    //self.walletItem.g
-    return nil;
-}
-
-- (NSError *)getNotExpired:(IndyHandle)walletHandle key:(NSString *)key value:(NSString *)value
-{
-    return nil;
-}
-
-- (NSError *)list:(IndyHandle)handle key:(NSString *)key valuesJson:(NSString *)valuesJson
-{
-    return nil;
-}
-
-- (NSError *)close:(IndyHandle)handle
-{
-    return nil;
-}
-
-- (NSError *)free:(IndyHandle)handle str:(NSString *)str
-{
-    return nil;
-}
-
-
-// MARK: - Singletone methods
-
-- (NSString *)walletTypeName
-{
-    return @"keychainWallet";
-}
-
 - (NSError *)createWithName:(NSString *)name config:(NSString *)config credentials:(NSString *)credentials
 {
     @synchronized (self.globalLock)
@@ -117,6 +66,7 @@
             return [NSError errorFromIndyError:WalletAlreadyExistsError];
         }
         
+        // Create walletItem for wallet to interact with keychain.
         KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name
                                                                            config:config
                                                                       credentials:credentials];
@@ -132,7 +82,6 @@
     
     return [NSError errorFromIndyError:Success];
 }
-
 
 - (NSError *)openWithName:(NSString *)name
                    config:(NSString *)config
@@ -162,26 +111,154 @@
     // 2. create & add handle to dictionary. create KeychainWalletItem for this handle
     
     KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name config:config credentials:credentials];
-  //  walletItem.freshnessTime = parcedRuntimeConfig.freshnessTime;
+    walletItem.freshnessTime = parcedRuntimeConfig.freshnessTime;
     
-    IndyHandle xhandle = [[SequenceUtils sharedInstance] getNextId];
-    
+    IndyHandle xhandle = (IndyHandle)[[SequenceUtils sharedInstance] getNextId];
     
     self.handlesDictionary[@(xhandle)] = walletItem;
+    self.namesAndDictionary[name] = @(xhandle);
     
     if (handle) { *handle = xhandle;}
     
+    return [NSError errorFromIndyError:Success];
+}
+
+
+- (NSError *)setValue:(NSString *)value forKey:(NSString *)key withHandle:(IndyHandle)handle
+{
+    @synchronized (self.globalLock)
+    {
+        if (self.handlesDictionary[@(handle)] == nil)
+        {
+            return [NSError errorFromIndyError:CommonInvalidState];
+        }
+        
+        // fetch wallet item to interact with keychain for that wallet
+        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
+
+        NSError *res;
+        [walletItem setWalletValue:value forKey:key error:&res];
+        
+        if (res.code != Success)
+        {
+            return [NSError errorFromIndyError:CommonInvalidState];
+        }
+    }
     
+    return [NSError errorFromIndyError:Success];
+}
+
+- (NSError *)getValue:(NSString *__autoreleasing *)value forKey:(NSString *)key withHandle:(IndyHandle)handle
+{
+    @synchronized (self.globalLock)
+    {
+        if (self.handlesDictionary[@(handle)] == nil)
+        {
+            return [NSError errorFromIndyError:CommonInvalidState];
+        }
+        
+        // fetch wallet item to interact with keychain for that wallet
+        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
+        
+        NSString *value = [walletItem getValueForKey:key];
+        
+        if (value == nil)
+        {
+            return [NSError errorFromIndyError:WalletNotFoundError];
+        }
+    }
     
+    return [NSError errorFromIndyError:Success];
+}
+
+- (NSError *)getNotExpired:(IndyHandle)walletHandle key:(NSString *)key value:(NSString *)value
+{
+    @synchronized (self.globalLock)
+    {
+        if (self.handlesDictionary[@(walletHandle)] == nil)
+        {
+            return [NSError errorFromIndyError:CommonInvalidState];
+        }
+        
+        // fetch wallet item to interact with keychain for that wallet
+        KeychainWalletItem *walletItem = self.handlesDictionary[@(walletHandle)];
+        
+        NSString *value = [walletItem getNotExpiredValueForKey:key];
+        
+        if (value == nil)
+        {
+            return [NSError errorFromIndyError:WalletNotFoundError];
+        }
+    }
     
+    return [NSError errorFromIndyError:Success];
+}
+
+- (NSError *)list:(IndyHandle)handle key:(NSString *)key valuesJson:(NSString**)valuesJson
+{
+    @synchronized (self.globalLock)
+    {
+        if (self.handlesDictionary[@(handle)] == nil)
+        {
+            return [NSError errorFromIndyError:CommonInvalidState];
+        }
+        
+        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
+        
+        NSString *valuesJsonList = [walletItem listValuesJsonForKeyPrefix:key];
+        
+        if (valuesJson)
+        {
+            *valuesJson = valuesJsonList;
+        }
+    }
     
+    return [NSError errorFromIndyError:Success];
+}
+
+- (NSError *)close:(IndyHandle)handle
+{
+    @synchronized (self.globalLock)
+    {
+        if (self.handlesDictionary[@(handle)] == nil)
+        {
+            return [NSError errorFromIndyError:CommonInvalidState];
+        }
+        
+        [self.handlesDictionary removeObjectForKey:@(handle)];
+    }
     
     return [NSError errorFromIndyError:Success];
 }
 
 - (NSError *)deleteWalletWithName:(NSString *)name config:(NSString *)config credentials:(NSString *)credentials
 {
+    NSArray *walletNames = [KeychainWalletItem allStoredWalletNames];
+    
+    if ([walletNames containsObject:name])
+    {
+        return [NSError errorFromIndyError:WalletAlreadyExistsError];
+    }
     return nil;
+}
+
+- (NSError *)free:(IndyHandle)handle str:(NSString *)str
+{
+    return [NSError errorFromIndyError:Success];
+}
+
+- (NSString *)walletTypeName
+{
+    return @"keychainWallet";
+}
+
+- (void) cleanup
+{
+    @synchronized (self.globalLock)
+    {
+        [self.handlesDictionary removeAllObjects];
+        [self.namesAndDictionary removeAllObjects];
+    }
 }
 
 @end

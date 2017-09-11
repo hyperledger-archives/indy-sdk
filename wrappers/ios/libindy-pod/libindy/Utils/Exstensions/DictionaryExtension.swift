@@ -6,8 +6,8 @@
 import Foundation
 
 
-public extension Dictionary {
- 
+public extension Dictionary
+{
     /**
      Merge with provided dictionary.
      */
@@ -16,5 +16,15 @@ public extension Dictionary {
         dictionary.forEach({ (key, value) in
             self.updateValue(value, forKey: key)
         })
+    }
+    
+    func toString() -> String?
+    {
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: self, options: .prettyPrinted) else
+        {
+            return nil
+        }
+        
+        return String(data: jsonData, encoding: .utf8)
     }
 }
