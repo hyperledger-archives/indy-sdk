@@ -146,9 +146,31 @@ impl TransactionHandler {
                 let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
                 json_msg.inner["result"]["data"] = tmp_obj;
             }
+            let data_to_check_proof = match json_msg.inner["result"]["type"].as_str() {
+                Some(super::ledger::constants::GET_ATTR) |
+                Some(super::ledger::constants::GET_CLAIM_DEF) |
+                Some(super::ledger::constants::GET_DDO) |
+                Some(super::ledger::constants::GET_NYM) |
+                Some(super::ledger::constants::GET_SCHEMA) => {
+                    (json_msg.inner["result"]["proofs"].as_str(),
+                     json_msg.inner["result"]["rootHash"].as_str(),
+                     json_msg.inner["result"]["dest"].as_str())
+                }
+                //TODO Some(super::ledger::constants::GET_TXN) => check ledger MerkleTree proofs?
+                _ => (None, None, None)
+            };
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
-            if reply_cnt == self.f {
-                //already have f same replies and receive f+1 now
+            let consensus_reached = {
+                if let (Some(proofs), Some(rootHash), Some(dest)) = data_to_check_proof {
+                    self::state_proof::verify_proof(proofs.as_bytes(),
+                                                    rootHash.as_bytes(),
+                                                    dest.as_bytes(),
+                                                    json_msg["result"]["data"].as_str())
+                } else {
+                    reply_cnt == self.f //already have f same replies and receive f+1 now
+                }
+            };
+            if consensus_reached {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
@@ -988,13 +1010,8 @@ mod tests {
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
-        let reply = super::types::Reply {
-            result: super::types::Response {
-                req_id: req_id,
-            },
-        };
 
-        th.process_reply(reply.result.req_id, &json.to_string());
+        th.process_reply(req_id, &json.to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -1013,13 +1030,8 @@ mod tests {
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json1).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
-        let reply = super::types::Reply {
-            result: super::types::Response {
-                req_id: req_id,
-            },
-        };
 
-        th.process_reply(reply.result.req_id, &json2.to_string());
+        th.process_reply(req_id, &json2.to_string());
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
