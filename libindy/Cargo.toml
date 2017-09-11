@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "0.1.1"
+version = "1.0.0"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -20,7 +20,7 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
 [features]
-default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool"]
+default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests"]
 bn_openssl = ["openssl", "int_traits"]
 ed25519_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
@@ -32,7 +32,7 @@ interoperability_tests = []
 revocation_tests = []
 
 [dependencies]
-amcl = { version = "0.1.1", optional = true }
+amcl = { version = "0.1.2", optional = true, features = ["BLS383"]}
 int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.4.2"
 hex = "0.2.0"

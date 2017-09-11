@@ -1,8 +1,7 @@
 import asyncio
 import json
 import logging
-from os import environ, makedirs
-from os.path import dirname
+from os import environ
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
@@ -55,7 +54,7 @@ def seed_my1():
 
 
 @pytest.fixture
-async def endpoint():
+def endpoint():
     return "127.0.0.1:9700"
 
 
@@ -147,7 +146,7 @@ def xwallet_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-async def xwallet(pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
+def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
     logger = logging.getLogger(__name__)
     logger.debug("xwallet: >>> pool_name: %r, wallet_type: %r, xwallet_cleanup: %r, path_home: %r",
                  pool_name,
@@ -156,13 +155,13 @@ async def xwallet(pool_name, wallet_name, wallet_type, xwallet_cleanup, path_hom
                  path_home)
 
     logger.debug("xwallet: Creating wallet")
-    await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None)
+    event_loop.run_until_complete(wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None))
 
     logger.debug("xwallet: yield")
     yield
 
     logger.debug("xwallet: Deleting wallet")
-    await wallet.delete_wallet(wallet_name, None) if xwallet_cleanup else None
+    event_loop.run_until_complete(wallet.delete_wallet(wallet_name, None)) if xwallet_cleanup else None
 
     logger.debug("xwallet: <<<")
 
@@ -190,7 +189,7 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture
-async def wallet_handle(wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
+def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
     logger = logging.getLogger(__name__)
     logger.debug(
         "wallet_handle: >>> wallet_name: %r, xwallet: %r, wallet_runtime_config: %r, wallet_handle_cleanup: %r",
@@ -200,14 +199,14 @@ async def wallet_handle(wallet_name, xwallet, wallet_runtime_config, wallet_hand
         wallet_handle_cleanup)
 
     logger.debug("wallet_handle: Opening wallet")
-    wallet_handle = await wallet.open_wallet(wallet_name, wallet_runtime_config, None)
+    wallet_handle = event_loop.run_until_complete(wallet.open_wallet(wallet_name, wallet_runtime_config, None))
     assert type(wallet_handle) is int
 
     logger.debug("wallet_handle: yield %r", wallet_handle)
     yield wallet_handle
 
     logger.debug("wallet_handle: Closing wallet")
-    await wallet.close_wallet(wallet_handle) if wallet_handle_cleanup else None
+    event_loop.run_until_complete(wallet.close_wallet(wallet_handle)) if wallet_handle_cleanup else None
 
     logger.debug("wallet_handle: <<<")
 
@@ -289,7 +288,7 @@ def pool_genesis_txn_file(pool_genesis_txn_path, pool_genesis_txn_data):
                  pool_genesis_txn_path,
                  pool_genesis_txn_data)
 
-    makedirs(dirname(pool_genesis_txn_path))
+    pool_genesis_txn_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(str(pool_genesis_txn_path), "w+") as f:
         f.writelines(pool_genesis_txn_data)
@@ -304,8 +303,8 @@ def pool_ledger_config_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-async def pool_ledger_config(pool_name, pool_genesis_txn_path, pool_genesis_txn_file, pool_ledger_config_cleanup,
-                             path_home):
+def pool_ledger_config(event_loop, pool_name, pool_genesis_txn_path, pool_genesis_txn_file,
+                       pool_ledger_config_cleanup, path_home):
     logger = logging.getLogger(__name__)
     logger.debug("pool_ledger_config: >>> pool_name: %r, pool_genesis_txn_path: %r, pool_genesis_txn_file: %r,"
                  " pool_ledger_config_cleanup: %r, path_home: %r",
@@ -316,17 +315,17 @@ async def pool_ledger_config(pool_name, pool_genesis_txn_path, pool_genesis_txn_
                  path_home)
 
     logger.debug("pool_ledger_config: Creating pool ledger config")
-    await pool.create_pool_ledger_config(
+    event_loop.run_until_complete(pool.create_pool_ledger_config(
         pool_name,
         json.dumps({
             "genesis_txn": str(pool_genesis_txn_path)
-        }))
+        })))
 
     logger.debug("pool_ledger_config: yield")
     yield
 
     logger.debug("pool_ledger_config: Deleting pool ledger config")
-    await pool.delete_pool_ledger_config(pool_name) if pool_ledger_config_cleanup else None
+    event_loop.run_until_complete(pool.delete_pool_ledger_config(pool_name)) if pool_ledger_config_cleanup else None
 
     logger.debug("pool_ledger_config: <<<")
 
@@ -355,7 +354,7 @@ def pool_config():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-async def pool_handle(pool_name, pool_ledger_config, pool_config, pool_handle_cleanup):
+def pool_handle(event_loop, pool_name, pool_ledger_config, pool_config, pool_handle_cleanup):
     logger = logging.getLogger(__name__)
     logger.debug("pool_handle: >>> pool_name: %r, pool_ledger_config: %r, pool_config: %r, pool_handle_cleanup: %r",
                  pool_name,
@@ -364,14 +363,14 @@ async def pool_handle(pool_name, pool_ledger_config, pool_config, pool_handle_cl
                  pool_handle_cleanup)
 
     logger.debug("pool_handle: Opening pool ledger")
-    pool_handle = await pool.open_pool_ledger(pool_name, pool_config)
+    pool_handle = event_loop.run_until_complete(pool.open_pool_ledger(pool_name, pool_config))
     assert type(pool_handle) is int
 
     logger.debug("pool_handle: yield: %r", pool_handle)
     yield pool_handle
 
     logger.debug("pool_handle: Closing pool ledger")
-    await pool.close_pool_ledger(pool_handle) if pool_handle_cleanup else None
+    event_loop.run_until_complete(pool.close_pool_ledger(pool_handle)) if pool_handle_cleanup else None
 
     logger.debug("pool_handle: <<<")
 
@@ -380,14 +379,14 @@ async def pool_handle(pool_name, pool_ledger_config, pool_config, pool_handle_cl
 async def identity_trustee1(wallet_handle, seed_trustee1):
     (trustee_did, trustee_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                             json.dumps({"seed": seed_trustee1}))
-    yield (trustee_did, trustee_verkey)
+    return (trustee_did, trustee_verkey)
 
 
 @pytest.fixture
 async def identity_steward1(wallet_handle, seed_steward1):
     (steward_did, steward_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
                                                                             json.dumps({"seed": seed_steward1}))
-    yield (steward_did, steward_verkey)
+    return (steward_did, steward_verkey)
 
 
 @pytest.fixture
@@ -400,4 +399,4 @@ async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
-    yield (my_did, my_verkey)
+    return (my_did, my_verkey)
