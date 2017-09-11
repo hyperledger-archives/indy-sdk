@@ -16,6 +16,7 @@ use services::ledger::constants::{
     STEWARD,
     TRUSTEE,
     TRUST_ANCHOR,
+    TGB,
     GET_TXN
 };
 
@@ -46,7 +47,8 @@ impl<T: JsonEncodable> JsonEncodable for Request<T> {}
 pub enum Role {
     Steward = STEWARD,
     Trustee = TRUSTEE,
-    TrustAnchor = TRUST_ANCHOR
+    TrustAnchor = TRUST_ANCHOR,
+    TGB = TGB
 }
 
 #[derive(Serialize, PartialEq, Debug)]
