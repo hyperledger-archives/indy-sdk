@@ -243,16 +243,15 @@ def windowsTesting(isDebugTests) {
                             "RUST_BACKTRACE=1"
                     ]) {
                         bat "cargo test $buildType --no-run"
-                    }
 
-                    echo "Windows Test: Run tests"
-                    withEnv([
-                            "RUST_TEST_THREADS=1",
-                            "RUST_LOG=trace",
-                            "RUST_BACKTRACE=1",
-                            "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
-                    ]) {
-                        bat "cargo test $buildType"
+                        echo "Windows Test: Run tests"
+                        withEnv([
+                                "RUST_TEST_THREADS=1",
+                                "RUST_LOG=trace",
+                                "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                        ]) {
+                            bat "cargo test $buildType"
+                        }
                     }
                 }
 
