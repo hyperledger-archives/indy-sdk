@@ -1,4 +1,5 @@
 .vs/
-Debug/
 packages/
-
+obj/
+bin/
+/indy-sdk-dotnet-doc/Help/

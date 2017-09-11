@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
-namespace Indy.Sdk.Dotnet
+namespace Hyperledger.Indy
 {
     /// <summary>
-    /// Exception indicating a problem originating from Sovrin.
+    /// Exception indicating a problem originating from the Indy SDK.
     /// </summary>
-    [Serializable]
     public sealed class IndyException : Exception
     {
         /// <summary>
-        /// Intializes a new SovrinException with a message and error code.
+        /// Initializes a new IndyException with a message and error code.
         /// </summary>
         /// <param name="message">The message for the exception.</param>
         /// <param name="errorCode">The error code for the exception.</param>
@@ -20,11 +18,11 @@ namespace Indy.Sdk.Dotnet
         }
 
         /// <summary>
-        /// Generates a SovrinException from the provided error code.
+        /// Generates an IndyException from the provided error code.
         /// </summary>
         /// <param name="errorCode">The error code.</param>
-        /// <returns>A SovrinException instance.</returns>
-        public static IndyException fromErrorCode(int errorCode)
+        /// <returns>An IndyException instance.</returns>
+        public static IndyException FromErrorCode(int errorCode)
         {
             if (!Enum.IsDefined(typeof(ErrorCode), errorCode))
                 throw new InvalidCastException(string.Format("The error #{0} does not have a corresponding ErrorCode value.", errorCode));
@@ -37,15 +35,5 @@ namespace Indy.Sdk.Dotnet
         /// Gets the error code for the exception.
         /// </summary>
         public ErrorCode ErrorCode { get; private set; }
-
-        /// <summary>
-        /// Gets object data for ISerializable.
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-        }
     }
 }
