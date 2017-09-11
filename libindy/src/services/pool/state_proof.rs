@@ -25,9 +25,18 @@ enum Node {
     Hash(Vec<u8>),
 }
 
+impl Node {
+    const RADIX: usize = 16;
+    const FULL_SIZE: usize = Node::RADIX + 1;
+    const PAIR_SIZE: usize = 2;
+    const HASH_SIZE: usize = 32;
+    const IS_LEAF_MASK: u8 = 0x20;
+    const IS_PATH_ODD_MASK: u8 = 0x10;
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct FullNode {
-    nodes: [Option<Box<Node>>; 16],
+    nodes: [Option<Box<Node>>; Node::RADIX],
     value: Option<Vec<u8>>
 }
 
@@ -50,17 +59,17 @@ impl rlp::Encodable for Node {
                 s.append_internal(&hash.as_slice());
             }
             &Node::Leaf(ref pair) => {
-                s.begin_list(2);
+                s.begin_list(Node::PAIR_SIZE);
                 s.append(&pair.path);
                 s.append(&pair.value);
             }
             &Node::Extension(ref ext) => {
-                s.begin_list(2);
+                s.begin_list(Node::PAIR_SIZE);
                 s.append(&ext.path);
                 s.append(ext.next.as_ref());
             }
             &Node::Full(ref node) => {
-                s.begin_list(17);
+                s.begin_list(Node::FULL_SIZE);
                 for node in &node.nodes {
                     if let &Some(ref node) = node {
                         s.append(node.as_ref());
@@ -81,14 +90,14 @@ impl rlp::Encodable for Node {
 impl rlp::Decodable for Node {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, RlpDecoderError> {
         match rlp.prototype()? {
-            RlpPrototype::List(2) => {
+            RlpPrototype::List(Node::PAIR_SIZE) => {
                 let path = rlp.at(0)?.as_raw();
-                if path[0] & 0x20 == 0x20 {
+                if path[0] & Node::IS_LEAF_MASK == Node::IS_LEAF_MASK {
                     return Ok(Node::Leaf(Leaf {
                         path: rlp.at(0)?.as_val()?,
                         value: rlp.at(1)?.as_val()?,
                     }));
-                } else if path[0] & 0x20 == 0x00 {
+                } else if path[0] & Node::IS_LEAF_MASK == 0x00 {
                     return Ok(Node::Extension(Extension {
                         path: rlp.at(0)?.as_val()?,
                         next: Box::new(rlp.at(1)?.as_val()?),
@@ -98,9 +107,9 @@ impl rlp::Decodable for Node {
                     return Err(RlpDecoderError::Custom("Path contains incorrect flags byte"));
                 }
             }
-            RlpPrototype::List(17) => {
-                let mut nodes: [Option<Box<Node>>; 16] = [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None];
-                for i in 0..16 {
+            RlpPrototype::List(Node::FULL_SIZE) => {
+                let mut nodes: [Option<Box<Node>>; Node::RADIX] = [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None];
+                for i in 0..Node::RADIX {
                     let cur = rlp.at(i)?;
                     match cur.prototype()? {
                         RlpPrototype::Data(0) => {
@@ -112,15 +121,15 @@ impl rlp::Decodable for Node {
                     }
                 }
                 let mut value: Option<Vec<u8>> = None;
-                if !rlp.at(16)?.is_empty() {
-                    value = Some(rlp.at(16)?.as_val()?)
+                if !rlp.at(Node::RADIX)?.is_empty() {
+                    value = Some(rlp.at(Node::RADIX)?.as_val()?)
                 }
                 return Ok(Node::Full(FullNode {
                     nodes: nodes,
                     value: value,
                 }));
             }
-            RlpPrototype::Data(32) => {
+            RlpPrototype::Data(Node::HASH_SIZE) => {
                 return Ok(Node::Hash(rlp.as_val()?));
             }
             _ => {
@@ -218,8 +227,8 @@ impl Node {
         return nibble_path;
     }
     fn parse_path(path: &[u8]) -> (bool, Vec<u8>) {
-        let is_leaf: bool = path[0] & 0x20 == 0x20;
-        let is_odd: bool = path[0] & 0x10 == 0x10;
+        let is_leaf: bool = path[0] & Node::IS_LEAF_MASK == Node::IS_LEAF_MASK;
+        let is_odd: bool = path[0] & Node::IS_PATH_ODD_MASK == Node::IS_PATH_ODD_MASK;
         let mut nibbles: Vec<u8> = Node::path_to_nibbles(&path[1..]); //TODO avoid copy
         if is_odd {
             nibbles.insert(0, path[0] & 0x0F);
