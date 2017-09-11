@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Indy.Sdk.Dotnet
+namespace Hyperledger.Indy
 {
     /// <summary>
     /// PInvoke import of C-Callable SDK library functions and associated delegates.
     /// </summary>
-    public static class IndyNativeMethods
+    internal static class IndyNativeMethods
     {
         /// <summary>
         /// Delegate for callbacks that only include the success or failure of command execution.
@@ -230,18 +230,6 @@ namespace Indy.Sdk.Dotnet
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_delete_wallet(int command_handle, string name, string credentials, NoValueDelegate cb);
 
-        /// <summary>
-        /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
-        /// in a secure wallet identified by the given string.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="wallet_key">unique string identifying the value in the wallet.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_wallet_set_seq_no_for_value(int command_handle, IntPtr wallet_handle, string wallet_key, NoValueDelegate cb);
-
         // ledger.rs
 
         /// <summary>
@@ -440,7 +428,7 @@ namespace Indy.Sdk.Dotnet
         [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_txn_request(int command_handle, string submitter_did, int data, BuildRequestResultDelegate cb);
 
-        // signus.rs
+        // Signus.rs
 
         /// <summary>
         /// Creates keys (signing and encryption keys) for a new

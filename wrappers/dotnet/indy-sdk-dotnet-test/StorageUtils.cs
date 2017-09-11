@@ -1,7 +1,6 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
-namespace Indy.Sdk.Dotnet.Test
+namespace Hyperledger.Indy.Test
 {
     class StorageUtils
     {
