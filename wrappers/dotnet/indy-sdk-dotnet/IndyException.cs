@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace Hyperledger.Indy
 {
     /// <summary>
     /// Exception indicating a problem originating from the Indy SDK.
     /// </summary>
-    [Serializable]
     public sealed class IndyException : Exception
     {
         /// <summary>
@@ -37,15 +35,5 @@ namespace Hyperledger.Indy
         /// Gets the error code for the exception.
         /// </summary>
         public ErrorCode ErrorCode { get; private set; }
-
-        /// <summary>
-        /// Gets object data for ISerializable.
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-        }
     }
 }
