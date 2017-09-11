@@ -1,4 +1,4 @@
-﻿namespace Indy.Sdk.Dotnet
+﻿namespace Hyperledger.Indy
 {
     /// <summary>
     /// Error codes
@@ -142,7 +142,7 @@
         PoolLedgerTerminated = 302,
 
         /// <summary>
-        /// No concensus during ledger operation
+        /// No consensus during ledger operation
         /// </summary>
         LedgerNoConsensusError = 303,
 
@@ -170,17 +170,17 @@
         AnoncredsRevocationRegistryFullError = 400,
 
         /// <summary>
-        /// 
+        /// Invalid user revocation index
         /// </summary>
         AnoncredsInvalidUserRevocIndex = 401,
 
         /// <summary>
-        /// 
+        /// Accumulator is full
         /// </summary>
         AnoncredsAccumulatorIsFull = 402,
 
         /// <summary>
-        /// 
+        /// Not issued error
         /// </summary>
         AnoncredsNotIssuedError = 403,
 
@@ -190,12 +190,12 @@
         AnoncredsMasterSecretDuplicateNameError = 404,
 
         /// <summary>
-        /// 
+        /// Proof rejected
         /// </summary>
         AnoncredsProofRejected = 405,
 
         /// <summary>
-        /// 
+        /// Claim revoked
         /// </summary>
         AnoncredsClaimRevoked = 406,
 
