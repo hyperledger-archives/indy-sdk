@@ -5,7 +5,7 @@
 
 #import "NSString+JSON.h"
 
-@implementation NSString(JSON)
+@implementation NSString (JSON)
 
 - (NSDictionary*) toDictionary
 {

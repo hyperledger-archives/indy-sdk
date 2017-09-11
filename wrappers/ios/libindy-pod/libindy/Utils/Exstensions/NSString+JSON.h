@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface NSString(JSON)
+@interface NSString (JSON)
 
 - (NSDictionary*) toDictionary;
 

@@ -19,12 +19,12 @@
 		5DADD3A21F62C27700F0BEE6 /* KeychainWalletConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */; };
 		5DADD3A51F62E7B800F0BEE6 /* SequenceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3A31F62E7B800F0BEE6 /* SequenceUtils.h */; };
 		5DADD3A61F62E7B800F0BEE6 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A41F62E7B800F0BEE6 /* SequenceUtils.m */; };
-		5DADD3B61F62EDF900F0BEE6 /* NSDictionary+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3B01F62EDF900F0BEE6 /* NSDictionary+JSON.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		5DADD3B71F62EDF900F0BEE6 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3B11F62EDF900F0BEE6 /* NSDictionary+JSON.m */; };
-		5DADD3B81F62EDF900F0BEE6 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3B21F62EDF900F0BEE6 /* NSError+IndyError.h */; };
-		5DADD3B91F62EDF900F0BEE6 /* NSError+IndyError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3B31F62EDF900F0BEE6 /* NSError+IndyError.m */; };
-		5DADD3BA1F62EDF900F0BEE6 /* NSString+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3B41F62EDF900F0BEE6 /* NSString+JSON.h */; };
-		5DADD3BB1F62EDF900F0BEE6 /* NSString+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3B51F62EDF900F0BEE6 /* NSString+JSON.m */; };
+		5DADD3C21F66733900F0BEE6 /* NSDictionary+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */; };
+		5DADD3C31F66733900F0BEE6 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3BD1F66733900F0BEE6 /* NSDictionary+JSON.m */; };
+		5DADD3C41F66733900F0BEE6 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3BE1F66733900F0BEE6 /* NSError+IndyError.h */; };
+		5DADD3C51F66733900F0BEE6 /* NSError+IndyError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3BF1F66733900F0BEE6 /* NSError+IndyError.m */; };
+		5DADD3C61F66733900F0BEE6 /* NSString+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3C01F66733900F0BEE6 /* NSString+JSON.h */; };
+		5DADD3C71F66733900F0BEE6 /* NSString+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3C11F66733900F0BEE6 /* NSString+JSON.m */; };
 		5DE5D1281F61320E000BB547 /* KeychainAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D1261F61320E000BB547 /* KeychainAccessibility.swift */; };
 		5DE5D1291F61320E000BB547 /* KeychainWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D1271F61320E000BB547 /* KeychainWrapper.swift */; };
 		5DE5D12C1F616AB7000BB547 /* KeychainError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D12B1F616AB7000BB547 /* KeychainError.swift */; };
@@ -65,12 +65,12 @@
 		5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainWalletConfig.m; sourceTree = "<group>"; };
 		5DADD3A31F62E7B800F0BEE6 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
 		5DADD3A41F62E7B800F0BEE6 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
-		5DADD3B01F62EDF900F0BEE6 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
-		5DADD3B11F62EDF900F0BEE6 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
-		5DADD3B21F62EDF900F0BEE6 /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
-		5DADD3B31F62EDF900F0BEE6 /* NSError+IndyError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+IndyError.m"; sourceTree = "<group>"; };
-		5DADD3B41F62EDF900F0BEE6 /* NSString+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+JSON.h"; sourceTree = "<group>"; };
-		5DADD3B51F62EDF900F0BEE6 /* NSString+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+JSON.m"; sourceTree = "<group>"; };
+		5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
+		5DADD3BD1F66733900F0BEE6 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
+		5DADD3BE1F66733900F0BEE6 /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
+		5DADD3BF1F66733900F0BEE6 /* NSError+IndyError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+IndyError.m"; sourceTree = "<group>"; };
+		5DADD3C01F66733900F0BEE6 /* NSString+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+JSON.h"; sourceTree = "<group>"; };
+		5DADD3C11F66733900F0BEE6 /* NSString+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+JSON.m"; sourceTree = "<group>"; };
 		5DE5D1261F61320E000BB547 /* KeychainAccessibility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainAccessibility.swift; sourceTree = "<group>"; };
 		5DE5D1271F61320E000BB547 /* KeychainWrapper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWrapper.swift; sourceTree = "<group>"; };
 		5DE5D12B1F616AB7000BB547 /* KeychainError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainError.swift; sourceTree = "<group>"; };
@@ -156,12 +156,12 @@
 		5DADD3AF1F62EDDB00F0BEE6 /* Exstensions */ = {
 			isa = PBXGroup;
 			children = (
-				5DADD3B01F62EDF900F0BEE6 /* NSDictionary+JSON.h */,
-				5DADD3B11F62EDF900F0BEE6 /* NSDictionary+JSON.m */,
-				5DADD3B21F62EDF900F0BEE6 /* NSError+IndyError.h */,
-				5DADD3B31F62EDF900F0BEE6 /* NSError+IndyError.m */,
-				5DADD3B41F62EDF900F0BEE6 /* NSString+JSON.h */,
-				5DADD3B51F62EDF900F0BEE6 /* NSString+JSON.m */,
+				5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */,
+				5DADD3BD1F66733900F0BEE6 /* NSDictionary+JSON.m */,
+				5DADD3BE1F66733900F0BEE6 /* NSError+IndyError.h */,
+				5DADD3BF1F66733900F0BEE6 /* NSError+IndyError.m */,
+				5DADD3C01F66733900F0BEE6 /* NSString+JSON.h */,
+				5DADD3C11F66733900F0BEE6 /* NSString+JSON.m */,
 			);
 			path = Exstensions;
 			sourceTree = "<group>";
@@ -245,19 +245,19 @@
 				5DF014DB1F1615BA00076592 /* IndyAnoncreds.h in Headers */,
 				5DF014E41F1615BA00076592 /* IndyTypes.h in Headers */,
 				5DF014E21F1615BA00076592 /* IndySignus.h in Headers */,
+				5DADD3C61F66733900F0BEE6 /* NSString+JSON.h in Headers */,
 				5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletProtocols.h in Headers */,
+				5DADD3C21F66733900F0BEE6 /* NSDictionary+JSON.h in Headers */,
 				5D4F3BFE1F5D3F48004CB6A4 /* IndyWalletCallbacks.h in Headers */,
 				5DF014D91F1615BA00076592 /* IndyAgent.h in Headers */,
 				5DF014DD1F1615BA00076592 /* IndyErrors.h in Headers */,
 				5DF014D51F1615BA00076592 /* libindy.h in Headers */,
-				5DADD3B61F62EDF900F0BEE6 /* NSDictionary+JSON.h in Headers */,
 				5D4F3C051F5D3F8E004CB6A4 /* KeychainWallet.h in Headers */,
 				5DF014E01F1615BA00076592 /* IndyPool.h in Headers */,
 				5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */,
 				5DADD3A11F62C27700F0BEE6 /* KeychainWalletConfig.h in Headers */,
-				5DADD3BA1F62EDF900F0BEE6 /* NSString+JSON.h in Headers */,
 				5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */,
-				5DADD3B81F62EDF900F0BEE6 /* NSError+IndyError.h in Headers */,
+				5DADD3C41F66733900F0BEE6 /* NSError+IndyError.h in Headers */,
 				5DADD3A51F62E7B800F0BEE6 /* SequenceUtils.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -367,6 +367,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5DADD3C71F66733900F0BEE6 /* NSString+JSON.m in Sources */,
 				5DF014DF1F1615BA00076592 /* IndyLedger.mm in Sources */,
 				5DF014DC1F1615BA00076592 /* IndyAnoncreds.mm in Sources */,
 				5D4F3C061F5D3F8E004CB6A4 /* KeychainWallet.m in Sources */,
@@ -375,17 +376,16 @@
 				5DF014E11F1615BA00076592 /* IndyPool.mm in Sources */,
 				5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */,
 				5DF014E31F1615BA00076592 /* IndySignus.mm in Sources */,
-				5DADD3BB1F62EDF900F0BEE6 /* NSString+JSON.m in Sources */,
+				5DADD3C31F66733900F0BEE6 /* NSDictionary+JSON.m in Sources */,
 				5DF014E61F1615BA00076592 /* IndyWallet.mm in Sources */,
 				5DE5D12C1F616AB7000BB547 /* KeychainError.swift in Sources */,
 				5DE5D1281F61320E000BB547 /* KeychainAccessibility.swift in Sources */,
+				5DADD3C51F66733900F0BEE6 /* NSError+IndyError.m in Sources */,
 				5DADD3A21F62C27700F0BEE6 /* KeychainWalletConfig.m in Sources */,
-				5DADD3B91F62EDF900F0BEE6 /* NSError+IndyError.m in Sources */,
 				5DE5D12E1F617F1C000BB547 /* DictionaryExtension.swift in Sources */,
 				5DADD3A61F62E7B800F0BEE6 /* SequenceUtils.m in Sources */,
 				5D4F3BFF1F5D3F48004CB6A4 /* IndyWalletCallbacks.m in Sources */,
 				5DF014DA1F1615BA00076592 /* IndyAgent.mm in Sources */,
-				5DADD3B71F62EDF900F0BEE6 /* NSDictionary+JSON.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
