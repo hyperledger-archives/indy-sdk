@@ -1,5 +1,8 @@
 mod types;
 mod catchup;
+#[warn(dead_code)]
+#[warn(unused_variables)]
+mod state_proof;
 
 extern crate byteorder;
 extern crate rust_base58;
