@@ -8,7 +8,6 @@ extern crate byteorder;
 extern crate digest;
 extern crate hex;
 extern crate rust_base58;
-extern crate serde_json;
 extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
@@ -17,7 +16,8 @@ use self::byteorder::{ByteOrder, LittleEndian};
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
 use self::rust_base58::FromBase58;
-use self::serde_json::Value;
+use serde_json;
+use serde_json::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
@@ -154,11 +154,11 @@ impl TransactionHandler {
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
             let consensus_reached = {
                 let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
-                if let Some((proofs, root_hash, key)) = data_to_check_proof {
+                if let Some((proofs, root_hash, key, value)) = data_to_check_proof {
                     self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
                                                     root_hash.from_base58().unwrap().as_slice(),
                                                     key.as_str(),
-                                                    json_msg.inner["result"]["data"].as_str())
+                                                    value.as_ref().map(String::as_str))
                 } else {
                     reply_cnt == self.f //already have f same replies and receive f+1 now
                 }
@@ -251,7 +251,8 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value) -> Option<(&str, &str, String)> {
+    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value)
+                                      -> Option<(&str, &str, String, Option<String>)> {
         let raw = match json_msg["type"].as_str() {
             Some(super::ledger::constants::GET_ATTR) |
             Some(super::ledger::constants::GET_CLAIM_DEF) |
@@ -268,7 +269,9 @@ impl TransactionHandler {
         if let (Some(proof), Some(root_hash), Some(dest)) = raw {
             let key_suffix: String = match json_msg["type"].as_str() {
                 Some(super::ledger::constants::GET_ATTR) => {
-                    if let Some(attr_name) = json_msg["raw"].as_str().or(json_msg["enc"].as_str()).or(json_msg["hash"].as_str()) {
+                    if let Some(attr_name) = json_msg["raw"].as_str()
+                        .or(json_msg["enc"].as_str())
+                        .or(json_msg["hash"].as_str()) {
                         let mut hasher = sha2::Sha256::default();
                         hasher.process(attr_name.as_bytes());
                         format!(":\x01:{}", hasher.fixed_result().to_hex())
@@ -295,7 +298,13 @@ impl TransactionHandler {
                 }
                 _ => return None
             };
-            Some((proof, root_hash, dest.to_string() + key_suffix.as_str()))
+            let value = if let (Some(data), Some(seq_no)) = (json_msg["data"].as_str(), json_msg["seqNo"].as_str()) {
+                let value = json!({ "lsn": seq_no, "val": data });
+                Some(value.to_string())
+            } else {
+                None
+            };
+            Some((proof, root_hash, dest.to_string() + key_suffix.as_str(), value))
         } else {
             None
         }
