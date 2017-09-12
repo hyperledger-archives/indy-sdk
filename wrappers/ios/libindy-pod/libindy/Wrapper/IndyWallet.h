@@ -6,6 +6,10 @@
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 #import "IndyWalletProtocols.h"
+#import <stdio.h>
+
+
+
 
 @interface IndyWallet : NSObject
 
@@ -37,4 +41,7 @@
                       credentials:(NSString *)credentials
                        completion:(void (^)(NSError *error ))handler;
 
+
 @end
+
+

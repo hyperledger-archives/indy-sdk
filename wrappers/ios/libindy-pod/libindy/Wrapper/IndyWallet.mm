@@ -9,6 +9,7 @@
 #import "IndyCallbacks.h"
 #import "indy_core.h"
 #import "NSError+IndyError.h"
+#import "KeychainCallbacks.hpp"
 
 
 @implementation IndyWallet
@@ -26,6 +27,20 @@
     return instance;
 }
 
+typedef indy_error_t (*createCb)(const char*, const char*, const char*);
+
+- (createCb)createCallback
+{
+    createCb callback = KeychainCallbacks::createFn;
+    
+    NSString *paramStr = @"param";
+    const char* param = [paramStr UTF8String];
+    
+    (*callback)(param, param, param);
+    
+    return KeychainCallbacks::createFn;
+}
+
 - (NSError *)registerWalletType:(NSString *)type
              withImplementation:(id<IndyWalletProtocol>)implementation
                      completion:(void (^)(NSError *error)) handler
@@ -39,7 +54,7 @@
     
     ret = indy_register_wallet_type(handle,
                                     [type UTF8String],
-                                    IndyWalletCreateCallback,
+                                    [self createCallback],
                                     IndyWalletOpenCallback,
                                     IndyWalletSetCallback,
                                     IndyWalletGetCallback,
