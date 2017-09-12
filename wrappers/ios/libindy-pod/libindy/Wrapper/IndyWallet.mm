@@ -29,16 +29,10 @@
 
 typedef indy_error_t (*createCb)(const char*, const char*, const char*);
 
-- (createCb)createCallback
+- (createCb)openCallback
 {
-    createCb callback = KeychainCallbacks::createFn;
-    
-    NSString *paramStr = @"param";
-    const char* param = [paramStr UTF8String];
-    
-    (*callback)(param, param, param);
-    
-    return KeychainCallbacks::createFn;
+    createCb call = KeychainCallbacks::createFn;
+    return call;
 }
 
 - (NSError *)registerWalletType:(NSString *)type

@@ -47,6 +47,12 @@
     NSError *ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:NO];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType() failed");
     
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:@"pool1"
+                                                      walletName:@"wallet1"
+                                                           xtype:xtype
+                                                          config:nil];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+    
     [[KeychainWallet sharedInstance] cleanup];
     [TestUtils cleanupStorage];
 }
