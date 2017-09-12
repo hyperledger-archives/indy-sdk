@@ -99,18 +99,7 @@ impl CatchupRep {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Reply {
-    pub result: ReplyResult,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ReplyResult {
-    pub req_id: u64,
-    pub seq_no: Option<u64>,
-    #[serde(rename = "type")]
-    pub type_: String,
-    pub identifier: String,
-    pub dest: Option<String>,
+    pub result: Response,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
