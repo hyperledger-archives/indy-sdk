@@ -81,6 +81,8 @@ extern void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnect
 
 - (indy_handle_t) createCommandHandleFor:(void*) cb;
 
+- (indy_handle_t)createCommandHandleForError:(void (^)(NSError *error))callback;
+
 - (indy_handle_t) createCommandHandleFor:(void *)callback
                        withMessageCallback:(void *)messageCallback;
 

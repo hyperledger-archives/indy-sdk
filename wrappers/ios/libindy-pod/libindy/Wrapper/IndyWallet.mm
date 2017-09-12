@@ -33,7 +33,8 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    [handler copy];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleForError: handler];
     
     ret = indy_create_wallet(handle,
                                [poolName UTF8String],
@@ -58,6 +59,7 @@
 {
     indy_error_t ret;
     
+    //id hghg = [handler copy];
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
     
     ret = indy_open_wallet( handle,

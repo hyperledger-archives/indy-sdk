@@ -188,6 +188,21 @@ static NSString* connectionsKey        =  @"connections";
     return (indy_handle_t)[handle integerValue];
 }
 
+- (indy_handle_t)createCommandHandleForError:(void (^)(NSError *error))callback
+{
+   // NSValue *cmdVal = [NSValue valueWithPointer:callback];
+    NSNumber *handle = nil;
+    
+    @synchronized(self.globalLock)
+    {
+        handle = [NSNumber numberWithInt:self.commandHandleCounter];
+        self.commandHandleCounter++;
+        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithObjectsAndKeys: [callback copy], commandCallbackKey, nil];
+        [self.commandCompletions setObject:dict forKey:handle];
+    }
+    return (indy_handle_t)[handle integerValue];
+}
+
 - (indy_handle_t)createCommandHandleFor:(void *)callback
                    withConnectionHandle:(indy_handle_t)connectionHandle
 {
@@ -284,6 +299,19 @@ static NSString* connectionsKey        =  @"connections";
     return val ? [val pointerValue] : NULL;
 }
 
+
+- (void (^)(NSError*))commandCompletionForError:(indy_handle_t)handle
+{
+    NSNumber *key = [NSNumber numberWithInt:handle];
+    void (^val)(NSError*) = nil;
+    @synchronized(self.globalLock)
+    {
+        NSMutableDictionary *dict = (NSMutableDictionary*)[self.commandCompletions objectForKey:key];
+        val = [dict objectForKey:@"commandCallback"];
+    }
+    return val;
+}
+
 - (NSMutableDictionary*) dictionaryFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
@@ -313,10 +341,10 @@ static NSString* connectionsKey        =  @"connections";
 void IndyWrapperCommon2PCallback(indy_handle_t xcommand_handle,
                                  indy_error_t err)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    void (^completion)(NSError*) = [[IndyCallbacks sharedInstance] commandCompletionForError: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*) = (__bridge void (^)(NSError*))block;
+    //void (^completion)(NSError*) = (__bridge void (^)(NSError*))block;
     
     if (completion)
     {
@@ -336,6 +364,8 @@ void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
     void (^completion)(NSError*, IndyHandle) = (__bridge void (^)(NSError*, IndyHandle))block;
+    
+    NSLog(@"completion invoked");
     
     if (completion)
     {
