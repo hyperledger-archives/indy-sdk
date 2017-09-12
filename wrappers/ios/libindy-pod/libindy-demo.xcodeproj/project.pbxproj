@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5D0073E91F680ADF00E5CCE2 /* RegisterWalletType.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0073E81F680ADE00E5CCE2 /* RegisterWalletType.m */; };
 		5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */; };
 		5D0481B91F46FEC800ED79A2 /* AgentMediumListen.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */; };
 		5D0481BB1F46FEE400ED79A2 /* AgentMediumAddIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */; };
@@ -96,6 +97,7 @@
 		2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D0073E81F680ADE00E5CCE2 /* RegisterWalletType.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RegisterWalletType.m; sourceTree = "<group>"; };
 		5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumConnect.m; sourceTree = "<group>"; };
 		5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumListen.m; sourceTree = "<group>"; };
 		5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumAddIdentity.m; sourceTree = "<group>"; };
@@ -318,6 +320,7 @@
 			children = (
 				5DF0147C1F1605EB00076592 /* WalletHighCases.m */,
 				5DF0147D1F1605EB00076592 /* WalletMediumCases.m */,
+				5D0073E81F680ADE00E5CCE2 /* RegisterWalletType.m */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
@@ -623,6 +626,7 @@
 				5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */,
 				5DF014B61F1605EB00076592 /* LedgerUtils.mm in Sources */,
 				5DF014AD1F1605EB00076592 /* WalletMediumCases.m in Sources */,
+				5D0073E91F680ADF00E5CCE2 /* RegisterWalletType.m in Sources */,
 				5DF014A81F1605EB00076592 /* PoolHighCases.m in Sources */,
 				5DF014A91F1605EB00076592 /* PoolMediumCases.m in Sources */,
 				5DF014A01F1605EB00076592 /* AnoncredsHighCases.m in Sources */,

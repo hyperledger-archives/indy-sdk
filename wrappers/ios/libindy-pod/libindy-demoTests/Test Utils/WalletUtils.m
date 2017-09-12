@@ -7,6 +7,10 @@
 #import <libindy/libindy.h>
 #import "TestUtils.h"
 
+@interface  WalletUtils()
+
+@property (strong, readwrite) NSMutableArray *registeredWalletTypes;
+@end
 
 @implementation WalletUtils
 
@@ -17,21 +21,34 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [WalletUtils new];
+        instance.registeredWalletTypes = [NSMutableArray new];
     });
     
     return instance;
 }
 
-// TODO: Implement when architecture is discussed
 - (NSError *)registerWalletType: (NSString *)xtype
+                     forceCreate: (BOOL)forceCreate
 {
     NSError *ret;
+    
+    if ([self.registeredWalletTypes containsObject:xtype])
+    {
+        if (!forceCreate)
+        {
+            return [NSError errorWithDomain:@"IndyErrorDomain" code: WalletTypeAlreadyRegisteredError userInfo:nil];;
+        }
+    }
+    
+    Class <IndyWalletProtocol> walletClass = [KeychainWallet class];
+    
+    [walletClass sharedInstance];
     
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     ret = [[IndyWallet sharedInstance] registerWalletType:xtype
-                                       withImplementation:[KeychainWallet sharedInstance]
+                                       withImplementation:[KeychainWallet class]
                                                completion:^(NSError* error)
            {
                err = error;
@@ -43,6 +60,8 @@
     {
         return ret;
     }
+    
+    [self.registeredWalletTypes addObject:xtype];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     

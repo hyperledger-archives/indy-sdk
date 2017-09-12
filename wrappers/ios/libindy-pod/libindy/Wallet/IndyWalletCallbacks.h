@@ -30,9 +30,10 @@
 - (void)removeWalletHandle:(IndyHandle)handle;
 
 
-- (id<IndyWalletProtocol>)getWalletImplementationByHandle:(IndyHandle)handle;
-- (id<IndyWalletProtocol>)getWalletImplementationByName:(NSString *) name;
+- (Class<IndyWalletProtocol>)getWalletImplementationByHandle:(IndyHandle)handle;
+- (Class<IndyWalletProtocol>)getWalletImplementationByName:(NSString *) name;
 
+- (void)freeString:(NSString *)string;
 - (void)retainString:(NSString**)valueString;
 - (void)freeStringWithPointer:(NSValue *)pointer;
 

@@ -22,8 +22,6 @@
 @property (strong, readwrite) NSMutableDictionary *handlesDictionary; // dictionary of active [walletHandle: walletItem]
 @property (strong, readwrite) NSMutableDictionary *namesAndDictionary; // dictionary of active [walletName: handle]
 
-- (NSString *)defaultConfig;
-
 @end
 
 
@@ -171,7 +169,7 @@
     return [NSError errorFromIndyError:Success];
 }
 
-- (NSError *)getNotExpired:(IndyHandle)walletHandle key:(NSString *)key value:(NSString *)value
+- (NSError *)getNotExpired:(IndyHandle)walletHandle key:(NSString *)key value:(NSString**)value
 {
     @synchronized (self.globalLock)
     {
@@ -183,11 +181,16 @@
         // fetch wallet item to interact with keychain for that wallet
         KeychainWalletItem *walletItem = self.handlesDictionary[@(walletHandle)];
         
-        NSString *value = [walletItem getNotExpiredValueForKey:key];
+        NSString *valueString = [walletItem getNotExpiredValueForKey:key];
         
-        if (value == nil)
+        if (valueString == nil)
         {
             return [NSError errorFromIndyError:WalletNotFoundError];
+        }
+        
+        if (value)
+        {
+            *value = valueString;
         }
     }
     
@@ -247,7 +250,7 @@
     return [NSError errorFromIndyError:Success];
 }
 
-- (NSString *)walletTypeName
++ (NSString *)walletTypeName
 {
     return @"keychainWallet";
 }

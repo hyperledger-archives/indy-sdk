@@ -11,7 +11,8 @@
 
 
 - (NSError *)registerWalletType:(NSString *)type
-             withImplementation:(id<IndyWalletProtocol>)implementation
+            // withImplementation:(id<IndyWalletProtocol>)implementation
+             withImplementation:(Class<IndyWalletProtocol>)implementation
                      completion:(void (^)(NSError *error)) handler;
 
 

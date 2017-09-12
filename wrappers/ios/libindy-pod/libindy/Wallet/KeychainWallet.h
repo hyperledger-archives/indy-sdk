@@ -7,12 +7,11 @@
 
 @interface KeychainWallet : NSObject <IndyWalletProtocol>
 
-- (NSString *)walletTypeName;
-
-- (NSString *)poolName;
+//+ (KeychainWallet *)sharedInstance;
 
 - (instancetype)initWithName:(NSString *)name
                runtimeConfig:(NSString *)runtimeConfig
                  credentials:(NSString *)credentials;
+
 
 @end
