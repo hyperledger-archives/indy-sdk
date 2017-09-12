@@ -103,14 +103,7 @@ extension KeychainWalletItem
     {
         return KeychainWrapper.allKeys(forService: KeychainWalletItem.serviceName)
     }
-    
-//    static public func deleteAllWallets() 
-//    {
-//        return KeychainWrapper.allKeys(forService: KeychainWalletItem.serviceName)
-//    }
-
-    
-    
+  
     public func setWalletValue(_ value: String, forKey key: String) throws
     {
         try self.readFromKeychain()

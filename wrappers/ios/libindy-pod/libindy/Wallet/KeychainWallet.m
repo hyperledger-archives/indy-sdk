@@ -254,10 +254,21 @@
 
 - (void) cleanup
 {
+    [self.handlesDictionary removeAllObjects];
+    [self.namesAndDictionary removeAllObjects];
+
     @synchronized (self.globalLock)
     {
-        [self.handlesDictionary removeAllObjects];
-        [self.namesAndDictionary removeAllObjects];
+        // 1. Fetch all stored wallet names from keychain
+        NSArray *walletNames = [KeychainWalletItem allStoredWalletNames];
+        
+        for (NSString *name in walletNames)
+        {
+            KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name
+                                                                               config:nil
+                                                                          credentials:nil];
+            [walletItem deleteFromKeychainAndReturnError:nil];
+        }
     }
 }
 
