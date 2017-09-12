@@ -5,12 +5,17 @@ mod catchup;
 mod state_proof;
 
 extern crate byteorder;
+extern crate digest;
+extern crate hex;
 extern crate rust_base58;
 extern crate serde_json;
+extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
 
 use self::byteorder::{ByteOrder, LittleEndian};
+use self::digest::{FixedOutput, Input};
+use self::hex::ToHex;
 use self::rust_base58::FromBase58;
 use self::serde_json::Value;
 use std::cell::RefCell;
@@ -146,26 +151,14 @@ impl TransactionHandler {
                 let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
                 json_msg.inner["result"]["data"] = tmp_obj;
             }
-            let data_to_check_proof = match json_msg.inner["result"]["type"].as_str() {
-                Some(super::ledger::constants::GET_ATTR) |
-                Some(super::ledger::constants::GET_CLAIM_DEF) |
-                Some(super::ledger::constants::GET_DDO) |
-                Some(super::ledger::constants::GET_NYM) |
-                Some(super::ledger::constants::GET_SCHEMA) => {
-                    (json_msg.inner["result"]["proofs"].as_str(),
-                     json_msg.inner["result"]["rootHash"].as_str(),
-                     json_msg.inner["result"]["dest"].as_str())
-                }
-                //TODO Some(super::ledger::constants::GET_TXN) => check ledger MerkleTree proofs?
-                _ => (None, None, None)
-            };
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
             let consensus_reached = {
-                if let (Some(proofs), Some(rootHash), Some(dest)) = data_to_check_proof {
-                    self::state_proof::verify_proof(proofs.as_bytes(),
-                                                    rootHash.as_bytes(),
-                                                    dest.as_bytes(),
-                                                    json_msg["result"]["data"].as_str())
+                let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
+                if let Some((proofs, root_hash, key)) = data_to_check_proof {
+                    self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
+                                                    root_hash.from_base58().unwrap().as_slice(),
+                                                    key.as_str(),
+                                                    json_msg.inner["result"]["data"].as_str())
                 } else {
                     reply_cnt == self.f //already have f same replies and receive f+1 now
                 }
@@ -255,6 +248,56 @@ impl TransactionHandler {
                 }
                 Ok(())
             }
+        }
+    }
+
+    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value) -> Option<(&str, &str, String)> {
+        let raw = match json_msg["type"].as_str() {
+            Some(super::ledger::constants::GET_ATTR) |
+            Some(super::ledger::constants::GET_CLAIM_DEF) |
+            Some(super::ledger::constants::GET_NYM) |
+            Some(super::ledger::constants::GET_SCHEMA) => {
+                (json_msg["proofs"].as_str(),
+                 json_msg["rootHash"].as_str(),
+                 json_msg["dest"].as_str().or(json_msg["origin"].as_str()))
+            }
+            //TODO Some(super::ledger::constants::GET_TXN) => check ledger MerkleTree proofs?
+            //TODO Some(super::ledger::constants::GET_DDO) => support DDO
+            _ => return None
+        };
+        if let (Some(proof), Some(root_hash), Some(dest)) = raw {
+            let key_suffix: String = match json_msg["type"].as_str() {
+                Some(super::ledger::constants::GET_ATTR) => {
+                    if let Some(attr_name) = json_msg["raw"].as_str().or(json_msg["enc"].as_str()).or(json_msg["hash"].as_str()) {
+                        let mut hasher = sha2::Sha256::default();
+                        hasher.process(attr_name.as_bytes());
+                        format!(":\x01:{}", hasher.fixed_result().to_hex())
+                    } else {
+                        return None;
+                    }
+                }
+                Some(super::ledger::constants::GET_CLAIM_DEF) => {
+                    if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
+                                                                  json_msg["ref"].as_str()) {
+                        format!(":\x03:{}{}", sign_type, sch_seq_no)
+                    } else {
+                        return None;
+                    }
+                }
+                Some(super::ledger::constants::GET_NYM) => "".to_string(),
+                Some(super::ledger::constants::GET_SCHEMA) => {
+                    if let (Some(name), Some(ver)) = (json_msg["data"]["name"].as_str(),
+                                                      json_msg["data"]["version"].as_str()) {
+                        format!(":\x02:{}{}", name, ver)
+                    } else {
+                        return None;
+                    }
+                }
+                _ => return None
+            };
+            Some((proof, root_hash, dest.to_string() + key_suffix.as_str()))
+        } else {
+            None
         }
     }
 }
