@@ -91,7 +91,7 @@ impl rlp::Decodable for Node {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, RlpDecoderError> {
         match rlp.prototype()? {
             RlpPrototype::List(Node::PAIR_SIZE) => {
-                let path = rlp.at(0)?.as_raw();
+                let path: Vec<u8> = rlp.at(0)?.as_val()?;
                 if path[0] & Node::IS_LEAF_MASK == Node::IS_LEAF_MASK {
                     return Ok(Node::Leaf(Leaf {
                         path: rlp.at(0)?.as_val()?,
@@ -133,7 +133,7 @@ impl rlp::Decodable for Node {
                 return Ok(Node::Hash(rlp.as_val()?));
             }
             _ => {
-                error!("Unexpected data while parsing Patricia Merkle Trie: {:?}", rlp.prototype());
+                error!("Unexpected data while parsing Patricia Merkle Trie: {:?}: {:?}", rlp.prototype(), rlp);
                 return Err(RlpDecoderError::Custom("Unexpected data"));
             }
         }
@@ -150,6 +150,7 @@ impl Node {
             let str = String::from_utf8(vec)
                 .map_err(|err| CommonError::InvalidStructure(
                     format!("Patricia Merkle Trie contains non-str value ({})", err)))?;
+            trace!("Str value from Patricia Merkle Trie {}", str);
             Ok(Some(str))
         } else {
             Ok(None)
@@ -239,6 +240,7 @@ impl Node {
 
 #[allow(dead_code)] //FIXME remove after usage in main code
 pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_value: Option<&str>) -> bool {
+    trace!("state_proof::verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
@@ -251,6 +253,7 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_val
     map.get(root_hash).map(|root| {
         root
             .get_str_value(&map, key)
+            .map_err(map_err_trace!())
             .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
             .unwrap_or(false)
     }).unwrap_or(false)
