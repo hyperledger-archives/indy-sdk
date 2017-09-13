@@ -52,6 +52,7 @@ impl LedgerService {
                     "STEWARD" => Some(Role::Steward as i32),
                     "TRUSTEE" => Some(Role::Trustee as i32),
                     "TRUST_ANCHOR" => Some(Role::TrustAnchor as i32),
+                    "TGB" => Some(Role::TGB as i32),
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 },
             _ => None
