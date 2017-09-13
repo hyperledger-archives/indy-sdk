@@ -6,9 +6,9 @@ namespace Hyperledger.Indy.Utils
     internal static class CallbackHelper
     {
         /// <summary>
-        /// Gets the callback to use for functions that don't return a value.
+        /// Gets the callback to use for completing tasks that don't return a value.
         /// </summary>
-        public static NoValueDelegate NoValueCallback = (xcommand_handle, err) =>
+        public static NoValueDelegate TaskCompletingNoValueCallback = (xcommand_handle, err) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -16,6 +16,14 @@ namespace Hyperledger.Indy.Utils
                 return;
 
             taskCompletionSource.SetResult(true);
+        };
+
+        /// <summary>
+        /// Gets the callback to use for functions that don't return a value and are not associated with a task.
+        /// </summary>
+        public static NoValueDelegate NoValueCallback = (xcommand_handle, err) =>
+        {
+            CheckCallback(err);
         };
 
         /// <summary>
