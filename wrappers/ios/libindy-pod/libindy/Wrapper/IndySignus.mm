@@ -16,7 +16,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_create_and_store_my_did( handle,
                                        walletHandle,
@@ -38,7 +38,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_replace_keys( handle,
                             walletHandle,
@@ -60,7 +60,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_store_their_did( handle,
                                walletHandle,
@@ -83,7 +83,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     uint32_t messageLen = (uint32_t)[message length];
     uint8_t *messageRaw = (uint8_t *)[message bytes];
@@ -111,7 +111,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     uint32_t messageLen = (uint32_t)[message length];
     uint8_t *messageRaw = (uint8_t *)[message bytes];
@@ -144,7 +144,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     uint32_t messageLen = (uint32_t)[message length];
     uint8_t *messageRaw = (uint8_t *)[message bytes];
@@ -175,7 +175,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     uint32_t messageLen = (uint32_t)[encryptedMessage length];
     uint8_t *messageRaw = (uint8_t *)[encryptedMessage bytes];

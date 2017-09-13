@@ -34,7 +34,7 @@
     indy_error_t ret;
     
     [handler copy];
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleForError: handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: handler];
     
     ret = indy_create_wallet(handle,
                                [poolName UTF8String],
@@ -60,7 +60,7 @@
     indy_error_t ret;
     
     //id hghg = [handler copy];
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_open_wallet( handle,
                               [name UTF8String],
@@ -82,7 +82,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_close_wallet( handle,
                             walletHandle,
@@ -103,7 +103,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_delete_wallet( handle,
                              [walletName UTF8String],
