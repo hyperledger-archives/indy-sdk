@@ -155,14 +155,17 @@ impl TransactionHandler {
             let consensus_reached = {
                 let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
                 if let Some((proofs, root_hash, key, value)) = data_to_check_proof {
+                    debug!("TransactionHandler::process_reply try to verify proofs in reply");
                     self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
                                                     root_hash.from_base58().unwrap().as_slice(),
                                                     key.as_str(),
                                                     value.as_ref().map(String::as_str))
                 } else {
+                    debug!("TransactionHandler::process_reply not enough data to verify proofs in reply, collect replies");
                     reply_cnt == self.f //already have f same replies and receive f+1 now
                 }
             };
+            debug!("TransactionHandler::process_reply consensus_reached {}", consensus_reached);
             if consensus_reached {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
@@ -258,8 +261,8 @@ impl TransactionHandler {
             Some(super::ledger::constants::GET_CLAIM_DEF) |
             Some(super::ledger::constants::GET_NYM) |
             Some(super::ledger::constants::GET_SCHEMA) => {
-                (json_msg["proofs"].as_str(),
-                 json_msg["rootHash"].as_str(),
+                (json_msg["state_proof"]["proof_nodes"].as_str(),
+                 json_msg["state_proof"]["root_hash"].as_str(),
                  json_msg["dest"].as_str().or(json_msg["origin"].as_str()))
             }
             //TODO Some(super::ledger::constants::GET_TXN) => check ledger MerkleTree proofs?
@@ -267,9 +270,9 @@ impl TransactionHandler {
             _ => return None
         };
         if let (Some(proof), Some(root_hash), Some(dest)) = raw {
-            let key_suffix: String = match json_msg["type"].as_str() {
+            let (key_suffix, value): (String, Option<String>) = match json_msg["type"].as_str() {
                 Some(super::ledger::constants::GET_ATTR) => {
-                    if let Some(attr_name) = json_msg["raw"].as_str()
+                    let key = if let Some(attr_name) = json_msg["raw"].as_str()
                         .or(json_msg["enc"].as_str())
                         .or(json_msg["hash"].as_str()) {
                         let mut hasher = sha2::Sha256::default();
@@ -277,28 +280,40 @@ impl TransactionHandler {
                         format!(":\x01:{}", hasher.fixed_result().to_hex())
                     } else {
                         return None;
-                    }
+                    };
+                    let value: Option<String> = if let Some(data) = json_msg.get("data") {
+                        let mut hasher = sha2::Sha256::default();
+                        hasher.process(serde_json::to_string(data).unwrap().as_bytes());
+                        Some(hasher.fixed_result().to_hex())
+                    } else {
+                        None
+                    };
+                    (key, value)
                 }
                 Some(super::ledger::constants::GET_CLAIM_DEF) => {
-                    if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
+                    let key = if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
                                                                   json_msg["ref"].as_str()) {
                         format!(":\x03:{}{}", sign_type, sch_seq_no)
                     } else {
                         return None;
-                    }
+                    };
+                    (key, json_msg["data"].as_str().map(String::from))
                 }
-                Some(super::ledger::constants::GET_NYM) => "".to_string(),
+                Some(super::ledger::constants::GET_NYM) => {
+                    ("".to_string(), None)
+                },
                 Some(super::ledger::constants::GET_SCHEMA) => {
-                    if let (Some(name), Some(ver)) = (json_msg["data"]["name"].as_str(),
+                    let key = if let (Some(name), Some(ver)) = (json_msg["data"]["name"].as_str(),
                                                       json_msg["data"]["version"].as_str()) {
                         format!(":\x02:{}{}", name, ver)
                     } else {
                         return None;
-                    }
+                    };
+                    (key, None)
                 }
                 _ => return None
             };
-            let value = if let (Some(data), Some(seq_no)) = (json_msg["data"].as_str(), json_msg["seqNo"].as_str()) {
+            let value = if let (Some(data), Some(seq_no)) = (value, json_msg["seqNo"].as_u64()) {
                 let value = json!({ "lsn": seq_no, "val": data });
                 Some(value.to_string())
             } else {
