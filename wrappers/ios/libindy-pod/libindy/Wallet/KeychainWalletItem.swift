@@ -195,9 +195,9 @@ extension KeychainWalletItem
         
         for (key, value) in valuesDictionary
         {
-            if key.hasPrefix(prefix)
+            if key.hasPrefix(prefix), let dictValue = value as? WalletValue
             {
-                valuesJson[key] = value
+                valuesJson[key] = dictValue.value
             }
         }
         
@@ -225,15 +225,25 @@ extension KeychainWalletItem
 
 extension KeychainWalletItem
 {
-    struct WalletValue
+    class WalletValue: NSObject, NSCoding
     {
         var value: String
         var timeCreated: String
         
-        init(value: String, timeCreated: String)
+        required init(value: String, timeCreated: String)
         {
             self.value = value
             self.timeCreated = timeCreated
+        }
+        
+        required init(coder decoder: NSCoder) {
+            self.value = decoder.decodeObject(forKey: "value") as? String ?? ""
+            self.timeCreated = decoder.decodeObject(forKey: "timeCreated") as? String ?? ""
+        }
+        
+        func encode(with coder: NSCoder) {
+            coder.encode(value, forKey: "value")
+            coder.encode(timeCreated, forKey: "timeCreated")
         }
     }
     

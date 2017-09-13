@@ -153,7 +153,7 @@ mod high_cases {
             let wallet_name = "indy_delete_wallet_works_for_opened";
 
             WalletUtils::create_wallet(pool_name, wallet_name, None, None).unwrap();
-            WalletUtils::open_wallet(wallet_name, None).unwrap();
+            WalletUtils::open_wallet(wallet_name, None).unwrapf();
             let res = WalletUtils::delete_wallet(wallet_name);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 

@@ -13,14 +13,22 @@
 
 @interface IndyWallet : NSObject
 
++ (IndyWallet *)sharedInstance;
 
+/**
+ Register Custom Wallet type with provided implementation
+ 
+ - parameter type:
+ */
 - (NSError *)registerWalletType:(NSString *)type
-            // withImplementation:(id<IndyWalletProtocol>)implementation
              withImplementation:(Class<IndyWalletProtocol>)implementation
                      completion:(void (^)(NSError *error)) handler;
 
-
-+ (IndyWallet *)sharedInstance;
+/**
+ Register Keychain Wallet type with default implementation
+*/
+- (NSError *)registerKeychainWalletType:(NSString *)type
+                     completion:(void (^)(NSError *error)) handler;
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                                  name:(NSString *)name

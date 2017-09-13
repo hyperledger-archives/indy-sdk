@@ -18,8 +18,8 @@
 		5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DADD3A11F62C27700F0BEE6 /* KeychainWalletConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD39F1F62C27700F0BEE6 /* KeychainWalletConfig.h */; };
 		5DADD3A21F62C27700F0BEE6 /* KeychainWalletConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */; };
-		5DADD3A51F62E7B800F0BEE6 /* SequenceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3A31F62E7B800F0BEE6 /* SequenceUtils.h */; };
-		5DADD3A61F62E7B800F0BEE6 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A41F62E7B800F0BEE6 /* SequenceUtils.m */; };
+		5DADD3A51F62E7B800F0BEE6 /* IndySequenceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3A31F62E7B800F0BEE6 /* IndySequenceUtils.h */; };
+		5DADD3A61F62E7B800F0BEE6 /* IndySequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A41F62E7B800F0BEE6 /* IndySequenceUtils.m */; };
 		5DADD3C21F66733900F0BEE6 /* NSDictionary+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */; };
 		5DADD3C31F66733900F0BEE6 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3BD1F66733900F0BEE6 /* NSDictionary+JSON.m */; };
 		5DADD3C41F66733900F0BEE6 /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3BE1F66733900F0BEE6 /* NSError+IndyError.h */; };
@@ -66,8 +66,8 @@
 		5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWalletItem.swift; sourceTree = "<group>"; };
 		5DADD39F1F62C27700F0BEE6 /* KeychainWalletConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeychainWalletConfig.h; sourceTree = "<group>"; };
 		5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainWalletConfig.m; sourceTree = "<group>"; };
-		5DADD3A31F62E7B800F0BEE6 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
-		5DADD3A41F62E7B800F0BEE6 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
+		5DADD3A31F62E7B800F0BEE6 /* IndySequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySequenceUtils.h; sourceTree = "<group>"; };
+		5DADD3A41F62E7B800F0BEE6 /* IndySequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndySequenceUtils.m; sourceTree = "<group>"; };
 		5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
 		5DADD3BD1F66733900F0BEE6 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
 		5DADD3BE1F66733900F0BEE6 /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
@@ -200,8 +200,8 @@
 			isa = PBXGroup;
 			children = (
 				5DADD3AF1F62EDDB00F0BEE6 /* Exstensions */,
-				5DADD3A31F62E7B800F0BEE6 /* SequenceUtils.h */,
-				5DADD3A41F62E7B800F0BEE6 /* SequenceUtils.m */,
+				5DADD3A31F62E7B800F0BEE6 /* IndySequenceUtils.h */,
+				5DADD3A41F62E7B800F0BEE6 /* IndySequenceUtils.m */,
 				5DF014C21F1615BA00076592 /* IndyCallbacks.h */,
 				5D13F6C21F161CA50024DFB3 /* IndyCallbacks.mm */,
 			);
@@ -264,7 +264,7 @@
 				5DADD3A11F62C27700F0BEE6 /* KeychainWalletConfig.h in Headers */,
 				5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */,
 				5DADD3C41F66733900F0BEE6 /* NSError+IndyError.h in Headers */,
-				5DADD3A51F62E7B800F0BEE6 /* SequenceUtils.h in Headers */,
+				5DADD3A51F62E7B800F0BEE6 /* IndySequenceUtils.h in Headers */,
 				5D0073EB1F68217F00E5CCE2 /* KeychainCallbacks.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -391,7 +391,7 @@
 				5DE5D1281F61320E000BB547 /* KeychainAccessibility.swift in Sources */,
 				5DADD3C51F66733900F0BEE6 /* NSError+IndyError.m in Sources */,
 				5DADD3A21F62C27700F0BEE6 /* KeychainWalletConfig.m in Sources */,
-				5DADD3A61F62E7B800F0BEE6 /* SequenceUtils.m in Sources */,
+				5DADD3A61F62E7B800F0BEE6 /* IndySequenceUtils.m in Sources */,
 				5D4F3BFF1F5D3F48004CB6A4 /* IndyWalletCallbacks.m in Sources */,
 				5DF014DA1F1615BA00076592 /* IndyAgent.mm in Sources */,
 			);
@@ -403,7 +403,7 @@
 		3E08C0211EB3336A000A73BA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
@@ -455,7 +455,7 @@
 		3E08C0221EB3336A000A73BA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
@@ -504,7 +504,7 @@
 			baseConfigurationReference = 717E50F5CB0006C54C8947D5 /* Pods-libindy.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
-				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
@@ -536,7 +536,7 @@
 			baseConfigurationReference = DEA13FB625E476E575ACEE1F /* Pods-libindy.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
-				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;

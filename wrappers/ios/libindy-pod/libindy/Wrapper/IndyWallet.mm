@@ -36,29 +36,62 @@ typedef indy_error_t (*createCb)(const char*, const char*, const char*);
 }
 
 - (NSError *)registerWalletType:(NSString *)type
-             withImplementation:(id<IndyWalletProtocol>)implementation
+             withImplementation:(Class<IndyWalletProtocol>)implementation
                      completion:(void (^)(NSError *error)) handler
 {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*)handler];
     
-    [[IndyWalletCallbacks sharedInstance] addWalletType:type
-                                     withImplementation:implementation];
+    BOOL addedType = [[IndyWalletCallbacks sharedInstance] setupCustomWalletImplementation: implementation];
+    
+    if (addedType == NO)
+    {
+        // custom wallet implementation is already registered
+        return [NSError errorFromIndyError:WalletTypeAlreadyRegisteredError];
+    }
     
     ret = indy_register_wallet_type(handle,
                                     [type UTF8String],
-                                    [self createCallback],
-                                    IndyWalletOpenCallback,
-                                    IndyWalletSetCallback,
-                                    IndyWalletGetCallback,
-                                    IndyWalletGetNotExpiredCallback,
-                                    IndyWalletListCallback,
-                                    IndyWalletCloseCallback,
-                                    IndyWalletDeleteCallback,
-                                    IndyWalletFreeCallback,
+                                    CustomWalletCreateCallback,
+                                    CustomWalletOpenCallback,
+                                    CustomWalletSetCallback,
+                                    CustomWalletGetCallback,
+                                    CustomWalletGetNotExpiredCallback,
+                                    CustomWalletListCallback,
+                                    CustomWalletCloseCallback,
+                                    CustomWalletDeleteCallback,
+                                    CustomWalletFreeCallback,
                                     IndyWrapperCommon2PCallback);
     
+    if( ret != Success )
+    {
+        [[IndyWalletCallbacks sharedInstance] removeCustomWalletImplementation];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+
+    return [NSError errorFromIndyError: ret];
+}
+
+- (NSError *)registerKeychainWalletType:(NSString *)type
+                     completion:(void (^)(NSError *error)) handler
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*)handler];
+    
+    ret = indy_register_wallet_type(handle,
+                                    [type UTF8String],
+                                    KeychainWalletCreateCallback,
+                                    KeychainWalletOpenCallback,
+                                    KeychainWalletSetCallback,
+                                    KeychainWalletGetCallback,
+                                    KeychainWalletGetNotExpiredCallback,
+                                    KeychainWalletListCallback,
+                                    KeychainWalletCloseCallback,
+                                    KeychainWalletDeleteCallback,
+                                    KeychainWalletFreeCallback,
+                                    IndyWrapperCommon2PCallback);
     
     if( ret != Success )
     {
@@ -78,8 +111,6 @@ typedef indy_error_t (*createCb)(const char*, const char*, const char*);
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
-    
-    [[IndyWalletCallbacks sharedInstance] addWalletName:name forRegisteredWalletType:type];
     
     ret = indy_create_wallet(handle,
                                [poolName UTF8String],

@@ -1,26 +1,26 @@
 //
-//  SequenceUtils.m
+//  IndySequenceUtils.m
 //  libindy
 //
 
-#import "SequenceUtils.h"
+#import "IndySequenceUtils.h"
 
-@interface SequenceUtils()
+@interface IndySequenceUtils()
 
 @property (atomic, strong) NSLock *lock;
 @property (atomic, assign) NSUInteger idsCounter;
 
 @end
 
-@implementation SequenceUtils
+@implementation IndySequenceUtils
 
-+ (SequenceUtils *)sharedInstance
++ (IndySequenceUtils *)sharedInstance
 {
-    static SequenceUtils *instance = nil;
+    static IndySequenceUtils *instance = nil;
     static dispatch_once_t dispatch_once_block;
     
     dispatch_once(&dispatch_once_block, ^{
-        instance = [SequenceUtils new];
+        instance = [IndySequenceUtils new];
         instance.idsCounter = 0;
         instance.lock = [NSLock new];
     });

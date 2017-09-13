@@ -223,7 +223,7 @@
 - (void)testDeleteWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
-    //[InmemWallet cleanupStorage];
+    [[KeychainWallet sharedInstance] cleanup];
     
     NSError *ret;
     NSString *poolName = @"indy_delete_wallet_works_for_plugged";
@@ -231,6 +231,8 @@
     NSString *xtype = @"inmem";
     
     // 1. Register wallet type
+    
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
     
     // 2. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
@@ -250,7 +252,7 @@
                                                           config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
-    //[InmemWallet cleanupStorage];
+    [[KeychainWallet sharedInstance] cleanup];
     [TestUtils cleanupStorage];
 }
 
@@ -283,6 +285,7 @@
 - (void)testOpenWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
+    [[KeychainWallet sharedInstance] cleanup];
     
     NSString *poolName = @"indy_open_wallet_works_for_plugged";
     NSString *walletName = @"indy_open_wallet_works_for_plugged";
@@ -290,6 +293,8 @@
     NSError *ret;
     
     // 1. register wallet type
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
     
     // 2. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
@@ -305,6 +310,7 @@
                                                  outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
     
+    [[KeychainWallet sharedInstance] cleanup];
     [TestUtils cleanupStorage];
 }
 
@@ -377,6 +383,8 @@
     NSError *ret;
     
     // 1. register wallet type
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
     
     // 2. create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName

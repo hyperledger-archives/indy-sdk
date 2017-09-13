@@ -60,8 +60,7 @@ class KeychainWrapper
         
         for attributes in results
         {
-            if let accountData = attributes[String(kSecAttrAccount)] as? Data,
-               let account = String(data: accountData, encoding: String.Encoding.utf8)
+            if let account = attributes[String(kSecAttrAccount)] as? String
             {
                     keys.append(account)
             }

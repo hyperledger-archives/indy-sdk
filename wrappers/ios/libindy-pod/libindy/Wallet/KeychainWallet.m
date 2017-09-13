@@ -7,7 +7,7 @@
 #import "KeychainWallet.h"
 #import "NSError+IndyError.h"
 #import "KeychainWalletConfig.h"
-#import "SequenceUtils.h"
+#import "IndySequenceUtils.h"
 #import "NSString+JSON.h"
 #import "libindy-Swift.h"
 
@@ -78,6 +78,8 @@
         }
     }
     
+    NSArray *walletNames2 = [KeychainWalletItem allStoredWalletNames];
+    
     return [NSError errorFromIndyError:Success];
 }
 
@@ -86,7 +88,6 @@
             runtimeConfig:(NSString *)runtimeConfig
               credentials:(NSString *)credentials
                    handle:(IndyHandle *)handle
-                outWallet:(__autoreleasing id<IndyWalletProtocol> *)wallet
 {
     // 1. Process runtime config
     
@@ -111,7 +112,7 @@
     KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name config:config credentials:credentials];
     walletItem.freshnessTime = parcedRuntimeConfig.freshnessTime;
     
-    IndyHandle xhandle = (IndyHandle)[[SequenceUtils sharedInstance] getNextId];
+    IndyHandle xhandle = (IndyHandle)[[IndySequenceUtils sharedInstance] getNextId];
     
     self.handlesDictionary[@(xhandle)] = walletItem;
     self.namesAndDictionary[name] = @(xhandle);
