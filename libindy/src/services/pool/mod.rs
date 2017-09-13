@@ -158,7 +158,7 @@ impl TransactionHandler {
                     debug!("TransactionHandler::process_reply try to verify proofs in reply");
                     self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
                                                     root_hash.from_base58().unwrap().as_slice(),
-                                                    key.as_str(),
+                                                    key.as_slice(),
                                                     value.as_ref().map(String::as_str))
                 } else {
                     debug!("TransactionHandler::process_reply not enough data to verify proofs in reply, collect replies");
@@ -255,7 +255,7 @@ impl TransactionHandler {
     }
 
     fn parse_reply_for_proof_checking(json_msg: &serde_json::Value)
-                                      -> Option<(&str, &str, String, Option<String>)> {
+                                      -> Option<(&str, &str, Vec<u8>, Option<String>)> {
         let raw = match json_msg["type"].as_str() {
             Some(super::ledger::constants::GET_ATTR) |
             Some(super::ledger::constants::GET_CLAIM_DEF) |
@@ -269,8 +269,9 @@ impl TransactionHandler {
             //TODO Some(super::ledger::constants::GET_DDO) => support DDO
             _ => return None
         };
+        let mut key_nym: Option<Vec<u8>> = None;
         if let (Some(proof), Some(root_hash), Some(dest)) = raw {
-            let (key_suffix, value): (String, Option<String>) = match json_msg["type"].as_str() {
+            let (key_suffix, value): (String, Option<serde_json::Value>) = match json_msg["type"].as_str() {
                 Some(super::ledger::constants::GET_ATTR) => {
                     let key = if let Some(attr_name) = json_msg["raw"].as_str()
                         .or(json_msg["enc"].as_str())
@@ -281,10 +282,10 @@ impl TransactionHandler {
                     } else {
                         return None;
                     };
-                    let value: Option<String> = if let Some(data) = json_msg.get("data") {
+                    let value: Option<serde_json::Value> = if let Some(data) = json_msg.get("data") {
                         let mut hasher = sha2::Sha256::default();
                         hasher.process(serde_json::to_string(data).unwrap().as_bytes());
-                        Some(hasher.fixed_result().to_hex())
+                        Some(serde_json::Value::String(hasher.fixed_result().to_hex()))
                     } else {
                         None
                     };
@@ -292,14 +293,17 @@ impl TransactionHandler {
                 }
                 Some(super::ledger::constants::GET_CLAIM_DEF) => {
                     let key = if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
-                                                                  json_msg["ref"].as_str()) {
-                        format!(":\x03:{}{}", sign_type, sch_seq_no)
+                                                                  json_msg["ref"].as_u64()) {
+                        format!(":\x03:{}:{}", sign_type, sch_seq_no)
                     } else {
                         return None;
                     };
-                    (key, json_msg["data"].as_str().map(String::from))
+                    (key, json_msg.get("data").map(Clone::clone))
                 }
                 Some(super::ledger::constants::GET_NYM) => {
+                    let mut hasher = sha2::Sha256::default();
+                    hasher.process(dest.as_bytes());
+                    key_nym = Some(hasher.fixed_result().to_vec());
                     ("".to_string(), None)
                 },
                 Some(super::ledger::constants::GET_SCHEMA) => {
@@ -309,7 +313,12 @@ impl TransactionHandler {
                     } else {
                         return None;
                     };
-                    (key, None)
+                    let value: Option<serde_json::Value> = if let (Some(attr_names), Some(name), Some(version)) = (json_msg["data"].get("attr_names"), json_msg["data"]["name"].as_str(), json_msg["data"]["version"].as_str()){
+                        Some(json!({"attr_names": attr_names,"name": name,"version": version}))
+                    } else {
+                        None
+                    };
+                    (key, value)
                 }
                 _ => return None
             };
@@ -319,7 +328,12 @@ impl TransactionHandler {
             } else {
                 None
             };
-            Some((proof, root_hash, dest.to_string() + key_suffix.as_str(), value))
+            let dest = if let Some(key_nym) = key_nym {
+                key_nym
+            } else {
+                (dest.to_string() + key_suffix.as_str()).as_bytes().to_vec() //TODO simplify copy
+            };
+            Some((proof, root_hash, dest, value))
         } else {
             None
         }
