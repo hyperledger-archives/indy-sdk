@@ -20,7 +20,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_sign_and_submit_request(handle,
                                        poolHandle,
@@ -44,7 +44,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_sign_request(handle,
                             walletHandle,
@@ -66,7 +66,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
 
     ret = indy_submit_request(handle,
                               poolHandle,
@@ -92,7 +92,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     
     ret = indy_build_nym_request(handle,
@@ -116,7 +116,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_get_nym_request(handle,
                                      [submitterDid UTF8String],
@@ -142,7 +142,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_attrib_request( handle,
                                     [submitterDid UTF8String],
@@ -167,7 +167,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_get_attrib_request(handle,
                                         [submitterDid UTF8String],
@@ -190,7 +190,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_schema_request( handle,
                                     [submitterDid UTF8String],
@@ -211,7 +211,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
  
     ret = indy_build_get_schema_request( handle,
@@ -237,7 +237,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_claim_def_txn( handle,
                                    [submitterDid UTF8String],
@@ -262,7 +262,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     NSString *xrefStr;
     if ([xref isKindOfClass:[NSNumber class]])
@@ -296,7 +296,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_get_ddo_request( handle,
                                      [submitterDid UTF8String],
@@ -320,7 +320,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_node_request( handle,
                                   [submitterDid UTF8String],
@@ -343,7 +343,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_build_get_txn_request(handle,
                                      [submitterDid UTF8String],
