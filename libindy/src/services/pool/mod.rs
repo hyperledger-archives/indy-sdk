@@ -319,6 +319,9 @@ impl TransactionHandler {
             if json_msg["type"].as_str().eq(&Some(::services::ledger::constants::GET_NYM)) {
                 out_value = value.map(|mut value| {
                     value["seqNo"] = json_msg["seqNo"].clone();
+                    if value["role"].as_str() == Some("") {
+                        value["role"] = serde_json::Value::Null; //FIXME should be fixed on node side
+                    }
                     let mut value = value.as_object_mut().unwrap().clone();
                     value.remove("dest");
                     serde_json::Value::from(value)
