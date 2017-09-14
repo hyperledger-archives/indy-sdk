@@ -13,9 +13,6 @@ use services::ledger::constants::{
     GET_SCHEMA,
     CLAIM_DEF,
     GET_CLAIM_DEF,
-    STEWARD,
-    TRUSTEE,
-    TRUST_ANCHOR,
     GET_TXN
 };
 
@@ -41,13 +38,6 @@ impl<T: JsonEncodable> Request<T> {
 }
 
 impl<T: JsonEncodable> JsonEncodable for Request<T> {}
-
-#[derive(Deserialize, Serialize, PartialEq, Debug)]
-pub enum Role {
-    Steward = STEWARD,
-    Trustee = TRUSTEE,
-    TrustAnchor = TRUST_ANCHOR
-}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NymOperation {
