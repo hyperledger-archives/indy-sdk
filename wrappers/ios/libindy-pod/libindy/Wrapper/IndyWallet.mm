@@ -189,4 +189,9 @@
     return [NSError errorFromIndyError: ret];
 }
 
+- (void)cleanupIndyKeychainWallet
+{
+    [[IndyKeychainWallet sharedInstance] cleanup];
+}
+
 @end

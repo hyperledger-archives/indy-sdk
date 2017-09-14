@@ -40,7 +40,7 @@
 - (void)testRegisterWalletTypeDoesNotWorkTwiceWithTheSameName
 {
     [TestUtils cleanupStorage];
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSError *ret;
     NSString *xtype = @"keychain";
@@ -52,7 +52,7 @@
     ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
     XCTAssertEqual(ret.code, WalletTypeAlreadyRegisteredError, @"WalletUtils:registerWalletType() returned wrong error code");
     
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 

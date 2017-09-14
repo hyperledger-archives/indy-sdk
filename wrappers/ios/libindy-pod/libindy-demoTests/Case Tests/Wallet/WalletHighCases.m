@@ -2,9 +2,6 @@
 //  WalletHighCases.m
 //  libindy-demo
 //
-//  Created by Anastasia Tarasova on 14.06.17.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
 
 
 #import <XCTest/XCTest.h>
@@ -40,7 +37,7 @@
 - (void)testRegisterWalletTypeWorks
 {
     [TestUtils cleanupStorage];
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSString *xtype = @"keychain";
     
@@ -52,7 +49,7 @@
                                                           config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
     
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
@@ -77,12 +74,12 @@
 - (void)testCreateWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSError *ret;
     NSString *poolName = @"indy_create_wallet_works";
     NSString *walletName = @"indy_create_wallet_works";
-    NSString *xtype = [IndyKeychainWallet walletTypeName];
+    NSString *xtype = @"keychain";
     
     // register type
     
@@ -97,7 +94,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
     
     
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
@@ -222,7 +219,7 @@
 - (void)testDeleteWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSError *ret;
     NSString *poolName = @"indy_delete_wallet_works_for_plugged";
@@ -251,7 +248,7 @@
                                                           config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
@@ -284,7 +281,7 @@
 - (void)testOpenWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSString *poolName = @"indy_open_wallet_works_for_plugged";
     NSString *walletName = @"indy_open_wallet_works_for_plugged";
@@ -309,7 +306,7 @@
                                                  outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
     
-    [[IndyKeychainWallet sharedInstance] cleanup];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 

@@ -49,6 +49,8 @@
                       credentials:(NSString *)credentials
                        completion:(void (^)(NSError *error ))handler;
 
+- (void)cleanupIndyKeychainWallet;
+
 
 @end
 

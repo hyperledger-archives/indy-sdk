@@ -40,21 +40,16 @@
         }
     }
     
-    Class <IndyWalletProtocol> walletClass = [IndyKeychainWallet class];
-    
-    [walletClass sharedInstance];
-    
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[IndyWallet sharedInstance] registerWalletType:xtype
-                                       withImplementation:[IndyKeychainWallet class]
-                                               completion:^(NSError* error)
+    
+    ret = [[IndyWallet sharedInstance] registerIndyKeychainWalletType:xtype
+                                                           completion:^(NSError* error)
            {
                err = error;
                [completionExpectation fulfill];
            }];
-    
     
     if( ret.code != Success )
     {

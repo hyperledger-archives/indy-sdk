@@ -241,7 +241,7 @@
 - (void)testAgentConnectWorksForExpiredKeyInWallet
 {
     [TestUtils cleanupStorage];
-    [[IndyKeychainWallet sharedInstance] cleanup];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSError *ret;
     NSString *poolName = [TestUtils pool];
@@ -349,7 +349,7 @@
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     
-    [[IndyKeychainWallet sharedInstance] cleanup];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
