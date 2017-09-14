@@ -27,13 +27,6 @@
     return instance;
 }
 
-typedef indy_error_t (*createCb)(const char*, const char*, const char*);
-
-- (createCb)openCallback
-{
-    createCb call = KeychainCallbacks::createFn;
-    return call;
-}
 
 - (NSError *)registerWalletType:(NSString *)type
              withImplementation:(Class<IndyWalletProtocol>)implementation
@@ -41,7 +34,7 @@ typedef indy_error_t (*createCb)(const char*, const char*, const char*);
 {
     indy_error_t ret;
 
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*)handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: handler];
     
     BOOL addedType = [[IndyWalletCallbacks sharedInstance] setupCustomWalletImplementation: implementation];
     
@@ -78,7 +71,7 @@ typedef indy_error_t (*createCb)(const char*, const char*, const char*);
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*)handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: handler];
     
     ret = indy_register_wallet_type(handle,
                                     [type UTF8String],

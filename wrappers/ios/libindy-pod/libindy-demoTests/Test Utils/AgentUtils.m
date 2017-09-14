@@ -70,7 +70,10 @@
                                             senderDId:senderDid
                                           receiverDId:receiverDid
                                     connectionHandler:onConnectCallback
-                                       messageHandler:(void (^)(IndyHandle, NSError*, NSString*))weakSelf.connectionCallbacks[@(tempConnectionHandle)]];
+                                     messageHandler:^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
+                                         NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
+                                         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
+                                     }];
 
     if (ret.code != Success)
     {
@@ -85,9 +88,9 @@
     return connectionErr;
 }
 
-__strong void (^onListenerCallback)(NSError*, IndyHandle) = nil;
-__strong void (^onMessageCallback)(IndyHandle, NSError*, NSString*) = nil;
-__strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, NSString* ) = nil;
+//__strong void (^onListenerCallback)(NSError*, IndyHandle) = nil;
+//__strong void (^onMessageCallback)(IndyHandle, NSError*, NSString*) = nil;
+//__strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, NSString* ) = nil;
 
 - (NSError *)listenForEndpoint:(NSString *)endpoint
              connectionCallback:( void (^)(IndyHandle listenerHandle, IndyHandle connectionHandle))connectionCallback
@@ -99,12 +102,12 @@ __strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, 
     __block IndyHandle tempListenerHandle = 0;
     __block NSError *listenerErr;
     
-    onConnectCallback = ^(IndyHandle xListenerHandle, NSError *error, IndyHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
+    void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, NSString* ) = ^(IndyHandle xListenerHandle, NSError *error, IndyHandle connectionHandle, NSString *senderDid, NSString *receiverDid) {
         NSLog(@"AgentUtils::listen::New connection %d on listener %d, err %ld, sender DID %@, receiver DID: %@", (int)connectionHandle, (int)xListenerHandle, (long)error.code, senderDid, receiverDid);
         if (connectionCallback) {connectionCallback(xListenerHandle, connectionHandle);}
     };
 
-    onListenerCallback = ^(NSError *error, IndyHandle xListenerHandle) {
+    void (^onListenerCallback)(NSError*, IndyHandle) = ^(NSError *error, IndyHandle xListenerHandle) {
         NSLog(@"OnListenerCallback triggered.");
         listenerErr = error;
         tempListenerHandle = xListenerHandle;
@@ -112,7 +115,7 @@ __strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, 
     };
     
     // message callback
-   onMessageCallback = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
+   void (^onMessageCallback)(IndyHandle, NSError*, NSString*) = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
         NSLog(@"AgentUtils::listen::On connection %d received (with error %ld) agent message (CLI->SRV): %@", (int)xConnectionHandle, (long)error.code, message);
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
@@ -278,8 +281,8 @@ __strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, 
         [connectCompletionExpectation fulfill];
     };
     
-    __weak typeof(self)weakSelf = self;
-    weakSelf.connectionCallbacks[@(tempConnectionHandle)] = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
+   // __weak typeof(self)weakSelf = self;
+    void (^messageHandler)(IndyHandle, NSError*, NSString*) = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
         NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
     };
     
@@ -288,7 +291,7 @@ __strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, 
                                           senderDId:senderDid
                                         receiverDId:receiverDid
                                   connectionHandler:onConnectCallback
-                                     messageHandler:(void (^)(IndyHandle, NSError*, NSString*))weakSelf.connectionCallbacks[@(tempConnectionHandle)]];
+                                     messageHandler:messageHandler];
     
     if (ret.code != Success)
     {

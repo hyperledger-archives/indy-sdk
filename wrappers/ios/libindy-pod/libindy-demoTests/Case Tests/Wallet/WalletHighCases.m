@@ -42,10 +42,9 @@
     [TestUtils cleanupStorage];
     [[IndyKeychainWallet sharedInstance] cleanup];
     
-    NSString *xtype = [IndyKeychainWallet walletTypeName];
+    NSString *xtype = @"keychain";
     
     NSError *ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:NO];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType() failed");
     
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:@"pool1"
                                                       walletName:@"wallet1"
