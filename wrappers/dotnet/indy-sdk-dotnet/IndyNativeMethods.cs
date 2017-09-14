@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Indy.Sdk.Dotnet
+namespace Hyperledger.Indy
 {
+    
+
     /// <summary>
     /// PInvoke import of C-Callable SDK library functions and associated delegates.
     /// </summary>
-    public static class IndyNativeMethods
+    internal static class IndyNativeMethods
     {
+        private const string NATIVE_LIB_NAME = "indy";
+
         /// <summary>
         /// Delegate for callbacks that only include the success or failure of command execution.
         /// </summary>
@@ -26,7 +30,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="config">Pool configuration json. if NULL, then default config will be used.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi,  BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi,  BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_create_pool_ledger_config(int command_handle, string config_name, string config, NoValueDelegate cb);
 
         /// <summary>
@@ -36,7 +40,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="config_name">Name of the pool ledger configuration to delete.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_delete_pool_ledger_config(int command_handle, string config_name, NoValueDelegate cb);
 
         /// <summary>
@@ -47,7 +51,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="config">Runtime pool configuration json. If null the default configuration will be used.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_open_pool_ledger(int command_handle, string config_name, string config, OpenPoolLedgerResultDelegate cb);
 
         /// <summary>
@@ -65,7 +69,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="handle">Pool handle returned by indy_open_pool_ledger</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_refresh_pool_ledger(int command_handle, IntPtr handle, NoValueDelegate cb);
 
         /// <summary>
@@ -75,7 +79,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="handle">pool handle returned by sovrin_open_pool_ledger.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_close_pool_ledger(int command_handle, IntPtr handle, NoValueDelegate cb);
 
         // wallet.rs
@@ -96,7 +100,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="free">Handler that allows to de-allocate strings allocated in caller code</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_register_wallet_type(int command_handle, string xtype, WalletTypeCreateDelegate create, WalletTypeOpenDelegate open, WalletTypeSetDelegate set, WalletTypeGetDelegate get, WalletTypeGetNotExpiredDelegate get_not_expired, WalletTypeListDelegate list, WalletTypeCloseDelegate close, WalletTypeDeleteDelegate delete, WalletTypeFreeDelegate free, NoValueDelegate cb);
 
         /// <summary>
@@ -182,7 +186,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="credentials">Wallet credentials json. </param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_create_wallet(int command_handle, string pool_name, string name, string xtype, string config, string credentials, NoValueDelegate cb);
 
         /// <summary>
@@ -198,7 +202,7 @@ namespace Indy.Sdk.Dotnet
         /// It is impossible to open wallet with the same name more than once.
         /// </remarks>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_open_wallet(int command_handle, string name, string runtime_config, string credentials, OpenWalletResultDelegate cb);
 
         /// <summary>
@@ -216,7 +220,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="handle">wallet handle returned by sovrin_open_wallet.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_close_wallet(int command_handle, IntPtr handle, NoValueDelegate cb);
 
         /// <summary>
@@ -227,20 +231,8 @@ namespace Indy.Sdk.Dotnet
         /// <param name="credentials">Wallet credentials json</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_delete_wallet(int command_handle, string name, string credentials, NoValueDelegate cb);
-
-        /// <summary>
-        /// Sets a seq_no (the corresponding Ledger transaction unique sequence number) for the a value
-        /// in a secure wallet identified by the given string.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="wallet_key">unique string identifying the value in the wallet.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_wallet_set_seq_no_for_value(int command_handle, IntPtr wallet_handle, string wallet_key, NoValueDelegate cb);
 
         // ledger.rs
 
@@ -272,7 +264,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="request_json">Request data json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_sign_and_submit_request(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string submitter_did, string request_json, SubmitRequestResultDelegate cb);
 
         /// <summary>
@@ -283,7 +275,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="request_json">Request data json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_submit_request(int command_handle, IntPtr pool_handle, string request_json, SubmitRequestResultDelegate cb);
         
         /// <summary>
@@ -295,7 +287,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="request_json">The request to sign.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestResultDelegate cb);
 
         /// <summary>
@@ -314,7 +306,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_ddo_request(int command_handle, string submitter_did, string target_did, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -328,7 +320,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="role">Role of a user NYM record</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_nym_request(int command_handle, string submitter_did, string target_did, string verkey, string alias, string role, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -342,7 +334,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="enc">Encrypted attribute data</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_attrib_request(int command_handle, string submitter_did, string target_did, string hash, string raw, string enc, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -354,7 +346,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="data"> name (attribute name)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_attrib_request(int command_handle, string submitter_did, string target_did, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -365,7 +357,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_nym_request(int command_handle, string submitter_did, string target_did, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -376,7 +368,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="data"> name, version, type, attr_names (ip, port, keys)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_schema_request(int command_handle, string submitter_did, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -388,7 +380,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="data">name, version</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_schema_request(int command_handle, string submitter_did, string dest, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -401,7 +393,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="data">components of a key in json: N, R, S, Z</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_claim_def_txn(int command_handle, string submitter_did, int xref, string signature_type, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -414,7 +406,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="origin">issuer did</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_claim_def_txn(int command_handle, string submitter_did, int xref, string signature_type, string origin, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -426,7 +418,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="data">id of a target NYM record</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_node_request(int command_handle, string submitter_did, string target_did, string data, BuildRequestResultDelegate cb);
 
         /// <summary>
@@ -437,10 +429,10 @@ namespace Indy.Sdk.Dotnet
         /// <param name="data">seq_no of transaction in ledger</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_txn_request(int command_handle, string submitter_did, int data, BuildRequestResultDelegate cb);
 
-        // signus.rs
+        // Signus.rs
 
         /// <summary>
         /// Creates keys (signing and encryption keys) for a new
@@ -451,7 +443,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="did_json">Identity information as json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_create_and_store_my_did(int command_handle, IntPtr wallet_handle, string did_json, CreateAndStoreMyDidResultDelegate cb);
 
         /// <summary>
@@ -474,7 +466,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="identity_json">Identity information as json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_replace_keys(int command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysResultDelegate cb);
 
         /// <summary>
@@ -495,7 +487,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="identity_json">Identity information as json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_store_their_did(int command_handle, IntPtr wallet_handle, string identity_json, NoValueDelegate cb);
 
         /// <summary>
@@ -508,7 +500,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="msg_len">The length of the message array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_sign(int command_handle, IntPtr wallet_handle, string did, byte[] msg_raw, int msg_len, SignResultDelegate cb);
 
         /// <summary>
@@ -533,7 +525,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="signature_len">The length of the signature array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, byte[] msg_raw, int msg_len, byte[] signature_raw, int signature_len, VerifySignatureResultDelegate cb);
 
         /// <summary>
@@ -556,7 +548,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="msg_len">The length of the message byte array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, byte[] msg_raw, int msg_len, EncryptResultDelegate cb);
 
         /// <summary>
@@ -583,7 +575,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="nonce_len">The length of the nonce byte array.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
 
         /// <summary>
@@ -608,7 +600,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="create_non_revoc">whether to request non-revocation claim.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_create_and_store_claim_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string signature_type, bool create_non_revoc, IssuerCreateAndStoreClaimDefResultDelegate cb);
 
         /// <summary>
@@ -629,7 +621,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="max_claim_num">maximum number of claims the new registry can process.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int max_claim_num, IssuerCreateAndStoreClaimRevocRegResultDelegate cb);
 
         /// <summary>
@@ -650,7 +642,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="user_revoc_index">index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
 
         /// <summary>
@@ -673,7 +665,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="user_revoc_index">index of the user in the revocation registry</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
 
         /// <summary>
@@ -692,7 +684,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="claim_offer_json">claim offer as a json containing information about the issuer and a claim</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_store_claim_offer(int command_handle, IntPtr wallet_handle, string claim_offer_json, NoValueDelegate cb);
 
         /// <summary>
@@ -703,7 +695,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="filter_json">optional filter to get claim offers for specific Issuer, claim_def or schema only only</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_get_claim_offers(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimOffersResultDelegate cb);
 
         /// <summary>
@@ -722,7 +714,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="master_secret_name">a new master secret name</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_master_secret(int command_handle, IntPtr wallet_handle, string master_secret_name, NoValueDelegate cb);
 
         /// <summary>
@@ -736,7 +728,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="master_secret_name">the name of the master secret stored in the wallet</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_and_store_claim_req(int command_handle, IntPtr wallet_handle, string prover_did, string claim_offer_json, string claim_def_json, string master_secret_name, ProverCreateAndStoreClaimReqResultDelegate cb);
 
         /// <summary>
@@ -755,7 +747,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="claims_json">claim json</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_store_claim(int command_handle, IntPtr wallet_handle, string claims_json, NoValueDelegate cb);
 
         /// <summary>
@@ -766,7 +758,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="filter_json">filter for claims</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_get_claims(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimsResultDelegate cb);
 
         /// <summary>
@@ -785,7 +777,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="proof_request_json">proof request json</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_get_claims_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetClaimsForProofResultDelegate cb);
 
         /// <summary>
@@ -809,7 +801,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="revoc_regs_json">all revocation registry jsons participating in the proof request</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_proof(int command_handle, IntPtr wallet_handle, string proof_req_json, string requested_claims_json, string schemas_json, string master_secret_name, string claim_defs_json, string revoc_regs_json, ProverCreateProofResultDelegate cb);
 
         /// <summary>
@@ -831,7 +823,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="revoc_regs_json">all revocation registry jsons participating in the proof</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofResultDelegate cb);
 
         /// <summary>
@@ -863,7 +855,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="connection_cb">The function that will be called when the connection has been created.</param>
         /// <param name="message_cb">The function that will be called when a message is received.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_connect(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string sender_did, string receiver_did, AgentConnectionEstablishedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
 
         /// <summary>
@@ -883,7 +875,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="connection_cb">Callback that will be called after establishing of incoming connection.</param>
         /// <param name="message_cb">Callback that will be called on receiving of an incoming message.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_listen(int command_handle, string endpoint, AgentListenerCreatedDelegate listener_cb, AgentListenerConnectionEstablishedDelegate connection_cb, AgentMessageReceivedDelegate message_cb);
 
         /// <summary>
@@ -914,7 +906,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="did">DID of identity.</param>
         /// <param name="add_identity_cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_add_identity(int command_handle, IntPtr listener_handle, IntPtr pool_handle, IntPtr wallet_handle, string did, NoValueDelegate add_identity_cb);
 
         /// <summary>
@@ -926,7 +918,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="did">DID of identity.</param>
         /// <param name="rm_identity_cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_remove_identity(int command_handle, IntPtr listener_handle, IntPtr wallet_handle, string did, NoValueDelegate rm_identity_cb);
 
         /// <summary>
@@ -937,7 +929,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="message"> Message to send.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_send(int command_handle, IntPtr connection_handle, string message, NoValueDelegate cb);
 
         /// <summary>
@@ -947,7 +939,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="connection_handle">Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_close_connection(int command_handle, IntPtr connection_handle, NoValueDelegate cb);
 
         /// <summary>
@@ -957,7 +949,7 @@ namespace Indy.Sdk.Dotnet
         /// <param name="listener_handle">Listener handle returned by sovrin_agent_listen call.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport("indy.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_agent_close_listener(int command_handle, IntPtr listener_handle, NoValueDelegate cb);
     }
 }

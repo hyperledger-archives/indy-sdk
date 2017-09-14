@@ -199,8 +199,8 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
                 echo "${env_name} Test: Test python wrapper"
 
                 sh '''
-                    python3.6 -m pip install -e .
-                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.6 -m pytest
+                    python3.5 -m pip install --user -e .
+                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
             }
         }
@@ -243,16 +243,15 @@ def windowsTesting(isDebugTests) {
                             "RUST_BACKTRACE=1"
                     ]) {
                         bat "cargo test $buildType --no-run"
-                    }
 
-                    echo "Windows Test: Run tests"
-                    withEnv([
-                            "RUST_TEST_THREADS=1",
-                            "RUST_LOG=trace",
-                            "RUST_BACKTRACE=1",
-                            "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
-                    ]) {
-                        bat "cargo test $buildType"
+                        echo "Windows Test: Run tests"
+                        withEnv([
+                                "RUST_TEST_THREADS=1",
+                                "RUST_LOG=trace",
+                                "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                        ]) {
+                            bat "cargo test $buildType"
+                        }
                     }
                 }
 
@@ -426,8 +425,8 @@ def pythonWrapperPublishing(testEnv, isRelease) {
                 sh 'cp $credentialsFile ./'
                 sh "sed -i -E \"s/version='([0-9,.]+).*/version='\\1$suffix',/\" setup.py"
                 sh '''
-                    python3.6 setup.py sdist
-                    python3.6 -m twine upload dist/* --config-file .pypirc
+                    python3.5 setup.py sdist
+                    python3.5 -m twine upload dist/* --config-file .pypirc
                 '''
             }
         }

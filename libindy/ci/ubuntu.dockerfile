@@ -31,7 +31,7 @@ RUN pip3 install -U \
 	setuptools \
 	virtualenv
 
-ENV RUST_ARCHIVE=rust-1.19.0-x86_64-unknown-linux-gnu.tar.gz
+ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 RUN mkdir -p /rust
@@ -58,6 +58,11 @@ RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
 WORKDIR /home/indy
 
+USER root
+RUN pip3 install \
+    twine
+
+USER indy
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
 RUN virtualenv -p python3.5 /home/indy/test
 RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/test/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
@@ -69,21 +74,3 @@ USER indy
 RUN pip3 install \
 	/home/indy/indy-anoncreds \
 	pytest
-
-USER root
-RUN apt-get update && \
-      apt-get install -y \
-      apt-utils \
-      software-properties-common \
-      ruby-dev
-RUN add-apt-repository ppa:jonathonf/python-3.6
-RUN apt-get update && \
-      apt-get install -y \
-      python3.6 \
-      python3-pip
-RUN gem install fpm
-ADD https://bootstrap.pypa.io/ez_setup.py .
-RUN python3.6
-RUN python3.6 -m pip install twine
-
-USER indy
