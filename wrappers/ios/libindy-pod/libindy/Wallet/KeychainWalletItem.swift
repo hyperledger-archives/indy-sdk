@@ -64,8 +64,13 @@ import Foundation
             oldValues.merge(with: self.values)
             dictionary[WalletAttributes.values.rawValue] = oldValues
         }
+        else if self.values.isEmpty != false
+        {
+            dictionary[WalletAttributes.values.rawValue] = self.values
+        }
         
         return dictionary
+
     }
 }
 
@@ -246,6 +251,7 @@ extension KeychainWalletItem
             coder.encode(timeCreated, forKey: "timeCreated")
         }
     }
+    
     
     fileprivate enum WalletAttributes: String
     {

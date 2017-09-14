@@ -15,6 +15,10 @@
 
 + (IndyWalletCallbacks*) sharedInstance;
 
+//@property (strong, readwrite) NSMutableDictionary *valuesPointers;
+
+@property (strong, readwrite) NSMutableSet *valuesSet;
+
 - (void)freeString:(NSString *)string;
 - (void)retainString:(NSString**)valueString;
 
@@ -45,15 +49,15 @@ extern indy_error_t KeychainWalletSetCallback(indy_handle_t handle,
 
 extern indy_error_t KeychainWalletGetCallback(indy_handle_t handle,
                                               const char* key,
-                                              const char *const *value_ptr);
+                                              const char ** const value_ptr);
     
 extern indy_error_t KeychainWalletGetNotExpiredCallback(indy_handle_t handle,
                                                         const char* key,
-                                                        const char *const *value_ptr);
+                                                        const char ** const value_ptr);
 
 extern indy_error_t KeychainWalletListCallback(indy_handle_t handle,
                                                const char* key,
-                                               const char *const *values_json_ptr);
+                                               const char ** const values_json_ptr);
 
 extern indy_error_t KeychainWalletCloseCallback(indy_handle_t handle);
 
@@ -82,15 +86,15 @@ extern indy_error_t CustomWalletSetCallback(indy_handle_t handle,
     
 extern indy_error_t CustomWalletGetCallback(indy_handle_t handle,
                                             const char* key,
-                                            const char *const *value_ptr);
+                                            const char ** const value_ptr);
     
 extern indy_error_t CustomWalletGetNotExpiredCallback(indy_handle_t handle,
                                                       const char* key,
-                                                      const char *const *value_ptr);
+                                                      const char ** const value_ptr);
     
 extern indy_error_t CustomWalletListCallback(indy_handle_t handle,
                                              const char* key,
-                                             const char *const *values_json_ptr);
+                                             const char ** const values_json_ptr);
     
 extern indy_error_t CustomWalletCloseCallback(indy_handle_t handle);
     

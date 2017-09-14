@@ -78,8 +78,6 @@
         }
     }
     
-    NSArray *walletNames2 = [KeychainWalletItem allStoredWalletNames];
-    
     return [NSError errorFromIndyError:Success];
 }
 
@@ -159,11 +157,16 @@
         // fetch wallet item to interact with keychain for that wallet
         KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
         
-        NSString *value = [walletItem getValueForKey:key];
+        NSString *valueString = [walletItem getValueForKey:key];
         
-        if (value == nil)
+        if (valueString == nil)
         {
             return [NSError errorFromIndyError:WalletNotFoundError];
+        }
+        
+        if (value)
+        {
+            *value = valueString;
         }
     }
     
