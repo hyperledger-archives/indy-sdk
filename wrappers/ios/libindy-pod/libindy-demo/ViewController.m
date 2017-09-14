@@ -9,14 +9,6 @@
 #import "ViewController.h"
 #import <libindy/libindy.h>
 
-@interface ViewController ()
-
-
-typedef void(^WalletCompletionBlock)(NSError* error);
-
-@property (nonatomic, strong) WalletCompletionBlock walletBlock;
-
-@end
 
 @implementation ViewController
 
@@ -25,11 +17,6 @@ typedef void(^WalletCompletionBlock)(NSError* error);
     // Do any additional setup after loading the view, typically from a nib.
     
     __block NSError *err;
-    self.walletBlock = ^(NSError* error)
-    {
-        NSLog(@"inside completion");
-        err = error;
-    };
     
     NSError *ret;
     ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  @"pool1"
@@ -42,9 +29,6 @@ typedef void(^WalletCompletionBlock)(NSError* error);
                NSLog(@"inside completion");
                err = error;
            }];
-    
-    NSLog(@"out of function scape");
-
 }
 
 
