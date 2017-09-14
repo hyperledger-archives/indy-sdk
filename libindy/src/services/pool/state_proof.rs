@@ -239,7 +239,6 @@ impl Node {
     }
 }
 
-#[allow(dead_code)] //FIXME remove after usage in main code
 pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
     trace!("state_proof::verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
