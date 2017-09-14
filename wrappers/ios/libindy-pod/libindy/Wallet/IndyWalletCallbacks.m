@@ -194,7 +194,7 @@ indy_error_t IndyKeychainWalletGetCallback(indy_handle_t handle,
  
     const char * cstring = [valueString UTF8String];
     *value_ptr = cstring;
-    [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
+  //  [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
     
     return Success;
 }
@@ -223,7 +223,7 @@ indy_error_t IndyKeychainWalletGetNotExpiredCallback(indy_handle_t handle,
         return (indy_error_t)res.code;
     }
     
-    [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
+   // [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
     
     const char * cstring = [valueString UTF8String];
     *value_ptr = cstring;
@@ -255,7 +255,7 @@ indy_error_t IndyKeychainWalletListCallback(indy_handle_t handle,
         return (indy_error_t)res.code;
     }
     
-    [[IndyWalletCallbacks sharedInstance] retainString:&valuesJsonString];
+   // [[IndyWalletCallbacks sharedInstance] retainString:&valuesJsonString];
     
     const char * cstring = [valuesJsonString UTF8String];
     *values_json_ptr = cstring;
@@ -308,8 +308,8 @@ indy_error_t IndyKeychainWalletDeleteCallback(const char* name,
 
 indy_error_t IndyKeychainWalletFreeCallback(indy_handle_t handle, const char* str)
 {
-    [[IndyWalletCallbacks sharedInstance] freeString:[NSString stringWithUTF8String:str]];
-    free((void*)str);
+    ///[[IndyWalletCallbacks sharedInstance] freeString:[NSString stringWithUTF8String:str]];
+    //free((void*)str);
     return Success;
 }
 

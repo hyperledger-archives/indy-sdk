@@ -146,7 +146,7 @@
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     
-   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
