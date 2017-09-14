@@ -821,7 +821,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
@@ -837,7 +836,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;

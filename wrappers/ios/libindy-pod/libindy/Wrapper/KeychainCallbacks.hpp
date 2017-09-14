@@ -7,7 +7,7 @@
 //
 
 
-#import "KeychainWallet.h"
+#import "IndyKeychainWallet.h"
 #ifndef KeychainCallbacks_h
 #define KeychainCallbacks_h
 
@@ -28,6 +28,6 @@ indy_error_t KeychainCallbacks::createFn(const char* name, const char* config, c
     NSString *walletConfig = (config != NULL) ? [NSString stringWithUTF8String:config] : nil;
     NSString *walletCredentials = (credentials != NULL) ? [NSString stringWithUTF8String:credentials] : nil;
     
-    [[KeychainWallet sharedInstance] createWithName:walletName config:walletConfig credentials:walletCredentials];
+    [[IndyKeychainWallet sharedInstance] createWithName:walletName config:walletConfig credentials:walletCredentials];
     return Success;
 };

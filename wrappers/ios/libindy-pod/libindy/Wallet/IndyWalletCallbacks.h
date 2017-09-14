@@ -31,41 +31,41 @@
 extern "C" {
 #endif
     
-// MARK: - KeychainWallet C-callbacks
+// MARK: - IndyKeychainWallet C-callbacks
 
-extern indy_error_t KeychainWalletCreateCallback(const char* name,
+extern indy_error_t IndyKeychainWalletCreateCallback(const char* name,
                                                  const char* config,
                                                  const char* credentials);
 
-extern indy_error_t KeychainWalletOpenCallback(const char* name,
+extern indy_error_t IndyKeychainWalletOpenCallback(const char* name,
                                                const char* config,
                                                const char* runtime_config,
                                                const char* credentials,
                                                indy_handle_t* handle);
 
-extern indy_error_t KeychainWalletSetCallback(indy_handle_t handle,
+extern indy_error_t IndyKeychainWalletSetCallback(indy_handle_t handle,
                                               const char* key,
                                               const char* value);
 
-extern indy_error_t KeychainWalletGetCallback(indy_handle_t handle,
+extern indy_error_t IndyKeychainWalletGetCallback(indy_handle_t handle,
                                               const char* key,
                                               const char ** const value_ptr);
     
-extern indy_error_t KeychainWalletGetNotExpiredCallback(indy_handle_t handle,
+extern indy_error_t IndyKeychainWalletGetNotExpiredCallback(indy_handle_t handle,
                                                         const char* key,
                                                         const char ** const value_ptr);
 
-extern indy_error_t KeychainWalletListCallback(indy_handle_t handle,
+extern indy_error_t IndyKeychainWalletListCallback(indy_handle_t handle,
                                                const char* key,
                                                const char ** const values_json_ptr);
 
-extern indy_error_t KeychainWalletCloseCallback(indy_handle_t handle);
+extern indy_error_t IndyKeychainWalletCloseCallback(indy_handle_t handle);
 
-extern indy_error_t KeychainWalletDeleteCallback(const char* name,
+extern indy_error_t IndyKeychainWalletDeleteCallback(const char* name,
                                                  const char* config,
                                                  const char* credentials);
 
-extern indy_error_t KeychainWalletFreeCallback(indy_handle_t handle, const char* str);
+extern indy_error_t IndyKeychainWalletFreeCallback(indy_handle_t handle, const char* str);
     
 // MARK: - Custom Wallet c-callbacks
     

@@ -27,7 +27,7 @@
 /**
  Register Keychain Wallet type with default implementation
 */
-- (NSError *)registerKeychainWalletType:(NSString *)type
+- (NSError *)registerIndyKeychainWalletType:(NSString *)type
                      completion:(void (^)(NSError *error)) handler;
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName

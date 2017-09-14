@@ -73,7 +73,7 @@ typedef indy_error_t (*createCb)(const char*, const char*, const char*);
     return [NSError errorFromIndyError: ret];
 }
 
-- (NSError *)registerKeychainWalletType:(NSString *)type
+- (NSError *)registerIndyKeychainWalletType:(NSString *)type
                      completion:(void (^)(NSError *error)) handler
 {
     indy_error_t ret;
@@ -82,15 +82,15 @@ typedef indy_error_t (*createCb)(const char*, const char*, const char*);
     
     ret = indy_register_wallet_type(handle,
                                     [type UTF8String],
-                                    KeychainWalletCreateCallback,
-                                    KeychainWalletOpenCallback,
-                                    KeychainWalletSetCallback,
-                                    KeychainWalletGetCallback,
-                                    KeychainWalletGetNotExpiredCallback,
-                                    KeychainWalletListCallback,
-                                    KeychainWalletCloseCallback,
-                                    KeychainWalletDeleteCallback,
-                                    KeychainWalletFreeCallback,
+                                    IndyKeychainWalletCreateCallback,
+                                    IndyKeychainWalletOpenCallback,
+                                    IndyKeychainWalletSetCallback,
+                                    IndyKeychainWalletGetCallback,
+                                    IndyKeychainWalletGetNotExpiredCallback,
+                                    IndyKeychainWalletListCallback,
+                                    IndyKeychainWalletCloseCallback,
+                                    IndyKeychainWalletDeleteCallback,
+                                    IndyKeychainWalletFreeCallback,
                                     IndyWrapperCommon2PCallback);
     
     if( ret != Success )

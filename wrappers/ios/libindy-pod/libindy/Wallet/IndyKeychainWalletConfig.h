@@ -1,15 +1,15 @@
 //
-//  KeychainWalletConfig.h
+//  IndyKeychainWalletConfig.h
 //  libindy
 //
 
 #import <Foundation/Foundation.h>
 
-@interface KeychainWalletConfig: NSObject
+@interface IndyKeychainWalletConfig: NSObject
 
 @property (assign, readwrite) NSUInteger freshnessTime;
 
-+ (KeychainWalletConfig *_Nonnull) defaultConfig;
++ (IndyKeychainWalletConfig *_Nonnull) defaultConfig;
 
 - (NSString *_Nonnull)toJson;
 

@@ -5,14 +5,14 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyWalletCallbacks.h"
-#import "KeychainWallet.h"
+#import "IndyKeychainWallet.h"
 #import "indy_core.h"
 
 @interface IndyWalletCallbacks ()
 
 @property (strong, readwrite) NSRecursiveLock *globalLock;
 
-@property (strong, readwrite) Class<IndyWalletProtocol> keychainWalletImplementation;
+@property (strong, readwrite) Class<IndyWalletProtocol> IndyKeychainWalletImplementation;
 
 @property (strong, readwrite) Class<IndyWalletProtocol> customWalletImplementation;
 
@@ -37,7 +37,7 @@
         instance.valuesSet = [NSMutableSet new];
         instance.globalLock = [NSRecursiveLock new];
         
-        instance.keychainWalletImplementation = [KeychainWallet class];
+        instance.IndyKeychainWalletImplementation = [IndyKeychainWallet class];
         
     });
     
@@ -83,9 +83,9 @@
 
 @end
 
-// MARK: - C KeychainWallet callbacks
+// MARK: - C IndyKeychainWallet callbacks
 
-indy_error_t KeychainWalletCreateCallback(const char* name,
+indy_error_t IndyKeychainWalletCreateCallback(const char* name,
                                           const char* config,
                                           const char* credentials)
 {
@@ -93,7 +93,7 @@ indy_error_t KeychainWalletCreateCallback(const char* name,
     NSString *walletConfig = (config != NULL) ? [NSString stringWithUTF8String:config] : nil;
     NSString *walletCredentials = (credentials != NULL) ? [NSString stringWithUTF8String:credentials] : nil;
     
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -107,7 +107,7 @@ indy_error_t KeychainWalletCreateCallback(const char* name,
     return Success;
 }
 
-indy_error_t KeychainWalletOpenCallback(const char* name,
+indy_error_t IndyKeychainWalletOpenCallback(const char* name,
                                         const char* config,
                                         const char* runtime_config,
                                         const char* credentials,
@@ -118,7 +118,7 @@ indy_error_t KeychainWalletOpenCallback(const char* name,
     NSString *walletRuntimeConfig = (runtime_config != NULL) ? [NSString stringWithUTF8String:runtime_config] : nil;
     NSString *walletCredentials = (credentials != NULL) ? [NSString stringWithUTF8String:credentials] : nil;
     
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -144,14 +144,14 @@ indy_error_t KeychainWalletOpenCallback(const char* name,
     return Success;
 }
 
-indy_error_t KeychainWalletSetCallback(indy_handle_t handle,
+indy_error_t IndyKeychainWalletSetCallback(indy_handle_t handle,
                                        const char* key,
                                        const char* value)
 {
     NSString *xkey = (key != NULL) ? [NSString stringWithUTF8String: key] : nil;
     NSString *xvalue = (value != NULL) ? [NSString stringWithUTF8String:value] : nil;
     
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -167,13 +167,13 @@ indy_error_t KeychainWalletSetCallback(indy_handle_t handle,
     return (indy_error_t)res.code;
 }
 
-indy_error_t KeychainWalletGetCallback(indy_handle_t handle,
+indy_error_t IndyKeychainWalletGetCallback(indy_handle_t handle,
                                        const char* key,
                                        const char ** const value_ptr)
 {
     NSString *xkey = (key != NULL) ? [NSString stringWithUTF8String: key] : nil;
     
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -199,12 +199,12 @@ indy_error_t KeychainWalletGetCallback(indy_handle_t handle,
     return Success;
 }
 
-indy_error_t KeychainWalletGetNotExpiredCallback(indy_handle_t handle,
+indy_error_t IndyKeychainWalletGetNotExpiredCallback(indy_handle_t handle,
                                                  const char* key,
                                                  const char ** const value_ptr)
 {
     NSString *xkey = (key != NULL) ? [NSString stringWithUTF8String: key] : nil;
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -231,12 +231,12 @@ indy_error_t KeychainWalletGetNotExpiredCallback(indy_handle_t handle,
     return Success;
 }
 
-indy_error_t KeychainWalletListCallback(indy_handle_t handle,
+indy_error_t IndyKeychainWalletListCallback(indy_handle_t handle,
                                         const char* key,
                                         const char ** const values_json_ptr)
 {
     NSString *xkey = (key != NULL) ? [NSString stringWithUTF8String: key] : nil;
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -263,9 +263,9 @@ indy_error_t KeychainWalletListCallback(indy_handle_t handle,
     return Success;
 }
 
-indy_error_t KeychainWalletCloseCallback(indy_handle_t handle)
+indy_error_t IndyKeychainWalletCloseCallback(indy_handle_t handle)
 {
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -279,7 +279,7 @@ indy_error_t KeychainWalletCloseCallback(indy_handle_t handle)
     return (indy_error_t)res.code;
 }
 
-indy_error_t KeychainWalletDeleteCallback(const char* name,
+indy_error_t IndyKeychainWalletDeleteCallback(const char* name,
                                           const char* config,
                                           const char* credentials)
 {
@@ -288,7 +288,7 @@ indy_error_t KeychainWalletDeleteCallback(const char* name,
     NSString *xcredentials = (credentials != NULL) ? [NSString stringWithUTF8String:credentials] : nil;
 
     
-    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] keychainWalletImplementation];
+    Class<IndyWalletProtocol> implementation = [[IndyWalletCallbacks sharedInstance] IndyKeychainWalletImplementation];
     
     if (implementation == nil)
     {
@@ -306,7 +306,7 @@ indy_error_t KeychainWalletDeleteCallback(const char* name,
 }
 
 
-indy_error_t KeychainWalletFreeCallback(indy_handle_t handle, const char* str)
+indy_error_t IndyKeychainWalletFreeCallback(indy_handle_t handle, const char* str)
 {
     [[IndyWalletCallbacks sharedInstance] freeString:[NSString stringWithUTF8String:str]];
     free((void*)str);

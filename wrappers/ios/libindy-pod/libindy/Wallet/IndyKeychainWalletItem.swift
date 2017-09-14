@@ -1,5 +1,5 @@
 //
-//  KeychainWalletItem.swift
+//  IndyKeychainWalletItem.swift
 //  libindy
 //
 //  Created by Anastasia Tarasova on 04/09/2017.
@@ -8,9 +8,9 @@
 
 import Foundation
 
-@objc public class KeychainWalletItem: NSObject
+@objc public class IndyKeychainWalletItem: NSObject
 {
-    static let serviceName = "IndyKeychainWallet"
+    static let serviceName = "IndyIndyKeychainWallet"
     
     //fileprivate (set) var poolName: String?
     
@@ -31,7 +31,7 @@ import Foundation
         self.config = config
         self.credentials = credentials
         
-        self.keychain = KeychainWrapper(service: KeychainWalletItem.serviceName, account: self.name)
+        self.keychain = KeychainWrapper(service: IndyKeychainWalletItem.serviceName, account: self.name)
     }
     
     /**
@@ -76,7 +76,7 @@ import Foundation
 
 // MARK: - Public action methods
 
-extension KeychainWalletItem
+extension IndyKeychainWalletItem
 {
     public func updateInKeychain() throws
     {
@@ -106,7 +106,7 @@ extension KeychainWalletItem
     
     static public func allStoredWalletNames() -> Array<String>
     {
-        return KeychainWrapper.allKeys(forService: KeychainWalletItem.serviceName)
+        return KeychainWrapper.allKeys(forService: IndyKeychainWalletItem.serviceName)
     }
   
     public func setWalletValue(_ value: String, forKey key: String) throws
@@ -212,7 +212,7 @@ extension KeychainWalletItem
 
 // MARK: - Prepare & pass data
 
-extension KeychainWalletItem
+extension IndyKeychainWalletItem
 {
     // MARK: Utilities
     
@@ -228,7 +228,7 @@ extension KeychainWalletItem
 
 // MARK: - Structs & Enums
 
-extension KeychainWalletItem
+extension IndyKeychainWalletItem
 {
     class WalletValue: NSObject, NSCoding
     {

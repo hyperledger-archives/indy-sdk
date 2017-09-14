@@ -13,11 +13,11 @@
 		5D2A3A4F1F164BD70003FE43 /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */; };
 		5D4F3BFE1F5D3F48004CB6A4 /* IndyWalletCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */; };
 		5D4F3BFF1F5D3F48004CB6A4 /* IndyWalletCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */; };
-		5D4F3C051F5D3F8E004CB6A4 /* KeychainWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C031F5D3F8E004CB6A4 /* KeychainWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5D4F3C061F5D3F8E004CB6A4 /* KeychainWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C041F5D3F8E004CB6A4 /* KeychainWallet.m */; };
+		5D4F3C051F5D3F8E004CB6A4 /* IndyKeychainWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5D4F3C061F5D3F8E004CB6A4 /* IndyKeychainWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */; };
 		5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DADD3A11F62C27700F0BEE6 /* KeychainWalletConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD39F1F62C27700F0BEE6 /* KeychainWalletConfig.h */; };
-		5DADD3A21F62C27700F0BEE6 /* KeychainWalletConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */; };
+		5DADD3A11F62C27700F0BEE6 /* IndyKeychainWalletConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD39F1F62C27700F0BEE6 /* IndyKeychainWalletConfig.h */; };
+		5DADD3A21F62C27700F0BEE6 /* IndyKeychainWalletConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A01F62C27700F0BEE6 /* IndyKeychainWalletConfig.m */; };
 		5DADD3A51F62E7B800F0BEE6 /* IndySequenceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3A31F62E7B800F0BEE6 /* IndySequenceUtils.h */; };
 		5DADD3A61F62E7B800F0BEE6 /* IndySequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DADD3A41F62E7B800F0BEE6 /* IndySequenceUtils.m */; };
 		5DADD3C21F66733900F0BEE6 /* NSDictionary+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */; };
@@ -31,7 +31,7 @@
 		5DE5D1281F61320E000BB547 /* KeychainAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D1261F61320E000BB547 /* KeychainAccessibility.swift */; };
 		5DE5D1291F61320E000BB547 /* KeychainWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D1271F61320E000BB547 /* KeychainWrapper.swift */; };
 		5DE5D12C1F616AB7000BB547 /* KeychainError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE5D12B1F616AB7000BB547 /* KeychainError.swift */; };
-		5DE5D12F1F619674000BB547 /* KeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */; };
+		5DE5D12F1F619674000BB547 /* IndyKeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C0E1F5DA697004CB6A4 /* IndyKeychainWalletItem.swift */; };
 		5DF014D51F1615BA00076592 /* libindy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C01F1615BA00076592 /* libindy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C21F1615BA00076592 /* IndyCallbacks.h */; };
 		5DF014D91F1615BA00076592 /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DF014C61F1615BA00076592 /* IndyAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -60,12 +60,12 @@
 		5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libPods-libindy.a"; path = "Pods/../build/Debug-iphoneos/libPods-libindy.a"; sourceTree = "<group>"; };
 		5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletCallbacks.h; sourceTree = "<group>"; };
 		5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyWalletCallbacks.m; sourceTree = "<group>"; };
-		5D4F3C031F5D3F8E004CB6A4 /* KeychainWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeychainWallet.h; sourceTree = "<group>"; };
-		5D4F3C041F5D3F8E004CB6A4 /* KeychainWallet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainWallet.m; sourceTree = "<group>"; };
+		5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyKeychainWallet.h; sourceTree = "<group>"; };
+		5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyKeychainWallet.m; sourceTree = "<group>"; };
 		5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletProtocols.h; sourceTree = "<group>"; };
-		5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWalletItem.swift; sourceTree = "<group>"; };
-		5DADD39F1F62C27700F0BEE6 /* KeychainWalletConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeychainWalletConfig.h; sourceTree = "<group>"; };
-		5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainWalletConfig.m; sourceTree = "<group>"; };
+		5D4F3C0E1F5DA697004CB6A4 /* IndyKeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IndyKeychainWalletItem.swift; sourceTree = "<group>"; };
+		5DADD39F1F62C27700F0BEE6 /* IndyKeychainWalletConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyKeychainWalletConfig.h; sourceTree = "<group>"; };
+		5DADD3A01F62C27700F0BEE6 /* IndyKeychainWalletConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyKeychainWalletConfig.m; sourceTree = "<group>"; };
 		5DADD3A31F62E7B800F0BEE6 /* IndySequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySequenceUtils.h; sourceTree = "<group>"; };
 		5DADD3A41F62E7B800F0BEE6 /* IndySequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndySequenceUtils.m; sourceTree = "<group>"; };
 		5DADD3BC1F66733900F0BEE6 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
@@ -145,11 +145,11 @@
 		5D4F3BFB1F5D3F30004CB6A4 /* Keychain Wallet */ = {
 			isa = PBXGroup;
 			children = (
-				5D4F3C031F5D3F8E004CB6A4 /* KeychainWallet.h */,
-				5D4F3C041F5D3F8E004CB6A4 /* KeychainWallet.m */,
-				5DADD39F1F62C27700F0BEE6 /* KeychainWalletConfig.h */,
-				5DADD3A01F62C27700F0BEE6 /* KeychainWalletConfig.m */,
-				5D4F3C0E1F5DA697004CB6A4 /* KeychainWalletItem.swift */,
+				5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */,
+				5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */,
+				5DADD39F1F62C27700F0BEE6 /* IndyKeychainWalletConfig.h */,
+				5DADD3A01F62C27700F0BEE6 /* IndyKeychainWalletConfig.m */,
+				5D4F3C0E1F5DA697004CB6A4 /* IndyKeychainWalletItem.swift */,
 				5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */,
 				5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */,
 			);
@@ -258,10 +258,10 @@
 				5DF014D91F1615BA00076592 /* IndyAgent.h in Headers */,
 				5DF014DD1F1615BA00076592 /* IndyErrors.h in Headers */,
 				5DF014D51F1615BA00076592 /* libindy.h in Headers */,
-				5D4F3C051F5D3F8E004CB6A4 /* KeychainWallet.h in Headers */,
+				5D4F3C051F5D3F8E004CB6A4 /* IndyKeychainWallet.h in Headers */,
 				5DF014E01F1615BA00076592 /* IndyPool.h in Headers */,
 				5DF014D61F1615BA00076592 /* IndyCallbacks.h in Headers */,
-				5DADD3A11F62C27700F0BEE6 /* KeychainWalletConfig.h in Headers */,
+				5DADD3A11F62C27700F0BEE6 /* IndyKeychainWalletConfig.h in Headers */,
 				5DF014E51F1615BA00076592 /* IndyWallet.h in Headers */,
 				5DADD3C41F66733900F0BEE6 /* NSError+IndyError.h in Headers */,
 				5DADD3A51F62E7B800F0BEE6 /* IndySequenceUtils.h in Headers */,
@@ -377,10 +377,10 @@
 				5DADD3C71F66733900F0BEE6 /* NSString+JSON.m in Sources */,
 				5DF014DF1F1615BA00076592 /* IndyLedger.mm in Sources */,
 				5DF014DC1F1615BA00076592 /* IndyAnoncreds.mm in Sources */,
-				5D4F3C061F5D3F8E004CB6A4 /* KeychainWallet.m in Sources */,
+				5D4F3C061F5D3F8E004CB6A4 /* IndyKeychainWallet.m in Sources */,
 				5DADD3CF1F667E6900F0BEE6 /* StringExtensions.swift in Sources */,
 				5DE5D1291F61320E000BB547 /* KeychainWrapper.swift in Sources */,
-				5DE5D12F1F619674000BB547 /* KeychainWalletItem.swift in Sources */,
+				5DE5D12F1F619674000BB547 /* IndyKeychainWalletItem.swift in Sources */,
 				5DADD3D51F66886F00F0BEE6 /* DictionaryExtension.swift in Sources */,
 				5DF014E11F1615BA00076592 /* IndyPool.mm in Sources */,
 				5D13F6C31F161CA50024DFB3 /* IndyCallbacks.mm in Sources */,
@@ -390,7 +390,7 @@
 				5DE5D12C1F616AB7000BB547 /* KeychainError.swift in Sources */,
 				5DE5D1281F61320E000BB547 /* KeychainAccessibility.swift in Sources */,
 				5DADD3C51F66733900F0BEE6 /* NSError+IndyError.m in Sources */,
-				5DADD3A21F62C27700F0BEE6 /* KeychainWalletConfig.m in Sources */,
+				5DADD3A21F62C27700F0BEE6 /* IndyKeychainWalletConfig.m in Sources */,
 				5DADD3A61F62E7B800F0BEE6 /* IndySequenceUtils.m in Sources */,
 				5D4F3BFF1F5D3F48004CB6A4 /* IndyWalletCallbacks.m in Sources */,
 				5DF014DA1F1615BA00076592 /* IndyAgent.mm in Sources */,

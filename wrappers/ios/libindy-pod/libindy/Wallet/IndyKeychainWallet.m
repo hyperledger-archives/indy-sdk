@@ -1,12 +1,12 @@
 //
-//  KeychainWallet.m
+//  IndyKeychainWallet.m
 //  libindy-demo
 //
 
 #import "IndyWalletCallbacks.h"
-#import "KeychainWallet.h"
+#import "IndyKeychainWallet.h"
 #import "NSError+IndyError.h"
-#import "KeychainWalletConfig.h"
+#import "IndyKeychainWalletConfig.h"
 #import "IndySequenceUtils.h"
 #import "NSString+JSON.h"
 #import "libindy-Swift.h"
@@ -14,7 +14,7 @@
 
 // MARK: - Indy Keychain Wallet
 
-@interface KeychainWallet ()
+@interface IndyKeychainWallet ()
 
 
 // Properties for singleton
@@ -25,15 +25,15 @@
 @end
 
 
-@implementation KeychainWallet
+@implementation IndyKeychainWallet
 
-+ (KeychainWallet *)sharedInstance
++ (IndyKeychainWallet *)sharedInstance
 {
-    static KeychainWallet *instance = nil;
+    static IndyKeychainWallet *instance = nil;
     static dispatch_once_t dispatch_once_block;
     
     dispatch_once(&dispatch_once_block, ^ {
-        instance = [KeychainWallet new];
+        instance = [IndyKeychainWallet new];
         instance.handlesDictionary = [NSMutableDictionary new];
     });
     
@@ -57,7 +57,7 @@
     @synchronized (self.globalLock)
     {
         // 1. Fetch all stored wallet names from keychain
-        NSArray *walletNames = [KeychainWalletItem allStoredWalletNames];
+        NSArray *walletNames = [IndyKeychainWalletItem allStoredWalletNames];
         
         if ([walletNames containsObject:name])
         {
@@ -65,7 +65,7 @@
         }
         
         // Create walletItem for wallet to interact with keychain.
-        KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name
+        IndyKeychainWalletItem *walletItem = [[IndyKeychainWalletItem alloc] initWithName:name
                                                                            config:config
                                                                       credentials:credentials];
         
@@ -89,25 +89,25 @@
 {
     // 1. Process runtime config
     
-    KeychainWalletConfig *parcedRuntimeConfig;;
+    IndyKeychainWalletConfig *parcedRuntimeConfig;;
     if ([runtimeConfig isEqualToString:config])
     {
-        parcedRuntimeConfig = [[KeychainWalletConfig alloc] initWithJson:[config toDictionary]];
+        parcedRuntimeConfig = [[IndyKeychainWalletConfig alloc] initWithJson:[config toDictionary]];
     }
     else
     {
-        parcedRuntimeConfig = [KeychainWalletConfig defaultConfig];
+        parcedRuntimeConfig = [IndyKeychainWalletConfig defaultConfig];
     }
     
-    NSArray *walletNames = [KeychainWalletItem allStoredWalletNames];
+    NSArray *walletNames = [IndyKeychainWalletItem allStoredWalletNames];
     if ([walletNames containsObject:name] == false)
     {
         return [NSError errorFromIndyError:CommonInvalidState];
     }
     
-    // 2. create & add handle to dictionary. create KeychainWalletItem for this handle
+    // 2. create & add handle to dictionary. create IndyKeychainWalletItem for this handle
     
-    KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name config:config credentials:credentials];
+    IndyKeychainWalletItem *walletItem = [[IndyKeychainWalletItem alloc] initWithName:name config:config credentials:credentials];
     walletItem.freshnessTime = parcedRuntimeConfig.freshnessTime;
     
     IndyHandle xhandle = (IndyHandle)[[IndySequenceUtils sharedInstance] getNextId];
@@ -131,7 +131,7 @@
         }
         
         // fetch wallet item to interact with keychain for that wallet
-        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
+        IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
 
         NSError *res;
         [walletItem setWalletValue:value forKey:key error:&res];
@@ -155,7 +155,7 @@
         }
         
         // fetch wallet item to interact with keychain for that wallet
-        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
+        IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
         
         NSString *valueString = [walletItem getValueForKey:key];
         
@@ -183,7 +183,7 @@
         }
         
         // fetch wallet item to interact with keychain for that wallet
-        KeychainWalletItem *walletItem = self.handlesDictionary[@(walletHandle)];
+        IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(walletHandle)];
         
         NSString *valueString = [walletItem getNotExpiredValueForKey:key];
         
@@ -210,7 +210,7 @@
             return [NSError errorFromIndyError:CommonInvalidState];
         }
         
-        KeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
+        IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
         
         NSString *valuesJsonList = [walletItem listValuesJsonForKeyPrefix:key];
         
@@ -240,7 +240,7 @@
 
 - (NSError *)deleteWalletWithName:(NSString *)name config:(NSString *)config credentials:(NSString *)credentials
 {
-    NSArray *walletNames = [KeychainWalletItem allStoredWalletNames];
+    NSArray *walletNames = [IndyKeychainWalletItem allStoredWalletNames];
     
     if ([walletNames containsObject:name])
     {
@@ -256,7 +256,7 @@
 
 + (NSString *)walletTypeName
 {
-    return @"keychainWallet";
+    return @"IndyKeychainWallet";
 }
 
 - (void) cleanup
@@ -267,11 +267,11 @@
     @synchronized (self.globalLock)
     {
         // 1. Fetch all stored wallet names from keychain
-        NSArray *walletNames = [KeychainWalletItem allStoredWalletNames];
+        NSArray *walletNames = [IndyKeychainWalletItem allStoredWalletNames];
         
         for (NSString *name in walletNames)
         {
-            KeychainWalletItem *walletItem = [[KeychainWalletItem alloc] initWithName:name
+            IndyKeychainWalletItem *walletItem = [[IndyKeychainWalletItem alloc] initWithName:name
                                                                                config:nil
                                                                           credentials:nil];
             [walletItem deleteFromKeychainAndReturnError:nil];

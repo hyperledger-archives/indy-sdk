@@ -1,27 +1,27 @@
 //
-//  KeychainWalletConfig.m
+//  IndyKeychainWalletConfig.m
 //  libindy
 //
 
-#import "KeychainWalletConfig.h"
+#import "IndyKeychainWalletConfig.h"
 
-@interface KeychainWalletConfig()
+@interface IndyKeychainWalletConfig()
 
 + (NSUInteger)defaultFreshnessTime;
 
 @end
 
 
-@implementation KeychainWalletConfig
+@implementation IndyKeychainWalletConfig
 
 + (NSUInteger)defaultFreshnessTime
 {
     return 1000;
 }
 
-+ (KeychainWalletConfig *)defaultConfig
++ (IndyKeychainWalletConfig *)defaultConfig
 {
-    return [[KeychainWalletConfig alloc] initWithFreshnessTime:[KeychainWalletConfig defaultFreshnessTime]];
+    return [[IndyKeychainWalletConfig alloc] initWithFreshnessTime:[IndyKeychainWalletConfig defaultFreshnessTime]];
 }
 
 - (instancetype)initWithJson:(NSDictionary* _Nonnull)json
@@ -36,7 +36,7 @@
         }
         else
         {
-            self.freshnessTime = [KeychainWalletConfig defaultFreshnessTime];
+            self.freshnessTime = [IndyKeychainWalletConfig defaultFreshnessTime];
         }
     }
     
