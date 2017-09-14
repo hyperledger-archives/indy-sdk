@@ -20,7 +20,6 @@ use self::types::{
     GetDdoOperation,
     NodeOperation,
     NodeOperationData,
-    Role,
     GetTxnOperation
 };
 use errors::common::CommonError;
@@ -47,21 +46,24 @@ impl LedgerService {
         let req_id = LedgerService::get_req_id();
 
         let role = match role {
-            Some(r) =>
-                match r.clone() {
-                    "STEWARD" => Some(Role::Steward as i32),
-                    "TRUSTEE" => Some(Role::Trustee as i32),
-                    "TRUST_ANCHOR" => Some(Role::TrustAnchor as i32),
-                    "TGB" => Some(Role::TGB as i32),
+            Some(r) => {
+                let r = match r {
+                    "STEWARD" => constants::STEWARD,
+                    "TRUSTEE" => constants::TRUSTEE,
+                    "TRUST_ANCHOR" => constants::TRUST_ANCHOR,
+                    "TGB" => constants::TGB,
+                    "" => constants::ROLE_REMOVE,
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
-                },
+                };
+                Some(r)
+            }
             _ => None
         };
 
         let operation = NymOperation::new(dest.to_string(),
-                                          verkey.as_ref().map(|s| s.to_string()),
-                                          alias.as_ref().map(|s| s.to_string()),
-                                          role.as_ref().map(|s| s.to_string()));
+                                          verkey.map(String::from),
+                                          alias.map(String::from),
+                                          role.map(String::from));
         let request = Request::new(req_id,
                                    identifier.to_string(),
                                    operation);
@@ -104,7 +106,7 @@ impl LedgerService {
         Base58::decode(&dest)?;
 
         if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")))
+            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
         }
         let req_id = LedgerService::get_req_id();
         let operation = AttribOperation::new(dest.to_string(),
@@ -247,6 +249,18 @@ mod tests {
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
         let nym_request = nym_request.unwrap();
+        assert!(nym_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_nym_request_works_for_empty_role() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":""}"#;
+
+        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
     }
 
