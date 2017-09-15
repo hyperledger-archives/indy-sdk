@@ -15,17 +15,20 @@ namespace Hyperledger.Indy.Samples
     {
         public static async Task Execute()
         {
+            var issuerWalletName = "issuerWallet";
+            var proverWalletName = "proverWallet";
+
             //1. Create and Open Pool
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
+            await PoolUtils.CreatePoolLedgerConfig();
+            var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}");
 
             //2. Issuer Create and Open Wallet
-            await Wallet.CreateWalletAsync(poolName, "issuerWallet", "default", null, null);
-            var issuerWallet = await Wallet.OpenWalletAsync("issuerWallet", null, null);
+            await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, issuerWalletName, "default", null, null);
+            var issuerWallet = await Wallet.OpenWalletAsync(issuerWalletName, null, null);
 
             //3. Prover Create and Open Wallet
-            await Wallet.CreateWalletAsync(poolName, "proverWallet", "default", null, null);
-            var proverWallet = await Wallet.OpenWalletAsync("proverWallet", null, null);
+            await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, proverWalletName, "default", null, null);
+            var proverWallet = await Wallet.OpenWalletAsync(proverWalletName, null, null);
 
             //4. Issuer create ClaimDef
             var schemaJson = "{\n" +
@@ -120,7 +123,7 @@ namespace Hyperledger.Indy.Samples
             var proof = JObject.Parse(proofJson);
 
             //13. Verifier verify Proof
-            Debug.Assert(string.Equals("Alex", proof["requested_proof"]["revealed_attrs"]["attr1_uuid"][1]));
+            Debug.Assert(string.Equals("Alex", proof["requested_proof"]["revealed_attrs"]["attr1_uuid"][1].ToString()));
             Debug.Assert(proof["requested_proof"]["unrevealed_attrs"].Value<string>("attr2_uuid") != null);
             Debug.Assert(string.Equals(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("self1")));
 
@@ -129,17 +132,17 @@ namespace Hyperledger.Indy.Samples
 
             //14. Close and Delete issuer wallet
             await issuerWallet.CloseAsync();
-            await Wallet.DeleteWalletAsync("issuerWallet", null);
+            await Wallet.DeleteWalletAsync(issuerWalletName, null);
 
             //15. Close and Delete prover wallet
             await proverWallet.CloseAsync();
-            await Wallet.DeleteWalletAsync("proverWallet", null);
+            await Wallet.DeleteWalletAsync(proverWalletName, null);
 
             //16. Close pool
             await pool.CloseAsync();
 
             //17. Delete Pool ledger config
-            await Pool.DeletePoolLedgerConfigAsync(poolName);
+            await Pool.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
 
             Console.WriteLine("Anoncreds sample -> completed");
         }

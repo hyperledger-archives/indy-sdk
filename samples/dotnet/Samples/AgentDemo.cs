@@ -25,15 +25,15 @@ namespace Hyperledger.Indy.Samples
             var trusteeSeed = "000000000000000000000000Trustee1";
 
             //1. Create and Open Pool
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
-            var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
+            await PoolUtils.CreatePoolLedgerConfig();
+            var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}");
 
             //2. Create and Open Listener Wallet
-            await Wallet.CreateWalletAsync(poolName, listenerWalletName, "default", null, null);
+            await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, listenerWalletName, "default", null, null);
             var listenerWallet = await Wallet.OpenWalletAsync(listenerWalletName, null, null);
 
             //3. Create and Open Trustee Wallet
-            await Wallet.CreateWalletAsync(poolName, trusteeWalletName, "default", null, null);
+            await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, trusteeWalletName, "default", null, null);
             var trusteeWallet = await Wallet.OpenWalletAsync(trusteeWalletName, null, null);
             var senderWallet = trusteeWallet;
 
@@ -95,7 +95,7 @@ namespace Hyperledger.Indy.Samples
             await pool.CloseAsync();
 
             // 17. Delete Pool ledger config
-            await Pool.DeletePoolLedgerConfigAsync(poolName);
+            await Pool.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
 
             Console.WriteLine("Agent sample -> completed");
         }

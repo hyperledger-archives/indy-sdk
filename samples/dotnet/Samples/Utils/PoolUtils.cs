@@ -3,12 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples.Utils
 {
     static class PoolUtils
     {
-        public static string DEFAULT_POOL_NAME = "default_pool";
+        public const string DEFAULT_POOL_NAME = "default_pool";
 
         public static string CreateGenesisTxnFile(string filename)
         {
@@ -35,15 +36,21 @@ namespace Hyperledger.Indy.Samples.Utils
             return file;
         }
 
-        public static string CreatePoolLedgerConfig()
+        public static async Task CreatePoolLedgerConfig()
         {
             var genesisTxnFile = CreateGenesisTxnFile("temp.txn");
             var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
             var createPoolLedgerConfig = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
-            Pool.CreatePoolLedgerConfigAsync(DEFAULT_POOL_NAME, createPoolLedgerConfig).Wait();
-
-            return DEFAULT_POOL_NAME;
+            try
+            {
+                await Pool.CreatePoolLedgerConfigAsync(DEFAULT_POOL_NAME, createPoolLedgerConfig);
+            }
+            catch (IndyException e)
+            {
+                if (e.ErrorCode != ErrorCode.PoolLedgerConfigAlreadyExistsError)
+                    throw;
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Indy.PoolApi;
 using System;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples
 {
@@ -7,15 +8,18 @@ namespace Hyperledger.Indy.Samples
     {
         static void Main(string[] args)
         {
-            Pool.DeletePoolLedgerConfigAsync("dummy").Wait();
-
-            AgentDemo.Demo().Wait();
-            AnonCredsDemo.Execute().Wait();
-            LedgerDemo.Execute().Wait();
-            SignusDemo.Execute().Wait();
+            ExecuteDemos().Wait();
 
             Console.WriteLine("Press any key to continue...");
             Console.ReadKey(true);
+        }
+
+        static async Task ExecuteDemos()
+        {
+            await AgentDemo.Demo();
+            await AnonCredsDemo.Execute();
+            await LedgerDemo.Execute();
+            await SignusDemo.Execute();
         }
     }
 }

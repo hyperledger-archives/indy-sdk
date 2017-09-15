@@ -23,16 +23,15 @@ namespace Hyperledger.Indy.Samples
             var trusteeSeed = "000000000000000000000000Trustee1";
 
             // 1. Create ledger config from genesis txn file
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
-
-            var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
+            await PoolUtils.CreatePoolLedgerConfig();
+            var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}");
 
             // 2. Create and Open My Wallet
-            await Wallet.CreateWalletAsync(poolName, myWalletName, "default", null, null);
+            await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, myWalletName, "default", null, null);
             var myWallet = await Wallet.OpenWalletAsync(myWalletName, null, null);
 
             // 3. Create and Open Trustee Wallet
-            await Wallet.CreateWalletAsync(poolName, theirWalletName, "default", null, null);
+            await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, theirWalletName, "default", null, null);
             var trusteeWallet = await Wallet.OpenWalletAsync(theirWalletName, null, null);
 
             // 4. Create My Did
@@ -69,7 +68,7 @@ namespace Hyperledger.Indy.Samples
             await pool.CloseAsync();
 
             // 11. Delete Pool ledger config
-            await Pool.DeletePoolLedgerConfigAsync(poolName);
+            await Pool.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
 
             Console.WriteLine("Ledger sample -> completed");
         }
