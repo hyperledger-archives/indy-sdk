@@ -180,7 +180,7 @@ extension IndyKeychainWalletItem
         return valueItem.value
     }
     
-    public func listValuesJson(forKeyPrefix prefix: String) -> String
+    public func listValuesJson(forKeyPrefix prefix: String) -> [String:Any]
     {
         var valuesJson = [String: Any]()
         
@@ -190,12 +190,12 @@ extension IndyKeychainWalletItem
         }
         catch
         {
-            return valuesJson.toString() ?? String.emptyJson
+            return valuesJson//.toString() ?? String.emptyJson
         }
         
         guard let valuesDictionary = self.resultData[WalletAttributes.values.rawValue] as? [String: Any] else
         {
-            return valuesJson.toString() ?? String.emptyJson
+            return valuesJson//.toString() ?? String.emptyJson
         }
         
         for (key, value) in valuesDictionary
@@ -206,7 +206,7 @@ extension IndyKeychainWalletItem
             }
         }
         
-        return valuesJson.toString() ?? String.emptyJson
+        return valuesJson///.toString() ?? String.emptyJson
     }
 }
 

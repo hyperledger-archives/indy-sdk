@@ -17,7 +17,7 @@
 
 //@property (strong, readwrite) NSMutableDictionary *valuesPointers;
 
-@property (strong, readwrite) NSMutableSet *valuesSet;
+//@property (strong, readwrite) NSMutableSet *valuesSet;
 
 - (void)freeString:(NSString *)string;
 - (void)retainString:(NSString**)valueString;

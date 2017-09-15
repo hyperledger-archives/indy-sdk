@@ -32,12 +32,12 @@
 
 +(NSTimeInterval) defaultTimeout
 {
-    return  10;
+    return  135;//10;
 }
 
 +(NSTimeInterval) shortTimeout
 {
-    return  5;
+    return  115;//5;
 }
 
 +(NSTimeInterval) longTimeout

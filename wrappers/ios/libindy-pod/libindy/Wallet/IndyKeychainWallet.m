@@ -9,6 +9,7 @@
 #import "IndyKeychainWalletConfig.h"
 #import "IndySequenceUtils.h"
 #import "NSString+JSON.h"
+#import "NSDictionary+JSON.h"
 #import "libindy-Swift.h"
 
 
@@ -212,7 +213,9 @@
         
         IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
         
-        NSString *valuesJsonList = [walletItem listValuesJsonForKeyPrefix:key];
+        NSDictionary *valuesJsonListDict = [walletItem listValuesJsonForKeyPrefix:key];
+        
+        NSString *valuesJsonList = [valuesJsonListDict toString];
         
         if (valuesJson)
         {

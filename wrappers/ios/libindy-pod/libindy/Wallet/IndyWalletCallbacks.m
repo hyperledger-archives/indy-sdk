@@ -34,7 +34,6 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [IndyWalletCallbacks new];
-        instance.valuesSet = [NSMutableSet new];
         instance.globalLock = [NSRecursiveLock new];
         
         instance.IndyKeychainWalletImplementation = [IndyKeychainWallet class];
@@ -47,23 +46,18 @@
 /**
  Remove refecence to NSString with pointer
  */
-- (void)freeString:(NSString *)string
-{
-    [self.valuesSet removeObject:string];
-    //[self.valuesPointers removeObjectForKey:pointer];
-}
-
-- (void)retainString:(NSString *__autoreleasing *)valueString
-{
-    @synchronized (self.globalLock)
-    {
-        //const char *const * valuePointer = (const char *const *)[*valueString UTF8String];
-        //NSValue *value = [NSValue valueWithPointer:valuePointer];
-        //self.valuesPointers[value] = [*valueString copy];
-        
-        [self.valuesSet addObject:*valueString];
-    }
-}
+//- (void)freeString:(NSString *)string
+//{
+//    [self.valuesSet removeObject:string];
+//}
+//
+//- (void)retainString:(NSString *__autoreleasing *)valueString
+//{
+//    @synchronized (self.globalLock)
+//    {
+//        [self.valuesSet addObject:*valueString];
+//    }
+//}
 
 - (BOOL)setupCustomWalletImplementation:(Class<IndyWalletProtocol>)implementation
 {
@@ -194,7 +188,6 @@ indy_error_t IndyKeychainWalletGetCallback(indy_handle_t handle,
  
     const char * cstring = [valueString UTF8String];
     *value_ptr = cstring;
-  //  [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
     
     return Success;
 }
@@ -222,8 +215,6 @@ indy_error_t IndyKeychainWalletGetNotExpiredCallback(indy_handle_t handle,
     {
         return (indy_error_t)res.code;
     }
-    
-   // [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
     
     const char * cstring = [valueString UTF8String];
     *value_ptr = cstring;
@@ -254,8 +245,6 @@ indy_error_t IndyKeychainWalletListCallback(indy_handle_t handle,
     {
         return (indy_error_t)res.code;
     }
-    
-   // [[IndyWalletCallbacks sharedInstance] retainString:&valuesJsonString];
     
     const char * cstring = [valuesJsonString UTF8String];
     *values_json_ptr = cstring;
@@ -305,11 +294,8 @@ indy_error_t IndyKeychainWalletDeleteCallback(const char* name,
 
 }
 
-
 indy_error_t IndyKeychainWalletFreeCallback(indy_handle_t handle, const char* str)
 {
-    ///[[IndyWalletCallbacks sharedInstance] freeString:[NSString stringWithUTF8String:str]];
-    //free((void*)str);
     return Success;
 }
 
@@ -426,8 +412,6 @@ indy_error_t CustomWalletGetCallback(indy_handle_t handle,
     
     *value_ptr = cstring;
     
-    //[[IndyWalletCallbacks sharedInstance] retainString:&valueString];
-    
     return Success;
 }
 
@@ -454,8 +438,6 @@ indy_error_t CustomWalletGetNotExpiredCallback(indy_handle_t handle,
     {
         return (indy_error_t)res.code;
     }
-    
-    [[IndyWalletCallbacks sharedInstance] retainString:&valueString];
     
     const char * cstring = [valueString UTF8String];
     *value_ptr = cstring;
@@ -486,8 +468,6 @@ indy_error_t CustomWalletListCallback(indy_handle_t handle,
     {
         return (indy_error_t)res.code;
     }
-    
-    [[IndyWalletCallbacks sharedInstance] retainString:&valuesJsonString];
     
     const char * cstring = [valuesJsonString UTF8String];
     *values_json_ptr = cstring;
@@ -540,8 +520,6 @@ indy_error_t CustomWalletDeleteCallback(const char* name,
 
 indy_error_t CustomWalletFreeCallback(indy_handle_t handle, const char* str)
 {
-    //[[IndyWalletCallbacks sharedInstance] freeString:[NSString stringWithUTF8String:str]];
-    //free(&str);
     return Success;
 }
 
