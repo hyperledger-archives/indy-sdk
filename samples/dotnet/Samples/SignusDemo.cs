@@ -45,13 +45,13 @@ namespace Hyperledger.Indy.Samples
 
             // 7. Their sign message
             var msgBytes = Encoding.UTF8.GetBytes("{\n" +
-                    "        \"reqId\":1495034346617224651,\n" +
-                    "        \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-                    "        \"operation\":{\n" +
-                    "            \"type\":\"1\",\n" +
-                    "            \"dest\":\"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB\"\n" +
-                    "        }\n" +
-                    "    }");
+                    "   \"reqId\":1495034346617224651,\n" +
+                    "   \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
+                    "   \"operation\":{\n" +
+                    "       \"type\":\"1\",\n" +
+                    "       \"dest\":\"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB\"\n" +
+                    "   }\n" +
+                    "}");
 
             var signatureBytes = await Signus.SignAsync(theirWallet, theirDid, msgBytes);
 

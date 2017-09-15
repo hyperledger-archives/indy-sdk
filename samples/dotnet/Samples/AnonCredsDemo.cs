@@ -32,13 +32,13 @@ namespace Hyperledger.Indy.Samples
 
             //4. Issuer create ClaimDef
             var schemaJson = "{\n" +
-                    "                    \"seqNo\":1,\n" +
-                    "                    \"data\": {\n" +
-                    "                        \"name\":\"gvt\",\n" +
-                    "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
-                    "                    }\n" +
-                    "                }";
+                    "   \"seqNo\":1,\n" +
+                    "   \"data\": {\n" +
+                    "       \"name\":\"gvt\",\n" +
+                    "       \"version\":\"1.0\",\n" +
+                    "       \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                    "   }\n" +
+                    "}";
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 
             var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(issuerWallet, issuerDid, schemaJson, null, false);
@@ -68,11 +68,11 @@ namespace Hyperledger.Indy.Samples
 
             //9. Issuer create Claim
             var claimAttributesJson = "{\n" +
-                    "               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-                    "               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-                    "               \"height\":[\"175\",\"175\"],\n" +
-                    "               \"age\":[\"28\",\"28\"]\n" +
-                    "        }";
+                    "   \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
+                    "   \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
+                    "   \"height\":[\"175\",\"175\"],\n" +
+                    "   \"age\":[\"28\",\"28\"]\n" +
+                    "}";
 
             var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerWallet, claimReq, claimAttributesJson, -1);
             var claimJson = createClaimResult.ClaimJson;
@@ -82,13 +82,13 @@ namespace Hyperledger.Indy.Samples
 
             //11. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
-                    "                          \"nonce\":\"123432421212\",\n" +
-                    "                          \"name\":\"proof_req_1\",\n" +
-                    "                          \"version\":\"0.1\",\n" +
-                    "                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
-                    "                                                \"attr2_uuid\":{\"schema_seq_no\":1,\"name\":\"sex\"}},\n" +
-                    "                          \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
-                    "                  }";
+                    "   \"nonce\":\"123432421212\",\n" +
+                    "   \"name\":\"proof_req_1\",\n" +
+                    "   \"version\":\"0.1\",\n" +
+                    "   \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
+                    "       \"attr2_uuid\":{\"schema_seq_no\":1,\"name\":\"sex\"}},\n" +
+                    "   \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                    "   }";
 
             var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(proverWallet, proofRequestJson);
 
@@ -106,11 +106,11 @@ namespace Hyperledger.Indy.Samples
             //12. Prover create Proof
             var selfAttestedValue = "yes";
             var requestedClaimsJson = string.Format("{{\n" +
-                    "                                          \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
-                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true],\n" +
-                    "                                                               \"attr2_uuid\":[\"{2}\", false]}},\n" +
-                    "                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{3}\"}}\n" +
-                    "                                        }}", selfAttestedValue, claimUuid, claimUuid, claimUuid);
+                    "   \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
+                    "   \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true],\n" +
+                    "   \"attr2_uuid\":[\"{2}\", false]}},\n" +
+                    "   \"requested_predicates\":{{\"predicate1_uuid\":\"{3}\"}}\n" +
+                    "}}", selfAttestedValue, claimUuid, claimUuid, claimUuid);
 
             var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schemaJson);
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, claimDef);
