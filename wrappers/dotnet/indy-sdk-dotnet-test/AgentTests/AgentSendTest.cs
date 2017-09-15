@@ -24,17 +24,17 @@ namespace Hyperledger.Indy.Test.AgentTests
 
             var clientConnection = await AgentConnection.ConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did);
 
-            var connectionEvent = await listener.WaitForConnection();
+            var connectionEvent = await listener.WaitForConnectionAsync();
             var serverConnection = connectionEvent.Connection;
 
-            var waitListenerConnectionTask = listener.WaitForConnection(); //Start waiting for additional connections - we'll never get one in this test, however.
+            var waitListenerConnectionTask = listener.WaitForConnectionAsync(); //Start waiting for additional connections - we'll never get one in this test, however.
 
             var clientToServerMessage = "msg_from_client";
             var serverToClientMessage = "msg_from_server";                             
 
             await clientConnection.SendAsync(clientToServerMessage);
 
-            var waitServerMessageTask = serverConnection.WaitForMessage();
+            var waitServerMessageTask = serverConnection.WaitForMessageAsync();
 
             var completedTask = await Task.WhenAny(waitListenerConnectionTask, waitServerMessageTask); //Wait for either an additional connection or message and proceed when one has arrived.
 
@@ -46,7 +46,7 @@ namespace Hyperledger.Indy.Test.AgentTests
 
             await serverConnection.SendAsync(serverToClientMessage);
 
-            var clientMessageEvent = await clientConnection.WaitForMessage();
+            var clientMessageEvent = await clientConnection.WaitForMessageAsync();
 
             Assert.AreEqual(serverToClientMessage, clientMessageEvent.Message);
         }
