@@ -308,7 +308,7 @@ impl TransactionHandler {
                 Some(super::ledger::constants::GET_SCHEMA) => {
                     if let (Some(name), Some(ver)) = (json_msg["data"]["name"].as_str(),
                                                       json_msg["data"]["version"].as_str()) {
-                        format!(":\x02:{}{}", name, ver)
+                        format!(":\x02:{}:{}", name, ver)
                     } else {
                         return None;
                     }
