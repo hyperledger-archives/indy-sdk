@@ -274,13 +274,11 @@ impl TransactionHandler {
             let mut value = json_msg.get("data").map(Clone::clone);
             let key_suffix: String = match json_msg["type"].as_str() {
                 Some(super::ledger::constants::GET_ATTR) => {
-                    value = if let Some(data) = json_msg.get("data") {
+                    value = json_msg.get("data").map(|data| {
                         let mut hasher = sha2::Sha256::default();
                         hasher.process(serde_json::to_string(data).unwrap().as_bytes());
-                        Some(serde_json::Value::String(hasher.fixed_result().to_hex()))
-                    } else {
-                        None
-                    };
+                        serde_json::Value::String(hasher.fixed_result().to_hex())
+                    });
                     if let Some(attr_name) = json_msg["raw"].as_str()
                         .or(json_msg["enc"].as_str())
                         .or(json_msg["hash"].as_str()) {
