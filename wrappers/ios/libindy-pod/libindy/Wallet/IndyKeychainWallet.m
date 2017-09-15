@@ -213,9 +213,10 @@
         
         IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
         
-        NSDictionary *valuesJsonListDict = [walletItem listValuesJsonForKeyPrefix:key];
+       // NSDictionary *valuesJsonListDict = [walletItem listValuesJsonForKeyPrefix:key];
         
-        NSString *valuesJsonList = [valuesJsonListDict toString];
+        NSString *valuesJsonList = [walletItem listValuesJsonForKeyPrefix:key];
+
         
         if (valuesJson)
         {
@@ -250,16 +251,6 @@
         return [NSError errorFromIndyError:WalletAlreadyExistsError];
     }
     return nil;
-}
-
-- (NSError *)free:(IndyHandle)handle str:(NSString *)str
-{
-    return [NSError errorFromIndyError:Success];
-}
-
-+ (NSString *)walletTypeName
-{
-    return @"IndyKeychainWallet";
 }
 
 - (void) cleanup

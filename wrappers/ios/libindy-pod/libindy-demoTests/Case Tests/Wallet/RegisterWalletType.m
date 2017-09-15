@@ -35,7 +35,7 @@
 }
 
 
-- (void)testAgentConnectWorksForExpiredKeyInKeychainWallet
+- (void)testKeychainWalletForAgentConnectWorksForExpiredKey
 {
     [TestUtils cleanupStorage];
    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];

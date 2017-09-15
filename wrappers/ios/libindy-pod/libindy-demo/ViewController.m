@@ -15,20 +15,6 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    
-    __block NSError *err;
-    
-    NSError *ret;
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  @"pool1"
-                                                           name:  @"wallet1"
-                                                          xType:  @"default"
-                                                         config:  nil
-                                                    credentials:  nil
-                                                     completion:  ^(NSError* error)
-           {
-               NSLog(@"inside completion");
-               err = error;
-           }];
 }
 
 

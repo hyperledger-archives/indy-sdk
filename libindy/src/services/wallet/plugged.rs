@@ -146,7 +146,7 @@ impl Wallet for PluggedWallet {
             return Err(WalletError::PluggedWallerError(err));
         }
 
-        let result = PluggedWalletJSONValues::from_json(values_json.as_str())?
+        let result = PluggedWalletJSONValues::from_json(values_json.as_str()).map_err(map_err_trace!())?
             .values
             .iter()
             .map(|value| (value.key.clone(), value.value.clone()))
@@ -654,6 +654,7 @@ mod tests {
         wallet.set("key1::subkey2", "value2").unwrap();
 
         let mut key_values = wallet.list("key1::").unwrap();
+        println!("{}", key_values);
         key_values.sort();
         assert_eq!(2, key_values.len());
 
