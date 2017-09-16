@@ -1,5 +1,4 @@
-﻿using Hyperledger.Indy.PoolApi;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples
@@ -16,7 +15,7 @@ namespace Hyperledger.Indy.Samples
 
         static async Task ExecuteDemos()
         {
-            await AgentDemo.Demo();
+            await AgentDemo.Execute();
             await AnonCredsDemo.Execute();
             await LedgerDemo.Execute();
             await SignusDemo.Execute();

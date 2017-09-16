@@ -1,7 +1,4 @@
 ﻿using Hyperledger.Indy.WalletApi;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples.Utils
@@ -20,5 +17,19 @@ namespace Hyperledger.Indy.Samples.Utils
                     throw;
             }
         }
+
+        public static async Task DeleteWalletAsync(string name, string credentials)
+        {
+            try
+            {
+                await Wallet.DeleteWalletAsync(name, credentials);
+            }
+            catch (IndyException e)
+            {
+                if (e.ErrorCode != ErrorCode.CommonIOError) //TODO: This should be a more specific error when implemented
+                    throw;
+            }
+        }
+
     }
 }

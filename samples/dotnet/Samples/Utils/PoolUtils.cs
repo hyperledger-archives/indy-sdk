@@ -1,8 +1,5 @@
 ﻿using Hyperledger.Indy.PoolApi;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples.Utils
@@ -49,6 +46,19 @@ namespace Hyperledger.Indy.Samples.Utils
             catch (IndyException e)
             {
                 if (e.ErrorCode != ErrorCode.PoolLedgerConfigAlreadyExistsError)
+                    throw;
+            }
+        }
+
+        public static async Task DeletePoolLedgerConfigAsync(string name)
+        {
+            try
+            {
+                await Pool.DeletePoolLedgerConfigAsync(name);
+            }
+            catch(IndyException e)
+            {
+                if (e.ErrorCode != ErrorCode.CommonIOError) //TODO: This should be a more specific error when implemented
                     throw;
             }
         }
