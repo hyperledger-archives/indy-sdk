@@ -13,7 +13,7 @@ Simply build the indy-sdk-dotnet.sln file using Visual Studio, msbuild, dotnet o
 
 The project also includes a NuGet package definition which can be built using the 'dotnet pack' command or by choosing publish on the project in Visual Studio.
 
-###Using the Wrapper
+### Using the Wrapper
 
 The .NET wrapper can be used in any .NET project by referencing the NuGet package which can be built using the instructions above.  At present the package is available in the normal NuGet repository 
 but it should be soon. 
