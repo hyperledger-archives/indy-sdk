@@ -10,7 +10,9 @@
     <Authors>Symon Rottem</Authors>
     <Company>Hyperledger Indy</Company>
     <Product>Hyperledger Indy SDK</Product>
-    <Description>.NET wrapper for the Hyperledger Indy SDK</Description>
+    <Description>.NET wrapper for the Hyperledger Indy SDK.
+
+Please note that to function the C-Callable Hyperledger Indy SDK and its dependencies must be installed in the library/DLL search path - please see the project page for more information.</Description>
     <PackageProjectUrl>https://github.com/hyperledger/indy-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/hyperledger/indy-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
