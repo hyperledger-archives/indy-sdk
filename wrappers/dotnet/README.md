@@ -15,8 +15,8 @@ The project also includes a NuGet package definition which can be built using th
 
 ### Using the Wrapper
 
-The .NET wrapper can be used in any .NET project by referencing the NuGet package which can be built using the instructions above.  At present the package is available in the normal NuGet repository 
-but it should be soon. 
+The .NET wrapper can be used in any .NET project by referencing the NuGet package which can be built using the instructions above or obtained from the 
+[nuget.org](https://www.nuget.org/packages/Hyperledger.Indy.Sdk) package repository.  Please note that the version available on nuget.org is pre-release only! 
 
 Before attempting to use the .NET wrapper the c-callable SDK must be installed in the library/search path - see the [Binaries](../../README.md#binaries) section of the main project page to download 
 the available c-callable binaries and their dependencies or the [Building Indy SDK](../../README.md#building-indy-sdk) for information on how to build your own.
