@@ -9,7 +9,7 @@
 
 @interface  WalletUtils()
 
-@property (nonatomic, strong) NSMutableArray *registeredWallets;
+@property (strong, readwrite) NSMutableArray *registeredWalletTypes;
 @end
 
 @implementation WalletUtils
@@ -21,25 +21,47 @@
     
     dispatch_once(&dispatch_once_block, ^ {
         instance = [WalletUtils new];
-        instance.registeredWallets = [NSMutableArray new];
+        instance.registeredWalletTypes = [NSMutableArray new];
     });
     
     return instance;
 }
 
-// TODO: Implement when architecture is discussed
-//- (NSError *)registerWalletType: (NSString *)xtype
-//{
-//    NSMutableArray *wallets = self.registeredWallets;
-//    
-//    NSError *ret;
-//    if ([wallets containsObject:xtype])
-//    {
-//        return [NSError new];
-//    }
-//    
-//    
-//}
+- (NSError *)registerWalletType: (NSString *)xtype
+                     forceCreate: (BOOL)forceCreate
+{
+    NSError *ret;
+    
+    if ([self.registeredWalletTypes containsObject:xtype])
+    {
+        if (!forceCreate)
+        {
+            return [NSError errorWithDomain:@"IndyErrorDomain" code: WalletTypeAlreadyRegisteredError userInfo:nil];;
+        }
+    }
+    
+    __block NSError *err = nil;
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    
+    
+    ret = [[IndyWallet sharedInstance] registerIndyKeychainWalletType:xtype
+                                                           completion:^(NSError* error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+    
+    if( ret.code != Success )
+    {
+        return ret;
+    }
+    
+    [self.registeredWalletTypes addObject:xtype];
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    return err;
+}
 
 -(NSError *)createAndOpenWalletWithPoolName:(NSString *) poolName
                                       xtype:(NSString *) xtype

@@ -5,45 +5,30 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
+#import "IndyWalletProtocols.h"
+#import <stdio.h>
 
-@protocol IndyWalletImplementation <NSObject>
 
-@required
-- (NSError *)createWithName:(NSString *)name
-                  andConfig:(NSString *)config;
 
-@required
-- (NSError *)openWithName:(NSString *)name
-               withConfig:(NSString *)config
-                andHandle:(IndyHandle *)handle;
-@required
-- (NSError *)setValue:(NSString *)value  // can value be of any type???
-               forKey:(NSString *)key
-            andSubKey:(NSString *)subkey
-           withHandle:(IndyHandle)handle;
-
-@required
-- (NSError *)getValue:(NSString **)value // can value be of any type???
-               forKey:(NSString *)key
-            andSubKey:(NSString *)subkey
-           withHandle:(IndyHandle)handle;
-
-@required
-- (NSError *)close:(IndyHandle)handle;
-
-@required
-- (NSError *)deleteWithName:(NSString *)name;
-
-@end
 
 @interface IndyWallet : NSObject
 
-/*
-- (NSError*) registerWalletType:(NSString*) type
-             withImplementation:(id<IndyWalletImplementation>) implementation;
-*/
-
 + (IndyWallet *)sharedInstance;
+
+/**
+ Register Custom Wallet type with provided implementation
+ 
+ - parameter type:
+ */
+- (NSError *)registerWalletType:(NSString *)type
+             withImplementation:(Class<IndyWalletProtocol>)implementation
+                     completion:(void (^)(NSError *error)) handler;
+
+/**
+ Register Keychain Wallet type with default implementation
+*/
+- (NSError *)registerIndyKeychainWalletType:(NSString *)type
+                     completion:(void (^)(NSError *error)) handler;
 
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                                  name:(NSString *)name
@@ -64,4 +49,9 @@
                       credentials:(NSString *)credentials
                        completion:(void (^)(NSError *error ))handler;
 
+- (void)cleanupIndyKeychainWallet;
+
+
 @end
+
+

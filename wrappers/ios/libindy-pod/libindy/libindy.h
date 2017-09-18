@@ -2,9 +2,6 @@
 //  libindy.h
 //  libindy
 //
-//  Created by Kirill Neznamov on 28/04/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
 
 #import <Foundation/Foundation.h>
 
@@ -24,5 +21,6 @@ FOUNDATION_EXPORT const unsigned char libindyVersionString[];
 #import <libindy/IndyLedger.h>
 #import <libindy/IndySignus.h>
 #import <libindy/IndyAgent.h>
+
 
 

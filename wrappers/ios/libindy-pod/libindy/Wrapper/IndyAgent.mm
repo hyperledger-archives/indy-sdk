@@ -19,17 +19,16 @@
 {
     indy_error_t ret;
 
-    // closure_map_ids?
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) connectionHandler
-                                                                  withMessageCallback: (void*) messageHandler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:  connectionHandler
+                                                              withMessageCallback:  messageHandler];
     
     ret = indy_agent_connect(handle,
-                               poolHandle,
-                               walletHandle,
-                               [senderDid UTF8String],
-                               [receiverDid UTF8String],
-                               IndyWrapperCommonAgentOutgoingConnectionCallback,
-                               IndyWrapperCommonAgentMessageCallback);
+                             poolHandle,
+                             walletHandle,
+                             [senderDid UTF8String],
+                             [receiverDid UTF8String],
+                             IndyWrapperCommonAgentOutgoingConnectionCallback,
+                             IndyWrapperCommonAgentMessageCallback);
     
     if( ret != Success )
     {
@@ -48,13 +47,13 @@
                                          NSString *senderDid,
                                          NSString *receiverDid))connectionCompletion
                 messageHandler:(void (^)(IndyHandle xconnectionHandle,
-                                              NSError *error,
+                                         NSError *error,
                                          NSString *message))messageCompletion
 {
     indy_error_t ret;
-    indy_handle_t listener_handle = [[IndyCallbacks sharedInstance] createCommandHandleForListenerCallback:(void*)[listenerCompletion copy]
-                                                                                        withConnectionCallback:(void*)[connectionCompletion copy]
-                                                                                            andMessageCallback:(void*)[messageCompletion copy] ];
+    indy_handle_t listener_handle = [[IndyCallbacks sharedInstance] createCommandHandleForListenerCallback:listenerCompletion
+                                                                                        withConnectionCallback:connectionCompletion
+                                                                                            andMessageCallback:messageCompletion];
     
     ret = indy_agent_listen(listener_handle,
                               [endpoint UTF8String],
@@ -76,7 +75,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t commandHandle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t commandHandle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_agent_add_identity(commandHandle,
                                     listenerHandle,
@@ -100,7 +99,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t commandHandle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t commandHandle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_agent_remove_identity(commandHandle,
                                        listenerHandle,
@@ -121,7 +120,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_agent_send(handle,
                             connectionHandle,
@@ -139,7 +138,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler
                                                                  withConnectionHandle: connectionHandle];
     
     ret = indy_agent_close_connection(handle,
@@ -159,7 +158,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     [[IndyCallbacks sharedInstance] forgetListenHandle: listenerHandle];
     
     ret = indy_agent_close_listener(handle,
