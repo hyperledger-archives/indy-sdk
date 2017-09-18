@@ -1,15 +1,14 @@
 #!groovy
 
-def name = 'watermark'
 def app
-def pathToCi = "${name}/ci"
+def pathToCi = 'watermark/ci"
 def dockerfile= 'dockerfile'
 
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def build(name, file = 'watermark/ci/dockerfile', customParams = '') {
+def build(name, file = 'watermark/ci/dockerfile ci', customParams = '') {
     return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file")
 }
 
