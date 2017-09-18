@@ -15,11 +15,12 @@ node {
         checkout scm
     }
 
-/*
     stage ('Build docker environment'){
-        app = build(name)
+        sh "ls"
+//        app = build(name)
     
     }
+/*
     stage ('Building'){
         app.inside {
             sh "echo Building"
