@@ -20,7 +20,6 @@ node {
         sh "cd ${name}"
         sh "ls"
     }
-
 }
 
 def build(name, file = 'ci/ubuntu-enterprise.dockerfile ci', customParams = '') {
