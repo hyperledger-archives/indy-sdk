@@ -12,7 +12,10 @@ node {
     
     }
     stage ('Building'){
-        sh "echo Building"
+        app.inside {
+            sh "echo Building"
+            sh "rustc --version"
+        }
     }
 
     stage ('Testing'){
