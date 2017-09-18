@@ -15,7 +15,7 @@ FROM ubuntu:16.04
 #RUN apt-get install -y fakeroot
 
 # libsodium installation
-RUN apt-get install -y libsodium18
+#RUN apt-get install -y libsodium18
 
 
 # Install curl
