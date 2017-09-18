@@ -18,6 +18,7 @@ node {
     }
 
     stage ('Build docker environment'){
+        sh "pwd"
         sh "ls ${pathToCi}"
         sh "echo building"
         app = build('watermark')
