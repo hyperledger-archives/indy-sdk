@@ -79,17 +79,18 @@ extern void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnect
 
 @interface IndyCallbacks : NSObject
 
-- (indy_handle_t) createCommandHandleFor:(void*) cb;
+// MARK: - Store callback and create command handle
+- (indy_handle_t)createCommandHandleFor:(id)callback;
 
-- (indy_handle_t) createCommandHandleFor:(void *)callback
-                       withMessageCallback:(void *)messageCallback;
+- (indy_handle_t) createCommandHandleFor:(id)callback
+                       withMessageCallback:(id)messageCallback;
 
-- (indy_handle_t) createCommandHandleFor:(void *)callback
+- (indy_handle_t) createCommandHandleFor:(id)callback
                       withConnectionHandle:(indy_handle_t)connectionHandle;
 
-- (indy_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
-                                   withConnectionCallback:(void *)connectionCallback
-                                       andMessageCallback:(void *)messageCallback;
+- (indy_handle_t)createCommandHandleForListenerCallback:(id)listenerCallback
+                                   withConnectionCallback:(id)connectionCallback
+                                       andMessageCallback:(id)messageCallback;
 
 - (void)            deleteCommandHandleFor:(indy_handle_t) handle;
 - (void)            forgetListenHandle:(indy_handle_t) listenHandle;
