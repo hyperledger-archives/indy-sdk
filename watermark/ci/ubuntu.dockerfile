@@ -22,8 +22,17 @@ FROM ubuntu:16.04
 RUN apt-get update && apt-get install -y curl
 
 # Install Rust
-FROM rust:1.19.0
-RUN cargo install
+ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
+ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
+
+RUN mkdir -p /rust
+WORKDIR /rust
+
+RUN curl -fsOSL $RUST_DOWNLOAD_URL \
+    && curl -s $RUST_DOWNLOAD_URL.sha256 | sha256sum -c - \
+    && tar -C /rust -xzf $RUST_ARCHIVE --strip-components=1 \
+    && rm $RUST_ARCHIVE \
+    && ./install.sh
 
 #Sovrin stuff
 RUN useradd -ms /bin/bash -u $uid sovrin
