@@ -22,7 +22,7 @@ FROM ubuntu:16.04
 RUN apt-get update && apt-get install -y curl
 
 # Install Rust
-RUN curl -sf -L https://static.rust-lang.org/rustup.sh | sh -s -- -y
+RUN curl -sSf -L https://static.rust-lang.org/rustup.sh | sh -s -- -y
 
 RUN useradd -ms /bin/bash -u $uid sovrin
 USER sovrin
