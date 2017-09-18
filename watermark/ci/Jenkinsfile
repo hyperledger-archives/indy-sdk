@@ -1,4 +1,11 @@
 #!groovy
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
+
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
 
 def name = 'watermark'
 def app
@@ -25,7 +32,4 @@ node {
     }
 }
 
-def build(name, file = 'ci/ubuntu-enterprise.dockerfile ci', customParams = '') {
-    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file")
-}
 
