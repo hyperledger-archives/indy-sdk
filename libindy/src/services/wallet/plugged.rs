@@ -138,8 +138,6 @@ impl Wallet for PluggedWallet {
             CStr::from_ptr(values_json_ptr).to_str()?.to_string()
         };
 
-        println!("values_json: {:?}", values_json);
-
         let err = (self.free_handler)(self.handle, values_json_ptr);
 
         if err != ErrorCode::Success {
@@ -151,8 +149,6 @@ impl Wallet for PluggedWallet {
             .iter()
             .map(|value| (value.key.clone(), value.value.clone()))
             .collect();
-
-        println!("result: {:?}", result);
 
         Ok(result)
     }
