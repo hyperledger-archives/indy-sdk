@@ -20,7 +20,7 @@ node {
     stage ('Build docker environment'){
         sh "ls ${pathToCi}"
         sh "echo building"
-        app = build(name)
+        app = build('watermark')
     
     }
 /*
