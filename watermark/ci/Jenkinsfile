@@ -25,17 +25,17 @@ node {
     
     }
     stage ('Building'){
-        //TODO: Fix this
         app.inside {
             sh "rustc --version"
             sh "gcc --version"
+            sh "cd watermark; cargo build"
         }
     }
 
     stage ('Testing'){
         sh "echo Testing"
         app.inside {
-            sh "cd watermark; pwd; ls; cargo test"
+            sh "cd watermark; cargo test"
         }
     }
 }
