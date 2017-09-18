@@ -3,9 +3,10 @@ FROM ubuntu:16.04
 
 ARG uid=1000
 
+
 # Update environment
-# JRE installation
-RUN apt-get update -y && apt-get install -y default-jre
+# JRE installation and gcc
+RUN apt-get update -y && apt-get install -y default-jre gcc pkg-config build-essential git
 
 # libsodium installation
 #RUN apt-get install -y libsodium18
