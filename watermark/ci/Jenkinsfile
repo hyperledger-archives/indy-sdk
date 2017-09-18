@@ -1,8 +1,15 @@
+#!groovy
 
 node {
-    try { 
-        stage ('Checkout'){
-            checkout scm
-        } 
+    stage ('Checkout'){
+        checkout scm
+    }
+    
+    stage ('Testing'){
+        sh "echo Testing"
+    }
+
+    stage ('Building'){
+        sh "echo Building"
     }
 }
