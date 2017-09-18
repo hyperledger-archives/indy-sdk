@@ -28,6 +28,7 @@ node {
         //TODO: Fix this
         app.inside {
             sh "rustc --version"
+            sh "gcc --version"
         }
     }
 
