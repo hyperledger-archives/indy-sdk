@@ -35,6 +35,28 @@
     [super tearDown];
 }
 
+// MARK: - Register wallet
+
+- (void)testRegisterWalletTypeDoesNotWorkTwiceWithTheSameName
+{
+    [TestUtils cleanupStorage];
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    
+    NSError *ret;
+    NSString *xtype = @"keychain";
+    
+    // 1. register
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    
+    // 2. register
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    XCTAssertEqual(ret.code, WalletTypeAlreadyRegisteredError, @"WalletUtils:registerWalletType() returned wrong error code");
+    
+   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    [TestUtils cleanupStorage];
+}
+
+
 // MARK: - Create wallet
 - (void)testCreateWalletWorksForDublicateName
 {

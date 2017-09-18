@@ -1332,22 +1332,5 @@
     XCTAssertFalse(isValid, @"isValid is true! Should be false.");
 }
 
-- (void)testAnoncreds
-{
-//    [self testProverCreateProofWorksForInvalidWalletHandle];
-//    [self testProverGetClaimsForProofReqWorksForRevealedAttr];
-//    [self testProverCreateProofWorksForUsingNotSatisfyClaim];
-//    [self testProverCreateAndStoreRequestWorks];
-    
-    NSString *path = [TestUtils getUserTmpDir];
-    NSString *pathDir = [TestUtils getUserDocumentDir];
-    [self testIssuerCreateAndStoreClaimDefWorks];
-    [self testIssuerCreateAndStoreClaimDefWorksForInvalidWallet];
-    [self testIssuerCreateClaimWorks];
-    [self testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimReq];
-    [self testIssuerCreateClaimWorksForInvalidWalletHandle];
-    [self testProverCreateAndStoreClaimreqWorksForClaimDefDoesNotCorrespondOfferDiffrentIssuerDid];
-}
-
 
 @end

@@ -20,7 +20,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_issuer_create_and_store_claim_def(handle,
                                                  walletHandle,
@@ -45,7 +45,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_issuer_create_and_store_revoc_reg(handle,
                                                  walletHandle,
@@ -69,7 +69,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
 
     ret = indy_issuer_create_claim(handle,
                                    walletHandle,
@@ -94,7 +94,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_issuer_revoke_claim(handle,
                                    walletHandle,
@@ -117,7 +117,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_store_claim_offer(handle,
                                         walletHandle,
@@ -139,7 +139,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_get_claim_offers(handle,
                                        walletHandle,
@@ -161,7 +161,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_create_master_secret(handle,
                                            walletHandle,
@@ -186,7 +186,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
 
     ret = indy_prover_create_and_store_claim_req(handle,
                                                  walletHandle,
@@ -211,7 +211,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_store_claim(handle,
                                   walletHandle,
@@ -232,7 +232,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_get_claims(handle,
                                  walletHandle,
@@ -253,7 +253,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_get_claims_for_proof_req(handle,
                                                walletHandle,
@@ -279,7 +279,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_prover_create_proof(handle,
                                    walletHandle,
@@ -308,7 +308,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
 
     ret = indy_verifier_verify_proof(handle,
                                      [proofReqJSON UTF8String],
