@@ -16,13 +16,6 @@
 
 @property (strong, readwrite) Class<IndyWalletProtocol> customWalletImplementation;
 
-/**
- Dictionary of [pointer: NSString] to prevent system from deallocating values strings from memory
- */
-
-
-
-
 @end
 
 @implementation IndyWalletCallbacks
@@ -43,22 +36,6 @@
     return instance;
 }
 
-/**
- Remove refecence to NSString with pointer
- */
-//- (void)freeString:(NSString *)string
-//{
-//    [self.valuesSet removeObject:string];
-//}
-//
-//- (void)retainString:(NSString *__autoreleasing *)valueString
-//{
-//    @synchronized (self.globalLock)
-//    {
-//        [self.valuesSet addObject:*valueString];
-//    }
-//}
-
 - (BOOL)setupCustomWalletImplementation:(Class<IndyWalletProtocol>)implementation
 {
     if (self.customWalletImplementation != nil)
@@ -73,6 +50,21 @@
 - (void)removeCustomWalletImplementation
 {
     self.customWalletImplementation = nil;
+}
+
+- (void)retainCString:(char *)cstring
+{
+    NSValue *value = [NSValue valueWithPointer:cstring];
+    
+    [self.valuesArray addObject:value];
+}
+
+- (void)freeCString:(const char *)cstring
+{
+    NSValue *value = [NSValue valueWithPointer:cstring];
+    [self.valuesArray removeObject:value];
+    
+    free((void*)cstring);
 }
 
 @end
@@ -187,7 +179,13 @@ indy_error_t IndyKeychainWalletGetCallback(indy_handle_t handle,
     }
  
     const char * cstring = [valueString UTF8String];
-    *value_ptr = cstring;
+    
+    char * copied = malloc(sizeof(char)*strlen(cstring));
+    strcpy(copied, cstring);
+    
+    [[IndyWalletCallbacks sharedInstance]  retainCString:copied];
+    
+    *value_ptr = copied;
     
     return Success;
 }
@@ -217,7 +215,12 @@ indy_error_t IndyKeychainWalletGetNotExpiredCallback(indy_handle_t handle,
     }
     
     const char * cstring = [valueString UTF8String];
-    *value_ptr = cstring;
+    
+    char * copied = malloc(sizeof(char)*strlen(cstring));
+    strcpy(copied, cstring);
+    [[IndyWalletCallbacks sharedInstance]  retainCString:copied];
+    
+    *value_ptr = copied;
     
     return Success;
 }
@@ -247,7 +250,13 @@ indy_error_t IndyKeychainWalletListCallback(indy_handle_t handle,
     }
     
     const char * cstring = [valuesJsonString UTF8String];
-    *values_json_ptr = cstring;
+    
+    char * copied = malloc(sizeof(char)*strlen(cstring));
+    strcpy(copied, cstring);
+    
+    [[IndyWalletCallbacks sharedInstance]  retainCString:copied];
+    
+    *values_json_ptr = copied;
     
     return Success;
 }
@@ -296,6 +305,7 @@ indy_error_t IndyKeychainWalletDeleteCallback(const char* name,
 
 indy_error_t IndyKeychainWalletFreeCallback(indy_handle_t handle, const char* str)
 {
+    [[IndyWalletCallbacks sharedInstance] freeCString:str];
     return Success;
 }
 
@@ -410,7 +420,13 @@ indy_error_t CustomWalletGetCallback(indy_handle_t handle,
     
     const char * cstring = [valueString UTF8String];
     
-    *value_ptr = cstring;
+    char * copied = malloc(sizeof(char)*strlen(cstring));
+    strcpy(copied, cstring);
+    
+    [[IndyWalletCallbacks sharedInstance]  retainCString:copied];
+    
+    *value_ptr = copied;
+
     
     return Success;
 }
@@ -440,7 +456,14 @@ indy_error_t CustomWalletGetNotExpiredCallback(indy_handle_t handle,
     }
     
     const char * cstring = [valueString UTF8String];
-    *value_ptr = cstring;
+    
+    char * copied = malloc(sizeof(char)*strlen(cstring));
+    strcpy(copied, cstring);
+    
+    [[IndyWalletCallbacks sharedInstance]  retainCString:copied];
+    
+    *value_ptr = copied;
+
     
     return Success;
 }
@@ -470,7 +493,13 @@ indy_error_t CustomWalletListCallback(indy_handle_t handle,
     }
     
     const char * cstring = [valuesJsonString UTF8String];
-    *values_json_ptr = cstring;
+    
+    char * copied = malloc(sizeof(char)*strlen(cstring));
+    strcpy(copied, cstring);
+    
+    [[IndyWalletCallbacks sharedInstance]  retainCString:copied];
+    
+    *values_json_ptr = copied;
     
     return Success;
 }
@@ -520,6 +549,7 @@ indy_error_t CustomWalletDeleteCallback(const char* name,
 
 indy_error_t CustomWalletFreeCallback(indy_handle_t handle, const char* str)
 {
+    [[IndyWalletCallbacks sharedInstance]  freeCString:str];
     return Success;
 }
 
