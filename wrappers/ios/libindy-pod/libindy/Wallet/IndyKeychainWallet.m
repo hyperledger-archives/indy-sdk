@@ -41,18 +41,6 @@
     return instance;
 }
 
-- (instancetype)initWithName:(NSString *)name
-                    poolName:(NSString *)poolName
-                      config:(NSString *)config
-                 credentials:(NSString *)credentials
-{
-    self = [super init];
-    if (self){
-    }
-    
-    return self;
-}
-
 - (NSError *)createWithName:(NSString *)name config:(NSString *)config credentials:(NSString *)credentials
 {
     @synchronized (self.globalLock)

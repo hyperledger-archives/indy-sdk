@@ -251,10 +251,11 @@
 - (void) testLedgerDemoForKeychainWallet
 {
     [TestUtils cleanupStorage];
-    NSString *myWalletName = @"my_wallet2";
-    NSString *theirWalletName = @"their_wallet3";
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    NSString *myWalletName = @"ledger_my_wallet2";
+    NSString *theirWalletName = @"ledger_their_wallet3";
     NSString *walletType = @"keychain";
-    NSString *poolName = @"ledger_demo_works";
+    NSString *poolName = @"ledger_demo_works_for_keychain_wallet";
     XCTestExpectation *completionExpectation;
     NSError *ret;
     
@@ -471,6 +472,7 @@
     XCTAssertNotNil(data[@"dest"], @"data[dest] is nil");
     XCTAssertTrue([data[@"dest"] isEqualToString:myDid], @"wrong dest!");
     
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 

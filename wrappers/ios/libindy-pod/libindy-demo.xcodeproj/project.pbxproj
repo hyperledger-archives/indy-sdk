@@ -794,6 +794,18 @@
 					"$(inherited)",
 					"\"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"CoreBitcoin\"",
+					"-l\"ISO8601DateFormatter\"",
+					"-l\"crypto\"",
+					"-l\"ssl\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"UIKit\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -810,6 +822,18 @@
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"CoreBitcoin\"",
+					"-l\"ISO8601DateFormatter\"",
+					"-l\"crypto\"",
+					"-l\"ssl\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"UIKit\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
