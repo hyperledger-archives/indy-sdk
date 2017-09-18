@@ -1,7 +1,7 @@
 #!groovy
 
 def app
-def pathToCi = 'watermark/ci"
+def pathToCi = 'watermark/ci'
 def dockerfile= 'dockerfile'
 
 def getUserUid() {
