@@ -15,6 +15,7 @@ node {
         checkout scm
     }
 
+/*
     stage ('Build docker environment'){
         app = build(name)
     
@@ -31,6 +32,7 @@ node {
         sh "cd ${name}"
         sh "ls"
     }
+*/
 }
 
 
