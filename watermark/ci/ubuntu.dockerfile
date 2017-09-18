@@ -9,8 +9,10 @@ RUN apt-get update -y && apt-get install -y default-jre
 # Development
 FROM ubuntu:16.04
 
+
 # fakeroot installation
-RUN apt-get install -y fakeroot
+# currenlty this is failing
+#RUN apt-get install -y fakeroot
 
 # libsodium installation
 RUN apt-get install -y libsodium18
