@@ -1,15 +1,28 @@
 #!groovy
 
+def name = 'watermark'
+def app
 node {
     stage ('Checkout'){
         checkout scm
     }
-    
-    stage ('Testing'){
-        sh "echo Testing"
-    }
 
+    stage ('Build docker environment'){
+        app = build(name)
+    
     stage ('Building'){
         sh "echo Building"
     }
+
+    stage ('Testing'){
+        sh "echo Testing"
+        sh "cd ${name}"
+        sh "ls"
+    }
+
 }
+
+def build(name, file = 'ci/ubuntu-enterprise.dockerfile ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file")
+}
+
