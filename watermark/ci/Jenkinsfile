@@ -35,6 +35,8 @@ node {
         sh "echo Testing"
         app.inside {
             sh "cd watermark"
+            sh "pwd"
+            sh "ls"
             sh "cargo test"
         }
     }
