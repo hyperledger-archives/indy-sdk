@@ -37,5 +37,5 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 #Sovrin stuff
 RUN useradd -ms /bin/bash -u $uid sovrin
 USER sovrin
-WORKDIR /home/sovrin
-VOLUME /home/sovrin
+WORKDIR ~/cxs/watermark
+#VOLUME /home/sovrin
