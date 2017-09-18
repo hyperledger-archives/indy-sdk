@@ -34,6 +34,7 @@ node {
     stage ('Testing'){
         sh "echo Testing"
         app.inside {
+            sh "cd csx/watermark"
             sh "cargo test"
         }
     }
