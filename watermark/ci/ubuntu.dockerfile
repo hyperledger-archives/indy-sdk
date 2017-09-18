@@ -22,8 +22,10 @@ FROM ubuntu:16.04
 RUN apt-get update && apt-get install -y curl
 
 # Install Rust
-RUN curl -sSf -L https://static.rust-lang.org/rustup.sh | sh -s -- -y
+FROM rust:1.19.0
+RUN cargo install
 
+#Sovrin stuff
 RUN useradd -ms /bin/bash -u $uid sovrin
 USER sovrin
 WORKDIR /home/sovrin
