@@ -23,14 +23,13 @@ node {
         app = build('watermark')
     
     }
-/*
     stage ('Building'){
         app.inside {
-            sh "echo Building"
             sh "rustc --version"
         }
     }
 
+/*
     stage ('Testing'){
         sh "echo Testing"
         sh "cd ${name}"
