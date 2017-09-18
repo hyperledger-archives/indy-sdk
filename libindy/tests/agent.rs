@@ -105,7 +105,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).expect("create wallet");
 
-            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("sovrin_agent_connect_works_for_a")).unwrap();
+            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("indy_agent_connect_works_for_aaa")).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), "127.0.0.1:9700").unwrap();
 
