@@ -19,7 +19,7 @@ node {
     }
 
     stage ('Build docker environment'){
-        sh "ls"
+        sh "ls ${pathToCi}"
 //        app = build(name)
     
     }
