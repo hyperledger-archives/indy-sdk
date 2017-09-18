@@ -34,7 +34,7 @@ node {
     stage ('Testing'){
         sh "echo Testing"
         app.inside {
-            sh "cd watermark"
+            sh "cd watermark; cargo test"
             sh "pwd"
             sh "ls"
             sh "cargo test"
