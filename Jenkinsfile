@@ -3,7 +3,7 @@
 try {
     testing()
 } catch (err) {
-    notifyingFailure()
+    currentBuild.result = "FAILED"
     throw err
 }
 
@@ -12,15 +12,8 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
-                'windows-test': { windowsTesting() }
+                //'windows-test': { windowsTesting() }
         ])
-    }
-}
-
-def notifyingFailure() {
-    currentBuild.result = "FAILED"
-    node('ubuntu-master') {
-        sendNotification.fail([email: true])
     }
 }
 
@@ -32,8 +25,8 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def dockerBuild(name, file='ci/ubuntu.dockerfile ci', customParams='') {
-  return docker.build("$name-test", "--build-arg uid=${helpers.getUserUid()} ${customParams} -f $file")
+def build(name, file='ci/ubuntu.dockerfile ci', customParams='') {
+  return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
 }
 
 def openPool(env_name, network_name, pool_type, pool_ver, plenum_ver, anoncreds_ver, node_ver) {
@@ -43,7 +36,7 @@ def openPool(env_name, network_name, pool_type, pool_ver, plenum_ver, anoncreds_
     echo "${env_name} Test: Build docker image for nodes pool ver. ${pool_ver}"
     echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
     verOptions = getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver)
-    def poolEnv = dockerBuild("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
+    def poolEnv = build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
             "--build-arg pool_ip=10.0.0.2 ${verOptions}")
     echo "${env_name} Test: Run nodes pool"
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
@@ -89,7 +82,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
         dir('libindy') {
             echo "${env_name} Test: Build docker image"
-            testEnv = dockerBuild('libindy', file)
+            testEnv = build('libindy', file)
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
