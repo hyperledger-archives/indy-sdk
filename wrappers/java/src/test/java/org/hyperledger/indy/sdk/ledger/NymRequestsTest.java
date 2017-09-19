@@ -45,7 +45,7 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildNymRequestWorksForOnlyRequiredFields() throws Exception {
 
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"1\",\"dest\":\"%s\"}", identifier, dest);
+		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"1\",\"dest\":\"%s\",\"role\":null}", identifier, dest);
 
 		String nymRequest = Ledger.buildNymRequest(identifier, dest, null, null, null).get();
 
