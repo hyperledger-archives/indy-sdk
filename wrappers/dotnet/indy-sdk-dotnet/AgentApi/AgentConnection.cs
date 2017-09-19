@@ -134,9 +134,9 @@ namespace Hyperledger.Indy.AgentApi
         }
 
         /// <summary>
-        /// Whether or not the connection is open.
+        /// Whether or not the close function has been called.
         /// </summary>
-        private bool _isOpen = true;
+        private bool _closeRequested = false;
 
         /// <summary>
         /// Gets the handle for the connection.
@@ -196,7 +196,7 @@ namespace Hyperledger.Indy.AgentApi
                 commandHandle,
                 Handle,
                 message,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -237,29 +237,46 @@ namespace Hyperledger.Indy.AgentApi
         /// </remarks>
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task CloseAsync()
-        {
-            _isOpen = false;
+        {           
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = IndyNativeMethods.indy_agent_close_connection(
                 commandHandle,
                 Handle,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
+
+            _closeRequested = true;
+            GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
         }
 
         /// <summary>
-        /// Disposes of resources used by the connection.
+        /// Disposes of resources.
         /// </summary>
-        public void Dispose()
+        public async void Dispose()
         {
-            if (_isOpen)
-                CloseAsync().Wait();
-        }        
+            if (!_closeRequested)
+                await CloseAsync();
+        }
+
+        /// <summary>
+        /// Finalizes the resource during GC if it hasn't been already.
+        /// </summary>
+        ~AgentConnection()
+        {
+            if (!_closeRequested)
+            {
+                IndyNativeMethods.indy_agent_close_connection(
+                   -1,
+                   Handle,
+                   CallbackHelper.NoValueCallback
+                );
+            }
+        }
     }
 }

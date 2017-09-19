@@ -67,7 +67,7 @@ namespace Hyperledger.Indy.WalletApi
                 walletType.CloseCallback,
                 walletType.DeleteCallback,
                 walletType.FreeCallback,
-                CallbackHelper.NoValueCallback);
+                CallbackHelper.TaskCompletingNoValueCallback);
 
             CallbackHelper.CheckResult(result);
 
@@ -126,7 +126,7 @@ namespace Hyperledger.Indy.WalletApi
                 type,
                 config,
                 credentials,
-                CallbackHelper.NoValueCallback);
+                CallbackHelper.TaskCompletingNoValueCallback);
 
             CallbackHelper.CheckResult(result);
 
@@ -200,7 +200,7 @@ namespace Hyperledger.Indy.WalletApi
                 commandHandle,
                 name,
                 credentials,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -208,7 +208,10 @@ namespace Hyperledger.Indy.WalletApi
             return taskCompletionSource.Task;
         }
 
-        private bool _isOpen = true;
+        /// <summary>
+        /// Whether or not the close function has been called.
+        /// </summary>
+        private bool _closeRequested = false;
 
         /// <summary>
         /// Gets the SDK handle for the Wallet instance.
@@ -230,17 +233,18 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public Task CloseAsync()
         {
-            _isOpen = false;
-
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = IndyNativeMethods.indy_close_wallet(
                 commandHandle,
                 Handle,
-                CallbackHelper.NoValueCallback);
+                CallbackHelper.TaskCompletingNoValueCallback);
 
             CallbackHelper.CheckResult(result);
+
+            _closeRequested = true;
+            GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
         }
@@ -248,10 +252,25 @@ namespace Hyperledger.Indy.WalletApi
         /// <summary>
         /// Disposes of resources.
         /// </summary>
-        public void Dispose()
+        public async void Dispose()
         {
-            if (_isOpen)
-                CloseAsync().Wait();
+            if (!_closeRequested)
+                await CloseAsync();
+        }
+
+        /// <summary>
+        /// Finalizes the resource during GC if it hasn't been already.
+        /// </summary>
+        ~Wallet()
+        {
+            if (!_closeRequested)
+            {
+                IndyNativeMethods.indy_close_wallet(
+                   -1,
+                   Handle,
+                   CallbackHelper.NoValueCallback
+                );
+            }
         }
     }
 }    
