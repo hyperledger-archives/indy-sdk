@@ -25,7 +25,7 @@ def notifyingFailure() {
 }
 
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
-    return "--build-arg=sovrin_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
+    return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
 }
 
 def getUserUid() {
