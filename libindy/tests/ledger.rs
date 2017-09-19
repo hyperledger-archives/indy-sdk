@@ -282,11 +282,11 @@ mod high_cases {
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
                     \"type\":\"1\",\
-                    \"dest\":\"{}\"\
+                    \"dest\":\"{}\",\
+                    \"role\":null\
                 }}", identifier, dest);
 
             let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, None).unwrap();
-
             assert!(nym_request.contains(&expected_result));
         }
 

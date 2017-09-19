@@ -244,7 +244,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest",role:null}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
