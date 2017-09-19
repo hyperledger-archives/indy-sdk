@@ -105,14 +105,14 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).expect("create wallet");
 
-            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("sovrin_agent_connect_works_for_a")).unwrap();
+            let (did, ver_key, pub_key) = SignusUtils::create_and_store_my_did(wallet_handle, Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).unwrap();
 
             SignusUtils::store_their_did_from_parts(wallet_handle, did.as_str(), pub_key.as_str(), ver_key.as_str(), "127.0.0.1:9700").unwrap();
 
             //FIXME temporary code: replace by indy_agent_listen
             thread::spawn(move || {
-                let secret_key = "6wBM7yEYWD7wGd3ZtNQX5r31uWuC8NoZS2Lr6HZvRTY4".from_base58().unwrap();
-                let public_key = "2vTqP9QfNdvPr397QaFKtbVUPbhgqmAum2oDVkYsk4p9".from_base58().unwrap();
+                let secret_key = "11UadcagPDQKGJtcnxhrKVHyTS4QTPm6FEUGZBNWV9d".from_base58().unwrap();
+                let public_key = "2rM2fBN7qhvrvLncRTxXWNca6vgK1TgiGS2C8JFtQX9T".from_base58().unwrap();
                 let socket: zmq::Socket = zmq::Context::new().socket(zmq::SocketType::ROUTER).unwrap();
                 socket.set_curve_server(true).unwrap();
                 socket.add_curve_keypair([public_key, secret_key].concat().as_slice()).unwrap();
@@ -121,7 +121,7 @@ mod high_cases {
                 let identity = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 let msg = socket.recv_string(zmq::DONTWAIT).unwrap().unwrap();
                 info!("Fake agent socket - recv - from {}, msg {}", identity, msg);
-                if msg.eq(r#"{"did":{"sender_did":"L1Xk2qCV6uxEEsYhP7B4EP","receiver_did":"L1Xk2qCV6uxEEsYhP7B4EP"}}"#) {
+                if msg.eq(r#"{"did":{"sender_did":"NcYxiDXkpYi6ov5FcYDi1e","receiver_did":"NcYxiDXkpYi6ov5FcYDi1e"}}"#) {
                     info!("Fake agent socket send ACK");
                     socket.send_multipart(&[identity.as_bytes(), "DID_ACK".as_bytes()], zmq::DONTWAIT).unwrap();
                 }
