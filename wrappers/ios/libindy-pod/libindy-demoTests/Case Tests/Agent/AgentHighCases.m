@@ -229,7 +229,7 @@
     
     // TODO: Rename to "indy_agent_connect_works_for_a" when it will be done in Rust
     // 2. Obtain did
-    NSString *seed = @"sovrin_agent_connect_works_for_a";
+    NSString *seed = @"indy_agent_connect_works_for_aaa";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
@@ -293,7 +293,7 @@
     
     // 2. Obtain did
     // TODO: Rename to "indy_agent_listen_works_for_al" when it will be done in Rust
-    NSString *seed = @"sovrin_agent_listen_works_for_al";
+    NSString *seed = @"indy_agent_listen_works_for_all";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;

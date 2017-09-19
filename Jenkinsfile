@@ -85,7 +85,7 @@ def notifyingFailure() {
 }
 
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
-    return "--build-arg=sovrin_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
+    return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
 }
 
 def openPool(env_name, network_name, pool_type, pool_ver, plenum_ver, anoncreds_ver, node_ver) {
@@ -305,8 +305,8 @@ def rhelPublishing() {
 
                         sh 'chmod -R 777 ci'
 
-                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/libindy-rpm-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+                            sh "./ci/libindy-rpm-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                         }
                     }
                 }
@@ -373,8 +373,8 @@ def windowsPublishing() {
                         bat "cargo build --release"
                     }
 
-                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/libindy-win-zip-and-upload.sh $version '${evernym_repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+                        sh "./ci/libindy-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
                     }
                 }
             }
@@ -392,8 +392,8 @@ def libindyDebPublishing(testEnv) {
         testEnv.inside('-u 0:0') {
             sh 'chmod -R 755 ci/*.sh'
 
-            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/libindy-deb-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+                sh "./ci/libindy-deb-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                 sh "rm -rf debian"
             }
         }
