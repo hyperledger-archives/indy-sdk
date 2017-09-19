@@ -16,11 +16,33 @@ try {
 
 def testing() {
     stage('Testing') {
+        isDebugTests = !(env.BRANCH_NAME in ['master', 'rc'])
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
+                'ubuntu-test' : { ubuntuTesting(isDebugTests) },
                 //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
-                'windows-test': { windowsTesting() }
+                'windows-test': { windowsTesting(isDebugTests) }
         ])
+    }
+}
+
+def publishing() {
+    stage('Publishing') {
+        if (!(env.BRANCH_NAME in ['master', 'rc'])) {
+            echo "${env.BRANCH_NAME}: skip publishing"
+            return
+        }
+        echo "${env.BRANCH_NAME}: start publishing"
+
+        publishedVersions = parallel([
+                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
+                'ubuntu-files' : { ubuntuPublishing() },
+                'windows-files': { windowsPublishing() },
+        ])
+
+        version = publishedVersions['ubuntu-files']
+        if (publishedVersions['windows-files'] != version) { // FIXME check rhel too, IS-307
+            error "platforms artifacts have different versions"
+        }
     }
 }
 
@@ -35,6 +57,14 @@ def acceptanceTesting() {
             echo "${env.BRANCH_NAME}: skip acceptance testing"
         }
         return false
+    }
+}
+
+def releasing() {
+    stage('Releasing') {
+        if (env.BRANCH_NAME == 'rc') {
+            publishingRCtoStable()
+        }
     }
 }
 
@@ -55,7 +85,7 @@ def notifyingFailure() {
 }
 
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
-    return "--build-arg=sovrin_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
+    return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
 }
 
 def openPool(env_name, network_name, pool_type, pool_ver, plenum_ver, anoncreds_ver, node_ver) {
@@ -96,6 +126,12 @@ def closePool(env_name, network_name, poolInst) {
         echo "${env_name} Test: error while delete ${network_name} - ${error}"
     }
     step([$class: 'WsCleanup'])
+}
+
+void getSrcVersion() {
+    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
+    return version
 }
 
 def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDebugTests) {
@@ -146,7 +182,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, isDeb
             }
         }
 
-        def folder = "debug"
+        def folder = isDebugTests ? "debug" : "release"
 
         sh "cp libindy/target/$folder/libindy.so wrappers/java/lib"
         dir('wrappers/java') {
@@ -269,8 +305,8 @@ def rhelPublishing() {
 
                         sh 'chmod -R 777 ci'
 
-                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                            sh "./ci/libindy-rpm-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+                            sh "./ci/libindy-rpm-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                         }
                     }
                 }
@@ -337,8 +373,8 @@ def windowsPublishing() {
                         bat "cargo build --release"
                     }
 
-                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                        sh "./ci/libindy-win-zip-and-upload.sh $version '${evernym_repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+                    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+                        sh "./ci/libindy-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
                     }
                 }
             }
@@ -356,8 +392,8 @@ def libindyDebPublishing(testEnv) {
         testEnv.inside('-u 0:0') {
             sh 'chmod -R 755 ci/*.sh'
 
-            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh "./ci/libindy-deb-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+                sh "./ci/libindy-deb-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                 sh "rm -rf debian"
             }
         }
