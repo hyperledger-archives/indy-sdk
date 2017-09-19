@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5D0073E91F680ADF00E5CCE2 /* RegisterWalletType.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0073E81F680ADE00E5CCE2 /* RegisterWalletType.m */; };
 		5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */; };
 		5D0481B91F46FEC800ED79A2 /* AgentMediumListen.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */; };
 		5D0481BB1F46FEE400ED79A2 /* AgentMediumAddIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */; };
@@ -15,8 +16,8 @@
 		5D0481C11F46FF2700ED79A2 /* AgentMediumCloseConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481C01F46FF2700ED79A2 /* AgentMediumCloseConnection.m */; };
 		5D0481C31F46FF4000ED79A2 /* AgentMediumCloseListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D0481C21F46FF4000ED79A2 /* AgentMediumCloseListener.m */; };
 		5D13F6C61F161E800024DFB3 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D13F6C51F161E800024DFB3 /* SequenceUtils.m */; };
-		5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; };
-		5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D13F6C71F161E9C0024DFB3 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5D82DB521F6A795B00170B22 /* libindy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D82DB511F6A795B00170B22 /* libindy.framework */; };
+		5D82DB531F6A795B00170B22 /* libindy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5D82DB511F6A795B00170B22 /* libindy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DF013DC1F1604C200076592 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF013D21F1604C100076592 /* AppDelegate.mm */; };
 		5DF013DD1F1604C200076592 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D31F1604C100076592 /* Assets.xcassets */; };
 		5DF013DE1F1604C200076592 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DF013D41F1604C100076592 /* LaunchScreen.storyboard */; };
@@ -79,13 +80,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		846CE34E1F0113A700B57188 /* Embed Frameworks */ = {
+		5D82DB501F6A795100170B22 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5D13F6C91F161E9C0024DFB3 /* libindy.framework in Embed Frameworks */,
+				5D82DB531F6A795B00170B22 /* libindy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,6 +97,7 @@
 		2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		3E2A7F851EC36186006194EC /* libindy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "libindy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* libindy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "libindy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D0073E81F680ADE00E5CCE2 /* RegisterWalletType.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RegisterWalletType.m; sourceTree = "<group>"; };
 		5D0481B61F46E1BD00ED79A2 /* AgentMediumConnect.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumConnect.m; sourceTree = "<group>"; };
 		5D0481B81F46FEC800ED79A2 /* AgentMediumListen.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumListen.m; sourceTree = "<group>"; };
 		5D0481BA1F46FEE400ED79A2 /* AgentMediumAddIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumAddIdentity.m; sourceTree = "<group>"; };
@@ -105,7 +107,7 @@
 		5D0481C21F46FF4000ED79A2 /* AgentMediumCloseListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseListener.m; sourceTree = "<group>"; };
 		5D13F6C41F161E800024DFB3 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
 		5D13F6C51F161E800024DFB3 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
-		5D13F6C71F161E9C0024DFB3 /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D82DB511F6A795B00170B22 /* libindy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = libindy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DF013D11F1604C100076592 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5DF013D21F1604C100076592 /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
 		5DF013D31F1604C100076592 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -171,7 +173,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5D13F6C81F161E9C0024DFB3 /* libindy.framework in Frameworks */,
+				5D82DB521F6A795B00170B22 /* libindy.framework in Frameworks */,
 				C4AEADFDB2CE7D041575D9DA /* libPods-libindy-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -190,7 +192,7 @@
 		3E2A7F7C1EC36186006194EC = {
 			isa = PBXGroup;
 			children = (
-				5D13F6C71F161E9C0024DFB3 /* libindy.framework */,
+				5D82DB511F6A795B00170B22 /* libindy.framework */,
 				5DF013D01F1604C100076592 /* libindy-demo */,
 				5DF014651F1605EB00076592 /* libindy-demoTests */,
 				3E2A7F861EC36186006194EC /* Products */,
@@ -267,8 +269,8 @@
 		5DF014681F1605EB00076592 /* Agent */ = {
 			isa = PBXGroup;
 			children = (
-				5D0481B41F46E16B00ED79A2 /* Medium Cases */,
 				5DF014691F1605EB00076592 /* AgentHighCases.m */,
+				5D0481B41F46E16B00ED79A2 /* Medium Cases */,
 			);
 			path = Agent;
 			sourceTree = "<group>";
@@ -318,6 +320,7 @@
 			children = (
 				5DF0147C1F1605EB00076592 /* WalletHighCases.m */,
 				5DF0147D1F1605EB00076592 /* WalletMediumCases.m */,
+				5D0073E81F680ADE00E5CCE2 /* RegisterWalletType.m */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
@@ -405,7 +408,7 @@
 				3E2A7F831EC36186006194EC /* Resources */,
 				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
 				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
-				846CE34E1F0113A700B57188 /* Embed Frameworks */,
+				5D82DB501F6A795100170B22 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -623,6 +626,7 @@
 				5D0481B71F46E1BD00ED79A2 /* AgentMediumConnect.m in Sources */,
 				5DF014B61F1605EB00076592 /* LedgerUtils.mm in Sources */,
 				5DF014AD1F1605EB00076592 /* WalletMediumCases.m in Sources */,
+				5D0073E91F680ADF00E5CCE2 /* RegisterWalletType.m in Sources */,
 				5DF014A81F1605EB00076592 /* PoolHighCases.m in Sources */,
 				5DF014A91F1605EB00076592 /* PoolMediumCases.m in Sources */,
 				5DF014A01F1605EB00076592 /* AnoncredsHighCases.m in Sources */,
@@ -778,11 +782,20 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					"\"$PODS_CONFIGURATION_BUILD_DIR/CoreBitcoin\"",
+					"\"$PODS_CONFIGURATION_BUILD_DIR/ISO8601DateFormatter\"",
+					"$(inherited)",
+					"\"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -792,7 +805,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
@@ -807,6 +822,7 @@
 			baseConfigurationReference = F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
@@ -821,6 +837,7 @@
 			baseConfigurationReference = ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "libindy-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";

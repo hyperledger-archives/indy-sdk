@@ -4,10 +4,13 @@
 //
 
 
+#import "IndyWalletCallbacks.h"
 #import "IndyWallet.h"
 #import "IndyCallbacks.h"
 #import "indy_core.h"
 #import "NSError+IndyError.h"
+#import "KeychainCallbacks.hpp"
+
 
 @implementation IndyWallet
 
@@ -24,6 +27,73 @@
     return instance;
 }
 
+
+- (NSError *)registerWalletType:(NSString *)type
+             withImplementation:(Class<IndyWalletProtocol>)implementation
+                     completion:(void (^)(NSError *error)) handler
+{
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: handler];
+    
+    BOOL addedType = [[IndyWalletCallbacks sharedInstance] setupCustomWalletImplementation: implementation];
+    
+    if (addedType == NO)
+    {
+        // custom wallet implementation is already registered
+        return [NSError errorFromIndyError:WalletTypeAlreadyRegisteredError];
+    }
+    
+    ret = indy_register_wallet_type(handle,
+                                    [type UTF8String],
+                                    CustomWalletCreateCallback,
+                                    CustomWalletOpenCallback,
+                                    CustomWalletSetCallback,
+                                    CustomWalletGetCallback,
+                                    CustomWalletGetNotExpiredCallback,
+                                    CustomWalletListCallback,
+                                    CustomWalletCloseCallback,
+                                    CustomWalletDeleteCallback,
+                                    CustomWalletFreeCallback,
+                                    IndyWrapperCommon2PCallback);
+    
+    if( ret != Success )
+    {
+        [[IndyWalletCallbacks sharedInstance] removeCustomWalletImplementation];
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+
+    return [NSError errorFromIndyError: ret];
+}
+
+- (NSError *)registerIndyKeychainWalletType:(NSString *)type
+                     completion:(void (^)(NSError *error)) handler
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: handler];
+    
+    ret = indy_register_wallet_type(handle,
+                                    [type UTF8String],
+                                    IndyKeychainWalletCreateCallback,
+                                    IndyKeychainWalletOpenCallback,
+                                    IndyKeychainWalletSetCallback,
+                                    IndyKeychainWalletGetCallback,
+                                    IndyKeychainWalletGetNotExpiredCallback,
+                                    IndyKeychainWalletListCallback,
+                                    IndyKeychainWalletCloseCallback,
+                                    IndyKeychainWalletDeleteCallback,
+                                    IndyKeychainWalletFreeCallback,
+                                    IndyWrapperCommon2PCallback);
+    
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+    
+    return [NSError errorFromIndyError: ret];
+}
+
 - (NSError *)createWalletWithPoolName:(NSString *)poolName
                                  name:(NSString *)name
                                 xType:(NSString *)type
@@ -33,7 +103,8 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    [handler copy];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: handler];
     
     ret = indy_create_wallet(handle,
                                [poolName UTF8String],
@@ -58,7 +129,8 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    //id hghg = [handler copy];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_open_wallet( handle,
                               [name UTF8String],
@@ -80,7 +152,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_close_wallet( handle,
                             walletHandle,
@@ -101,7 +173,7 @@
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: (void*) handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_delete_wallet( handle,
                              [walletName UTF8String],
@@ -115,6 +187,11 @@
     }
     
     return [NSError errorFromIndyError: ret];
+}
+
+- (void)cleanupIndyKeychainWallet
+{
+    [[IndyKeychainWallet sharedInstance] cleanup];
 }
 
 @end
