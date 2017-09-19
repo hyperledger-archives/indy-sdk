@@ -224,7 +224,6 @@
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
-    // TODO: Rename to "indy_agent_connect_works_for_a" when it will be done in Rust
     // 2. Obtain did
     NSString *seed = @"indy_agent_connect_works_for_aaa";
     NSString *did;
@@ -262,7 +261,7 @@
                                                                 did:did];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
     
-    // 5. connect // TODO: Stuck here
+    // 5. connect
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:0
                                                 walletHandle:walletHandle
                                                    senderDid:did
@@ -289,7 +288,6 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    // TODO: Rename to "indy_agent_listen_works_for_al" when it will be done in Rust
     NSString *seed = @"indy_agent_listen_works_for_all";
     NSString *did;
     NSString *verKey;
@@ -708,7 +706,6 @@
                                                                       endpoint:endpoint];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
-    // TODO: There is some zmq for sockets involved for clean test.
     IndyHandle connectionHandle = 0;
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:-1
                                                 walletHandle:receiverWallet
@@ -764,8 +761,6 @@
                                                                 outMyVerkey:&receiverVerkey2
                                                                     outMyPk:&receiverPk2];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for receiverDid 2");
-    
-    // TODO: In Rust there is socket code.
     
     // 5. Add identities
     NSMutableArray *receiverDids = [NSMutableArray new];
