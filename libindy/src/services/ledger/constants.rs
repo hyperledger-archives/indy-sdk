@@ -14,4 +14,3 @@ pub const STEWARD: &str = "2";
 pub const TRUSTEE: &str = "0";
 pub const TRUST_ANCHOR: &str = "101";
 pub const TGB: &str = "100";
-pub const ROLE_REMOVE: &str = "";

@@ -52,7 +52,6 @@ impl LedgerService {
                     "TRUSTEE" => constants::TRUSTEE,
                     "TRUST_ANCHOR" => constants::TRUST_ANCHOR,
                     "TGB" => constants::TGB,
-                    "" => constants::ROLE_REMOVE,
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 };
                 Some(r)
@@ -258,9 +257,9 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":""}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":null}"#;
 
-        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
+        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None).unwrap();
         assert!(nym_request.contains(expected_result));
     }
 
