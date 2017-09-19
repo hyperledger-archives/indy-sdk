@@ -6,9 +6,9 @@ namespace Hyperledger.Indy.Utils
     internal static class CallbackHelper
     {
         /// <summary>
-        /// Gets the callback to use for functions that don't return a value.
+        /// Gets the callback to use for completing tasks that don't return a value.
         /// </summary>
-        public static NoValueDelegate NoValueCallback = (xcommand_handle, err) =>
+        public static NoValueDelegate TaskCompletingNoValueCallback = (xcommand_handle, err) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -16,6 +16,14 @@ namespace Hyperledger.Indy.Utils
                 return;
 
             taskCompletionSource.SetResult(true);
+        };
+
+        /// <summary>
+        /// Gets the callback to use for functions that don't return a value and are not associated with a task.
+        /// </summary>
+        public static NoValueDelegate NoValueCallback = (xcommand_handle, err) =>
+        {
+            CheckCallback(err);
         };
 
         /// <summary>
@@ -34,7 +42,7 @@ namespace Hyperledger.Indy.Utils
         /// </summary>
         /// <typeparam name="T">The type the promise will return.</typeparam>
         /// <param name="taskCompletionSource">The source controlling the async result.</param>
-        /// <param name="errorCode">The error code returned to the callback by the sovrin function.</param>
+        /// <param name="errorCode">The error code returned to the callback by the indy function.</param>
         /// <returns>true if the error code was success, otherwise false.</returns>
         /// <exception cref="IndyException">If the errorCode is not a success result a SovrinException will be thrown.</exception>
         public static bool CheckCallback<T>(TaskCompletionSource<T> taskCompletionSource, int errorCode)
@@ -51,7 +59,7 @@ namespace Hyperledger.Indy.Utils
         /// <summary>
         /// Checks the result of a callback made by the Sovrin library.
         /// </summary>
-        /// <param name="errorCode">The error code returned to the callback by the sovrin function.</param>
+        /// <param name="errorCode">The error code returned to the callback by the indy function.</param>
         /// <exception cref="IndyException">If the errorCode is not a success result a SovrinException will be thrown.</exception>
         public static void CheckCallback(int errorCode)
         {
