@@ -1450,7 +1450,7 @@ mod demos {
 
     #[cfg(feature = "interoperability_tests")]
     #[test]
-    fn interoperability_test_pysovrin_is_issuer() {
+    fn interoperability_test_pyindy_is_issuer() {
         TestUtils::cleanup_storage();
 
         let pool_name = "pool1";
@@ -1586,7 +1586,7 @@ mod demos {
 
     #[cfg(feature = "interoperability_tests")]
     #[test]
-    fn interoperability_test_pysovrin_is_verifier() {
+    fn interoperability_test_pyindy_is_verifier() {
         TestUtils::cleanup_storage();
 
         let pool_name = "pool1";
@@ -1697,7 +1697,7 @@ mod demos {
 
     #[cfg(feature = "interoperability_tests")]
     #[test]
-    fn interoperability_test_pysovrin_is_prover() {
+    fn interoperability_test_pyindy_is_prover() {
         TestUtils::cleanup_storage();
 
         let schema_seq_no = 1;
