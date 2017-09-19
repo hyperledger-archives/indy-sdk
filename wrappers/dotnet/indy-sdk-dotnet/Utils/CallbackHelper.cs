@@ -42,7 +42,7 @@ namespace Hyperledger.Indy.Utils
         /// </summary>
         /// <typeparam name="T">The type the promise will return.</typeparam>
         /// <param name="taskCompletionSource">The source controlling the async result.</param>
-        /// <param name="errorCode">The error code returned to the callback by the sovrin function.</param>
+        /// <param name="errorCode">The error code returned to the callback by the indy function.</param>
         /// <returns>true if the error code was success, otherwise false.</returns>
         /// <exception cref="IndyException">If the errorCode is not a success result a SovrinException will be thrown.</exception>
         public static bool CheckCallback<T>(TaskCompletionSource<T> taskCompletionSource, int errorCode)
@@ -59,7 +59,7 @@ namespace Hyperledger.Indy.Utils
         /// <summary>
         /// Checks the result of a callback made by the Sovrin library.
         /// </summary>
-        /// <param name="errorCode">The error code returned to the callback by the sovrin function.</param>
+        /// <param name="errorCode">The error code returned to the callback by the indy function.</param>
         /// <exception cref="IndyException">If the errorCode is not a success result a SovrinException will be thrown.</exception>
         public static void CheckCallback(int errorCode)
         {

@@ -241,9 +241,11 @@
 - (void)testAgentConnectWorksForExpiredKeyInWallet
 {
     [TestUtils cleanupStorage];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSError *ret;
     NSString *poolName = [TestUtils pool];
+    NSString *xtype = @"keychain";
     
     // 1. create and open pool ledger
     
@@ -252,10 +254,14 @@
                                                                  poolHandle:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName() failed");
     
+    // register wallet type
+    
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    
     // 2. listener wallet
     IndyHandle listenerWallet = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
-                                                                  xtype:nil
+                                                                  xtype:xtype
                                                                  handle:&listenerWallet];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listener wallet");
     
@@ -343,6 +349,7 @@
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
