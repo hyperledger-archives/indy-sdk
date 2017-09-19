@@ -17,7 +17,6 @@
 		5DB57B0C1F7120DE00EB4C90 /* Indy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; };
 		5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B0F1F712A5100EB4C90 /* Base58Test.m */; };
-		5DB57B511F712A5200EB4C90 /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B121F712A5100EB4C90 /* AgentHighCases.m */; };
 		5DB57B521F712A5200EB4C90 /* AgentMediumAddIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */; };
 		5DB57B531F712A5200EB4C90 /* AgentMediumCloseConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */; };
 		5DB57B541F712A5200EB4C90 /* AgentMediumCloseListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */; };
@@ -57,6 +56,7 @@
 		5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4B1F712A5200EB4C90 /* NSArray+JSON.m */; };
 		5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */; };
 		5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */; };
+		5DFBC3FD1F715AD1003DFC5D /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */; };
 		80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */; };
 		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
 /* End PBXBuildFile section */
@@ -112,7 +112,6 @@
 		5DB57A6F1F71201200EB4C90 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		5DB57B0B1F7120DE00EB4C90 /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB57B0F1F712A5100EB4C90 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
-		5DB57B121F712A5100EB4C90 /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
 		5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumAddIdentity.m; sourceTree = "<group>"; };
 		5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseConnection.m; sourceTree = "<group>"; };
 		5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseListener.m; sourceTree = "<group>"; };
@@ -165,6 +164,7 @@
 		5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
 		5DB57B4E1F712A5200EB4C90 /* NSString+Validation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
 		5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
+		5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
 		7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -262,7 +262,7 @@
 		5DB57B111F712A5100EB4C90 /* Agent */ = {
 			isa = PBXGroup;
 			children = (
-				5DB57B121F712A5100EB4C90 /* AgentHighCases.m */,
+				5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */,
 				5DB57B131F712A5100EB4C90 /* Medium Cases */,
 			);
 			path = Agent;
@@ -640,6 +640,7 @@
 				5DB57B6D1F712A5200EB4C90 /* AnoncredsUtils.m in Sources */,
 				5DB57B751F712A5200EB4C90 /* WalletUtils.m in Sources */,
 				5DB57B6F1F712A5200EB4C90 /* Environment.m in Sources */,
+				5DFBC3FD1F715AD1003DFC5D /* AgentHighCases.m in Sources */,
 				5DB57B5E1F712A5200EB4C90 /* LedgerNodeRequest.mm in Sources */,
 				5DB57B711F712A5200EB4C90 /* PoolUtils.m in Sources */,
 				5DB57B661F712A5200EB4C90 /* WalletHighCases.m in Sources */,
@@ -656,7 +657,6 @@
 				5DB57B6A1F712A5200EB4C90 /* SignusDemo.mm in Sources */,
 				5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */,
 				5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */,
-				5DB57B511F712A5200EB4C90 /* AgentHighCases.m in Sources */,
 				5DB57B631F712A5200EB4C90 /* SignusHighCases.m in Sources */,
 				5DB57B5F1F712A5200EB4C90 /* LedgerNymRequest.mm in Sources */,
 				5DB57B681F712A5200EB4C90 /* AnoncredsDemo.mm in Sources */,
