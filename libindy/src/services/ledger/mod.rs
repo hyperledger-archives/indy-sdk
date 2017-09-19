@@ -46,6 +46,7 @@ impl LedgerService {
         let req_id = LedgerService::get_req_id();
 
         let role = match role {
+            Some("") => None,
             Some(r) => {
                 let r = match r {
                     "STEWARD" => constants::STEWARD,
@@ -259,7 +260,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":null}"#;
 
-        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None).unwrap();
+        let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
     }
 

@@ -328,7 +328,7 @@ mod high_cases {
                     \"role\":null\
                 }}", identifier, dest);
 
-            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, None).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some("")).unwrap();
             assert!(nym_request.contains(&expected_result));
         }
 
@@ -1185,7 +1185,7 @@ mod medium_cases {
             let get_nym_response_data_with_role: GetNymResultData = serde_json::from_str(&get_nym_response_with_role.result.data.unwrap()).unwrap();
 
             nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(),
-                                                         Some(&my_verkey.clone()), None, None).unwrap();
+                                                         Some(&my_verkey.clone()), None, Some("")).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
 
             get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
