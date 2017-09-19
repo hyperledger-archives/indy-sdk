@@ -346,7 +346,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 claimOfferJson,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -425,7 +425,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 masterSecretName,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -527,7 +527,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 claimsJson,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
