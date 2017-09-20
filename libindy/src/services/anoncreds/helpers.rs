@@ -1,14 +1,15 @@
 extern crate rand;
 extern crate openssl;
+extern crate indy_crypto;
 
 use errors::common::CommonError;
 
 use services::anoncreds::constants::LARGE_MVECT;
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::GroupOrderElement;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::HashMap;
+use self::indy_crypto::pair::{GroupOrderElement, PointG1, Pair};
 
 #[cfg(not(test))]
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CommonError> {
@@ -88,6 +89,24 @@ pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CommonErro
 
 pub trait BytesView {
     fn to_bytes(&self) -> Result<Vec<u8>, CommonError>;
+}
+
+impl BytesView for PointG1 {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl BytesView for GroupOrderElement {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
+        Ok(self.to_bytes()?)
+    }
+}
+
+impl BytesView for Pair {
+    fn to_bytes(&self) -> Result<Vec<u8>, CommonError> {
+        Ok(self.to_bytes()?)
+    }
 }
 
 pub trait AppendByteArray {

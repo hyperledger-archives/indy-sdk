@@ -1,4 +1,5 @@
 extern crate zmq_pw as zmq;
+extern crate indy_crypto;
 
 use std::cell::{BorrowError, BorrowMutError};
 use std::error::Error;
@@ -6,6 +7,8 @@ use std::{fmt, io};
 
 use api::ErrorCode;
 use errors::ToErrorCode;
+
+use self::indy_crypto::errors::ToErrorCode as IndyCryptoToErrorCode;
 
 #[derive(Debug)]
 pub enum CommonError {
@@ -112,6 +115,25 @@ impl From<BorrowError> for CommonError {
 impl From<BorrowMutError> for CommonError {
     fn from(err: BorrowMutError) -> Self {
         CommonError::InvalidState(err.description().to_string())
+    }
+}
+
+impl From<indy_crypto::errors::IndyCryptoError> for CommonError {
+    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+        match err.to_error_code() as i32 {
+            code if code == ErrorCode::CommonInvalidParam1 as i32 => CommonError::InvalidParam1(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam2 as i32 => CommonError::InvalidParam2(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam3 as i32 => CommonError::InvalidParam3(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam4 as i32 => CommonError::InvalidParam4(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam5 as i32 => CommonError::InvalidParam5(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam6 as i32 => CommonError::InvalidParam6(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam7 as i32 => CommonError::InvalidParam7(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam8 as i32 => CommonError::InvalidParam8(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidParam9 as i32 => CommonError::InvalidParam9(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidState as i32 => CommonError::InvalidState(err.description().to_string()),
+            code if code == ErrorCode::CommonInvalidStructure as i32 => CommonError::InvalidStructure(err.description().to_string()),
+            _ => CommonError::InvalidStructure("Invalid error code".to_string())
+        }
     }
 }
 
