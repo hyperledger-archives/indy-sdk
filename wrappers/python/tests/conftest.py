@@ -84,7 +84,7 @@ def path_home() -> Path:
     logger = logging.getLogger(__name__)
     logger.debug("path_home: >>>")
 
-    path = Path.home().joinpath(".indy_сlient")
+    path = Path.home().joinpath(".indy_client")
 
     if path.exists():
         logger.debug("path_home: Cleanup home path: %r", path)
