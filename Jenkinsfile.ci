@@ -7,7 +7,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
-                //'windows-test': { windowsTesting() }
+                'windows-test': { windowsTesting() }
         ])
     }
 }
