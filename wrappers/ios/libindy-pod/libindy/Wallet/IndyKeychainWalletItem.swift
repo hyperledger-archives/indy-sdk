@@ -142,7 +142,6 @@ extension IndyKeychainWalletItem
         return valueItem.value
     }
     
-    
     public func getNotExpiredValue(forKey key: String) -> String?
     {
         do
@@ -180,9 +179,12 @@ extension IndyKeychainWalletItem
         return valueItem.value
     }
     
+    
     public func listValuesJson(forKeyPrefix prefix: String) -> String
     {
         var valuesJson = [String: Any]()
+        
+        var arrayValues = [[String: String]]()
         
         do
         {
@@ -202,9 +204,15 @@ extension IndyKeychainWalletItem
         {
             if key.hasPrefix(prefix), let dictValue = value as? WalletValue
             {
-                valuesJson[key] = dictValue.value
+                var valuesDict = [String: String]()
+                valuesDict["key"] = key
+                valuesDict["value"] = dictValue.value
+                
+                arrayValues.append(valuesDict)
             }
         }
+        
+        valuesJson["values"] = arrayValues
         
         return valuesJson.toString() ?? String.emptyJson
     }

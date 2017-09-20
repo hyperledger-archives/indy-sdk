@@ -7,7 +7,7 @@
 @implementation IndyPool
 
 + (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)name
-                                     poolConfig:(NSString *)config
+                                     poolConfig:(NSString *)poolConfig
                                      completion:(void (^)(NSError *error)) handler
 {
     indy_error_t ret;
@@ -16,7 +16,7 @@
     
     ret = indy_create_pool_ledger_config(handle,
                                          [name UTF8String],
-                                         [config UTF8String],
+                                         [poolConfig UTF8String],
                                          IndyWrapperCommon2PCallback
                                          );
     if( ret != Success )
@@ -28,7 +28,7 @@
 }
 
 + (NSError *)openPoolLedgerWithName:(NSString *)name
-                         poolConfig:(NSString *)config
+                         poolConfig:(NSString *)poolConfig
                          completion:(void (^)(NSError *error, IndyHandle poolHandle)) handler
 {
     indy_error_t ret;
@@ -37,7 +37,7 @@
     
     ret = indy_open_pool_ledger(handle,
                                 [name UTF8String],
-                                [config UTF8String],
+                                [poolConfig UTF8String],
                                 IndyWrapperCommon3PHCallback
                                 );
     if( ret != Success )
@@ -67,7 +67,7 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)closePoolLedgerWithHandle:(IndyHandle)IndyHandle
++ (NSError *)closePoolLedgerWithHandle:(IndyHandle)poolHandle
                             completion:(void (^)(NSError *error)) handler
 {
     indy_error_t ret;
@@ -75,7 +75,7 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
     
     ret = indy_close_pool_ledger(handle,
-                                 (indy_handle_t) IndyHandle,
+                                 (indy_handle_t) poolHandle,
                                  IndyWrapperCommon2PCallback
                                  );
     if( ret != Success )

@@ -5,14 +5,19 @@ mod catchup;
 mod state_proof;
 
 extern crate byteorder;
+extern crate digest;
+extern crate hex;
 extern crate rust_base58;
-extern crate serde_json;
+extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
 
 use self::byteorder::{ByteOrder, LittleEndian};
+use self::digest::{FixedOutput, Input};
+use self::hex::ToHex;
 use self::rust_base58::FromBase58;
-use self::serde_json::Value;
+use serde_json;
+use serde_json::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
@@ -147,8 +152,21 @@ impl TransactionHandler {
                 json_msg.inner["result"]["data"] = tmp_obj;
             }
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
-            if reply_cnt == self.f {
-                //already have f same replies and receive f+1 now
+            let consensus_reached = {
+                let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
+                if let Some((proofs, root_hash, key, value)) = data_to_check_proof {
+                    debug!("TransactionHandler::process_reply try to verify proofs in reply");
+                    self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
+                                                    root_hash.from_base58().unwrap().as_slice(),
+                                                    key.as_slice(),
+                                                    value.as_ref().map(String::as_str))
+                } else {
+                    debug!("TransactionHandler::process_reply not enough data to verify proofs in reply, collect replies");
+                    reply_cnt == self.f //already have f same replies and receive f+1 now
+                }
+            };
+            debug!("TransactionHandler::process_reply consensus_reached {}", consensus_reached);
+            if consensus_reached {
                 for &cmd_id in &pend_cmd.cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
@@ -233,6 +251,88 @@ impl TransactionHandler {
                 }
                 Ok(())
             }
+        }
+    }
+
+    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value)
+                                      -> Option<(&str, &str, Vec<u8>, Option<String>)> {
+        let raw = match json_msg["type"].as_str() {
+            Some(super::ledger::constants::GET_ATTR) |
+            Some(super::ledger::constants::GET_CLAIM_DEF) |
+            Some(super::ledger::constants::GET_NYM) |
+            Some(super::ledger::constants::GET_SCHEMA) => {
+                (json_msg["state_proof"]["proof_nodes"].as_str(),
+                 json_msg["state_proof"]["root_hash"].as_str(),
+                 json_msg["dest"].as_str().or(json_msg["origin"].as_str())
+                     .map(|v: &str| v.as_bytes().to_vec()))
+            }
+            //TODO Some(super::ledger::constants::GET_TXN) => check ledger MerkleTree proofs?
+            //TODO Some(super::ledger::constants::GET_DDO) => support DDO
+            _ => return None
+        };
+        if let (Some(proof), Some(root_hash), Some(mut dest)) = raw {
+            let mut value = json_msg.get("data").map(Clone::clone);
+            let key_suffix: String = match json_msg["type"].as_str() {
+                Some(super::ledger::constants::GET_ATTR) => {
+                    value = json_msg.get("data").map(|data| {
+                        let mut hasher = sha2::Sha256::default();
+                        hasher.process(serde_json::to_string(data).unwrap().as_bytes());
+                        serde_json::Value::String(hasher.fixed_result().to_hex())
+                    });
+                    if let Some(attr_name) = json_msg["raw"].as_str()
+                        .or(json_msg["enc"].as_str())
+                        .or(json_msg["hash"].as_str()) {
+                        let mut hasher = sha2::Sha256::default();
+                        hasher.process(attr_name.as_bytes());
+                        format!(":\x01:{}", hasher.fixed_result().to_hex())
+                    } else {
+                        return None;
+                    }
+                }
+                Some(super::ledger::constants::GET_CLAIM_DEF) => {
+                    if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
+                                                                  json_msg["ref"].as_u64()) {
+                        format!(":\x03:{}:{}", sign_type, sch_seq_no)
+                    } else {
+                        return None;
+                    }
+                }
+                Some(super::ledger::constants::GET_NYM) => {
+                    let mut hasher = sha2::Sha256::default();
+                    hasher.process(dest.as_slice());
+                    dest = hasher.fixed_result().to_vec();
+                    "".to_string()
+                }
+                Some(super::ledger::constants::GET_SCHEMA) => {
+                    if let (Some(name), Some(ver)) = (json_msg["data"]["name"].as_str(),
+                                                      json_msg["data"]["version"].as_str()) {
+                        format!(":\x02:{}:{}", name, ver)
+                    } else {
+                        return None;
+                    }
+                }
+                _ => return None
+            };
+            let mut out_value: Option<serde_json::Value> = None;
+            if json_msg["type"].as_str().eq(&Some(::services::ledger::constants::GET_NYM)) {
+                out_value = value.map(|mut value| {
+                    value["seqNo"] = json_msg["seqNo"].clone();
+                    if value["role"].as_str() == Some("") {
+                        value["role"] = serde_json::Value::Null; //FIXME should be fixed on node side
+                    }
+                    let mut value = value.as_object_mut().unwrap().clone();
+                    value.remove("dest");
+                    serde_json::Value::from(value)
+                });
+            } else {
+                if let (Some(data), Some(seq_no)) = (value, json_msg["seqNo"].as_u64()) {
+                    out_value = Some(json!({ "lsn": seq_no, "val": data }));
+                }
+            }
+            dest.extend_from_slice(key_suffix.as_bytes());
+            Some((proof, root_hash, dest, out_value.map(|v| v.to_string())))
+        } else {
+            None
         }
     }
 }
@@ -988,13 +1088,8 @@ mod tests {
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
-        let reply = super::types::Reply {
-            result: super::types::Response {
-                req_id: req_id,
-            },
-        };
 
-        th.process_reply(reply.result.req_id, &json.to_string());
+        th.process_reply(req_id, &json.to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -1013,13 +1108,8 @@ mod tests {
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json1).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
-        let reply = super::types::Reply {
-            result: super::types::Response {
-                req_id: req_id,
-            },
-        };
 
-        th.process_reply(reply.result.req_id, &json2.to_string());
+        th.process_reply(req_id, &json2.to_string());
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
