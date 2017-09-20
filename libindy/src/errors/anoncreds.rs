@@ -1,4 +1,5 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use std::error;
 use std::fmt;
@@ -81,6 +82,12 @@ impl ToErrorCode for AnoncredsError {
 impl From<CommonError> for AnoncredsError {
     fn from(err: CommonError) -> AnoncredsError {
         AnoncredsError::CommonError(err)
+    }
+}
+
+impl From<indy_crypto::errors::IndyCryptoError> for AnoncredsError {
+    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+        AnoncredsError::CommonError(CommonError::from(err))
     }
 }
 

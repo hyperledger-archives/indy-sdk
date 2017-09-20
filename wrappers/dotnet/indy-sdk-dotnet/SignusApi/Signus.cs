@@ -235,7 +235,7 @@ namespace Hyperledger.Indy.SignusApi
                 commandHandle,
                 wallet.Handle,
                 identityJson,
-                CallbackHelper.NoValueCallback);
+                CallbackHelper.TaskCompletingNoValueCallback);
 
             CallbackHelper.CheckResult(commandResult);
 

@@ -28,6 +28,18 @@ static NSString* connectionsKey        =  @"connections";
 
 @implementation IndyCallbacks
 
++ (IndyCallbacks *)sharedInstance
+{
+    static IndyCallbacks *instance = nil;
+    static dispatch_once_t dispatch_once_block;
+    
+    dispatch_once(&dispatch_once_block, ^ {
+        instance = [IndyCallbacks new];
+    });
+    
+    return instance;
+}
+
 - (IndyCallbacks *)init
 {
     self = [super init];
@@ -43,26 +55,37 @@ static NSString* connectionsKey        =  @"connections";
     return self;
 }
 
+// MARK: - Agent callbacks
+
+
+/**
+ Map connection and listener callbacks in
+ */
 - (void) addConnection:(indy_handle_t) connection  forListener:(indy_handle_t) listener
 {
-    NSNumber *nl = [NSNumber numberWithInt: listener];
-    NSNumber *nc = [NSNumber numberWithInt: connection];
+    NSNumber *listenerHandle = [NSNumber numberWithInt: listener];
+    NSNumber *connectionHandle = [NSNumber numberWithInt: connection];
     
     @synchronized(self.globalLock)
     {
-        NSMutableDictionary *dict = [self.agentConnectCompletions objectForKey: nl ];
+        NSMutableDictionary *dict = [self.agentConnectCompletions objectForKey: listenerHandle ];
         if(dict)
         {
             NSMutableDictionary *listenerParams = [dict objectForKey: connectionsKey];
             if(listenerParams)
             {
-                [listenerParams setObject:nc forKey:nc];
+                // TODO: is it correct?
+                [listenerParams setObject:connectionHandle forKey:connectionHandle];
             }
         }
     }
 }
 
+// MARK: Listener
 
+/**
+ Map connection and listener callbacks in listenerForConnection
+ */
 - (void) addListener:(indy_handle_t) listener forConnection:(indy_handle_t) connection
 {
     NSNumber *nl = [NSNumber numberWithInt: listener];
@@ -102,7 +125,7 @@ static NSString* connectionsKey        =  @"connections";
     
     @synchronized(self.globalLock)
     {
-        [self.agentListenCompletions setObject:callbacks forKey:key];
+        self.agentListenCompletions[key] = callbacks;
     }
 }
 
@@ -113,8 +136,8 @@ static NSString* connectionsKey        =  @"connections";
     {
         if ([self.agentListenCompletions objectForKey:key])
         {
-            NSMutableDictionary *dict = [self.agentListenCompletions objectForKey:key];
-            if(dict && [dict objectForKey:connectionsKey])
+            NSMutableDictionary *dict = self.agentListenCompletions[key];
+            if(dict && dict[connectionsKey])
             {
                 NSArray *connections = [[dict objectForKey:connectionsKey] allKeys];
                 for(NSNumber *n in connections)
@@ -133,19 +156,20 @@ static NSString* connectionsKey        =  @"connections";
     NSMutableDictionary *val = nil;
     @synchronized(self.globalLock)
     {
-        val = [self.agentListenCompletions objectForKey: key];
+        val = self.agentListenCompletions[key];
     }
     return val;
 }
 
-- (void) rememberConnectHandle:(indy_handle_t) connectionHandle withCallback:(void*) callback
+// MARK: Connect
+
+- (void) rememberConnectHandle:(indy_handle_t) connectionHandle withCallback:(id) callback
 {
-    NSValue *val = [NSValue valueWithPointer:callback];
     NSNumber *key = [NSNumber numberWithInt:connectionHandle];
     
     @synchronized(self.globalLock)
     {
-        [self.agentConnectCompletions setObject:val forKey:key];
+        self.agentConnectCompletions[key] = [callback copy];
     }
 }
 
@@ -154,44 +178,46 @@ static NSString* connectionsKey        =  @"connections";
     NSNumber *key = [NSNumber numberWithInt:connectionHandle];
     @synchronized(self.globalLock)
     {
-        if ([self.agentConnectCompletions objectForKey:key])
+        if (self.agentConnectCompletions[key])
         {
             [self.agentConnectCompletions removeObjectForKey:key];
         }
     }
 }
 
-- (void *)connectCompletionFor:(indy_handle_t)handle
+- (id)connectCompletionFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
-    NSValue *val = nil;
+    id val = nil;
     @synchronized(self.globalLock)
     {
-        val = [self.agentConnectCompletions objectForKey: key];
+        val = self.agentConnectCompletions[key];
     }
-    return val ? [val pointerValue] : NULL;
+    return val;
 }
 
+// MARK: - Create command handle and store callback
 
-- (indy_handle_t)createCommandHandleFor:(void *)callback
+- (indy_handle_t)createCommandHandleFor:(id)callback
 {
-    NSValue *cmdVal = [NSValue valueWithPointer:callback];
     NSNumber *handle = nil;
     
     @synchronized(self.globalLock)
     {
         handle = [NSNumber numberWithInt:self.commandHandleCounter];
         self.commandHandleCounter++;
-        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithObjectsAndKeys: cmdVal, commandCallbackKey, nil];
-        [self.commandCompletions setObject:dict forKey:handle];
+        
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        dict[commandCallbackKey] = [callback copy];
+        
+        self.commandCompletions[handle] = dict;
     }
     return (indy_handle_t)[handle integerValue];
 }
 
-- (indy_handle_t)createCommandHandleFor:(void *)callback
+- (indy_handle_t)createCommandHandleFor:(id)callback
                    withConnectionHandle:(indy_handle_t)connectionHandle
 {
-    NSValue  *cmdVal = [NSValue valueWithPointer:callback];
     NSNumber *conVal = [NSNumber numberWithInt:connectionHandle];
     
     NSNumber *handle = nil;
@@ -200,9 +226,12 @@ static NSString* connectionsKey        =  @"connections";
     {
         handle = [NSNumber numberWithInt:self.commandHandleCounter];
         self.commandHandleCounter++;
-        NSMutableDictionary *dict = [ NSMutableDictionary dictionaryWithObjectsAndKeys: cmdVal, commandCallbackKey,
-                                     conVal, connectionHandleKey, nil];
-        [self.commandCompletions setObject:dict forKey:handle];
+        
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        dict[commandCallbackKey] = [callback copy];
+        dict[connectionHandleKey] = conVal;
+        
+        self.commandCompletions[handle] = dict;
     }
     return (indy_handle_t)[handle integerValue];
 }
@@ -217,44 +246,41 @@ static NSString* connectionsKey        =  @"connections";
  @param messageCallback Callback that will be called on receiving of an incoming message. Can be called multiply times: once for each incoming message.
  @return commandHandle
  */
-- (indy_handle_t)createCommandHandleForListenerCallback:(void *)listenerCallback
-                                 withConnectionCallback:(void *)connectionCallback
-                                     andMessageCallback:(void *)messageCallback
+- (indy_handle_t)createCommandHandleForListenerCallback:(id)listenerCallback
+                                 withConnectionCallback:(id)connectionCallback
+                                     andMessageCallback:(id)messageCallback
 {
-    NSValue *listenerCbVal = [NSValue valueWithPointer:listenerCallback];
-    NSValue *connectionCbVal = [NSValue valueWithPointer:connectionCallback];
-    NSValue *messageCbVal = [NSValue valueWithPointer:messageCallback];
-    
     NSNumber *handle = nil;
     
     @synchronized(self.globalLock)
     {
         handle = [NSNumber numberWithInt:self.commandHandleCounter];
         self.commandHandleCounter++;
-        NSMutableDictionary *dict = [ NSMutableDictionary dictionaryWithObjectsAndKeys: listenerCbVal, commandCallbackKey,
-                                     connectionCbVal, connectionCallbackKey,
-                                     messageCbVal, messageCallbackKey,    nil];
         
-        [self.commandCompletions setObject:dict forKey:handle];
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        dict[commandCallbackKey] = [listenerCallback copy];
+        dict[connectionCallbackKey] = [connectionCallback copy];
+        dict[messageCallbackKey] = [messageCallback copy];
+        
+        self.commandCompletions[handle] = dict;
     }
     return (indy_handle_t)[handle integerValue];
 }
 
-- (indy_handle_t)createCommandHandleFor:(void *)callback
-                    withMessageCallback:(void *)messageCallback
+- (indy_handle_t)createCommandHandleFor:(id)callback
+                    withMessageCallback:(id)messageCallback
 {
-    NSValue *cmdVal = [NSValue valueWithPointer:callback];
-    NSValue *mesVal = [NSValue valueWithPointer:messageCallback];
-    
     NSNumber *handle = nil;
     
     @synchronized(self.globalLock)
     {
         handle = [NSNumber numberWithInt:self.commandHandleCounter];
         self.commandHandleCounter++;
-        NSMutableDictionary *dict = [ NSMutableDictionary dictionaryWithObjectsAndKeys: cmdVal, commandCallbackKey,
-                                     mesVal, messageCallbackKey,    nil];
-        [self.commandCompletions setObject:dict forKey:handle];
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        dict[commandCallbackKey] = [callback copy];
+        dict[messageCallbackKey] = [messageCallback copy];
+        
+        self.commandCompletions[handle] = dict;
     }
     return (indy_handle_t)[handle integerValue];
 }
@@ -272,16 +298,29 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (void *)commandCompletionFor:(indy_handle_t)handle
+- (id)commandCompletionForAgent:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
-    NSValue *val = nil;
+    id val = nil;
     @synchronized(self.globalLock)
     {
         NSMutableDictionary *dict = (NSMutableDictionary*)[self.commandCompletions objectForKey:key];
         val = [dict objectForKey:@"commandCallback"];
     }
-    return val ? [val pointerValue] : NULL;
+    return val;
+}
+
+
+- (id)commandCompletionFor:(indy_handle_t)handle
+{
+    NSNumber *key = [NSNumber numberWithInt:handle];
+    id val = nil;
+    @synchronized(self.globalLock)
+    {
+        NSMutableDictionary *dict = (NSMutableDictionary*)[self.commandCompletions objectForKey:key];
+        val = [dict objectForKey:@"commandCallback"];
+    }
+    return val;
 }
 
 - (NSMutableDictionary*) dictionaryFor:(indy_handle_t)handle
@@ -295,28 +334,17 @@ static NSString* connectionsKey        =  @"connections";
     return dict;
 }
 
-+ (IndyCallbacks *)sharedInstance
-{
-    static IndyCallbacks *instance = nil;
-    static dispatch_once_t dispatch_once_block;
-    
-    dispatch_once(&dispatch_once_block, ^ {
-        instance = [IndyCallbacks new];
-    });
-    
-    return instance;
-}
-
 @end
 
+// MARK: - static indy C-callbacks
 
 void IndyWrapperCommon2PCallback(indy_handle_t xcommand_handle,
                                  indy_error_t err)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*) = (__bridge void (^)(NSError*))block;
+    void (^completion)(NSError*) = (void (^)(NSError*))block;
     
     if (completion)
     {
@@ -332,10 +360,10 @@ void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
                                   indy_error_t err,
                                   indy_handle_t pool_handle)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, IndyHandle) = (__bridge void (^)(NSError*, IndyHandle))block;
+    void (^completion)(NSError*, IndyHandle) = (void (^)(NSError*, IndyHandle))block;
     
     if (completion)
     {
@@ -351,10 +379,10 @@ void IndyWrapperCommon3PSCallback(indy_handle_t xcommand_handle,
                                   indy_error_t err,
                                   const char* arg1)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, NSString *) = (__bridge void (^)(NSError*, NSString *arg1 ))block;
+    void (^completion)(NSError*, NSString *) = (void (^)(NSError*, NSString *arg1 ))block;
     NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
     
     if (completion)
@@ -371,10 +399,10 @@ void IndyWrapperCommon3PBCallback(indy_handle_t xcommand_handle,
                                   indy_error_t err,
                                   indy_bool_t arg1)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, BOOL ) = (__bridge void (^)(NSError*, BOOL arg1 ))block;
+    void (^completion)(NSError*, BOOL ) = (void (^)(NSError*, BOOL arg1 ))block;
     
     if (completion)
     {
@@ -391,10 +419,10 @@ void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
                                  const char* arg1,
                                  const char *arg2)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, NSString* arg1, NSString *arg2))block;
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2) = (void (^)(NSError*, NSString* arg1, NSString *arg2))block;
     
     NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
     NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
@@ -415,10 +443,10 @@ void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
                                  const uint8_t* arg1,
                                  uint32_t arg2)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, NSData* arg) = (__bridge void (^)(NSError*, NSData* arg))block;
+    void (^completion)(NSError*, NSData* arg) = (void (^)(NSError*, NSData* arg))block;
     
     NSData *sarg = [NSData dataWithBytes:arg1 length:arg2];
     
@@ -438,10 +466,10 @@ void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
                                  const char *arg2,
                                  const char *arg3)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (__bridge void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
     
     NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
     NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
@@ -463,10 +491,10 @@ void IndyWrapperCommon5PSCallback(indy_handle_t xcommand_handle,
                                   const char* arg1,
                                   const char *arg2)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, IndyHandle, NSString* arg1, NSString *arg2) = (__bridge void (^)(NSError*, IndyHandle, NSString* arg1, NSString *arg2))block;
+    void (^completion)(NSError*, IndyHandle, NSString* arg1, NSString *arg2) = (void (^)(NSError*, IndyHandle, NSString* arg1, NSString *arg2))block;
     
     NSString* sarg1 = [NSString stringWithUTF8String: arg1];
     NSString* sarg2 = [NSString stringWithUTF8String: arg2];
@@ -488,10 +516,10 @@ void IndyWrapperCommon6PDataCallback(indy_handle_t xcommand_handle,
                                      const uint8_t* arg3,
                                      uint32_t arg4)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     
-    void (^completion)(NSError*, NSData* xArg1, NSData* xArg2) = (__bridge void (^)(NSError*, NSData* xArg1, NSData* xArg2))block;
+    void (^completion)(NSError*, NSData* xArg1, NSData* xArg2) = (void (^)(NSError*, NSData* xArg1, NSData* xArg2))block;
     
     NSData *sarg1 = [NSData dataWithBytes:arg1 length:arg2];
     NSData *sarg2 = [NSData dataWithBytes:arg3 length:arg4];
@@ -513,11 +541,11 @@ void IndyWrapperCommonAgentOutgoingConnectionCallback(indy_handle_t xcommand_han
     NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] dictionaryFor: xcommand_handle];
     if(dict && [dict objectForKey: commandCallbackKey])
     {
-        void * commandBlock = [[dict objectForKey: commandCallbackKey] pointerValue];
-        void * messageBlock = [[dict objectForKey: messageCallbackKey] pointerValue];
+        id commandBlock = dict[commandCallbackKey];
+        id messageBlock = dict[messageCallbackKey];
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
         
-        void (^completion)(NSError*, IndyHandle) = (__bridge void (^)(NSError*, IndyHandle))commandBlock;
+        void (^completion)(NSError*, IndyHandle) = (void (^)(NSError*, IndyHandle))commandBlock;
         
         if(err == Success)
         {
@@ -542,10 +570,10 @@ void IndyWrapperCommonAgentMessageCallback(indy_handle_t xconnection_handle,
     NSString *messageArg = [NSString stringWithUTF8String: message];
     dispatch_async(dispatch_get_main_queue(), ^
                    {
-                       void* block = [[IndyCallbacks sharedInstance] connectCompletionFor: xconnection_handle];
+                       id block = [[IndyCallbacks sharedInstance] connectCompletionFor: xconnection_handle];
                        if(block)
                        {
-                           void (^completion)(IndyHandle, NSError*, NSString*) = (__bridge void (^)(IndyHandle, NSError*, NSString*))block;
+                           void (^completion)(IndyHandle, NSError*, NSString*) = (void (^)(IndyHandle, NSError*, NSString*))block;
                            if(completion)
                            {
                                NSError *error = [NSError errorFromIndyError: err ];
@@ -558,9 +586,9 @@ void IndyWrapperCommonAgentMessageCallback(indy_handle_t xconnection_handle,
 void IndyWrapperCloseConnectionCallback(indy_handle_t xcommand_handle,
                                         indy_error_t err)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionForAgent: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
-    void (^completion)(NSError*) = (__bridge void (^)(NSError*))block;
+    void (^completion)(NSError*) = (void (^)(NSError*))block;
     
     NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] dictionaryFor: xcommand_handle];
     
@@ -585,7 +613,7 @@ void IndyWrapperCommonAgentListenerCallback(indy_handle_t xcommand_handle,
                                             indy_error_t  err,
                                             indy_handle_t listener_handle)
 {
-    void * block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    id block = [[IndyCallbacks sharedInstance] commandCompletionForAgent: xcommand_handle];
     // Dictionary of callbacks for this commandHandle
     NSMutableDictionary *dict = [[IndyCallbacks sharedInstance] dictionaryFor: xcommand_handle];
     
@@ -595,7 +623,7 @@ void IndyWrapperCommonAgentListenerCallback(indy_handle_t xcommand_handle,
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] rememberListenHandle:listener_handle withDictionary:dict];
     
-    void (^completion)(NSError* error, IndyHandle) = (__bridge void (^)(NSError*,IndyHandle))block;
+    void (^completion)(NSError* error, IndyHandle) = (void (^)(NSError*,IndyHandle))block;
     
     if(completion)
     {
@@ -625,11 +653,10 @@ void IndyWrapperCommonAgentListenerConnectionCallback(indy_handle_t xlistener_ha
                        
                        if(dict && [dict objectForKey: connectionCallbackKey])
                        {
-                           NSValue *val = [dict objectForKey: connectionCallbackKey];
-                           if(val)
+                           id block = [dict objectForKey: connectionCallbackKey];
+                           if(block)
                            {
-                               void* block = [val pointerValue];
-                               void (^completion)(IndyHandle,NSError*,IndyHandle,NSString*,NSString*) = (__bridge void (^)(IndyHandle,NSError*,IndyHandle,NSString*,NSString*))block;
+                               void (^completion)(IndyHandle,NSError*,IndyHandle,NSString*,NSString*) = (void (^)(IndyHandle,NSError*,IndyHandle,NSString*,NSString*))block;
                                if(completion)
                                {
                                    NSError *error = [ NSError errorFromIndyError: err ];
@@ -641,10 +668,9 @@ void IndyWrapperCommonAgentListenerConnectionCallback(indy_handle_t xlistener_ha
                        
                    });
 }
-
-void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnection_handle,
+  void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnection_handle,
                                                    indy_error_t  err,
-                                                   const char *    message)
+                                                   const char *  message)
 {
     NSString* sarg = [NSString stringWithUTF8String: message];
     
@@ -655,12 +681,11 @@ void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnection_han
                        
                        if(listenerHandle && dict && [dict objectForKey: messageCallbackKey] )
                        {
-                           NSValue *val = [dict objectForKey: messageCallbackKey];
+                           id block = dict[messageCallbackKey];
                            
-                           if(val)
+                           if(block)
                            {
-                               void* block = [val pointerValue];
-                               void (^completion)(IndyHandle,NSError*,NSString*) = (__bridge void (^)(IndyHandle,NSError*,NSString*))block;
+                               void (^completion)(IndyHandle,NSError*,NSString*) = (void (^)(IndyHandle,NSError*,NSString*))block;
                                if(completion)
                                {
                                    NSError *error = [ NSError errorFromIndyError: err ];
