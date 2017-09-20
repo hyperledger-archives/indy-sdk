@@ -1519,8 +1519,7 @@ pub mod mocks {
                                  PointG1::new().unwrap(), PointG1::new().unwrap(),
                                  PointG1::new().unwrap(), PointG2::new().unwrap(),
                                  PointG2::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG2::new().unwrap(),
-                                 GroupOrderElement::new().unwrap())
+                                 PointG2::new().unwrap())
     }
 
     pub fn get_accumulator() -> Accumulator {

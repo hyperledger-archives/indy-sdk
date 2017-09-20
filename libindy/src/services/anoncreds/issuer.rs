@@ -102,7 +102,7 @@ impl Issuer {
 
         info!(target: "anoncreds_service", "Issuer generate revocation keys -> done");
         Ok((
-            Some(RevocationPublicKey::new(g, gdash, h, h0, h1, h2, htilde, hcap, u, pk, y, x)),
+            Some(RevocationPublicKey::new(g, gdash, h, h0, h1, h2, htilde, hcap, u, pk, y)),
             Some(RevocationSecretKey::new(x, sk))
         ))
     }
