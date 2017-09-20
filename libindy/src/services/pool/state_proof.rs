@@ -91,7 +91,7 @@ impl rlp::Decodable for Node {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, RlpDecoderError> {
         match rlp.prototype()? {
             RlpPrototype::List(Node::PAIR_SIZE) => {
-                let path = rlp.at(0)?.as_raw();
+                let path: Vec<u8> = rlp.at(0)?.as_val()?;
                 if path[0] & Node::IS_LEAF_MASK == Node::IS_LEAF_MASK {
                     return Ok(Node::Leaf(Leaf {
                         path: rlp.at(0)?.as_val()?,
@@ -133,7 +133,7 @@ impl rlp::Decodable for Node {
                 return Ok(Node::Hash(rlp.as_val()?));
             }
             _ => {
-                error!("Unexpected data while parsing Patricia Merkle Trie: {:?}", rlp.prototype());
+                error!("Unexpected data while parsing Patricia Merkle Trie: {:?}: {:?}", rlp.prototype(), rlp);
                 return Err(RlpDecoderError::Custom("Unexpected data"));
             }
         }
@@ -144,19 +144,20 @@ type NodeHash = generic_array::GenericArray<u8, <sha3::Sha3_256 as digest::Fixed
 type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
-    fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Result<Option<String>, CommonError> {
+    fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Result<Option<String>, CommonError> {
         let value = self.get_value(db, path)?;
         if let Some(vec) = value {
             let str = String::from_utf8(vec)
                 .map_err(|err| CommonError::InvalidStructure(
                     format!("Patricia Merkle Trie contains non-str value ({})", err)))?;
+            trace!("Str value from Patricia Merkle Trie {}", str);
             Ok(Some(str))
         } else {
             Ok(None)
         }
     }
-    fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b str) -> Result<Option<Vec<u8>>, CommonError> {
-        let nibble_path = Node::path_to_nibbles(path.as_bytes());
+    fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Result<Option<Vec<u8>>, CommonError> {
+        let nibble_path = Node::path_to_nibbles(path);
         match self._get_value(db, nibble_path.as_slice())? {
             Some(v) => {
                 trace!("Raw value from Patricia Merkle Trie {:?}", v);
@@ -198,6 +199,7 @@ impl Node {
                     return Err(CommonError::InvalidState(
                         "Incorrect Patricia Merkle Trie: node marked as leaf but path contains extension flag".to_string()));
                 }
+                trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
                 if pair_path == path {
                     return Ok(Some(&pair.value));
                 } else {
@@ -237,8 +239,8 @@ impl Node {
     }
 }
 
-#[allow(dead_code)] //FIXME remove after usage in main code
-pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_value: Option<&str>) -> bool {
+pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
+    trace!("state_proof::verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
@@ -251,6 +253,7 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_val
     map.get(root_hash).map(|root| {
         root
             .get_str_value(&map, key)
+            .map_err(map_err_trace!())
             .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
             .unwrap_or(false)
     }).unwrap_or(false)
@@ -260,14 +263,9 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &str, expected_val
 mod tests {
     use super::*;
 
-    fn hex_str_to_bytes(hex_str: &str) -> Vec<u8> {
-        let mut vec: Vec<u8> = Vec::new();
-        for i in 0..hex_str.len() / 2 {
-            let x = &hex_str[(i * 2)..(i * 2 + 2)];
-            vec.push(u8::from_str_radix(&x, 16).unwrap())
-        }
-        return vec;
-    }
+    extern crate hex;
+
+    use self::hex::FromHex;
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {
@@ -280,7 +278,7 @@ mod tests {
             'E'  -> 'v6fdsfdfs'
         */
         let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080";
-        let vec = hex_str_to_bytes(str);
+        let vec = Vec::from_hex(str).unwrap();
         let rlp = UntrustedRlp::new(vec.as_slice());
         let proofs: Vec<Node> = rlp.as_list().unwrap();
         info!("Input");
@@ -301,7 +299,7 @@ mod tests {
         }
         for k in 33..35 {
             info!("Try get {}", k);
-            let x = proofs[2].get_str_value(&map, k.to_string().as_str()).unwrap().unwrap();
+            let x = proofs[2].get_str_value(&map, k.to_string().as_bytes()).unwrap().unwrap();
             info!("{:?}", x);
             assert_eq!(x, format!("v{}", k - 32));
         }
@@ -317,12 +315,12 @@ mod tests {
             'D'  -> 'v5asdfasdf'
             'E'  -> 'v6fdsfdfs'
         */
-        let proofs = hex_str_to_bytes("f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080");
-        let root_hash = hex_str_to_bytes("badc906111df306c6afac17b62f29792f0e523b67ba831651d6056529b6bf690");
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33", Some("v1")));
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "34", Some("v2")));
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C", Some("v3")));
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "4", Some("v4")));
+        let proofs = Vec::from_hex("f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
+        let root_hash = Vec::from_hex("badc906111df306c6afac17b62f29792f0e523b67ba831651d6056529b6bf690").unwrap();
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33".as_bytes(), Some("v1")));
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "34".as_bytes(), Some("v2")));
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C".as_bytes(), Some("v3")));
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "4".as_bytes(), Some("v4")));
     }
 
     #[test]
@@ -334,9 +332,9 @@ mod tests {
             '333' -> 'v4'
             '334' -> 'v5'
         */
-        let proofs = hex_str_to_bytes("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080");
-        let root_hash = hex_str_to_bytes("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab");
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "333", Some("v4")));
+        let proofs = Vec::from_hex("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080").unwrap();
+        let root_hash = Vec::from_hex("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab").unwrap();
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "333".as_bytes(), Some("v4")));
     }
 
     #[test]
@@ -348,14 +346,14 @@ mod tests {
             '333' -> 'v4'
             '334' -> 'v5'
         */
-        let proofs = hex_str_to_bytes("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080");
-        let root_hash = hex_str_to_bytes("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab");
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33", Some("v1")));
+        let proofs = Vec::from_hex("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080").unwrap();
+        let root_hash = Vec::from_hex("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab").unwrap();
+        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33".as_bytes(), Some("v1")));
     }
 
     #[test]
     fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
-        let proofs = hex_str_to_bytes("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080");
-        assert_eq!(verify_proof(proofs.as_slice(), &[0x00], "", None), false);
+        let proofs = Vec::from_hex("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
+        assert_eq!(verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
     }
 }

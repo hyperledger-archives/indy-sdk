@@ -1,12 +1,14 @@
+extern crate indy_crypto;
+
 use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 use services::anoncreds::constants::*;
 use services::anoncreds::types::*;
 use services::anoncreds::helpers::*;
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
+use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 
 extern crate time;
 

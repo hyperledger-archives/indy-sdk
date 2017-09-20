@@ -1,10 +1,13 @@
+extern crate indy_crypto;
+
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use errors::common::CommonError;
 use services::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use utils::json::{JsonEncodable, JsonDecodable};
+
+use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 
 pub enum ByteOrder {
     Big,
