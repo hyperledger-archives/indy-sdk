@@ -26,11 +26,6 @@ def testing() {
 
 def publishing() {
     stage('Publishing') {
-        if (!(env.BRANCH_NAME in ['master', 'rc'])) {
-            echo "${env.BRANCH_NAME}: skip publishing"
-            return
-        }
-        
         echo "${env.BRANCH_NAME}: start publishing"
 
         publishedVersions = parallel([
