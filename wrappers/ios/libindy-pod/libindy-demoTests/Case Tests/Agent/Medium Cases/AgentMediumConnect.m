@@ -256,7 +256,7 @@
     
     // register wallet type
     
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     
     // 2. listener wallet
     IndyHandle listenerWallet = 0;

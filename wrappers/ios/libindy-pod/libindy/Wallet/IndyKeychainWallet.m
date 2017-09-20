@@ -9,6 +9,7 @@
 #import "IndyKeychainWalletConfig.h"
 #import "IndySequenceUtils.h"
 #import "NSString+JSON.h"
+#import "NSDictionary+JSON.h"
 #import "libindy-Swift.h"
 
 
@@ -38,18 +39,6 @@
     });
     
     return instance;
-}
-
-- (instancetype)initWithName:(NSString *)name
-                    poolName:(NSString *)poolName
-                      config:(NSString *)config
-                 credentials:(NSString *)credentials
-{
-    self = [super init];
-    if (self){
-    }
-    
-    return self;
 }
 
 - (NSError *)createWithName:(NSString *)name config:(NSString *)config credentials:(NSString *)credentials
@@ -212,7 +201,10 @@
         
         IndyKeychainWalletItem *walletItem = self.handlesDictionary[@(handle)];
         
+       // NSDictionary *valuesJsonListDict = [walletItem listValuesJsonForKeyPrefix:key];
+        
         NSString *valuesJsonList = [walletItem listValuesJsonForKeyPrefix:key];
+
         
         if (valuesJson)
         {
@@ -247,16 +239,6 @@
         return [NSError errorFromIndyError:WalletAlreadyExistsError];
     }
     return nil;
-}
-
-- (NSError *)free:(IndyHandle)handle str:(NSString *)str
-{
-    return [NSError errorFromIndyError:Success];
-}
-
-+ (NSString *)walletTypeName
-{
-    return @"IndyKeychainWallet";
 }
 
 - (void) cleanup

@@ -13,7 +13,7 @@
 		5D2A3A4F1F164BD70003FE43 /* libPods-libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D2A3A4E1F164BD70003FE43 /* libPods-libindy.a */; };
 		5D4F3BFE1F5D3F48004CB6A4 /* IndyWalletCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3BFC1F5D3F48004CB6A4 /* IndyWalletCallbacks.h */; };
 		5D4F3BFF1F5D3F48004CB6A4 /* IndyWalletCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3BFD1F5D3F48004CB6A4 /* IndyWalletCallbacks.m */; };
-		5D4F3C051F5D3F8E004CB6A4 /* IndyKeychainWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5D4F3C051F5D3F8E004CB6A4 /* IndyKeychainWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C031F5D3F8E004CB6A4 /* IndyKeychainWallet.h */; };
 		5D4F3C061F5D3F8E004CB6A4 /* IndyKeychainWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D4F3C041F5D3F8E004CB6A4 /* IndyKeychainWallet.m */; };
 		5D4F3C0D1F5D8A44004CB6A4 /* IndyWalletProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D4F3C0C1F5D8A44004CB6A4 /* IndyWalletProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DADD3A11F62C27700F0BEE6 /* IndyKeychainWalletConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DADD39F1F62C27700F0BEE6 /* IndyKeychainWalletConfig.h */; };
@@ -520,6 +520,19 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/build/Debug-iphoneos",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"crypto\"",
+					"-l\"indy\"",
+					"-l\"libsodium\"",
+					"-l\"libzmq-pw\"",
+					"-l\"milagro\"",
+					"-l\"ssl\"",
+					"-l\"stdc++\"",
+					"-\"lpthread\"",
+					"-\"lresolv\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libindy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -551,6 +564,19 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/build/Debug-iphoneos",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"crypto\"",
+					"-l\"indy\"",
+					"-l\"libsodium\"",
+					"-l\"libzmq-pw\"",
+					"-l\"milagro\"",
+					"-l\"ssl\"",
+					"-l\"stdc++\"",
+					"-\"lpthread\"",
+					"-\"lresolv\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.evernym.libindy;
 				PRODUCT_NAME = "$(TARGET_NAME)";

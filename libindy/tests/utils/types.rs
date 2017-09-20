@@ -96,7 +96,7 @@ pub struct GetSchemaReplyResult {
 pub struct GetSchemaResultData {
     pub attr_names: HashSet<String>,
     pub name: String,
-    pub origin: String,
+    pub origin: Option<String>,
     pub version: String
 }
 
