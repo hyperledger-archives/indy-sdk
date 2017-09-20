@@ -4,3 +4,6 @@ name = "watermark"
 version = "0.0.1"
 authors = [ "Mark Hadley <mark.hadley@evernym.com>" ]
 
+[lib]
+name = "cxs"
+path = "src/lib.rs"
