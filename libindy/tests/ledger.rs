@@ -821,7 +821,7 @@ mod high_cases {
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&my_did.clone(),
                                                                              get_schema_response.result.seq_no.unwrap(),
                                                                              &claim_def.signature_type,
-                                                                             &get_schema_response.result.data.unwrap().origin).unwrap();
+                                                                             &get_schema_response.result.dest.unwrap()).unwrap();
 
             let get_claim_def_response = PoolUtils::send_request(pool_handle, &get_claim_def_request).unwrap();
             info!("get_claim_def_response {}", get_claim_def_response);

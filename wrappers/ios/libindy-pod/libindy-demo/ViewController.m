@@ -7,10 +7,8 @@
 //
 
 #import "ViewController.h"
+#import <libindy/libindy.h>
 
-@interface ViewController ()
-
-@end
 
 @implementation ViewController
 
