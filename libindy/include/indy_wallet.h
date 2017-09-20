@@ -44,15 +44,15 @@ extern "C" {
 
                                                   indy_error_t (*getFn)(indy_handle_t handle,
                                                                           const char* key,
-                                                                          const char *const *value_ptr),
+                                                                          const char ** const value_ptr),
 
-                                                  indy_error_t (*getNotExiredFn)(indy_handle_t handle,
+                                                  indy_error_t (*getNotExpiredFn)(indy_handle_t handle,
                                                                           const char* key,
-                                                                          const char *const *value_ptr),
+                                                                          const char ** const value_ptr),
 
                                                   indy_error_t (*listFn)(indy_handle_t handle,
                                                                           const char* key,
-                                                                          const char *const *values_json_ptr),
+                                                                          const char ** const values_json_ptr),
 
                                                   indy_error_t (*closeFn)(indy_handle_t handle),
                                                   indy_error_t (*deleteFn)(const char* name,

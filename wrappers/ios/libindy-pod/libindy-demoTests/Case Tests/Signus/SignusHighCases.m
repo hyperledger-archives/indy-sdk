@@ -132,7 +132,7 @@
     
     // 1. Create and open wallet, get wallet handle
     IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                                   xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");

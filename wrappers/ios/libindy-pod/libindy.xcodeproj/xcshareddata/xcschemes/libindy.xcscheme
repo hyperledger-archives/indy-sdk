@@ -29,6 +29,15 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "3E2A7F841EC36186006194EC"
+            BuildableName = "libindy-demo.app"
+            BlueprintName = "libindy-demo"
+            ReferencedContainer = "container:libindy-demo.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -81,8 +90,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Run Script"
-               scriptText = "${SRCROOT}/universal_framework.sh"
-               shellToInvoke = "/bin/sh">
+               scriptText = "${SRCROOT}/universal_framework.sh">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"

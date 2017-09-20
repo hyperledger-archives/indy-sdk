@@ -56,7 +56,7 @@ namespace Hyperledger.Indy.PoolApi
                 commandHandle,
                 configName,
                 config,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -79,7 +79,7 @@ namespace Hyperledger.Indy.PoolApi
             var result = IndyNativeMethods.indy_delete_pool_ledger_config(
                 commandHandle,
                 configName,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -132,7 +132,10 @@ namespace Hyperledger.Indy.PoolApi
             return taskCompletionSource.Task;
         }
 
-        private bool _isOpen = true;
+        /// <summary>
+        /// Whether or not the close function has been called.
+        /// </summary>
+        private bool _closeRequested = false;
 
         /// <summary>
         /// Gets the handle for the pool.
@@ -160,7 +163,7 @@ namespace Hyperledger.Indy.PoolApi
             var result = IndyNativeMethods.indy_refresh_pool_ledger(
                 commandHandle,
                 Handle,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -178,18 +181,19 @@ namespace Hyperledger.Indy.PoolApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
         public Task CloseAsync()
         {
-            _isOpen = false;
-
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = IndyNativeMethods.indy_close_pool_ledger(
                 commandHandle,
                 Handle,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
+
+            _closeRequested = true;
+            GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
         }
@@ -197,10 +201,25 @@ namespace Hyperledger.Indy.PoolApi
         /// <summary>
         /// Disposes of resources.
         /// </summary>
-        public void Dispose()
+        public async void Dispose()
         {
-            if (_isOpen)
-                CloseAsync().Wait();
+            if (!_closeRequested)
+                await CloseAsync();
+        }
+
+        /// <summary>
+        /// Finalizes the resource during GC if it hasn't been already.
+        /// </summary>
+        ~Pool()
+        {
+            if (!_closeRequested)
+            {
+                IndyNativeMethods.indy_close_pool_ledger(
+                   -1,
+                   Handle,
+                   CallbackHelper.NoValueCallback
+                );
+            }
         }
     }
 }

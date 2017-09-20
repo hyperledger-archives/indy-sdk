@@ -315,6 +315,25 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_nym_requests_works_for_empty_role() {
+            let identifier = "Th7MpTaRZVRYnPiabds81Y";
+            let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+            let role = "";
+
+            let expected_result = format!(
+                "\"identifier\":\"{}\",\
+                \"operation\":{{\
+                    \"type\":\"1\",\
+                    \"dest\":\"{}\",\
+                    \"role\":\"\"\
+                }}", identifier, dest);
+
+            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some(role)).unwrap();
+            assert!(nym_request.contains(&expected_result));
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_requests_works() {
             let identifier = "Th7MpTaRZVRYnPiabds81Y";
             let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
