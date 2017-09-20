@@ -22,7 +22,7 @@ namespace Hyperledger.Indy.Test
 
         public static string GetIndyHomePath()
         {
-            return Path.Combine(GetUserHomePath(), ".indy");
+            return Path.Combine(GetUserHomePath(), ".indy_client");
         }
 
         public static string getIndyHomePath(string filename)
@@ -32,7 +32,7 @@ namespace Hyperledger.Indy.Test
 
         public static string GetTmpPath()
         {
-            return Path.Combine(Path.GetTempPath(), "indy");
+            return Path.Combine(Path.GetTempPath(), "indy_client");
         }
 
         public static string GetTmpPath(string filename)
