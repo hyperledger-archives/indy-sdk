@@ -33,7 +33,7 @@
 
 + (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
                                      did:(NSString *)did
-                            identityJSON:(NSString *)json
+                            identityJSON:(NSString *)identityJSON
                               completion:(void (^)(NSError *error, NSString *verkey, NSString *pk)) handler
 {
     indy_error_t ret;
@@ -43,7 +43,7 @@
     ret = indy_replace_keys( handle,
                             walletHandle,
                             [did UTF8String],
-                            [json UTF8String],
+                            [identityJSON UTF8String],
                             IndyWrapperCommon4PCallback
                             );
     if( ret != Success )
@@ -55,7 +55,7 @@
 }
 
 + (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
-                              identityJSON:(NSString *)json
+                              identityJSON:(NSString *)identityJSON
                                 completion:(void (^)(NSError *error)) handler
 {
     indy_error_t ret;
@@ -64,7 +64,7 @@
     
     ret = indy_store_their_did( handle,
                                walletHandle,
-                               [json UTF8String],
+                               [identityJSON UTF8String],
                                IndyWrapperCommon2PCallback
                                );
     if( ret != Success )

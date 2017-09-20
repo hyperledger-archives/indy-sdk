@@ -46,10 +46,10 @@
     NSString *xtype = @"keychain";
     
     // 1. register
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     
     // 2. register
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     XCTAssertEqual(ret.code, WalletTypeAlreadyRegisteredError, @"WalletUtils:registerWalletType() returned wrong error code");
     
    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];

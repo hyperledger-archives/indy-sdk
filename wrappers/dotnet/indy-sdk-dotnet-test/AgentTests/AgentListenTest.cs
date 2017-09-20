@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9607";
 
-            var didJson = "{\"seed\":\"sovrin_agent_connect_works_for_a\"}";
+            var didJson = "{\"seed\":\"indy_agent_connect_works_for_aaa\"}";
        
             var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
 
