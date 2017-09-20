@@ -150,7 +150,7 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def build(name, file='ci/ubuntu.dockerfile ci', customParams='') {
+def dockerBuild(name, file='ci/ubuntu.dockerfile ci', customParams='') {
   return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
 }
 
