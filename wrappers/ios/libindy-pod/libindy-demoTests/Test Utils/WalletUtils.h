@@ -11,8 +11,7 @@
 
 + (WalletUtils *)sharedInstance;
 
-- (NSError *)registerWalletType: (NSString *)xtype
-                    forceCreate: (BOOL)forceCreate;
+- (NSError *)registerWalletType:(NSString *)xtype;
 
 - (NSError *)createAndOpenWalletWithPoolName:(NSString *)poolName
                                        xtype:(NSString *)xtype

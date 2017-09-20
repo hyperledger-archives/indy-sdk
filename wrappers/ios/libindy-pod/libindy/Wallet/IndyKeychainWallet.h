@@ -7,8 +7,4 @@
 
 @interface IndyKeychainWallet : NSObject <IndyWalletProtocol>
 
-- (instancetype)initWithName:(NSString *)name
-               runtimeConfig:(NSString *)runtimeConfig
-                 credentials:(NSString *)credentials;
-
 @end

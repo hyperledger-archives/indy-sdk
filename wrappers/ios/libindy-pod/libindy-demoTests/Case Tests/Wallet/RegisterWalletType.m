@@ -35,7 +35,7 @@
 }
 
 
-- (void)testAgentConnectWorksForExpiredKeyInKeychainWallet
+- (void)testKeychainWalletForAgentConnectWorksForExpiredKey
 {
     [TestUtils cleanupStorage];
    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
@@ -53,7 +53,7 @@
     
     // register wallet type
     
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     
     // 2. listener wallet
     IndyHandle listenerWallet = 0;
@@ -146,7 +146,7 @@
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     
-   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
