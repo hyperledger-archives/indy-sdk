@@ -1,11 +1,13 @@
+extern crate indy_crypto;
+
 use services::anoncreds::types::*;
 use services::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
 use services::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
 use utils::crypto::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::common::CommonError;
-use utils::crypto::pair::{Pair, PointG1, PointG2};
 use services::anoncreds::issuer::Issuer;
+use self::indy_crypto::pair::{PointG1, PointG2, Pair};
 
 pub struct Verifier {}
 

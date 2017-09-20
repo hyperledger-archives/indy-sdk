@@ -20,7 +20,7 @@ public extension Dictionary
     
     func toString() -> String?
     {
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: self, options: .prettyPrinted) else
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: self) else
         {
             return nil
         }

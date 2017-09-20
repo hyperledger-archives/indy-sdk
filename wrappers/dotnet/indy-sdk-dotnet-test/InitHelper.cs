@@ -11,27 +11,14 @@ namespace Hyperledger.Indy.Test
     {
         private static bool _isInitialized = false;
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool SetDllDirectory(string lpPathName);
-
         public static async Task InitAsync()
         {
             if (_isInitialized)
                 return;
 
-            LoadIndyDll();
             await RegisterWalletTypeAsync();
 
             _isInitialized = true;
-        }
-
-        private static void LoadIndyDll()
-        {
-            var executingLocation = Assembly.GetExecutingAssembly().Location;
-            var libDir = Path.Combine(executingLocation, "../../../../lib");
-            var dir = Path.GetFullPath(libDir);
-
-            SetDllDirectory(dir);
         }
 
         private static async Task RegisterWalletTypeAsync()

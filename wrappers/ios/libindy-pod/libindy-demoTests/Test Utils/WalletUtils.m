@@ -28,16 +28,12 @@
 }
 
 - (NSError *)registerWalletType: (NSString *)xtype
-                     forceCreate: (BOOL)forceCreate
 {
     NSError *ret;
     
     if ([self.registeredWalletTypes containsObject:xtype])
     {
-        if (!forceCreate)
-        {
-            return [NSError errorWithDomain:@"IndyErrorDomain" code: WalletTypeAlreadyRegisteredError userInfo:nil];;
-        }
+        return [NSError errorWithDomain:@"IndyErrorDomain" code: WalletTypeAlreadyRegisteredError userInfo:nil];;
     }
     
     __block NSError *err = nil;

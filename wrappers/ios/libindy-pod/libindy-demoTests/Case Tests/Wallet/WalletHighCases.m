@@ -41,7 +41,7 @@
     
     NSString *xtype = @"keychain";
     
-    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:NO];
+    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:@"pool1"
                                                       walletName:@"wallet1"
@@ -83,7 +83,7 @@
     
     // register type
     
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:NO];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType() failed");
     
     // create wallet
@@ -228,7 +228,7 @@
     
     // 1. Register wallet type
     
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     
     // 2. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
@@ -289,7 +289,7 @@
     NSError *ret;
     
     // 1. register wallet type
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
     
     // 2. Create wallet
@@ -379,7 +379,7 @@
     NSError *ret;
     
     // 1. register wallet type
-    ret = [[WalletUtils sharedInstance] registerWalletType:xtype forceCreate:false];
+    ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
     
     // 2. create wallet
