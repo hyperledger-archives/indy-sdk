@@ -9,5 +9,5 @@ name = "cxs"
 path = "src/lib.rs"
 
 [dependencies]
-indy = { path = "/home/mark/dev/indy-sdk/libindy/" }
+indy = { git = "https://github.com/hyperledger/indy-sdk/" }
 lazy_static = "0.2"
