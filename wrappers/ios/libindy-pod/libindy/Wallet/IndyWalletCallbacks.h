@@ -15,15 +15,13 @@
 
 + (IndyWalletCallbacks*) sharedInstance;
 
-//@property (strong, readwrite) NSMutableDictionary *valuesPointers;
-
-@property (strong, readwrite) NSMutableSet *valuesSet;
-
-- (void)freeString:(NSString *)string;
-- (void)retainString:(NSString**)valueString;
+@property (strong, readwrite) NSMutableArray *valuesArray;
 
 - (BOOL)setupCustomWalletImplementation:(Class<IndyWalletProtocol>)implementation;
 - (void)removeCustomWalletImplementation;
+
+- (void)retainCString:(char *)cstring;
+- (void)freeCString:(const char *)cstring;
 
 @end
 

@@ -43,7 +43,6 @@
 		5DF014AE1F1605EB00076592 /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF0147F1F1605EB00076592 /* AnoncredsDemo.mm */; };
 		5DF014AF1F1605EB00076592 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014801F1605EB00076592 /* LedgerDemo.mm */; };
 		5DF014B01F1605EB00076592 /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014811F1605EB00076592 /* SignusDemo.mm */; };
-		5DF014B11F1605EB00076592 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DF014821F1605EB00076592 /* Info.plist */; };
 		5DF014B21F1605EB00076592 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014851F1605EB00076592 /* AgentUtils.m */; };
 		5DF014B31F1605EB00076592 /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014871F1605EB00076592 /* AnoncredsUtils.m */; };
 		5DF014B41F1605EB00076592 /* ClosureUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DF014891F1605EB00076592 /* ClosureUtils.m */; };
@@ -497,7 +496,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DF014B11F1605EB00076592 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -796,6 +794,18 @@
 					"$(inherited)",
 					"\"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"CoreBitcoin\"",
+					"-l\"ISO8601DateFormatter\"",
+					"-l\"crypto\"",
+					"-l\"ssl\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"UIKit\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -812,6 +822,18 @@
 				INFOPLIST_FILE = "libindy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"CoreBitcoin\"",
+					"-l\"ISO8601DateFormatter\"",
+					"-l\"crypto\"",
+					"-l\"ssl\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"UIKit\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.evernym.libindy-demo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

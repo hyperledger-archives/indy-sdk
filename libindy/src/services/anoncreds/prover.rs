@@ -1,3 +1,5 @@
+extern crate indy_crypto;
+
 use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::constants::*;
@@ -6,11 +8,12 @@ use services::anoncreds::helpers::*;
 use services::anoncreds::verifier::Verifier;
 use services::anoncreds::issuer::Issuer;
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
 use std::iter::FromIterator;
+
+use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 
 pub struct Prover {}
 
@@ -1519,8 +1522,7 @@ pub mod mocks {
                                  PointG1::new().unwrap(), PointG1::new().unwrap(),
                                  PointG1::new().unwrap(), PointG2::new().unwrap(),
                                  PointG2::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG2::new().unwrap(),
-                                 GroupOrderElement::new().unwrap())
+                                 PointG2::new().unwrap())
     }
 
     pub fn get_accumulator() -> Accumulator {

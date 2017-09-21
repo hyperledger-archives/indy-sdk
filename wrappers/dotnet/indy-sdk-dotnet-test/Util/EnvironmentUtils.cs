@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Hyperledger.Indy.Test
 {
@@ -13,12 +14,15 @@ namespace Hyperledger.Indy.Test
 
         public static string GetUserHomePath()
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return Environment.GetEnvironmentVariable("HOME");
+            else
+                return Environment.GetEnvironmentVariable("USERPROFILE");
         }
 
         public static string GetIndyHomePath()
         {
-            return Path.Combine(GetUserHomePath(), ".indy");
+            return Path.Combine(GetUserHomePath(), ".indy_client");
         }
 
         public static string getIndyHomePath(string filename)
@@ -28,7 +32,7 @@ namespace Hyperledger.Indy.Test
 
         public static string GetTmpPath()
         {
-            return Path.Combine(Path.GetTempPath(), "indy");
+            return Path.Combine(Path.GetTempPath(), "indy_client");
         }
 
         public static string GetTmpPath(string filename)

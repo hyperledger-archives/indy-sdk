@@ -1,10 +1,13 @@
+extern crate indy_crypto;
+
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use errors::common::CommonError;
 use services::anoncreds::helpers::{AppendByteArray, clone_bignum_map};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use utils::json::{JsonEncodable, JsonDecodable};
+
+use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 
 pub enum ByteOrder {
     Big,
@@ -1038,13 +1041,12 @@ pub struct RevocationPublicKey {
     pub h_cap: PointG2,
     pub u: PointG2,
     pub pk: PointG1,
-    pub y: PointG2,
-    pub x: GroupOrderElement
+    pub y: PointG2
 }
 
 impl RevocationPublicKey {
     pub fn new(g: PointG1, g_dash: PointG2, h: PointG1, h0: PointG1, h1: PointG1, h2: PointG1, htilde: PointG1,
-               h_cap: PointG2, u: PointG2, pk: PointG1, y: PointG2, x: GroupOrderElement) -> RevocationPublicKey {
+               h_cap: PointG2, u: PointG2, pk: PointG1, y: PointG2) -> RevocationPublicKey {
         RevocationPublicKey {
             g: g,
             g_dash: g_dash,
@@ -1056,8 +1058,7 @@ impl RevocationPublicKey {
             h_cap: h_cap,
             u: u,
             pk: pk,
-            y: y,
-            x: x
+            y: y
         }
     }
 }
