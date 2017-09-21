@@ -37,7 +37,8 @@ use utils::types::{
     Reply,
     SchemaResult,
     GetTxnResult,
-    SchemaData
+    SchemaData,
+    GetNymResultData
 };
 use std::collections::HashSet;
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
@@ -281,11 +282,11 @@ mod high_cases {
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
                     \"type\":\"1\",\
-                    \"dest\":\"{}\"\
+                    \"dest\":\"{}\",\
+                    \"role\":null\
                 }}", identifier, dest);
 
             let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, None).unwrap();
-
             assert!(nym_request.contains(&expected_result));
         }
 
@@ -318,17 +319,16 @@ mod high_cases {
         fn indy_build_nym_requests_works_for_empty_role() {
             let identifier = "Th7MpTaRZVRYnPiabds81Y";
             let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-            let role = "";
 
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
                     \"type\":\"1\",\
                     \"dest\":\"{}\",\
-                    \"role\":\"\"\
+                    \"role\":null\
                 }}", identifier, dest);
 
-            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some(role)).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some("")).unwrap();
             assert!(nym_request.contains(&expected_result));
         }
 
@@ -1159,6 +1159,45 @@ mod medium_cases {
 
             let res = LedgerUtils::build_get_nym_request(identifier, dest);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_nym_requests_works_for_reset_role() {
+            TestUtils::cleanup_storage();
+            let pool_name = "indy_nym_requests_works_for_reset_role";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let mut nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(),
+                                                                 Some(&my_verkey.clone()), None, Some("TRUSTEE")).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let mut get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
+            let get_nym_response_with_role = PoolUtils::send_request(pool_handle, &get_nym_request).unwrap();
+            info!("get_nym_response_with_role {:?}", get_nym_response_with_role);
+
+            let get_nym_response_with_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_with_role).unwrap();
+            let get_nym_response_data_with_role: GetNymResultData = serde_json::from_str(&get_nym_response_with_role.result.data.unwrap()).unwrap();
+
+            nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(),
+                                                         Some(&my_verkey.clone()), None, Some("")).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+
+            get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
+            let get_nym_response_without_role = PoolUtils::send_request(pool_handle, &get_nym_request).unwrap();
+            info!("get_nym_response_without_role {:?}", get_nym_response_without_role);
+
+            let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
+            let get_nym_response_data_without_role: GetNymResultData = serde_json::from_str(&get_nym_response_without_role.result.data.unwrap()).unwrap();
+            assert_eq!(get_nym_response_data_without_role.role.clone().unwrap(), "");
+            assert_ne!(get_nym_response_data_without_role.role.unwrap(), get_nym_response_data_with_role.role.unwrap());
+
+            TestUtils::cleanup_storage();
         }
     }
 
