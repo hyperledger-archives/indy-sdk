@@ -1,5 +1,6 @@
 extern crate serde_json;
 extern crate uuid;
+extern crate indy_crypto;
 
 use self::uuid::Uuid;
 use errors::common::CommonError;
@@ -30,9 +31,9 @@ use services::anoncreds::types::{
     ClaimRequestJson
 };
 use std::collections::HashMap;
-use utils::crypto::pair::PointG2;
 use std::cell::RefCell;
 use utils::crypto::base58::Base58;
+use self::indy_crypto::pair::PointG2;
 
 pub enum ProverCommand {
     StoreClaimOffer(

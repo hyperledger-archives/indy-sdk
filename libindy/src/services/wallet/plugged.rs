@@ -143,7 +143,7 @@ impl Wallet for PluggedWallet {
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
         }
-
+        
         let result = PluggedWalletJSONValues::from_json(values_json.as_str()).map_err(map_err_trace!())?
             .values
             .iter()
