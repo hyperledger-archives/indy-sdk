@@ -48,7 +48,6 @@ pub struct NymOperation {
     pub verkey: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alias: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>
 }
 
