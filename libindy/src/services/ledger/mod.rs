@@ -46,13 +46,13 @@ impl LedgerService {
         let req_id = LedgerService::get_req_id();
 
         let role = match role {
+            Some("") => None,
             Some(r) => {
                 let r = match r {
                     "STEWARD" => constants::STEWARD,
                     "TRUSTEE" => constants::TRUSTEE,
                     "TRUST_ANCHOR" => constants::TRUST_ANCHOR,
                     "TGB" => constants::TGB,
-                    "" => constants::ROLE_REMOVE,
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 };
                 Some(r)
@@ -244,7 +244,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":null}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
@@ -258,7 +258,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":""}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":null}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
@@ -272,7 +272,7 @@ mod tests {
         let verkey = "verkey";
         let alias = "some_alias";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","verkey":"verkey","alias":"some_alias"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","verkey":"verkey","alias":"some_alias","role":null}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), None);
         assert!(nym_request.is_ok());

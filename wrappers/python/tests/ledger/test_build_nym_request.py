@@ -24,7 +24,8 @@ async def test_build_nym_request_works_for_only_required_fields():
         "identifier": identifier,
         "operation": {
             "type": "1",
-            "dest": destination
+            "dest": destination,
+            "role": None
         }
     }
 
