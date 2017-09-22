@@ -26,10 +26,6 @@ RUN apt-get install -y \
     debhelper \
     wget
 
-#    python3.5 \
-#    python3-pip \
-#    python-setuptools \
-
 # Install curl
 RUN apt-get update && apt-get install -y curl
 
@@ -46,7 +42,3 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
     && rm $RUST_ARCHIVE \
     && ./install.sh
 
-#Sovrin stuff
-RUN useradd -ms /bin/bash -u $uid sovrin
-USER sovrin
-#VOLUME /home/sovrin
