@@ -7,7 +7,7 @@ library; there are also convenience wrappers for various programming languages.
 
 All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org)
 in project IS (note that regular Indy tickets are in the INDY project instead...). Also, join
-us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
+us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss.
 
 ## Building Indy SDK
 
