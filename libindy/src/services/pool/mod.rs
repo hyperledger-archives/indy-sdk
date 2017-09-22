@@ -11,6 +11,9 @@ extern crate rust_base58;
 extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
+extern crate indy_crypto;
+extern crate base64;
+
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::digest::{FixedOutput, Input};
@@ -37,6 +40,7 @@ use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
+use self::indy_crypto::bls::Generator;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -64,6 +68,7 @@ enum PoolWorkerHandler {
 }
 
 struct TransactionHandler {
+    gen: Generator,
     f: usize,
     nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
@@ -127,10 +132,10 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg);
+                self.process_reply(reply.result.req_id, raw_msg)?;
             }
             Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg);
+                self.process_reply(response.txn.req_id, raw_msg)?;
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -142,24 +147,36 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
+    fn process_reply(&mut self, req_id: u64, raw_msg: &String) -> Result<(), PoolError> {
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             let pend_cmd: &mut CommandProcess = pend_cmd;
-            let mut json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
+            let mut json_msg: HashableValue =
+                HashableValue {
+                    inner: serde_json::from_str(raw_msg)
+                        .map_err(|err| PoolError::CommonError(CommonError::InvalidStructure("Invalid message".to_string())))?
+                };
+
             if let Some(str) = json_msg.inner["result"]["data"].clone().as_str() {
                 let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
                 json_msg.inner["result"]["data"] = tmp_obj;
             }
             let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
+
             let consensus_reached = {
                 let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
                 if let Some((proofs, root_hash, key, value)) = data_to_check_proof {
                     debug!("TransactionHandler::process_reply try to verify proofs in reply");
-                    self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
-                                                    root_hash.from_base58().unwrap().as_slice(),
-                                                    key.as_slice(),
-                                                    value.as_ref().map(String::as_str))
+                    //                    let c = self::state_proof::verify_proof(base64::decode(proofs).unwrap().as_slice(),
+                    //                                                    root_hash.from_base58().unwrap().as_slice(),
+                    //                                                    key.as_slice(),
+                    //                                                    value.as_ref().map(String::as_str));
+                    //                    println!("cccc {:?}", c);
+                    //                    c
+
+                    let c = self::state_proof::verify_proof_signature(&json_msg.inner["result"], &self.nodes, self.f, &self.gen, root_hash)?;
+                    println!("cccc {:?}", c);
+                    c
                 } else {
                     debug!("TransactionHandler::process_reply not enough data to verify proofs in reply, collect replies");
                     reply_cnt == self.f //already have f same replies and receive f+1 now
@@ -179,6 +196,7 @@ impl TransactionHandler {
         if remove {
             self.pending_commands.remove(&req_id);
         }
+        Ok(())
     }
 
     //TODO correct handling of Reject
@@ -340,6 +358,7 @@ impl TransactionHandler {
 impl Default for TransactionHandler {
     fn default() -> Self {
         TransactionHandler {
+            gen: Generator::from_bytes(&"7BRrJUcxuAomyoBC7YkvRD9TpFrcGoYAT9BQhhxuNB4FFjNPffimLywJViQRJAPnP97PQxCHTiEBTu6KuYV7trC4Ez3eRz7QSnKUwd5KqG9PxQaFaNaJyFv8uAXQgm3Q7nkEqjjKrCKdWmj89ZmAG848Ucn2v6bqhNmShEH9ARQqxhozXbmBy68oa6eh1vxs3DYenGgeWnjCCueBbR7vrMB9ATJBpCuPg25KWXjyh6KqnLsZfcRdst4NzuAmS8NzBPSvW6".from_base58().unwrap_or(Vec::new())).unwrap_or(Generator::new().unwrap()),
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
@@ -617,12 +636,15 @@ impl RemoteNode {
     fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
+        let blskey = txn.data.blskey.as_str().from_base58()
+            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
             public_key: ED25519::vk_to_curve25519(&node_verkey)?,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
             is_blacklisted: false,
+            blskey: blskey
         })
     }
 
@@ -1190,6 +1212,7 @@ mod tests {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
+                    blskey: "",
                     services: Vec::new(),
                     client_port: 9700,
                     client_ip: "127.0.0.1".to_string(),

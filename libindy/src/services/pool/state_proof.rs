@@ -4,6 +4,7 @@ extern crate rlp;
 extern crate sha3;
 extern crate generic_array;
 extern crate digest;
+extern crate indy_crypto;
 
 use self::rlp::{
     DecoderError as RlpDecoderError,
@@ -16,6 +17,13 @@ use self::sha3::Digest;
 use std::collections::HashMap;
 
 use errors::common::CommonError;
+
+use services::pool::types::RemoteNode;
+use self::indy_crypto::bls::{Bls, Generator, VerKey, MultiSignature};
+
+extern crate rust_base58;
+
+use self::rust_base58::{ToBase58, FromBase58};
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Node {
@@ -257,6 +265,34 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_va
             .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
             .unwrap_or(false)
     }).unwrap_or(false)
+}
+
+pub fn verify_proof_signature(json_msg: &serde_json::Value, nodes: &Vec<RemoteNode>, f: usize, gen: &Generator, root_hash: &str) -> Result<bool, CommonError> {
+    match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
+           json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
+           json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
+        (Some(signature), Some(participants), Some(pool_state_root)) => {
+            let mut verkeys: Vec<VerKey> = Vec::new();
+            for node in nodes {
+                verkeys.push(VerKey::from_bytes(&node.blskey)?)
+            }
+            let mut verkeys_links: Vec<&VerKey> = Vec::new();
+            for i in 0..verkeys.len() {
+                verkeys_links.push(&verkeys[i])
+            }
+
+            let multi_sig = MultiSignature::from_bytes(&signature.from_base58().unwrap())?;
+
+            let a = pool_state_root;
+
+            println!("a {:?}", a.as_bytes());
+            println!("signature {:?}", multi_sig);
+
+            Ok(/*participants.len() >= (nodes.len() - f) &&*/
+                Bls::verify_multi_sig(&multi_sig, &a.from_base58().unwrap(), &verkeys_links[..], gen)?)
+        }
+        _ => Err(CommonError::InvalidStructure("Invalid multi signature".to_string()))
+    }
 }
 
 #[cfg(test)]
