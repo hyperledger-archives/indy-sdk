@@ -14,7 +14,6 @@ RUN apt-get update -y && apt-get install -y default-jre \
 
 # libsodium installation
 RUN apt-get install -y \
-    libsodium18 \
     libsodium-dev \
     libssl-dev \
     libgmp3-dev \
@@ -42,3 +41,5 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
     && rm $RUST_ARCHIVE \
     && ./install.sh
 
+RUN useradd -ms /bin/bash -u $uid cxs
+USER cxs
