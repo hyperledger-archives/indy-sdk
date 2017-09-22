@@ -6,19 +6,21 @@ ARG uid=1000
 
 # Update environment
 # JRE installation and gcc
-RUN apt-get update -y && apt-get install -y default-jre gcc pkg-config build-essential git
+RUN apt-get update -y && apt-get install -y default-jre \
+    gcc \
+    pkg-config \
+    build-essential \
+    git 
 
 # libsodium installation
 RUN apt-get install -y \
     libsodium18 \
     libsodium-dev
-    pkg-config \
     libssl-dev \
     libgmp3-dev \
     build-essential \
     libsqlite3-dev \
     cmake \
-    git \
     apt-transport-https \
     ca-certificates \
     debhelper \
