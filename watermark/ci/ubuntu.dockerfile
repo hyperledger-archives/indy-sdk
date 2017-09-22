@@ -9,7 +9,7 @@ ARG uid=1000
 RUN apt-get update -y && apt-get install -y default-jre gcc pkg-config build-essential git
 
 # libsodium installation
-#RUN apt-get install -y libsodium18
+RUN apt-get install -y libsodium18
 
 # Install curl
 RUN apt-get update && apt-get install -y curl
