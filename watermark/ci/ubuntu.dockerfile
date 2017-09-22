@@ -9,7 +9,24 @@ ARG uid=1000
 RUN apt-get update -y && apt-get install -y default-jre gcc pkg-config build-essential git
 
 # libsodium installation
-RUN apt-get install -y libsodium18
+RUN apt-get install -y \
+    libsodium18 \
+    libsodium-dev
+    pkg-config \
+    libssl-dev \
+    libgmp3-dev \
+    build-essential \
+    libsqlite3-dev \
+    cmake \
+    git \
+    apt-transport-https \
+    ca-certificates \
+    debhelper \
+    wget
+
+#    python3.5 \
+#    python3-pip \
+#    python-setuptools \
 
 # Install curl
 RUN apt-get update && apt-get install -y curl
