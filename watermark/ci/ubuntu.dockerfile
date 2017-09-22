@@ -15,7 +15,7 @@ RUN apt-get update -y && apt-get install -y default-jre \
 # libsodium installation
 RUN apt-get install -y \
     libsodium18 \
-    libsodium-dev
+    libsodium-dev \
     libssl-dev \
     libgmp3-dev \
     build-essential \
