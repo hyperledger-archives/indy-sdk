@@ -6,10 +6,24 @@ ARG uid=1000
 
 # Update environment
 # JRE installation and gcc
-RUN apt-get update -y && apt-get install -y default-jre gcc pkg-config build-essential git
+RUN apt-get update -y && apt-get install -y default-jre \
+    gcc \
+    pkg-config \
+    build-essential \
+    git 
 
 # libsodium installation
-#RUN apt-get install -y libsodium18
+RUN apt-get install -y \
+    libsodium-dev \
+    libssl-dev \
+    libgmp3-dev \
+    build-essential \
+    libsqlite3-dev \
+    cmake \
+    apt-transport-https \
+    ca-certificates \
+    debhelper \
+    wget
 
 # Install curl
 RUN apt-get update && apt-get install -y curl
@@ -27,7 +41,5 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
     && rm $RUST_ARCHIVE \
     && ./install.sh
 
-#Sovrin stuff
-RUN useradd -ms /bin/bash -u $uid sovrin
-USER sovrin
-#VOLUME /home/sovrin
+RUN useradd -ms /bin/bash -u $uid cxs
+USER cxs

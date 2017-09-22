@@ -7,3 +7,7 @@ authors = [ "Mark Hadley <mark.hadley@evernym.com>" ]
 [lib]
 name = "cxs"
 path = "src/lib.rs"
+
+[dependencies]
+indy = { git = "https://github.com/hyperledger/indy-sdk/" }
+lazy_static = "0.2"
