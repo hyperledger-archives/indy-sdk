@@ -64,28 +64,69 @@ pub fn get_mtilde(unrevealed_attrs: &Vec<String>)
     Ok(mtilde)
 }
 
-fn largest_square_less_than(delta: i32) -> i32 {
-    (delta as f64).sqrt().floor() as i32
+fn largest_square_less_than(delta: usize) -> usize {
+    (delta as f64).sqrt().floor() as usize
 }
+
 
 pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CommonError> {
-    let u1 = largest_square_less_than(delta);
-    let u2 = largest_square_less_than(delta - u1.pow(2));
-    let u3 = largest_square_less_than(delta - u1.pow(2) - u2.pow(2));
-    let u4 = largest_square_less_than(delta - u1.pow(2) - u2.pow(2) - u3.pow(2));
-
-    if u1.pow(2) + u2.pow(2) + u3.pow(2) + u4.pow(2) == delta {
-        let mut res: HashMap<String, BigNumber> = HashMap::new();
-        res.insert("0".to_string(), BigNumber::from_dec(&u1.to_string()[..])?);
-        res.insert("1".to_string(), BigNumber::from_dec(&u2.to_string()[..])?);
-        res.insert("2".to_string(), BigNumber::from_dec(&u3.to_string()[..])?);
-        res.insert("3".to_string(), BigNumber::from_dec(&u4.to_string()[..])?);
-
-        Ok(res)
-    } else {
-        Err(CommonError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
+    if delta < 0 {
+        return Err(CommonError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)));
     }
+
+    let mut roots: [usize; 5] = [0; 5];
+    let mut total: [usize; 5] = [0; 5];
+    let mut tried: Vec<String> = Vec::new();
+
+    roots[0] = largest_square_less_than(delta as usize);
+    total[0] = delta as usize;
+
+    let mut i = 1;
+
+    while i <= 4 {
+        total[i] = total[i - 1] - roots[i - 1].pow(2);
+
+        if total[i] == 0 {
+            break
+        } else if i == 4 {
+            i = adjust_index(&mut roots, i, &mut tried);
+            continue
+        }
+
+        roots[i] = largest_square_less_than(total[i]);
+        i += 1;
+    }
+
+    let mut res: HashMap<String, BigNumber> = HashMap::new();
+    res.insert("0".to_string(), BigNumber::from_dec(&roots[0].to_string()[..])?);
+    res.insert("1".to_string(), BigNumber::from_dec(&roots[1].to_string()[..])?);
+    res.insert("2".to_string(), BigNumber::from_dec(&roots[2].to_string()[..])?);
+    res.insert("3".to_string(), BigNumber::from_dec(&roots[3].to_string()[..])?);
+
+    Ok(res)
 }
+
+fn adjust_index(roots: &mut [usize; 5], i: usize, tried: &mut Vec<String>) -> usize {
+    let mut index = i;
+    let mut k: String = gen_key(roots);
+
+    tried.push(k.clone());
+    while tried.contains(&k) {
+        roots[index - 1] -= 1;
+        while roots[index - 1] == 0 {
+            index -= 1;
+            roots[index - 1] -= 1;
+        }
+        k = gen_key(roots);
+    }
+    return index;
+}
+
+fn gen_key(roots: &mut [usize; 5]) -> String {
+    roots.clone().sort();
+    format!("{:?}", roots)
+}
+
 
 pub trait BytesView {
     fn to_bytes(&self) -> Result<Vec<u8>, CommonError>;
@@ -170,12 +211,51 @@ mod tests {
     #[test]
     fn four_squares_works() {
         let res = four_squares(10 as i32);
-
-        assert!(res.is_ok());
         let res_data = res.unwrap();
 
         assert_eq!("3".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
         assert_eq!("1".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+        let res = four_squares(107 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("9".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("5".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("1".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+        let res = four_squares(112 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("10".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+
+        let res = four_squares(253 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("14".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("7".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+        let res = four_squares(0 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("0".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+        let res = four_squares(25 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("5".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("0".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
         assert_eq!("0".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
         assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
     }
