@@ -74,3 +74,5 @@ USER indy
 RUN pip3 install \
 	/home/indy/indy-anoncreds \
 	pytest
+
+RUN pip3 install -U pip plumbum

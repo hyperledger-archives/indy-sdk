@@ -24,3 +24,5 @@ put -r ../libindy-dev_"$version"_amd64.deb
 put -r ../libindy_"$version"_amd64.deb
 ls -l /var/repository/repos/libindy/ubuntu/$type/$version-$number
 EOF
+
+./sovrin-packaging/upload_debs.py ../ $type

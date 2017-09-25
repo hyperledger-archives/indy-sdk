@@ -373,8 +373,14 @@ def libindyDebPublishing(testEnv) {
         testEnv.inside('-u 0:0') {
             sh 'chmod -R 755 ci/*.sh'
 
-            withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
-                sh "./ci/libindy-deb-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+            dir('sovrin-packaging') {
+                git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
+            }
+
+            withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key'), file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
+                sh 'mkdir /root/.ssh && cp $sovrin_repo_key /root/.ssh'
+                sh 'cp $evernym_repo_key /root/.ssh'
+                sh "./ci/libindy-deb-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                 sh "rm -rf debian"
             }
         }
