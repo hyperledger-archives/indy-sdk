@@ -128,12 +128,11 @@ async def issuer_create_claim(wallet_handle: int,
     :param user_revoc_index: index of a new user in the revocation registry
      (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
     :return: Revocation registry update json with a newly issued claim
-        Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
+        Claim json containing issued claim, issuer_did, and schema_seq_no
         used for issuance
         {
             "claim": <see claim_json above>,
             "signature": <signature>,
-            "revoc_reg_seq_no", string,
             "issuer_did", string,
             "schema_seq_no", string,
         }
@@ -141,7 +140,7 @@ async def issuer_create_claim(wallet_handle: int,
 
     logger = logging.getLogger(__name__)
     logger.debug("issuer_create_claim: >>> wallet_handle: %r, claim_req_json: %r, claim_json: %r,"
-                 " revoc_reg_seq_no: %r, user_revoc_index: %r",
+                 " user_revoc_index: %r",
                  wallet_handle,
                  claim_req_json,
                  claim_json,
