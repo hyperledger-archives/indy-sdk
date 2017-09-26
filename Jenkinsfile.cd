@@ -379,7 +379,6 @@ def libindyDebPublishing(testEnv) {
 
             withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key'), file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
                 sh 'mkdir /root/.ssh && cp $sovrin_repo_key /root/.ssh'
-                sh 'cp $evernym_repo_key /root/.ssh'
                 sh "./ci/libindy-deb-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
                 sh "rm -rf debian"
             }
