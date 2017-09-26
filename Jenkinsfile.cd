@@ -34,8 +34,7 @@ def publishing() {
                 'windows-files': { windowsPublishing() },
         ])
 
-        version = publishedVersions['ubuntu-files']
-        if (publishedVersions['windows-files'] != version) { // FIXME check rhel too, IS-307
+        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
             error "platforms artifacts have different versions"
         }
     }
@@ -313,7 +312,7 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv)
+                libindyDebPublishing(testEnv, version)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
             }
@@ -368,18 +367,23 @@ def windowsPublishing() {
     return version
 }
 
-def libindyDebPublishing(testEnv) {
+def libindyDebPublishing(testEnv, version) {
     dir('libindy') {
         testEnv.inside('-u 0:0') {
             sh 'chmod -R 755 ci/*.sh'
 
             dir('sovrin-packaging') {
-                git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
+                downloadPackagingUtils()
             }
 
-            withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key'), file(credentialsId: 'EvernymRepoSSHKey', variable: 'evernym_repo_key')]) {
-                sh 'mkdir /root/.ssh && cp $sovrin_repo_key /root/.ssh'
-                sh "./ci/libindy-deb-build-and-upload.sh $version $evernym_repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
+            withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
+                sh 'mkdir /root/.ssh && ln -sf $sovrin_repo_key /root/.ssh'
+                sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $env.BUILD_NUMBER"
+
+                if (env.BRANCH_NAME == 'rc') {
+                    stash includes: 'debs/*', name: 'libindyDebs'
+                }
+
                 sh "rm -rf debian"
             }
         }
@@ -466,13 +470,28 @@ def publishingRCtoStable() {
 
 def publishLibindyRCtoStable(version) {
     rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'key')]) {
-        for (os in ['ubuntu', 'windows']) { //FIXME add rhel IS-307
-            src = "/var/repository/repos/libindy/$os/rc/$rcFullVersion/"
-            target = "/var/repository/repos/libindy/$os/stable/$version"
-            //should not exists
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
-        }
+    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
+        //Copy windows files
+        src = "/var/repository/repos/windows/libindy/rc/$rcFullVersion/"
+        target = "/var/repository/repos/windows/libindy/stable/$version"
+
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
+
+        //Copy ubuntu files
+        unstash name: 'libindyDebs'
+        uploadDebianStableFiles(version)
     }
+}
+
+def uploadDebianStableFiles(version) {
+    sh 'ln -sf $sovrin_repo_key ~/.ssh'
+    downloadPackagingUtils()
+    sh "rename -v 's/$version-\\d+/$version/' debs/*.deb"
+    path = sh(returnStdout: true, script: 'pwd debs').trim() + '/debs'
+    sh "./upload-debs $path PR-24"
+}
+
+def downloadPackagingUtils() {
+    git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
 }
