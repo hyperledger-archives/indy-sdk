@@ -484,20 +484,21 @@ def publishLibindyRCtoStable(version) {
 
         //Upload ubuntu files
         unstash name: 'libindyDebs'
-        uploadDebianFilesToStable(version)
+        uploadDebianFilesToStable(version, rcFullVersion)
     }
 }
 
-def uploadDebianFilesToStable(version) {
+def uploadDebianFilesToStable(version, rcFullVersion) {
     try {
         sh 'ln -sf $sovrin_repo_key ~/.ssh'
 
-        downloadPackagingUtils()
-
-        sh "rename -v 's/$version-\\d+/$version/' debs/*.deb"
+        sh "rename -v 's/$rcFullVersion/$version/' debs/*.deb"
         path = sh(returnStdout: true, script: 'pwd debs').trim() + '/debs'
 
-        sh "./upload-debs $path stable"
+        dir ('sovrin-packaging'){
+            downloadPackagingUtils()
+            sh "./upload-debs $path stable"
+        }
     }
     finally {
         sh 'rm -f ~/.ssh/$sovrin_repo_key'
