@@ -15,7 +15,9 @@ RUN \
            openssl-devel \
            sqlite-devel \
            libsodium-devel \
-           spectool
+           spectool \
+           python35 \
+           python35-pip
 
 
 RUN cd /tmp && \
@@ -28,6 +30,13 @@ RUN cd /tmp && \
 
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+RUN yum install -y java-1.8.0-openjdk-devel
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk
+
+RUN wget https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+RUN sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
+RUN yum install -y apache-maven
 
 ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
