@@ -209,7 +209,7 @@ def windowsTesting() {
 
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/libindy/windows/deps/indy-sdk-deps.zip"'
+                    bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
                     bat 'unzip prebuilt.zip -d prebuilt'
 
                     echo "Windows Test: Build"
@@ -337,7 +337,7 @@ def windowsPublishing() {
 
                 dir('libindy') {
                     echo "Publish Windows files: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/libindy/windows/deps/indy-sdk-deps.zip"'
+                    bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
                     bat 'unzip prebuilt.zip -d prebuilt'
 
                     echo "Publish Windows files: Build"
@@ -377,14 +377,18 @@ def libindyDebPublishing(testEnv, version) {
             }
 
             withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-                sh 'mkdir /root/.ssh && ln -sf $sovrin_repo_key /root/.ssh'
-                sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $env.BUILD_NUMBER"
+                try {
+                    sh 'mkdir /root/.ssh && ln -sf $sovrin_repo_key /root/.ssh'
+                    sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $env.BUILD_NUMBER"
 
-                if (env.BRANCH_NAME == 'rc') {
-                    stash includes: 'debs/*', name: 'libindyDebs'
+                    if (env.BRANCH_NAME == 'rc') {
+                        stash includes: 'debs/*', name: 'libindyDebs'
+                    }
                 }
-
-                sh "rm -rf debian"
+                finally {
+                    sh "rm -rf debian"
+                    sh 'rm -f ~/.ssh/$sovrin_repo_key'
+                }
             }
         }
     }
@@ -478,18 +482,26 @@ def publishLibindyRCtoStable(version) {
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
 
-        //Copy ubuntu files
+        //Upload ubuntu files
         unstash name: 'libindyDebs'
-        uploadDebianStableFiles(version)
+        uploadDebianFilesToStable(version)
     }
 }
 
-def uploadDebianStableFiles(version) {
-    sh 'ln -sf $sovrin_repo_key ~/.ssh'
-    downloadPackagingUtils()
-    sh "rename -v 's/$version-\\d+/$version/' debs/*.deb"
-    path = sh(returnStdout: true, script: 'pwd debs').trim() + '/debs'
-    sh "./upload-debs $path PR-24"
+def uploadDebianFilesToStable(version) {
+    try {
+        sh 'ln -sf $sovrin_repo_key ~/.ssh'
+
+        downloadPackagingUtils()
+
+        sh "rename -v 's/$version-\\d+/$version/' debs/*.deb"
+        path = sh(returnStdout: true, script: 'pwd debs').trim() + '/debs'
+
+        sh "./upload-debs $path stable"
+    }
+    finally {
+        sh 'rm -f ~/.ssh/$sovrin_repo_key'
+    }
 }
 
 def downloadPackagingUtils() {
