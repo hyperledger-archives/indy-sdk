@@ -6,7 +6,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
+                'libindy-redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
