@@ -2,7 +2,7 @@ source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/hyperledger/indy-sdk.git'
 platform :ios, '10.2'
 
-workspace 'libindy.xcworkspace'
+workspace 'Indy.xcworkspace'
 
 def appPods
     pod 'libsodium'
@@ -12,18 +12,18 @@ def appPods
     pod 'libindy-core', "0.1.1"
 end
 
-target 'libindy-demo' do
-    project 'libindy-demo'
+target 'Indy-demo' do
+    project 'Indy-demo'
     pod 'CoreBitcoin', :podspec => 'https://raw.github.com/oleganza/CoreBitcoin/master/CoreBitcoin.podspec'
 
-    target 'libindy-demoTests' do
+    target 'Indy-demoTests' do
 	inherit! :search_paths
     end
 end
 
 
-target 'libindy' do
-    project 'libindy'
+target 'Indy' do
+    project 'Indy'
     appPods
 end
 

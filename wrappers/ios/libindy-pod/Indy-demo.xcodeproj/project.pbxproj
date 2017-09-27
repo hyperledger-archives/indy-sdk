@@ -1,0 +1,929 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5DB57A701F71201200EB4C90 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A661F71201200EB4C90 /* AppDelegate.mm */; };
+		5DB57A711F71201200EB4C90 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A671F71201200EB4C90 /* Assets.xcassets */; };
+		5DB57A721F71201200EB4C90 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A681F71201200EB4C90 /* LaunchScreen.storyboard */; };
+		5DB57A731F71201200EB4C90 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A6A1F71201200EB4C90 /* Main.storyboard */; };
+		5DB57A741F71201200EB4C90 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A6C1F71201200EB4C90 /* Info.plist */; };
+		5DB57A751F71201200EB4C90 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A6D1F71201200EB4C90 /* main.m */; };
+		5DB57A761F71201200EB4C90 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A6F1F71201200EB4C90 /* ViewController.m */; };
+		5DB57B0C1F7120DE00EB4C90 /* Indy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; };
+		5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B0F1F712A5100EB4C90 /* Base58Test.m */; };
+		5DB57B521F712A5200EB4C90 /* AgentMediumAddIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */; };
+		5DB57B531F712A5200EB4C90 /* AgentMediumCloseConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */; };
+		5DB57B541F712A5200EB4C90 /* AgentMediumCloseListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */; };
+		5DB57B551F712A5200EB4C90 /* AgentMediumConnect.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B171F712A5100EB4C90 /* AgentMediumConnect.m */; };
+		5DB57B561F712A5200EB4C90 /* AgentMediumListen.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B181F712A5100EB4C90 /* AgentMediumListen.m */; };
+		5DB57B571F712A5200EB4C90 /* AgentMediumRemoveIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B191F712A5100EB4C90 /* AgentMediumRemoveIdentity.m */; };
+		5DB57B581F712A5200EB4C90 /* AgentMediumSend.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1A1F712A5100EB4C90 /* AgentMediumSend.m */; };
+		5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */; };
+		5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */; };
+		5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */; };
+		5DB57B5C1F712A5200EB4C90 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */; };
+		5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */; };
+		5DB57B5E1F712A5200EB4C90 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */; };
+		5DB57B5F1F712A5200EB4C90 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */; };
+		5DB57B601F712A5200EB4C90 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */; };
+		5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B261F712A5200EB4C90 /* PoolHighCases.m */; };
+		5DB57B621F712A5200EB4C90 /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B271F712A5200EB4C90 /* PoolMediumCases.m */; };
+		5DB57B631F712A5200EB4C90 /* SignusHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B291F712A5200EB4C90 /* SignusHighCases.m */; };
+		5DB57B641F712A5200EB4C90 /* SignusMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2A1F712A5200EB4C90 /* SignusMediumCases.m */; };
+		5DB57B651F712A5200EB4C90 /* RegisterWalletType.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2C1F712A5200EB4C90 /* RegisterWalletType.m */; };
+		5DB57B661F712A5200EB4C90 /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2D1F712A5200EB4C90 /* WalletHighCases.m */; };
+		5DB57B671F712A5200EB4C90 /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2E1F712A5200EB4C90 /* WalletMediumCases.m */; };
+		5DB57B681F712A5200EB4C90 /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B301F712A5200EB4C90 /* AnoncredsDemo.mm */; };
+		5DB57B691F712A5200EB4C90 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B311F712A5200EB4C90 /* LedgerDemo.mm */; };
+		5DB57B6A1F712A5200EB4C90 /* SignusDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B321F712A5200EB4C90 /* SignusDemo.mm */; };
+		5DB57B6B1F712A5200EB4C90 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57B331F712A5200EB4C90 /* Info.plist */; };
+		5DB57B6C1F712A5200EB4C90 /* AgentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B361F712A5200EB4C90 /* AgentUtils.m */; };
+		5DB57B6D1F712A5200EB4C90 /* AnoncredsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B381F712A5200EB4C90 /* AnoncredsUtils.m */; };
+		5DB57B6E1F712A5200EB4C90 /* ClosureUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B3A1F712A5200EB4C90 /* ClosureUtils.m */; };
+		5DB57B6F1F712A5200EB4C90 /* Environment.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B3C1F712A5200EB4C90 /* Environment.m */; };
+		5DB57B701F712A5200EB4C90 /* LedgerUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B3E1F712A5200EB4C90 /* LedgerUtils.mm */; };
+		5DB57B711F712A5200EB4C90 /* PoolUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B401F712A5200EB4C90 /* PoolUtils.m */; };
+		5DB57B721F712A5200EB4C90 /* SequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B421F712A5200EB4C90 /* SequenceUtils.m */; };
+		5DB57B731F712A5200EB4C90 /* SignusUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B441F712A5200EB4C90 /* SignusUtils.mm */; };
+		5DB57B741F712A5200EB4C90 /* TestUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B461F712A5200EB4C90 /* TestUtils.m */; };
+		5DB57B751F712A5200EB4C90 /* WalletUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B481F712A5200EB4C90 /* WalletUtils.m */; };
+		5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4B1F712A5200EB4C90 /* NSArray+JSON.m */; };
+		5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */; };
+		5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */; };
+		5DFBC3FD1F715AD1003DFC5D /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */; };
+		80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */; };
+		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3E2A7F9F1EC36187006194EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3E2A7F7D1EC36186006194EC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3E2A7F841EC36186006194EC;
+			remoteInfo = "libindy-demo";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3ED5BE501EC4985500881380 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D82DB501F6A795100170B22 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0C1A2D3B2C8FD407BD6E5F9D /* Pods-Indy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
+		3E2A7F851EC36186006194EC /* Indy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Indy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E2A7F9E1EC36187006194EC /* Indy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Indy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DB57A651F71201200EB4C90 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		5DB57A661F71201200EB4C90 /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
+		5DB57A671F71201200EB4C90 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5DB57A691F71201200EB4C90 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		5DB57A6B1F71201200EB4C90 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		5DB57A6C1F71201200EB4C90 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DB57A6D1F71201200EB4C90 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		5DB57A6E1F71201200EB4C90 /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		5DB57A6F1F71201200EB4C90 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		5DB57B0B1F7120DE00EB4C90 /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DB57B0F1F712A5100EB4C90 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
+		5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumAddIdentity.m; sourceTree = "<group>"; };
+		5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseConnection.m; sourceTree = "<group>"; };
+		5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseListener.m; sourceTree = "<group>"; };
+		5DB57B171F712A5100EB4C90 /* AgentMediumConnect.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumConnect.m; sourceTree = "<group>"; };
+		5DB57B181F712A5100EB4C90 /* AgentMediumListen.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumListen.m; sourceTree = "<group>"; };
+		5DB57B191F712A5100EB4C90 /* AgentMediumRemoveIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumRemoveIdentity.m; sourceTree = "<group>"; };
+		5DB57B1A1F712A5100EB4C90 /* AgentMediumSend.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumSend.m; sourceTree = "<group>"; };
+		5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
+		5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
+		5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
+		5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
+		5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
+		5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
+		5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
+		5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
+		5DB57B261F712A5200EB4C90 /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
+		5DB57B271F712A5200EB4C90 /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
+		5DB57B291F712A5200EB4C90 /* SignusHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusHighCases.m; sourceTree = "<group>"; };
+		5DB57B2A1F712A5200EB4C90 /* SignusMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignusMediumCases.m; sourceTree = "<group>"; };
+		5DB57B2C1F712A5200EB4C90 /* RegisterWalletType.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RegisterWalletType.m; sourceTree = "<group>"; };
+		5DB57B2D1F712A5200EB4C90 /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
+		5DB57B2E1F712A5200EB4C90 /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
+		5DB57B301F712A5200EB4C90 /* AnoncredsDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
+		5DB57B311F712A5200EB4C90 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
+		5DB57B321F712A5200EB4C90 /* SignusDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusDemo.mm; sourceTree = "<group>"; };
+		5DB57B331F712A5200EB4C90 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5DB57B351F712A5200EB4C90 /* AgentUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AgentUtils.h; sourceTree = "<group>"; };
+		5DB57B361F712A5200EB4C90 /* AgentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentUtils.m; sourceTree = "<group>"; };
+		5DB57B371F712A5200EB4C90 /* AnoncredsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnoncredsUtils.h; sourceTree = "<group>"; };
+		5DB57B381F712A5200EB4C90 /* AnoncredsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsUtils.m; sourceTree = "<group>"; };
+		5DB57B391F712A5200EB4C90 /* ClosureUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClosureUtils.h; sourceTree = "<group>"; };
+		5DB57B3A1F712A5200EB4C90 /* ClosureUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClosureUtils.m; sourceTree = "<group>"; };
+		5DB57B3B1F712A5200EB4C90 /* Environment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Environment.h; sourceTree = "<group>"; };
+		5DB57B3C1F712A5200EB4C90 /* Environment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Environment.m; sourceTree = "<group>"; };
+		5DB57B3D1F712A5200EB4C90 /* LedgerUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LedgerUtils.h; sourceTree = "<group>"; };
+		5DB57B3E1F712A5200EB4C90 /* LedgerUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerUtils.mm; sourceTree = "<group>"; };
+		5DB57B3F1F712A5200EB4C90 /* PoolUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PoolUtils.h; sourceTree = "<group>"; };
+		5DB57B401F712A5200EB4C90 /* PoolUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolUtils.m; sourceTree = "<group>"; };
+		5DB57B411F712A5200EB4C90 /* SequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequenceUtils.h; sourceTree = "<group>"; };
+		5DB57B421F712A5200EB4C90 /* SequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SequenceUtils.m; sourceTree = "<group>"; };
+		5DB57B431F712A5200EB4C90 /* SignusUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignusUtils.h; sourceTree = "<group>"; };
+		5DB57B441F712A5200EB4C90 /* SignusUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SignusUtils.mm; sourceTree = "<group>"; };
+		5DB57B451F712A5200EB4C90 /* TestUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestUtils.h; sourceTree = "<group>"; };
+		5DB57B461F712A5200EB4C90 /* TestUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestUtils.m; sourceTree = "<group>"; };
+		5DB57B471F712A5200EB4C90 /* WalletUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WalletUtils.h; sourceTree = "<group>"; };
+		5DB57B481F712A5200EB4C90 /* WalletUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletUtils.m; sourceTree = "<group>"; };
+		5DB57B4A1F712A5200EB4C90 /* NSArray+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+JSON.h"; sourceTree = "<group>"; };
+		5DB57B4B1F712A5200EB4C90 /* NSArray+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+JSON.m"; sourceTree = "<group>"; };
+		5DB57B4C1F712A5200EB4C90 /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
+		5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
+		5DB57B4E1F712A5200EB4C90 /* NSString+Validation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
+		5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
+		5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
+		7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
+		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
+		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
+		EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.release.xcconfig"; sourceTree = "<group>"; };
+		F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.debug.xcconfig"; sourceTree = "<group>"; };
+		F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3E2A7F821EC36186006194EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB57B0C1F7120DE00EB4C90 /* Indy.framework in Frameworks */,
+				C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E2A7F9B1EC36187006194EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3E2A7F7C1EC36186006194EC = {
+			isa = PBXGroup;
+			children = (
+				5DB57B0E1F712A5100EB4C90 /* Indy-demoTests */,
+				5DB57B0B1F7120DE00EB4C90 /* Indy.framework */,
+				5DB57A641F71201200EB4C90 /* Indy-demo */,
+				3E2A7F861EC36186006194EC /* Products */,
+				FFB35C33119165C4896C64A8 /* Pods */,
+				84DF55ECAD03C4B4CEE16BD1 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		3E2A7F861EC36186006194EC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E2A7F851EC36186006194EC /* Indy-demo.app */,
+				3E2A7F9E1EC36187006194EC /* Indy-demoTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5DB57A641F71201200EB4C90 /* Indy-demo */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57A651F71201200EB4C90 /* AppDelegate.h */,
+				5DB57A661F71201200EB4C90 /* AppDelegate.mm */,
+				5DB57A671F71201200EB4C90 /* Assets.xcassets */,
+				5DB57A681F71201200EB4C90 /* LaunchScreen.storyboard */,
+				5DB57A6A1F71201200EB4C90 /* Main.storyboard */,
+				5DB57A6C1F71201200EB4C90 /* Info.plist */,
+				5DB57A6D1F71201200EB4C90 /* main.m */,
+				5DB57A6E1F71201200EB4C90 /* ViewController.h */,
+				5DB57A6F1F71201200EB4C90 /* ViewController.m */,
+			);
+			path = "Indy-demo";
+			sourceTree = "<group>";
+		};
+		5DB57B0E1F712A5100EB4C90 /* Indy-demoTests */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B0F1F712A5100EB4C90 /* Base58Test.m */,
+				5DB57B101F712A5100EB4C90 /* Case Tests */,
+				5DB57B2F1F712A5200EB4C90 /* Demo Tests */,
+				5DB57B331F712A5200EB4C90 /* Info.plist */,
+				5DB57B341F712A5200EB4C90 /* Test Utils */,
+				5DB57B491F712A5200EB4C90 /* Utils */,
+			);
+			path = "Indy-demoTests";
+			sourceTree = "<group>";
+		};
+		5DB57B101F712A5100EB4C90 /* Case Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B111F712A5100EB4C90 /* Agent */,
+				5DB57B1B1F712A5100EB4C90 /* Anoncreds */,
+				5DB57B1F1F712A5200EB4C90 /* Ledger */,
+				5DB57B251F712A5200EB4C90 /* Pool */,
+				5DB57B281F712A5200EB4C90 /* Signus */,
+				5DB57B2B1F712A5200EB4C90 /* Wallet */,
+			);
+			path = "Case Tests";
+			sourceTree = "<group>";
+		};
+		5DB57B111F712A5100EB4C90 /* Agent */ = {
+			isa = PBXGroup;
+			children = (
+				5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */,
+				5DB57B131F712A5100EB4C90 /* Medium Cases */,
+			);
+			path = Agent;
+			sourceTree = "<group>";
+		};
+		5DB57B131F712A5100EB4C90 /* Medium Cases */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */,
+				5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */,
+				5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */,
+				5DB57B171F712A5100EB4C90 /* AgentMediumConnect.m */,
+				5DB57B181F712A5100EB4C90 /* AgentMediumListen.m */,
+				5DB57B191F712A5100EB4C90 /* AgentMediumRemoveIdentity.m */,
+				5DB57B1A1F712A5100EB4C90 /* AgentMediumSend.m */,
+			);
+			path = "Medium Cases";
+			sourceTree = "<group>";
+		};
+		5DB57B1B1F712A5100EB4C90 /* Anoncreds */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */,
+				5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */,
+				5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */,
+			);
+			path = Anoncreds;
+			sourceTree = "<group>";
+		};
+		5DB57B1F1F712A5200EB4C90 /* Ledger */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */,
+				5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */,
+				5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */,
+				5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */,
+				5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */,
+			);
+			path = Ledger;
+			sourceTree = "<group>";
+		};
+		5DB57B251F712A5200EB4C90 /* Pool */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B261F712A5200EB4C90 /* PoolHighCases.m */,
+				5DB57B271F712A5200EB4C90 /* PoolMediumCases.m */,
+			);
+			path = Pool;
+			sourceTree = "<group>";
+		};
+		5DB57B281F712A5200EB4C90 /* Signus */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B291F712A5200EB4C90 /* SignusHighCases.m */,
+				5DB57B2A1F712A5200EB4C90 /* SignusMediumCases.m */,
+			);
+			path = Signus;
+			sourceTree = "<group>";
+		};
+		5DB57B2B1F712A5200EB4C90 /* Wallet */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B2C1F712A5200EB4C90 /* RegisterWalletType.m */,
+				5DB57B2D1F712A5200EB4C90 /* WalletHighCases.m */,
+				5DB57B2E1F712A5200EB4C90 /* WalletMediumCases.m */,
+			);
+			path = Wallet;
+			sourceTree = "<group>";
+		};
+		5DB57B2F1F712A5200EB4C90 /* Demo Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B301F712A5200EB4C90 /* AnoncredsDemo.mm */,
+				5DB57B311F712A5200EB4C90 /* LedgerDemo.mm */,
+				5DB57B321F712A5200EB4C90 /* SignusDemo.mm */,
+			);
+			path = "Demo Tests";
+			sourceTree = "<group>";
+		};
+		5DB57B341F712A5200EB4C90 /* Test Utils */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B351F712A5200EB4C90 /* AgentUtils.h */,
+				5DB57B361F712A5200EB4C90 /* AgentUtils.m */,
+				5DB57B371F712A5200EB4C90 /* AnoncredsUtils.h */,
+				5DB57B381F712A5200EB4C90 /* AnoncredsUtils.m */,
+				5DB57B391F712A5200EB4C90 /* ClosureUtils.h */,
+				5DB57B3A1F712A5200EB4C90 /* ClosureUtils.m */,
+				5DB57B3B1F712A5200EB4C90 /* Environment.h */,
+				5DB57B3C1F712A5200EB4C90 /* Environment.m */,
+				5DB57B3D1F712A5200EB4C90 /* LedgerUtils.h */,
+				5DB57B3E1F712A5200EB4C90 /* LedgerUtils.mm */,
+				5DB57B3F1F712A5200EB4C90 /* PoolUtils.h */,
+				5DB57B401F712A5200EB4C90 /* PoolUtils.m */,
+				5DB57B411F712A5200EB4C90 /* SequenceUtils.h */,
+				5DB57B421F712A5200EB4C90 /* SequenceUtils.m */,
+				5DB57B431F712A5200EB4C90 /* SignusUtils.h */,
+				5DB57B441F712A5200EB4C90 /* SignusUtils.mm */,
+				5DB57B451F712A5200EB4C90 /* TestUtils.h */,
+				5DB57B461F712A5200EB4C90 /* TestUtils.m */,
+				5DB57B471F712A5200EB4C90 /* WalletUtils.h */,
+				5DB57B481F712A5200EB4C90 /* WalletUtils.m */,
+			);
+			path = "Test Utils";
+			sourceTree = "<group>";
+		};
+		5DB57B491F712A5200EB4C90 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				5DB57B4A1F712A5200EB4C90 /* NSArray+JSON.h */,
+				5DB57B4B1F712A5200EB4C90 /* NSArray+JSON.m */,
+				5DB57B4C1F712A5200EB4C90 /* NSDictionary+JSON.h */,
+				5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */,
+				5DB57B4E1F712A5200EB4C90 /* NSString+Validation.h */,
+				5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */,
+				8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */,
+				49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */,
+				5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FFB35C33119165C4896C64A8 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */,
+				F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */,
+				ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */,
+				2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */,
+				F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */,
+				EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */,
+				0C1A2D3B2C8FD407BD6E5F9D /* Pods-Indy-demoTests.debug.xcconfig */,
+				7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3E2A7F841EC36186006194EC /* Indy-demo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E2A7FA71EC36187006194EC /* Build configuration list for PBXNativeTarget "Indy-demo" */;
+			buildPhases = (
+				3DAF44B115C578F44367F9F0 /* [CP] Check Pods Manifest.lock */,
+				3E2A7F811EC36186006194EC /* Sources */,
+				3E2A7F821EC36186006194EC /* Frameworks */,
+				3E2A7F831EC36186006194EC /* Resources */,
+				B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */,
+				E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */,
+				5D82DB501F6A795100170B22 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Indy-demo";
+			productName = "libindy-demo";
+			productReference = 3E2A7F851EC36186006194EC /* Indy-demo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3E2A7F9D1EC36187006194EC /* Indy-demoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "Indy-demoTests" */;
+			buildPhases = (
+				8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */,
+				3E2A7F9A1EC36187006194EC /* Sources */,
+				3E2A7F9B1EC36187006194EC /* Frameworks */,
+				3E2A7F9C1EC36187006194EC /* Resources */,
+				3ED5BE501EC4985500881380 /* CopyFiles */,
+				58E7D3F16AB63FB03CA9D928 /* [CP] Embed Pods Frameworks */,
+				4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3E2A7FA01EC36187006194EC /* PBXTargetDependency */,
+			);
+			name = "Indy-demoTests";
+			productName = "libindy-demoTests";
+			productReference = 3E2A7F9E1EC36187006194EC /* Indy-demoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3E2A7F7D1EC36186006194EC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = Hyperledger;
+				TargetAttributes = {
+					3E2A7F841EC36186006194EC = {
+						CreatedOnToolsVersion = 8.3.2;
+						DevelopmentTeam = ES8QU3D2A4;
+						ProvisioningStyle = Automatic;
+					};
+					3E2A7F9D1EC36187006194EC = {
+						CreatedOnToolsVersion = 8.3.2;
+						DevelopmentTeam = ES8QU3D2A4;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 3E2A7F841EC36186006194EC;
+					};
+				};
+			};
+			buildConfigurationList = 3E2A7F801EC36186006194EC /* Build configuration list for PBXProject "Indy-demo" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3E2A7F7C1EC36186006194EC;
+			productRefGroup = 3E2A7F861EC36186006194EC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3E2A7F841EC36186006194EC /* Indy-demo */,
+				3E2A7F9D1EC36187006194EC /* Indy-demoTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3E2A7F831EC36186006194EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB57A741F71201200EB4C90 /* Info.plist in Resources */,
+				5DB57A731F71201200EB4C90 /* Main.storyboard in Resources */,
+				5DB57A711F71201200EB4C90 /* Assets.xcassets in Resources */,
+				5DB57A721F71201200EB4C90 /* LaunchScreen.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E2A7F9C1EC36187006194EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB57B6B1F712A5200EB4C90 /* Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3DAF44B115C578F44367F9F0 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Indy-demo-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		58E7D3F16AB63FB03CA9D928 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Indy-demoTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E6EB6F49635D20DFFF587CE2 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3E2A7F811EC36186006194EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB57A761F71201200EB4C90 /* ViewController.m in Sources */,
+				5DB57A751F71201200EB4C90 /* main.m in Sources */,
+				5DB57A701F71201200EB4C90 /* AppDelegate.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E2A7F9A1EC36187006194EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DB57B641F712A5200EB4C90 /* SignusMediumCases.m in Sources */,
+				5DB57B651F712A5200EB4C90 /* RegisterWalletType.m in Sources */,
+				5DB57B521F712A5200EB4C90 /* AgentMediumAddIdentity.m in Sources */,
+				5DB57B6C1F712A5200EB4C90 /* AgentUtils.m in Sources */,
+				5DB57B551F712A5200EB4C90 /* AgentMediumConnect.m in Sources */,
+				5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */,
+				5DB57B6D1F712A5200EB4C90 /* AnoncredsUtils.m in Sources */,
+				5DB57B751F712A5200EB4C90 /* WalletUtils.m in Sources */,
+				5DB57B6F1F712A5200EB4C90 /* Environment.m in Sources */,
+				5DFBC3FD1F715AD1003DFC5D /* AgentHighCases.m in Sources */,
+				5DB57B5E1F712A5200EB4C90 /* LedgerNodeRequest.mm in Sources */,
+				5DB57B711F712A5200EB4C90 /* PoolUtils.m in Sources */,
+				5DB57B661F712A5200EB4C90 /* WalletHighCases.m in Sources */,
+				5DB57B531F712A5200EB4C90 /* AgentMediumCloseConnection.m in Sources */,
+				5DB57B741F712A5200EB4C90 /* TestUtils.m in Sources */,
+				5DB57B671F712A5200EB4C90 /* WalletMediumCases.m in Sources */,
+				5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */,
+				5DB57B601F712A5200EB4C90 /* LedgerSchemaRequest.mm in Sources */,
+				5DB57B721F712A5200EB4C90 /* SequenceUtils.m in Sources */,
+				5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */,
+				5DB57B561F712A5200EB4C90 /* AgentMediumListen.m in Sources */,
+				5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */,
+				5DB57B581F712A5200EB4C90 /* AgentMediumSend.m in Sources */,
+				5DB57B6A1F712A5200EB4C90 /* SignusDemo.mm in Sources */,
+				5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */,
+				5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */,
+				5DB57B631F712A5200EB4C90 /* SignusHighCases.m in Sources */,
+				5DB57B5F1F712A5200EB4C90 /* LedgerNymRequest.mm in Sources */,
+				5DB57B681F712A5200EB4C90 /* AnoncredsDemo.mm in Sources */,
+				5DB57B691F712A5200EB4C90 /* LedgerDemo.mm in Sources */,
+				5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */,
+				5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */,
+				5DB57B731F712A5200EB4C90 /* SignusUtils.mm in Sources */,
+				5DB57B571F712A5200EB4C90 /* AgentMediumRemoveIdentity.m in Sources */,
+				5DB57B701F712A5200EB4C90 /* LedgerUtils.mm in Sources */,
+				5DB57B541F712A5200EB4C90 /* AgentMediumCloseListener.m in Sources */,
+				5DB57B621F712A5200EB4C90 /* PoolMediumCases.m in Sources */,
+				5DB57B6E1F712A5200EB4C90 /* ClosureUtils.m in Sources */,
+				5DB57B5C1F712A5200EB4C90 /* LedgerAttribRequest.mm in Sources */,
+				5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3E2A7FA01EC36187006194EC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3E2A7F841EC36186006194EC /* Indy-demo */;
+			targetProxy = 3E2A7F9F1EC36187006194EC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		5DB57A681F71201200EB4C90 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5DB57A691F71201200EB4C90 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		5DB57A6A1F71201200EB4C90 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5DB57A6B1F71201200EB4C90 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		3E2A7FA51EC36187006194EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3E2A7FA61EC36187006194EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3E2A7FA81EC36187006194EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = "Indy-demo/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					"\"$PODS_CONFIGURATION_BUILD_DIR/CoreBitcoin\"",
+					"\"$PODS_CONFIGURATION_BUILD_DIR/ISO8601DateFormatter\"",
+					"$(inherited)",
+					"\"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"CoreBitcoin\"",
+					"-l\"ISO8601DateFormatter\"",
+					"-l\"crypto\"",
+					"-l\"ssl\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"UIKit\"",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.hyperledger.indy-demo";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3E2A7FA91EC36187006194EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				INFOPLIST_FILE = "Indy-demo/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"CoreBitcoin\"",
+					"-l\"ISO8601DateFormatter\"",
+					"-l\"crypto\"",
+					"-l\"ssl\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"UIKit\"",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.hyperledger.indy-demo";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		3E2A7FAB1EC36187006194EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C1A2D3B2C8FD407BD6E5F9D /* Pods-Indy-demoTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				INFOPLIST_FILE = "Indy-demoTests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.hyperledger.Indy-demoTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Indy-demo.app/Indy-demo";
+			};
+			name = Debug;
+		};
+		3E2A7FAC1EC36187006194EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				INFOPLIST_FILE = "Indy-demoTests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.hyperledger.Indy-demoTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Indy-demo.app/Indy-demo";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3E2A7F801EC36186006194EC /* Build configuration list for PBXProject "Indy-demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2A7FA51EC36187006194EC /* Debug */,
+				3E2A7FA61EC36187006194EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E2A7FA71EC36187006194EC /* Build configuration list for PBXNativeTarget "Indy-demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2A7FA81EC36187006194EC /* Debug */,
+				3E2A7FA91EC36187006194EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "Indy-demoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2A7FAB1EC36187006194EC /* Debug */,
+				3E2A7FAC1EC36187006194EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3E2A7F7D1EC36186006194EC /* Project object */;
+}
