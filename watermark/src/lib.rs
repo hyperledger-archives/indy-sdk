@@ -3,6 +3,8 @@ use std::ffi::CString;
 use indy::api::ErrorCode;
 use indy::api::pool::indy_create_pool_ledger_config;
 
+pub mod api;
+
 pub fn config()-> ErrorCode {
     let pool_name = "pool1";
     let config_name = "config1";
