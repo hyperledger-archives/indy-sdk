@@ -97,7 +97,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
         dir('libindy') {
             echo "${env_name} Test: Build docker image"
-            testEnv = build('libindy', file)
+            testEnv = dockerBuild('libindy', file)
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
@@ -161,7 +161,7 @@ def openPool(env_name, network_name, pool_type, pool_ver, plenum_ver, anoncreds_
     echo "${env_name} Test: Build docker image for nodes pool ver. ${pool_ver}"
     echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
     verOptions = getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver)
-    def poolEnv = build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',"--build-arg pool_ip=10.0.0.2 ${verOptions}")
+    def poolEnv = dockerBuild("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',"--build-arg pool_ip=10.0.0.2 ${verOptions}")
     echo "${env_name} Test: Run nodes pool"
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 }
