@@ -866,7 +866,7 @@ impl PrimaryPredicateGEInitProof {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PrimaryEqualProof {
-    pub revealed_attrs: HashMap<String, String>,
+    pub revealed_attrs: HashMap<String, (String, String)>,
     pub a_prime: BigNumber,
     pub e: BigNumber,
     pub v: BigNumber,
@@ -876,7 +876,7 @@ pub struct PrimaryEqualProof {
 }
 
 impl PrimaryEqualProof {
-    pub fn new(revealed_attrs: HashMap<String, String>, a_prime: BigNumber, e: BigNumber,
+    pub fn new(revealed_attrs: HashMap<String, (String, String)>, a_prime: BigNumber, e: BigNumber,
                v: BigNumber, m: HashMap<String, BigNumber>, m1: BigNumber,
                m2: BigNumber) -> PrimaryEqualProof {
         PrimaryEqualProof {
