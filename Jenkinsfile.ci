@@ -6,7 +6,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'libindy-redhat-test' : { rhelTesting() },
+                'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
