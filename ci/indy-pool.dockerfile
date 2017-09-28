@@ -30,10 +30,10 @@ ARG indy_node_ver=1.1.44
 
 RUN apt-get update -y && apt-get install -y \
         indy-plenum=${indy_plenum_ver} \
-	indy-anoncreds=${indy_anoncreds_ver} \
+        indy-anoncreds=${indy_anoncreds_ver} \
         indy-node=${indy_node_ver}
-	libindy-crypto \
-	vim
+        libindy-crypto \
+        vim
 
 RUN echo '[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
