@@ -135,7 +135,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        poolInst = openPool(env_name, network_name, 'master', 'master146', '1.1.134', '1.0.25', '1.1.146')
+        poolInst = openPool(env_name, network_name, 'master', 'master147', '1.1.135', '1.0.25', '1.1.147')
 
         def testEnv
 
