@@ -26,7 +26,7 @@ RUN useradd -ms /bin/bash -u $uid indy
 
 ARG indy_anoncreds_ver=1.0.10
 
-RUN git clone -b bls https://github.com/hyperledger/indy-plenum.git
+RUN git clone https://github.com/hyperledger/indy-plenum.git
 RUN cd indy-plenum && python3 setup.py install && cd ..
 
 RUN apt-get update -y && apt-get install -y \
@@ -59,7 +59,7 @@ RUN pip install jsonpickle \
 	python-dateutil \
 	timeout-decorator
 
-RUN git clone -b bls https://github.com/hyperledger/indy-node.git
+RUN git clone https://github.com/hyperledger/indy-node.git
 RUN cd indy-node && python3 setup.py install && cd ..
 
 RUN echo '[supervisord]\n\

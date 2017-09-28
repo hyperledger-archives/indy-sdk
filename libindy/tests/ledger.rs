@@ -150,19 +150,21 @@ mod high_cases {
                          "signature":"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"}"#;
 
             let resp = PoolUtils::send_request(pool_handle, request);
+            let reply: serde_json::Value = serde_json::from_str(resp.unwrap().as_str()).unwrap();
 
-            let exp_reply = Reply {
-                op: "REPLY".to_string(),
-                result: GetNymReplyResult {
-                    _type: "105".to_string(),
-                    req_id: 1491566332010860,
-                    data: Some(r#"{"dest":"Th7MpTaRZVRYnPiabds81Y","identifier":"V4SGRU86Z58d6TV7PBUe6f","role":"2","verkey":"~7TYfekw4GUagBnBVCqPjiC"}"#.to_string()),
-                    identifier: "Th7MpTaRZVRYnPiabds81Y".to_string(),
-                    dest: "Th7MpTaRZVRYnPiabds81Y".to_string(),
-                }
-            };
-            let act_reply: Reply<GetNymReplyResult> = serde_json::from_str(resp.unwrap().as_str()).unwrap();
-            assert_eq!(act_reply, exp_reply);
+            assert_eq!(reply["op"].as_str().unwrap(), "REPLY");
+            assert_eq!(reply["result"]["type"].as_str().unwrap(), "105");
+            assert_eq!(reply["result"]["reqId"].as_u64().unwrap(), 1491566332010860);
+
+            let data: serde_json::Value = serde_json::from_str(reply["result"]["data"].as_str().unwrap()).unwrap();
+            assert_eq!(data["dest"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
+            assert_eq!(data["identifier"].as_str().unwrap(), "V4SGRU86Z58d6TV7PBUe6f");
+            assert_eq!(data["role"].as_str().unwrap(), "2");
+            assert_eq!(data["verkey"].as_str().unwrap(), "~7TYfekw4GUagBnBVCqPjiC");
+
+            assert_eq!(reply["result"]["identifier"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
+            assert_eq!(reply["result"]["dest"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
+
             TestUtils::cleanup_storage();
         }
 
@@ -1197,8 +1199,9 @@ mod medium_cases {
 
             let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
             let get_nym_response_data_without_role: GetNymResultData = serde_json::from_str(&get_nym_response_without_role.result.data.unwrap()).unwrap();
-            assert_eq!(get_nym_response_data_without_role.role.clone().unwrap(), "");
-            assert_ne!(get_nym_response_data_without_role.role.unwrap(), get_nym_response_data_with_role.role.unwrap());
+
+            assert!(get_nym_response_data_without_role.role.is_none());
+            assert_ne!(get_nym_response_data_without_role.role, get_nym_response_data_with_role.role);
 
             TestUtils::cleanup_storage();
         }
