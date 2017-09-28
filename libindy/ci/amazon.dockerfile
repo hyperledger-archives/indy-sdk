@@ -50,12 +50,12 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
-WORKDIR /usr/src
-RUN wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz
-RUN tar xzf Python-3.5.2.tgz
-WORKDIR /usr/src/Python-3.5.2
-RUN ./configure
-RUN make altinstall
+RUN cd /usr/src && \
+    wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz && \
+    tar xzf Python-3.5.2.tgz && \
+    cd Python-3.5.2 && \
+    ./configure && \
+    make altinstall
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
