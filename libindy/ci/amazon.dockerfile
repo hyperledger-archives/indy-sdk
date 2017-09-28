@@ -15,9 +15,7 @@ RUN \
            openssl-devel \
            sqlite-devel \
            libsodium-devel \
-           spectool \
-           python35 \
-           python35-pip
+           spectool
 
 
 RUN cd /tmp && \
@@ -52,9 +50,16 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
+WORKDIR /usr/src
+RUN wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz
+RUN tar xzf Python-3.5.2.tgz
+WORKDIR /usr/src/Python-3.5.2
+RUN ./configure
+RUN make altinstall
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
 RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
-WORKDIR /home/sorvin
+WORKDIR /home/indy
