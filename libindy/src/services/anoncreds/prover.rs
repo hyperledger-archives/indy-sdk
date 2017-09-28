@@ -633,21 +633,17 @@ impl Prover {
             .add(&init_proof.m2_tilde)?;
 
 
-        let mut revealed_attrs_with_values: HashMap<String, (String, String)> = HashMap::new();
+        let mut revealed_attrs_with_values: HashMap<String, String> = HashMap::new();
 
         for attr in revealed_attrs.iter() {
-            let attribute_values = encoded_attributes.get(attr)
-                .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
-
             revealed_attrs_with_values.insert(
                 attr.clone(),
-                (attribute_values.get(0)
-                     .ok_or(CommonError::InvalidStructure(format!("Raw value not found")))?
-                     .clone(),
-                 attribute_values.get(1)
-                     .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
-                     .clone(),
-                )
+                encoded_attributes
+                    .get(attr)
+                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
+                    .get(1)
+                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
+                    .clone(),
             );
         }
 

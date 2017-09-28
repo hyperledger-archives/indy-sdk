@@ -144,18 +144,18 @@ impl VerifierCommandExecutor {
                 format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))));
         }
 
-        let received_revealed_attrs_values: HashSet<(String, String, String)> =
+        let received_revealed_attrs_values: HashSet<(String, String)> =
             proof_claims.requested_proof.revealed_attrs
                 .values()
-                .map(|v| v.clone())
-                .collect::<HashSet<(String, String, String)>>();
+                .map(|&(ref uuid, _, ref encoded_value)| (uuid.clone(), encoded_value.clone()))
+                .collect::<HashSet<(String, String)>>();
 
-        let received_revealed_attrs_values_from_equal_proof: HashSet<(String, String, String)> = proof_claims.proofs.iter()
+        let received_revealed_attrs_values_from_equal_proof: HashSet<(String, String)> = proof_claims.proofs.iter()
             .flat_map(|(uuid, proof)|
-                proof.proof.primary_proof.eq_proof.revealed_attrs.values().map(move |&(ref raw_value, ref encoded_value)| (uuid.clone(), raw_value.clone(), encoded_value.clone()))
+                proof.proof.primary_proof.eq_proof.revealed_attrs.values().map(move |encoded_value| (uuid.clone(), encoded_value.clone()))
             )
             .into_iter()
-            .collect::<HashSet<(String, String, String)>>();
+            .collect::<HashSet<(String, String)>>();
 
         if received_revealed_attrs_values != received_revealed_attrs_values_from_equal_proof { return Ok(false); }
 
