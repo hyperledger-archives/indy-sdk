@@ -1,0 +1,61 @@
+#!groovy
+
+def app
+def pathToCi = 'cxs/ci'
+def dockerfile= 'dockerfile'
+
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
+
+def build(name, file = 'cxs/ci/ubuntu.dockerfile cxs/ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file")
+}
+
+node {
+    stage ('Checkout'){
+        checkout scm
+    }
+    stage ('Build docker environment'){
+        sh "pwd"
+        sh "ls ${pathToCi}"
+        sh "echo building"
+        app = build('cxs')
+    
+    }
+    stage ('Building'){
+        app.inside {
+            sh "rustc --version"
+            sh "gcc --version"
+            sh "cd cxs/libcxs; cargo build"
+        }
+    }
+
+    stage ('Testing'){
+        sh "echo Testing"
+        app.inside {
+            sh "cd cxs/libcxs; cargo test"
+        }
+    }
+    testNodeWrapper(app)
+}
+
+def testNodeWrapper(env) {
+    dir ('cxs/wrappers/node'){
+        stage ('Test Node Wrapper'){
+            env.inside {
+                sh 'npm -v'
+                sh 'npm install'
+                sh 'npm test'
+            }
+        }
+        stage ('Build Node Package'){
+            env.inside {
+                sh 'npm pack'
+                sh 'test -f cxs-1.0.0.tgz'
+            }
+        }
+    }
+}
+
+

@@ -1,0 +1,23 @@
+{
+  "name": "cxs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/**/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evernym/cxs.git"
+  },
+  "author": "evernym",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/evernym/cxs/issues"
+  },
+  "homepage": "https://github.com/evernym/cxs#readme",
+  "dependencies": {
+    "mocha": "^3.5.0",
+    "chai": "^4.1.1"
+  }
+}
