@@ -396,7 +396,7 @@ def libindyDebPublishing(testEnv, isRelease, version) {
                 type = 'stable'
                 suffix = ''
             } else {
-                type = $env.BRANCH_NAME
+                type = env.BRANCH_NAME
                 suffix = "-$env.BUILD_NUMBER"
             }
             
