@@ -27,12 +27,13 @@ RUN useradd -ms /bin/bash -u $uid indy
 ARG indy_plenum_ver=1.1.136
 ARG indy_anoncreds_ver=1.0.25
 ARG indy_node_ver=1.1.149
+ARG indy_crypto_ver=0.1.6
 
 RUN apt-get update -y && apt-get install -y \
         indy-plenum=${indy_plenum_ver} \
         indy-anoncreds=${indy_anoncreds_ver} \
         indy-node=${indy_node_ver} \
-        libindy-crypto \
+        libindy-crypto=${indy_crypto_ver} \
         vim
 
 RUN echo '[supervisord]\n\
