@@ -34,7 +34,7 @@ RUN apt-get update -y && apt-get install -y \
         indy-plenum=${indy_plenum_ver} \
         indy-anoncreds=${indy_anoncreds_ver} \
         indy-node=${indy_node_ver} \
-        python3-indy-crypto={python3_indy_crypto_ver} \
+        python3-indy-crypto=${python3_indy_crypto_ver} \
         libindy-crypto=${indy_crypto_ver} \
         vim
 
