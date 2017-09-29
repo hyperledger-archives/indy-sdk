@@ -391,6 +391,7 @@ def libindyDebPublishing(testEnv, isRelease, version) {
             sh 'chmod -R 755 ci/*.sh'
 
             def suffix = getSuffix(isRelease, "Apt(Libindy)")
+            def type = env.BRANCH_NAME == 'rc' && isRelease ? 'stable' : $env.BRANCH_NAME
 
             dir('sovrin-packaging') {
                 downloadPackagingUtils()
@@ -399,7 +400,7 @@ def libindyDebPublishing(testEnv, isRelease, version) {
             withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
                 try {
                     sh 'mkdir /root/.ssh && ln -sf $sovrin_repo_key /root/.ssh'
-                    sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix"
+                    sh "./ci/libindy-deb-build-and-upload.sh $version $type $suffix"
                 }
                 finally {
                     sh "rm -rf debian"
