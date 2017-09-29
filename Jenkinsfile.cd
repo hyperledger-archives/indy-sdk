@@ -390,8 +390,16 @@ def libindyDebPublishing(testEnv, isRelease, version) {
         testEnv.inside('-u 0:0') {
             sh 'chmod -R 755 ci/*.sh'
 
-            def (type, suffix) = env.BRANCH_NAME == 'rc' && isRelease ? ['stable', ''] : [$env.BRANCH_NAME, "-$env.BUILD_NUMBER"]
-
+            def type
+            def suffix
+            if (env.BRANCH_NAME == 'rc' && isRelease) {
+                type = 'stable'
+                suffix = ''
+            } else {
+                type = $env.BRANCH_NAME
+                suffix = "-$env.BUILD_NUMBER"
+            }
+            
             dir('sovrin-packaging') {
                 downloadPackagingUtils()
             }
