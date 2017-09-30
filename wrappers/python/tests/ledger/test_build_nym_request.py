@@ -23,9 +23,8 @@ async def test_build_nym_request_works_for_only_required_fields():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "1",
             "dest": destination,
-            "role": None
+            "type": "1",
         }
     }
 
@@ -44,11 +43,11 @@ async def test_build_nym_request_works_with_option_fields():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "1",
-            "dest": destination,
-            "verkey": ver_key,
             "alias": alias,
-            "role": "2"
+            "dest": destination,
+            "role": "2",
+            "type": "1",
+            "verkey": ver_key,
         }
     }
 
