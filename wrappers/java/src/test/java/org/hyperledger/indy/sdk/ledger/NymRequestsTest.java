@@ -45,9 +45,18 @@ public class NymRequestsTest extends IndyIntegrationTest {
 	@Test
 	public void testBuildNymRequestWorksForOnlyRequiredFields() throws Exception {
 
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"1\",\"dest\":\"%s\",\"role\":null}", identifier, dest);
+		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"type\":\"1\"}", identifier, dest);
 
 		String nymRequest = Ledger.buildNymRequest(identifier, dest, null, null, null).get();
+		assertTrue(nymRequest.contains(expectedResult));
+	}
+
+	@Test
+	public void testBuildNymRequestWorksForEmptyRole() throws Exception {
+
+		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"role\":null,\"type\":\"1\"}", identifier, dest);
+
+		String nymRequest = Ledger.buildNymRequest(identifier, dest, null, null, "").get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 
@@ -60,12 +69,12 @@ public class NymRequestsTest extends IndyIntegrationTest {
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
-				"\"type\":\"1\"," +
-				"\"dest\":\"%s\"," +
-				"\"verkey\":\"%s\"," +
 				"\"alias\":\"%s\"," +
-				"\"role\":\"2\"" +
-				"}", identifier, dest, verkey, alias);
+				"\"dest\":\"%s\"," +
+				"\"role\":\"2\"," +
+				"\"type\":\"1\"," +
+				"\"verkey\":\"%s\"" +
+				"}", identifier, alias, dest, verkey);
 
 		String nymRequest = Ledger.buildNymRequest(identifier, dest, verkey, alias, role).get();
 

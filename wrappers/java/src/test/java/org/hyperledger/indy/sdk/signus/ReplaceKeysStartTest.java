@@ -17,7 +17,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
-public class ReplaceKeysTest extends IndyIntegrationTest {
+public class ReplaceKeysStartTest extends IndyIntegrationTest {
 
 	private Wallet wallet;
 	private String did;
@@ -42,30 +42,32 @@ public class ReplaceKeysTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testReplaceKeysWorksForEmptyJson() throws Exception {
-		SignusResults.ReplaceKeysResult result = Signus.replaceKeys(wallet, did, "{}").get();
+	public void testreplaceKeysStartWorksForEmptyJson() throws Exception {
+		SignusResults.ReplaceKeysStartResult result = Signus.replaceKeysStart(wallet, did, "{}").get();
 		assertNotNull(result);
 
 		assertEquals(32, Base58.decode(result.getVerkey()).length);
 	}
 
 	@Test
-	public void testReplaceKeysWorksForInvalidDid() throws Exception {
+	public void testreplaceKeysStartWorksForInvalidDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
-		Signus.replaceKeys(this.wallet, "invalid_base58_string", "{}").get();
+		SignusResults.ReplaceKeysStartResult result = Signus.replaceKeysStart(this.wallet, "invalid_base58_string", "{}").get();
+
+		assertNotEquals(verkey, result.getVerkey());
 	}
 
 	@Test
-	public void testReplaceKeysWorksForNotExistsDid() throws Exception {
-		SignusResults.ReplaceKeysResult result = Signus.replaceKeys(this.wallet, "8wZcEriaNLNKtteJvx7f8i", "{}").get();
+	public void testreplaceKeysStartWorksForNotExistsDid() throws Exception {
+		SignusResults.ReplaceKeysStartResult result = Signus.replaceKeysStart(this.wallet, "8wZcEriaNLNKtteJvx7f8i", "{}").get();
 		assertNotNull(result);
 	}
 
 	@Test
-	public void testReplaceKeysWorksForSeed() throws Exception {
-		SignusResults.ReplaceKeysResult result = Signus.replaceKeys(this.wallet, this.did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}").get();
+	public void testreplaceKeysStartWorksForSeed() throws Exception {
+		SignusResults.ReplaceKeysStartResult result = Signus.replaceKeysStart(this.wallet, this.did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}").get();
 		assertNotNull(result);
 		String verkey = result.getVerkey();
 

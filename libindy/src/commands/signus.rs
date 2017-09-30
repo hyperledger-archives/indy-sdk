@@ -30,11 +30,15 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // did json
         Box<Fn(Result<(String, String, String), IndyError>) + Send>),
-    ReplaceKeys(
+    ReplaceKeysStart(
         i32, // wallet handle
         String, // identity json
         String, // did
         Box<Fn(Result<(String, String), IndyError>) + Send>),
+    ReplaceKeysApply(
+        i32, // wallet handle
+        String, // did
+        Box<Fn(Result<(), IndyError>) + Send>),
     StoreTheirDid(
         i32, // wallet handle
         String, // identity json
@@ -115,9 +119,13 @@ impl SignusCommandExecutor {
                 info!(target: "signus_command_executor", "CreateAndStoreMyDid command received");
                 self.create_and_store_my_did(wallet_handle, &did_json, cb);
             }
-            SignusCommand::ReplaceKeys(wallet_handle, identity_json, did, cb) => {
-                info!(target: "signus_command_executor", "ReplaceKeys command received");
-                self.replace_keys(wallet_handle, &identity_json, &did, cb);
+            SignusCommand::ReplaceKeysStart(wallet_handle, identity_json, did, cb) => {
+                info!(target: "signus_command_executor", "ReplaceKeysStart command received");
+                self.replace_keys_start(wallet_handle, &identity_json, &did, cb);
+            }
+            SignusCommand::ReplaceKeysApply(wallet_handle, did, cb) => {
+                info!(target: "signus_command_executor", "ReplaceKeysApply command received");
+                self.replace_keys_apply(wallet_handle, &did, cb);
             }
             SignusCommand::StoreTheirDid(wallet_handle, identity_json, cb) => {
                 info!(target: "signus_command_executor", "StoreTheirDid command received");
@@ -176,18 +184,18 @@ impl SignusCommandExecutor {
         Ok((my_did.did, my_did.verkey, my_did.pk))
     }
 
-    fn replace_keys(&self,
-                    wallet_handle: i32,
-                    keys_info_json: &str,
-                    did: &str,
-                    cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        cb(self._replace_keys(wallet_handle, keys_info_json, did));
+    fn replace_keys_start(&self,
+                          wallet_handle: i32,
+                          keys_info_json: &str,
+                          did: &str,
+                          cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        cb(self._replace_keys_start(wallet_handle, keys_info_json, did));
     }
 
-    fn _replace_keys(&self,
-                     wallet_handle: i32,
-                     keys_info_json: &str,
-                     did: &str) -> Result<(String, String), IndyError> {
+    fn _replace_keys_start(&self,
+                           wallet_handle: i32,
+                           keys_info_json: &str,
+                           did: &str) -> Result<(String, String), IndyError> {
         let keys_info: MyKyesInfo = MyKyesInfo::from_json(keys_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
@@ -207,9 +215,26 @@ impl SignusCommandExecutor {
                 CommonError::InvalidState(
                     format!("Can't serialize MyDid: {}", err.description())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("my_did::{}", my_did.did), &my_did_json)?;
+        self.wallet_service.set(wallet_handle, &format!("my_did_temporary_keys::{}", my_did.did), &my_did_json)?;
 
         Ok((my_did.verkey, my_did.pk))
+    }
+
+    fn replace_keys_apply(&self,
+                          wallet_handle: i32,
+                          did: &str,
+                          cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        cb(self._replace_keys_apply(wallet_handle, did));
+    }
+
+    fn _replace_keys_apply(&self,
+                           wallet_handle: i32,
+                           did: &str) -> Result<(), IndyError> {
+        let temporary_my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did_temporary_keys::{}", did))?;
+
+        self.wallet_service.set(wallet_handle, &format!("my_did::{}", did), &temporary_my_did_json)?;
+
+        Ok(())
     }
 
     fn store_their_did(&self,

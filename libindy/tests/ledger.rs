@@ -283,9 +283,8 @@ mod high_cases {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
-                    \"type\":\"1\",\
                     \"dest\":\"{}\",\
-                    \"role\":null\
+                    \"type\":\"1\"\
                 }}", identifier, dest);
 
             let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, None).unwrap();
@@ -304,12 +303,12 @@ mod high_cases {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
-                    \"type\":\"1\",\
-                    \"dest\":\"{}\",\
-                    \"verkey\":\"{}\",\
                     \"alias\":\"{}\",\
-                    \"role\":\"2\"\
-                }}", identifier, dest, verkey, alias);
+                    \"dest\":\"{}\",\
+                    \"role\":\"2\",\
+                    \"type\":\"1\",\
+                    \"verkey\":\"{}\"\
+                }}",  identifier, alias, dest, verkey );
 
             let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), Some(verkey), Some(alias), Some(role)).unwrap();
 
@@ -325,9 +324,9 @@ mod high_cases {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
-                    \"type\":\"1\",\
                     \"dest\":\"{}\",\
-                    \"role\":null\
+                    \"role\":null,\
+                    \"type\":\"1\"\
                 }}", identifier, dest);
 
             let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some("")).unwrap();

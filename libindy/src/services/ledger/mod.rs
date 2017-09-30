@@ -1,4 +1,5 @@
 extern crate time;
+extern crate serde_json;
 
 pub mod merkletree;
 pub mod types;
@@ -10,7 +11,6 @@ use self::types::{
     GetNymOperation,
     GetSchemaOperationData,
     GetSchemaOperation,
-    NymOperation,
     Request,
     SchemaOperation,
     SchemaOperationData,
@@ -25,6 +25,8 @@ use self::types::{
 use errors::common::CommonError;
 use utils::json::{JsonEncodable, JsonDecodable};
 use utils::crypto::base58::Base58;
+use serde_json::Value;
+use services::ledger::constants::NYM;
 
 trait LedgerSerializer {
     fn serialize(&self) -> String;
@@ -45,30 +47,40 @@ impl LedgerService {
 
         let req_id = LedgerService::get_req_id();
 
-        let role = match role {
-            Some("") => None,
-            Some(r) => {
-                let r = match r {
+        let mut operation: Value = Value::Object(serde_json::map::Map::new());
+        operation["type"] = Value::String(NYM.to_string());
+        operation["dest"] = Value::String(dest.to_string());
+
+        if let Some(v) = verkey {
+            operation["verkey"] = Value::String(v.to_string());
+        }
+
+        if let Some(a) = alias {
+            operation["alias"] = Value::String(a.to_string());
+        }
+
+        if let Some(r) = role {
+            if r == "" {
+                operation["role"] = Value::Null
+            } else {
+                operation["role"] = Value::String(match r {
                     "STEWARD" => constants::STEWARD,
                     "TRUSTEE" => constants::TRUSTEE,
                     "TRUST_ANCHOR" => constants::TRUST_ANCHOR,
                     "TGB" => constants::TGB,
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
-                };
-                Some(r)
+                }.to_string())
             }
-            _ => None
-        };
+        }
 
-        let operation = NymOperation::new(dest.to_string(),
-                                          verkey.map(String::from),
-                                          alias.map(String::from),
-                                          role.map(String::from));
-        let request = Request::new(req_id,
-                                   identifier.to_string(),
-                                   operation);
-        let request_json = Request::to_json(&request)
+        let mut request: Value = Value::Object(serde_json::map::Map::new());
+        request["reqId"] = Value::Number(serde_json::Number::from(req_id));
+        request["identifier"] = Value::String(identifier.to_string());
+        request["operation"] = operation;
+
+        let request_json = serde_json::to_string(&request)
             .map_err(|err| CommonError::InvalidState(format!("Invalid nym request json: {}", err.to_string())))?;
+
         Ok(request_json)
     }
 
@@ -244,7 +256,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":null}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","type":"1"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
@@ -258,7 +270,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","role":null}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","role":null,"type":"1"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
@@ -272,9 +284,9 @@ mod tests {
         let verkey = "verkey";
         let alias = "some_alias";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"1","dest":"dest","verkey":"verkey","alias":"some_alias","role":null}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"alias":"some_alias","dest":"dest","role":null,"type":"1","verkey":"verkey"}"#;
 
-        let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), None);
+        let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), Some(""));
         assert!(nym_request.is_ok());
         let nym_request = nym_request.unwrap();
         assert!(nym_request.contains(expected_result));
