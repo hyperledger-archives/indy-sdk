@@ -37,7 +37,8 @@ use utils::types::{
     Reply,
     SchemaResult,
     GetTxnResult,
-    SchemaData
+    SchemaData,
+    GetNymResultData
 };
 use std::collections::HashSet;
 // TODO: FIXME: create_my_did doesn't support CID creation, but this trustee has CID as DID. So it is rough workaround for this issue.
@@ -149,19 +150,21 @@ mod high_cases {
                          "signature":"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"}"#;
 
             let resp = PoolUtils::send_request(pool_handle, request);
+            let reply: serde_json::Value = serde_json::from_str(resp.unwrap().as_str()).unwrap();
 
-            let exp_reply = Reply {
-                op: "REPLY".to_string(),
-                result: GetNymReplyResult {
-                    _type: "105".to_string(),
-                    req_id: 1491566332010860,
-                    data: Some(r#"{"dest":"Th7MpTaRZVRYnPiabds81Y","identifier":"V4SGRU86Z58d6TV7PBUe6f","role":"2","verkey":"~7TYfekw4GUagBnBVCqPjiC"}"#.to_string()),
-                    identifier: "Th7MpTaRZVRYnPiabds81Y".to_string(),
-                    dest: "Th7MpTaRZVRYnPiabds81Y".to_string(),
-                }
-            };
-            let act_reply: Reply<GetNymReplyResult> = serde_json::from_str(resp.unwrap().as_str()).unwrap();
-            assert_eq!(act_reply, exp_reply);
+            assert_eq!(reply["op"].as_str().unwrap(), "REPLY");
+            assert_eq!(reply["result"]["type"].as_str().unwrap(), "105");
+            assert_eq!(reply["result"]["reqId"].as_u64().unwrap(), 1491566332010860);
+
+            let data: serde_json::Value = serde_json::from_str(reply["result"]["data"].as_str().unwrap()).unwrap();
+            assert_eq!(data["dest"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
+            assert_eq!(data["identifier"].as_str().unwrap(), "V4SGRU86Z58d6TV7PBUe6f");
+            assert_eq!(data["role"].as_str().unwrap(), "2");
+            assert_eq!(data["verkey"].as_str().unwrap(), "~7TYfekw4GUagBnBVCqPjiC");
+
+            assert_eq!(reply["result"]["identifier"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
+            assert_eq!(reply["result"]["dest"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
+
             TestUtils::cleanup_storage();
         }
 
@@ -281,11 +284,11 @@ mod high_cases {
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
                     \"type\":\"1\",\
-                    \"dest\":\"{}\"\
+                    \"dest\":\"{}\",\
+                    \"role\":null\
                 }}", identifier, dest);
 
             let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, None).unwrap();
-
             assert!(nym_request.contains(&expected_result));
         }
 
@@ -318,17 +321,16 @@ mod high_cases {
         fn indy_build_nym_requests_works_for_empty_role() {
             let identifier = "Th7MpTaRZVRYnPiabds81Y";
             let dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-            let role = "";
 
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
                     \"type\":\"1\",\
                     \"dest\":\"{}\",\
-                    \"role\":\"\"\
+                    \"role\":null\
                 }}", identifier, dest);
 
-            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some(role)).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&identifier.clone(), &dest.clone(), None, None, Some("")).unwrap();
             assert!(nym_request.contains(&expected_result));
         }
 
@@ -632,9 +634,9 @@ mod high_cases {
         fn indy_build_node_request_works_for_correct_data_json() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"]}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
 
-            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"]}}"#;
+            let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
 
             let node_request = LedgerUtils::build_node_request(identifier, dest, data).unwrap();
             assert!(node_request.contains(expected_result));
@@ -657,7 +659,9 @@ mod high_cases {
                               \"client_ip\":\"10.0.0.100\",\
                               \"client_port\":9709, \
                               \"alias\":\"Node5\", \
-                              \"services\": [\"VALIDATOR\"]}";
+                              \"services\": [\"VALIDATOR\"],\
+                              \"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+
             let node_request = LedgerUtils::build_node_request(&my_did.clone(), &my_did.clone(), node_data).unwrap();
 
             let res = PoolUtils::send_request(pool_handle, &node_request);
@@ -690,7 +694,8 @@ mod high_cases {
                               \"client_ip\":\"10.0.0.100\",\
                               \"client_port\":9709, \
                               \"alias\":\"Node5\", \
-                              \"services\": [\"VALIDATOR\"]}";
+                              \"services\": [\"VALIDATOR\"],\
+                              \"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
             let dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y"; // random(32) and base58
 
@@ -821,7 +826,7 @@ mod high_cases {
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&my_did.clone(),
                                                                              get_schema_response.result.seq_no.unwrap(),
                                                                              &claim_def.signature_type,
-                                                                             &get_schema_response.result.data.unwrap().origin).unwrap();
+                                                                             &get_schema_response.result.dest.unwrap()).unwrap();
 
             let get_claim_def_response = PoolUtils::send_request(pool_handle, &get_claim_def_request).unwrap();
             info!("get_claim_def_response {}", get_claim_def_response);
@@ -1160,6 +1165,46 @@ mod medium_cases {
             let res = LedgerUtils::build_get_nym_request(identifier, dest);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_nym_requests_works_for_reset_role() {
+            TestUtils::cleanup_storage();
+            let pool_name = "indy_nym_requests_works_for_reset_role";
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let mut nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(),
+                                                                 Some(&my_verkey.clone()), None, Some("TRUSTEE")).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let mut get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
+            let get_nym_response_with_role = PoolUtils::send_request(pool_handle, &get_nym_request).unwrap();
+            info!("get_nym_response_with_role {:?}", get_nym_response_with_role);
+
+            let get_nym_response_with_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_with_role).unwrap();
+            let get_nym_response_data_with_role: GetNymResultData = serde_json::from_str(&get_nym_response_with_role.result.data.unwrap()).unwrap();
+
+            nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(),
+                                                         Some(&my_verkey.clone()), None, Some("")).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+
+            get_nym_request = LedgerUtils::build_get_nym_request(&my_did.clone(), &my_did.clone()).unwrap();
+            let get_nym_response_without_role = PoolUtils::send_request(pool_handle, &get_nym_request).unwrap();
+            info!("get_nym_response_without_role {:?}", get_nym_response_without_role);
+
+            let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
+            let get_nym_response_data_without_role: GetNymResultData = serde_json::from_str(&get_nym_response_without_role.result.data.unwrap()).unwrap();
+
+            assert!(get_nym_response_data_without_role.role.is_none());
+            assert_ne!(get_nym_response_data_without_role.role, get_nym_response_data_with_role.role);
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod attrib_requests {
@@ -1352,7 +1397,7 @@ mod medium_cases {
         fn indy_build_node_request_works_for_wrong_service() {
             let identifier = "identifier";
             let dest = "dest";
-            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["SERVICE"]}"#;
+            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["SERVICE"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
 
             let res = LedgerUtils::build_node_request(identifier, dest, data);
             assert!(res.is_err());
@@ -1375,7 +1420,9 @@ mod medium_cases {
                               \"client_ip\":\"10.0.0.100\",\
                               \"client_port\":9709, \
                               \"alias\":\"Node5\", \
-                              \"services\": [\"VALIDATOR\"]}";
+                              \"services\": [\"VALIDATOR\"],\
+                              \"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+
             let node_request = LedgerUtils::build_node_request(&my_did.clone(), &my_did.clone(), node_data).unwrap();
 
             let res: Result<String, ErrorCode> = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request);
@@ -1401,7 +1448,9 @@ mod medium_cases {
                               \"client_ip\":\"10.0.0.100\",\
                               \"client_port\":9709, \
                               \"alias\":\"Node5\", \
-                              \"services\": [\"VALIDATOR\"]}";
+                              \"services\": [\"VALIDATOR\"],\
+                              \"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+
             let node_request = LedgerUtils::build_node_request(&my_did.clone(), &my_did.clone(), node_data).unwrap();
 
             let res: Result<String, ErrorCode> = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request);

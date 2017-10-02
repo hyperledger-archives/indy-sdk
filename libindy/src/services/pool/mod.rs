@@ -5,14 +5,22 @@ mod catchup;
 mod state_proof;
 
 extern crate byteorder;
+extern crate digest;
+extern crate hex;
 extern crate rust_base58;
-extern crate serde_json;
+extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
+extern crate indy_crypto;
+extern crate base64;
+
 
 use self::byteorder::{ByteOrder, LittleEndian};
+use self::digest::{FixedOutput, Input};
+use self::hex::ToHex;
 use self::rust_base58::FromBase58;
-use self::serde_json::Value;
+use serde_json;
+use serde_json::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
@@ -32,6 +40,7 @@ use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
+use self::indy_crypto::bls::{Generator, VerKey};
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -59,6 +68,7 @@ enum PoolWorkerHandler {
 }
 
 struct TransactionHandler {
+    gen: Generator,
     f: usize,
     nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
@@ -122,10 +132,10 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg);
+                self.process_reply(reply.result.req_id, raw_msg)?;
             }
             Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg);
+                self.process_reply(response.txn.req_id, raw_msg)?;
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -137,30 +147,77 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
-        let mut remove = false;
-        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
-            let pend_cmd: &mut CommandProcess = pend_cmd;
-            let mut json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
-            if let Some(str) = json_msg.inner["result"]["data"].clone().as_str() {
-                let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
-                json_msg.inner["result"]["data"] = tmp_obj;
-            }
-            let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
-            if reply_cnt == self.f {
-                //already have f same replies and receive f+1 now
-                for &cmd_id in &pend_cmd.cmd_ids {
-                    CommandExecutor::instance().send(
-                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+    fn process_reply(&mut self, req_id: u64, raw_msg: &str) -> Result<(), PoolError> {
+        trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
+
+        if !self.pending_commands.contains_key(&req_id) {
+            warn!("TransactionHandler::process_reply: <<< No pending command for request");
+            return Ok(());
+        }
+
+        let json_msg: HashableValue =
+            HashableValue {
+                inner: serde_json::from_str(raw_msg)
+                    .map_err(|err| CommonError::InvalidStructure("Invalid message structure".to_string()))?
+            };
+
+        let reply_cnt = *self.pending_commands
+            .get(&req_id).unwrap()
+            .replies.get(&json_msg).unwrap_or(&0usize);
+        trace!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
+
+        let consensus_reached = reply_cnt >= self.f || {
+            debug!("TransactionHandler::process_reply: Try to verify proof and signature");
+
+            let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
+            let data_to_check_proof_signature = TransactionHandler::parse_reply_for_proof_signature_checking(&json_msg.inner["result"]);
+
+            data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
+                debug!("TransactionHandler::process_reply: Proof and signature are present");
+
+                let (proofs, root_hash, key, value) = data_to_check_proof.unwrap();
+
+                let proof_valid = self::state_proof::verify_proof(
+                    base64::decode(proofs).unwrap().as_slice(),
+                    root_hash.from_base58().unwrap().as_slice(),
+                    key.as_slice(),
+                    value.as_ref().map(String::as_str));
+
+
+                debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
+
+                proof_valid && {
+                    let (signature, participants, pool_state_root) = data_to_check_proof_signature.unwrap();
+                    let signature_valid = self::state_proof::verify_proof_signature(
+                        signature,
+                        participants.as_slice(),
+                        root_hash,
+                        pool_state_root,
+                        self.nodes.as_slice(), self.f, &self.gen);
+                    debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
+                    signature_valid
                 }
-                remove = true;
-            } else {
-                pend_cmd.replies.insert(json_msg, reply_cnt + 1);
             }
-        }
-        if remove {
+        };
+
+        debug!("TransactionHandler::process_reply: consensus_reached {}", consensus_reached);
+
+        if consensus_reached {
+            let cmd_ids = self.pending_commands.get(&req_id).unwrap().cmd_ids.clone();
+
+            for cmd_id in cmd_ids {
+                CommandExecutor::instance().send(
+                    Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.to_owned())))).unwrap();
+            }
+
             self.pending_commands.remove(&req_id);
+        } else {
+            let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
+            pend_cmd.replies.insert(json_msg, reply_cnt + 1);
         }
+
+        trace!("TransactionHandler::process_reply: <<<");
+        Ok(())
     }
 
     //TODO correct handling of Reject
@@ -235,11 +292,181 @@ impl TransactionHandler {
             }
         }
     }
+
+    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value)
+                                      -> Option<(&str, &str, Vec<u8>, Option<String>)> {
+        trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
+
+        let xtype = if let Some(xtype) = json_msg["type"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: xtype: {:?}", xtype);
+            xtype
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No type field");
+            return None;
+        };
+
+        let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: proof: {:?}", proof);
+            proof
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No proof");
+            return None;
+        };
+
+        let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: root_hash: {:?}", root_hash);
+            root_hash
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No root hash");
+            return None;
+        };
+
+        // TODO: FIXME: It is a workaround for Node's problem. Node returns some transactions as strings and some as objects.
+        // If node returns marshaled json it can contain spaces and it can cause invalid hash.
+        // So we have to save the original string too.
+        // See https://jira.hyperledger.org/browse/INDY-699
+        let (data, parsed_data): (String, serde_json::Value) = if let Some(data) = json_msg["data"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: Data is string");
+            if let Ok(parsed_data) = serde_json::from_str(data) {
+                (data.to_owned(), parsed_data)
+            } else {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid json");
+                return None;
+            }
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: Data is non-string");
+            (json_msg["data"].to_string(), json_msg["data"].clone())
+        };
+
+        trace!("TransactionHandler::parse_reply_for_proof_checking: data: {:?}, parsed_data: {:?}", data, parsed_data);
+
+        let key_suffix: String = match xtype {
+            super::ledger::constants::GET_ATTR => {
+                if let Some(attr_name) = json_msg["raw"].as_str()
+                    .or(json_msg["enc"].as_str())
+                    .or(json_msg["hash"].as_str()) {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_ATTR attr_name {:?}", attr_name);
+
+                    let mut hasher = sha2::Sha256::default();
+                    hasher.process(attr_name.as_bytes());
+                    format!(":\x01:{}", hasher.fixed_result().to_hex())
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_ATTR No key suffix");
+                    return None;
+                }
+            }
+            super::ledger::constants::GET_CLAIM_DEF => {
+                if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
+                                                              json_msg["ref"].as_u64()) {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CLAIM_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
+                    format!(":\x03:{}:{}", sign_type, sch_seq_no)
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_CLAIM_DEF No key suffix");
+                    return None;
+                }
+            }
+            super::ledger::constants::GET_NYM => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: GET_NYM");
+                "".to_string()
+            }
+            super::ledger::constants::GET_SCHEMA => {
+                if let (Some(name), Some(ver)) = (parsed_data["name"].as_str(),
+                                                  parsed_data["version"].as_str()) {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
+                    format!(":\x02:{}:{}", name, ver)
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_SCHEMA No key suffix");
+                    return None;
+                }
+            }
+            _ => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
+                return None;
+            }
+        };
+
+        let dest = if let Some(dest) = json_msg["dest"].as_str().or(json_msg["origin"].as_str()) {
+            let mut dest = if xtype == super::ledger::constants::GET_NYM {
+                let mut hasher = sha2::Sha256::default();
+                hasher.process(dest.as_bytes());
+                hasher.fixed_result().to_vec()
+            } else {
+                dest.as_bytes().to_vec()
+            };
+
+            dest.extend_from_slice(key_suffix.as_bytes());
+
+            trace!("TransactionHandler::parse_reply_for_proof_checking: dest: {:?}", dest);
+            dest
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
+            return None;
+        };
+
+        let value = {
+            let mut value = json!({});
+
+            match xtype {
+                //TODO super::ledger::constants::GET_TXN => check ledger MerkleTree proofs?
+                //TODO super::ledger::constants::GET_DDO => support DDO
+                super::ledger::constants::GET_NYM => {
+                    value["identifier"] = parsed_data["identifier"].clone();
+                    value["role"] = parsed_data["role"].clone();
+                    value["verkey"] = parsed_data["verkey"].clone();
+                    value["seqNo"] = json_msg["seqNo"].clone();
+                    value["txnTime"] = json_msg["txnTime"].clone();
+                }
+                super::ledger::constants::GET_ATTR => {
+                    let mut hasher = sha2::Sha256::default();
+                    hasher.process(data.as_bytes());
+                    value["val"] = serde_json::Value::String(hasher.fixed_result().to_hex());
+                    value["lsn"] = json_msg["seqNo"].clone();
+                    value["lut"] = json_msg["txnTime"].clone();
+                }
+                super::ledger::constants::GET_CLAIM_DEF |
+                super::ledger::constants::GET_SCHEMA => {
+                    value["val"] = parsed_data;
+                    value["lsn"] = json_msg["seqNo"].clone();
+                    value["lut"] = json_msg["txnTime"].clone();
+                }
+                _ => {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
+                    return None
+                }
+            };
+
+            value.to_string()
+        };
+
+        trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, dest, value);
+        Some((proof, root_hash, dest, Some(value)))
+    }
+
+    fn parse_reply_for_proof_signature_checking(json_msg: &serde_json::Value) -> Option<(&str, Vec<&str>, &str)> {
+        match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
+               json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
+               json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
+            (Some(signature), Some(participants), Some(pool_state_root)) => {
+                let participants_unwrap: Vec<&str> = participants
+                    .iter()
+                    .flat_map(Value::as_str)
+                    .collect();
+
+                if participants.len() == participants_unwrap.len() {
+                    Some((signature, participants_unwrap, pool_state_root))
+                } else {
+                    None
+                }
+            }
+            _ => None
+        }
+    }
 }
 
 impl Default for TransactionHandler {
     fn default() -> Self {
         TransactionHandler {
+            gen: Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
@@ -517,12 +744,19 @@ impl RemoteNode {
     fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
+
+        let blskey = txn.data.blskey.as_str().from_base58()
+            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+        let blskey = VerKey::from_bytes(blskey.as_slice())
+            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+
         Ok(RemoteNode {
             public_key: ED25519::vk_to_curve25519(&node_verkey)?,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
             is_blacklisted: false,
+            blskey: blskey
         })
     }
 
@@ -988,13 +1222,8 @@ mod tests {
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
-        let reply = super::types::Reply {
-            result: super::types::Response {
-                req_id: req_id,
-            },
-        };
 
-        th.process_reply(reply.result.req_id, &json.to_string());
+        th.process_reply(req_id, &json.to_string()).unwrap();
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -1013,13 +1242,8 @@ mod tests {
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json1).unwrap() }, 1);
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
-        let reply = super::types::Reply {
-            result: super::types::Response {
-                req_id: req_id,
-            },
-        };
 
-        th.process_reply(reply.result.req_id, &json2.to_string());
+        th.process_reply(req_id, &json2.to_string()).unwrap();
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
@@ -1087,6 +1311,7 @@ mod tests {
         use services::pool::rust_base58::ToBase58;
         use std::thread;
         use super::*;
+        use self::indy_crypto::bls::{Generator, SignKey, VerKey};
 
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
@@ -1096,10 +1321,15 @@ mod tests {
             let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+
+            let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
+                                     &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
+
             let gt = GenTransaction {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
+                    blskey,
                     services: Vec::new(),
                     client_port: 9700,
                     client_ip: "127.0.0.1".to_string(),

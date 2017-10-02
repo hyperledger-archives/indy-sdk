@@ -7,7 +7,7 @@ impl EnvironmentUtils {
     pub fn indy_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
         let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
-        path.push(if cfg!(target_os = "ios") { "Documents/.indy" } else { ".indy" });
+        path.push(if cfg!(target_os = "ios") { "Documents/.indy_client" } else { ".indy_client" });
         path
     }
 
@@ -37,7 +37,7 @@ impl EnvironmentUtils {
 
     pub fn tmp_path() -> PathBuf {
         let mut path = env::temp_dir();
-        path.push("indy");
+        path.push("indy_client");
         path
     }
 
@@ -62,7 +62,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".indy"));
+        assert!(path.to_string_lossy().contains(".indy_client"));
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".indy"));
+        assert!(path.to_string_lossy().contains(".indy_client"));
         assert!(path.to_string_lossy().contains("wallet"));
     }
 
@@ -81,7 +81,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".indy"));
+        assert!(path.to_string_lossy().contains(".indy_client"));
         assert!(path.to_string_lossy().contains("wallet1"));
     }
 
@@ -91,7 +91,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".indy"));
+        assert!(path.to_string_lossy().contains(".indy_client"));
         assert!(path.to_string_lossy().contains("pool"));
     }
 
@@ -101,7 +101,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".indy"));
+        assert!(path.to_string_lossy().contains(".indy_client"));
         assert!(path.to_string_lossy().contains("pool1"));
     }
 
@@ -111,7 +111,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains("indy"));
+        assert!(path.to_string_lossy().contains("indy_client"));
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod tests {
 
         assert!(path.is_absolute());
         assert!(path.has_root());
-        assert!(path.to_string_lossy().contains("indy"));
+        assert!(path.to_string_lossy().contains("indy_client"));
         assert!(path.to_string_lossy().contains("test.txt"));
     }
 
@@ -129,6 +129,4 @@ mod tests {
         let pool_ip = EnvironmentUtils::test_pool_ip();
         assert!(!pool_ip.is_empty());
     }
-
-
 }

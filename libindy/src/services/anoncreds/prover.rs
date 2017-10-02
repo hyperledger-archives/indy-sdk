@@ -1,3 +1,5 @@
+extern crate indy_crypto;
+
 use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::constants::*;
@@ -6,11 +8,12 @@ use services::anoncreds::helpers::*;
 use services::anoncreds::verifier::Verifier;
 use services::anoncreds::issuer::Issuer;
 use utils::crypto::bn::BigNumber;
-use utils::crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
 use std::iter::FromIterator;
+
+use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
 
 pub struct Prover {}
 
@@ -549,7 +552,7 @@ impl Prover {
         let r_delta = BigNumber::rand(LARGE_VPRIME)?;
 
         let t_delta = pk.z
-            .exp(&BigNumber::from_dec(&delta.to_string())?, Some(&mut ctx))?
+            .mod_exp(&BigNumber::from_dec(&delta.to_string())?, &pk.n, Some(&mut ctx))?
             .mul(
                 &pk.s.mod_exp(&r_delta, &pk.n, Some(&mut ctx))?,
                 Some(&mut ctx)
@@ -635,11 +638,12 @@ impl Prover {
         for attr in revealed_attrs.iter() {
             revealed_attrs_with_values.insert(
                 attr.clone(),
-                encoded_attributes.get(attr)
+                encoded_attributes
+                    .get(attr)
                     .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
                     .get(1)
                     .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
-                    .clone()
+                    .clone(),
             );
         }
 
@@ -1519,8 +1523,7 @@ pub mod mocks {
                                  PointG1::new().unwrap(), PointG1::new().unwrap(),
                                  PointG1::new().unwrap(), PointG2::new().unwrap(),
                                  PointG2::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG2::new().unwrap(),
-                                 GroupOrderElement::new().unwrap())
+                                 PointG2::new().unwrap())
     }
 
     pub fn get_accumulator() -> Accumulator {

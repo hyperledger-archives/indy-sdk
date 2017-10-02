@@ -122,9 +122,9 @@ namespace Hyperledger.Indy.AgentApi
         private IDictionary<IntPtr, AgentConnection> _connections = new ConcurrentDictionary<IntPtr, AgentConnection>();
 
         /// <summary>
-        /// Whether or not the listener is open.
+        /// Whether or not the close function has been called.
         /// </summary>
-        private bool _isOpen = true;
+        private bool _closeRequested = false;
 
         /// <summary>
         /// Gets the handle for the listener.
@@ -215,7 +215,7 @@ namespace Hyperledger.Indy.AgentApi
                 pool.Handle,
                 wallet.Handle,
                 did,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -245,7 +245,7 @@ namespace Hyperledger.Indy.AgentApi
                 Handle,
                 wallet.Handle,
                 did,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -292,28 +292,48 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task CloseAsync()
         {
-            _isOpen = false;
+            if (_closeRequested)
+                return Task.FromResult(true);
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = IndyNativeMethods.indy_agent_close_listener(
                 commandHandle,
                 Handle,
-                CallbackHelper.NoValueCallback
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
+
+            _closeRequested = true;
+            GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
         }
 
         /// <summary>
-        /// Disposes of resources used by the listener.
+        /// Disposes of resources.
         /// </summary>
-        public void Dispose()
+        public async void Dispose()
         {
-            if (_isOpen)
-                CloseAsync().Wait();
+            if (!_closeRequested)
+                await CloseAsync();
+        }
+
+        /// <summary>
+        /// Finalizes the resource during GC if it hasn't been already.
+        /// </summary>
+        ~AgentListener()
+        {
+            if (!_closeRequested)
+            {
+                IndyNativeMethods.indy_agent_close_listener(
+                    -1,
+                    Handle,
+                    CallbackHelper.NoValueCallback
+                );
+            }
         }
     }
 }

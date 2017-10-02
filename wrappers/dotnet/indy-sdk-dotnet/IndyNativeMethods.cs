@@ -76,7 +76,7 @@ namespace Hyperledger.Indy
         /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="handle">pool handle returned by sovrin_open_pool_ledger.</param>
+        /// <param name="handle">pool handle returned by indy_open_pool_ledger.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -198,7 +198,7 @@ namespace Hyperledger.Indy
         /// <param name="credentials">Wallet credentials json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <remarks>
-        /// Wallet with corresponded name must be previously created with sovrin_create_wallet method.
+        /// Wallet with corresponded name must be previously created with indy_create_wallet method.
         /// It is impossible to open wallet with the same name more than once.
         /// </remarks>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
@@ -206,7 +206,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_open_wallet(int command_handle, string name, string runtime_config, string credentials, OpenWalletResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_open_wallet function.
+        /// Delegate for the function called back to by the indy_open_wallet function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -217,7 +217,7 @@ namespace Hyperledger.Indy
         /// Closes opened wallet and frees allocated resources.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="handle">wallet handle returned by sovrin_open_wallet.</param>
+        /// <param name="handle">wallet handle returned by indy_open_wallet.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -447,7 +447,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_create_and_store_my_did(int command_handle, IntPtr wallet_handle, string did_json, CreateAndStoreMyDidResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_create_and_store_my_did function.
+        /// Delegate for the function called back to by the indy_create_and_store_my_did function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -470,7 +470,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_replace_keys(int command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_replace_keys function.
+        /// Delegate for the function called back to by the indy_replace_keys function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -504,7 +504,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_sign(int command_handle, IntPtr wallet_handle, string did, byte[] msg_raw, int msg_len, SignResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_sign function.
+        /// Delegate for the function called back to by the indy_sign function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -529,7 +529,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_verify_signature(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, byte[] msg_raw, int msg_len, byte[] signature_raw, int signature_len, VerifySignatureResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_verify_signature function.
+        /// Delegate for the function called back to by the indy_verify_signature function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -552,7 +552,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_encrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, byte[] msg_raw, int msg_len, EncryptResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_encrypt function.
+        /// Delegate for the function called back to by the indy_encrypt function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -579,7 +579,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_decrypt function.
+        /// Delegate for the function called back to by the indy_decrypt function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -604,7 +604,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_issuer_create_and_store_claim_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string signature_type, bool create_non_revoc, IssuerCreateAndStoreClaimDefResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_issuer_create_and_store_claim_def function.
+        /// Delegate for the function called back to by the indy_issuer_create_and_store_claim_def function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -625,7 +625,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int max_claim_num, IssuerCreateAndStoreClaimRevocRegResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_issuer_create_and_store_revoc_reg function.
+        /// Delegate for the function called back to by the indy_issuer_create_and_store_revoc_reg function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -646,7 +646,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int user_revoc_index, IssuerCreateClaimResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_issuer_create_and_store_revoc_reg function.
+        /// Delegate for the function called back to by the indy_issuer_create_and_store_revoc_reg function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -669,7 +669,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int user_revoc_index, IssuerRevokeClaimResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_issuer_revoke_claim function.
+        /// Delegate for the function called back to by the indy_issuer_revoke_claim function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -699,7 +699,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_prover_get_claim_offers(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimOffersResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_prover_get_claim_offers function.
+        /// Delegate for the function called back to by the indy_prover_get_claim_offers function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -732,7 +732,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_prover_create_and_store_claim_req(int command_handle, IntPtr wallet_handle, string prover_did, string claim_offer_json, string claim_def_json, string master_secret_name, ProverCreateAndStoreClaimReqResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_prover_create_and_store_claim_req function.
+        /// Delegate for the function called back to by the indy_prover_create_and_store_claim_req function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -762,7 +762,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_prover_get_claims(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimsResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_prover_get_claims function.
+        /// Delegate for the function called back to by the indy_prover_get_claims function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -781,7 +781,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_prover_get_claims_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetClaimsForProofResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_prover_get_claims_for_proof_req function.
+        /// Delegate for the function called back to by the indy_prover_get_claims_for_proof_req function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -805,7 +805,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_prover_create_proof(int command_handle, IntPtr wallet_handle, string proof_req_json, string requested_claims_json, string schemas_json, string master_secret_name, string claim_defs_json, string revoc_regs_json, ProverCreateProofResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_prover_create_proof function.
+        /// Delegate for the function called back to by the indy_prover_create_proof function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -827,7 +827,7 @@ namespace Hyperledger.Indy
         internal static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofResultDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the sovrin_verifier_verify_proof function.
+        /// Delegate for the function called back to by the indy_verifier_verify_proof function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
@@ -900,7 +900,7 @@ namespace Hyperledger.Indy
         /// Add identity to listener.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="listener_handle">listener handle (created by sovrin_agent_listen).</param>
+        /// <param name="listener_handle">listener handle (created by indy_agent_listen).</param>
         /// <param name="pool_handle">pool handle (created by open_pool_ledger).</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="did">DID of identity.</param>
@@ -913,7 +913,7 @@ namespace Hyperledger.Indy
         /// Remove identity from listener.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="listener_handle">listener handle (created by sovrin_agent_listen).</param>
+        /// <param name="listener_handle">listener handle (created by indy_agent_listen).</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="did">DID of identity.</param>
         /// <param name="rm_identity_cb">The function that will be called when the asynchronous call is complete.</param>
@@ -925,7 +925,7 @@ namespace Hyperledger.Indy
         /// Sends message to connected agent.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="connection_handle">Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.</param>
+        /// <param name="connection_handle">Connection handle returned by indy_agent_connect or indy_agent_listen calls.</param>
         /// <param name="message"> Message to send.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
@@ -936,7 +936,7 @@ namespace Hyperledger.Indy
         /// Closes agent connection.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="connection_handle">Connection handle returned by sovrin_agent_connect or sovrin_agent_listen calls.</param>
+        /// <param name="connection_handle">Connection handle returned by indy_agent_connect or indy_agent_listen calls.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -946,7 +946,7 @@ namespace Hyperledger.Indy
         /// Closes agent connection.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="listener_handle">Listener handle returned by sovrin_agent_listen call.</param>
+        /// <param name="listener_handle">Listener handle returned by indy_agent_listen call.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
