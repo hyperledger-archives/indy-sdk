@@ -26,9 +26,11 @@ if [ -d "${BUILD_DIR}/${CONFIGURATION}-iphoneos/${TARGET_NAME}.framework/${TARGE
 echo "iphoneos exists 1"
 fi
 
+open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
+
 
 # Step 1. Copy the framework structure (from iphoneos build) to the universal folder
-echo "Copying to output folder"
+echo "Copying to output folder: ${UNIVERSAL_OUTPUTFOLDER}/ from ${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME} "
 cp -R "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}" "${UNIVERSAL_OUTPUTFOLDER}/"
 
 # Step 2. Copy Swift modules from iphonesimulator build (if it exists) to the copied framework directory
@@ -48,9 +50,11 @@ fi
 # Step 3. Create universal binary file using lipo and place the combined executable in the copied framework directory
 echo "Combining executables"
 
-open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
+#open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
 
 lipo -create -output "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/${TARGET_NAME}" "${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${TARGET_NAME}.framework/${TARGET_NAME}" "${BUILD_DIR}/${CONFIGURATION}-iphoneos/${TARGET_NAME}.framework/${TARGET_NAME}"
+
+open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
 
 # Step 4. Create universal binaries for embedded frameworks
 #for SUB_FRAMEWORK in $( ls "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/Frameworks" ); do
@@ -61,8 +65,8 @@ lipo -create -output "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/${TARGE
 # Step 5. Convenience step to copy the framework to the project's directory
 echo "Copying to project dir"
 
-
-yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${FULL_PRODUCT_NAME}" "${PROJECT_DIR}"
+yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"  "${PROJECT_DIR}"
+#yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${FULL_PRODUCT_NAME}" "${PROJECT_DIR}"
 
 open "${PROJECT_DIR}"
 
