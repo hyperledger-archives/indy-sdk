@@ -1,11 +1,14 @@
 extern crate serde_json;
 extern crate rmp_serde;
+extern crate indy_crypto;
 
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use super::zmq;
 use errors::common::CommonError;
+
+use self::indy_crypto::bls;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::json::{JsonDecodable, JsonEncodable};
@@ -18,6 +21,7 @@ pub struct NodeData {
     pub node_ip: String,
     pub node_port: u32,
     pub services: Vec<String>,
+    pub blskey: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -28,7 +32,7 @@ pub struct GenTransaction {
     #[serde(rename = "txnId")]
     pub txn_id: Option<String>,
     #[serde(rename = "type")]
-    pub txn_type: String,
+    pub txn_type: String
 }
 
 impl JsonEncodable for GenTransaction {}
@@ -185,6 +189,7 @@ pub struct RemoteNode {
     pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
     pub is_blacklisted: bool,
+    pub blskey: bls::VerKey
 }
 
 pub struct CatchUpProcess {
