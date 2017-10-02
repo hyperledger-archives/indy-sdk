@@ -44,7 +44,7 @@ def testNodeWrapper(env) {
     dir ('cxs/wrappers/node'){
         stage ('Test Node Wrapper'){
             env.inside {
-                sh "cp cxs/libcxs/target/debug/libcx.so wrappers/node/lib"
+                sh "cp cxs/libcxs/target/debug/libcxs.so wrappers/node/lib"
                 sh 'npm -v'
                 sh 'npm install'
                 sh 'npm test'
