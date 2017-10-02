@@ -13,8 +13,12 @@ schema_data = json.dumps({
 
 
 @pytest.mark.asyncio
-async def test_replace_keys_apply_works(pool_handle, wallet_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_replace_keys_apply_works(pool_handle, wallet_handle, identity_trustee1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     (new_verkey, _) = await signus.replace_keys_start(wallet_handle, my_did, "{}")
 
@@ -33,8 +37,12 @@ async def test_replace_keys_apply_works(pool_handle, wallet_handle, identity_my1
 
 
 @pytest.mark.asyncio
-async def test_replace_keys_without_nym_transaction(pool_handle, wallet_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_replace_keys_without_nym_transaction(pool_handle, wallet_handle, identity_trustee1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     await signus.replace_keys_start(wallet_handle, my_did, "{}")
     await signus.replace_keys_apply(wallet_handle, my_did)
