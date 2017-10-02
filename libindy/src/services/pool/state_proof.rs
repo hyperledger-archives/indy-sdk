@@ -4,6 +4,7 @@ extern crate rlp;
 extern crate sha3;
 extern crate generic_array;
 extern crate digest;
+extern crate indy_crypto;
 
 use self::rlp::{
     DecoderError as RlpDecoderError,
@@ -16,6 +17,13 @@ use self::sha3::Digest;
 use std::collections::HashMap;
 
 use errors::common::CommonError;
+
+use services::pool::types::RemoteNode;
+use self::indy_crypto::bls::{Bls, Generator, VerKey, MultiSignature};
+
+extern crate rust_base58;
+
+use self::rust_base58::FromBase58;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Node {
@@ -240,7 +248,7 @@ impl Node {
 }
 
 pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
-    trace!("state_proof::verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
+    debug!("verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
@@ -257,6 +265,54 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_va
             .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
             .unwrap_or(false)
     }).unwrap_or(false)
+}
+
+pub fn verify_proof_signature(signature: &str,
+                              participants: &[&str],
+                              root_hash: &str,
+                              pool_state_root: &str,
+                              nodes: &[RemoteNode],
+                              f: usize,
+                              gen: &Generator) -> bool {
+    trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, pool_state_root);
+
+    let mut ver_keys: Vec<&VerKey> = Vec::new();
+    for node in nodes {
+        if participants.contains(&node.name.as_str()) {
+            ver_keys.push(&node.blskey)
+        }
+    }
+
+    debug!("verify_proof_signature: ver_keys.len(): {:?}", ver_keys.len());
+
+    if ver_keys.len() < (nodes.len() - f) {
+        return false;
+    }
+
+    let signature =
+        if let Ok(signature) = signature.from_base58() {
+            signature
+        } else {
+            return false;
+        };
+
+    let signature =
+        if let Ok(signature) = MultiSignature::from_bytes(signature.as_slice()) {
+            signature
+        } else {
+            return false;
+        };
+
+    debug!("verify_proof_signature: signature: {:?}", signature);
+
+    let state_root = root_hash.to_owned() + pool_state_root;
+
+    debug!("verify_proof_signature: state_root: {:?}", state_root);
+
+    let res = Bls::verify_multi_sig(&signature, state_root.as_bytes(), ver_keys.as_slice(), gen).unwrap_or(false);
+
+    debug!("verify_proof_signature: <<< res: {:?}", res);
+    res
 }
 
 #[cfg(test)]
@@ -281,26 +337,26 @@ mod tests {
         let vec = Vec::from_hex(str).unwrap();
         let rlp = UntrustedRlp::new(vec.as_slice());
         let proofs: Vec<Node> = rlp.as_list().unwrap();
-        info!("Input");
+        info! ("Input");
         for rlp in rlp.iter() {
-            info!("{:?}", rlp.as_raw());
+            info! ("{:?}", rlp.as_raw());
         }
-        info!("parsed");
+        info! ("parsed");
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
-            info!("{:?}", node);
+            info! ("{:?}", node);
             let encoded = rlp_encode(node);
-            info!("{:?}", encoded);
+            info! ("{:?}", encoded);
             let mut hasher = sha3::Sha3_256::default();
             hasher.input(encoded.to_vec().as_slice());
             let out = hasher.result();
-            info!("{:?}", out);
+            info! ("{:?}", out);
             map.insert(out, node);
         }
         for k in 33..35 {
-            info!("Try get {}", k);
+            info! ("Try get {}", k);
             let x = proofs[2].get_str_value(&map, k.to_string().as_bytes()).unwrap().unwrap();
-            info!("{:?}", x);
+            info! ("{:?}", x);
             assert_eq!(x, format!("v{}", k - 32));
         }
     }
@@ -354,6 +410,6 @@ mod tests {
     #[test]
     fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
         let proofs = Vec::from_hex("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
-        assert_eq!(verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
+        assert_eq! (verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
     }
 }
