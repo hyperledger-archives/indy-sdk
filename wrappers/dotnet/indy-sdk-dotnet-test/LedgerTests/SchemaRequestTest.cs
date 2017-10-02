@@ -110,8 +110,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
 
             Assert.AreEqual("gvt2", (string)getSchemaResponseObject["result"]["data"]["name"]);
-            Assert.AreEqual("2.0", (string)getSchemaResponseObject["result"]["data"]["version"]);
-            Assert.AreEqual(did, (string)getSchemaResponseObject["result"]["data"]["origin"]);
+            Assert.AreEqual("2.0", (string)getSchemaResponseObject["result"]["data"]["version"]);           
         }
 
         [TestMethod]
