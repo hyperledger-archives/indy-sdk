@@ -48,7 +48,6 @@ pub struct NymOperation {
     pub verkey: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alias: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>
 }
 
@@ -337,18 +336,20 @@ pub struct NodeOperationData {
     pub client_ip: String,
     pub client_port: i32,
     pub alias: String,
-    pub services: Vec<Services>
+    pub services: Vec<Services>,
+    pub blskey: String
 }
 
 impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>) -> NodeOperationData {
+    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>, blskey: String) -> NodeOperationData {
         NodeOperationData {
             node_ip: node_ip,
             node_port: node_port,
             client_ip: client_ip,
             client_port: client_port,
             alias: alias,
-            services: services
+            services: services,
+            blskey: blskey
         }
     }
 }
