@@ -46,7 +46,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"client_ip\":\"10.0.0.100\"," +
                     "\"client_port\":911," +
                     "\"alias\":\"some\"," +
-                    "\"services\":[\"VALIDATOR\"]}";
+                    "\"services\":[\"VALIDATOR\"]," +
+                    "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
@@ -72,7 +73,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"client_ip\":\"10.0.0.100\"," +
                     "\"client_port\":910," +
                     "\"alias\":\"some\"," +
-                    "\"services\":[\"VALIDATOR\"]}";
+                    "\"services\":[\"VALIDATOR\"]," +
+                    "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
             var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
 
@@ -91,7 +93,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"client_ip\":\"10.0.0.100\"," +
                     "\"client_port\":911," +
                     "\"alias\":\"some\"," +
-                    "\"services\":[\"SERVICE\"]}";
+                    "\"services\":[\"SERVICE\"]," +
+                    "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
                 Ledger.BuildNodeRequestAsync(_identifier, _dest, data)
@@ -129,7 +132,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
                  "\"client_ip\":\"10.0.0.100\"," +
                  "\"client_port\":911," +
                  "\"alias\":\"some\"," +
-                 "\"services\":[\"VALIDATOR\"]}";
+                 "\"services\":[\"VALIDATOR\"]," +
+                    "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
             var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
 
