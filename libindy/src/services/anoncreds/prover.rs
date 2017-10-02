@@ -638,11 +638,12 @@ impl Prover {
         for attr in revealed_attrs.iter() {
             revealed_attrs_with_values.insert(
                 attr.clone(),
-                encoded_attributes.get(attr)
+                encoded_attributes
+                    .get(attr)
                     .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
                     .get(1)
                     .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
-                    .clone()
+                    .clone(),
             );
         }
 
