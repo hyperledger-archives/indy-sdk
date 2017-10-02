@@ -552,7 +552,7 @@ impl Prover {
         let r_delta = BigNumber::rand(LARGE_VPRIME)?;
 
         let t_delta = pk.z
-            .exp(&BigNumber::from_dec(&delta.to_string())?, Some(&mut ctx))?
+            .mod_exp(&BigNumber::from_dec(&delta.to_string())?, &pk.n, Some(&mut ctx))?
             .mul(
                 &pk.s.mod_exp(&r_delta, &pk.n, Some(&mut ctx))?,
                 Some(&mut ctx)
