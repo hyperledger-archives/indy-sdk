@@ -64,28 +64,58 @@ pub fn get_mtilde(unrevealed_attrs: &Vec<String>)
     Ok(mtilde)
 }
 
-fn largest_square_less_than(delta: i32) -> i32 {
-    (delta as f64).sqrt().floor() as i32
+fn largest_square_less_than(delta: usize) -> usize {
+    (delta as f64).sqrt().floor() as usize
 }
 
 pub fn four_squares(delta: i32) -> Result<HashMap<String, BigNumber>, CommonError> {
-    let u1 = largest_square_less_than(delta);
-    let u2 = largest_square_less_than(delta - u1.pow(2));
-    let u3 = largest_square_less_than(delta - u1.pow(2) - u2.pow(2));
-    let u4 = largest_square_less_than(delta - u1.pow(2) - u2.pow(2) - u3.pow(2));
-
-    if u1.pow(2) + u2.pow(2) + u3.pow(2) + u4.pow(2) == delta {
-        let mut res: HashMap<String, BigNumber> = HashMap::new();
-        res.insert("0".to_string(), BigNumber::from_dec(&u1.to_string()[..])?);
-        res.insert("1".to_string(), BigNumber::from_dec(&u2.to_string()[..])?);
-        res.insert("2".to_string(), BigNumber::from_dec(&u3.to_string()[..])?);
-        res.insert("3".to_string(), BigNumber::from_dec(&u4.to_string()[..])?);
-
-        Ok(res)
-    } else {
-        Err(CommonError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)))
+    if delta < 0 {
+        return Err(CommonError::InvalidStructure(format!("Cannot get the four squares for delta {} ", delta)));
     }
+
+    let d = delta as usize;
+    let mut roots: [usize; 4] = [largest_square_less_than(d), 0, 0, 0];
+
+    'outer: for i in (1 .. roots[0] + 1).rev() {
+        roots[0] = i;
+        if d == roots[0].pow(2) {
+            roots[1] = 0;
+            roots[2] = 0;
+            roots[3] = 0;
+            break 'outer;
+        }
+        roots[1] = largest_square_less_than(d - roots[0].pow(2));
+        for j in (1 .. roots[1] + 1).rev() {
+            roots[1] = j;
+            if d == roots[0].pow(2) + roots[1].pow(2) {
+                roots[2] = 0;
+                roots[3] = 0;
+                break 'outer;
+            }
+            roots[2] = largest_square_less_than(d - roots[0].pow(2) - roots[1].pow(2));
+            for k in (1 .. roots[2] + 1).rev() {
+                roots[2] = k;
+                if d == roots[0].pow(2) + roots[1].pow(2) + roots[2].pow(2) {
+                    roots[3] = 0;
+                    break 'outer;
+                }
+                roots[3] = largest_square_less_than(d - roots[0].pow(2) - roots[1].pow(2) - roots[2].pow(2));
+                if d == roots[0].pow(2) + roots[1].pow(2) + roots[2].pow(2) + roots[3].pow(2) {
+                    break 'outer;
+                }
+            }
+        }
+    }
+
+    let mut res: HashMap<String, BigNumber> = HashMap::new();
+    res.insert("0".to_string(), BigNumber::from_dec(&roots[0].to_string()[..])?);
+    res.insert("1".to_string(), BigNumber::from_dec(&roots[1].to_string()[..])?);
+    res.insert("2".to_string(), BigNumber::from_dec(&roots[2].to_string()[..])?);
+    res.insert("3".to_string(), BigNumber::from_dec(&roots[3].to_string()[..])?);
+
+    Ok(res)
 }
+
 
 pub trait BytesView {
     fn to_bytes(&self) -> Result<Vec<u8>, CommonError>;
@@ -169,15 +199,38 @@ mod tests {
 
     #[test]
     fn four_squares_works() {
-        let res = four_squares(10 as i32);
-
-        assert!(res.is_ok());
+        let res = four_squares(107 as i32);
         let res_data = res.unwrap();
 
-        assert_eq!("3".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
-        assert_eq!("1".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
-        assert_eq!("0".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("9".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("5".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("1".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
         assert_eq!("0".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+        let res = four_squares(112 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("10".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+
+        let res = four_squares(253 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("14".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("7".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("2".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
+
+        let res = four_squares(1506099439 as i32);
+        let res_data = res.unwrap();
+
+        assert_eq!("38807".to_string(), res_data.get("0").unwrap().to_dec().unwrap());
+        assert_eq!("337".to_string(), res_data.get("1").unwrap().to_dec().unwrap());
+        assert_eq!("50".to_string(), res_data.get("2").unwrap().to_dec().unwrap());
+        assert_eq!("11".to_string(), res_data.get("3").unwrap().to_dec().unwrap());
     }
 
     #[test]
