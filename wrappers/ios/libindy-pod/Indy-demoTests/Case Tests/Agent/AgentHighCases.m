@@ -282,13 +282,13 @@
     
     // 1. Obtain wallet handle
     IndyHandle walletHandle;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:@"pool2"
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     
     // 2. Obtain did
-    NSString *seed = @"indy_agent_listen_works_for_all";
+    NSString *seed = @"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     NSString *did;
     NSString *verKey;
     NSString *pubKey;
@@ -300,7 +300,7 @@
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
     
     // 3. Store their did from parts
-    NSString *endpoint = @"127.0.0.1:9803";
+    NSString *endpoint = [TestUtils endpoint];
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
                                                                       theirDid:did
                                                                        theirPk:pubKey

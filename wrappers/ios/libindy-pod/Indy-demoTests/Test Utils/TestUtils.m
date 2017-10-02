@@ -26,7 +26,7 @@
 +(void) cleanupStorage
 {
     NSMutableString *path = [TestUtils getUserDocumentDir];
-    [path appendString:@"/.indy"];
+    [path appendString:@"/.indy_client"];
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
