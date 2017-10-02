@@ -4,9 +4,14 @@ use self::libc::c_char;
 use api::Errorcode;
 use api::Errorcode::Success;
 use api::CxsStatus;
+use utils::pool;
 
 #[no_mangle]
-pub extern fn cxs_init() -> Errorcode { Success }
+pub extern fn cxs_init() -> Errorcode {
+    let pool_name = "pool1";
+    let config_name = "config1";
+    pool::create_pool_config(&pool_name, &config_name)
+}
 
 
 /**
@@ -93,3 +98,15 @@ pub extern fn cxs_proof_validate_response(proof_handle: i32, response_data: *con
 pub extern fn cxs_proof_list_state(status_array: *mut CxsStatus) -> Errorcode { Success }
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_proof_get_state(proof_handle: i32, status: *mut c_char) -> Errorcode { Success }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_init() {
+        assert_eq!(Success, cxs_init());
+    }
+
+
+}

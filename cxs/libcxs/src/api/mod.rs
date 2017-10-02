@@ -1,5 +1,7 @@
 pub mod cxs;
 
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub enum Errorcode
 {
     Success = 0,
