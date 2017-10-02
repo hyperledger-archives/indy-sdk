@@ -2,13 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var rustlib_1 = require("./rustlib");
 var ffi = require("ffi");
-var CXSRuntimeConfig = /** @class */ (function () {
+var CXSRuntimeConfig = (function () {
     function CXSRuntimeConfig(_basepath) {
         this.basepath = _basepath;
     }
     return CXSRuntimeConfig;
 }());
-var CXSRuntime = /** @class */ (function () {
+exports.CXSRuntimeConfig = CXSRuntimeConfig;
+var CXSRuntime = (function () {
     function CXSRuntime(config) {
         config = config || {};
         function _initialize_basepath() {
@@ -26,8 +27,3 @@ var CXSRuntime = /** @class */ (function () {
     return CXSRuntime;
 }());
 exports.CXSRuntime = CXSRuntime;
-// var basepath = "/node_modules/cxs/lib/libcxs.so"
-// var basepath = "/home/rmarsh/dev/cxs/cxs/wrappers/node/lib/libcxs.so";
-var run = new CXSRuntime(new CXSRuntimeConfig());
-// var run = new CXSRuntime(new CXSRuntimeConfig(basepath))
-run.ffi.cxs_init();

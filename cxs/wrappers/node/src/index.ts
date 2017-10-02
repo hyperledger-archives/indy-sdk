@@ -5,7 +5,7 @@ export interface CXSAcessType {
     readonly ffi: FFIEntryPoint
 }
 
-class CXSRuntimeConfig {
+export class CXSRuntimeConfig {
     basepath?:string
     constructor(_basepath?: string){
         this.basepath = _basepath
@@ -36,10 +36,4 @@ export class CXSRuntime implements CXSAcessType {
         this.ffi = ffi.Library(libraryPath, FFIConfiguration)
     }
 }
-// var basepath = "/node_modules/cxs/lib/libcxs.so"
-// var basepath = "/home/rmarsh/dev/cxs/cxs/wrappers/node/lib/libcxs.so";
-
-var run = new CXSRuntime(new CXSRuntimeConfig())
-// var run = new CXSRuntime(new CXSRuntimeConfig(basepath))
-run.ffi.cxs_init();
 
