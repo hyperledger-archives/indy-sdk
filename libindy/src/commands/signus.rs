@@ -194,6 +194,8 @@ impl SignusCommandExecutor {
                            wallet_handle: i32,
                            keys_info_json: &str,
                            did: &str) -> Result<(String, String), IndyError> {
+        self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
+
         let keys_info: MyKyesInfo = MyKyesInfo::from_json(keys_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|

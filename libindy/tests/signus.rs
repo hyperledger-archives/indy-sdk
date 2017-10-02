@@ -874,8 +874,8 @@ mod medium_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            //TODO may be we must return WalletNotFound in case if key not exists in wallet
-            SignusUtils::replace_keys_start(wallet_handle, "8wZcEriaNLNKtteJvx7f8i", "{}").unwrap();
+            let res = SignusUtils::replace_keys_start(wallet_handle, "unknowndid", "{}");
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1206,74 +1206,78 @@ mod medium_cases {
         }
     }
 
-    #[test]
-    fn indy_replace_keys_demo() {
-        TestUtils::cleanup_storage();
+    mod replace_keys {
+        use super::*;
 
-        // 1. Create and open pool
-        let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+        #[test]
+        fn indy_replace_keys_demo() {
+            TestUtils::cleanup_storage();
 
-        // 2. Create and open wallet
-        let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            // 1. Create and open pool
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-        // 3. Generate did from Trustee seed
-        let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
-        // 4. Generate my did
-        let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+            // 2. Create and open wallet
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        // 5. Send Nym request to Ledger
-        let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            // 3. Generate did from Trustee seed
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            // 4. Generate my did
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-        // 6. Start replacing of keys
-        let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            // 5. Send Nym request to Ledger
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-        // 7. Send Nym request to Ledger with new verkey
-        let nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(), Some(&new_verkey.clone()), None, None).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+            // 6. Start replacing of keys
+            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
-        // 8. Send Schema request before apply replacing of keys
-        let schema_data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
-        let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
-        let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
-        assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            // 7. Send Nym request to Ledger with new verkey
+            let nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(), Some(&new_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
 
-        // 9. Apply replacing of keys
-        SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+            // 8. Send Schema request before apply replacing of keys
+            let schema_data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
 
-        // 10. Send Schema request
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            // 9. Apply replacing of keys
+            SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
 
-        WalletUtils::close_wallet(wallet_handle).unwrap();
-        PoolUtils::close(pool_handle).unwrap();
+            // 10. Send Schema request
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
 
-        TestUtils::cleanup_storage();
-    }
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
-    #[test]
-    fn indy_replace_keys_without_nym_transaction() {
-        TestUtils::cleanup_storage();
+            TestUtils::cleanup_storage();
+        }
 
-        let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-        let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        #[test]
+        fn indy_replace_keys_without_nym_transaction() {
+            TestUtils::cleanup_storage();
 
-        let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some("000000000000000000000000Trustee1")).unwrap();
-        let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-        let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
-        SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-        let schema_data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
-        let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
-        let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
-        assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
 
-        WalletUtils::close_wallet(wallet_handle).unwrap();
-        PoolUtils::close(pool_handle).unwrap();
+            let schema_data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
 
-        TestUtils::cleanup_storage();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 }
