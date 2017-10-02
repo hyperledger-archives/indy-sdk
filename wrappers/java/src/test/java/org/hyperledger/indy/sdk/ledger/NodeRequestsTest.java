@@ -47,7 +47,8 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 				"\"client_ip\":\"10.0.0.100\"," +
 				"\"client_port\":911," +
 				"\"alias\":\"some\"," +
-				"\"services\":[\"VALIDATOR\"]}";
+				"\"services\":[\"VALIDATOR\"]," +
+				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
@@ -78,7 +79,8 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 				"\"client_ip\":\"10.0.0.100\"," +
 				"\"client_port\":910," +
 				"\"alias\":\"some\"," +
-				"\"services\":[\"VALIDATOR\"]}";
+				"\"services\":[\"VALIDATOR\"]," +
+				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
 		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
 		Ledger.submitRequest(pool, nodeRequest).get();
@@ -95,7 +97,8 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 				"\"client_ip\":\"10.0.0.100\"," +
 				"\"client_port\":911," +
 				"\"alias\":\"some\"," +
-				"\"services\":[\"SERVICE\"]}";
+				"\"services\":[\"SERVICE\"]" +
+				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
 		Ledger.buildNodeRequest(identifier, dest, data).get();
 	}
@@ -132,7 +135,8 @@ public class NodeRequestsTest extends IndyIntegrationTest {
 				"\"client_ip\":\"10.0.0.100\"," +
 				"\"client_port\":911," +
 				"\"alias\":\"some\"," +
-				"\"services\":[\"VALIDATOR\"]}";
+				"\"services\":[\"VALIDATOR\"]," +
+				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
 		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
