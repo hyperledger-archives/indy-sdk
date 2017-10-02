@@ -1,5 +1,6 @@
 extern crate zmq_pw as zmq;
 extern crate serde_json;
+extern crate indy_crypto;
 
 use std::{error, fmt, io};
 
@@ -84,6 +85,12 @@ impl ToErrorCode for PoolError {
             PoolError::AlreadyExists(ref description) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
             PoolError::CommonError(ref err) => err.to_error_code()
         }
+    }
+}
+
+impl From<indy_crypto::errors::IndyCryptoError> for PoolError {
+    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+        PoolError::CommonError(CommonError::from(err))
     }
 }
 
