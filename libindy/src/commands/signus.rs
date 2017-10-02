@@ -1,9 +1,11 @@
+extern crate serde_json;
+
 use utils::json::{JsonDecodable, JsonEncodable};
 use errors::signus::SignusError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid};
+use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid, DidPair};
 use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
@@ -76,7 +78,32 @@ pub enum SignusCommand {
         String, // did
         Vec<u8>, // encrypted msg
         Vec<u8>, // nonce
-        Box<Fn(Result<Vec<u8>, IndyError>) + Send>)
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    PairwiseExists(
+        i32, // wallet handle
+        String, // their_did
+        Box<Fn(Result<bool, IndyError>) + Send>),
+    CreatePairwise(
+        i32, // wallet handle
+        String, // their_did
+        String, // my_did
+        Box<Fn(Result<(), IndyError>) + Send>),
+    PairwiseList(
+        i32, // wallet handle
+        Box<Fn(Result<String, IndyError>) + Send>),
+    PairwiseGetMyDid(
+        i32, // wallet handle
+        String, // their_did
+        Box<Fn(Result<String, IndyError>) + Send>),
+    PairwiseSetMetadata(
+        i32, // wallet handle
+        String, // their_did
+        String, // metadata
+        Box<Fn(Result<(), IndyError>) + Send>),
+    PairwiseGetMetadata(
+        i32, // wallet handle
+        String, // their_did
+        Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct SignusCommandExecutor {
@@ -144,6 +171,30 @@ impl SignusCommandExecutor {
             SignusCommand::Decrypt(wallet_handle, my_did, did, encrypted_msg, nonce, cb) => {
                 info!(target: "signus_command_executor", "Decrypt command received");
                 self.decrypt(wallet_handle, &my_did, &did, &encrypted_msg, &nonce, cb);
+            }
+            SignusCommand::PairwiseExists(wallet_handle, their_did, cb) => {
+                info!(target: "signus_command_executor", "PairwiseExists command received");
+                self.pairwise_exists(wallet_handle, &their_did, cb);
+            }
+            SignusCommand::CreatePairwise(wallet_handle, their_did, my_did, cb) => {
+                info!(target: "signus_command_executor", "CreatePairwise command received");
+                self.create_pairwise(wallet_handle, &their_did, &my_did, cb);
+            }
+            SignusCommand::PairwiseList(wallet_handle, cb) => {
+                info!(target: "signus_command_executor", "PairwiseList command received");
+                self.pairwise_list(wallet_handle, cb);
+            }
+            SignusCommand::PairwiseGetMyDid(wallet_handle, their_did, cb) => {
+                info!(target: "signus_command_executor", "PairwiseGetMyDid command received");
+                self.pairwise_get_my_did(wallet_handle, &their_did, cb);
+            }
+            SignusCommand::PairwiseSetMetadata(wallet_handle, their_did, metadata, cb) => {
+                info!(target: "signus_command_executor", "PairwiseSetMetadata command received");
+                self.pairwise_set_metadata(wallet_handle, &their_did, &metadata, cb);
+            }
+            SignusCommand::PairwiseGetMetadata(wallet_handle, their_did, cb) => {
+                info!(target: "signus_command_executor", "PairwiseGetMetadata command received");
+                self.pairwise_get_metadata(wallet_handle, &their_did, cb);
             }
         };
     }
@@ -348,7 +399,6 @@ impl SignusCommandExecutor {
 
 
     fn _get_their_did_from_nym(&self, get_nym_response: &str, wallet_handle: i32) -> Result<TheirDid, IndyError> {
-
         let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_response)
             .map_err(map_err_trace!())
             .map_err(|_| CommonError::InvalidState(format!("Invalid their did json")))?;
@@ -550,5 +600,93 @@ impl SignusCommandExecutor {
 
         self.signus_service.decrypt(&my_did, &their_did, encrypted_msg, nonce)
             .map_err(|err| IndyError::SignusError(err))
+    }
+
+    fn pairwise_exists(&self,
+                       wallet_handle: i32,
+                       their_did: &str,
+                       cb: Box<Fn(Result<bool, IndyError>) + Send>) {
+        cb(Ok(self.wallet_service.get(wallet_handle, &format!("pairwise::{}", their_did)).is_ok()));
+    }
+
+    fn create_pairwise(&self,
+                       wallet_handle: i32,
+                       their_did: &str,
+                       my_did: &str,
+                       cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        cb(self._create_pairwise(wallet_handle, their_did, my_did));
+    }
+
+    fn _create_pairwise(&self,
+                        wallet_handle: i32,
+                        their_did: &str,
+                        my_did: &str) -> Result<(), IndyError> {
+        self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
+        self.wallet_service.get(wallet_handle, &format!("their_did::{}", their_did))?;
+
+        let pair = DidPair::new(my_did.to_string(), their_did.to_string()).to_json()
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't serialize DidPair: {}", err.description())))?;
+
+        self.wallet_service.set(wallet_handle, &format!("pairwise::{}", their_did), &pair)?;
+
+        Ok(())
+    }
+
+    fn pairwise_list(&self,
+                     wallet_handle: i32,
+                     cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self._pairwise_list(wallet_handle));
+    }
+
+    fn _pairwise_list(&self,
+                      wallet_handle: i32) -> Result<String, IndyError> {
+        let pairwise_list: Vec<String> =
+            self.wallet_service.list(wallet_handle, &format!("pairwise::"))?
+                .iter()
+                .map(|&(_, ref pair)| pair.clone())
+                .collect::<Vec<String>>();
+
+        let pairwise_list_json = serde_json::to_string(&pairwise_list)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't serialize {}", err)))?;
+
+        Ok(pairwise_list_json)
+    }
+
+    fn pairwise_get_my_did(&self,
+                           wallet_handle: i32,
+                           their_did: &str,
+                           cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self._pairwise_get_my_did(wallet_handle, their_did));
+    }
+
+    fn _pairwise_get_my_did(&self,
+                            wallet_handle: i32,
+                            their_did: &str) -> Result<String, IndyError> {
+        let pair = self.wallet_service.get(wallet_handle, &format!("pairwise::{}", their_did))?;
+
+        let pair: DidPair = DidPair::from_json(&pair)
+            .map_err(|e|
+                CommonError::InvalidStructure(format!("Can't deserialize DidPair: {:?}", e)))?;
+
+        Ok(pair.my_did)
+    }
+
+    fn pairwise_set_metadata(&self,
+                             wallet_handle: i32,
+                             their_did: &str,
+                             metadata: &str,
+                             cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        cb(self.wallet_service.set(wallet_handle, &format!("pairwise::{}::metadata", their_did), &metadata)
+            .map_err(|err| IndyError::WalletError(err)))
+    }
+
+    fn pairwise_get_metadata(&self,
+                             wallet_handle: i32,
+                             their_did: &str,
+                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self.wallet_service.get(wallet_handle, &format!("pairwise::{}::metadata", their_did))
+            .map_err(|err| IndyError::WalletError(err)));
     }
 }
