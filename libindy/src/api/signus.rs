@@ -67,7 +67,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Generated new keys (signing and encryption keys) for an existing
+/// Generated temporary keys (signing and encryption keys) for an existing
 /// DID (owned by the caller of the library).
 ///
 /// #Params
