@@ -43,7 +43,7 @@ extern "C" {
                                                                           const char*   pk)
                                                     );
 
-    /// Generated new keys (signing and encryption keys) for an existing
+    /// Generated temporary keys (signing and encryption keys) for an existing
     /// DID (owned by the caller of the library).
     ///
     /// #Params
