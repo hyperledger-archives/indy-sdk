@@ -2381,6 +2381,8 @@ mod demos {
                                                                                        &claim_req,
                                                                                        &claim_json, Some(user_revoc_index)).unwrap();
 
+        println!("xclaim_json {:?}", xclaim_json);
+
         //8. Prover store received Claim
         AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
 
