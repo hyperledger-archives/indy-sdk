@@ -51,14 +51,6 @@ public class ReplaceKeysStartTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testreplaceKeysStartWorksForInvalidDid() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
-
-		Signus.replaceKeysStart(this.wallet, "invalid_base58_string", "{}").get();
-	}
-
-	@Test
 	public void testreplaceKeysStartWorksForNotExistsDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
