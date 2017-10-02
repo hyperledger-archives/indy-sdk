@@ -52,7 +52,7 @@ impl LedgerUtils {
             return Err(err);
         }
 
-        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -167,9 +167,9 @@ impl LedgerUtils {
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
 
-        let verkey_str = verkey.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
-        let data_str = data.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
-        let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());;
+        let verkey_str = verkey.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let data_str = data.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let err =
             indy_build_nym_request(command_handle,
                                      submitter_did.as_ptr(),
