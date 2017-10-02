@@ -28,13 +28,6 @@ async def test_replace_keys_start_works_for_correct_crypto_type(wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_replace_keys_start_works_for_invalid_did(wallet_handle):
-    with pytest.raises(IndyError) as e:
-        await signus.replace_keys_start(wallet_handle, 'invalid_base58_string', "{}")
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
-
-
-@pytest.mark.asyncio
 async def test_replace_keys_start_works_for_not_exists_did(wallet_handle):
     with pytest.raises(IndyError) as e:
         await signus.replace_keys_start(wallet_handle, 'unknowndid', "{}")

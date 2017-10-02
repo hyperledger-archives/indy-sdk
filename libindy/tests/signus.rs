@@ -157,20 +157,6 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_replace_keys_start_works_for_invalid_did() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = SignusUtils::replace_keys_start(wallet_handle, "invalid_base58_string", "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
         fn indy_replace_keys_start_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
