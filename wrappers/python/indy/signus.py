@@ -52,9 +52,9 @@ async def create_and_store_my_did(wallet_handle: int,
     return res
 
 
-async def replace_keys(wallet_handle: int,
-                       did: str,
-                       identity_json: str) -> (str, str):
+async def replace_keys_start(wallet_handle: int,
+                             did: str,
+                             identity_json: str) -> (str, str):
     """
     Generated new keys (signing and encryption keys) for an existing
     DID (owned by the caller of the library).
@@ -71,29 +71,59 @@ async def replace_keys(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("replace_keys: >>> wallet_handle: %r, did: %r, identity_json: %r",
+    logger.debug("replace_keys_start: >>> wallet_handle: %r, did: %r, identity_json: %r",
                  wallet_handle,
                  did,
                  identity_json)
 
-    if not hasattr(replace_keys, "cb"):
-        logger.debug("replace_keys: Creating callback")
-        replace_keys.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+    if not hasattr(replace_keys_start, "cb"):
+        logger.debug("replace_keys_start: Creating callback")
+        replace_keys_start.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
-    verkey, pk = await do_call('indy_replace_keys',
+    verkey, pk = await do_call('indy_replace_keys_start',
                                c_wallet_handle,
                                c_did,
                                c_identity_json,
-                               replace_keys.cb)
+                               replace_keys_start.cb)
 
     res = (verkey.decode(), pk.decode())
 
-    logger.debug("replace_keys: <<< res: %r", res)
+    logger.debug("replace_keys_start: <<< res: %r", res)
     return res
+
+
+async def replace_keys_apply(wallet_handle: int,
+                             did: str) -> (str, str):
+    """
+    Apply temporary keys as main for an existing DID (owned by the caller of the library).
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param did: DID
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("replace_keys_apply: >>> wallet_handle: %r, did: %r, identity_json: %r",
+                 wallet_handle,
+                 did)
+
+    if not hasattr(replace_keys_apply, "cb"):
+        logger.debug("replace_keys_apply: Creating callback")
+        replace_keys_apply.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+
+    await do_call('indy_replace_keys_apply',
+                  c_wallet_handle,
+                  c_did,
+                  replace_keys_apply.cb)
+
+    logger.debug("replace_keys_apply: <<<")
 
 
 async def store_their_did(wallet_handle: int,
