@@ -31,7 +31,8 @@ async def test_build_node_request_works_for_correct_data_json():
         "client_ip": "ip",
         "client_port": 1,
         "alias": "some",
-        "services": ["VALIDATOR"]
+        "services": ["VALIDATOR"],
+        "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
     }
 
     expected_response = {

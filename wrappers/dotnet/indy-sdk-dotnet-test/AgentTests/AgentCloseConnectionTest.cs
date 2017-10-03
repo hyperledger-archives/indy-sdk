@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.Test.AgentTests
 
             var connection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
 
-            var connectionEvent = await activeListener.WaitForConnection();
+            var connectionEvent = await activeListener.WaitForConnectionAsync();
             var serverToClientConnection = connectionEvent.Connection;
 
             await serverToClientConnection.CloseAsync();

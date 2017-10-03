@@ -22,7 +22,7 @@ namespace Hyperledger.Indy.AgentApi
     /// method.
     /// </para>
     /// <para>When an open listener receives an incoming connection an <see cref="AgentConnectionEvent"/> 
-    /// is raised asynchronously and these events can be obtained by calling the <see cref="WaitForConnection"/> 
+    /// is raised asynchronously and these events can be obtained by calling the <see cref="WaitForConnectionAsync"/> 
     /// method on the listener instance, which will return a <see cref="Task{AgentConnectionEvent}"/> that will resolve to
     /// the first received event for that listener.  
     /// </para>
@@ -267,7 +267,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <seealso cref="AgentConnection"/>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an 
         /// <see cref="AgentConnectionEvent"/> when a connection is established.</returns>
-        public Task<AgentConnectionEvent> WaitForConnection()
+        public Task<AgentConnectionEvent> WaitForConnectionAsync()
         {
             var taskCompletionSource = new TaskCompletionSource<AgentConnectionEvent>();
             var tuple = Tuple.Create(Handle, taskCompletionSource);
