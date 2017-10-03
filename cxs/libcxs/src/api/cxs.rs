@@ -4,13 +4,16 @@ use self::libc::c_char;
 use api::Errorcode;
 use api::Errorcode::Success;
 use api::CxsStatus;
-use utils::pool;
+use utils::{pool, wallet};
 
 #[no_mangle]
 pub extern fn cxs_init() -> Errorcode {
     let pool_name = "pool1";
     let config_name = "config1";
-    pool::create_pool_config(&pool_name, &config_name)
+    let wallet_name = "wallet1";
+    let wallet_type = "default";
+    pool::create_pool_config(&pool_name, &config_name);
+    wallet::create_wallet(&pool_name, &wallet_name, &wallet_type)
 }
 
 
