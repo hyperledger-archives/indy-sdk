@@ -27,8 +27,10 @@ node {
         app.inside {
             sh "rustc --version"
             sh "gcc --version"
-            sh "ls cxs/wrappers/node"
+            sh "mkdir -p cxs/wrappers/node/lib"
             sh "cd cxs/libcxs; cargo build"
+            sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib"
+            sh "ls cxs/wrappers/node/lib"
         }
     }
 
@@ -45,10 +47,6 @@ def testNodeWrapper(env) {
     dir ('cxs/wrappers/node'){
         stage ('Test Node Wrapper'){
             env.inside {
-                sh "mkdir -p lib"
-                sh "pwd"
-                sh "ls ../../libcxs/target/debug"
-                sh "cp ../../libcxs/target/debug/libcxs.so lib"
                 sh 'npm -v'
                 sh 'npm install'
                 sh 'npm test'
