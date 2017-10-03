@@ -3,15 +3,7 @@ extern crate libc;
 use std::sync::mpsc::channel;
 use std::ffi::CString;
 
-use indy::api::signus::{
-    indy_sign,
-    indy_create_and_store_my_did,
-    indy_store_their_did,
-    indy_replace_keys,
-    indy_verify_signature,
-    indy_encrypt,
-    indy_decrypt
-};
+use indy::api::signus::*;
 use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
