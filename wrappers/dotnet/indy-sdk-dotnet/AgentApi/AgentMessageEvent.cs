@@ -6,7 +6,7 @@
     /// <remarks>
     /// <para>The AgentMessageEvent is raised asynchronously when a message is received on 
     /// an <see cref="AgentConnection"/>.  These events are queued and events for a specific 
-    /// connection can be obtained by calling the connection's <see cref="AgentConnection.WaitForMessage"/>
+    /// connection can be obtained by calling the connection's <see cref="AgentConnection.WaitForMessageAsync"/>
     /// method.
     /// </para>
     /// <note type="note">Messages received on a connection arrived encrypted, however the <see cref="Message"/> 

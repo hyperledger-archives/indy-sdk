@@ -5,15 +5,20 @@
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Version>1.0.0</Version>
+    <Version>0.0.2-alpha</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Symon Rottem</Authors>
     <Company>Hyperledger Indy</Company>
-    <Product>Indy.Sdk.DotNet</Product>
-    <Description>.NET wrapper for the Indy SDK</Description>
+    <Product>Hyperledger Indy SDK</Product>
+    <Description>.NET wrapper for the Hyperledger Indy SDK.
+
+Please note that to function the C-Callable Hyperledger Indy SDK and its dependencies must be installed in the library/DLL search path - please see the project page for more information.</Description>
     <PackageProjectUrl>https://github.com/hyperledger/indy-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/hyperledger/indy-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageTags>hyperledger indy sdk</PackageTags>
+    <PackageLicenseUrl>https://github.com/hyperledger/indy-sdk/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageIconUrl></PackageIconUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
