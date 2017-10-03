@@ -47,10 +47,10 @@ public final class SignusResults {
 	/**
 	 * Result from calling replaceKeys.
 	 */
-	public static class ReplaceKeysResult extends IndyJava.Result {
+	public static class ReplaceKeysStartResult extends IndyJava.Result {
 
 		private String verkey, pk;
-		ReplaceKeysResult(String verkey, String pk) { this.verkey = verkey; this.pk = pk; }
+		ReplaceKeysStartResult(String verkey, String pk) { this.verkey = verkey; this.pk = pk; }
 		
 		/**
 		 * Gets the verification key.

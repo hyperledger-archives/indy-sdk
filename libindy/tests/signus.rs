@@ -136,18 +136,18 @@ mod high_cases {
         }
     }
 
-    mod replace_keys {
+    mod replace_keys_start {
         use super::*;
 
         #[test]
-        fn indy_replace_keys_works() {
+        fn indy_replace_keys_start_works() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys(wallet_handle, &my_did, "{}").unwrap();
+            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             assert!(new_verkey != my_verkey);
 
@@ -157,21 +157,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_replace_keys_works_for_invalid_did() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = SignusUtils::replace_keys(wallet_handle, "invalid_base58_string", "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_replace_keys_works_for_invalid_handle() {
+        fn indy_replace_keys_start_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -179,7 +165,7 @@ mod high_cases {
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = SignusUtils::replace_keys(invalid_wallet_handle, &my_did, "{}");
+            let res = SignusUtils::replace_keys_start(invalid_wallet_handle, &my_did, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -188,16 +174,89 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_replace_keys_works_for_seed() {
+        fn indy_replace_keys_start_works_for_seed() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
             assert_eq!(new_verkey, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW");
             assert_ne!(my_verkey, new_verkey);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod replace_keys_apply {
+        use super::*;
+
+        #[test]
+        fn indy_replace_keys_apply_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+
+            assert!(new_verkey != my_verkey);
+
+            SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_apply_works_without_calling_replace_start() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            assert_eq!(SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_apply_works_for_unknown_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+
+            assert_eq!(SignusUtils::replace_keys_apply(wallet_handle, "unknowndid").unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            assert_eq!(SignusUtils::replace_keys_apply(invalid_wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -792,17 +851,17 @@ mod medium_cases {
         }
     }
 
-    mod replace_keys {
+    mod replace_keys_start {
         use super::*;
 
         #[test]
-        fn indy_replace_keys_works_for_not_exists_did() {
+        fn indy_replace_keys_start_works_for_not_exists_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            //TODO may be we must return WalletNotFound in case if key not exists in wallet
-            SignusUtils::replace_keys(wallet_handle, "8wZcEriaNLNKtteJvx7f8i", "{}").unwrap();
+            let res = SignusUtils::replace_keys_start(wallet_handle, "unknowndid", "{}");
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -810,14 +869,14 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_replace_keys_works_for_correct_crypto_type() {
+        fn indy_replace_keys_start_works_for_correct_crypto_type() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys(wallet_handle, &my_did, r#"{"crypto_type":"ed25519"}"#).unwrap();
+            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"crypto_type":"ed25519"}"#).unwrap();
             assert!(my_verkey != new_verkey);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -826,14 +885,14 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_replace_keys_works_for_invalid_crypto_type() {
+        fn indy_replace_keys_start_works_for_invalid_crypto_type() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let res = SignusUtils::replace_keys(wallet_handle, &my_did, r#"{"crypto_type":"type"}"#);
+            let res = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"crypto_type":"type"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::SignusUnknownCryptoError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1128,6 +1187,81 @@ mod medium_cases {
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod replace_keys {
+        use super::*;
+
+        #[test]
+        fn indy_replace_keys_demo() {
+            TestUtils::cleanup_storage();
+
+            // 1. Create and open pool
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            // 2. Create and open wallet
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            // 3. Generate did from Trustee seed
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            // 4. Generate my did
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            // 5. Send Nym request to Ledger
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            // 6. Start replacing of keys
+            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+
+            // 7. Send Nym request to Ledger with new verkey
+            let nym_request = LedgerUtils::build_nym_request(&my_did.clone(), &my_did.clone(), Some(&new_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+
+            // 8. Send Schema request before apply replacing of keys
+            let schema_data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+
+            // 9. Apply replacing of keys
+            SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+
+            // 10. Send Schema request
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_replace_keys_without_nym_transaction() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (my_did, my_verkey, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let nym_request = LedgerUtils::build_nym_request(&trustee_did.clone(), &my_did.clone(), Some(&my_verkey.clone()), None, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+
+            let schema_data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
+            let schema_request = LedgerUtils::build_schema_request(&my_did.clone(), schema_data).unwrap();
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
