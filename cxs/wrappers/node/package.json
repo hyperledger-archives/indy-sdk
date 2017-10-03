@@ -1,8 +1,10 @@
 {
   "name": "cxs",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "author": "evernym",
+  "license": "ISC",
+  "description": "Node wrapper for cxs",
+  "main": "src/index.js",
   "scripts": {
     "test": "mocha test/**/*.js"
   },
@@ -10,14 +12,23 @@
     "type": "git",
     "url": "git+https://github.com/evernym/cxs.git"
   },
-  "author": "evernym",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/evernym/cxs/issues"
   },
   "homepage": "https://github.com/evernym/cxs#readme",
   "dependencies": {
+    "chai": "^4.1.1",
+    "ffi": "^2.2.0",
+    "fs-extra": "^4.0.2",
     "mocha": "^3.5.0",
-    "chai": "^4.1.1"
+    "path": "^0.12.7"
+  },
+  "directories": {
+    "test": "test",
+    "lib": "src",
+    "build": "dist"
+  },
+  "devDependencies": {
+    "typescript": "^2.5.3"
   }
 }
