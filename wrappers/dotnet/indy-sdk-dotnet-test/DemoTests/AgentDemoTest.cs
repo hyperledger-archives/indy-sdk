@@ -66,9 +66,9 @@ namespace Hyperledger.Indy.Test.DemoTests
             // 11. Send test message from sender to listener
             await connection.SendAsync("test");
 
-            var serverConnectionEvent = await activeListener.WaitForConnection();
+            var serverConnectionEvent = await activeListener.WaitForConnectionAsync();
             var serverConnection = serverConnectionEvent.Connection;
-            var messageEvent = await serverConnection.WaitForMessage();
+            var messageEvent = await serverConnection.WaitForMessageAsync();
 
             Assert.AreEqual(message, messageEvent.Message);
 

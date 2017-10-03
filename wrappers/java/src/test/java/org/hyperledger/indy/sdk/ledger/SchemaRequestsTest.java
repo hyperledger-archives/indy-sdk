@@ -119,7 +119,6 @@ public class SchemaRequestsTest extends IndyIntegrationTest {
 
 		assertEquals("gvt2", getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name"));
 		assertEquals("2.0", getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
-		assertEquals(did, getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("origin"));
 	}
 
 	@Test
