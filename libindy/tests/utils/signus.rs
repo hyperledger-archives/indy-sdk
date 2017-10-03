@@ -8,6 +8,7 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
+use utils::ledger::LedgerUtils;
 
 pub struct SignusUtils {}
 
@@ -162,24 +163,24 @@ impl SignusUtils {
         Ok(())
     }
 
-    pub fn replace_keys(wallet_handle: i32, did: &str, identity_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn replace_keys_start(wallet_handle: i32, did: &str, identity_json: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, verkey, public_key| {
             sender.send((err, verkey, public_key)).unwrap();
         });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_replace_keys_cb(cb);
+        let (command_handle, cb) = CallbackUtils::closure_to_replace_keys_start_cb(cb);
 
         let did = CString::new(did).unwrap();
         let identity_json = CString::new(identity_json).unwrap();
 
         let err =
-            indy_replace_keys(command_handle,
-                              wallet_handle,
-                              did.as_ptr(),
-                              identity_json.as_ptr(),
-                              cb);
+            indy_replace_keys_start(command_handle,
+                                    wallet_handle,
+                                    did.as_ptr(),
+                                    identity_json.as_ptr(),
+                                    cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -192,6 +193,47 @@ impl SignusUtils {
         }
 
         Ok((my_verkey, my_pk))
+    }
+
+    pub fn replace_keys_apply(wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_replace_keys_apply_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_replace_keys_apply(command_handle,
+                                    wallet_handle,
+                                    did.as_ptr(),
+                                    cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(())
+    }
+
+    pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
+        let (verkey, pk) = SignusUtils::replace_keys_start(wallet_handle, did, "{}").unwrap();
+
+        let nym_request = LedgerUtils::build_nym_request(did, did, Some(&verkey), None, None).unwrap();
+        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, did, &nym_request).unwrap();
+
+        SignusUtils::replace_keys_apply(wallet_handle, did).unwrap();
+
+        Ok((verkey, pk))
     }
 
     pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
