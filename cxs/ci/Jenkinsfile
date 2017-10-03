@@ -27,8 +27,8 @@ node {
         app.inside {
             sh "rustc --version"
             sh "gcc --version"
+            sh "ls cxs/wrappers/node"
             sh "cd cxs/libcxs; cargo build"
-            sh "ls cxs/libcxs/target/debug"
         }
     }
 
