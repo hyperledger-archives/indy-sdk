@@ -16,7 +16,7 @@ var CXSRuntime = (function () {
             // this needs additional logic
             var basepath = config.basepath;
             if (basepath === undefined) {
-                basepath = "/node_modules/cxs/lib/libcxs.so";
+                basepath = "/usr/local/lib/node_modules/cxs/lib/libcxs.so";
             }
             return basepath;
         }

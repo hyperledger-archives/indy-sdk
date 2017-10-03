@@ -25,7 +25,7 @@ export class CXSRuntime implements CXSAcessType {
             let basepath = config.basepath
 
             if (basepath === undefined) {
-                basepath = "/node_modules/cxs/lib/libcxs.so"
+                basepath = "/usr/local/lib/node_modules/cxs/lib/libcxs.so"
             }
 
             return basepath
@@ -36,4 +36,5 @@ export class CXSRuntime implements CXSAcessType {
         this.ffi = ffi.Library(libraryPath, FFIConfiguration)
     }
 }
+
 
