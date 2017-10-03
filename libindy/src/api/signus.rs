@@ -67,7 +67,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Generated new keys (signing and encryption keys) for an existing
+/// Generated temporary keys (signing and encryption keys) for an existing
 /// DID (owned by the caller of the library).
 ///
 /// #Params
@@ -89,19 +89,19 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_replace_keys(command_handle: i32,
-                                 wallet_handle: i32,
-                                 did: *const c_char,
-                                 identity_json: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                      verkey: *const c_char,
-                                                      pk: *const c_char)>) -> ErrorCode {
+pub  extern fn indy_replace_keys_start(command_handle: i32,
+                                       wallet_handle: i32,
+                                       did: *const c_char,
+                                       identity_json: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            verkey: *const c_char,
+                                                            pk: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
-        .send(Command::Signus(SignusCommand::ReplaceKeys(
+        .send(Command::Signus(SignusCommand::ReplaceKeysStart(
             wallet_handle,
             identity_json,
             did,
@@ -115,6 +115,40 @@ pub  extern fn indy_replace_keys(command_handle: i32,
 
     result_to_err_code!(result)
 }
+
+/// Apply temporary keys as main for an existing DID (owned by the caller of the library).
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// did
+/// cb: Callback that takes command result as parameter.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub  extern fn indy_replace_keys_apply(command_handle: i32,
+                                       wallet_handle: i32,
+                                       did: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::ReplaceKeysApply(
+            wallet_handle,
+            did,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
 /// so that it can be used to verify transaction.

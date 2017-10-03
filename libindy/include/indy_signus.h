@@ -43,7 +43,7 @@ extern "C" {
                                                                           const char*   pk)
                                                     );
 
-    /// Generated new keys (signing and encryption keys) for an existing
+    /// Generated temporary keys (signing and encryption keys) for an existing
     /// DID (owned by the caller of the library).
     ///
     /// #Params
@@ -65,16 +65,37 @@ extern "C" {
     /// Wallet*
     /// Crypto*
 
-    extern indy_error_t indy_replace_keys(indy_handle_t command_handle,
-                                          indy_handle_t wallet_handle,
-                                          const char *  did,
-                                          const char *  identity_json,
+    extern indy_error_t indy_replace_keys_start(indy_handle_t command_handle,
+                                                indy_handle_t wallet_handle,
+                                                const char *  did,
+                                                const char *  identity_json,
 
-                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                               indy_error_t  err,
-                                                               const char*   verkey,
-                                                               const char*   pk)
-                                         );
+                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                     indy_error_t  err,
+                                                                     const char*   verkey,
+                                                                     const char*   pk)
+                                               );
+
+    /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
+    ///
+    /// #Params
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// command_handle: command handle to map callback to user context.
+    /// did
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+
+    extern indy_error_t indy_replace_keys_apply(indy_handle_t command_handle,
+                                                indy_handle_t wallet_handle,
+                                                const char *  did,
+
+                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                     indy_error_t  err)
+                                               );
 
     /// Saves their DID for a pairwise connection in a secured Wallet,
     /// so that it can be used to verify transaction.
