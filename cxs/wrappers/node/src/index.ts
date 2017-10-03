@@ -1,5 +1,6 @@
 import { FFIEntryPoint,FFIConfiguration, FFIInterfaceConfig } from './rustlib'
 import * as ffi from 'ffi'
+import * as path from 'path'
 
 export interface CXSAcessType {
     readonly ffi: FFIEntryPoint
@@ -13,6 +14,11 @@ export class CXSRuntimeConfig {
 
 }
 
+/** CXSRuntime is the object that interfaces with the cxs sdk functions **/
+/** FFIConfiguration will contain all the sdk api functions **/
+/** CXSRuntimeConfg is a class that currently only contains a chosen basepath for the .so file
+ * I made it a class just in case we think of more needed configs **/
+
 export class CXSRuntime implements CXSAcessType {
     readonly basepath: string
     readonly ffi: FFIEntryPoint
@@ -25,7 +31,8 @@ export class CXSRuntime implements CXSAcessType {
             let basepath = config.basepath
 
             if (basepath === undefined) {
-                basepath = "/usr/local/lib/node_modules/cxs/lib/libcxs.so"
+                //This basepath is in the local/appSpecific node_modules
+                basepath = path.resolve("../node_modules/cxs/lib/libcxs.so");
             }
 
             return basepath
@@ -36,5 +43,3 @@ export class CXSRuntime implements CXSAcessType {
         this.ffi = ffi.Library(libraryPath, FFIConfiguration)
     }
 }
-
-
