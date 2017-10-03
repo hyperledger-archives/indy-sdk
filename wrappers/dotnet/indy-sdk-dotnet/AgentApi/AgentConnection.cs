@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.AgentApi
     /// </para>
     /// <para>Messages received on a connection result in an <see cref="AgentMessageEvent"/> being raised
     /// asynchronously for each message and these events can be obtained by calling the 
-    /// <see cref="WaitForMessage"/> method, which will return a <see cref="Task{AgentMessageEvent}"/> that will resolve to
+    /// <see cref="WaitForMessageAsync"/> method, which will return a <see cref="Task{AgentMessageEvent}"/> that will resolve to
     /// the first received event.  
     /// </para>
     /// <para>When a connection is no longer required it must be closed using its <see cref="CloseAsync"/> 
@@ -218,7 +218,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </remarks>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an
         /// <see cref="AgentMessageEvent"/> when a message is received.</returns>
-        public Task<AgentMessageEvent> WaitForMessage()
+        public Task<AgentMessageEvent> WaitForMessageAsync()
         {
             var taskCompletionSource = new TaskCompletionSource<AgentMessageEvent>();
             var tuple = Tuple.Create(Handle, taskCompletionSource);
