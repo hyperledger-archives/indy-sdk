@@ -14,7 +14,8 @@ typedef enum
 
 typedef enum
 {
-  initialized = 0,
+  none = 0,
+  initialized,
   offer_sent,
   request_received,
   accepted,
@@ -23,11 +24,11 @@ typedef enum
   revoked,
 } cxs_claim_state_t;
 
-typedef int cxs_schema_handle_t;
-typedef int cxs_claimdef_handle_t;
-typedef int cxs_connection_handle_t;
-typedef int cxs_claim_handle_t;
-typedef int cxs_proof_handle_t;
+typedef unsigned int cxs_schema_handle_t;
+typedef unsigned int cxs_claimdef_handle_t;
+typedef unsigned int cxs_connection_handle_t;
+typedef unsigned int cxs_claim_handle_t;
+typedef unsigned int cxs_proof_handle_t;
 
 typedef struct {
 
@@ -103,11 +104,14 @@ cxs_error_t cxs_connection_create(const char *recipient_info, cxs_connection_han
 /** Asynchronously request a connection be made. */
 cxs_error_t cxs_connection_connect(cxs_connection_handle_t connection_handle);
 
-/** Populates data with the contents of the connection handle. */
-cxs_error_t cxs_connection_get_data(cxs_connection_handle_t connection_handle, char *data);
+/** Returns the contents of the connection handle. */
+char *cxs_connection_get_data(cxs_connection_handle_t connection_handle);
 
 /** Populates status with the current state of the asynchronous connection request. */
-cxs_error_t cxs_connection_get_state(cxs_connection_handle_t connection_handle, char *status);
+cxs_error_t cxs_connection_get_state(cxs_connection_handle_t connection_handle, cxs_claim_state_t *status);
+
+/** Releases the connection from memory. */
+cxs_error_t cxs_connection_release(cxs_connection_handle_t connection_handle);
 
 /** Populate status_array with the state of each connection handle. */
 cxs_error_t cxs_connection_list_state(cxs_status_t *status_array);
