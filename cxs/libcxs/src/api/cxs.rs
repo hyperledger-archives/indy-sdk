@@ -151,7 +151,7 @@ pub extern fn cxs_proof_validate_response(proof_handle: u32, response_data: *con
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_proof_list_state(status_array: *mut CxsStatus) -> Errorcode { Errorcode::Success }
 #[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_get_state(proof_handle: i32, status: *mut c_char) -> Errorcode { Success }
+pub extern fn cxs_proof_get_state(proof_handle: i32, status: *mut c_char) -> Errorcode { Errorcode::Success }
 
 #[cfg(test)]
 mod tests {
@@ -169,8 +169,5 @@ mod tests {
         let (pool_result, wallet_result ) = cxs_init("", &config_name, &wallet_name, &wallet_type);
         assert!(pool_result.is_err(), error_message(&UNKNOWN_ERROR.code_num));
         assert!(wallet_result.is_err(),error_message(&UNKNOWN_ERROR.code_num));
-
     }
-
-
 }
