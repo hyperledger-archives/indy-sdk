@@ -1,6 +1,7 @@
 pub mod pool;
 pub mod wallet;
 pub mod init;
+pub mod error;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -13,4 +14,3 @@ pub fn generate_command_handle() -> i32 {
 #[macro_use]
 pub mod cstring;
 
-pub mod error;

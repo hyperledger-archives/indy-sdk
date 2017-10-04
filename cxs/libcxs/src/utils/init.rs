@@ -1,5 +1,5 @@
 use indy::api::ErrorCode as indyError;
-use error;
+use utils::error;
 
 
 pub fn indy_error_to_cxs_error_code(err:indyError) ->  &'static error::Error {

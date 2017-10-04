@@ -32,7 +32,7 @@ pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use error::SUCCESS;
+    use utils::error::SUCCESS;
 
     #[test]
     fn test_config() {

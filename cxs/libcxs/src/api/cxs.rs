@@ -13,7 +13,6 @@ use connection::release;
 use std::ffi::CString;
 
 #[no_mangle]
-<<<<<<< HEAD
 pub extern fn cxs_init (pool_name:*const c_char,
                            config_name:*const c_char,
                            wallet_name:*const c_char,

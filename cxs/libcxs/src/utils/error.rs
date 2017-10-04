@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
 
-
-
 // **** DEFINE NEW ERRORS HERE ****
 // STEP 1: create new public static instance of Error, assign it a new unused number and
 // give it a human readable error message

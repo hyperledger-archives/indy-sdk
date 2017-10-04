@@ -30,7 +30,7 @@ pub fn create_wallet<'a>(pool_name:&str, wallet_name:&str, wallet_type:&str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use error;
+    use utils::error;
     #[test]
     fn test_wallet() {
         let pool_name = String::from("pool1");
